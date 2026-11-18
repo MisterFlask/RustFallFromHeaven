@@ -15,6 +15,7 @@ import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark
 import { stackWear, drawWearPip, drawHarbourMark } from "../sea.js";
 import { outpostTag } from "../lanes.js";
 import { drawMarksR3d } from "../marks.js";
+import { drawPlateShield } from "../persons_lines.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -118,7 +119,9 @@ function drawHudParts(r3d, cam) {
   // name matters more than the pins crowding round it), under the stack badges.
   const screenCity = v.overlay.city;
   for (const c of r3d.cities ?? []) {
-    const city = c.city;
+    // The view's entry as it is now (the dressing keeps the one it was dressed with: a House's
+    // state or a siege changes without a redress).
+    const city = S.cities.get(c.city.id) ?? c.city;
     // The city screen's own city is named by its title; its plate would cover its plot's yields.
     if (screenCity && city.id === screenCity.id) continue;
     // At the plot's front edge, clear of the gate where the garrison stands; in front of the walls
@@ -179,8 +182,12 @@ function drawHudParts(r3d, cam) {
     }
     // Sieges (docs/SIEGES.md): a besieged city's plate is ringed in red, and its walls' Sentinels
     // stand as small towers under it (filled by their HP left; hollow when breached).
-    // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plate's left end.
-    drawHarbourMark(g, city, x - h * 0.45, p.y, h * 0.42, 1);
+    // Persons of Note (docs/PERSONS.md, "UI", part G): an own city's House shield at the plate's
+    // left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
+    const shieldW = city.house ? drawPlateShield(g, city.house, x - h * 0.42, p.y, h * 1.05) : 0;
+    // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plate's left end (left of the
+    // shield when there is one).
+    drawHarbourMark(g, city, x - h * 0.45 - (shieldW ? shieldW + 3 : 0), p.y, h * 0.42, 1);
     if (city.besieged) {
       g.lineWidth = 2.5;
       g.strokeStyle = "#e0442c";

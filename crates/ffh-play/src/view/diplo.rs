@@ -214,6 +214,9 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
         "they_give" => Json::Arr(theirs.iter().map(|t| item_json(g, with, with, v.h, t)).collect()),
         "troops" => troops,
         "tribute" => tribute_json(g, with, v.h),
+        // Persons of Note (docs/PERSONS.md, "UI", part I): what making peace with them does to
+        // the cast (at war only; empty when nothing).
+        "peace_preview" => if g.at_war(v.team, g.players[with].team) { crate::view::house_marks::act_preview(v, &ffh_core::persons::PersonsAct::MakePeace(g.players[with].team)) } else { Json::Arr(Vec::new()) },
     })
 }
 

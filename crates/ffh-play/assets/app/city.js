@@ -855,7 +855,10 @@ function chooseModes([tapMode, setTapMode], always = false) {
 function buildLists(c, choose) {
   // A governed city lists what may be an empire order (the server's list); a click places one.
   const locked = !!c.governance?.governed;
-  return GROUPS.map(([order, label]) => {
+  // Persons of Note (docs/PERSONS.md, "UI", part C): a House that takes no order now: its reason
+  // once over the lists (each entry disabled, the reason in its tooltip too).
+  const houseWhy = locked ? c.buildable.find((b) => b.why)?.why : null;
+  const lists = GROUPS.map(([order, label]) => {
     const items = c.buildable.filter((b) => b.order === order);
     if (!items.length) return null;
     return h(
@@ -869,7 +872,8 @@ function buildLists(c, choose) {
           // chip's hover or tap); a world ritual's rules line (its own facts: what it leaves, the
           // next cost), its own state (The Tithe's named rival), and why it cannot be chosen now.
           const ritual = b.ritual ?? null;
-          const why = !b.enabled ? (ritual?.why ?? "Not possible now.") : null;
+          // (Persons of Note: a House that takes no order now gives its reason, `b.why`.)
+          const why = !b.enabled ? (ritual?.why ?? b.why ?? "Not possible now.") : null;
           return h(
             `button.build${ritual ? ".ritual-build" : ""}`,
             {
@@ -891,6 +895,7 @@ function buildLists(c, choose) {
       ),
     );
   });
+  return houseWhy ? [h("p.warn.build-refusal", houseWhy), ...lists] : lists;
 }
 
 /** The full screen's production: the current build's progress, the queue, what a tap does, then

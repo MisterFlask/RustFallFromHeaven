@@ -11,6 +11,7 @@ import { run } from "./commands.js";
 import { render as markup } from "./markup.js";
 import { isoSkin, isoIcon, unlockIcon } from "./isoui.js";
 import { infoTip } from "./infotips.js";
+import { previewList } from "./persons_lines.js";
 
 /** A multiplier in percent (200) as the screens write it: "x2", "x2.7", "x1.35". */
 export function times(pct) {
@@ -745,17 +746,27 @@ export async function openCivics() {
           p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : (p.changed ? h("span.warn", { title: "The revolution timer, a civic you cannot leave, or anarchy" }, "This change is not possible now.") : h("span.warn", "No change.")),
           // This game's governors: the government decides who runs the cities.
           p.rule_change ? h("div.civic-rule-change", p.rule_change === "governed" ? "Every city will be handed to governors." : "Every city will be ruled directly.") : null,
+          // Persons of Note (docs/PERSONS.md, "UI", part I): a direct-rule civic while Houses
+          // stand (the warning), then what the set does to the cast.
+          p.persons_warning ? h("div.persons-warning", { role: "alert" }, p.persons_warning) : null,
+          p.persons_warning ? null : previewList(p.persons),
         )
       : h("div.civic-summary.dim", `Upkeep ${c.upkeep} gold per turn.${c.anarchy ? ` Anarchy: ${turns(c.anarchy)}.` : ""}${c.revolution_timer ? ` Next revolution in ${turns(c.revolution_timer)}.` : ""} Pick civics to see the change.`);
     m.setBody(h("div.civics", columns), summary);
     m.setButtons([
       {
-        label: "Revolution!",
+        label: p?.valid && p.persons_button ? p.persons_button : "Revolution!",
         primary: true,
         disabled: !p?.valid,
         onClick: async () => {
+          // Persons of Note (principle 4): adopting a direct-rule civic while Houses stand is
+          // confirmed on its warning (Cancel has the focus).
+          if (p?.persons_warning && !(await ask("Adopt and face the secession?", `${p.persons_warning}${p.anarchy ? ` ${turns(p.anarchy)} of anarchy.` : ""} This cannot be undone.`, [
+            { label: p.persons_button ?? "Adopt", value: true, primary: true, danger: true },
+            { label: "Cancel", value: null },
+          ]))) return;
           // Anarchy is the price: ask first (Cancel has the focus); none, no question.
-          if (p?.anarchy && !(await ask("Start the revolution?", `Start the revolution? ${turns(p.anarchy)} of anarchy.`, [
+          if (p?.anarchy && !p.persons_warning && !(await ask("Start the revolution?", `Start the revolution? ${turns(p.anarchy)} of anarchy.`, [
             { label: "Revolution", value: true, primary: true, danger: true },
             { label: "Cancel", value: null },
           ]))) return;
@@ -829,10 +840,18 @@ export async function openReligion() {
         h("td", x.can_convert ? h("button.small", { onclick: () => convert(x.religion) }, "Convert") : null),
       ),
     );
+    // Persons of Note (docs/PERSONS.md, "UI", part I): what converting does to the cast, under the
+    // religion's row (nothing when nothing).
+    const rowsWithPreview = rows.flatMap((row, i) => {
+      const x = r.religions[i];
+      const pv = x.can_convert ? previewList(x.persons) : null;
+      return pv ? [row, h("tr.persons-preview-row", { "data-religion": x.religion }, h("td", { colspan: 5 }, pv))] : [row];
+    });
     m.setBody(
       h("p.dim", `${r.state_religion !== null ? `State religion: ${dname("ReligionType", r.state_religion)}. ` : "No state religion. "}Converting costs ${turns(r.anarchy)} of anarchy${r.conversion_timer ? `; the next conversion is possible in ${turns(r.conversion_timer)}` : ""}.`),
-      h("table.scores", h("tr", h("th", "Religion"), h("th", "Founded"), h("th", "Holy city"), h("th", "Your cities"), h("th", "")), rows),
+      h("table.scores", h("tr", h("th", "Religion"), h("th", "Founded"), h("th", "Holy city"), h("th", "Your cities"), h("th", "")), rowsWithPreview),
       r.can_convert_none ? h("button", { onclick: () => convert(null) }, "No state religion") : null,
+      r.can_convert_none ? previewList(r.persons_none) : null,
     );
   };
   load();

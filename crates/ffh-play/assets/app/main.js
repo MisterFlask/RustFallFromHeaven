@@ -36,6 +36,7 @@ import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { ritualAlerts } from "./rituals.js";
+import { personAlerts, houseTag } from "./persons_lines.js";
 // Persons of Note (docs/PERSONS.md, "UI"): the Court (Shift+F9, the menu's Court, its count of what
 // needs attention) and the grant list; also reached from window.ffh.persons.
 import * as persons from "./persons.js";
@@ -283,6 +284,8 @@ async function refreshLog() {
     // World rituals (docs/CARDS.md): their news as alerts (a game's log read the first time: this
     // turn's only).
     ritualAlerts(r.entries, { fresh });
+    // Persons of Note (docs/PERSONS.md, "UI", part H): their news as alerts.
+    personAlerts(r.entries, { fresh });
   } catch {
     /* busy inside a decision */
   }
@@ -385,6 +388,8 @@ async function runPopups() {
 
 function citiesList() {
   const mine = ownCities();
+  // A civilization with Houses: the view sends each own city's `house` (null: the Crown's).
+  const houses = mine.some((c) => "house" in c);
   return openModal({
     title: "Your cities",
     tag: "cities",
@@ -393,12 +398,14 @@ function citiesList() {
       mine.length
         ? h(
             "table.scores",
-            h("tr", h("th", "City"), h("th", "City perk"), h("th", "Size"), h("th", "Producing"), h("th", "Growth")),
+            h("tr", h("th", "City"), houses ? h("th", "House") : null, h("th", "City perk"), h("th", "Size"), h("th", "Producing"), h("th", "Growth")),
             mine.map((c) =>
               h(
                 "tr.clickable",
                 { onclick: () => (closeTag("cities"), mapView.centerOn(c.x, c.y), openCity(c.id)) },
                 h("td", `${c.capital ? "★ " : ""}${c.name}`, c.outpost ? h("span.dim", " outpost") : null),
+                // Persons of Note (docs/PERSONS.md, "UI", part E): the House or the Crown.
+                houses ? h("td.city-house", houseTag(c.house)) : null,
                 h("td", c.perk ? perkView(c.perk) : (c.specialty ?? "—")),
                 h("td", String(c.size)),
                 h("td", c.production ? `${dname(["UnitType", "BuildingType", "ProjectType", "ProcessType"][c.production.order], c.production.type)} (${turns(c.production.turns)})` : c.outpost ? h("span", { class: c.outpost.lane === "open" ? "" : "warn" }, c.outpost.text ?? "") : h("span.warn", "nothing")),

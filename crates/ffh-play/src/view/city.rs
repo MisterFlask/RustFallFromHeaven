@@ -25,6 +25,9 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
     let d = g.d;
     let governed = g.city_is_governed(c);
     let empire = |order: OrderType, data: usize| !governed || g.order_may_be_empire(order, data as i32);
+    // Persons of Note (docs/PERSONS.md, "UI", part C): a governed city of a House that takes no
+    // order now lists its empire orders disabled, `why` the rules' named reason.
+    let house_refusal = if governed { g.city_house_takes_order(c).err() } else { None };
     let mut out = Vec::new();
     for u in d.units.keys() {
         if g.city_offers_unit(c, u) && g.city_can_train(c, u, false, true, false, false) {
@@ -64,6 +67,14 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
     for p in d.processes.keys() {
         if !governed && g.city_can_maintain(c, p, false) {
             out.push(crate::jobj! { "order" => Json::idx(OrderType::ORDER_MAINTAIN), "type" => Json::idx(p), "enabled" => true, "cost" => Json::Null, "turns" => Json::Null });
+        }
+    }
+    if let Some(why) = house_refusal {
+        for j in &mut out {
+            if j.get("enabled").and_then(Json::as_bool) == Some(true) {
+                j.set("enabled", false);
+                j.set("why", why.as_str());
+            }
         }
     }
     Json::Arr(out)

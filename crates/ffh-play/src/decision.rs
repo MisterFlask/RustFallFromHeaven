@@ -243,11 +243,29 @@ pub fn keep_city(g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Opti
         player: p,
         kind: DecisionKind::KeepCity { city: c, can_raze, gift_to },
         title: if can_raze { "Raze or keep?".into() } else { "Keep the city?".into() },
-        text: format!("You have captured {} (size {}).{}", city.name, city.population, city_contents(g, c)),
+        text: format!("You have captured {} (size {}).{}{}", city.name, city.population, city_contents(g, c), if can_raze { raze_preview(g, p, c) } else { String::new() }),
         advisor: options.iter().position(|o| o.key == key),
         options,
         context: city_context(g, c, city.previous_owner),
     }
+}
+
+/// Persons of Note (docs/PERSONS.md, "UI", part I): what razing city `c` does to player `p`'s
+/// cast, `[NEWLINE]`-led lines under `If razed:` (empty when nothing).
+fn raze_preview(g: &Game, p: PlayerId, c: CityId) -> String {
+    if !g.player_has_persons(p) || g.players[p].persons.is_empty() {
+        return String::new();
+    }
+    let lines = g.persons_preview(p, &ffh_core::persons::PersonsAct::Raze(c));
+    if lines.is_empty() {
+        return String::new();
+    }
+    let mut out = "[NEWLINE][NEWLINE]If razed:".to_string();
+    for l in &lines {
+        out.push_str("[NEWLINE]");
+        out.push_str(&crate::view::house_marks::preview_sentence(l));
+    }
+    out
 }
 
 /// What a captured or joining city holds, for the keep/raze question: its buildings (wonders

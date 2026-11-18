@@ -25,6 +25,7 @@ import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
 import { openTroops, troopsLabel } from "./crusade.js";
 import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
+import { previewList } from "./persons_lines.js";
 
 /** The players screen. */
 export async function openDiplomacy() {
@@ -246,7 +247,10 @@ function itemTip(it, techHelp) {
 }
 
 async function declareWar(p) {
-  const v = await ask("Declare war?", `Declare war on ${teamName(p.team)}? Their allies may join them.`, [
+  // Persons of Note (docs/PERSONS.md, "UI", part I): what the war does to the cast, under the
+  // question (nothing when nothing).
+  const pv = previewList(p.war_preview);
+  const v = await ask("Declare war?", pv ? [h("p", `Declare war on ${teamName(p.team)}? Their allies may join them.`), pv] : `Declare war on ${teamName(p.team)}? Their allies may join them.`, [
     { label: "Declare war", value: true, primary: true, danger: true },
     { label: "Cancel", value: null },
   ]);
@@ -484,6 +488,8 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     m.setBody(
       leader.el,
       t.war ? h("p.warn", { title: "A deal makes peace, so it must hold the peace treaty (or a capitulation)." }, "You are at war.") : null,
+      // Persons of Note (docs/PERSONS.md, "UI", part I): what making peace does to the cast.
+      t.war ? previewList(t.peace_preview, { title: "If peace is made:" }) : null,
       h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
       summary,
       status,

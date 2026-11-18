@@ -106,6 +106,11 @@ fn city_json(v: &Viewer, c: CityId, card: bool) -> Json {
     if card && governed {
         j.set("card", role_card(v, c));
     }
+    // Persons of Note (docs/PERSONS.md, "UI", part E): the city's House (`{id, label, colour,
+    // state, turns}`; null: the Crown's). Left out for a human without Houses.
+    if let Some(house) = crate::view::house_marks::city_house_field(v, c) {
+        j.set("house", house);
+    }
     j
 }
 
@@ -116,6 +121,8 @@ pub fn city(v: &Viewer, c: CityId) -> Json {
     }
     let mut j = city_json(v, c, false);
     j.set("government", government(v.g, v.h).map(Json::idx));
+    // Persons of Note (part C): the House holding the city in detail, or the Crown's grant.
+    crate::view::house_marks::governance_fields(v, c, &mut j);
     j
 }
 
@@ -253,10 +260,21 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
         _ => g.city_production_turns_left_project(c, ProjectType::from_usize(data as usize), num),
     };
     let mut rows: Vec<(CityId, i32, Option<i32>, Json)> = Vec::new();
+    // Persons of Note (docs/PERSONS.md, "UI", part C): a House's city that could build the item
+    // but takes no order now, with the rules' named reason (the list shows it disabled).
+    let mut refused: Vec<Json> = Vec::new();
     let mut cities: Vec<CityId> = g.players[v.h].cities.clone();
     cities.sort();
     for c in cities {
-        if !g.cities.contains(c) || g.city_check_empire_order(v.h, c, order, data).is_err() {
+        if !g.cities.contains(c) {
+            continue;
+        }
+        if let Err(why) = g.city_check_empire_order(v.h, c, order, data) {
+            if why.starts_with("The House") {
+                if let Err(named) = g.city_house_takes_order(c) {
+                    refused.push(crate::jobj! { "city" => c, "name" => city_name(g, c), "why" => named });
+                }
+            }
             continue;
         }
         let lead = g.city_lead_orders(c);
@@ -300,6 +318,7 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
         "army" => army,
         "dest" => crate::command::recruit_dest_json(army.map(RecruitDest::Army)),
         "cities" => Json::Arr(out),
+        "refused" => Json::Arr(refused),
     })
 }
 

@@ -17,6 +17,7 @@ import { stackHead } from "./stacks.js";
 import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
+import { drawPlateShield } from "./persons_lines.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
 import { drawLanesFlat, outpostTag } from "./lanes.js";
 import { drawMarksFlat } from "./marks.js";
@@ -1430,8 +1431,11 @@ export class MapView {
           // Revolt pressure (docs/CULTURE.md): a mark at the label's right end by its level.
           g.font = `bold ${ts >= 32 ? 11 : 9}px ${FONT}`;
           drawRevoltMark(g, c, sx + ts / 2 + tw / 2 + 4, sy - 2, 6, 1, sy - 1.5);
+          // Persons of Note (docs/PERSONS.md, "UI", part G): an own city's House shield at the
+          // label's left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
+          const shieldW = c.house ? drawPlateShield(g, c.house, sx + ts / 2 - tw / 2 - 8, sy - 2, 17) : 0;
           // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the label's left end.
-          drawHarbourMark(g, c, sx + ts / 2 - tw / 2 - 5, sy - 2, 7, 1);
+          drawHarbourMark(g, c, sx + ts / 2 - tw / 2 - 5 - (shieldW ? shieldW + 2 : 0), sy - 2, 7, 1);
           if (c.owner === mine && ts >= 32) {
             const prod = c.production ? `${dname(ORDER_KINDS[c.production.order], c.production.type)}${c.production.turns !== null ? ` ${c.production.turns}` : ""}` : c.idle ? "idle!" : "";
             if (prod) {
