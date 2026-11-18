@@ -4,7 +4,9 @@ This game's own rules, not FFH2's. The government civic decides who runs a civil
 the player by hand, or governors. Under governors the player sets empire priorities, may overrule a
 city's role, and places empire orders (armies' units, settlers, wonders, rituals) at the cities it
 picks; it never picks an ordinary building. This file is the rules as they play, what was decided
-beyond the design, and what is left.
+beyond the design, and what is left. A city granted to a House (docs/PERSONS.md) takes empire
+orders only by its House's quota (`city_check_empire_order` refuses past it; each order placed is
+counted, never refunded).
 
 History: the first rules (the owner's design spec "FfH Culture Actions & Army Combat", 2026-10-29:
 four directly ruled cities, every other city under a governor from a bench, governors with a

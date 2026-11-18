@@ -67,6 +67,7 @@ described in docs/AUTOPSY.md.
 | `person_demand` | `issued`, `met`, `refused` | – |
 | `person_state` | `Devoted`, `Loyal`, `Restless`, `Disloyal` (a holder's change of state), `left` (a person without a post left the cast, Disloyal) | – |
 | `person_house` | `ended` (a House without cities) | – |
+| `person_seceded` | `house`, `league`, `civil_war` (a civilization born of Houses), `held` (every city held: the Houses ended), `no_leader`, `commander_league`, `commander_city`, `commander_resigned`, `released` (a House released as a vassal) | – |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -164,7 +165,7 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `march` (a marching recruit: `how` sent / arrived / diverted / stopped / killed, `to_army`,
   `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
 - `person` (Persons of Note, docs/PERSONS.md: `how` entered / posted / granted / demand / state /
-  house and `what`, as the counts above);
+  house / seceded and `what`, as the counts above);
 - `intent` and `decision`;
 - `prediction`: an AI estimate resolved by the rules (the prediction ledger, docs/CALIBRATION.md).
 

@@ -318,6 +318,7 @@ impl Game {
             self.persons_unit_over(u, p, np);
         }
         let text = match (why, labels.len()) {
+            (Why::CivilWar, 1) => format!("Civil war: {} secedes from the {civ_name} with {names}.", labels[0]),
             (Why::CivilWar, _) => format!("Civil war: {} secede from the {civ_name} with {names}.", and_list(&labels)),
             (_, 1) => format!("{} secedes from the {civ_name} with {names}.", labels[0]),
             _ => format!("{} secede from the {civ_name} with {names}.", and_list(&labels)),

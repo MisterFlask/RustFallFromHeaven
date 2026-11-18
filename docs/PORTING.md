@@ -301,6 +301,22 @@ flag.
   good, make demands with a term and carry a loyalty with four states. No consequence on other
   systems yet (the quota, the head's trait, maintenance, secession come in step 2). The draw of a
   person is a new RNG use, so AI games play differently from the same seed. Save format 47.
+- **Persons of Note, their consequences** (docs/PERSONS.md, "The first build", 2026-11-18; step 2):
+  a House's city takes empire and requisition orders by its House's quota (none while Restless or
+  Disloyal, none past `house_orders` per city in 30 turns while Loyal, no limit while Devoted);
+  a Restless or Disloyal commander's army takes no order to attack (it moves and defends); a
+  Disloyal head's unit goes to its House's largest city and takes no orders; a head's first
+  leader trait the owner lacks applies in the House's cities (health, happiness, commerce,
+  the extra-yield threshold, trade yield, great people rate, wonder and trait production, free
+  promotions; `city_has_trait` answers for it); a city of a House with a head pays half its
+  number-of-cities maintenance (`PERSON_HOUSE_MAINTENANCE_PERCENT`). At a countdown's end a House
+  secedes with the cities no army holds as a new civilization of the owner's kind (with the other
+  Houses whose countdown runs, rivals apart: a league), at war with its former owner; a commander's
+  sworn units join such a league, seize a city as a new civilization, or the commander resigns.
+  Adopting a direct-rule civic with Houses is the secession of every House at once (civil war). A
+  House can be released as its owner's vassal. Why: an empire shared with holders who withhold
+  and can leave with what they hold (the owner's concept). A Works demand never names a palace.
+  Save format 48.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
   every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
   Line, Charge, Volley, Vanguard; four tactics). A side's auto formation in every battle, attacking or

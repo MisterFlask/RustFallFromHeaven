@@ -1,6 +1,6 @@
 # Persons of Note
 
-This game's own rules, not FFH2's. **A design: nothing here is built.** A civilization has a small
+This game's own rules, not FFH2's. **Stages 1 and 2 are built ("The first build"); the rest is a design.** A civilization has a small
 cast of named, authored characters (its heroes, and the minor leaders of docs/minor-leaders who
 join it as its best veterans and great people). Its cities are held by Houses, each presided over
 by one of them; its armies are commanded by them; its vassals are ruled by them. Each makes
@@ -12,7 +12,7 @@ decisions and which are proposals still to be confirmed.
 |---|---|---|
 | 0 | the vassal levy: an army requisitions from its owner's vassals' cities, by a quota | not built |
 | 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | rules, state and read API built (`crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`); the governors gone; Court screen and AI to come |
-| 2 | consequences: quotas and withholding, secession, leagues, the civil war of direct rule, heirs | not built |
+| 2 | consequences: quotas and withholding, secession, leagues, the civil war of direct rule, heirs | rules built (`persons/secession.rs`, `persons/city.rs`, hooks in the order code, the attack rule, the city's reads); release as a vassal built too |
 | 3 | vassals: a House released as a vassal, a capitulated leader as a person, claims abroad | not built |
 | 4 | foreign persons: seeing them, courting them, agents abroad | not built |
 | 5 | the annals: what each character did in the player's earlier games | not built |
@@ -126,12 +126,20 @@ Restless, Disloyal: none. An empty seat: no limit. `house_orders` is the governm
 (Aristocracy 150, Republic 100, Theocracy 100, City States 50; a civic without the key: 100).
 At no orders left an empire order is refused with the reason, and the requisition passes the
 city over.
+*As built:* `city_check_empire_order` keeps its `&'static str` refusal (`The House is Restless. It
+takes no orders.`, `The House takes no more orders now.`); the reason with the House's name and the
+turns is `city_house_takes_order`. Withdrawn or removed orders are not refunded.
 
 **A head's trait** applies in their House's cities for every state. A trait with nothing a
 city can carry gives nothing (no falling through to the next).
+*As built:* the saved `City::house_trait` (`city_house_trait`), refreshed on a grant, a head's
+change, a House's end and in the owner's turn (its own traits may change); each effect is added
+where the city reads its owner's value (`persons/city.rs` lists them).
 
 **Maintenance.** A city of a House with a head pays `PERSON_HOUSE_MAINTENANCE_PERCENT` (50) of
 its number-of-cities maintenance.
+*As built:* read functions `city_house_maintenance_saved_times100(c)` (what a grant of `c` saves)
+and `house_maintenance_saved_times100(h)`, in hundredths of gold a turn.
 
 **Heirs.** When a head leaves, an owner with exactly one person without a post has that one
 succeed at once. With several the seat is empty until the owner names one (`player_name_heir`;
@@ -160,15 +168,31 @@ the AI in its turn); with none, until a person without a post exists, who then t
   than they are; else the commander resigns and the units stay.
 - Everyone who has met the owner is told: `House Ashledger secedes from the Bannor with
   Prespur, Elam and Torrin.`
+- *As built:* in a league, the head of a member House whose every city is held leaves the cast
+  with their unit removed; the others' units go to the new capital. A person of the owner whose
+  unit leaves with a released city or a sworn unit leaves the cast (`X goes over to ...`). A
+  commander joins only a league formed this turn; the city to seize is on the commander's land
+  area (no path search); going over to a rival (3) is stage 4. A Disloyal head's unit is sent
+  marching (`Unit::march`) to the House's largest city, and again whenever it is elsewhere while
+  the countdown runs; `unit_house_refusal(u)` is the refusal (the rules do not stop an order
+  given to it in that city: the client and the AI ask). A Restless or Disloyal commander's army:
+  `unit_can_move_into` with `attack` refuses, `unit_attack_refusal(u)` says why. Battles go into
+  the commanders' records (`Won a battle at <place>.`), a held city into its head's.
 
 **Direct rule.** While `player_rules_directly` there are no Houses and no grant
 (`Government: direct rule. No city can be granted.`). When a player with Houses comes under a
 direct-rule civic, by any means, every House secedes at once as one league, whatever its state
 and its rivalries; the counter on the map holds. Commanders are not touched.
+*As built:* hooked in `player_governance_sync`; a House that cannot secede (no leader to be had)
+is dissolved (its cities the Crown's, its head out of the cast), so no House stands under direct
+rule (a harness invariant).
 
 **Release.** `player_release_house`: a House with a head, not Disloyal, of an owner that is no
 vassal, becomes the owner's vassal civilization (`Birth::vassal`), led as a secession is, at
 peace; the head leaves the cast. Refused under No Vassal States.
+*As built:* `player_check_release_house` / `player_release_house(p, h) -> Result<PlayerId, _>`;
+also refused with an empty seat or without a leader to be had; all the House's cities go; the
+vassal is played by the game's AI.
 
 ## What it is for
 

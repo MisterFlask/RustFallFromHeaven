@@ -112,7 +112,7 @@ asks its decisions through `Controller` methods, and is described in its own doc
 | The Armageddon deck | `deck/` | `Game::doom` | DECKS.md |
 | The cards' content | `ffh/cards/`, `ffh/world_rituals*`, `ffh/world_ritual_spells/` | `Game::area_effects`, `delves`, fields on the objects | CARDS.md |
 | Governors | `governors.rs` | fields on `City`, `Player` | GOVERNORS.md |
-| Persons of Note: the cast, Houses, commanders, demands, loyalty | `persons/` | `Game::persons`, `houses`, `persons_drawn`, fields on `City`, `Player`, `Army` | PERSONS.md |
+| Persons of Note: the cast, Houses, commanders, demands, loyalty; the quota, the head's trait and maintenance in a House's cities, the withheld attack, secession, leagues, civil war, release | `persons/` (hooks in `governors.rs`, `army/requisition.rs`, `unit/movement.rs`, the city's reads, `engagement/engage.rs`) | `Game::persons`, `houses`, `persons_drawn`, fields on `City` (`house`, `taken_by`, `house_trait`), `Player`, `Army` | PERSONS.md |
 | Cultural actions | `culture.rs` | fields on `City`, `Player` | CULTURE.md |
 | City works | `works.rs` | fields on `City` | WORKS.md |
 | The sea: range, boats, wear, seas, lanes, outposts | `naval.rs`, `seas.rs`, `outposts.rs` | `Map::seas`, fields on `Unit`, `City` | NAVAL.md |
