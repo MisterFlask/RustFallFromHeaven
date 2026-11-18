@@ -405,6 +405,29 @@ impl Game {
         });
     }
 
+    /// Persons of Note (docs/PERSONS.md): `kind` `entered` (what: hero / veteran / great_person),
+    /// `posted` (commander / head / heir), `granted` (house / founded), `demand` (issued / met /
+    /// refused), `state` (Devoted / Loyal / Restless / Disloyal / left), `house` (ended); counted
+    /// as `person_<kind>` by what.
+    pub(crate) fn tel_person(&self, p: PlayerId, kind: &'static str, what: &'static str) {
+        if !self.telemetry.on() {
+            return;
+        }
+        let turn = self.game_turn();
+        self.telemetry.with(|t| {
+            let key = match kind {
+                "entered" => "person_entered",
+                "posted" => "person_posted",
+                "granted" => "person_granted",
+                "demand" => "person_demand",
+                "state" => "person_state",
+                _ => "person_house",
+            };
+            t.count(p, key, what, 1);
+            t.event(|| ev(turn, "person", p).s("how", kind).s("what", what).end());
+        });
+    }
+
     pub(crate) fn tel_hurry(&self, c: CityId, hurry: HurryType, gold: i32, pop: i32) {
         let p = self.cities[c].owner;
         let name = self.d.hurries[hurry].base.type_.as_str();

@@ -402,6 +402,12 @@ pub struct Player {
     /// the player casts it, an untargeted one until it can take effect (no unit of the player, or
     /// its requirement unmet). The ritual is not built again meanwhile.
     pub world_ritual_pending: Option<ProjectType>,
+    /// This game's persons of note (docs/PERSONS.md), in the order they entered (the cast order).
+    pub persons: Vec<PersonId>,
+    /// Its Houses, in the order founded.
+    pub houses: Vec<HouseId>,
+    /// The names its Houses took in this game (a name is not used twice).
+    pub house_names: Vec<String>,
 }
 
 impl Player {
@@ -663,6 +669,9 @@ impl Player {
             world_spell_casts: 0,
             tithe_target: None,
             world_ritual_pending: None,
+            persons: Vec::new(),
+            houses: Vec::new(),
+            house_names: Vec::new(),
         }
     }
 
@@ -831,6 +840,13 @@ fn reset_player(g: &mut Game, p: PlayerId) {
     // after its crusade ends: left in the slabs, its old armies were orphans).
     for id in old.armies {
         g.armies.remove(id);
+    }
+    // So are its persons of note and Houses (docs/PERSONS.md).
+    for id in old.persons {
+        g.persons.remove(id);
+    }
+    for id in old.houses {
+        g.houses.remove(id);
     }
 
     let (num_players, num_teams) = (g.num_players(), g.num_teams());

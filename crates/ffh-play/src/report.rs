@@ -156,12 +156,14 @@ impl MessageStore {
 /// A message's JSON with what ffh-core says it is, so that a client marks and links it without
 /// reading its wording: `kind: "engagement"` and its `report` (a battle's message), `kind:
 /// "ritual"` and its `verb` (a world ritual's news, docs/CARDS.md), and `mark: "city" | "loss" |
-/// "kill" | "retreat"` (a located message's map marker; absent: an event).
+/// "kill" | "retreat" | "person"` (a located message's map marker; absent: an event); `kind:
+/// "person"` and its `person` (a person of note's message, docs/PERSONS.md).
 pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
     let j = match e.tag {
         LogTag::None => j,
         LogTag::Battle(id) => j.with("kind", "engagement").with("report", id),
         LogTag::Ritual(news) => j.with("kind", "ritual").with("verb", news.verb()),
+        LogTag::Person(x) => j.with("kind", "person").with("person", x.0),
     };
     match e.mark {
         LogMark::Event => j,
@@ -169,6 +171,7 @@ pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
         LogMark::Loss => j.with("mark", "loss"),
         LogMark::Kill => j.with("mark", "kill"),
         LogMark::Retreat => j.with("mark", "retreat"),
+        LogMark::Person => j.with("mark", "person"),
     }
 }
 
@@ -180,9 +183,11 @@ pub fn entry_fields_from(j: &Json, e: &mut LogEntry) {
         Some("loss") => LogMark::Loss,
         Some("kill") => LogMark::Kill,
         Some("retreat") => LogMark::Retreat,
+        Some("person") => LogMark::Person,
         _ => LogMark::Event,
     };
     e.tag = match s("kind").as_deref() {
+        Some("person") => j.get("person").and_then(Json::as_i64).and_then(|id| u32::try_from(id).ok()).map_or(LogTag::None, |id| LogTag::Person(ffh_core::ids::PersonId(id))),
         Some("engagement") => j.get("report").and_then(Json::as_i64).and_then(|id| u32::try_from(id).ok()).map_or(LogTag::None, LogTag::Battle),
         Some("ritual") => match s("verb").as_deref() {
             Some("began") => LogTag::Ritual(RitualNews::Began),

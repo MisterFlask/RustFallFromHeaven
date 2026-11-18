@@ -534,6 +534,25 @@ impl<'a> Rd<'a> {
         self.pairs_bool_or::<K>(key, false)
     }
 
+    /// An object from type names to true/false: the names set to true, in file order.
+    pub fn pairs_true_list<K: InfoId>(&self, key: &str) -> Vec<K> {
+        let mut out = Vec::new();
+        for (name, x) in self.members(key) {
+            match x.as_bool() {
+                Some(true) => {
+                    if let Some(k) = self.resolve::<K>(name) {
+                        if !out.contains(&k) {
+                            out.push(k);
+                        }
+                    }
+                }
+                Some(false) => {}
+                None => self.wrong(key, "an object of true/false", x),
+            }
+        }
+        out
+    }
+
     pub fn pairs_bool_or<K: InfoId>(&self, key: &str, def: bool) -> IdxVec<K, bool> {
         self.per_type(key, def, |x| x.as_bool(), "an object of true/false")
     }

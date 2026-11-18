@@ -515,7 +515,7 @@ impl Game {
         // Phase 7: the army commander's aura.
         if let Some(a) = unit.army.filter(|&a| self.armies.contains(a)) {
             let (aura_a, aura_dv) = self.army_aura_pct(a);
-            let commander = self.armies[a].commander.unwrap_or(u);
+            let commander = self.armies[a].commander.and_then(|x| self.persons.get(x)).and_then(|x| x.unit).unwrap_or(u);
             modifier += log.push(if attack { aura_a } else { aura_dv }, || TermSource::Aura(commander));
         }
 

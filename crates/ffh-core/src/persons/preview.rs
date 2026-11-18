@@ -1,0 +1,320 @@
+//! Previews (pure): what a choice does to each holder before it is made, for the client and the
+//! AI (docs/PERSONS.md, UI: "Previews at the decision"), and a countdown's stated outcome.
+
+use ffh_data::*;
+
+use super::houses::Claimant;
+use super::loyalty::Holder;
+use super::*;
+
+/// One line of a preview: who, what, and the state it leaves them in when that changes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PreviewLine {
+    /// Who: `House Arne`, `Hrolf, 2nd Army`.
+    pub subject: String,
+    /// What: `Granted Torrin: +1 (30 turns)`, `Demand met: +3 (60 turns)`.
+    pub text: String,
+    /// The state after the choice, on the subject's last line, only when it changes.
+    pub state_after: Option<LoyaltyState>,
+}
+
+/// One choice of the grant list ([`Game::grant_candidates`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GrantCandidate {
+    pub to: GrantTo,
+    /// `House Arne`, `Hrolf` (founds a House), `Great Prophet` (draws the founder).
+    pub label: String,
+    /// A claimant to the city.
+    pub claimant: bool,
+    /// What the grant does, grantee first, then each snubbed claimant.
+    pub lines: Vec<PreviewLine>,
+    /// Why it cannot be chosen, if it cannot (`No person of note is left to found a House.`).
+    pub refusal: Option<&'static str>,
+}
+
+/// An act whose effect on the cast is previewed ([`Game::persons_preview`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PersonsAct<'a> {
+    DeclareWar(TeamId),
+    MakePeace(TeamId),
+    /// A new state religion (`None`: none).
+    Convert(Option<ReligionType>),
+    /// Civics adopted (each replaces the civic of its option).
+    Civics(&'a [CivicType]),
+    /// One of the player's cities razed by it.
+    Raze(CityId),
+}
+
+/// Lines of one subject before their states are worked out: (text, change of loyalty).
+struct Pending {
+    subject: String,
+    holder: Option<Holder>,
+    /// Their loyalty now (for a holder that does not exist yet: 0).
+    total: i32,
+    state: LoyaltyState,
+    lines: Vec<(String, i32)>,
+}
+
+fn amount_text(label: &str, (amount, turns): (i32, i32)) -> String {
+    let sign = if amount > 0 { "+" } else { "" };
+    format!("{label}: {sign}{amount} ({turns} turns)")
+}
+
+impl Game {
+    fn pending_for(&self, hd: Holder) -> Pending {
+        let total = self.holder_loyalty(hd);
+        Pending { subject: self.holder_label(hd), holder: Some(hd), total, state: self.holder_state(hd), lines: Vec::new() }
+    }
+
+    fn pending_lines(&self, list: Vec<Pending>) -> Vec<PreviewLine> {
+        let mut out = Vec::new();
+        for pd in list {
+            let delta: i32 = pd.lines.iter().map(|l| l.1).sum();
+            let after = match pd.holder {
+                Some(hd) => self.holder_state_at(hd, pd.total + delta),
+                None => LoyaltyState::of(pd.total + delta),
+            };
+            let n = pd.lines.len();
+            for (i, (text, _)) in pd.lines.into_iter().enumerate() {
+                let state_after = (i + 1 == n && after != pd.state).then_some(after);
+                out.push(PreviewLine { subject: pd.subject.clone(), text, state_after });
+            }
+        }
+        out
+    }
+
+    /// Adds `(text, delta)` to the subject `hd`, creating it in `list` when new.
+    fn pending_add(&self, list: &mut Vec<Pending>, hd: Holder, text: String, delta: i32) {
+        if let Some(pd) = list.iter_mut().find(|pd| pd.holder == Some(hd)) {
+            pd.lines.push((text, delta));
+            return;
+        }
+        let mut pd = self.pending_for(hd);
+        pd.lines.push((text, delta));
+        list.push(pd);
+    }
+
+    /// What granting city `c` of player `p` to `to` does (pure).
+    pub fn grant_preview(&self, p: PlayerId, c: CityId, to: GrantTo) -> Vec<PreviewLine> {
+        let city = self.persons_city_name(c);
+        let plot = self.city_plot(c);
+        let met = amount_text("Demand met", DEMAND_MET);
+        let refused = amount_text("Demand refused", DEMAND_REFUSED);
+        let mut list: Vec<Pending> = Vec::new();
+        // The grantee.
+        let (house, head, grantee) = match to {
+            GrantTo::House(h) => (self.house_label(h), self.houses[h].head, Some(Holder::House(h))),
+            GrantTo::Person(x) => (format!("House {}", self.house_new_name(p)), Some(x), Some(Holder::Person(x))),
+            GrantTo::GreatPerson(_) => (format!("House {}", self.house_new_name(p)), None, None),
+        };
+        let mut first = match grantee {
+            Some(hd) => {
+                let mut pd = self.pending_for(hd);
+                pd.subject = house.clone();
+                pd
+            }
+            None => Pending { subject: house.clone(), holder: None, total: 0, state: LoyaltyState::Loyal, lines: Vec::new() },
+        };
+        if let GrantTo::Person(x) = to {
+            first.lines.push((format!("Founded by {} at {city}", self.persons[x].name), 0));
+            if let Some(a) = self.person_army(x) {
+                first.lines.push((format!("Command of the {} ends", self.armies[a].name), 0));
+            }
+        }
+        first.lines.push((amount_text(&format!("Granted {city}"), GRANTED), GRANTED.0));
+        if let Some(x) = head {
+            if let Some(dm) = self.persons[x].demand {
+                let meets = match dm.kind {
+                    DemandKind::GrantCity(q) => q == plot,
+                    DemandKind::Post | DemandKind::House => matches!(to, GrantTo::Person(_)),
+                    _ => false,
+                };
+                if meets {
+                    first.lines.push((met.clone(), DEMAND_MET.0));
+                }
+            }
+        }
+        list.push(first);
+        // The snubbed claimants.
+        for cl in self.city_claimants(c) {
+            let (hd, person, amount) = self.claimant_holder(cl);
+            if Some(hd) == grantee || (person.is_some() && person == head) {
+                continue;
+            }
+            let label = amount_text(&format!("{city} granted to {house}"), amount);
+            self.pending_add(&mut list, hd, label, amount.0);
+            if let (Some(y), Some(hx)) = (person, head) {
+                if self.persons.contains(y) && self.persons.contains(hx) {
+                    self.pending_add(&mut list, hd, format!("Rival: {}", self.persons[hx].name), 0);
+                }
+            }
+        }
+        // Demands the grant makes impossible.
+        for &y in &self.players[p].persons {
+            let Some(dm) = self.persons.get(y).and_then(|person| person.demand) else { continue };
+            if dm.kind == DemandKind::GrantCity(plot) && Some(y) != head {
+                let hd = self.person_holder(y);
+                self.pending_add(&mut list, hd, refused.clone(), DEMAND_REFUSED.0);
+            }
+        }
+        self.pending_lines(list)
+    }
+
+    /// The grant list of city `c` of player `p` (pure): every House, every person who heads none
+    /// (a commander's command ends), every great person unit, each with whether it claims the
+    /// city and what the grant does. Empty when the city cannot be granted.
+    pub fn grant_candidates(&self, p: PlayerId, c: CityId) -> Vec<GrantCandidate> {
+        if self.player_check_grant_city(p, c).is_err() {
+            return Vec::new();
+        }
+        let claimants = self.city_claimants(c);
+        let mut out = Vec::new();
+        for &h in &self.players[p].houses {
+            if !self.houses.contains(h) {
+                continue;
+            }
+            let claimant = claimants.iter().any(|&cl| match cl {
+                Claimant::House(o) => o == h,
+                Claimant::Commander(x) => self.houses[h].head == Some(x),
+            });
+            let to = GrantTo::House(h);
+            out.push(GrantCandidate { to, label: self.house_label(h), claimant, lines: self.grant_preview(p, c, to), refusal: None });
+        }
+        for &x in &self.players[p].persons {
+            if !self.persons.contains(x) || self.person_house(x).is_some() {
+                continue;
+            }
+            let to = GrantTo::Person(x);
+            let claimant = claimants.contains(&Claimant::Commander(x));
+            out.push(GrantCandidate { to, label: self.persons[x].name.clone(), claimant, lines: self.grant_preview(p, c, to), refusal: None });
+        }
+        let pool_empty = self.persons_pool(p).is_empty();
+        for &u in &self.players[p].units {
+            if !self.unit_is_great_person(u) {
+                continue;
+            }
+            let to = GrantTo::GreatPerson(u);
+            let refusal = pool_empty.then_some("No person of note is left to found a House.");
+            let label = self.unit_get_name(u);
+            out.push(GrantCandidate { to, label, claimant: false, lines: self.grant_preview(p, c, to), refusal });
+        }
+        out
+    }
+
+    /// What an act of player `p` does to its cast (pure).
+    pub fn persons_preview(&self, p: PlayerId, act: &PersonsAct) -> Vec<PreviewLine> {
+        let met = amount_text("Demand met", DEMAND_MET);
+        let refused = amount_text("Demand refused", DEMAND_REFUSED);
+        let mut list: Vec<Pending> = Vec::new();
+        let demands: Vec<(PersonId, DemandKind)> = self.players[p].persons.iter().filter_map(|&x| self.persons.get(x).and_then(|person| person.demand).map(|dm| (x, dm.kind))).collect();
+        match *act {
+            PersonsAct::DeclareWar(t) => {
+                for &(x, kind) in &demands {
+                    if let DemandKind::War(q) = kind {
+                        if self.players[q].team == t {
+                            self.pending_add(&mut list, self.person_holder(x), met.clone(), DEMAND_MET.0);
+                        }
+                    }
+                }
+            }
+            PersonsAct::MakePeace(t) => {
+                for &(x, kind) in &demands {
+                    if let DemandKind::TakeCity(plot) = kind {
+                        if self.persons_city_at(plot).is_some_and(|c| self.players[self.cities[c].owner].team == t) {
+                            self.pending_add(&mut list, self.person_holder(x), refused.clone(), DEMAND_REFUSED.0);
+                        }
+                    }
+                }
+            }
+            PersonsAct::Convert(religion) => {
+                for &(x, kind) in &demands {
+                    if kind == DemandKind::AdoptReligion && religion.is_some() {
+                        self.pending_add(&mut list, self.person_holder(x), met.clone(), DEMAND_MET.0);
+                    }
+                }
+                let now = self.player_get_state_religion(p);
+                for hd in self.player_holders(p) {
+                    let Some(x) = self.holder_person(hd) else { continue };
+                    let (before, after) = (self.person_religion_part(x, now), self.person_religion_part(x, religion));
+                    if before != after {
+                        let text = if after < 0 { format!("State religion opposed: {after}") } else { format!("State religion opposed ends: +{}", -before) };
+                        self.pending_add(&mut list, hd, text, after - before);
+                    }
+                }
+            }
+            PersonsAct::Civics(civics) => {
+                let d = self.d;
+                let mut set: Vec<Option<CivicType>> = self.players[p].civics.iter().copied().collect();
+                for &c in civics {
+                    let option = d.civics[c].civic_option_type;
+                    if let Some(o) = option {
+                        set[o.idx()] = Some(c);
+                    }
+                }
+                let direct_after = set.iter().flatten().any(|&c| d.civics[c].direct_rule);
+                if direct_after && !self.player_rules_directly(p) {
+                    let mut out = Vec::new();
+                    for &h in &self.players[p].houses {
+                        if !self.houses.contains(h) {
+                            continue;
+                        }
+                        let (going, held) = self.house_cities_held(h);
+                        let names = |v: &[CityId]| and_list(&v.iter().map(|&c| self.persons_city_name(c)).collect::<Vec<_>>());
+                        let mut text = if going.is_empty() { "Every city is held by an army: the House ends.".to_string() } else { format!("Secedes with {}.", names(&going)) };
+                        if !held.is_empty() && !going.is_empty() {
+                            text.push_str(&format!(" Held by armies: {}.", names(&held)));
+                        }
+                        out.push(PreviewLine { subject: self.house_label(h), text, state_after: None });
+                    }
+                    return out;
+                }
+            }
+            PersonsAct::Raze(c) => {
+                let plot = self.city_plot(c);
+                for &(x, kind) in &demands {
+                    if Self::demand_names_plot(kind, plot) {
+                        self.pending_add(&mut list, self.person_holder(x), refused.clone(), DEMAND_REFUSED.0);
+                    }
+                }
+            }
+        }
+        self.pending_lines(list)
+    }
+
+    /// The stated outcome of House `h`'s countdown: `House Ashledger will secede with Prespur, Elam
+    /// and Torrin in 8 turns.` (without a countdown: what would go now).
+    pub fn house_secession_outcome(&self, h: HouseId) -> String {
+        let label = self.house_label(h);
+        let (going, _) = self.house_cities_held(h);
+        let cities = and_list(&going.iter().map(|&c| self.persons_city_name(c)).collect::<Vec<_>>());
+        match self.houses[h].standing.countdown {
+            Some(end) => {
+                let turns = (end - self.game_turn()).max(0);
+                if going.is_empty() {
+                    format!("{label} will end in {turns} turns: every city is held.")
+                } else {
+                    format!("{label} will secede with {cities} in {turns} turns.")
+                }
+            }
+            None => {
+                if going.is_empty() {
+                    format!("{label} would end: every city is held.")
+                } else {
+                    format!("{label} would secede with {cities}.")
+                }
+            }
+        }
+    }
+
+    /// The stated outcome of commander `x`'s countdown: `Hrolf will leave with 6 sworn units in 8
+    /// turns.`
+    pub fn commander_secession_outcome(&self, x: PersonId) -> String {
+        let st = &self.persons[x].standing;
+        let name = &self.persons[x].name;
+        let n = st.sworn.iter().filter(|&&u| self.units.contains(u)).count();
+        match st.countdown {
+            Some(end) => format!("{name} will leave with {n} sworn units in {} turns.", (end - self.game_turn()).max(0)),
+            None => format!("{name} would leave with the army's units."),
+        }
+    }
+}

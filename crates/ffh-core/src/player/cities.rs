@@ -835,6 +835,9 @@ impl Game {
         if self.telemetry.on() {
             self.tel_raze(p, city);
         }
+        // This game's persons of note (docs/PERSONS.md): demands naming it are refused.
+        let plot = self.city_plot(city);
+        self.persons_city_razed(p, plot);
 
         let team = self.players[p].team;
 

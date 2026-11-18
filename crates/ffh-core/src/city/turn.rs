@@ -209,6 +209,8 @@ impl Game {
         self.city_culture_lost(c);
         // This game's armies: it leaves every requisition; recruits marching to it go elsewhere.
         self.city_army_lost(c);
+        // This game's Houses (docs/PERSONS.md): it leaves its House.
+        self.city_persons_lost(c);
 
         let plot = self.city_plot(c);
 

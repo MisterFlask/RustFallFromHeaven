@@ -29,6 +29,7 @@ pub mod mapscript;
 pub mod naval;
 pub mod outposts;
 pub mod path;
+pub mod persons;
 pub mod player;
 pub mod plot;
 pub mod plot_group;

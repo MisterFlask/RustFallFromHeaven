@@ -11,7 +11,7 @@ decisions and which are proposals still to be confirmed.
 | Stage | What | Status |
 |---|---|---|
 | 0 | the vassal levy: an army requisitions from its owner's vassals' cities, by a quota | not built |
-| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | not built |
+| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | rules, state and read API built (`crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`); the governors gone; Court screen and AI to come |
 | 2 | consequences: quotas and withholding, secession, leagues, the civil war of direct rule, heirs | not built |
 | 3 | vassals: a House released as a vassal, a capitulated leader as a person, claims abroad | not built |
 | 4 | foreign persons: seeing them, courting them, agents abroad | not built |

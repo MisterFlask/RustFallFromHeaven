@@ -329,6 +329,10 @@ pub struct City {
     /// taken or a lane was traced again), from the water by the outpost to the water by its home
     /// port; empty while cut or missing. The trade network reads it.
     pub lane: Vec<PlotIdx>,
+    /// This game's Houses (docs/PERSONS.md): the House it was granted to (`None`: the Crown's).
+    pub house: Option<HouseId>,
+    /// The commander whose army took it, and the game turn (a claim for `TAKEN_CLAIM_TURNS`).
+    pub taken_by: Option<(PersonId, i32)>,
 }
 
 impl City {
@@ -557,6 +561,8 @@ impl City {
             outpost: false,
             lane_cut_turns: 0,
             lane: Vec::new(),
+            house: None,
+            taken_by: None,
         }
     }
 

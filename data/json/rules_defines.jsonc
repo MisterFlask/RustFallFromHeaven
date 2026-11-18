@@ -109,6 +109,22 @@
   "GOVERNOR_PRIORITY_WEIGHT": 30,
   // the empire priorities a player may set
   "GOVERNOR_MAX_PRIORITIES": 2,
+  // ==== Persons of Note (docs/PERSONS.md, "The first build") ====
+  // the level an army unit needs to enter the cast as a veteran, plus one for each of its owner's
+  //      living veterans in the cast
+  "PERSON_VETERAN_LEVEL": 5,
+  // the turns a person's demand stands before it lapses (refused)
+  "PERSON_DEMAND_TURNS": 40,
+  // the turns after a demand was met or refused before the next one is made
+  "PERSON_DEMAND_REST": 20,
+  // the turns of a Disloyal person's countdown
+  "PERSON_DISLOYAL_TURNS": 10,
+  // a House with a city within this many plots of a city is a claimant to it
+  "PERSON_CLAIM_RANGE": 6,
+  // the window (turns) a House's order quota is counted over
+  "PERSON_LEVY_TURNS": 30,
+  // the percent of its number-of-cities maintenance a city of a House with a head pays
+  "PERSON_HOUSE_MAINTENANCE_PERCENT": 50,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
   //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
   //      engage_row_order in units.jsonc; plot

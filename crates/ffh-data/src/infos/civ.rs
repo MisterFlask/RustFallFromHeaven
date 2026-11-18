@@ -405,6 +405,10 @@ pub struct LeaderHeadInfo {
     // ---- arrays ----
     /// C++ `hasTrait(i)`.
     pub has_trait: IdxVec<TraitType, bool>,
+    /// The leader's own traits in their authored order (the `traits` object's keys set to true, in
+    /// file order; a civilization's traits are not listed). Persons of Note read the first one
+    /// (docs/PERSONS.md: ambition, a head's trait).
+    pub traits: Vec<TraitType>,
     pub flavor_value: IdxVec<FlavorType, i32>,
     pub contact_rand: IdxVec<ContactType, i32>,
     pub contact_delay: IdxVec<ContactType, i32>,
@@ -541,6 +545,7 @@ pub fn read_leader_head(rd: &Rd) -> LeaderHeadInfo {
         minor_leader_of: rd.rf("minor_leader_of"),
         preferred_breakaway: rd.bool("preferred_breakaway"),
         has_trait: rd.pairs_bool("traits"),
+        traits: rd.pairs_true_list("traits"),
         flavor_value: rd.pairs_int("flavors", 0),
         contact_rand: rd.pairs_int("contact_rands", 0),
         contact_delay: rd.pairs_int("contact_delays", 0),

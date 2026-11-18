@@ -213,6 +213,9 @@ impl Game {
         self.player_do_march(p);
         self.player_march_join(p);
         self.player_army_sync(p);
+        // This game's persons of note (docs/PERSONS.md): after the armies are settled (commanders
+        // follow the groups), before governance and requisition (which read the Houses' quotas).
+        self.player_persons_turn(p);
         // This game's fleets (docs/NAVAL.md, 7.2): their standing orders, with the moves their
         // owner left them (after its own orders: an order it gave this turn is not undone).
         self.player_fleet_stations(p);

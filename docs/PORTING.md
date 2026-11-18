@@ -293,6 +293,14 @@ flag.
   cities. Hand-run civics cost more with size: Despotism city-count maintenance +25% -> +40%; God
   King distance maintenance +10% -> +25% and city-count maintenance +30% (new). A governed city's
   cultural channel is its owner's (2026-10-30). Save format 30.
+- **Persons of Note** (docs/PERSONS.md, "The first build", 2026-11-18; step 1 of 3, the state and
+  the rules that concern only persons and Houses): every living civilization has a cast of
+  persons (its heroes; one veteran a turn, an army unit at level 5 plus its living veterans, who
+  takes the name of a minor leader of its civilization drawn with the game RNG; a great person
+  spent on founding a House). They command armies, head Houses that cities are granted to for
+  good, make demands with a term and carry a loyalty with four states. No consequence on other
+  systems yet (the quota, the head's trait, maintenance, secession come in step 2). The draw of a
+  person is a new RNG use, so AI games play differently from the same seed. Save format 47.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
   every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
   Line, Charge, Volley, Vanguard; four tactics). A side's auto formation in every battle, attacking or

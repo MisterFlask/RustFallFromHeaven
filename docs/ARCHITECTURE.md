@@ -112,6 +112,7 @@ asks its decisions through `Controller` methods, and is described in its own doc
 | The Armageddon deck | `deck/` | `Game::doom` | DECKS.md |
 | The cards' content | `ffh/cards/`, `ffh/world_rituals*`, `ffh/world_ritual_spells/` | `Game::area_effects`, `delves`, fields on the objects | CARDS.md |
 | Governors | `governors.rs` | fields on `City`, `Player` | GOVERNORS.md |
+| Persons of Note: the cast, Houses, commanders, demands, loyalty | `persons/` | `Game::persons`, `houses`, `persons_drawn`, fields on `City`, `Player`, `Army` | PERSONS.md |
 | Cultural actions | `culture.rs` | fields on `City`, `Player` | CULTURE.md |
 | City works | `works.rs` | fields on `City` | WORKS.md |
 | The sea: range, boats, wear, seas, lanes, outposts | `naval.rs`, `seas.rs`, `outposts.rs` | `Map::seas`, fields on `Unit`, `City` | NAVAL.md |
@@ -123,7 +124,7 @@ How they attach to the ported rules:
 - **Turn processing calls each system by name**, one line each with its place in the order
   explained: the game turn in `game/turn.rs` (`crusade_do_turn`, `doom_do_turn`,
   `area_effects_do_turn`, `seas_refresh_all`), the player turn in `player/turn.rs` (march, army
-  sync, governance, requisition, supply, sea), a city's death in `city/turn.rs`.
+  sync, persons, governance, requisition, supply, sea), a city's death in `city/turn.rs`.
 - **Passive effects are data.** A card that only uses existing effect keys is a data file;
   spells and Armageddon cards are found by name through registries (`ffh/cards/mod.rs`,
   `deck/doom_cards.rs`), like the ported Python callbacks (`ffh/dispatch.rs`).

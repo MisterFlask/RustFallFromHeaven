@@ -155,7 +155,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 45: a log entry's audience, mark and tag (`LogEntry::audience`, `mark`, `tag`).
 /// - 46: named governors and their traits gone (`Game::governors`, `Player::governors`,
 ///   `governor_count`, `City::governor`; docs/GOVERNORS.md).
-pub const FORMAT_VERSION: u32 = 46;
+/// - 47: Persons of Note (docs/PERSONS.md): `Game::persons`, `houses`, `persons_drawn`,
+///   `persons_barred`, `Player::persons`, `houses`, `house_names`, `City::house`, `taken_by`,
+///   `Army::commander` a person, `Army::commander_named`, `LogMark::Person`, `LogTag::Person`.
+pub const FORMAT_VERSION: u32 = 47;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -309,6 +312,10 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         plot_groups,
         deals,
         armies,
+        persons,
+        houses,
+        persons_drawn,
+        persons_barred,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -432,6 +439,10 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     plot_groups.grow(slots);
     deals.grow(slots);
     armies.grow(slots);
+    persons.grow(slots);
+    houses.grow(slots);
+    persons_drawn.grow(slots);
+    persons_barred.grow(slots);
     battle_reports.grow(slots);
     battle_report_next.grow(slots);
     map_rand.grow(slots);
@@ -554,6 +565,10 @@ fn write_game(g: &Game, w: &mut Writer) {
         plot_groups,
         deals,
         armies,
+        persons,
+        houses,
+        persons_drawn,
+        persons_barred,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -676,6 +691,10 @@ fn write_game(g: &Game, w: &mut Writer) {
     plot_groups.write(w);
     deals.write(w);
     armies.write(w);
+    persons.write(w);
+    houses.write(w);
+    persons_drawn.write(w);
+    persons_barred.write(w);
     battle_reports.write(w);
     battle_report_next.write(w);
     map_rand.write(w);
@@ -795,6 +814,10 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         plot_groups: Persist::read(r)?,
         deals: Persist::read(r)?,
         armies: Persist::read(r)?,
+        persons: Persist::read(r)?,
+        houses: Persist::read(r)?,
+        persons_drawn: Persist::read(r)?,
+        persons_barred: Persist::read(r)?,
         battle_reports: Persist::read(r)?,
         battle_report_next: Persist::read(r)?,
         map_rand: Persist::read(r)?,

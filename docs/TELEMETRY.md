@@ -61,6 +61,12 @@ described in docs/AUTOPSY.md.
 | `culture_revolt` | `unrest`, `revolt`, `near_flip`, `calm`, `flip` (a city's revolt level changed by the caster's pressure; counted for the caster) | – |
 | `march` | `sent`, `arrived`, `diverted`, `stopped`, `killed` (marching recruits: docs/ARMIES.md; `stopped`: no city it could reach, an ordinary unit again; `killed`: died on the way) | `sent`: the estimated march in turns; the others: turns since it set out |
 | `requisition` | `placed`, `withdrawn` (an army's requisition orders: docs/ARMIES.md) | – |
+| `person_entered` | `hero`, `veteran`, `great_person` (a person of note entered the cast: docs/PERSONS.md) | – |
+| `person_posted` | `commander`, `head`, `heir` (a post taken) | – |
+| `person_granted` | `house` (a city granted to a House), `founded` (to a person or a great person, who founds one) | – |
+| `person_demand` | `issued`, `met`, `refused` | – |
+| `person_state` | `Devoted`, `Loyal`, `Restless`, `Disloyal` (a holder's change of state), `left` (a person without a post left the cast, Disloyal) | – |
+| `person_house` | `ended` (a House without cities) | – |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -157,6 +163,8 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
   city, its owner; the event's player is the caster);
 - `march` (a marching recruit: `how` sent / arrived / diverted / stopped / killed, `to_army`,
   `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
+- `person` (Persons of Note, docs/PERSONS.md: `how` entered / posted / granted / demand / state /
+  house and `what`, as the counts above);
 - `intent` and `decision`;
 - `prediction`: an AI estimate resolved by the rules (the prediction ledger, docs/CALIBRATION.md).
 
