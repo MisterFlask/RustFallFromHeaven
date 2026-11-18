@@ -18,3 +18,13 @@ wants done next into this file.
   docs/ART.md 16.4, docs/DECKS.md 8.4
 - Other: "Next steps" in docs/PORTING.md, "Not in this change" in docs/SUPPLY.md, the "Not built"
   notes in docs/NAVAL.md
+
+## Persons of Note
+
+A cast of named people (heroes, veterans, great people, capitulated leaders) who hold armies,
+cities and vassals, each want one thing, and can take what they hold. Design: docs/PERSONS.md.
+
+- Decided (2026-11-18): a disloyal holder takes what it holds; a master levies its vassals
+  through the armies' requisition, with a quota by government; a human as a vassal is out of scope.
+- Open: docs/PERSONS.md, "Open points for the owner".
+- First step: the vassal levy (stage 0), which needs no persons.
