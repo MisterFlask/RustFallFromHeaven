@@ -16,12 +16,26 @@ import { openModal, closeTag } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
 import { leaderPortrait, PORTRAIT } from "./portraits.js";
-import { unitIcon } from "./look.js";
-import { isoSkin, unitFigure } from "./isoui.js";
 import { infoTip } from "./infotips.js";
 import { keywordChips, remindersNode } from "./keywords.js";
 import { render as markup } from "./markup.js";
 import { SHIELD, SHIELD_EDGE, houseColour, stateClass, stateGlyph, stateKey, stateWord, turnsText } from "./persons_mark.js";
+
+// The unit figures (look.js, isoui.js) are loaded in the page only: they read the generated art,
+// which the node tests of the modules that import this one (armies.js, governors.js, ...) do not
+// have. Until they have loaded, a hero shows its initials.
+let unitIcon = null;
+let isoSkin = () => false;
+let unitFigure = null;
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  import("./look.js").then((m) => (unitIcon = m.unitIcon)).catch(() => {});
+  import("./isoui.js")
+    .then((m) => {
+      isoSkin = m.isoSkin;
+      unitFigure = m.unitFigure;
+    })
+    .catch(() => {});
+}
 
 const SVG = "http://www.w3.org/2000/svg";
 
@@ -125,7 +139,7 @@ function portrait(p, size = PORTRAIT.small) {
   }
   if (p.unit_type !== null && p.unit_type !== undefined) {
     const owner = me()?.player ?? null;
-    const fig = isoSkin() ? unitFigure(p.unit_type, owner, size) : unitIcon(p.unit_type, ownerLook(), { title: p.name });
+    const fig = isoSkin() && unitFigure ? unitFigure(p.unit_type, owner, size) : unitIcon ? unitIcon(p.unit_type, ownerLook(), { title: p.name }) : null;
     if (fig) return h("span.pportrait.unit", fig);
   }
   const initials = String(p.name ?? p.title ?? "?").split(/\s+/).map((w) => w[0] ?? "").join("").slice(0, 2);
