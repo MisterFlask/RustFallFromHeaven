@@ -19,14 +19,12 @@ use ffh_play::{Json, Session, SessionOptions};
 const FRAGMENTS: &[(&str, &[&str])] = &[
     ("KEYWORD_RITUAL", &["progress is lost if the city switches", "switches to building something else", "hurried with gold", "cannot be hurried", "production is lost", "first build", "off the head of the queue", "visible to every player"]),
     ("KEYWORD_WORLD_RITUAL", &["one in progress per player", "doubles the next cost", "doubles its next cost", "every player is told"]),
-    // Persons of Note (docs/PERSONS.md, "UI", part J; "The second build").
-    ("KEYWORD_HOUSE", &["the vassal of its liege", "led by a person of the liege's court", "may requisition in its cities"]),
-    ("KEYWORD_CROWN", &["the civilization holds itself", "always the crown's", "or to found one"]),
-    ("KEYWORD_FRIENDLY", &["loyalty +3 or more", "refuses any offer to secede"]),
-    ("KEYWORD_PLEASED", &["loyalty +1 or +2"]),
-    ("KEYWORD_CAUTIOUS", &["loyalty from -2 to 0", "an offer that meets its price"]),
-    ("KEYWORD_ANNOYED", &["loyalty from -5 to -3", "is levied nothing", "army takes no order to attack"]),
-    ("KEYWORD_FURIOUS", &["loyalty -6 or less", "countdown of 10 turns", "stops the countdown"]),
+    // Persons of Note (docs/PERSONS.md, "UI", part J; "The second build", rule 13: the loyalty
+    // states are the attitude words, no keywords).
+    ("KEYWORD_HOUSE", &["a vassal civilization led by", "its cities its own", "a house that breaks away declares war", "every vassal is a house"]),
+    ("KEYWORD_CROWN", &["the cities a civilization holds itself", "always the crown's", "or to a person of note or a great person who founds one", "pay triple city-count maintenance"]),
+    ("KEYWORD_TRIBUTE", &["a share of its cities' gold and research", "the research added to the liege's", "1 less for each 10% more"]),
+    ("KEYWORD_LEVY", &["an army's requisition in a city of its owner's house", "costs the house -1 loyalty", "annoyed or furious takes no levy"]),
     ("KEYWORD_SWORN", &["when their furious countdown began", "leave with the commander"]),
     ("KEYWORD_CLAIMANT", &["a house with a city within", "took the city in the last", "becomes their rival"]),
 ];

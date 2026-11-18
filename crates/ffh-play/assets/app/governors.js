@@ -17,9 +17,8 @@ import { h, toast, errorText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
-import { stateMark, houseShield, openCourt, openGrant } from "./persons.js";
+import { openGrant } from "./persons.js";
 import { houseTag } from "./persons_lines.js";
-import { stateKey } from "./persons_mark.js";
 
 // ---- the rules, in the help display (help.js; the Governors screen's (i) opens it) ------------
 
@@ -73,36 +72,21 @@ function modeLine(government, direct) {
   return `Government: ${dname("CivicType", government)}. Every city is ${direct ? "ruled directly" : "governed"}.`;
 }
 
-/** Persons of Note (docs/PERSONS.md, "UI", part C; "The second build"): who holds the city. A
- *  House's: `House Ashledger. Head: Maereth Ashledger. Cautious ●. Takes levies.` (a tap on the
- *  House opens the Court at its card), or `Held by the Crown. [Grant]` (where it cannot be
- *  granted, the reason in place of the button). Null for a civilization without Houses. */
+/** Persons of Note (docs/PERSONS.md, rule 13; "UI", part C): who holds one of your cities. Every
+ *  city of yours is the Crown's (a House's city is its own player's: your city screen does not
+ *  open on it): `Held by the Crown. [Grant]`, where it cannot be granted the reason in place of the
+ *  button, and `Over the Crown's limit of 3.` for a city beyond the limit. Null for a civilization
+ *  without Houses. */
 export function holderLine(k, cityId) {
-  if (k.house) {
-    const hs = k.house;
-    const head = hs.head ? hs.head.name : "none";
-    return h(
-      "div.holder-line.holder-house",
-      { "data-house": hs.id, "data-state": hs.state },
-      h("button.link.holder-house-name", { title: "Open the Court at this House", onclick: () => openCourt({ house: hs.id }) }, houseShield(hs.colour, 18), ` ${hs.label}`),
-      h("span", `. Head: ${head}. `),
-      stateMark(hs.state, hs.turns),
-      h("span", "."),
-      hs.tribute ? h("span", ` ${hs.tribute}`) : null,
-      h(hs.takes_levy === false ? (stateKey(hs.state) === "furious" ? "div.warn.holder-orders" : "div.caution.holder-orders") : "div.holder-orders", hs.levy ?? ""),
-      hs.outcome ? h("div.warn.holder-outcome", hs.outcome) : null,
-    );
-  }
-  if (k.crown) {
-    return h(
-      "div.holder-line.holder-crown",
-      h("span", "Held by the Crown. "),
-      k.crown.grantable
-        ? h("button.small.holder-grant", { title: "Grant the city to a House or a person of note, for good", onclick: () => openGrant(cityId) }, "Grant")
-        : h("span.dim.holder-refusal", k.crown.refusal ?? ""),
-    );
-  }
-  return null;
+  if (!k.crown) return null;
+  return h(
+    "div.holder-line.holder-crown",
+    h("span", "Held by the Crown. "),
+    k.crown.grantable
+      ? h("button.small.holder-grant", { title: "Grant the city to a House, or to found one, for good", onclick: () => openGrant(cityId) }, "Grant")
+      : h("span.dim.holder-refusal", k.crown.refusal ?? ""),
+    k.crown.over ? h("div.caution.holder-over", k.crown.over) : null,
+  );
 }
 
 /** The city screen's Governance section (null for another's city). `reload` re-reads the screen. */

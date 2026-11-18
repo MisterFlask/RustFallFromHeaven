@@ -1388,6 +1388,38 @@ li.crown-city > .link { margin-right: auto; text-align: left; justify-content: f
 .pbecomes.ps-furious { color: var(--warn); }
 #btn-court { position: relative; }
 .court-badge { display: inline-block; min-width: 16px; margin-left: 4px; padding: 0 4px; border-radius: 8px; background: var(--c-crimson); color: var(--c-rime); font: 700 11px/16px var(--font); text-align: center; vertical-align: 1px; }
+/* The second build (docs/PERSONS.md, rule 13): the Crown's limit and the realm's default
+   tribute in the Court's header; a House card's leader line, its tribute list (one row a rate,
+   two lines on a phone: the rate, what it pays this turn, its tribute part and loyalty, the state
+   mark), its levy and size lines; the Crown's cities over the limit. */
+.court-header .caution, .grant-head .caution { color: var(--caution); }
+.pattn[data-kind="levy"] > span:first-child, .pattn[data-kind="crown_over"] > span:first-child { color: var(--caution); }
+.ptribute-default { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 4px; }
+.ptribute-default select { min-height: 30px; }
+.phouse-name { display: flex; align-items: center; gap: 5px; }
+.pleader { font-size: 13px; margin-top: 1px; }
+.psince { font-size: 12px; }
+.pparts-block { margin: 2px 0 4px; }
+details.ptribute { margin: 6px 0 4px; padding-top: 4px; border-top: 1px solid rgba(132, 139, 152, 0.35); }
+details.ptribute > summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; list-style: none; padding: 2px 0; }
+details.ptribute > summary::-webkit-details-marker { display: none; }
+.ptribute-line { flex: 1 1 14em; min-width: 0; }
+.ptribute-change { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
+.ptribute-change::after { content: " \25BE"; text-decoration: none; display: inline-block; margin-left: 2px; }
+details.ptribute[open] .ptribute-change::after { content: " \25B4"; }
+.trates-head { margin: 4px 0 3px; font-size: 12px; }
+.trates { display: flex; flex-direction: column; gap: 3px; }
+button.trate { display: grid; grid-template-columns: 3.4em minmax(0, 1fr) auto; grid-template-areas: "pct est state" "pct part state"; gap: 1px 8px; align-items: center; justify-items: start; width: 100%; min-height: 42px; padding: 4px 8px; text-align: left; }
+button.trate .trate-pct { grid-area: pct; font-weight: 700; font-size: 15px; }
+button.trate .trate-est { grid-area: est; }
+button.trate .trate-part { grid-area: part; font-size: 12px; color: var(--dim); }
+button.trate .trate-state { grid-area: state; justify-self: end; }
+button.trate.current[disabled] { background: rgba(242, 199, 75, 0.1); border-color: var(--accent); color: var(--c-bone); }
+button.trate .trate-now { display: block; color: var(--accent); font-size: 11px; font-weight: 700; }
+.plevy { margin-top: 4px; }
+li.crown-city .crown-note { font-size: 12px; }
+.city-chip.held { border-style: dashed; }
+.peffect.self { border-left-color: var(--accent); }
 /* Persons of Note in the existing screens (docs/PERSONS.md, "UI", parts C to I; persons_lines.js):
    the House tag of the lists, the holder line of the city screen, the commander's line, the
    preview lines under an act, the civics screen's warning, the alerts. The state is always the
@@ -1404,7 +1436,8 @@ button.link.house-tag { padding: 0; }
 .commander-line .commander-text { min-width: 0; }
 .commander-line select.commander-change { max-width: 100%; }
 .army-line .commander-line { margin: 2px 0 0; }
-.requisition-house { display: flex; align-items: center; gap: 2px; margin: 0 0 2px 22px; font-size: 0.92em; }
+.requisition-house { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 0 0 2px 22px; font-size: 0.92em; }
+.requisition-house .levy-text { min-width: 0; }
 .person-line, .held-line, .found-house-line { margin: 3px 0; }
 .iso-person { margin: 4px 0; }
 .commander-figure { flex: none; display: inline-flex; }

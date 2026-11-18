@@ -166,6 +166,20 @@ function candidateLine(c, fleet = false) {
   return h("span", h("span.dim", ` · ${dname("UnitType", c.unit)}, ${turns(c.production_turns)} to train`), march);
 }
 
+/** The levy line of a House's city among the requisition's candidates (docs/PERSONS.md, rule 6):
+ *  its House (shield and name) and `Takes levies. Each levy: -1 (20 turns).`, or the rules'
+ *  reason it takes none (`House Arne is Annoyed. It takes no levy.`) in the caution colour (the
+ *  warning colour when Furious). */
+function levyLine(x) {
+  const tone = x.takes_levy === false ? (String(x.state).toLowerCase() === "furious" ? ".warn" : ".caution") : "";
+  return h(
+    `div.requisition-house${tone}`,
+    { "data-house": x.id, "data-levy": x.takes_levy === false ? "no" : "yes" },
+    h("span.house-tag", houseShield(x.colour, 14), h("span.house-name", x.label)),
+    h("span.levy-text", x.text),
+  );
+}
+
 /** An army's requisition on the Armies screen: the cities it requisitions from, its orders in
  *  progress, and every city it may requisition from with a checkbox (`act` sends a command and
  *  re-reads the screen). */
@@ -196,9 +210,10 @@ function requisitionView(a, act) {
       h("span", ` ${c.name}`),
       c.governed ? h("span.dim", " (governed)") : null,
       candidateLine(c, a.domain === "sea"),
-      // Persons of Note (docs/PERSONS.md, "UI", part D): a House's city and its quota, or the
-      // reason it gives none (the requisition then passes it over).
-      c.house ? h(`div.requisition-house${c.house.takes_levy === false ? ".warn" : ".dim"}`, houseShield(c.house.colour, 14), h("span", ` ${c.house.text}`)) : null,
+      // Persons of Note (docs/PERSONS.md, rule 6, the levy): a House's city, its House and
+      // whether it takes levies, or the rules' reason it takes none (the requisition then passes
+      // it over).
+      c.house ? levyLine(c.house) : null,
       c.order ? h("span.badge", { title: "Training for the army now" }, `${turns(c.order.turns)}`) : null,
     ),
   );

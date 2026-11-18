@@ -18,9 +18,10 @@
     "reminder": "TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER",
     "implies": ["KEYWORD_RITUAL"]
   },
-  // Persons of Note (docs/PERSONS.md, "UI", part J; "The second build": the loyalty states are
-  //     the attitude scale): the Court screen, the grant list and the screens that show a House
-  //     or a loyalty state carry these.
+  // Persons of Note (docs/PERSONS.md, "The second build", rule 13; "UI", part J): the Court
+  //     screen, the grant list and the screens that show a House, a tribute or a levy carry these.
+  //     The loyalty states are the game's attitude words, not keywords: a state mark's tooltip is
+  //     the attitude's own help (attitudes.jsonc).
   {
     "type": "KEYWORD_HOUSE",
     "description": "TXT_KEY_KEYWORD_HOUSE",
@@ -32,30 +33,14 @@
     "reminder": "TXT_KEY_KEYWORD_CROWN_REMINDER"
   },
   {
-    "type": "KEYWORD_FRIENDLY",
-    "description": "TXT_KEY_KEYWORD_FRIENDLY",
-    "reminder": "TXT_KEY_KEYWORD_FRIENDLY_REMINDER"
+    "type": "KEYWORD_TRIBUTE",
+    "description": "TXT_KEY_KEYWORD_TRIBUTE",
+    "reminder": "TXT_KEY_KEYWORD_TRIBUTE_REMINDER"
   },
   {
-    "type": "KEYWORD_PLEASED",
-    "description": "TXT_KEY_KEYWORD_PLEASED",
-    "reminder": "TXT_KEY_KEYWORD_PLEASED_REMINDER"
-  },
-  {
-    "type": "KEYWORD_CAUTIOUS",
-    "description": "TXT_KEY_KEYWORD_CAUTIOUS",
-    "reminder": "TXT_KEY_KEYWORD_CAUTIOUS_REMINDER"
-  },
-  {
-    "type": "KEYWORD_ANNOYED",
-    "description": "TXT_KEY_KEYWORD_ANNOYED",
-    "reminder": "TXT_KEY_KEYWORD_ANNOYED_REMINDER"
-  },
-  {
-    "type": "KEYWORD_FURIOUS",
-    "description": "TXT_KEY_KEYWORD_FURIOUS",
-    "reminder": "TXT_KEY_KEYWORD_FURIOUS_REMINDER",
-    "implies": ["KEYWORD_ANNOYED"]
+    "type": "KEYWORD_LEVY",
+    "description": "TXT_KEY_KEYWORD_LEVY",
+    "reminder": "TXT_KEY_KEYWORD_LEVY_REMINDER"
   },
   {
     "type": "KEYWORD_SWORN",
