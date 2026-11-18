@@ -102,7 +102,8 @@ in that game.
 applies in the cities of their House, and nowhere else.
 - *Which trait*: the person's traits in their authored order (personal, then inherited), the
   first that is not a trait of the owner's leader or civilization. A commander's trait does
-  nothing: only a House's head runs cities. A hero has no leader traits.
+  nothing, and nothing takes its place (the owner's decision, 2026-11-18): a commander is told
+  apart by the promotions their unit has earned. A hero has no leader traits.
 - *What applies*, as if the city's owner had the trait, for that city alone: the trait's
   health and happiness; its commerce (`commerce_change`, `commerce_modifier`) and its plots'
   extra yield (`extra_yield_threshold`) and trade yield; its great people rate; its wonder
@@ -250,9 +251,11 @@ cast. The civics screen states it before the choice:
 An army has one commander's post. A veteran in the army, a hero travelling with it or a Great
 Commander may hold it; a House's head may not (one post each).
 
-- *What a commander is worth* in battle rises with the commander's unit's level (the commander
-  auras of docs/ENGAGEMENTS.md, phase 7, decided there). The capable commander is the one who
-  has fought most, and so the one with the most claims.
+- *What a commander is worth* is their unit: its level and the promotions it has earned. A
+  commander has no attribute of their own. What the commander's post adds in battle (the
+  commander auras of docs/ENGAGEMENTS.md, phase 7) rises with the unit's level and is decided
+  there. The capable commander is the one who has fought most, and so the one with the most
+  claims.
 - *Claims*: the commander whose army takes a city is a claimant to it (Houses, above).
 - *Restless*, the army takes no order to attack: it moves and defends.
 - *Dismissal.* Before the countdown: the post is empty, `Dismissed: -3 (30 turns)`. After it
@@ -397,7 +400,6 @@ Still open beyond those:
   no trait. The other reading: the next trait in their order.
 - **Whether a Restless head's trait is withheld**, as its orders are. It would make crossing a
   good head cost what made them good; here the trait applies whatever the state.
-- **A commander brings no trait.** Their worth is their unit's level alone.
 - **Who names the heir.** Here the player. The other reading: the House takes one by a rule.
 - **A head who never fights never dies** (a Great Merchant). The House then changes hands only
   by secession or release.
