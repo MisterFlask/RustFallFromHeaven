@@ -592,8 +592,8 @@ view's `src/view/house_marks.rs`). A loyalty state is always the one mark (`pers
   the House's state mark on a dark disc (▲ Friendly, △ Pleased, ● Cautious, ◆ Annoyed, ✖ Furious),
   and Furious the turns left in a red pill at the shield's left. The Crown's cities carry none.
 - *Diplomacy* (rules 7, 9 and 13; `diplo.js`): the list (`F4`) shows your Houses first (`House
-  Aldric, your vassal`, with the shield; the Attitude column their state's mark, its tip their
-  loyalty parts and total; a `Court` button), then each civilization you met followed by its
+  Aldric, your vassal`, with the shield, and not again among the relations; the Attitude column
+  their state's mark, its tip their loyalty parts and total; a `Court` button), then each civilization you met followed by its
   Houses, indented (`House Alyndra, vassal of the Svartalfar`, the head's portrait; a House whose
   liege you have not met stands on its own). A House's leader speaks as any leader. Its trade
   screen offers what the rules let it trade: you give gold and gold per turn (`+1` a gold, `+10`
@@ -601,9 +601,10 @@ view's `src/view/house_marks.rs`). A loyalty state is always the one mark (`pers
   each worth its price (`−150`) or greyed with the rules' reason (`(House Alyndra is Pleased with
   the Svartalfar.)`); under the tables `Trades through the Svartalfar.` with `Trade with the
   Svartalfar…`. The answer is the rules' (`This proposal will be refused. Reason: House Alyndra
-  asks 150 gold.`), and with a House's item in the deal what accepting means: `House Alyndra will
-  break away from the Svartalfar: war between them.`, and for Become your vassal `You become its
-  liege: war with the Svartalfar.` At war: `You are at war. An accepted offer makes peace with
+  asks 150 gold.`), and with a House's item in the deal, under `If accepted:`, what accepting
+  means: `House Alyndra will break away from the Svartalfar: war between them.`, and for Become
+  your vassal `You become its liege: war with the Svartalfar.` A vassal deal the rules hold (a
+  House's, a capitulation) shows no `cancel in` count. At war: `You are at war. An accepted offer makes peace with
   House Alyndra first.` Your own House's screen has no tables: `House Aldric pays its liege by
   tribute.`, its attitude and `Open the Court`.
 - *Alerts* (part H): the persons' messages (the log's `kind: "person"`, and `mark: "person"` for a

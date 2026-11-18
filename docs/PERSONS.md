@@ -934,7 +934,8 @@ Rule 13's parts outside the Court (`view/house_marks.rs`, `view/diplo.rs`, `asse
   and gold per turn at `BRIBE_GOLD_PER_TURN_TURNS`; the screen's totals and answer then read as for
   any deal (`Total offered: 1`, `Total requested: 150`, `Reason: House Alyndra asks 150 gold.`).
   `trade_answer` for a House is the rules' answer whoever plays it. The war a deal means is said
-  under the answer (`secede_war`, `vassal_war`). Departure: **no gift to one's own House.** The
+  under the answer (`If accepted:`, `secede_war`, `vassal_war`). A House's vassal deal, which the
+  rules never let be cancelled, shows no `cancel in` count in the list (it showed one). Departure: **no gift to one's own House.** The
   contract asked that the usual gift items (gold) work for one's own Houses; the rules refuse
   every item between a House and its liege's team (`house_trade_item_allowed`), and a gift would
   not move a House's loyalty (it is not one of its parts), so the own House's trade screen shows

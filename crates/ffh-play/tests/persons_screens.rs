@@ -178,6 +178,11 @@ fn a_house_is_drawn_in_its_lieges_colour_with_its_shield() {
     assert!(s_of(hb, "outcome").contains(" will break away "), "{hb}");
     assert!(s_of(hb, "loyalty").starts_with("Loyalty: "));
     assert!(arr(hb, "parts").iter().any(|x| x.as_str().is_some_and(|t| t.starts_with("Tribute "))), "{hb}");
+    // Its vassal deal cannot be cancelled (the rules): no count runs for it.
+    for d in arr(&row, "deals") {
+        assert_eq!(d.get("cancelable").and_then(Json::as_bool), Some(false), "{d}");
+        assert_eq!(d.get("cancel_in").and_then(Json::as_i64), Some(0), "{d}");
+    }
     let row = find(&players, "id", n.player.0 as i64);
     assert_eq!(row.get("color_player").and_then(Json::as_i64), Some(st.neighbour.0 as i64));
     let hb = row.get("house").unwrap();

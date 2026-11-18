@@ -41,12 +41,13 @@ export async function openDiplomacy() {
     if (m.closed) return;
     const rows = byLiege(r.players.filter((p) => !p.barbarian), me()?.player)
       .map((p) => {
-        const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
         // A House (docs/PERSONS.md, "The second build", rule 13): under its liege, named by its
-        // label (`House Arne, vassal of the Bannor`); its attitude toward you, its liege, is its
-        // state's one mark, with its loyalty parts as the tip.
+        // label (`House Arne, vassal of the Bannor`; yours: `House Arne, your vassal`, so its
+        // relations do not say it again); its attitude toward you, its liege, is its state's one
+        // mark, with its loyalty parts as the tip.
         const house = p.house;
         const ownHouse = !!house && house.liege === me()?.player;
+        const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us && !ownHouse ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
         const who = house ? houseLine(house) : `${dname("CivilizationType", p.civ)} · team ${p.team}`;
         const attitude = ownHouse && house.state
           ? h("td", { tip: () => houseAttitudeTip(p) }, stateMark(house.state, house.turns))
@@ -459,7 +460,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     if (!t.house) return [];
     const kinds = new Set(get.map((x) => tname("TradeableItem", x.item)));
     const out = [];
-    if (kinds.has("TRADE_SECEDE") || kinds.has("TRADE_HOUSE_VASSAL")) out.push(h("div.warn.house-war", t.house.secede_war));
+    if (kinds.has("TRADE_SECEDE") || kinds.has("TRADE_HOUSE_VASSAL")) out.push(h("div.house-war-title", "If accepted:"), h("div.warn.house-war", t.house.secede_war));
     if (kinds.has("TRADE_HOUSE_VASSAL")) out.push(h("div.warn.house-war", t.house.vassal_war));
     return out;
   };

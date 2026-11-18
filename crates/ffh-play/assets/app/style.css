@@ -821,7 +821,8 @@ table.scores.diplo tr.house-row > td:first-child .leader-cell { border-left: 2px
 .house-of { white-space: nowrap; }
 .house-of .house-shield { vertical-align: -2px; }
 .trades-through { margin: 8px 0 0; }
-.trade-summary .house-war { margin-top: 4px; font-weight: 700; }
+.trade-summary .house-war-title { margin-top: 6px; font-weight: 700; }
+.trade-summary .house-war { font-weight: 700; }
 .own-house p { margin: 6px 0; }
 @media (max-width: 520px) {
   table.scores.diplo tr.house-row > td:first-child { padding-left: 10px; }
