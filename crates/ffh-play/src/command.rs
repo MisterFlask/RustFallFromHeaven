@@ -96,6 +96,15 @@ pub enum Command {
     EmpireOrder { city: CityId, order: OrderType, data: i32, dest: Option<ffh_core::army::RecruitDest> },
     /// Take the empire order at `index` of governed city `city`'s queue off.
     EmpireOrderRemove { city: CityId, index: i32 },
+    /// Persons of Note (docs/PERSONS.md): grant city `city`, for good, to `to` (`{house}`, a person
+    /// `{person}` who founds a House, or a great person unit `{unit}`, consumed).
+    GrantCity { city: CityId, to: ffh_core::persons::GrantTo },
+    /// Name person `person` (without a post) heir of House `house`, whose seat is empty.
+    NameHeir { house: HouseId, person: PersonId },
+    /// Name person `person` (with the army) commander of army `army`.
+    SetCommander { army: ArmyId, person: PersonId },
+    /// Release House `house` as a vassal civilization (its cities go with it).
+    ReleaseHouse { house: HouseId },
     Research { tech: Option<TechType>, shift: bool },
     /// Commit to research path `path` (docs/PORTING.md, "Research paths").
     ResearchPath { path: ResearchPathType },
@@ -466,6 +475,10 @@ pub const COMMAND_NAMES: &[&str] = &[
     "govern_priorities",
     "empire_order",
     "empire_order_remove",
+    "grant_city",
+    "name_heir",
+    "set_commander",
+    "release_house",
     "research",
     "research_path",
     "update_civics",
@@ -523,6 +536,10 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("govern_priorities", &["roles"]),
     ("empire_order", &["city", "order", "data", "dest"]),
     ("empire_order_remove", &["city", "index"]),
+    ("grant_city", &["city", "house", "person", "unit"]),
+    ("name_heir", &["house", "person"]),
+    ("set_commander", &["army", "person"]),
+    ("release_house", &["house"]),
     ("research", &["tech", "shift"]),
     ("research_path", &["path"]),
     ("update_civics", &["civics"]),
@@ -647,6 +664,20 @@ fn station_field(j: &Json) -> Result<ffh_core::army::Station, FieldError> {
     }
 }
 
+/// The grantee of `grant_city`: exactly one of `house`, `person` and `unit`.
+fn grant_to_field(j: &Json) -> Result<ffh_core::persons::GrantTo, FieldError> {
+    use ffh_core::persons::GrantTo;
+    let house: Option<HouseId> = j.opt("house")?;
+    let person: Option<PersonId> = j.opt("person")?;
+    let unit: Option<UnitId> = j.opt("unit")?;
+    match (house, person, unit) {
+        (Some(x), None, None) => Ok(GrantTo::House(x)),
+        (None, Some(x), None) => Ok(GrantTo::Person(x)),
+        (None, None, Some(u)) => Ok(GrantTo::GreatPerson(u)),
+        _ => Err(FieldError::new("house", "exactly one of `house`, `person` and `unit`")),
+    }
+}
+
 /// The `dest` field of `recruit_dest` ([`recruit_dest_json`]'s form).
 fn recruit_dest_field(j: &Json) -> Result<Option<ffh_core::army::RecruitDest>, FieldError> {
     use ffh_core::army::RecruitDest;
@@ -708,6 +739,10 @@ impl Command {
             Command::GovernPriorities { .. } => "govern_priorities",
             Command::EmpireOrder { .. } => "empire_order",
             Command::EmpireOrderRemove { .. } => "empire_order_remove",
+            Command::GrantCity { .. } => "grant_city",
+            Command::NameHeir { .. } => "name_heir",
+            Command::SetCommander { .. } => "set_commander",
+            Command::ReleaseHouse { .. } => "release_house",
             Command::Research { .. } => "research",
             Command::ResearchPath { .. } => "research_path",
             Command::UpdateCivics { .. } => "update_civics",
@@ -828,6 +863,10 @@ impl Command {
                 Command::EmpireOrder { city: j.req("city")?, order, data: order_data(d, j, order)?, dest: recruit_dest_field(j)? }
             }
             "empire_order_remove" => Command::EmpireOrderRemove { city: j.req("city")?, index: j.req("index")? },
+            "grant_city" => Command::GrantCity { city: j.req("city")?, to: grant_to_field(j)? },
+            "name_heir" => Command::NameHeir { house: j.req("house")?, person: j.req("person")? },
+            "set_commander" => Command::SetCommander { army: j.req("army")?, person: j.req("person")? },
+            "release_house" => Command::ReleaseHouse { house: j.req("house")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "research_path" => Command::ResearchPath { path: names::field(d, j, "path")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
@@ -948,6 +987,14 @@ impl Command {
                 j.with("city", *city).with("order", Json::idx(*order)).with("data", *data).with("dest", recruit_dest_json(*dest))
             }
             Command::EmpireOrderRemove { city, index } => j.with("city", *city).with("index", *index),
+            Command::GrantCity { city, to } => match *to {
+                ffh_core::persons::GrantTo::House(x) => j.with("city", *city).with("house", x),
+                ffh_core::persons::GrantTo::Person(x) => j.with("city", *city).with("person", x),
+                ffh_core::persons::GrantTo::GreatPerson(u) => j.with("city", *city).with("unit", u),
+            },
+            Command::NameHeir { house, person } => j.with("house", *house).with("person", *person),
+            Command::SetCommander { army, person } => j.with("army", *army).with("person", *person),
+            Command::ReleaseHouse { house } => j.with("house", *house),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::ResearchPath { path } => j.with("path", Json::idx(*path)),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
@@ -1233,6 +1280,10 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::GovernPriorities { roles } => g.player_set_governor_priorities(h, roles.clone()),
         Command::EmpireOrder { city, order, data, dest } => g.city_push_empire_order(h, *city, *order, *data, -1, *dest),
         Command::EmpireOrderRemove { city, index } => g.city_remove_empire_order(h, *city, *index as usize),
+        Command::GrantCity { city, to } => g.player_grant_city(h, *city, *to).map(|_| ()),
+        Command::NameHeir { house, person } => g.player_name_heir(h, *house, *person),
+        Command::SetCommander { army, person } => g.player_set_commander(h, *army, *person),
+        Command::ReleaseHouse { house } => g.player_release_house(h, *house).map(|_| ()),
         Command::RecruitDest { city, index, dest } => {
             if *index < 0 {
                 g.cities[*city].recruit_default = *dest;
@@ -1719,6 +1770,29 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             in_range("queue index", *index, g.cities[*city].order_queue.len())?;
             g.city_check_remove_empire_order(h, *city, *index as usize).map_err(cannot)?;
             Plan::Apply(Action::Army(Command::EmpireOrderRemove { city: *city, index: *index }))
+        }
+
+        // Persons of Note (docs/PERSONS.md): the rules' own checks and reasons.
+        Command::GrantCity { city, to } => {
+            city_of(g, h, *city)?;
+            g.player_check_grant(h, *city, *to).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::NameHeir { house, person } => {
+            crate::view::persons::check_name_heir(g, h, *house, *person).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::SetCommander { army, person } => {
+            army_of(g, h, *army)?;
+            crate::view::persons::check_set_commander(g, h, *army, *person).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ReleaseHouse { house } => {
+            g.player_check_release_house(h, *house).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
         }
 
         Command::Engage { by, to, formation, declare_war } => {
@@ -2561,6 +2635,12 @@ mod tests {
             Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_TRAIN, data: 5, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(1))) },
             Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_CONSTRUCT, data: 9, dest: None },
             Command::EmpireOrderRemove { city: CityId(2), index: 1 },
+            Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::House(HouseId(1)) },
+            Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::Person(PersonId(3)) },
+            Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::GreatPerson(UnitId(7)) },
+            Command::NameHeir { house: HouseId(0), person: PersonId(2) },
+            Command::SetCommander { army: ArmyId(1), person: PersonId(4) },
+            Command::ReleaseHouse { house: HouseId(2) },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::ResearchPath { path: ResearchPathType(2) },

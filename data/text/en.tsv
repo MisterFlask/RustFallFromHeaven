@@ -14964,3 +14964,19 @@ TXT_KEY_KEYWORD_RITUAL	Ritual
 TXT_KEY_KEYWORD_RITUAL_REMINDER	Progress is lost if the city switches to building something else. Cannot be hurried with gold. While this is in production, the city's plot is visible to every player.
 TXT_KEY_KEYWORD_WORLD_RITUAL	World Ritual
 TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER	One in progress per player. Each completion doubles its next cost. Every player is told when it begins, is abandoned or completes. At completion its world spell takes effect; a spell with a target must be cast before the turn ends.
+TXT_KEY_KEYWORD_HOUSE	House
+TXT_KEY_KEYWORD_HOUSE_REMINDER	Holds cities granted to it for good, under a head from the court. The head's trait applies in its cities, and they pay half their number-of-cities maintenance. Its loyalty decides how many empire orders its cities take.
+TXT_KEY_KEYWORD_CROWN	Crown
+TXT_KEY_KEYWORD_CROWN_REMINDER	The cities no House holds. The capital is always the Crown's. A Crown city takes every empire order.
+TXT_KEY_KEYWORD_DEVOTED	Devoted
+TXT_KEY_KEYWORD_DEVOTED_REMINDER	Loyalty +3 or more. A House takes empire orders without limit.
+TXT_KEY_KEYWORD_LOYAL	Loyal
+TXT_KEY_KEYWORD_LOYAL_REMINDER	Loyalty from -2 to +2. A House takes empire orders up to its quota: its cities times the government's rate, every 30 turns.
+TXT_KEY_KEYWORD_RESTLESS	Restless
+TXT_KEY_KEYWORD_RESTLESS_REMINDER	Loyalty -3 or less. A House takes no empire order; a commander's army takes no order to attack.
+TXT_KEY_KEYWORD_DISLOYAL	Disloyal
+TXT_KEY_KEYWORD_DISLOYAL_REMINDER	Loyalty -6 or less. A countdown of 10 turns runs: at its end a House secedes with its cities that no army holds, and a commander leaves with the units sworn to them. Loyalty above -6 stops the countdown.
+TXT_KEY_KEYWORD_SWORN	Sworn
+TXT_KEY_KEYWORD_SWORN_REMINDER	The units of a commander's army when their Disloyal countdown began. At its end they leave with the commander, except those in a city where more of the owner's other units stand.
+TXT_KEY_KEYWORD_CLAIMANT	Claimant
+TXT_KEY_KEYWORD_CLAIMANT_REMINDER	A House with a city within 6 plots, or the commander whose army took the city in the last 20 turns. Granting the city to another costs a claimant House -1 and that commander -2 (30 turns), and its head becomes their rival.

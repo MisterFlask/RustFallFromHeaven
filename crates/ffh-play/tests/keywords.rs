@@ -19,6 +19,15 @@ use ffh_play::{Json, Session, SessionOptions};
 const FRAGMENTS: &[(&str, &[&str])] = &[
     ("KEYWORD_RITUAL", &["progress is lost if the city switches", "switches to building something else", "hurried with gold", "cannot be hurried", "production is lost", "first build", "off the head of the queue", "visible to every player"]),
     ("KEYWORD_WORLD_RITUAL", &["one in progress per player", "doubles the next cost", "doubles its next cost", "every player is told"]),
+    // Persons of Note (docs/PERSONS.md, "UI", part J).
+    ("KEYWORD_HOUSE", &["granted to it for good", "half their number-of-cities", "head's trait applies in its cities"]),
+    ("KEYWORD_CROWN", &["no house holds", "always the crown's", "takes every empire order"]),
+    ("KEYWORD_DEVOTED", &["loyalty +3 or more", "empire orders without limit"]),
+    ("KEYWORD_LOYAL", &["loyalty from -2 to +2", "up to its quota", "government's rate"]),
+    ("KEYWORD_RESTLESS", &["loyalty -3 or less", "takes no empire order", "takes no order to attack"]),
+    ("KEYWORD_DISLOYAL", &["loyalty -6 or less", "countdown of 10 turns", "stops the countdown"]),
+    ("KEYWORD_SWORN", &["when their disloyal countdown began", "leave with the commander"]),
+    ("KEYWORD_CLAIMANT", &["a house with a city within", "took the city in the last", "becomes their rival"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.
@@ -95,4 +104,35 @@ fn every_keyword_mark_names_a_keyword() {
         }
     }
     assert!(marks >= 2, "the World Spells concept marks its keywords: {marks}");
+}
+
+/// Every string of an object (but its `reminders` and a person's `backstory`, flavour), deep.
+fn strings_of(j: &Json, out: &mut Vec<String>) {
+    match j {
+        Json::Str(s) => out.push(s.clone()),
+        Json::Arr(a) => a.iter().for_each(|x| strings_of(x, out)),
+        Json::Obj(o) => o.iter().filter(|(k, _)| k != "reminders" && k != "backstory").for_each(|(_, v)| strings_of(v, out)),
+        _ => {}
+    }
+}
+
+/// Persons of Note (docs/PERSONS.md, "UI", part J): the Court's and every grant list's lines, on
+/// the staged scene, do not restate a keyword's reminder.
+#[test]
+fn the_court_does_not_restate_reminder_text() {
+    let bad = forbidden(ffh_data::global());
+    let dir = common::TempDir::new("keywords-persons");
+    let st = ffh_play::stage::persons(&dir.0, false).expect("staged");
+    let (bytes, sidecar) = ffh_play::save::read_bundle(&st.save).unwrap();
+    let opts = SessionOptions { journal: false, ..SessionOptions::default() };
+    let s = Session::load(&bytes, sidecar.as_ref(), Arc::new(AdvisorAnswerer), opts).unwrap();
+    let mut texts = Vec::new();
+    strings_of(&s.query(&ffh_play::query::Query::Court).unwrap(), &mut texts);
+    for c in s.g.players[s.human].cities.clone() {
+        strings_of(&s.query(&ffh_play::query::Query::Grant { city: c }).unwrap(), &mut texts);
+    }
+    assert!(texts.len() > 100, "{}", texts.len());
+    for t in &texts {
+        check("persons payload", t, &bad);
+    }
 }

@@ -17,5 +17,48 @@
     "description": "TXT_KEY_KEYWORD_WORLD_RITUAL",
     "reminder": "TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER",
     "implies": ["KEYWORD_RITUAL"]
+  },
+  // Persons of Note (docs/PERSONS.md, "UI", part J): the Court screen, the grant list and the
+  //     screens that show a House or a loyalty state carry these.
+  {
+    "type": "KEYWORD_HOUSE",
+    "description": "TXT_KEY_KEYWORD_HOUSE",
+    "reminder": "TXT_KEY_KEYWORD_HOUSE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_CROWN",
+    "description": "TXT_KEY_KEYWORD_CROWN",
+    "reminder": "TXT_KEY_KEYWORD_CROWN_REMINDER"
+  },
+  {
+    "type": "KEYWORD_DEVOTED",
+    "description": "TXT_KEY_KEYWORD_DEVOTED",
+    "reminder": "TXT_KEY_KEYWORD_DEVOTED_REMINDER"
+  },
+  {
+    "type": "KEYWORD_LOYAL",
+    "description": "TXT_KEY_KEYWORD_LOYAL",
+    "reminder": "TXT_KEY_KEYWORD_LOYAL_REMINDER"
+  },
+  {
+    "type": "KEYWORD_RESTLESS",
+    "description": "TXT_KEY_KEYWORD_RESTLESS",
+    "reminder": "TXT_KEY_KEYWORD_RESTLESS_REMINDER"
+  },
+  {
+    "type": "KEYWORD_DISLOYAL",
+    "description": "TXT_KEY_KEYWORD_DISLOYAL",
+    "reminder": "TXT_KEY_KEYWORD_DISLOYAL_REMINDER",
+    "implies": ["KEYWORD_RESTLESS"]
+  },
+  {
+    "type": "KEYWORD_SWORN",
+    "description": "TXT_KEY_KEYWORD_SWORN",
+    "reminder": "TXT_KEY_KEYWORD_SWORN_REMINDER"
+  },
+  {
+    "type": "KEYWORD_CLAIMANT",
+    "description": "TXT_KEY_KEYWORD_CLAIMANT",
+    "reminder": "TXT_KEY_KEYWORD_CLAIMANT_REMINDER"
   }
 ]
