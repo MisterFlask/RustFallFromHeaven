@@ -381,7 +381,7 @@ fn house_json(v: &Viewer, hv: &HouseView, persons: &[PersonView], grantable: &[C
     let head_line = if hv.head.is_some() {
         None
     } else if hv.needs_heir {
-        Some(format!("{} has no head. Name an heir.", hv.label))
+        Some(format!("{} has no head.", hv.label))
     } else {
         Some(format!("{} has no head. The first person without a post to enter the court succeeds.", hv.label))
     };
@@ -766,7 +766,7 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "y" => g.cities[c].y,
         "title" => format!("Grant {name}"),
         "note" => "A grant is for good.",
-        "baseline" => format!("Held by the Crown: city-count maintenance {} gold a turn.", gold(full)),
+        "baseline" => if pays { format!("Held by the Crown: city-count maintenance {} gold a turn.", gold(full)) } else { "Held by the Crown: no city-count maintenance this turn.".to_string() },
         "refusal" => refusal,
         "none" => (refusal.is_none() && candidates.is_empty()).then_some("No House, person or great person to grant it to."),
         "candidates" => Json::Arr(candidates.into_iter().map(|(_, j)| j).collect()),

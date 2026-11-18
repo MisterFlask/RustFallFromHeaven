@@ -169,7 +169,7 @@ fn a_grant_does_what_its_preview_says() {
     let name = ffh_play::view::city_name(&ses.g, c);
     assert_eq!(s(&r, "title"), format!("Grant {name}"));
     assert_eq!(s(&r, "note"), "A grant is for good.");
-    assert!(s(&r, "baseline").starts_with("Held by the Crown: city-count maintenance "));
+    assert!(s(&r, "baseline").starts_with("Held by the Crown: ") && s(&r, "baseline").contains("city-count maintenance"));
     assert_eq!(r.get("refusal"), Some(&Json::Null));
     let cands = arr(&r, "candidates");
     let claims: Vec<bool> = cands.iter().map(|x| x.get("claimant").and_then(Json::as_bool).unwrap()).collect();

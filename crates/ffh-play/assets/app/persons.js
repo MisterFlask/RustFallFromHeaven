@@ -11,7 +11,7 @@
 
 import * as api from "./api.js";
 import { S, emit, me, info } from "./state.js";
-import { h, toast, errorText } from "./dom.js";
+import { h, fill, toast, errorText } from "./dom.js";
 import { openModal, closeTag } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
@@ -205,13 +205,14 @@ function moreBlock(x, extra = []) {
   );
 }
 
-/** A person's head row: portrait, name, title, state mark. */
-function personHead(p, size = PORTRAIT.small) {
+/** A person's head row: portrait, name, title, state mark (`mark` false: a head's, whose state is
+ *  their House's, marked once on the House). */
+function personHead(p, size = PORTRAIT.small, mark = true) {
   return h(
     "div.phead",
     portrait(p, size),
     h("div.pname", h("b", p.name), p.title ? h("div.ptitle.dim", p.title) : null),
-    stateMark(p.state, p.countdown_turns),
+    mark ? stateMark(p.state, p.countdown_turns) : null,
   );
 }
 
@@ -236,16 +237,16 @@ function houseCard(x, m, reload) {
     h(`button.small.city-chip${c.seat ? ".seat" : ""}`, { "data-city": c.city, title: "Open the city", onclick: () => (m.close(null), emit("open-city", c.city)) }, c.name),
   );
   const head = x.head
-    ? h("div.phouse-head", personHead(x.head), h("div.pline", x.head.where))
+    ? h("div.phouse-head", personHead(x.head, PORTRAIT.small, false), h("div.pline", x.head.where))
     : h("div.phouse-head", h("div.pline.warn", x.head_line), x.needs_heir ? actButton({ label: "Name an heir", act: { kind: "heir", house: x.id } }, m) : null);
   const foot = h("div.pfoot");
   const release = () =>
-    foot.replaceChildren(
+    fill(foot,
       h("button.small.prelease", { disabled: !x.release.ok, title: x.release.refusal ?? "Release the House as your vassal civilization", onclick: confirm }, "Release as a vassal"),
       x.release.refusal ? h("span.dim", ` ${x.release.refusal}`) : null,
     );
   const confirm = () =>
-    foot.replaceChildren(
+    fill(foot,
       h("div.pconfirm", h("p", x.release.confirm), h("button.small.danger", { onclick: async () => (await run({ c: "release_house", house: x.id })) && reload() }, "Release"), h("button.small", { onclick: release }, "Back")),
     );
   release();
@@ -478,12 +479,12 @@ function candidateCard(r, c, m) {
   const foot = h("div.pfoot");
   const who = c.kind === "house" && c.color !== null && c.color !== undefined ? houseShield(c.color, 22) : portrait({ leader: c.leader, unit_type: c.unit_type, name: c.title });
   const choose = () =>
-    foot.replaceChildren(
+    fill(foot,
       c.refusal ? h("p.warn", c.refusal) : null,
       h("button.pact.pgrant-to", { disabled: !!c.refusal, title: c.refusal ?? null, onclick: confirm }, c.button),
     );
   const confirm = () => {
-    foot.replaceChildren(
+    fill(foot,
       h(
         "div.pconfirm",
         { role: "alertdialog", "aria-label": c.confirm },

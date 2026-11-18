@@ -1335,6 +1335,7 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .pattn { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .pattn > span:first-child { flex: 1 1 14em; min-width: 0; }
 .pattn.urgent > span:first-child { color: var(--caution); }
+.pattn[data-kind="disloyal"] > span:first-child { color: var(--warn); }
 .pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 8px; align-items: start; }
 .pcards.one { grid-template-columns: minmax(0, 1fr); }
 .pcard { border: 1px solid var(--c-iron); background: rgba(38, 51, 79, 0.45); padding: 6px 8px; min-width: 0; overflow-wrap: anywhere; }
@@ -1367,7 +1368,7 @@ ul.pparts, ul.precord, ul.plines, .peffect ul { margin: 2px 0; padding-left: 18p
 .crown-glyph { font-size: 20px; line-height: 1; color: var(--accent); }
 ul.crown-cities { list-style: none; margin: 2px 0; padding: 0; }
 li.crown-city { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 3px 0; }
-li.crown-city > .link { flex: 1 1 8em; text-align: left; }
+li.crown-city > .link { margin-right: auto; text-align: left; justify-content: flex-start; }
 .grant-head p { margin: 2px 0; }
 .grant-list { margin-top: 6px; }
 .modal.grant .modal-body { max-height: 70vh; overflow-y: auto; }
