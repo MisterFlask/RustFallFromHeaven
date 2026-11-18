@@ -165,6 +165,9 @@ impl Controller for Ai {
             return;
         }
         let turn = g.game_turn();
+        // A House (docs/PERSONS.md) is a vassal: its liege makes its war and peace, and it plays
+        // its own land (persons.rs).
+        let house = persons::is_house(g, p);
         // The empire decisions are made on the first call of the player's turn. A controller
         // that did not see the earlier calls (a game saved mid-turn, resumed with a fresh AI)
         // recognises them from the game state: the rules call again within a turn only while
@@ -205,11 +208,21 @@ impl Controller for Ai {
             production::wonder_emphasis(g, p);
             expansion::prepare_escorts(g, p); // early-expansion
             diplomacy::reconsider_deals(g, p);
-            diplomacy::manage(g, &v);
-            offers::to_humans(g, &v); // ai-offers: deals offered to human players
+            // A House makes no war, peace or deals of its own (it answers offers: `judge_offer`),
+            // and asks no loans.
+            if !house {
+                diplomacy::manage(g, &v);
+                offers::to_humans(g, &v); // ai-offers: deals offered to human players
+            }
             // Crusades and loans (docs/CRUSADE.md): pledged units leave before ours move.
             crusade::deliver(g, p);
-            crusade::ask_for_loans(g, p);
+            if !house {
+                crusade::ask_for_loans(g, p);
+            }
+            // Persons of Note (docs/PERSONS.md): tribute, a grant, an offer to an enemy's House. A
+            // grant moves a city to a House and an accepted offer makes peace with one: before the
+            // view of the turn is built.
+            persons::turn(g, p);
             // War declarations change the picture.
             // (`View::new`, the forecast cache carried over.)
             let forecasts = std::mem::take(&mut v.forecasts);
@@ -218,7 +231,6 @@ impl Controller for Ai {
             v.analyze(g);
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
-            persons::turn(g, p); // Persons of Note: heirs, a grant, a demand met (docs/PERSONS.md)
             governor::turn(self, g, p); // governed cities: priorities, empire orders (docs/GOVERNORS.md)
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)

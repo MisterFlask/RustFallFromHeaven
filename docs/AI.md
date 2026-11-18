@@ -1977,39 +1977,74 @@ between seeds).
 
 ## Persons of Note (`persons.rs`)
 
-This game's own system (docs/PERSONS.md). A rules change, so not gated on the AI (CLAUDE.md): the
-AI's minimum, reasonable and unmeasured. AI players only (`persons::turn`, once a turn before the
-governors' empire orders): a human's grants, heirs and demands are the human's.
+This game's own system (docs/PERSONS.md; the second build: Houses as vassal civilizations, rule
+12). A rules change, so not gated on the AI (CLAUDE.md): reasonable choices, unmeasured. AI players
+only (`persons::turn`, once a turn after the turn's diplomacy, before the governors' empire
+orders): a human's grants, tribute and offers are the human's.
 
-- **Heirs.** A House with an empty seat takes the heir candidate in the best state (ties: the
-  earlier in the cast); with one candidate the rules seat them.
-- **Grants** (`choose_grant`), one a turn while the government allows them: a Crown city other
-  than the capital and the AI's best production city (`kept_city`: the empire orders go to its
-  most productive cities, and a House's city takes them only within its quota), to the candidate
-  of `grant_candidates` ranked by, in order: no holder made Disloyal by the preview; a standing
-  demand met (a Restless or Disloyal grantee's first); a claimant, the one in the best state; a
-  person without a post founding a House, then a great person founding the first House (only with
-  no House and no person without a post, and not a great person whose card the card logic keeps
-  waiting), then the House with the fewest cities; the fewest holders made Restless. A commander
-  is granted a city (which ends the command) only for their claim or demand. A grant that would
-  make a holder Disloyal waits: the Crown keeping the city snubs nobody. No House is enlarged past
-  the Crown: one whose cities would outnumber the Crown's after the grant gets no more. (A
-  secession takes every city of its House. Before the cap, 8 games of 300 turns with 7
-  civilizations had four secessions, of 5 to 8 cities each.)
-- **Demands** (`demands`): at most one act a turn, Restless and Disloyal holders first: a Works
-  wonder becomes an empire order in its seat when the House takes the order and the AI values the
-  wonder there (some value, at most 50 turns). The grant demands are the grants' first rank; a
-  demanded state religion is what `empire::religion` adopts whenever it may; a demanded war adds a
-  tenth to that civilization's score in the war planning (`diplomacy::manage`), never a war of
-  its own.
+- **Tribute** (`tribute_for`). Each House pays the realm's default (20%) while it would be Pleased
+  or Friendly paying it, 10% while it would be Cautious, nothing while it would be Annoyed or
+  worse. The state is read at the default rate, not at the current one, so the choice does not
+  feed on itself (at the current rate a House lifted to Pleased by 10% would go back to 20% and
+  Cautious the next turn). Set through the rules' command, only when it changes.
+- **Grants** (`choose_grant`), one a turn: only while the Crown is over its limit (rule 14: 3
+  cities under a governing civic, the capital alone for the Kuriotates; settlements never count),
+  and only beyond the Crown's six most populous cities (`CROWN_KEPT`: a grant gives the city's
+  production and most of its commerce away, which costs more than a large city's triple
+  maintenance), never the capital nor the best production city (`kept_city`): the least populous
+  first. The candidate of `grant_candidates` ranked by, in order: no holder made Furious by the
+  preview; a standing demand met (an Annoyed or Furious grantee's first); the least populous city;
+  a claimant, the one in the best state; a person without a post founding a House; a great person
+  founding one (only when no such person is at hand and no House has room, and not a great person
+  whose card the card logic keeps waiting); a House enlarged, the one with the fewest cities, only
+  up to its realm's size threshold (rule 14, `house_size_threshold`) and never to outnumber the
+  Crown (`house_has_room`); the fewest holders made Annoyed. A commander founds a House (and loses
+  the command) only for their claim or demand; a hero cannot found one (the rules refuse it). A
+  grant that would make a holder Furious waits. With nobody able to take a city, no previews are
+  computed.
+- **The levy** (`levy_city`): the main army's requisition (`armies::requisition_cities`) takes
+  the cities of its Houses that are Pleased or Friendly as candidates beside its own (the House's
+  garrison judges whether the city can spare its production); an order already under way stays
+  when the House turns Cautious, as an order in our own city does.
+- **Offers** (`choose_offer`): at war with a civilization, Secede offered to one of its Houses
+  that is Cautious or worse at the rules' price (`house_bribe_price`), in gold when that is at
+  most a third of our treasury (the gold the Khazad keep left out), else in gold per turn (the
+  price over ten turns) when that is at most a third of our gold rate; the cheapest first, one
+  offer a turn, the same House again only ten turns after our last offer to it (the House's noted
+  offers, `Offered N gold by the X`). Through `player_offer_house`, the deal path the human uses.
+  Asked, an AI House answers by the price alone (`diplomacy::judge_offer`).
+- **A House's own turn** (`persons::is_house`). A House cannot declare war or make peace (its
+  liege does), so its turn skips the diplomacy (`diplomacy::manage`: peace, vassalage, trades,
+  war planning), the offers to humans, the loans asked of others, the field army targets and the
+  amphibious target (`View::analyze`) and the campaign (`campaign::plan`); it keeps the city
+  management (governors, production, the empire's research, civics and sliders, culture), its
+  defence (the danger map from its enemies' units, the barbarians' included; the rival defenders;
+  the cities in peril) and its units' moves. Measured with a throwaway timer over seeds 1, 4 and 8
+  (300 turns, 7 civilizations, standard, no telemetry): a House's AI turn fell from 1.55 to 1.30
+  ms (seed 4) and from 2.48 to 1.90 ms (seed 8); seed 1 went from 1.93 to 2.23 ms with other
+  Houses in its game (the governors' part doubled). The parts skipped were 0.3 to 0.4 ms of a
+  House's turn; a House's whole AI turn is about 6% of a game's time, so the extra cost of a game
+  with many Houses is in the rules' per-player work, not in their AI.
 - **Civics.** A direct-rule civic (Despotism, God King) is not considered while a House stands
-  (`civic_barred`): the rules would make every House secede.
+  and the AI does not rule directly already (`civic_barred`): adopting one is the civil war.
 - **Armies.** A stack with nothing else to do (before gathering, `military::army`) stands in the
-  largest city of a Disloyal House where no army of ours stands, within 8 turns (a city where an
-  army stands does not secede). A Disloyal commander's army goes first of all to our city with the
-  largest garrison of other land units, within 10 turns (its sworn units there stay).
-- **Requisition** passes over a House's city that takes no order (`armies::requisition_cities`).
-- It never releases a House as a vassal.
+  largest city of a Furious House where no army of ours stands, within 8 turns (a city where an
+  army stands goes back to the liege when its House breaks away). A Furious commander's army goes
+  first of all to our city with the largest garrison of other land units, within 10 turns (its
+  sworn units there stay).
+- A demanded war adds a tenth to that civilization's score in the war planning
+  (`diplomacy::manage`), never a war of its own. It never frees a House; it offers no House
+  Become your vassal.
+
+Soak (8 AI games, seeds 1-8, 300 turns, 7 civilizations, standard size; against the rules' build
+whose AI granted any Crown city one a turn and took 20% from every House): no panic, no failed
+check. Per game: Houses founded 2-8 (base 5-12), vassal civilizations made Houses 0 (0-2), cities
+granted to Houses 3-15 (15-31), Houses at the end 2-6 (5-7), player slots at the end 11-20 (15-25),
+levies 0-6 (0), tribute 16-170 gold and 135-1116 research (207-858 and 1609-5276: fewer and smaller
+Houses, mostly Cautious at 20%, so paying 10% or nothing), offers 2 in 8 games, both accepted (2
+break-aways, both bought; base: 11 break-aways, all by the countdown), no countdown break-away.
+Time a turn 5% below the base's on the same seeds, the two run side by side (the games diverge,
+with fewer slots).
 
 ## Random events (`events.rs`)
 

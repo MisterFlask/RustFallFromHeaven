@@ -1459,8 +1459,7 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let has = |items: &[TradeData], kind: TradeableItem| items.iter().any(|t| t.item_type == kind);
     // ---- Houses (docs/PERSONS.md, "The second build", rule 9): a House answers offers to secede
     // or become `from`'s vassal by the rules' price alone (`house_bribe_price`; gold per turn
-    // counted ten times), and trades nothing else. (Added with the rules; the AI of the second
-    // build is still to be written.)
+    // counted ten times), and trades nothing else (persons.rs makes the AI's own offers).
     if let Some(h) = g.player_house(p) {
         if !we_give.iter().any(|t| ffh_core::persons::house_item(t.item_type).is_some()) {
             return no("a House trades only Secede and Become your vassal");

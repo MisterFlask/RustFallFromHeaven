@@ -12,7 +12,9 @@
 //!   that needs its production for its own defence, governed cities first (their production is
 //!   the governor's development), a directly ruled city only when what it would interrupt is worth
 //!   less ([`interruptible`]: not a wonder, a ritual, a settler or a worker, not the last turns of
-//!   a building); as many cities as the army lacks units, the soonest to deliver first. A city
+//!   a building), and the cities of its Houses while the House is Pleased or Friendly (the levy,
+//!   docs/PERSONS.md, rule 6: each order is a grievance); as many cities as the army lacks units,
+//!   the soonest to deliver first. A city
 //!   whose order is under way keeps it while it can still serve. At peace, no requisition; through
 //!   a turn without a main army (out of supply, at sea) while the war lasts, the orders under way
 //!   are kept where the city can still spare them and no new ones placed. The unit is [`requisition_unit`] (the AI's
@@ -134,7 +136,7 @@ fn requisition(g: &mut Game, p: PlayerId, main: Option<ArmyId>, war: bool) {
             requisition_cities(g, p, a)
         } else if war && main.is_none() {
             let busy = ordered_cities(g, a);
-            g.armies[a].requisition.iter().copied().filter(|&c| busy.contains(&c) && can_spare(g, p, c)).collect()
+            g.armies[a].requisition.iter().copied().filter(|&c| busy.contains(&c) && can_spare(g, c)).collect()
         } else {
             Vec::new()
         };
@@ -148,7 +150,7 @@ fn requisition(g: &mut Game, p: PlayerId, main: Option<ArmyId>, war: bool) {
                 .into_iter()
                 .filter(|c| !list.contains(c))
                 .map(|c| {
-                    let why = if !can_spare(g, p, c) {
+                    let why = if !can_spare(g, c) {
                         "needs its production"
                     } else if Some(a) != main {
                         "not the main army"
@@ -171,11 +173,12 @@ fn ordered_cities(g: &Game, a: ArmyId) -> Vec<CityId> {
     out
 }
 
-/// Whether city `c` of `p` can spare its production for an army: it holds against what threatens
-/// it (a defender at least, and the defense `production::emergency` would not switch to a
-/// defender for), it is not short of the defenders that keep revolt pressure off, and it is not
-/// training a defender for itself.
-fn can_spare(g: &Game, p: PlayerId, c: CityId) -> bool {
+/// Whether city `c` can spare its production for an army: it holds against what threatens its
+/// owner there (a defender at least, and the defense `production::emergency` would not switch to
+/// a defender for), it is not short of the defenders that keep revolt pressure off, and it is not
+/// training a defender for itself. (A levied city of a House: the House's garrison.)
+fn can_spare(g: &Game, c: CityId) -> bool {
+    let p = g.cities[c].owner;
     let plot = g.city_plot(c);
     let (defenders, defense) = crate::production::garrison(g, p, plot);
     let threat = crate::production::local_threat(g, p, plot, 2);
@@ -222,13 +225,15 @@ fn interruptible(g: &Game, c: CityId, a: ArmyId) -> bool {
 /// units, the soonest to deliver first (training plus march, within [`REQUISITION_HORIZON`]; the
 /// march guessed from the distance to rank them, then found along the land), governed cities
 /// before directly ruled ones, which serve only when what they would interrupt gives way
-/// ([`interruptible`]). Only cities on the army's landmass whose unit can reach it by land.
+/// ([`interruptible`]). Only cities on the army's landmass whose unit can reach it by land. The
+/// cities of its Houses that take a levy now are candidates beside its own
+/// (`persons::levy_cities`: a Pleased or Friendly House).
 pub fn requisition_cities(g: &Game, p: PlayerId, a: ArmyId) -> Vec<CityId> {
     let Some(at) = g.army_plot(a) else { return Vec::new() };
     let area = g.map.plots[at].area;
     let busy = ordered_cities(g, a);
     // (In the order the army picked them.)
-    let mut list: Vec<CityId> = g.armies[a].requisition.iter().copied().filter(|&c| busy.contains(&c) && can_spare(g, p, c)).collect();
+    let mut list: Vec<CityId> = g.armies[a].requisition.iter().copied().filter(|&c| busy.contains(&c) && can_spare(g, c)).collect();
     // The shortfall counts every order under way: those of the cities released here are withdrawn
     // with the new list, and their places go to others.
     let released = g.army_requisition_orders(a).iter().filter(|(c, _)| !list.contains(c)).count() as i32;
@@ -242,8 +247,10 @@ pub fn requisition_cities(g: &Game, p: PlayerId, a: ArmyId) -> Vec<CityId> {
     let siege = wants_siege(g, a);
     let (ax, ay) = g.map.xy(at);
     let mut cands: Vec<(bool, i32, CityId, UnitType, i32)> = Vec::new();
-    for &c in &g.players[p].cities {
-        if busy.contains(&c) || g.map.plots[g.city_plot(c)].area != area || !can_spare(g, p, c) {
+    // Its own cities, then its Houses' that take a levy now (Pleased or Friendly: persons.rs).
+    let levy = crate::persons::levy_cities(g, p);
+    for &c in g.players[p].cities.iter().chain(&levy) {
+        if busy.contains(&c) || g.map.plots[g.city_plot(c)].area != area || !can_spare(g, c) {
             continue;
         }
         let governed = g.city_is_governed(c);
@@ -530,7 +537,7 @@ mod tests {
         for _ in 0..3 {
             g.player_init_unit(p1, w, 9, 3, Some(UnitAIType::UNITAI_ATTACK), None);
         }
-        assert!(!can_spare(&g, p0, c[4]));
+        assert!(!can_spare(&g, c[4]));
         turn(&mut g, p0);
         assert!(!g.armies[a].requisition.contains(&c[4]), "the threatened city is released");
         assert!(g.cities[c[4]].order_queue.iter().all(|o| !o.requisition), "its order withdrawn");

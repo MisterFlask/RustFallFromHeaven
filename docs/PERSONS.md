@@ -202,8 +202,8 @@ it left open:
    worse. The keywords Devoted, Loyal, Restless and Disloyal are replaced by Friendly, Pleased,
    Cautious, Annoyed and Furious (new ids; the four could not map onto five). The define
    `PERSON_DISLOYAL_TURNS` keeps its name: the Furious countdown.
-6. *As built:* the AI does not levy yet (the AI build). An order already placed stays when its
-   House turns Annoyed; only new ones are passed over.
+6. *As built:* an order already placed stays when its House turns Annoyed; only new ones are
+   passed over. The AI levies only from a Pleased or Friendly House ("AI" below).
 7. *As built:* `house_break_away`; the break-away and the liege take `GRUDGE` (-4) toward each
    other; the news is marked for the alerts (`LogMark::Person`, untagged: the client knows it by
    its wording, `breaks away from the ... : war.`). The vassal rules bring the liege's other Houses
@@ -227,8 +227,11 @@ it left open:
 11. *As built:* `player_persons_civil_war` breaks every House away (each its own war), called by
     `player_set_civics` on a change from a governing civic into a direct-rule one; a vassal taken
     later under direct rule is a House and stays (note 2).
-12. *Not in this build:* the AI keeps the first build's grant choices mapped onto the scale
-    (Furious for Disloyal), and answers a House's offers by the price; the AI build does the rest.
+12. *As built (the AI build, 2026-11-18):* as the rule says, with rule 14 read into the grants:
+    a grant only while the Crown is over its limit, and a House enlarged only up to its realm's
+    size threshold; the tribute is chosen by the House's state at the default rate; a House's own
+    turn skips diplomacy, the war targets and the campaign. Details in "AI" below and
+    docs/AI.md, "Persons of Note".
 13. *Not in this build:* the client's screens were kept true with a minimum (the Court's House
     card shows the tribute, the levy and Free; the commands `house_tribute`, `tribute_default`,
     `free_house`; the House marks on every House's city; Secede and Become your vassal in the
@@ -761,18 +764,40 @@ under the record: `Earlier games: seceded twice; held Prespur to the end once.`
 A rules change is not gated on the AI (CLAUDE.md, "How AI changes are checked"): the AI does
 something reasonable with it.
 
-**Built** (2026-11-18, `crates/ffh-ai/src/persons.rs`; docs/AI.md, "Persons of Note"), for AI
-players only: heirs in the best state; one grant a turn of a Crown city (not the capital, not its
-best production city), ranked: no holder made Disloyal, a demand met (Restless holders first), a
-claimant in the best state, a person without a post founding a House (a great person founds only
-the first House), then the House with the fewest cities; a Works wonder ordered in its seat when
-the House takes the order and the AI values it; a demanded war weighs a tenth more in the war
-planning; no direct-rule civic while a House stands; an idle army stands in an unheld city of a
-Disloyal House; a Disloyal commander's army goes to the most garrisoned city; requisition passes
-over a House's city that takes no order; never a release. Not built: commands by the AI (the
-rules' default commander stands), the order quota's use beyond the requisition's skip, courting.
+**Built** (the second build's AI, 2026-11-18, `crates/ffh-ai/src/persons.rs`; docs/AI.md,
+"Persons of Note"), for AI players only:
+- *As a liege.* Tribute by each House's state at the default rate: 20% Pleased or Friendly, 10%
+  Cautious, 0% Annoyed or worse, set only when it changes. The levy: the main army's requisition
+  takes the cities of its Pleased or Friendly Houses beside its own. Grants, one a turn, only while
+  the Crown is over its limit (rule 14) and only beyond the Crown's six most populous cities, never
+  the capital nor the best production city, the least populous first: a demand met first, then a
+  claimant in the best state, then a person without a post founding a House, then a great person
+  founding one (only when nobody else can take the city and the card logic does not keep it), then
+  the House with the fewest cities, enlarged only up to its realm's size threshold and never past
+  the Crown; a grant that makes a holder Furious waits; a hero never founds a House.
+- *As a House.* It answers Secede and Become your vassal by the rules' price alone. Its own turn
+  skips what a vassal cannot do: diplomacy (peace, vassalage, trades, war planning), offers to
+  humans, loans, the field army targets, the amphibious target and the campaign; it keeps its city
+  management, its defence and its units' moves.
+- *As a buyer.* At war with a civilization, Secede offered to one of its Houses that is Cautious or
+  worse at its price, in gold up to a third of the treasury, else in gold per turn up to a third of
+  the gold rate; the cheapest first, one offer a turn, the same House again after ten turns.
+- *Elsewhere.* No direct-rule civic while a House stands (unless it rules directly already); an
+  idle army stands in an unheld city of a Furious House; a Furious commander's army goes to the
+  most garrisoned city; a demanded war weighs a tenth more in the war planning.
+- *Retired with their rules:* heirs, the order quota's skip, the seat's wonder order.
 
-The design's first version:
+**Not built:** Become your vassal offered by the AI; freeing a House; commands by the AI (the
+rules' default commander stands); threats.
+
+**Measured** (8 AI games, seeds 1-8, 300 turns, 7 civilizations, standard size; the base is the
+rules' build, whose AI granted any Crown city and took 20% from every House): no panic, no failed
+check. Per game: Houses founded 2-8 (base 5-12), Houses at the end 2-6 (5-7), cities granted to
+Houses 3-15 (15-31), levies 0-6 (0), tribute 16-170 gold and 135-1116 research (207-858 and
+1609-5276), 2 offers in 8 games, both accepted, and no break-away by the countdown (base: 11). Most
+Houses stand Cautious at 20% and pay 10% or nothing.
+
+The design's first version (before the builds; superseded where the above differs):
 - it grants each city gained beyond the Crown's size to the claimant in the best state, and
   founds a House for a person without a post before enlarging one;
 - each turn it works toward the standing demand that is cheapest for it among those of its
@@ -784,10 +809,10 @@ The design's first version:
 - it places orders in Houses' and vassals' cities up to the quota and no further;
 - it courts a rival's Restless holder when at war with that rival.
 
-To measure as each stage lands: secessions and leagues per AI game and what caused them, the
-share of demands met, the turns Houses spend Restless (telemetry `person`: `entered`, `posted`,
-`granted`, `demand`, `state`, `seceded`, `courted`). An AI that loses a House every game is an
-AI the human need not fight: if so, the AI's demands are tuned before the human's are.
+To measure as each stage lands: break-aways per AI game and what caused them, the share of
+demands met, the turns Houses spend Annoyed or worse (telemetry `person_*`: `entered`, `granted`,
+`house`, `levy`, `tribute`, `bribe`, `demand`, `state`, `seceded`). An AI that loses a House every
+game is an AI the human need not fight: if so, the AI's demands are tuned before the human's are.
 
 ## UI
 

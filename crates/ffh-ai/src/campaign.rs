@@ -358,7 +358,8 @@ pub fn plan(g: &Game, v: &mut View) {
         return;
     }
     v.campaign.built = true;
-    if v.barbarian || g.players[v.p].cities.is_empty() {
+    // (A House, docs/PERSONS.md, has no targets of its own: its liege makes its wars.)
+    if v.barbarian || g.players[v.p].cities.is_empty() || crate::persons::is_house(g, v.p) {
         return;
     }
     let p = v.p;
