@@ -21,6 +21,8 @@ import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
 import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
+import { personLine, commanderLine } from "./persons_lines.js";
+import { openGrant } from "./persons.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -464,6 +466,16 @@ export async function moveTo(x, y, { direct = false } = {}) {
   if (!S.sel) return;
   if (waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)) clearWaypoints();
   if (S.sel.x === x && S.sel.y === y) return;
+  // Persons of Note (docs/PERSONS.md, "UI", part D): an attack the army's commander withholds
+  // (Restless, Disloyal) is refused with the rules' reason.
+  if (unitsAt(x, y).some((u) => u.owner !== me()?.player)) {
+    const units = S.sel.units;
+    const p = hover && hover.x === x && hover.y === y && preview.path ? preview.path : await api.query("path", { units, x, y }).catch(() => null);
+    if (p?.attack_refusal) {
+      toast(p.attack_refusal, "error");
+      return;
+    }
+  }
   if (!direct && (await planAttack(x, y))) return;
   if (!S.sel) return;
   await run({ c: "move", units: S.sel.units, x, y, append: false });
@@ -1024,6 +1036,8 @@ function showTip() {
     }
     // Supply lines (docs/SUPPLY.md): an army selected, whether it would be supplied there.
     for (const siege of path.ends_sieges ?? []) lines.push(h(`div.tip-siege${siege.starving ? ".bad" : ".warn"}`, siege.text));
+    // Persons of Note: the army's commander withholds the attack.
+    if (path.attack_refusal) lines.push(h("div.tip-refusal.warn", path.attack_refusal));
     if (path.supply) {
       const s = path.supply;
       // At sea (docs/NAVAL.md 3.3): in range of a port.
@@ -1472,6 +1486,8 @@ function armyLine() {
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
     // Supply (docs/SUPPLY.md, section 5): its state in bare words.
     a.supply?.text ? h(`div.army-supply${a.supply.state === "supplied" && a.supply.line ? ".dim" : ".warn"}`, a.supply.text) : null,
+    // Persons of Note (docs/PERSONS.md, "UI", part D): its commander (the Armies screen changes it).
+    commanderLine(a, { unitName: (t) => dname("UnitType", t), compact: true }),
   );
 }
 
@@ -1756,6 +1772,27 @@ export function renderPanel() {
         { title: "The rules march it there; it takes no orders until it arrives." },
         h("b", marchLine(march)),
         march.from ? h("span.dim", ` · from ${march.from}`) : null,
+      ),
+    );
+  }
+  // Persons of Note (docs/PERSONS.md, "UI", part F): the person the lead unit is; a Disloyal
+  // head's unit takes no orders (the rules' reason); a great person's Found a House.
+  const leadFull = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
+  if (r?.held) status.push(h("div.held-line.warn", r.held));
+  const person = personLine(leadFull);
+  if (person) status.push(person);
+  const fh = leadFull?.found_house;
+  if (fh && S.sel.units.length === 1) {
+    const can = fh.city !== null && fh.city !== undefined;
+    status.push(
+      h(
+        "div.found-house-line",
+        h(
+          "button.small.found-house",
+          { disabled: !can, title: can ? `Open the grant list of ${fh.name}, this unit first. A person of note is drawn and founds a House; the unit is consumed.` : fh.why, onclick: () => openGrant(fh.city, { unit: lead.id }) },
+          "Found a House",
+        ),
+        h("span.dim", can ? ` ${fh.name}` : ` ${fh.why}`),
       ),
     );
   }

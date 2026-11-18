@@ -2,6 +2,7 @@
 //! `civics`, `religions` and `players` (the diplomacy overview of the players the human knows).
 
 use ffh_core::ids::*;
+use ffh_core::persons::PersonsAct;
 use ffh_data::*;
 
 use crate::json::Json;
@@ -181,19 +182,23 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
             (false, true) => Json::from("direct"),
             _ => Json::Null,
         };
-        j.set(
-            "proposed",
-            crate::jobj! {
-                "civics" => Json::Arr(set.iter().map(|&c| Json::opt_idx(c)).collect()),
-                "changed" => changed,
-                "valid" => valid,
-                "anarchy" => if changed { g.player_get_civic_anarchy_length(h, &set) } else { 0 },
-                "upkeep" => g.player_get_civic_upkeep(h, Some(&set), false),
-                // `governed`: every city will be handed to governors; `direct`: every city will be
-                // ruled directly; null: no change of who runs them.
-                "rule_change" => rule_change,
-            },
-        );
+        let mut proposed = crate::jobj! {
+            "civics" => Json::Arr(set.iter().map(|&c| Json::opt_idx(c)).collect()),
+            "changed" => changed,
+            "valid" => valid,
+            "anarchy" => if changed { g.player_get_civic_anarchy_length(h, &set) } else { 0 },
+            "upkeep" => g.player_get_civic_upkeep(h, Some(&set), false),
+            // `governed`: every city will be handed to governors; `direct`: every city will be
+            // ruled directly; null: no change of who runs them.
+            "rule_change" => rule_change,
+        };
+        // Persons of Note (docs/PERSONS.md, "UI", part I): what the set does to the cast
+        // (`persons`), and the warning of a direct-rule civic while Houses stand.
+        if changed {
+            let civics: Vec<Option<CivicType>> = set.iter().copied().collect();
+            crate::view::house_marks::civics_preview(v, &civics, &mut proposed);
+        }
+        j.set("proposed", proposed);
     }
     j
 }
@@ -289,11 +294,14 @@ pub fn religions(v: &Viewer) -> Json {
             "our_holy_city" => g.player_has_holy_city(h, r),
             "our_cities" => pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count(),
             "can_convert" => g.player_can_convert(h, Some(r)),
+            // Persons of Note (docs/PERSONS.md, "UI", part I): what converting does to the cast.
+            "persons" => if g.player_can_convert(h, Some(r)) { crate::view::house_marks::act_preview(v, &PersonsAct::Convert(Some(r))) } else { Json::Arr(Vec::new()) },
         }
     });
     crate::jobj! {
         "state_religion" => Json::opt_idx(g.player_get_state_religion(h)),
         "can_convert_none" => g.player_can_convert(h, None),
+        "persons_none" => if g.player_can_convert(h, None) { crate::view::house_marks::act_preview(v, &PersonsAct::Convert(None)) } else { Json::Arr(Vec::new()) },
         "conversion_timer" => pl.conversion_timer,
         "anarchy" => g.player_get_religion_anarchy_length(h),
         "religions" => Json::Arr(out.collect()),
@@ -332,7 +340,11 @@ pub fn players(v: &Viewer) -> Json {
             })
             .collect();
         j.set("deals", Json::Arr(deals));
-        j.set("can_declare_war", t != v.team && g.team_can_declare_war(v.team, t));
+        let can_war = t != v.team && g.team_can_declare_war(v.team, t);
+        j.set("can_declare_war", can_war);
+        // Persons of Note (docs/PERSONS.md, "UI", part I): what declaring war on it does to the
+        // cast (the war dialog's lines; empty when nothing).
+        j.set("war_preview", if can_war { crate::view::house_marks::act_preview(v, &PersonsAct::DeclareWar(t)) } else { Json::Arr(Vec::new()) });
         // A crusade's Host (docs/CRUSADE.md): an army, not a civilization to talk to.
         j.set("crusade_host", g.player_is_crusade_host(p));
     }

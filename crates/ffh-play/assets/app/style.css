@@ -1325,3 +1325,31 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .pstate.ps-restless { color: var(--caution); }
 .pstate.ps-disloyal { color: var(--warn); }
 .house-shield { display: inline-block; vertical-align: -2px; flex: none; }
+
+/* Persons of Note in the existing screens (docs/PERSONS.md, "UI", parts C to I; persons_lines.js):
+   the House tag of the lists, the holder line of the city screen, the commander's line, the
+   preview lines under an act, the civics screen's warning, the alerts. The state is always the
+   one mark above. */
+.house-tag { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.house-tag.crown { color: var(--dim); }
+button.link.house-tag { padding: 0; }
+.holder-line { margin: 4px 0 6px; line-height: 1.5; }
+.holder-line .holder-house-name { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; padding: 0; }
+.holder-outcome { margin-top: 2px; }
+.build-refusal { margin: 4px 0; }
+.commander-line { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0; }
+.commander-line .leader-portrait { flex: none; border-radius: 4px; }
+.commander-line .commander-text { min-width: 0; }
+.commander-line select.commander-change { max-width: 100%; }
+.army-line .commander-line { margin: 2px 0 0; }
+.requisition-house { display: flex; align-items: center; gap: 2px; margin: 0 0 2px 22px; font-size: 0.92em; }
+.person-line, .held-line, .found-house-line { margin: 3px 0; }
+.persons-preview { margin: 6px 0; padding: 4px 8px; border-left: 3px solid var(--caution); background: rgba(255, 182, 59, 0.07); }
+.persons-preview-title { font-weight: 700; }
+.persons-preview-line { line-height: 1.45; }
+.persons-warning { margin: 6px 0; padding: 6px 10px; border: 1px solid var(--warn); border-left-width: 4px; background: rgba(241, 91, 71, 0.12); color: var(--em); font-weight: 700; }
+tr.empire-city.refused { opacity: 0.75; cursor: not-allowed; }
+.toast.person-alert { display: flex; align-items: center; gap: 8px; border-left: 3px solid var(--accent); cursor: pointer; }
+.toast.person-alert.secession { border-left-color: var(--warn); }
+.toast.person-alert .leader-portrait { flex: none; border-radius: 4px; }
+.toast.person-alert .person-alert-mark { color: var(--accent); }

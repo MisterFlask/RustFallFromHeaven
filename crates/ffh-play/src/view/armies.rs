@@ -95,6 +95,9 @@ fn requisition_json(v: &Viewer, a: ArmyId, candidates: bool) -> Json {
                 "production_turns" => preview.map(|p| p.2),
                 "march_turns" => preview.and_then(|p| p.3),
                 "order" => orders.iter().find(|(oc, _)| *oc == c).map(|(_, o)| o.clone()),
+                // Persons of Note (docs/PERSONS.md, "UI", part D): a House's city, its quota
+                // (`text`: `House Arne: 1 of 3 orders left.` or the reason it gives none).
+                "house" => crate::view::house_marks::requisition_house(g, c),
             }
         });
         j.set("candidates", Json::Arr(list.collect()));
@@ -274,6 +277,8 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "upgrade_price" => upgrades.iter().map(|&(u, t)| g.unit_upgrade_price(u, t)).sum::<i32>(),
     };
     j.set("domain", "land");
+    // Persons of Note (docs/PERSONS.md, "UI", part D): its commander and the persons with it.
+    crate::view::house_marks::army_fields(v, a, &mut j);
     if screen {
         j.set("recruits", Json::Arr(marching.into_iter().map(|u| recruit_json(v, u)).collect()));
         // This game's governors (docs/GOVERNORS.md): the empire orders for the army in the human's

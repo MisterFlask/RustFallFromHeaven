@@ -160,6 +160,7 @@ impl MessageStore {
 /// "person"` and its `person` (a person of note's message, docs/PERSONS.md).
 pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
     let j = match e.tag {
+        LogTag::None if is_secession_text(&e.text) => j.with("kind", "secession"),
         LogTag::None => j,
         LogTag::Battle(id) => j.with("kind", "engagement").with("report", id),
         LogTag::Ritual(news) => j.with("kind", "ritual").with("verb", news.verb()),
@@ -173,6 +174,17 @@ pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
         LogMark::Retreat => j.with("mark", "retreat"),
         LogMark::Person => j.with("mark", "person"),
     }
+}
+
+/// Whether an untagged message is the news of a secession, a commander going over or a House
+/// released (docs/PERSONS.md, "Secession"), told to everyone who met the owner: the rules log them
+/// untagged (`Game::log.msg_to`), so the client's alerts know them by the rules' wording
+/// (`kind: "secession"`).
+pub fn is_secession_text(text: &str) -> bool {
+    text.starts_with("Civil war: ")
+        || ((text.starts_with("House ") || text.contains(", ")) && (text.contains(" secedes from the ") || text.contains(" secede from the ")))
+        || (text.contains(" goes over to ") && text.ends_with(" units."))
+        || (text.starts_with("House ") && text.contains(" is released from the ") && text.contains(" as a vassal with "))
 }
 
 /// The mark and the tag [`entry_fields`] wrote, read back (absent or unknown: the defaults).

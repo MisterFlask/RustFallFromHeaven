@@ -1174,7 +1174,12 @@ fn unit_of(g: &Game, h: PlayerId, u: UnitId) -> Result<(), CmdErr> {
         Some(unit) if unit.owner != h => Err(CmdErr::NotOwner),
         Some(unit) => match g.unit_march_refusal(u) {
             Some(why) => Err(cannot(format!("the {} is {why}: it takes no orders until it arrives", names::display(g.d, unit.unit_type)))),
-            None => Ok(()),
+            // Persons of Note (docs/PERSONS.md, "Secession"): a Disloyal head's unit takes no
+            // orders; the rules move it, the human's commands ask here.
+            None => match g.unit_house_refusal(u) {
+                Some(why) => Err(cannot(why)),
+                None => Ok(()),
+            },
         },
     }
 }

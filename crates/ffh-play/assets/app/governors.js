@@ -17,6 +17,8 @@ import { h, toast, errorText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
+import { stateMark, houseShield, openCourt, openGrant } from "./persons.js";
+import { houseTag } from "./persons_lines.js";
 
 // ---- the rules, in the help display (help.js; the Governors screen's (i) opens it) ------------
 
@@ -70,16 +72,50 @@ function modeLine(government, direct) {
   return `Government: ${dname("CivicType", government)}. Every city is ${direct ? "ruled directly" : "governed"}.`;
 }
 
+/** Persons of Note (docs/PERSONS.md, "UI", part C): who holds the city. `House Ashledger. Head:
+ *  Maereth Ashledger. Loyal ●. Trait here: Philosophical. Orders: 2 of 3 left.` (a tap on the
+ *  House opens the Court at its card), or `Held by the Crown. [Grant]` (where it cannot be
+ *  granted, the reason in place of the button). Null for a civilization without Houses. */
+export function holderLine(k, cityId) {
+  if (k.house) {
+    const hs = k.house;
+    const head = hs.head ? hs.head.name : "none (an heir is to be named)";
+    return h(
+      "div.holder-line.holder-house",
+      { "data-house": hs.id, "data-state": hs.state },
+      h("button.link.holder-house-name", { title: "Open the Court at this House", onclick: () => openCourt({ house: hs.id }) }, houseShield(hs.colour, 18), ` ${hs.label}`),
+      h("span", `. Head: ${head}. `),
+      stateMark(hs.state, hs.turns),
+      h("span", "."),
+      hs.trait !== null && hs.trait !== undefined ? h("span", ` Trait here: ${dname("TraitType", hs.trait)}.`) : null,
+      h(hs.order_refusal ? "div.warn.holder-orders" : "div.holder-orders", hs.orders_text),
+      hs.outcome ? h("div.warn.holder-outcome", hs.outcome) : null,
+    );
+  }
+  if (k.crown) {
+    return h(
+      "div.holder-line.holder-crown",
+      h("span", "Held by the Crown. "),
+      k.crown.grantable
+        ? h("button.small.holder-grant", { title: "Grant the city to a House or a person of note, for good", onclick: () => openGrant(cityId) }, "Grant")
+        : h("span.dim.holder-refusal", k.crown.refusal ?? ""),
+    );
+  }
+  return null;
+}
+
 /** The city screen's Governance section (null for another's city). `reload` re-reads the screen. */
 export function governanceView(c) {
   const k = c.governance;
   if (!k) return null;
+  const holder = holderLine(k, c.id);
   if (!k.governed) {
-    return h("div.section.governance", h("h4", "Governance"), h("p", `Ruled directly. Government: ${dname("CivicType", k.government)}.`));
+    return h("div.section.governance", h("h4", "Governance"), h("p", `Ruled directly. Government: ${dname("CivicType", k.government)}.`), holder);
   }
   return h(
     "div.section.governance",
     h("h4", "Governance"),
+    holder,
     h("p", `Role: ${roleLabel(k)}${k.suitability !== null && k.suitability !== undefined ? `, suitability ${k.suitability}%` : ""}.`),
   );
 }
@@ -146,6 +182,8 @@ function roleCard(c, r, act, go) {
       "div.role-card-head",
       h("button.link", { onclick: () => go(c.city), title: "Open the city" }, h("b", c.name)),
       c.capital ? h("span.dim", " (capital)") : null,
+      // Persons of Note (part E): the House holding the city, or the Crown.
+      "house" in c ? [" · ", houseTag(c.house, { open: true })] : null,
     ),
     h("div.role-line", h("span", "Role: "), h("b", dname("CityRoleType", c.role)), h("span.dim", ` (${c.role_overridden ? "overruled" : "proposed"}), suitability ${c.suitability}%`)),
     h("ul.role-keys", keys),
@@ -180,7 +218,7 @@ export async function openGovernors({ openCity } = {}) {
     };
     const mode = h("p.governors-mode", modeLine(r.government, r.direct_rule));
     if (r.direct_rule) {
-      const rows = r.cities.map((c) => h("tr", { "data-city": c.city }, h("td", h("button.link", { onclick: () => go(c.city), title: "Open the city" }, c.name), c.capital ? h("span.dim", " (capital)") : null), h("td.num", `${c.production}`)));
+      const rows = r.cities.map((c) => h("tr", { "data-city": c.city }, h("td", h("button.link", { onclick: () => go(c.city), title: "Open the city" }, c.name), c.capital ? h("span.dim", " (capital)") : null, "house" in c ? [" · ", houseTag(c.house, { open: true })] : null), h("td.num", `${c.production}`)));
       m.setBody(mode, h("table.governors", h("thead", h("tr", h("th", "City"), h("th", { title: "Production" }, "Prod."))), h("tbody", rows)));
       return;
     }
@@ -307,8 +345,10 @@ export async function orderEmpire({ order, data, army = null, beforeMap = null }
     toast(errorText(e), "error");
     return false;
   }
+  // Persons of Note (part C): a House's city that takes no order now, with the rules' reason.
+  const refused = r.refused ?? [];
   if (!r.cities.length) {
-    toast("No governed city can build it.", "error");
+    toast(refused.length ? refused.map((x) => `${x.name}: ${x.why}`).join(" ") : "No governed city can build it.", "error");
     return false;
   }
   const what = orderName(order, data);
@@ -329,6 +369,10 @@ export async function orderEmpire({ order, data, army = null, beforeMap = null }
         h("td", c.cost_percent !== undefined ? h(`span${tierSel(c.tier)}`, `Cost: ${c.cost_percent}%`) : null),
       ),
     );
+    // Disabled: the House takes no order there now (the rules' reason as the row's text).
+    for (const x of refused) {
+      rows.push(h("tr.empire-city.refused", { "data-city": x.city, "aria-disabled": "true" }, h("td", h("input", { type: "radio", name: "empire-city", disabled: true, "aria-label": x.name })), h("td", x.name), h("td.warn", { colspan: army !== null ? 5 : 4 }, x.why)));
+    }
     m.setBody(
       h(
         "table.governors.empire-cities",

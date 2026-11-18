@@ -20,6 +20,7 @@ pub mod armies;
 pub mod battles;
 pub mod cards;
 pub mod governors;
+pub mod house_marks;
 pub mod city;
 pub mod crusade;
 pub mod culture;
@@ -387,6 +388,12 @@ pub fn cities(v: &Viewer) -> Json {
                 });
             }
         }
+        // Persons of Note (docs/PERSONS.md, "UI", parts E and G): the human's own city's House
+        // (`{id, label, colour, state, turns}`; null: the Crown's), for its plate and the lists.
+        // Left out for others' cities and for a human without Houses.
+        if let Some(house) = house_marks::city_house_field(v, c) {
+            j.set("house", house);
+        }
         // Revolt pressure on a city the human sees (its banner's mark): its level
         // (`culture::REVOLT_*`) and the unhappiness it causes.
         if visible || own {
@@ -537,6 +544,9 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // World rituals (docs/CARDS.md, "World rituals"): every civilization's ritual as the human
         // may know it (the HUD's rituals element and its full list).
         "rituals" => rituals::rituals(v),
+        // Persons of Note (docs/PERSONS.md, "UI", part H): the human's cast in brief (`{id, name,
+        // leader}`), for the alerts' portraits.
+        "persons" => house_marks::cast_brief(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).
