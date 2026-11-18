@@ -1265,13 +1265,14 @@ taken off by hand: `pop_order` refuses it, and `do_task TASK_CLEAR_ORDERS` while
 "requisitioned by the 2nd Army: release the city from the army's requisition on the Armies
 screen"), `govern_role {city, role}`, `govern_priorities {roles}`, `empire_order {city, order,
 data, dest?}` (`dest` as `recruit_dest`'s, a unit only), `empire_order_remove {city, index}`,
-`grant_city {city, house | person | unit}` (Persons of Note, docs/PERSONS.md: grant city `city` for
-good to a House, to a person who founds one, or to a great person unit, consumed; the rules'
-`player_check_grant` and its reasons, "The capital is the Crown's.", "The city is a House's. A
-grant is for good.", "Government: direct rule. No city can be granted."), `name_heir {house,
-person}` ("The seat is not empty.", "The heir must hold no post."), `set_commander {army, person}`
-("Not with this army.", "A House's head does not command."), `release_house {house}` ("A Disloyal
-House cannot be released.", "The seat is empty.", "Game option: no vassal states.")
+`grant_city {city, house | person | unit}` (Persons of Note, docs/PERSONS.md, "The second build":
+give city `city` to a House, a vassal civilization of its own, or to a person who founds one, or to
+a great person unit, consumed; the rules' `player_check_grant` and its reasons, "The capital is
+the Crown's.", "A hero cannot head a House.", "Government: direct rule. No city can be
+granted."), `house_tribute {house, pct}` and `tribute_default {pct}` (a House's tribute, 0 to 50
+in steps of 10: "Tribute: 0 to 50 percent, in steps of 10.", "Not a House of yours."),
+`free_house {house}` (the House is freed: no longer a vassal), `set_commander {army, person}`
+("Not with this army.", "A House's head does not command.")
 (this game's governors, docs/GOVERNORS.md: the rules' own checks and reasons, "Role requires
 suitability 75%.", "Empire orders: units, wonders, palaces and projects only."; in a governed
 city `push_order` places an empire order and `pop_order` takes one off, the governor's and the

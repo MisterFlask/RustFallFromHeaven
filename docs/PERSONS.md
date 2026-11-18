@@ -1,6 +1,8 @@
 # Persons of Note
 
-This game's own rules, not FFH2's. **Stages 1 and 2 are built ("The first build"); the rest is a design.** A civilization has a small
+This game's own rules, not FFH2's. **"The second build" (Houses as vassal civilizations, rules 1
+to 14) is built in the rules; its AI and its screens are a minimum, to be reworked. "The first
+build" is what it replaced where they differ; the rest is a design.** A civilization has a small
 cast of named, authored characters (its heroes, and the minor leaders of docs/minor-leaders who
 join it as its best veterans and great people). Its cities are held by Houses, each presided over
 by one of them; its armies are commanded by them; its vassals are ruled by them. Each makes
@@ -10,16 +12,18 @@ decisions and which are proposals still to be confirmed.
 
 | Stage | What | Status |
 |---|---|---|
-| 0 | the vassal levy: an army requisitions from its owner's vassals' cities, by a quota | not built |
-| 1 | the cast, Houses and grants, heirs, commanders, demands and loyalty; the Court screen and the grant list; persons in the city, Armies and unit screens, on the map's plates, in the alerts and in the previews of civics, religion, war, peace and razing. The per-city named governors and their traits are gone | built (rules `crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`; client `crates/ffh-play/src/view/persons.rs`, `view/house_marks.rs`, `assets/app/persons*.js`; AI `crates/ffh-ai/src/persons.rs`) |
-| 2 | consequences: the order quota and withholding, a head's trait in their House's cities, half maintenance, secession, leagues, a commander's secession, the civil war of direct rule | built (`persons/secession.rs`, `persons/city.rs`) |
-| 3 | vassals: a House released as a vassal, a ruler's loyalty and demands, a capitulated leader as a person, claims abroad | release built (the head leaves the cast); the rest not built |
-| 4 | foreign persons: seeing them, courting them, agents abroad | not built |
+| 0 | the vassal levy: an army requisitions in its owner's Houses' cities | built (second build, rule 6; no quota: an Annoyed House takes none) |
+| 1 | the cast, commanders, demands and loyalty; the Court screen and the grant list; persons in the city, Armies and unit screens, on the map's plates, in the alerts and in the previews of civics, religion, war, peace and razing. The per-city named governors and their traits are gone | built (first build; rules `crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`; client `crates/ffh-play/src/view/persons.rs`, `view/house_marks.rs`, `assets/app/persons*.js`; AI `crates/ffh-ai/src/persons.rs`). Houses reworked by the second build |
+| 2 | consequences: a commander's withheld attack and secession, the civil war of direct rule | built; the first build's order quota, a head's trait in the cities, half maintenance, heirs and leagues retired by the second build |
+| 3 | vassals: every vassal a House, its leader a person of the liege's cast, tribute, breaking away, freeing | built (second build, `persons/vassals.rs`, `persons/secession.rs`); claims abroad not built |
+| 4 | foreign persons: side deals with a rival's Houses (Secede, Become your vassal); seeing persons, courting, agents abroad | side deals built (second build, rule 9, `persons/bribes.rs`); the rest not built |
 | 5 | the annals: what each character did in the player's earlier games | not built |
+| second build | Houses as vassal civilizations, rules 1 to 14 below | rules built (ffh-core, 2026-11-18); the AI (rule 12) and the screens (rule 13) a minimum: the AI and client builds rework them |
 
-"The first build" below is what is built, with each ambiguous case as it was settled; "UI" is the
-interface as built. The sections between them ("Rules") are the design the build came from and
-describe the stages not built yet.
+"The second build" below is the contract in force, with its "as built" notes; "The first build"
+is what was built before it, in force where the second build does not change it (the cast,
+commanders, demands, the civil war); "UI" is the interface as first built. The sections between
+them ("Rules") are the design the builds came from and describe the stages not built yet.
 
 ## The second build (2026-11-18): Houses as vassal civilizations
 
@@ -127,6 +131,95 @@ post, the Court screen, the previews, claims).
     plates for everyone, and its attitude mark for the liege. The diplomacy screen lists a House
     under its liege (`House Arne, vassal of the Bannor`) and offers Secede and Become your vassal
     in its trade table.
+14. **The Crown's limit and a House's size** (the owner's request of 2026-11-18: "the typical
+    state should be the player managing 2-5 Houses depending on empire size"). (a) Each governing
+    civic (not direct rule) sets how many cities the Crown holds at the normal rate: the civic key
+    `crown_cities` (`CivicInfo::crown_cities`, 0: no limit): City States 4, Aristocracy 5,
+    Theocracy 5, Republic 6. The Crown's cities in the player's city order with the capital first:
+    those beyond the limit pay triple city-count maintenance. Under a direct-rule civic, no limit.
+    The screens read the limit, the Crown's count, the cities over it and the gold a turn they
+    cost beyond the normal rate (`The Crown holds 7 cities, 2 over its limit of 5: +8.4 gold a
+    turn.`); a grant's maintenance line includes the saving of coming back under the limit.
+    (b) A House holding more than 3 cities has a standing loyalty part `Holds N cities: -(N-3)`,
+    computed like `State religion opposed`, shown in its parts and counted in previews. The
+    numbers are first guesses.
+
+### The second build as built (2026-11-18)
+
+Every rule above is built in the rules (`crates/ffh-core/src/persons/`: `vassals.rs` the records,
+tribute, levy and freeing; `houses.rs` grants; `secession.rs` breaking away; `bribes.rs` side deals;
+`crown.rs` rule 14; `read.rs` and `preview.rs` the screens' API; tests
+`crates/ffh-core/tests/persons.rs`). Where the build differs from the text above, or settles what
+it left open:
+
+1. *As built:* `House { id, owner, player, origin, name, head, standing, founded_turn, color,
+   tribute, last_gold, last_research, last_turn }`; `Player::house` on the House's player,
+   `Player::house_tribute` on the liege. `City::house` and `City::house_trait` are gone:
+   `city_house(c)` is the House of the city's owner (`Player::house`, no scan). A player's colour
+   is the client's (by player id; the setup has none): `player_color_player(p)` names the liege for
+   a House, for the client to draw. A vassal civilization's label is its own description when it
+   has one (`House Arne`, `Bannor of House Arne`), else its short description (`Hippus`).
+2. *As built:* the hook is `team_vassal_houses`, called at the end of `team_set_vassal` both ways;
+   the head is the person of the liege's cast with the vassal's leader (a founder), else a new one
+   (origin `Ruler`, entered without a message: the liege is told `Hippus is a House of ours: it
+   capitulated.`). `HouseOrigin`: `Founded`, `Capitulated`, `Vassal` (a vassal deal, a card's
+   birth, a colony; the births clear the starting modifier). A human vassal gets no House (out of
+   scope). The record also ends when the House's player dies. A player that becomes a House loses
+   its own cast; its own Houses are freed by the vassal rules (a vassal holds no vassals).
+   **No vassal under a direct-rule civic** (`team_vassal_refusal`): "every vassal is a House" with
+   "no House under direct rule" means a direct-rule master holds no vassal: the vassal and
+   capitulation trades are refused to one, a card's vassal birth takes open borders and a defensive
+   pact instead (as under No Vassal States), a colony cannot be split off, the Oath of Fealty has no
+   target. Not checked: a permanent alliance merging a vassal into a direct-rule team (the master's
+   next civics sync breaks it away).
+3. *As built:* a founding is `world::birth` with the city released (`Birth::keep_armies`: the
+   owner's units in an army or marching stay its own), the founder's unit removed first; the
+   vassal rules make the record, which the founding names (`House <name>`, origin `Founded`, no
+   starting modifier). Grants are also refused to a vassal and under No Vassal States. Refusal for
+   a hero: `A hero cannot head a House.`
+4. *As built:* `player_set_house_tribute(p, h, pct)`, `player_set_house_tribute_default(p, pct)`
+   (refusals `Not a House of yours.`, `Tribute: 0 to 50 percent, in steps of 10.`);
+   `house_tribute_at(h, pct)` is what it would pay this turn (`TributeView::at` lists 0 to 50 with
+   the loyalty and state at each); `house_commerce(h)` the gold and research commerce it is taken
+   from. Paid in `player_persons_turn` of the liege, after the break-aways.
+5. *As built:* `LoyaltyState` keeps its name, with the five variants; `withholds()` is Annoyed or
+   worse. The keywords Devoted, Loyal, Restless and Disloyal are replaced by Friendly, Pleased,
+   Cautious, Annoyed and Furious (new ids; the four could not map onto five). The define
+   `PERSON_DISLOYAL_TURNS` keeps its name: the Furious countdown.
+6. *As built:* the AI does not levy yet (the AI build). An order already placed stays when its
+   House turns Annoyed; only new ones are passed over.
+7. *As built:* `house_break_away`; the break-away and the liege take `GRUDGE` (-4) toward each
+   other; the news is marked for the alerts (`LogMark::Person`, untagged: the client knows it by
+   its wording, `breaks away from the ... : war.`). The vassal rules bring the liege's other Houses
+   into the war (the House declares war on them too). A House whose every city an army holds ends
+   (its player dies without a city).
+8. *As built:* `player_check_free_house`, `player_free_house`.
+9. *As built:* the trade items `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL` (`tools/gen_enums.py`
+   `EXTRA_MEMBERS`); `player_can_trade_item` lets a House give only them and take only gold and
+   gold per turn (without the gold-trading tech), from a civilization that met it and is not its
+   liege; a House can be contacted at war (`player_can_contact`). An offer made at war makes peace
+   between the buyer and the House first (a deal at war makes peace), then the House breaks away.
+   `player_offer_house(buyer, house_player, give, get) -> bool` is the one way to propose it (the
+   client's `propose_deal` to a House and the AI use it): the House's controller answers
+   (`consider_offer`; ffh-ai by `house_bribe_price`), an offer refused is noted there, an accepted
+   one where the deal is implemented. The AI liege's memory is an attitude modifier
+   (`ai_attitude_extra -4`, the AI's relation -2), which does not fade (FfH's modifiers do not);
+   `Offered N gold by the X` stands in the House's parts for 20 turns, amount 0.
+10. *As built:* all retired, with `house_orders`, `PERSON_HOUSE_MAINTENANCE_PERCENT` and
+    `PERSON_LEVY_TURNS`. A first build's `DemandKind::Wonder` stays readable in saves; nothing
+    makes one.
+11. *As built:* `player_persons_civil_war` breaks every House away (each its own war).
+12. *Not in this build:* the AI keeps the first build's grant choices mapped onto the scale
+    (Furious for Disloyal), and answers a House's offers by the price; the AI build does the rest.
+13. *Not in this build:* the client's screens were kept true with a minimum (the Court's House
+    card shows the tribute, the levy and Free; the commands `house_tribute`, `tribute_default`,
+    `free_house`; the House marks on every House's city; Secede and Become your vassal in the
+    trade table); the client build lays them out.
+14. *As built:* the Crown's cities leave out settlements and outposts (they pay no city-count
+    maintenance); there is no limit wherever no city can be granted (direct rule, a vassal, No
+    Vassal States, no persons): a grant is the remedy. `player_crown_limit`,
+    `player_crown_cities`, `player_crown_over`, `player_crown_over_cost_times100` (the gold a turn
+    beyond the normal rate, inflation included), on `CourtView` too; `house_size_part(h)`.
 
 ## The first build (2026-11-18)
 

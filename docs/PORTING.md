@@ -317,6 +317,38 @@ flag.
   House can be released as its owner's vassal. Why: an empire shared with holders who withhold
   and can leave with what they hold (the owner's concept). A Works demand never names a palace.
   Save format 48.
+- **Persons of Note, the second build: Houses as vassal civilizations** (docs/PERSONS.md, "The
+  second build", the owner's decisions of 2026-11-18; replaces the quota, the head's trait, the
+  half maintenance, heirs, leagues and release above). Vassals change in FFH2's own terms:
+  - *Every vassal is a House*: a player of its own, the vassal of its liege, headed by a person
+    of the liege's cast (the leader of a capitulated civilization included), played by the
+    game's AI. A grant of a Crown city founds one (a new player born of the liege, led by the
+    veteran or great person granted it, who leaves the map) or gives the city to the House's
+    player, garrison included (the liege's units in an army or marching stay).
+  - *Tribute*: a House pays its liege 0 to 50% (default 20%) of its gold commerce (from its
+    treasury) and of its research commerce (to the liege's current research); FFH2's vassals pay
+    nothing. The higher the tribute, the lower its loyalty (`1 - N/10`).
+  - *The levy*: an army requisitions in its owner's Houses' cities; the unit trained is the
+    liege's. Each order is a grievance (`Levied: -1 (20 turns)`); an Annoyed House takes none.
+  - *Breaking away is war*: a Furious House's countdown, the civil war of direct rule or an
+    accepted offer to secede ends its vassalage with a declaration of war on the liege; its
+    cities where an army of the liege stands go back to the liege first. Civ4's own vassal
+    revolt rule (`canVassalRevolt`: free when master or vassal lost land) no longer frees a House,
+    and no player cancels a House's vassal deal; its liege can free it (at peace).
+  - *No vassal under a direct-rule civic* (Despotism, God King): the vassal and capitulation
+    trades are refused to a master under one, a card's vassal birth takes open borders and a
+    defensive pact instead, a colony cannot be split off, the Oath of Fealty targets no one.
+  - *Side deals*: a House trades only Secede and Become your vassal (new trade items), for gold
+    and gold per turn, with a civilization that has met it and is not its liege, at war too; it
+    accepts when Cautious or worse and the offer covers `(loyalty + 6) x 25 x its cities` gold.
+    The AI liege remembers the buyer (an attitude modifier).
+  - *The attitude scale*: a person's or a House's loyalty reads Friendly, Pleased, Cautious,
+    Annoyed or Furious; a House's AI attitude toward its liege is its loyalty's.
+  - *The Crown's limit* (rule 14): each governing civic sets how many cities the Crown holds at
+    the normal city-count maintenance (City States 4, Aristocracy 5, Theocracy 5, Republic 6);
+    each further one pays triple. A House of more than 3 cities: `Holds N cities: -(N - 3)`.
+  Why: a large empire is shared with holders who have a view of how it is ruled, in the game's
+  own idioms (vassalage, attitude, the diplomacy screen, requisition, war). Save format 49.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
   every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
   Line, Charge, Volley, Vanguard; four tactics). A side's auto formation in every battle, attacking or

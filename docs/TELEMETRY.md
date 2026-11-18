@@ -61,13 +61,16 @@ described in docs/AUTOPSY.md.
 | `culture_revolt` | `unrest`, `revolt`, `near_flip`, `calm`, `flip` (a city's revolt level changed by the caster's pressure; counted for the caster) | – |
 | `march` | `sent`, `arrived`, `diverted`, `stopped`, `killed` (marching recruits: docs/ARMIES.md; `stopped`: no city it could reach, an ordinary unit again; `killed`: died on the way) | `sent`: the estimated march in turns; the others: turns since it set out |
 | `requisition` | `placed`, `withdrawn` (an army's requisition orders: docs/ARMIES.md) | – |
-| `person_entered` | `hero`, `veteran`, `great_person` (a person of note entered the cast: docs/PERSONS.md) | – |
-| `person_posted` | `commander`, `head`, `heir` (a post taken) | – |
+| `person_entered` | `hero`, `veteran`, `great_person`, `ruler` (a person of note entered the cast: docs/PERSONS.md; `ruler`: a vassal civilization's leader, its House's head) | – |
+| `person_posted` | `commander` (a post taken) | – |
 | `person_granted` | `house` (a city granted to a House), `founded` (to a person or a great person, who founds one) | – |
 | `person_demand` | `issued`, `met`, `refused` | – |
-| `person_state` | `Devoted`, `Loyal`, `Restless`, `Disloyal` (a holder's change of state), `left` (a person without a post left the cast, Disloyal) | – |
-| `person_house` | `ended` (a House without cities) | – |
-| `person_seceded` | `house`, `league`, `civil_war` (a civilization born of Houses), `held` (every city held: the Houses ended), `no_leader`, `commander_league`, `commander_city`, `commander_resigned`, `released` (a House released as a vassal) | – |
+| `person_state` | `Friendly`, `Pleased`, `Cautious`, `Annoyed`, `Furious` (a holder's change of state), `left` (a person without a post left the cast, Furious) | – |
+| `person_house` | `vassal`, `capitulated` (a vassal became a House: a vassal deal, a card's birth, a colony or a founding; a capitulation), `ended` (a House record ended: its vassalage or its player ended), `freed` (its liege freed it); counted for the liege | – |
+| `person_seceded` | `countdown`, `civil_war`, `bribe`, `bribe_vassal` (a House broke away: a Furious countdown, direct rule, an offer to Secede or to Become your vassal), `held` (every city of it held: it ended), `commander_house`, `commander_city`, `commander_resigned` (a commander's secession) | – |
+| `person_levy` | `placed` (a levy order in a House's city, counted for the liege) | – |
+| `person_bribe` | `offered` (an offer to one of the player's Houses, accepted or not, counted for the liege) | – |
+| `person_tribute` | `gold`, `research` (a House's tribute, counted for the liege) | the gold and the research paid |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -165,7 +168,8 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `march` (a marching recruit: `how` sent / arrived / diverted / stopped / killed, `to_army`,
   `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
 - `person` (Persons of Note, docs/PERSONS.md: `how` entered / posted / granted / demand / state /
-  house / seceded and `what`, as the counts above);
+  house / seceded / levy / bribe and `what`, as the counts above) and `tribute` (a House's tribute
+  paid: `gold`, `research`; the event's player is the liege);
 - `intent` and `decision`;
 - `prediction`: an AI estimate resolved by the rules (the prediction ledger, docs/CALIBRATION.md).
 
