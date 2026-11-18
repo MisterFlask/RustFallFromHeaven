@@ -81,7 +81,9 @@ impl Game {
             return None;
         }
         let cities = self.house_cities(h).len() as i32;
-        Some((self.house_loyalty(h) + 6).max(0) * BRIBE_PER_CITY * cities)
+        // At least one step even when Furious: a rival cannot take a House for nothing during the
+        // countdown that is its liege's window to answer (docs/PERSONS.md, rule 9).
+        Some((self.house_loyalty(h) + 6).max(1) * BRIBE_PER_CITY * cities)
     }
 
     /// Why House `h` does not give `kind` to `buyer` now (`None`: it would, at its price): the

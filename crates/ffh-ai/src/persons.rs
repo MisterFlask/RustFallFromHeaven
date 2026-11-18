@@ -9,15 +9,13 @@
 //!   worse. Judged at the default rate, so the choice does not feed on itself (a House that the
 //!   lower rate lifts from Cautious to Pleased keeps the lower rate). Set only when it changes.
 //! - **Grants** ([`choose_grant`]): one a turn while the Crown is over its limit (rule 14: 3 cities,
-//!   the capital alone for the Kuriotates; settlements never count), and only beyond its
-//!   [`CROWN_KEPT`] most populous cities (a grant gives the city's production and most of its
-//!   commerce away; the limit's triple maintenance costs less than a large city), never the capital
-//!   nor the best production city ([`kept_city`]): the least populous first. The candidate by, in
+//!   the capital alone for the Kuriotates; settlements never count), the least populous first,
+//!   never the capital nor the best production city ([`kept_city`]). The candidate by, in
 //!   order: no holder made Furious; a standing demand met (an Annoyed or Furious grantee's first);
 //!   the least populous city; a claimant, the one in the best state; a person without a post
 //!   founding a House, then a great person founding one (only when no such person is at hand and
 //!   no House has room, and not one the card logic keeps waiting: [`great_person_spare`]), then a
-//!   House enlarged (only to its realm's size threshold, and never to outnumber the Crown:
+//!   House enlarged (only to its realm's size threshold:
 //!   [`house_has_room`]), the one with the fewest cities; the fewest holders made Annoyed. A
 //!   commander founds a House (and loses the command) only for their claim or demand; a hero never
 //!   founds one (the rules refuse it). A grant that would make some holder Furious waits.
@@ -46,9 +44,6 @@ use ffh_data::*;
 
 use crate::view::View;
 
-/// The Crown's most populous cities the AI never grants, whatever its limit (docs/PERSONS.md,
-/// rule 12).
-pub const CROWN_KEPT: usize = 6;
 
 /// The tribute of a House that would be Cautious at the default rate (percent).
 pub const TRIBUTE_CAUTIOUS: i32 = 10;
@@ -155,26 +150,22 @@ pub(crate) fn kept_city(g: &Game, p: PlayerId) -> Option<CityId> {
 }
 
 /// The Crown cities `p` may grant this turn, the least populous first (ties: the older): none
-/// while the Crown is within its limit (`player_crown_over`); else its cities beyond the
-/// [`CROWN_KEPT`] most populous, but the capital and [`kept_city`].
+/// while the Crown is within its limit (`player_crown_over`); else every Crown city but the
+/// capital and [`kept_city`] (one grant a turn, so the Crown comes down to its limit and stops).
 pub fn grantable_cities(g: &Game, p: PlayerId) -> Vec<CityId> {
     if g.player_crown_over(p).is_empty() {
         return Vec::new();
     }
-    let mut crown = g.player_crown_cities(p);
-    crown.sort_by_key(|&c| (Reverse(g.cities[c].population), c));
     let kept = kept_city(g, p);
-    let mut out: Vec<CityId> = crown.into_iter().skip(CROWN_KEPT).filter(|&c| Some(c) != kept && !g.city_is_capital(c)).collect();
+    let mut out: Vec<CityId> = g.player_crown_cities(p).into_iter().filter(|&c| Some(c) != kept && !g.city_is_capital(c)).collect();
     out.sort_by_key(|&c| (g.cities[c].population, c));
     out
 }
 
-/// Whether House `h` may take one more Crown city (`crown`: the Crown's cities before the grant):
-/// it stays within its realm's size threshold (rule 14) and does not outnumber the Crown after
-/// the grant (a break-away takes every city of it).
-pub fn house_has_room(g: &Game, h: HouseId, crown: usize) -> bool {
-    let after = g.house_great_cities(h) + 1;
-    after <= g.house_size_threshold(h) && after as usize <= crown.saturating_sub(1)
+/// Whether House `h` may take one more Crown city: it stays within its realm's size threshold
+/// (rule 14: the threshold grows with the realm, so a large realm's Houses are larger).
+pub fn house_has_room(g: &Game, h: HouseId) -> bool {
+    g.house_great_cities(h) + 1 <= g.house_size_threshold(h)
 }
 
 /// The state of the grantee of `to` when the grant of city `c` meets their standing demand.
@@ -205,7 +196,6 @@ fn great_person_spare(g: &Game, p: PlayerId, u: UnitId) -> bool {
 /// What [`choose_grant`] weighs beyond the candidate: the Crown's cities, whether a person
 /// without a post can found a House, whether some House has room.
 struct GrantContext {
-    crown: usize,
     founder: bool,
     room: bool,
 }
@@ -218,7 +208,7 @@ fn grant_key(g: &Game, p: PlayerId, c: CityId, k: &GrantCandidate, cx: &GrantCon
     }
     let met = meets_demand(g, c, k.to);
     let kind = match k.to {
-        GrantTo::House(h) if !house_has_room(g, h, cx.crown) => return None,
+        GrantTo::House(h) if !house_has_room(g, h) => return None,
         GrantTo::House(_) => 1,
         GrantTo::Person(x) => match g.persons[x].post {
             Post::None => 3,
@@ -264,15 +254,14 @@ pub fn choose_grant(g: &Game, p: PlayerId) -> Option<(CityId, GrantTo)> {
     if cities.is_empty() {
         return None;
     }
-    let crown = g.player_crown_cities(p).len();
     let with_leader = |post: fn(&Post) -> bool| pl.persons.iter().any(|&x| g.persons.get(x).is_some_and(|person| post(&person.post) && person.leader.is_some()));
     let founder = with_leader(|post| *post == Post::None);
-    let room = houses_of(g, p).into_iter().any(|h| house_has_room(g, h, crown));
+    let room = houses_of(g, p).into_iter().any(|h| house_has_room(g, h));
     // Nobody could take a city (the previews below are the cost of this turn).
     if !founder && !room && !has_great && !with_leader(|post| matches!(post, Post::Commander(_))) {
         return None;
     }
-    let cx = GrantContext { crown, founder, room };
+    let cx = GrantContext { founder, room };
     let mut best: Option<((bool, i32, Reverse<i32>, bool, i32, i32, i32, i32), CityId, GrantTo)> = None;
     for c in cities {
         for k in g.grant_candidates(p, c) {
@@ -591,25 +580,25 @@ mod tests {
         assert!(c != kept && c != cities[0]);
     }
 
-    /// No grant within the Crown's six most populous cities, though the Crown is over its limit of
-    /// 3; beyond them, the least populous first.
+    /// Over its limit of 3 the Crown grants its cities, the least populous first, never the capital
+    /// nor the best production city; at its limit it grants nothing.
     #[test]
-    fn no_grant_within_the_six_most_populous_crown_cities() {
+    fn the_crown_grants_what_is_over_its_limit() {
+        let (g3, _) = world(&SPOTS[..3]);
+        assert!(g3.player_crown_over(P0).is_empty(), "at its limit");
+        assert!(grantable_cities(&g3, P0).is_empty());
         let (mut g, c) = world(&SPOTS[..6]);
-        let y = person(&mut g, 13, 6);
+        pops(&mut g, &c, &[6, 5, 4, 3, 2, 1]);
         assert_eq!(g.player_crown_over(P0).len(), 3, "over its limit");
-        assert!(grantable_cities(&g, P0).is_empty());
-        assert_eq!(choose_grant(&g, P0), None);
-        // Eight cities: the two least populous may go, the least populous first.
-        let more: Vec<CityId> = SPOTS[6..8].iter().map(|&(x, y)| g.player_init_city(P0, x, y, true, true)).collect();
-        let all: Vec<CityId> = c.iter().chain(&more).copied().collect();
-        pops(&mut g, &all, &[6, 5, 5, 4, 4, 3, 1, 2]);
-        assert_eq!(grantable_cities(&g, P0), vec![all[6], all[7]]);
-        assert_eq!(choose_grant(&g, P0), Some((all[6], GrantTo::Person(y))));
+        let kept = kept_city(&g, P0);
+        let list = grantable_cities(&g, P0);
+        assert!(!list.is_empty() && !list.contains(&c[0]) && kept.is_none_or(|k| !list.contains(&k)), "{list:?}");
+        let pop: Vec<i32> = list.iter().map(|&k| g.cities[k].population).collect();
+        assert!(pop.windows(2).all(|w| w[0] <= w[1]), "least populous first: {pop:?}");
+        let y = person(&mut g, 13, 6);
+        assert_eq!(choose_grant(&g, P0), Some((list[0], GrantTo::Person(y))));
         super::turn(&mut g, P0);
         assert!(g.players[P0].houses.len() == 1 && !g.persons[y].unit.is_some_and(|u| g.units.contains(u)), "founded: the veteran left the map");
-        // Seven Crown cities now: only the seventh.
-        assert_eq!(grantable_cities(&g, P0), vec![all[7]]);
     }
 
     /// A hero never founds a House: with only a hero, nothing is granted; a veteran founds.
@@ -620,7 +609,7 @@ mod tests {
         assert!(g.persons[x].leader.is_none());
         assert_eq!(choose_grant(&g, P0), None);
         let y = person(&mut g, 13, 5);
-        assert_eq!(choose_grant(&g, P0), Some((c[6], GrantTo::Person(y))));
+        assert!(matches!(choose_grant(&g, P0), Some((k, GrantTo::Person(z))) if z == y && k != c[0]));
     }
 
     /// A House at its size threshold (3 in a realm under 16 cities) is not enlarged; a new House is
@@ -636,11 +625,11 @@ mod tests {
         assert_eq!(g.house_size_threshold(h), 3);
         let crown = g.player_crown_cities(P0).len();
         assert_eq!(crown, 7);
-        assert!(!house_has_room(&g, h, crown));
-        assert_eq!(grantable_cities(&g, P0), vec![c[6]]);
+        assert!(!house_has_room(&g, h));
+        assert!(!grantable_cities(&g, P0).is_empty());
         assert_eq!(choose_grant(&g, P0), None, "the only House is full");
         let y = person(&mut g, 13, 6);
-        assert_eq!(choose_grant(&g, P0), Some((c[6], GrantTo::Person(y))));
+        assert!(matches!(choose_grant(&g, P0), Some((_, GrantTo::Person(z))) if z == y));
     }
 
     /// A grant that meets a standing demand comes first: the House whose head demands city C gets
@@ -651,7 +640,7 @@ mod tests {
         let (x, h) = house(&mut g, c[9]);
         pops(&mut g, &c[..9], &[5, 5, 5, 5, 5, 5, 3, 2, 1]);
         let _y = person(&mut g, 13, 6);
-        assert_eq!(grantable_cities(&g, P0), vec![c[8], c[7], c[6]]);
+        assert_eq!(&grantable_cities(&g, P0)[..3], &[c[8], c[7], c[6]]);
         let plot = g.city_plot(c[6]);
         demand(&mut g, x, DemandKind::GrantCity(plot));
         assert_eq!(choose_grant(&g, P0), Some((c[6], GrantTo::House(h))));
@@ -662,7 +651,7 @@ mod tests {
 
     /// A grant whose preview turns a holder Furious is not made when another is not: the person
     /// without a post demands one, the House claims the two Crown cities near its seat and the snub
-    /// (-1) would make it Furious, so the person founds with the unclaimed one.
+    /// (-1) of the person founding there would make it Furious, so that grant is not the one made.
     #[test]
     fn a_snub_that_makes_a_holder_furious_is_avoided() {
         let (mut g, c) = world(&SPOTS);
@@ -671,12 +660,17 @@ mod tests {
         assert_eq!(g.house_state(h), LoyaltyState::Annoyed);
         let y = person(&mut g, 13, 6);
         demand(&mut g, y, DemandKind::Post);
-        assert_eq!(grantable_cities(&g, P0), vec![c[6], c[7], c[8]]);
+        assert!(grantable_cities(&g, P0).iter().any(|k| c[7..9].contains(k)));
         for &k in &c[7..9] {
             let cand = g.grant_candidates(P0, k).into_iter().find(|cand| cand.to == GrantTo::Person(y)).unwrap();
             assert!(cand.lines.iter().any(|l| l.state_after == Some(LoyaltyState::Furious)), "{:?}", cand.lines);
         }
-        assert_eq!(choose_grant(&g, P0), Some((c[6], GrantTo::Person(y))));
+        // The grant chosen makes no holder Furious (with every Crown city over the limit to choose
+        // from, it may well meet the Annoyed House's own demand first).
+        let (k, to) = choose_grant(&g, P0).expect("a grant");
+        let cand = g.grant_candidates(P0, k).into_iter().find(|cand| cand.to == to).expect("a candidate");
+        assert!(cand.lines.iter().all(|l| l.state_after != Some(LoyaltyState::Furious)), "{k:?} {to:?}: {:?}", cand.lines);
+        assert!(!(to == GrantTo::Person(y) && c[7..9].contains(&k)), "not y on a claimed city");
     }
 
     // ---- Offers ----

@@ -703,9 +703,9 @@ fn a_houses_price_and_its_refusals() {
     assert_eq!(g.house_bribe_price(h), Some(5 * 25));
     assert_eq!(g.house_bribe_refusal(h, P1, BribeKind::Secede), None);
     assert!(g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_SECEDE), false));
-    // Furious: 0.
+    // Furious: one step at least (never free: the countdown is the liege's window).
     set_house_loyalty(&mut g, h, -7);
-    assert_eq!(g.house_bribe_price(h), Some(0));
+    assert_eq!(g.house_bribe_price(h), Some(25));
     // A House trades nothing else; only gold comes to it, and not from its liege.
     assert!(!g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_MAPS), false));
     assert!(!g.player_can_trade_item(P1, hp, &item(TradeableItem::TRADE_OPEN_BORDERS), false));

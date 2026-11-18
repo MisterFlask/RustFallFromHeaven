@@ -102,7 +102,8 @@ post, the Court screen, the previews, claims).
    this: it takes gold and gold per turn, and gives **Secede** (it breaks away at once, rule 7)
    or **Become your vassal** (it breaks away and becomes the buyer's House; by the vassal rules
    the buyer then shares its war with the old liege). It accepts when its loyalty is Cautious or
-   worse and the offer covers its price: `(loyalty + 6) x 25 x its cities` gold (0 when Furious),
+   worse and the offer covers its price: `(loyalty + 6) x 25 x its cities` gold (one step, `25 x its cities`, at least: a Furious House
+   is never free, its countdown being its liege's window to answer),
    gold per turn counted ten times; refusals in the screen's words (`House Arne is Pleased with
    the Bannor.`). The liege learns of a bribe: an AI liege's attitude memory toward the buyer
    (-2, as a broken deal); the House's loyalty list shows `Offered 300 gold by the Hippus` and a
@@ -115,9 +116,9 @@ post, the Court screen, the previews, claims).
 11. **Direct rule** stays as built: no Houses and no grants under it; adopting it is every House
     breaking away (rule 7), the counter on the map holding.
 12. **AI.** As a liege: tribute 20% by default, 10% for a Cautious House, 0% for an Annoyed one;
-    levy only from Pleased or Friendly Houses; grants as built (the capital and the best
-    production city kept, no House outgrowing the Crown) and only beyond the Crown's six most
-    populous cities (a grant now gives the city's production and most of its commerce away). As
+    levy only from Pleased or Friendly Houses; grants of the Crown's cities over its limit (rule
+    14), the least populous first, the capital and the best production city kept, a House
+    enlarged only up to its size threshold (rule 14). As
     a House: its own turn, trimmed for cost (no war planning, no diplomacy of its own beyond
     answering offers). As a buyer: at war with a civilization, it offers Secede to that
     civilization's Houses that are Cautious or worse, gold up to their price when it can pay,
@@ -769,12 +770,11 @@ something reasonable with it.
 - *As a liege.* Tribute by each House's state at the default rate: 20% Pleased or Friendly, 10%
   Cautious, 0% Annoyed or worse, set only when it changes. The levy: the main army's requisition
   takes the cities of its Pleased or Friendly Houses beside its own. Grants, one a turn, only while
-  the Crown is over its limit (rule 14) and only beyond the Crown's six most populous cities, never
-  the capital nor the best production city, the least populous first: a demand met first, then a
+  the Crown is over its limit (rule 14), never the capital nor the best production city, the
+  least populous first: a demand met first, then a
   claimant in the best state, then a person without a post founding a House, then a great person
   founding one (only when nobody else can take the city and the card logic does not keep it), then
-  the House with the fewest cities, enlarged only up to its realm's size threshold and never past
-  the Crown; a grant that makes a holder Furious waits; a hero never founds a House.
+  the House with the fewest cities, enlarged only up to its realm's size threshold; a grant that makes a holder Furious waits; a hero never founds a House.
 - *As a House.* It answers Secede and Become your vassal by the rules' price alone. Its own turn
   skips what a vassal cannot do: diplomacy (peace, vassalage, trades, war planning), offers to
   humans, loans, the field army targets, the amphibious target and the campaign; it keeps its city

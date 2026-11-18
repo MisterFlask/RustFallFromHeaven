@@ -1989,16 +1989,15 @@ orders): a human's grants, tribute and offers are the human's.
   Cautious the next turn). Set through the rules' command, only when it changes.
 - **Grants** (`choose_grant`), one a turn: only while the Crown is over its limit (rule 14: 3
   cities under a governing civic, the capital alone for the Kuriotates; settlements never count),
-  and only beyond the Crown's six most populous cities (`CROWN_KEPT`: a grant gives the city's
-  production and most of its commerce away, which costs more than a large city's triple
-  maintenance), never the capital nor the best production city (`kept_city`): the least populous
-  first. The candidate of `grant_candidates` ranked by, in order: no holder made Furious by the
+  never the capital nor the best production city (`kept_city`), the least populous first, so the
+  Crown comes down to its limit (an earlier version also kept the Crown's six most populous
+  cities, which kept AI realms at 2-6 Houses a game across all civilizations; removed 2026-11-18
+  so the AI plays the owner's limit of 3). The candidate of `grant_candidates` ranked by, in order: no holder made Furious by the
   preview; a standing demand met (an Annoyed or Furious grantee's first); the least populous city;
   a claimant, the one in the best state; a person without a post founding a House; a great person
   founding one (only when no such person is at hand and no House has room, and not a great person
   whose card the card logic keeps waiting); a House enlarged, the one with the fewest cities, only
-  up to its realm's size threshold (rule 14, `house_size_threshold`) and never to outnumber the
-  Crown (`house_has_room`); the fewest holders made Annoyed. A commander founds a House (and loses
+  up to its realm's size threshold (rule 14, `house_size_threshold`; `house_has_room`); the fewest holders made Annoyed. A commander founds a House (and loses
   the command) only for their claim or demand; a hero cannot found one (the rules refuse it). A
   grant that would make a holder Furious waits. With nobody able to take a city, no previews are
   computed.
