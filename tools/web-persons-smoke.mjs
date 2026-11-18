@@ -220,9 +220,20 @@ async function main() {
     check(court.houses === 4 && court.crownCities === 4 && court.over.length === 1 && court.persons >= 2, `the cards: ${JSON.stringify(court)}`);
     check(court.marks.some((t) => t.includes("Furious") && t.includes("✖") && t.includes("8 turns")), `the Furious mark with its turns: ${court.marks}`);
     check(["House", "Crown", "Tribute", "Levy", "Claimant"].every((k) => court.chips.includes(k)) && !court.chips.includes("Furious"), `the keyword chips: ${court.chips}`);
-    steps.push(`the Court: ${court.header.join(" ")} ${court.crown} ${court.attention.length} lines need attention (${kinds.join(", ")}); the Crown (${court.crownCities} cities), ${court.houses} Houses, ${court.persons} persons without a House`);
+    steps.push(`the Court: ${court.header.join(" ")} ${court.attention.length} lines need attention (${kinds.join(", ")}); the Crown (${court.crownCities} cities), ${court.houses} Houses, ${court.persons} persons without a House`);
     await crop(page, ".modal[data-tag=court] .court-header, .modal[data-tag=court] .court-attention", "court-attention.png");
     await crop(page, ".modal[data-tag=court]", "court.png", { pad: 2 });
+    // The rest of the Court, a screen at a time: the realm's cards, then the persons.
+    if (SHOTS) {
+      const scrollTo = (sel) => page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
+      await scrollTo(".modal[data-tag=court] .pcards");
+      await crop(page, ".modal[data-tag=court]", "court-realm.png", { pad: 2 });
+      await scrollTo(".modal[data-tag=court] .house-card:nth-child(4)");
+      await crop(page, ".modal[data-tag=court]", "court-realm-2.png", { pad: 2 });
+      await scrollTo(".modal[data-tag=court] .person-card");
+      await crop(page, ".modal[data-tag=court]", "court-persons.png", { pad: 2 });
+      await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
+    }
 
     // A state mark's tooltip: the attitude's help from the data.
     const tipText = await page.evaluate(async (sel) => {
@@ -246,13 +257,14 @@ async function main() {
     }, card);
     await until(() => page.evaluate((sel) => document.querySelectorAll(`${sel} details.ptribute[open] button.trate`).length === 6, card), "the tribute list (6 rates)", 5000 * SLOW);
     const rates = await page.evaluate((sel) =>
-      [...document.querySelectorAll(`${sel} button.trate`)].map((b) => ({ pct: Number(b.dataset.pct), current: b.getAttribute("aria-pressed") === "true", disabled: b.disabled, part: b.querySelector(".trate-part").textContent, state: b.querySelector(".pstate").dataset.state, est: b.querySelector(".trate-est").textContent })),
+      [...document.querySelectorAll(`${sel} button.trate`)].map((b) => ({ pct: Number(b.dataset.pct), current: b.getAttribute("aria-pressed") === "true", part: b.querySelector(".trate-part").textContent, state: b.querySelector(".pstate").dataset.state, est: b.querySelector(".trate-est").textContent })),
     card);
     const now = rates.find((r) => r.current);
-    check(now?.pct === 0 && now.disabled, `the current rate (House A pays 0%): ${JSON.stringify(rates)}`);
+    check(now?.pct === 0 && rates.filter((r) => r.current).length === 1, `the current rate (House A pays 0%): ${JSON.stringify(rates)}`);
     check(rates.every((r) => /^Pays \d+ gold, \d+ research\.$/.test(r.est) && /^Tribute: [+-]?\d+ · Loyalty: [+-]?\d+$/.test(r.part)), `the rows' lines: ${JSON.stringify(rates)}`);
     const before = await cardState(page, houseA.id);
-    await crop(page, card, "court-house-tribute.png", { pad: 4 });
+    await page.evaluate((sel) => document.querySelector(`${sel} details.ptribute`).scrollIntoView({ block: "center" }), card);
+    await crop(page, `${card} details.ptribute`, "court-house-tribute.png", { pad: 6 });
     const pick = rates.find((r) => r.pct === 30);
     const [, partWant, totalWant] = /^Tribute: ([+-]?\d+) · Loyalty: ([+-]?\d+)$/.exec(pick.part);
     await tap(page, `${card} button.trate[data-pct="30"]`);
@@ -261,7 +273,8 @@ async function main() {
     check(after.parts.includes(`Tribute 30%: ${partWant}`) && !after.parts.includes("Tribute 0%: +1"), `the tribute part changed as the row said (${partWant}): ${JSON.stringify(after)}`);
     check(after.total === `Loyalty: ${totalWant}.` && after.state === pick.state && after.open, `the total and state the row said (${totalWant}, ${pick.state}), the list kept open: ${JSON.stringify(after)}`);
     steps.push(`${houseA.label}'s tribute 0% -> 30%: parts ${before.parts.find((p) => p.startsWith("Tribute"))} -> ${after.parts.find((p) => p.startsWith("Tribute"))}, ${before.total} -> ${after.total}`);
-    await crop(page, card, "court-house-tribute-set.png", { pad: 4 });
+    await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: "start" }), card);
+    await crop(page, card, "court-house-card.png", { pad: 4 });
 
     // The grant list of the contested Crown city, from the Crown's card.
     await tap(page, `.modal[data-tag=court] .crown-card button.pgrant[data-city="${taken.id}"]`);
@@ -321,6 +334,7 @@ async function main() {
     await tap(page, `${card} button.prelease`);
     const freeLine = await until(() => page.evaluate((sel) => document.querySelector(`${sel} .pconfirm p`)?.textContent ?? null, card), "the Free confirmation", 5000 * SLOW);
     check(freeLine === `Free ${houseA.label}? It is no longer our vassal, at peace with us. This cannot be undone.`, `the Free confirmation: ${freeLine}`);
+    await page.evaluate((sel) => document.querySelector(`${sel} .pfoot`).scrollIntoView({ block: "center" }), card);
     await crop(page, `${card} .pfoot`, "court-free.png", { pad: 4 });
     await tap(page, `${card} .pconfirm button.small:not(.danger)`);
     await until(() => page.evaluate((sel) => !!document.querySelector(`${sel} button.prelease`), card), "back from the Free confirmation", 5000 * SLOW);
@@ -337,9 +351,9 @@ async function main() {
       d.open = true;
       d.scrollIntoView({ block: "start" });
     }, armySel);
-    const levy = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .requisition-city`)].map((r) => ({ city: Number(r.dataset.city), house: r.querySelector(".requisition-house .house-name")?.textContent ?? null, levy: r.querySelector(".requisition-house")?.dataset.levy ?? null, text: r.querySelector(".levy-text")?.textContent ?? null })), armySel);
+    const levy = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .requisition-city`)].map((r) => ({ city: Number(r.dataset.city), house: r.querySelector(".requisition-house")?.dataset.house ?? null, levy: r.querySelector(".requisition-house")?.dataset.levy ?? null, text: r.querySelector(".levy-text")?.textContent ?? null })), armySel);
     const takes = levy.find((x) => x.levy === "yes");
-    const refuses = levy.find((x) => x.levy === "no" && x.house === houseV.label);
+    const refuses = levy.find((x) => x.levy === "no" && x.house === String(houseV.id));
     check(takes?.text === "Takes levies. Each levy: -1 (20 turns)." && refuses?.text === `${houseV.label} is Annoyed. It takes no levy.`, `the levy lines: ${JSON.stringify(levy)}`);
     check(levy.findIndex((x) => x.house) > levy.findIndex((x) => !x.house), `the Crown's cities first: ${JSON.stringify(levy)}`);
     steps.push(`Requisition from: ${levy.filter((x) => !x.house).length} Crown cities, ${levy.filter((x) => x.house).length} Houses' cities ("${takes.text}" / "${refuses.text}")`);

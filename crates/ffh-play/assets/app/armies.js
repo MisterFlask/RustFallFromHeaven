@@ -167,15 +167,16 @@ function candidateLine(c, fleet = false) {
 }
 
 /** The levy line of a House's city among the requisition's candidates (docs/PERSONS.md, rule 6):
- *  its House (shield and name) and `Takes levies. Each levy: -1 (20 turns).`, or the rules'
- *  reason it takes none (`House Arne is Annoyed. It takes no levy.`) in the caution colour (the
- *  warning colour when Furious). */
+ *  its House (shield and name) and `Takes levies. Each levy: -1 (20 turns).`, or its shield and the
+ *  rules' reason it takes none (`House Arne is Annoyed. It takes no levy.`) in the caution colour
+ *  (the warning colour when Furious). */
 function levyLine(x) {
   const tone = x.takes_levy === false ? (String(x.state).toLowerCase() === "furious" ? ".warn" : ".caution") : "";
   return h(
     `div.requisition-house${tone}`,
     { "data-house": x.id, "data-levy": x.takes_levy === false ? "no" : "yes" },
-    h("span.house-tag", houseShield(x.colour, 14), h("span.house-name", x.label)),
+    // The rules' reason names the House (`House Arne is Annoyed. ...`): its name is not said twice.
+    h("span.house-tag", houseShield(x.colour, 14), x.takes_levy === false ? null : [h("span.house-name", x.label), h("span.dim", " ·")]),
     h("span.levy-text", x.text),
   );
 }

@@ -191,7 +191,13 @@ fn the_court_shows_the_realm() {
     assert_eq!(s(fur, "state"), "Furious");
     let o = s(fur, "outcome");
     assert!([" will seize ", " will join ", " will resign "].iter().any(|w| o.contains(w)), "{o}");
-    assert_eq!(s(p("no_post"), "post"), "No post.");
+    let rantine = p("no_post");
+    assert_eq!(s(rantine, "post"), "No post.");
+    // A hero cannot head a House: its demand for a post goes to the Armies screen (a command).
+    let dm = rantine.get("demand").unwrap();
+    if s(dm, "kind") == "post" {
+        assert_eq!(s(dm.get("button").unwrap(), "label"), "Armies", "{dm}");
+    }
 
     // Part J: the keywords (the loyalty states are the attitude words: none of their own).
     let keys: Vec<&str> = arr(&r, "reminders").iter().map(|x| s(x, "key")).collect();

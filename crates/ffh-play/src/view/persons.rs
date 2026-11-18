@@ -142,6 +142,8 @@ fn demand_json(v: &Viewer, pv: &PersonView, grantable: &[CityId]) -> Json {
         Some(if g.teams[team].at_war[ot] { format!("Owner: {civ}. At war.") } else { format!("Owner: {civ}. At peace.") })
     };
     let (kind, note, button): (&str, Option<String>, Json) = match dm.kind {
+        // A hero cannot head a House: its post is a command (the Armies screen names commanders).
+        DemandKind::Post if pv.leader.is_none() => ("post", None, crate::jobj! { "label" => "Armies", "act" => crate::jobj! { "kind" => "armies" } }),
         DemandKind::Post | DemandKind::House => {
             let kind = if dm.kind == DemandKind::Post { "post" } else { "house" };
             match nearest_grantable(g, h, pv.id, grantable) {
@@ -347,16 +349,16 @@ fn crown_over_lasting_times100(g: &Game, h: PlayerId, over: &[CityId]) -> i32 {
 /// cities, 2 over its limit of 3: +8.4 gold a turn.` or `The Crown holds 3 cities; its limit is
 /// 3.`, with `Settlements are not counted.` for a civilization with settlements; `over`: beyond the
 /// limit (the caution colour). The cost is at the cities' lasting rate, a city that pays none now
-/// said apart (`Myrean pays none while disorder lasts.`). `None` where there is no limit (no city
-/// can be granted).
-fn crown_line(g: &Game, h: PlayerId, cv: &CourtView) -> Option<Json> {
+/// said apart (`Myrean pays none while disorder lasts.`), but for city `told` (the grant list's
+/// city: its baseline says it). `None` where there is no limit (no city can be granted).
+fn crown_line(g: &Game, h: PlayerId, cv: &CourtView, told: Option<CityId>) -> Option<Json> {
     let limit = cv.crown_limit?;
     let n = cv.crown_cities.len() as i32;
     let over = cv.crown_over.len();
     let mut text = if over > 0 {
         let cost = crown_over_lasting_times100(g, h, &cv.crown_over).max(cv.crown_over_cost_times100);
         let mut t = format!("The Crown holds {}, {over} over its limit of {limit}: +{} gold a turn.", cities_text(n), gold(cost));
-        for &c in &cv.crown_over {
+        for &c in cv.crown_over.iter().filter(|&&c| Some(c) != told) {
             if let Some(why) = pays_none_now(g, c) {
                 t.push(' ');
                 t.push_str(&why);
@@ -670,7 +672,7 @@ pub fn court(v: &Viewer) -> Json {
     crate::jobj! {
         "government" => Json::opt_idx(gov),
         "header" => header,
-        "crown_line" => crown_line(g, h, &cv),
+        "crown_line" => crown_line(g, h, &cv, None),
         "realm" => realm,
         "tribute_default" => has.then_some(cv.tribute_default),
         "tribute_steps" => steps,
@@ -926,7 +928,7 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "title" => format!("Grant {name}"),
         "note" => "A grant is for good.",
         "baseline" => baseline,
-        "crown_line" => crown_line(g, v.h, &cv),
+        "crown_line" => crown_line(g, v.h, &cv, Some(c)),
         "refusal" => refusal,
         "none" => (refusal.is_none() && candidates.is_empty()).then_some("No House, person or great person to grant it to."),
         "candidates" => Json::Arr(candidates.into_iter().map(|(_, j)| j).collect()),

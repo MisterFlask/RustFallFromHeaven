@@ -175,6 +175,10 @@ async function doAct(act, m = null) {
       return emit("open-screen", "diplomacy");
     case "religion":
       return emit("open-screen", "religion");
+    case "armies":
+      m?.close(null);
+      closeTag("court");
+      return emit("open-screen", "armies");
     case "order":
       return orderWonder(act);
     case "card":
@@ -252,7 +256,7 @@ const tributeOpen = new Set();
 /** A House's tribute: its line (`Tribute 20%: 12 gold, 8 research last turn.`) and the list of
  *  rates (0 to 50%), each with what the House would pay this turn and its tribute part and
  *  loyalty at that rate (rule 4); a tap on a rate sets it (`house_tribute`) and the Court is read
- *  again. The current rate is marked and cannot be chosen. */
+ *  again. The current rate is marked (`now`); a tap on it does nothing. */
 function tributeBlock(x, reload) {
   const t = x.tribute;
   const set = async (pct) => {
@@ -265,9 +269,8 @@ function tributeBlock(x, reload) {
         type: "button",
         "data-pct": r.pct,
         "aria-pressed": r.current ? "true" : "false",
-        disabled: r.current,
         title: r.current ? "The House's tribute now" : `Set the tribute to ${r.pct}%`,
-        onclick: () => set(r.pct),
+        onclick: () => (r.current ? null : set(r.pct)),
       },
       h("span.trate-pct", `${r.pct}%`, r.current ? h("span.trate-now", "now") : null),
       h("span.trate-est", r.estimate),
@@ -546,7 +549,9 @@ function effectBlock(e) {
  *  which turns into the confirmation line. */
 function candidateCard(r, c, m) {
   const foot = h("div.pfoot");
-  const who = c.kind === "house" && c.color !== null && c.color !== undefined ? houseShield(c.color, 22) : portrait({ leader: c.leader, unit_type: c.unit_type, name: c.title });
+  // Its leader's portrait (a great person: its unit's figure); a House's name carries its shield.
+  const who = portrait({ leader: c.leader, unit_type: c.unit_type, name: c.title });
+  const shield = c.kind === "house" && c.color !== null && c.color !== undefined ? houseShield(c.color, 18) : null;
   const choose = () =>
     fill(foot,
       c.refusal ? h("p.warn", c.refusal) : null,
@@ -577,7 +582,7 @@ function candidateCard(r, c, m) {
   return h(
     "div.pcard.grant-card",
     { "data-kind": c.kind, "data-claimant": c.claimant ? "1" : "0" },
-    h("div.phead", who, h("div.pname", h("b", c.title)), claim, c.state ? stateMark(c.state) : null),
+    h("div.phead", who, h("div.pname", h("div.phouse-name", shield, h("b", c.title))), claim, c.state ? stateMark(c.state) : null),
     h("ul.plines", c.lines.map((l) => h("li", l))),
     // The grantee's own loyalty lines: its header already names it and its state.
     ownLines.length || own?.state_after ? h("div.peffect.self", h("ul", ownLines.map((l) => h("li", l))), own?.state_after ? becomesLine(own.state_after) : null) : null,
