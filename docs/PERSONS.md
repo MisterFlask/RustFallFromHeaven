@@ -1,8 +1,8 @@
 # Persons of Note
 
 This game's own rules, not FFH2's. **"The second build" (Houses as vassal civilizations, rules 1
-to 14) is built in the rules; its AI and its screens are a minimum, to be reworked. "The first
-build" is what it replaced where they differ; the rest is a design.** A civilization has a small
+to 14) is built: its rules, its AI and its screens. "The first build" is what it replaced where
+they differ; the rest is a design.** A civilization has a small
 cast of named, authored characters (its heroes, and the minor leaders of docs/minor-leaders who
 join it as its best veterans and great people). Its cities are held by Houses, each presided over
 by one of them; its armies are commanded by them; its vassals are ruled by them. Each makes
@@ -18,7 +18,7 @@ decisions and which are proposals still to be confirmed.
 | 3 | vassals: every vassal a House, its leader a person of the liege's cast, tribute, breaking away, freeing | built (second build, `persons/vassals.rs`, `persons/secession.rs`); claims abroad not built |
 | 4 | foreign persons: side deals with a rival's Houses (Secede, Become your vassal); seeing persons, courting, agents abroad | side deals built (second build, rule 9, `persons/bribes.rs`); the rest not built |
 | 5 | the annals: what each character did in the player's earlier games | not built |
-| second build | Houses as vassal civilizations, rules 1 to 14 below | rules built (ffh-core, 2026-11-18); the AI (rule 12) and the screens (rule 13) a minimum: the AI and client builds rework them |
+| second build | Houses as vassal civilizations, rules 1 to 14 below | built (2026-11-18): the rules (ffh-core), the AI (rule 12, `crates/ffh-ai/src/persons.rs`) and the screens (rule 13: the Court, the grant list, the levy, diplomacy, the map's plates) |
 
 "The second build" below is the contract in force, with its "as built" notes; "The first build"
 is what was built before it, in force where the second build does not change it (the cast,
@@ -234,10 +234,9 @@ it left open:
     size threshold; the tribute is chosen by the House's state at the default rate; a House's own
     turn skips diplomacy, the war targets and the campaign. Details in "AI" below and
     docs/AI.md, "Persons of Note".
-13. *Not in this build:* the client's screens were kept true with a minimum (the Court's House
-    card shows the tribute, the levy and Free; the commands `house_tribute`, `tribute_default`,
-    `free_house`; the House marks on every House's city; Secede and Become your vassal in the
-    trade table); the client build lays them out.
+13. *As built (the client build, 2026-11-18):* as the rule says; the screens are described in
+    "UI" (parts A to J and their "as built" notes) and docs/HUMAN.md, "Persons of Note in the
+    screens".
 14. *As built:* `player_crown_limit` (`PERSON_CROWN_CITIES` plus the player's traits'
     `crown_cities_change`, at least 1), `player_crown_cities`, `player_crown_over`,
     `player_crown_over_cost_times100` (the gold a turn beyond the normal rate, inflation

@@ -21,19 +21,22 @@ wants done next into this file.
 
 ## Persons of Note: the stages not built
 
-The cast, Houses, demands, loyalty and their consequences are built (docs/PERSONS.md, stages 1
-and 2, "The first build"). Still to build, each described there:
+The cast, commanders, demands, loyalty and Houses as vassal civilizations (tribute, the levy,
+breaking away, side deals with a rival's Houses) are built (docs/PERSONS.md, "The second build"
+and "The first build"). Still to build, each described there:
 
-- The vassal levy (stage 0): an army requisitions from its owner's vassals' cities, by a quota.
-  Needs no persons.
-- Vassal rulers (stage 3): a released head stays in the cast as the vassal's ruler, with
-  loyalty and demands; a capitulated leader as a person; claims abroad.
-- Foreign persons (stage 4): seeing a rival's holders, courting them, agents abroad. Courting
+- Claims abroad (stage 3).
+- Foreign persons (stage 4): seeing a rival's persons, courting them, agents abroad. Courting
   is kept only if the AI can answer it.
+- How many Houses a realm has: in a soak of 8 AI games (400 turns) a realm of 9 or more cities
+  had a median of 1 House late in the game, against the 2 to 5 wanted; the founders (veterans
+  of level 5 or more, great persons) are the bottleneck, so the Crown stays over its limit.
+  Levers: the AI founds with a great person while over the limit; a lower veteran bar.
 - The annals (stage 5): what each character did in the player's earlier games.
 - The cast itself: a civilization has five minor leaders, so at most five persons who are not
   heroes. How many it needs, and which enter as soldiers and which as great people, is the
   owner's.
 - To be judged in play (docs/PERSONS.md, "Open points for the owner"): the proposals the first
-  build made (demands with a term, the order quota, Restless withholding, claims, leagues),
-  the Crown's size, a House's say over its cities' roles, a commander's effect in battle.
+  build made that the second kept (demands with a term, an Annoyed holder's withheld service,
+  claims), the Crown's limit of 3, the tribute's loyalty cost, the size grievance, a
+  commander's effect in battle.
