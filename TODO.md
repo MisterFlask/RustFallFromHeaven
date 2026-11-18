@@ -29,5 +29,7 @@ they hold. Design: docs/PERSONS.md.
   through the armies' requisition, with a quota by government; a human as a vassal is out of scope.
   Cities are held by Houses of several cities, not by per-city governors (the named governors and
   their traits go); a want is always an act the player can do on the board.
+  A grant is for good: no city is revoked and no head replaced; a House outlives its head and
+  takes its heir from the cast.
 - Open: docs/PERSONS.md, "Open points for the owner".
 - First step: the vassal levy (stage 0), which needs no persons.

@@ -11,7 +11,7 @@ are first guesses, and "Open points" lists what is not decided.
 |---|---|---|
 | 0 | the vassal levy: an army requisitions from its owner's vassals' cities | not built |
 | 1 | the cast, the Court screen, Houses and grants, the commander's post, wants and loyalty; no consequences. The per-city named governors and their traits go | not built |
-| 2 | consequences: a House's and a commander's secession, revoking, dismissal | not built |
+| 2 | consequences: a House's and a commander's secession, dismissal, heirs | not built |
 | 3 | vassals: a House released as a vassal, a capitulated leader as a person, claims | not built |
 | 4 | foreign persons: seeing them, courting them, agents abroad | not built |
 
@@ -76,7 +76,8 @@ outlives it only in a post that takes the unit off the map (below).
   vassal, holding the vassal ruler's post from the start.
 
 **Who leaves.** The unit dies; the great person is spent; the person secedes, defects or resigns
-(below); a vassal ruler's vassal dies. There is no ageing.
+(below); a vassal ruler's vassal dies. There is no ageing. A House's head who leaves is
+followed by an heir (Houses, below).
 
 **Wants.** One each. A want is always something the player can do on the board at that moment
 (the owner's rule, 2026-11-18): a city granted, an army given, a war declared, a city taken, a
@@ -112,7 +113,7 @@ keeps it). What a rival is given after is a grievance.
 Loyalty is a sum of listed modifiers, each with a cause and, where it is timed, its turns left,
 shown as attitude is shown: `Passed over for the 2nd Army: -2 (18 turns)`.
 
-- *Only chosen acts move it*: a grant, a revocation, an appointment or a dismissal, a change of
+- *Only chosen acts move it*: a grant, an appointment or a dismissal, a change of
   civics or state religion, a declaration of war or a peace, a levy beyond the quota. Losing a
   city, a battle or ground in the score moves nothing.
 - *The want*: met, +2 while it is; unmet with no post, -1 every `PERSON_IDLE_TURNS` (20) turns,
@@ -130,17 +131,34 @@ There is no RNG in loyalty: every change has a listed cause and every outcome a 
 ### Houses
 
 Every city belongs to a House. The **Crown** is the leader's own House: it always holds the
-capital, it has no person at its head and it cannot be disloyal. Every other House is presided
-over by one person of the cast and holds one city or more.
+capital, it has no person at its head and it cannot be disloyal. Every other House has a name of
+its own (from its civilization's list: `governor_names.jsonc` becomes the Houses'), is presided
+over by one person of the cast and holds one city or more. A House outlives its head.
 
 - **A city gained** (founded, captured, traded, flipped) is the Crown's until it is granted.
 - **Granting** a Crown city (never the capital) is one click, on the city or on the Court
-  screen: to a House that exists, or to a person without a post, which founds their House
-  ("House Valdric", the person's name). The list shows each candidate's want, state and cities.
+  screen: to a House that exists, or to a person without a post, which founds a House
+  ("House Valdric"). The list shows each candidate's want, state and cities.
   `Granted Torrin: +1 (30 turns)` for the House; `Torrin granted to House Valdric: -1 (30
   turns)` for its head's rival.
-- **Presiding takes the unit off the map.** A veteran or a hero who founds a House no longer
-  fights: that is the price, and it means a House does not end with a death in battle.
+- **A grant is for good** (the owner's decision, 2026-11-18). A city cannot be revoked from a
+  House, and a House's head cannot be replaced. A city leaves its House only by leaving its
+  owner (captured, traded, flipped, razed), by the House's secession or by its release as a
+  vassal; a city won back is the Crown's again. A House that has lost its last city ends, and
+  its head is a person without a post.
+- **The head stays on the map.** A hero or a veteran who presides over a House still fights.
+- **Heirs.** When a House's head dies or leaves the cast, the House takes its heir from the
+  cast: the player names one of its persons without a post, at once (with one such person, that
+  one). With none the seat is empty until a person without a post enters the cast, who takes it.
+  While the seat is empty the House cannot become Disloyal and its cities count as the Crown's
+  for maintenance.
+- **Loyalty is the House's.** The modifiers earned by what was done to the House (grants,
+  levies, its rival's gains) stay with it when its head changes; the heir brings only their own
+  want. Changing the head does not clear a grievance.
+- **A Disloyal head's unit is the House's, not the player's**: from the turn the countdown
+  begins it goes to the House's largest city and takes no orders (as a marching recruit takes
+  none, docs/ARMIES.md), so the countdown cannot be ended by sending the head to die. Before
+  that the unit is the player's to risk as any other.
 - **What a House does.** Nothing to the city's yields. Its cities are built as governed cities
   are today (docs/GOVERNORS.md: roles, priorities, empire orders and requisition are the
   player's, unchanged). The House's name is the governor's: the per-city named governor and its
@@ -149,13 +167,8 @@ over by one person of the cast and holds one city or more.
   (`PERSON_HOUSE_MAINTENANCE_PERCENT`, 50), and the government civic sets how many cities the
   Crown holds before each further one counts double (`CivicInfo::crown_cities`). And a landless
   person who wants land sours.
-- **Revoking** a city from a House returns it to the Crown: `Torrin revoked: -3 (40 turns)`. A
-  House left without a city ends; its head returns to the map in the capital, without a post.
-  Once a House's countdown has begun, revoking any of its cities ends the countdown at once with
-  its outcome.
-- **Under a direct-rule civic** (Despotism, God King) there are no Houses: every city is the
-  Crown's and no city counts double. Adopting one revokes every city (above, with its
-  consequences); leaving one grants nothing by itself.
+- **Under a direct-rule civic** (Despotism, God King) Houses stand as under any government:
+  the civic says who picks the cities' queues (docs/GOVERNORS.md), not who holds them.
 
 **A House's secession.** At the countdown's end the House's cities become a new civilization of
 the owner's kind led by its head (`world::birth` with `release`, as the Sundering's factions:
@@ -163,14 +176,15 @@ buildings, culture and garrisons go with the cities; docs/CARDS.md), at war with
 owner. An ordinary war: peace, and taking it back as a vassal, are possible.
 - *The counter on the map*: a city of the House in which an army of the owner stands at the
   countdown's end does not go (a Disloyal commander's army does not count). Occupy the cities, meet the want, or accept the loss.
-- *The exposure is chosen*: a House can take what it was granted and nothing else. One large
-  House is cheap to keep content and costly to lose; several small ones are the reverse.
+- *The exposure is chosen, once*: a House can take what it was granted and nothing else, and
+  what it was granted cannot be taken back. One large House is cheap to keep content and costly
+  to lose; several small ones are the reverse.
 
 ### Commanders
 
 An army has one commander's post (the slot docs/ARMIES.md leaves for phases 6-7; what a loyal
 commander is worth in battle is decided there). A veteran in the army, a hero travelling with it
-or a Great Commander may hold it. The unit stays on the map.
+or a Great Commander may hold it. A House's head holds no command (one post each).
 
 **Dismissal.** Before the countdown: the post is empty, `Dismissed: -3 (30 turns)`. After it
 began: the outcome happens at once.
@@ -286,12 +300,12 @@ human can peel an AI empire apart by courting and the AI cannot answer, courting
 
 - **The Crown.** Whether the leader's own cities are a House like any other, and what holds its
   size down: here, city-count maintenance doubling beyond a number the government sets.
-- **Whether presiding takes the unit off the map.** Here it does. If a head stays on the map, a
-  House needs a rule for its head's death, and sending a Disloyal head to die becomes the
-  counter.
-- **Direct rule and Houses.** Here Despotism and God King have no Houses, and adopting one
-  revokes everything at its price. The other reading: Houses under every government, and direct
-  rule only says who picks the queues.
+- **Who names the heir.** Here the player, among its persons without a post. The other
+  reading: the House takes one by a rule (the longest in the cast), and the player has no say.
+- **A Restless head sent to die** is allowed here (the unit is the player's until the
+  countdown); the loyalty stays with the House, so it buys a new want and nothing else.
+- **A House's secession when its head dies during the countdown**: here the heir inherits the
+  countdown.
 - **A House takes every city it holds.** The alternative is its seat alone, the others
   returning to the Crown; that makes large Houses nearly safe.
 - **Whether a House's cities owe a levy quota too**, larger than a vassal's, so that
