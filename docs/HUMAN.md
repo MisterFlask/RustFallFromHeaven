@@ -576,29 +576,55 @@ view's `src/view/house_marks.rs`). A loyalty state is always the one mark (`pers
   `House Gunthar: no limit.`, `House Arne: 1 of 3 orders left.` or the reason it gives none.
 - *Lists* (part E): the Governors screen's rows and the cities list (`F1`) show each city's House
   (shield and name; the state mark when Restless or Disloyal) or `Crown`.
-- *Unit panel* (part F): a person's unit has `Person of note: Donal Lugh, commander of the 4th Army. ● Loyal`
-  under its numbers
-  (a tap opens the Court at the person); a great person, while a city can be granted, `Found a
-  House` with the Crown's grantable city nearest it (the grant list there, this unit first;
-  disabled with the reason otherwise). A Disloyal head's unit takes no orders: the panel says why
-  (`House Arne is Disloyal. Its head's unit takes no orders.`) and the server refuses its orders
-  with that reason, as a marching recruit's.
-- *Map plates* (part G, the HD-2D, isometric and flat maps): your own cities' plates carry the
-  House's shield at their left (none for the Crown's); Restless the amber ◆ on it, Disloyal the red
-  ✖ and the turns left in a pill at its corner. Another's cities carry none.
+- *Unit panel* (part F): a person's unit has `Person of note: Donal Lugh, commander of the 4th
+  Army. ● Cautious` under its numbers (a tap opens the Court at the person); a great person, while
+  a city can be granted, `Found a House` with the Crown's grantable city nearest it and what it
+  does (`Nearest city to grant: Vallus. A leader is drawn; the House is a new civilization, your
+  vassal.`; the grant list there, this unit first; disabled with the reason otherwise). A hero has
+  none (heroes command).
+- *Colours and map plates* (part G; "The second build", rules 1 and 13; the HD-2D, isometric and
+  flat maps): a House is drawn in its liege's colour everywhere a player's colour is used (its
+  territory and borders, its plates, its units' flags, the minimap, the lists), so a realm reads as
+  one: the view's `players[].color_player` and a House city's `house.liege` name the player whose
+  colour it takes (`tiles.js` `playerColor` reads them; a House breaking away takes its own colour
+  back at the next view, the drawn territory and the HD-2D dressing redrawn). Every House's city
+  carries its shield at its plate's left, for every viewer; for its liege the shield also carries
+  the House's state mark on a dark disc (▲ Friendly, △ Pleased, ● Cautious, ◆ Annoyed, ✖ Furious),
+  and Furious the turns left in a red pill at the shield's left. The Crown's cities carry none.
+- *Diplomacy* (rules 7, 9 and 13; `diplo.js`): the list (`F4`) shows your Houses first (`House
+  Aldric, your vassal`, with the shield, and not again among the relations; the Attitude column
+  their state's mark, its tip their loyalty parts and total; a `Court` button), then each civilization you met followed by its
+  Houses, indented (`House Alyndra, vassal of the Svartalfar`, the head's portrait; a House whose
+  liege you have not met stands on its own). A House's leader speaks as any leader. Its trade
+  screen offers what the rules let it trade: you give gold and gold per turn (`+1` a gold, `+10`
+  a gold per turn: counted ten times), it gives `Secede` or `Become your vassal` (one of the two),
+  each worth its price (`−150`) or greyed with the rules' reason (`(House Alyndra is Pleased with
+  the Svartalfar.)`); under the tables `Trades through the Svartalfar.` with `Trade with the
+  Svartalfar…`. The answer is the rules' (`This proposal will be refused. Reason: House Alyndra
+  asks 150 gold.`), and with a House's item in the deal, under `If accepted:`, what accepting
+  means: `House Alyndra will break away from the Svartalfar: war between them.`, and for Become
+  your vassal `You become its liege: war with the Svartalfar.` A vassal deal the rules hold (a
+  House's, a capitulation) shows no `cancel in` count. At war: `You are at war. An accepted offer makes peace with
+  House Alyndra first.` Your own House's screen has no tables: `House Aldric pays its liege by
+  tribute.`, its attitude and `Open the Court`.
 - *Alerts* (part H): the persons' messages (the log's `kind: "person"`, and `mark: "person"` for a
-  House without a head; a change of command is left to the log) and the news of a secession
-  (`kind: "secession"`, told to everyone who met the owner) show as toasts, with the person's
-  portrait when they have a leader; a click opens the Court at the person (a secession's toast is
+  House without a head; a change of command is left to the log) and the news of a break-away
+  (`kind: "secession"`, told to everyone who met the liege: `House Alyndra breaks away from the
+  Svartalfar with Gereth Minar for the Bannor: war.`) show as toasts, with the person's portrait
+  when they have a leader. A change of state shows the one mark over the rest of the text, and a
+  House turned Annoyed or Furious adds `House Arne takes no levy.`, a commander `The 3rd Army takes
+  no order to attack.`; an offer to one of your Houses is the rules' line (`The Svartalfar offered
+  House Arne 300 gold to secede.`). A click opens the Court at the House (a head's message, or a
+  House named by a message without a person), else at the person (a break-away's toast is
   dismissed). At most the newest three a batch, with `Persons of note: N more messages in the log.`
 - *Previews* (part I): under the act, the rules' lines, `House Casimir: Demand refused: -3 (60
-  turns). Becomes Disloyal ✖.`, nothing when there are none: the war question (Diplomacy), the
+  turns). Becomes ◆ Annoyed.`, nothing when there are none: the war question (Diplomacy), the
   trade screen at war (`If peace is made:`), each religion the screen can convert to (and No state
   religion), the keep/raze question (`If razed:` in its text). On the civics screen a direct-rule
-  civic while Houses stand shows the warning `Adopting God King: 4 Houses secede with 7 cities,
-  as one civilization at war with us: ... Censura stays: an army of ours stands in it.`, the
-  button reads `Adopt God King: 4 Houses secede`, and a click asks
-  once more (`This cannot be undone.`).
+  civic while Houses stand shows the warning `Adopting God King: 4 Houses break away with 5
+  cities, each at war with us: Ventry, ... Corona stays: an army of ours stands in it.`, the
+  button reads `Adopt God King: 4 Houses break away`, and a click asks once more (`This cannot be
+  undone.`).
 
 **Cities.** Double-click your city, use the button in the selection panel when your units
 stand in it, or the Cities list (`F1`). The city screen: the plots of the city's radius with
@@ -1444,8 +1470,9 @@ source); and each unit's `army`, `garrison`, `army_unit` and `march` (null, or a
 | `empire_cities {order, data, army?}` | the second step: each governed city able to build it, `{city, name, x, y, turns, own_turns, ahead, ahead_turns, displaces, distance, cost_percent?, tier?, suggested}` (`turns` behind the `ahead` orders; `displaces` the governor's order it goes ahead of, delayed `own_turns`; `distance` in plots to the army; one `suggested`: with an army the nearest, ties to the fewest turns, without the fewest turns), and `dest` (the army, as `empire_order` takes it) `refused`: the governed cities of a House that takes no order now, `{city, name, why}` (the rules' named reason). |
 | `armies` | the Armies screen: the `armies` (as the view's, with `recruits`: the recruits marching to it in full, each its `march` with `id`, `unit`, `x`, `y`; and the requisition's `candidates`: every city of yours with `picked`, `governed`, the `unit` it would train for the army, its `production_turns` and `march_turns` (null: no way by land), its `order` in progress; `open`: whether the requisition may change; `on_order`: its empire orders in your cities, each `{city, name, unit, index, turns}`), each city's garrison (`units`, `governed`) with the recruits marching to it (`recruits`), `supply_budget` (`SUPPLY_LINE_BUDGET`), `stall_turns`; the Fleets section (docs/NAVAL.md, section 7): `fleets` (as `armies`, with `domain` `sea`, `supply`, `tactic` and `tactic_next` null, `station` (`kind` `none`, `patrol` with `sea`, or `escort` with `army` or `group`; `text`, the order in bare words), `wear` (its ships' highest, in percent) and `wear_text`, `sea` (the name of the sea it is in), its requisition's candidates the coastal cities only), `seas` (the seas a fleet may patrol: `{id, name}`), `escort_targets` (your armies and fleets: `{army, name, fleet}`) Persons of Note: each army's `commander` (`{person, name, title, leader, unit_type, level, state, turns, outcome, withholds_attack}` or null) and `persons_with` (`[{person, name, unit_type, level}]`); each requisition candidate's `house` (`{id, label, colour, state, turns, orders_left, orders_total, text}`, null for a Crown city). |
 | `culture` | the Cultural Pressure panel: the channels you see (each `{city, city_name, x, y, caster, action, religion, target, since_turn, hostile}`): `ours` and `aimed` (at your team) also with `amount`, `reach`, `unseen` and a spread's `chance` as in the city query (for `aimed` the reach is your cities), `others`; `pressure`: your cities under revolt pressure (the city query's `pressure` with `city` and `name`); `memories`: what met leaders remember of your cultural actions (`{player, hostility, friendship}`, at most `memory_max`); `thresholds` as in the city query |
-| `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help`, `research_mods` (its tech-specific research multipliers in percent: `others`, known by civilizations met, and `prereqs`, alternative prerequisites known, added to 100; `feature`, a held unique feature, and `path`, the research path, each multiplying; `total`; the research chooser and the tech tree show them) and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons; `path`, `path_percent` and `paths`: each research path's techs, those known and closed, the research left, `complete`, and `can_commit` or the `refusal`), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep, and `rule_change`: `governed`, `direct` or null, whether the change hands every city to governors or takes every city back), religions, the players you met with your deals Persons of Note (preview lines `{subject, text, state_after, line}`, empty when nothing): `civics {with}`'s `proposed.persons`, and for a direct-rule civic while Houses stand `proposed.persons_warning` and `proposed.persons_button`; each religion's `persons` (converting to it) and `persons_none`; each player's `war_preview` (declaring war on its team). |
-| `trade {with}` | the trade tables both ways, with the AI's values (see Deals) `peace_preview`: at war, what making peace does to your persons (preview lines `{subject, text, state_after, line}`; empty when nothing). |
+| `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help`, `research_mods` (its tech-specific research multipliers in percent: `others`, known by civilizations met, and `prereqs`, alternative prerequisites known, added to 100; `feature`, a held unique feature, and `path`, the research path, each multiplying; `total`; the research chooser and the tech tree show them) and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons; `path`, `path_percent` and `paths`: each research path's techs, those known and closed, the research left, `complete`, and `can_commit` or the `refusal`), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep, and `rule_change`: `governed`, `direct` or null, whether the change hands every city to governors or takes every city back), religions, the players you met with your deals Persons of Note (preview lines `{subject, text, state_after, line}`, empty when nothing): `civics {with}`'s `proposed.persons`, and for a direct-rule civic while Houses stand `proposed.persons_warning` and `proposed.persons_button`; each religion's `persons` (converting to it) and `persons_none`; each player's `war_preview` (declaring war on its team); each player (also in the view's `players`) `color_player` (whose colour it is drawn in: a House's liege) and `house` (a House: `{id, label, liege, liege_name, colour}`, and for its liege `state`, `turns`, `outcome`, `parts`, `loyalty`; null otherwise). The view's cities: a House's city's `house` is `{id, label, colour, liege, state, turns}` (the state and turns for its liege only); its `persons` (the cast in brief) `{id, name, leader, house, army}`. |
+| `trade {with}` | the trade tables both ways, with the AI's values (see Deals) `peace_preview`: at war, what making peace does to your persons (preview lines `{subject, text, state_after, line}`; empty when nothing). Persons of Note: with a House, `house` (`{id, label, liege, liege_name, colour, own, price, trades_through, liege_contact, line, secede_war, vassal_war}`; null for a civilization that is no House): its tables are the rules' (you give gold and gold per turn, `value` 1 and 10, `value_turns` 10; it gives `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL`, each with `refusal`, the rules' reason it would not, and `value`, minus its `price`); `troops` null. Your own House (`own`): no items, `line` the rules' `House Arne pays its liege by tribute.` |
+| `trade_answer {with, give, get}` (a House) | the rules' answer, whoever plays the House: refused with the reason it would not give an item (`House Arne is Pleased with the Bannor`) or the deal's error, else accepted when the gold offered (gold per turn ten times) covers its price (`margin`; refused: `House Arne asks 150 gold`). |
 | `trade_answer {with, give, get}` | what `propose_deal` with these items would get now (see Deals) |
 | `speech {with,comment?,salt?}` | what the AI leader of `with` says to you: `{with, comment, text}`; `comment` an `AI_DIPLOCOMMENT_*` (`DiploCommentType`), or none for what it says when you contact it (its greeting, Civ4's `AI_getGreeting`, or `AI_DIPLOCOMMENT_REFUSE_TO_TALK`); `salt` picks among its lines (Civ4 uses the interface's random numbers); `text` null when it has no line |
 | `moments {since}` | the leader moments from index `since` (`view.moments_next` is the next one): `{i, t, player, comment, text}`, an AI leader opening the diplomacy screen with you (first contact, a war declared on you) and what it said; the last 20 are kept in a save |
@@ -1711,13 +1738,16 @@ node tools/web-persons-smoke.mjs --bin B # Persons of Note: the Court, a House's
 * `web-persons-screens-smoke.mjs [--bin PATH] [--assets DIR] [--shots DIR] [--gpu]`: Persons of
   Note in the existing screens (docs/PERSONS.md, "UI", parts C to I) on `stage persons` and
   `stage persons-direct`, on the HD-2D map (`?force3d=1`; minutes under SwiftShader): the alerts of
-  the loaded turn, the own cities' House marks in the view, a state change's alert, the city
-  screen's Governance line of a Devoted, a Restless and a Crown city at 390 px (no sideways
-  scroll), the Armies screen's commander lines (Loyal; Disloyal with `Takes no order to
-  attack.`), the unit panel's person line and the great person's Found a House, the war
-  question's preview lines, and the civics screen's God King warning with its button. With
-  `--shots DIR` it saves the review crops (deviceScaleFactor 2). Any console or page error fails
-  it.
+  the loaded turn, the own cities' House marks in the view, the Houses drawn in their lieges'
+  colours, the map's plates (a crop), a state change's alert, the city screen's Governance line of
+  a Crown city at 390 px (no sideways scroll), the Armies screen's commander lines (Furious with
+  `Takes no order to attack.`), the unit panel's person line and the great person's Found a
+  House, the war question's preview lines; the diplomacy list (your Houses first, the neighbour's
+  House under its liege) and the House's trade screen (Secede and Become your vassal, `Trades
+  through the ...`, a Secede offer below its price refused with the rules' reason and proposed,
+  one at its price accepted with the war it means, proposed: the House breaks away and its alert
+  shows); and the civics screen's God King warning with its button. With `--shots DIR` it saves
+  the review crops (deviceScaleFactor 2). Any console or page error fails it.
 * `web-smoke.mjs [--turns 4] [--seed 5] [--out DIR] [--assets DIR] [--cdp] [--headed]` drives the
   page with the mouse and keyboard in headless Chromium (the `playwright` package if it resolves,
   else Chromium over the DevTools protocol; skipped without a browser): new game (Start

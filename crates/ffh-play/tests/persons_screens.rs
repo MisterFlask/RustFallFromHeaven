@@ -126,6 +126,171 @@ fn the_screens_show_houses_commanders_and_persons() {
     }
 }
 
+/// The map's marks and the colours (docs/PERSONS.md, "The second build", rules 1 and 13): a
+/// House's city carries its shield and its liege (whose colour it is drawn in) for every viewer,
+/// the attitude mark and countdown for its liege only; the players list says whose colour each
+/// player is drawn in, and a House's record (its attitude and parts for its liege only).
+#[test]
+fn a_house_is_drawn_in_its_lieges_colour_with_its_shield() {
+    let (_dir, st, s) = load("persons-colours", false);
+    let g = &s.g;
+    let house = |role: &str| st.houses.iter().find(|x| x.role == role).unwrap();
+    let (f, n) = (house("furious"), house("neighbour"));
+    // The human's view: its own House's city, with the attitude; the neighbour's House's city,
+    // its shield and liege only.
+    let cities = ffh_play::view::cities(&ffh_play::view::Viewer::new(g, st.human, false));
+    let cities = cities.as_arr().unwrap();
+    let fm = find(cities, "id", f.cities[0].0 as i64).get("house").unwrap().clone();
+    assert_eq!(fm.get("liege").and_then(Json::as_i64), Some(st.human.0 as i64));
+    assert_eq!(s_of(&fm, "label"), f.label);
+    assert_eq!(s_of(&fm, "state"), "Furious");
+    assert_eq!(fm.get("turns").and_then(Json::as_i64), Some(8));
+    let nc = n.cities[0];
+    assert!(g.cities[nc].owner == n.player);
+    // (Seen with debug reveal: the scene's human need not have revealed it.)
+    let revealed = ffh_play::view::cities(&ffh_play::view::Viewer::new(g, st.human, true));
+    let nm = find(revealed.as_arr().unwrap(), "id", nc.0 as i64).get("house").expect("the neighbour's House's city shows its shield").clone();
+    assert_eq!(nm.get("liege").and_then(Json::as_i64), Some(st.neighbour.0 as i64));
+    assert_eq!(nm.get("colour").and_then(Json::as_i64), Some(g.houses[n.id].color as i64));
+    assert!(nm.get("state").unwrap().is_null() && nm.get("turns").unwrap().is_null(), "{nm}");
+    // The neighbour's view: its own House's city with the attitude, the human's Houses' (where it
+    // knows them) without.
+    let theirs = ffh_play::view::cities(&ffh_play::view::Viewer::new(g, st.neighbour, true));
+    let theirs = theirs.as_arr().unwrap();
+    let nm = find(theirs, "id", nc.0 as i64).get("house").unwrap().clone();
+    assert_eq!(s_of(&nm, "state"), g.house_state(n.id).name());
+    for x in theirs {
+        if let Some(m) = x.get("house").filter(|m| !m.is_null()) {
+            if m.get("liege").and_then(Json::as_i64) == Some(st.human.0 as i64) {
+                assert!(m.get("state").unwrap().is_null(), "only the liege sees the attitude: {m}");
+            }
+        }
+    }
+    // The players list: whose colour each is drawn in, and the Houses' records.
+    let pl = q(&s, r#"{"q":"players"}"#);
+    let players = arr(&pl, "players");
+    let row = find(&players, "id", f.player.0 as i64);
+    assert_eq!(row.get("color_player").and_then(Json::as_i64), Some(st.human.0 as i64));
+    let hb = row.get("house").unwrap();
+    assert_eq!(s_of(hb, "label"), f.label);
+    assert_eq!(s_of(hb, "state"), "Furious");
+    assert_eq!(hb.get("turns").and_then(Json::as_i64), Some(8));
+    assert!(s_of(hb, "outcome").contains(" will break away "), "{hb}");
+    assert!(s_of(hb, "loyalty").starts_with("Loyalty: "));
+    assert!(arr(hb, "parts").iter().any(|x| x.as_str().is_some_and(|t| t.starts_with("Tribute "))), "{hb}");
+    // Its vassal deal cannot be cancelled (the rules): no count runs for it.
+    for d in arr(&row, "deals") {
+        assert_eq!(d.get("cancelable").and_then(Json::as_bool), Some(false), "{d}");
+        assert_eq!(d.get("cancel_in").and_then(Json::as_i64), Some(0), "{d}");
+    }
+    let row = find(&players, "id", n.player.0 as i64);
+    assert_eq!(row.get("color_player").and_then(Json::as_i64), Some(st.neighbour.0 as i64));
+    let hb = row.get("house").unwrap();
+    assert_eq!(hb.get("liege").and_then(Json::as_i64), Some(st.neighbour.0 as i64));
+    assert_eq!(s_of(hb, "liege_name"), g.player_get_civilization_short_description(st.neighbour));
+    assert!(hb.get("state").is_none() && hb.get("parts").is_none(), "another's House: no attitude toward its liege shown: {hb}");
+    let row = find(&players, "id", st.neighbour.0 as i64);
+    assert_eq!(row.get("color_player").and_then(Json::as_i64), Some(st.neighbour.0 as i64));
+    assert!(row.get("house").unwrap().is_null());
+    // The alerts' cast: a head's House, a commander's army.
+    let view = q(&s, r#"{"q":"view"}"#);
+    let cast = arr(&view, "persons");
+    let head = st.persons.iter().find(|x| x.0 == "head_furious").unwrap().1;
+    assert_eq!(find(&cast, "id", head.0 as i64).get("house").and_then(Json::as_i64), Some(f.id.0 as i64));
+    let cmd = st.persons.iter().find(|x| x.0 == "commander_loyal").unwrap().1;
+    let army = st.armies.iter().find(|x| x.0 == "loyal").unwrap().1;
+    assert_eq!(find(&cast, "id", cmd.0 as i64).get("army").and_then(Json::as_str), Some(g.armies[army].name.as_str()));
+}
+
+/// A House on the diplomacy screen (docs/PERSONS.md, "The second build", rules 7, 9 and 13): it
+/// gives Secede and Become your vassal at its price and takes gold and gold per turn; the rest is
+/// its liege's (`Trades through the X.`); the answer is the rules' (its price, its refusal by its
+/// state); accepting is war (said before); the human's own House trades nothing (tribute).
+#[test]
+fn a_houses_trade_table_and_its_answers() {
+    let (_dir, st, mut s) = load("persons-trade", false);
+    let n = st.houses.iter().find(|x| x.role == "neighbour").unwrap();
+    let (hp, nid) = (n.player, n.id);
+    let price = s.g.house_bribe_price(nid).expect("the neighbour's House takes offers");
+    let liege = s.g.player_get_civilization_short_description(st.neighbour);
+    let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, hp.0));
+    assert_eq!(tr.get("contact").and_then(Json::as_bool), Some(true));
+    let house = tr.get("house").unwrap();
+    assert_eq!(house.get("price").and_then(Json::as_i64), Some(price as i64));
+    assert_eq!(house.get("own").and_then(Json::as_bool), Some(false));
+    assert_eq!(s_of(house, "trades_through"), format!("Trades through the {liege}."));
+    assert_eq!(s_of(house, "secede_war"), format!("{} will break away from the {liege}: war between them.", n.label));
+    assert_eq!(s_of(house, "vassal_war"), format!("You become its liege: war with the {liege}."));
+    assert!(tr.get("troops").unwrap().is_null());
+    let names = |side: &str| -> Vec<&'static str> { arr(&tr, side).iter().filter_map(|x| x.get("item").and_then(Json::as_i64)).map(|i| TradeableItem::NAMES[i as usize]).collect() };
+    assert_eq!(names("they_give"), vec!["TRADE_SECEDE", "TRADE_HOUSE_VASSAL"]);
+    assert!(names("we_give").iter().all(|x| ["TRADE_GOLD", "TRADE_GOLD_PER_TURN"].contains(x)), "{:?}", names("we_give"));
+    let secede = arr(&tr, "they_give")[0].clone();
+    assert!(secede.get("refusal").unwrap().is_null());
+    assert_eq!(secede.get("value").and_then(Json::as_i64), Some(-(price as i64)));
+    let gold = arr(&tr, "we_give").into_iter().find(|x| x.get("item").and_then(Json::as_i64) == Some(TradeableItem::TRADE_GOLD.idx() as i64)).unwrap();
+    assert_eq!(gold.get("value").and_then(Json::as_i64), Some(1));
+    // The answers: below the price refused (its price the reason), at it accepted.
+    let answer = |s: &ffh_play::Session, gold: i32, item: &str| q(s, &format!(r#"{{"q":"trade_answer","with":{},"give":[{{"item":"TRADE_GOLD","data":{gold}}}],"get":[{{"item":"{item}"}}]}}"#, hp.0));
+    if price > 1 {
+        let a = answer(&s, price - 1, "TRADE_SECEDE");
+        assert_eq!(a.get("accept").and_then(Json::as_bool), Some(false));
+        assert_eq!(s_of(&a, "why"), format!("{} asks {price} gold", n.label));
+    }
+    let a = answer(&s, price.max(1), "TRADE_SECEDE");
+    assert_eq!(a.get("accept").and_then(Json::as_bool), Some(true), "{a}");
+    // Pleased with its liege: it refuses, in the rules' words (no closing stop: the screen adds it).
+    s.g.houses[nid].standing.mods.push(ffh_core::persons::LoyaltyMod { cause: ffh_core::persons::LoyaltyCause::DemandMet, amount: 8, until: None });
+    let state = s.g.house_state(nid);
+    assert!(state < ffh_core::persons::LoyaltyState::Cautious, "{state:?}");
+    let why = format!("{} is {} with the {liege}.", n.label, state.name());
+    let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, hp.0));
+    assert!(tr.get("house").unwrap().get("price").unwrap().is_null());
+    for x in arr(&tr, "they_give") {
+        assert_eq!(s_of(&x, "refusal"), why);
+        assert!(x.get("value").unwrap().is_null());
+    }
+    let a = answer(&s, price.max(1), "TRADE_HOUSE_VASSAL");
+    assert_eq!(a.get("accept").and_then(Json::as_bool), Some(false));
+    assert_eq!(s_of(&a, "why"), why.trim_end_matches('.'));
+    // The human's own House: no side deal, it pays tribute.
+    let own = st.houses.iter().find(|x| x.role == "friendly").unwrap();
+    let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, own.player.0));
+    let house = tr.get("house").unwrap();
+    assert_eq!(house.get("own").and_then(Json::as_bool), Some(true));
+    assert_eq!(s_of(house, "line"), format!("{} pays its liege by tribute.", own.label));
+    assert!(arr(&tr, "we_give").is_empty() && arr(&tr, "they_give").is_empty());
+}
+
+/// The previews of the acts (docs/PERSONS.md, "UI", part I) come from the rules' `persons_preview`
+/// as lines worded with the attitude scale; a great person's unit can found a House, a hero's
+/// cannot.
+#[test]
+fn the_previews_and_the_unit_panel() {
+    let (_dir, st, s) = load("persons-previews", false);
+    let g = &s.g;
+    let v = ffh_play::view::Viewer::new(g, st.human, false);
+    let states = ["Friendly", "Pleased", "Cautious", "Annoyed", "Furious"];
+    let war = ffh_play::view::house_marks::act_preview(&v, &ffh_core::persons::PersonsAct::DeclareWar(g.players[st.neighbour].team));
+    let raze = ffh_play::view::house_marks::act_preview(&v, &ffh_core::persons::PersonsAct::Raze(st.crown[1]));
+    for list in [&war, &raze] {
+        for l in list.as_arr().unwrap() {
+            let line = s_of(l, "line");
+            if let Some(after) = l.get("state_after").and_then(Json::as_str) {
+                assert!(states.contains(&after) && line.ends_with(&format!(" Becomes {after}.")), "{line}");
+            }
+        }
+    }
+    assert_eq!(war.as_arr().unwrap().len(), g.persons_preview(st.human, &ffh_core::persons::PersonsAct::DeclareWar(g.players[st.neighbour].team)).len());
+    // F. A hero has no Found a House; the great person has.
+    let hero = g.person_unit(st.persons.iter().find(|x| x.0 == "commander_loyal").unwrap().1).unwrap();
+    assert!(!g.unit_is_great_person(hero));
+    let grp = q(&s, &format!(r#"{{"q":"group","units":[{}]}}"#, hero.0));
+    assert!(arr(&grp, "units")[0].get("found_house").unwrap().is_null(), "a hero founds no House");
+    let grp = q(&s, &format!(r#"{{"q":"group","units":[{}]}}"#, st.great_person.0));
+    assert!(arr(&grp, "units")[0].get("found_house").unwrap().get("city").and_then(Json::as_i64).is_some());
+}
+
 #[test]
 fn the_civics_screen_warns_of_a_direct_rule_civic() {
     let (_dir, st, s) = load("persons-screens-direct", true);

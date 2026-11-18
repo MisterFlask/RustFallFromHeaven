@@ -73,10 +73,11 @@ pub fn city_house_field(v: &Viewer, c: CityId) -> Option<Json> {
     Some(g.city_house(c).map_or(Json::Null, |h| house_chip(g, h)))
 }
 
-/// The map's mark of a House's city (part G; docs/PERSONS.md, rule 13): its shield for everyone
-/// (`{id, label, colour}`), and for its liege its attitude mark (`state`, `turns`; null for the
-/// others), from `Game::city_house_mark` (cheap); `None` for a city of a civilization that is no
-/// House.
+/// The map's mark of a House's city (part G; docs/PERSONS.md, rules 1 and 13): its shield for
+/// everyone (`{id, label, colour, liege}`: `liege` is the player whose colour the House is drawn
+/// in, `Game::player_color_player`), and for its liege its attitude mark (`state`, `turns`; null
+/// for the others), from `Game::city_house_mark` (cheap); `None` for a city of a civilization that
+/// is no House.
 pub fn city_map_mark(v: &Viewer, c: CityId) -> Option<Json> {
     let g = v.g;
     let m = g.city_house_mark(c)?;
@@ -85,9 +86,57 @@ pub fn city_map_mark(v: &Viewer, c: CityId) -> Option<Json> {
         "id" => m.house,
         "label" => g.house_label(m.house),
         "colour" => m.color as i32,
+        "liege" => m.owner,
         "state" => liege.then(|| m.state.name()),
         "turns" => if liege { m.countdown_turns } else { None },
     })
+}
+
+/// `+2`, `-1`, `0`.
+fn signed(n: i32) -> String {
+    if n > 0 {
+        format!("+{n}")
+    } else {
+        n.to_string()
+    }
+}
+
+/// A loyalty part as a line: `Tribute 20%: -1`, `Levied: -1 (12 turns)`.
+fn part_line(p: &ffh_core::persons::LoyaltyPart) -> String {
+    match p.turns_left {
+        Some(t) => format!("{}: {} ({t} {})", p.label, signed(p.amount), if t == 1 { "turn" } else { "turns" }),
+        None => format!("{}: {}", p.label, signed(p.amount)),
+    }
+}
+
+/// A House among the players (the view's `players[].house`; docs/PERSONS.md, rules 1 and 13: the
+/// diplomacy screen lists a House under its liege): `{id, label, liege, liege_name, colour}` and,
+/// for its liege, its attitude toward it as the rules give it: `state`, `turns` (the Furious
+/// countdown's turns left, else null), `outcome` (the countdown's stated outcome, else null),
+/// `parts` (`["Tribute 20%: -1", ..]`) and `loyalty` (`Loyalty: -2.`); null for a player that is
+/// no House. `liege_name` is the liege's civilization (`Bannor`), as the rules' lines name it.
+pub fn player_house_brief(v: &Viewer, p: PlayerId) -> Json {
+    let g = v.g;
+    let Some(h) = g.player_house(p) else { return Json::Null };
+    let house = &g.houses[h];
+    let liege = house.owner;
+    let mut j = crate::jobj! {
+        "id" => h,
+        "label" => g.house_label(h),
+        "liege" => liege,
+        "liege_name" => g.player_get_civilization_short_description(liege),
+        "colour" => house.color as i32,
+    };
+    if liege == v.h {
+        if let Some(hv) = g.house_view(h) {
+            j.set("state", hv.state.name());
+            j.set("turns", hv.countdown_turns);
+            j.set("outcome", hv.outcome);
+            j.set("parts", Json::Arr(hv.parts.iter().map(|x| Json::from(part_line(x))).collect()));
+            j.set("loyalty", format!("Loyalty: {}.", signed(hv.loyalty)));
+        }
+    }
+    j
 }
 
 /// A person in brief: `{person, name, title, leader}` (`leader`: the portrait, null for a hero).
@@ -304,7 +353,10 @@ pub fn act_preview(v: &Viewer, act: &ffh_core::persons::PersonsAct) -> Json {
     preview_json(&v.g.persons_preview(v.h, act))
 }
 
-/// The human's cast in brief, for the alerts' portraits (part H): `[{id, name, leader}]`.
+/// The human's cast in brief, for the alerts' portraits and where a tap on one goes (part H):
+/// `[{id, name, leader, house, army}]` (`house`: the House the person heads, `army`: the name of
+/// the army they command, `3rd Army`, each null for none; an alert about a head is about its
+/// House).
 pub fn cast_brief(v: &Viewer) -> Json {
     let g = v.g;
     Json::Arr(
@@ -312,7 +364,15 @@ pub fn cast_brief(v: &Viewer) -> Json {
             .persons
             .iter()
             .filter(|&&x| g.persons.contains(x))
-            .map(|&x| crate::jobj! { "id" => x, "name" => g.persons[x].name.as_str(), "leader" => g.persons[x].leader.map(Json::idx) })
+            .map(|&x| {
+                crate::jobj! {
+                    "id" => x,
+                    "name" => g.persons[x].name.as_str(),
+                    "leader" => g.persons[x].leader.map(Json::idx),
+                    "house" => g.person_house(x),
+                    "army" => g.person_army(x).map(|a| g.armies[a].name.clone()),
+                }
+            })
             .collect(),
     )
 }

@@ -310,6 +310,10 @@ pub fn players_brief(v: &Viewer) -> Json {
             "our_master" => g.teams[v.team].vassal[t],
             "score" => g.player_score[p],
             "contact" => g.player_can_contact(v.h, p),
+            // Persons of Note (docs/PERSONS.md, "The second build", rules 1 and 13): the player whose
+            // colour it is drawn in (a House: its liege's), and a House's record (null: no House).
+            "color_player" => g.player_color_player(p),
+            "house" => house_marks::player_house_brief(v, p),
         });
     }
     Json::Arr(out)
@@ -389,10 +393,11 @@ pub fn cities(v: &Viewer) -> Json {
                 });
             }
         }
-        // Persons of Note (docs/PERSONS.md, "UI", parts E and G; rule 13): a House's city carries its
-        // House (`{id, label, colour, state, turns}`, the state and turns for its liege only), for
-        // its plate; the human's own cities are the Crown's (null), for the lists. Left out for
-        // the other cities and for a human without Houses.
+        // Persons of Note (docs/PERSONS.md, "UI", parts E and G; rules 1 and 13): a House's city
+        // carries its House (`{id, label, colour, liege, state, turns}`, the state and turns for its
+        // liege only), for its plate and its colour (the liege's); the human's own cities are the
+        // Crown's (null), for the lists. Left out for the other cities and for a human without
+        // Houses.
         if let Some(house) = house_marks::city_map_mark(v, c).or_else(|| house_marks::city_house_field(v, c)) {
             j.set("house", house);
         }

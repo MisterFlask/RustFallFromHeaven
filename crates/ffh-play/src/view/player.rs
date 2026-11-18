@@ -333,9 +333,11 @@ pub fn players(v: &Viewer) -> Json {
                 } else {
                     return None;
                 };
-                // When the human may cancel it (Civ4: after `PEACE_TREATY_LENGTH` turns).
+                // When the human may cancel it (Civ4: after `PEACE_TREATY_LENGTH` turns); never for
+                // a vassal deal the rules hold (a House's: docs/PERSONS.md, "The second build", rule
+                // 9; a capitulation), so no count runs for it.
                 let cancelable = g.deal_is_cancelable(id, Some(v.h));
-                let cancel_in = if cancelable { 0 } else { g.deal_turns_to_cancel(id, Some(v.h)).max(0) };
+                let cancel_in = if cancelable || g.deal_is_uncancelable_vassal_deal(id, Some(v.h)) { 0 } else { g.deal_turns_to_cancel(id, Some(v.h)).max(0) };
                 Some(crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn, "cancelable" => cancelable, "cancel_in" => cancel_in })
             })
             .collect();

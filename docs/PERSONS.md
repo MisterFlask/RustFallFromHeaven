@@ -933,6 +933,51 @@ docs/HUMAN.md, "Persons of Note in the screens"; tests `crates/ffh-play/tests/pe
   proposed; razing in the keep/raze question's text (`If razed:`). Adopting a direct-rule civic asks
   once more with the warning and `This cannot be undone.` (the anarchy in the same question).
 
+#### The second build's map, diplomacy, alerts, previews and unit panel as built (2026-11-18)
+Rule 13's parts outside the Court (`view/house_marks.rs`, `view/diplo.rs`, `assets/app/persons_lines.js`,
+`diplo.js`, `tiles.js`; docs/HUMAN.md, "Persons of Note in the screens"; tests
+`crates/ffh-play/tests/persons_screens.rs`, `tools/web-persons-screens-smoke.mjs`):
+- **Colours** (rule 1): the view serves, with each player, `color_player` (`player_color_player`)
+  and, with each House city, `house.liege`; `tiles.js` `playerColor` draws a player in its colour
+  player's colour, so every place that colours by owner (territory, borders, plates, unit flags,
+  banners, the minimap, the lists) draws a realm in one colour. A change (a House breaking away,
+  a new House) redraws the flat map's territory and minimap and redresses the HD-2D map (its
+  dressing key carries the colours). The border between a liege and its House stays drawn (the
+  map's owners differ), in the one colour.
+- **Plates** (part G): every House's city carries its shield for every viewer; for its liege the
+  shield carries the House's state mark on a dark disc for every state (rule 13: "its attitude
+  mark for the liege"; the first build marked only Restless and Disloyal), and Furious the turns
+  left in a red pill at the shield's left (under its point, a garrison's stack badge, drawn over
+  the plates, covered it). The plates read the view's city as it is now, so a change of state
+  reaches the page with the next view (no tile delta needed).
+- **Diplomacy** (rules 9 and 13): the list shows the human's Houses first, then each civilization
+  with its Houses under it, by `players[].house` (`{id, label, liege, liege_name, colour}`, and for
+  the liege `state`, `turns`, `outcome`, `parts`, `loyalty`); a House's Attitude toward its liege is
+  its state's mark with its loyalty parts as the tip. The trade query serves a House's tables from
+  the rules (`house_bribe_refusal`, `house_bribe_price`, `house_offer_value`): Secede and Become
+  your vassal always listed, each with the rules' refusal or valued at minus the price, gold at 1
+  and gold per turn at `BRIBE_GOLD_PER_TURN_TURNS`; the screen's totals and answer then read as for
+  any deal (`Total offered: 1`, `Total requested: 150`, `Reason: House Alyndra asks 150 gold.`).
+  `trade_answer` for a House is the rules' answer whoever plays it. The war a deal means is said
+  under the answer (`If accepted:`, `secede_war`, `vassal_war`). A House's vassal deal, which the
+  rules never let be cancelled, shows no `cancel in` count in the list (it showed one). Departure: **no gift to one's own House.** The
+  contract asked that the usual gift items (gold) work for one's own Houses; the rules refuse
+  every item between a House and its liege's team (`house_trade_item_allowed`), and a gift would
+  not move a House's loyalty (it is not one of its parts), so the own House's trade screen shows
+  the rules' line (`House Aldric pays its liege by tribute.`), its attitude and `Open the Court`,
+  and no tables.
+- **Alerts** (part H): the cast in brief carries each person's House and army, so a head's news
+  opens the Court at the House, a message naming one of the human's Houses without a person
+  likewise. A House turned Annoyed or Furious adds `House Arne takes no levy.`, a commander `The 3rd
+  Army takes no order to attack.` (no rules line marks a levy refused: the change of state that
+  refuses levies is the alert). An offer to one of the human's Houses is the rules' line (`The
+  Hippus offered House Arne 300 gold to secede.`), not the contract's wording.
+- **Previews and the unit panel** (parts F and I) stay as the first build laid them out, on the
+  rules' second-build lines; a great person's `Found a House` says what it does (`A leader is
+  drawn; the House is a new civilization, your vassal.`); a hero has none.
+- The staged scene gives the human at least 400 gold and twice the neighbour's House's price, so
+  the trade screen's offer can be accepted.
+
 #### J. Help and keywords
 A help topic `Persons of Note` (the rules in short bullets, as the Governors topic does). Keywords with reminders (data/json/keywords.jsonc, data/text/en.tsv): House, Crown, Devoted, Loyal, Restless, Disloyal, Sworn, Claimant. Reminders are bare and short (`Restless: a House takes no new order; a commander's army takes no order to attack.`). The texts of this system mark the keywords and never restate a reminder (tests/keywords.rs).
 
