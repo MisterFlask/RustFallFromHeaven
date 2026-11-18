@@ -71,6 +71,7 @@ fn the_court_shows_every_part() {
     let header = strs(&r, "header");
     assert_eq!(header[0], "Government: Aristocracy.");
     assert_eq!(header[1], "Tribute of a new House: 20%.");
+    assert_eq!(header[2], "The Crown holds 4 cities; its limit is 5.", "the Crown's limit (rule 14)");
     assert!(arr(&r, "empty").is_empty());
     assert_eq!(r.get("grants"), Some(&Json::Null));
     assert_eq!(int(&r, "tribute_default"), 20);

@@ -42,6 +42,7 @@ use crate::log::{LogMark, LogTag};
 
 mod bribes;
 mod command;
+mod crown;
 mod demands;
 mod entry;
 mod houses;
@@ -53,6 +54,7 @@ mod turn;
 mod vassals;
 
 pub use bribes::{house_item, house_offer_value, BribeKind};
+pub use crown::{CROWN_OVER_FACTOR, HOUSE_CITIES_FREE};
 pub use entry::{leader_name, leader_title};
 pub use houses::Claimant;
 pub use preview::{GrantCandidate, PersonsAct, PreviewLine};

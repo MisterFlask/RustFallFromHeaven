@@ -960,3 +960,72 @@ fn read_api_and_save_round_trip() {
     assert_eq!(g2.house_view(h), g.house_view(h));
     assert_eq!(g2.person_view(x), g.person_view(x));
 }
+
+// ---------------------------------------------------------------------------------------------
+// The Crown's limit and a House's size (rule 14)
+// ---------------------------------------------------------------------------------------------
+
+/// The sum of player `p`'s cities' cached maintenance (hundredths).
+fn cached_maintenance(g: &Game, p: PlayerId) -> i32 {
+    g.players[p].cities.iter().map(|&c| g.cities[c].maintenance).sum()
+}
+
+#[test]
+fn the_crown_beyond_its_limit_pays_triple() {
+    let World { mut g, cap, a, b, c, .. } = world();
+    // Despotism (direct rule): no limit.
+    assert_eq!(g.player_crown_limit(P0), None);
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    assert_eq!(g.player_crown_limit(P0), Some(5));
+    let d = g.player_init_city(P0, 3, 7, true, true);
+    let e = g.player_init_city(P0, 11, 7, true, true);
+    assert_eq!(g.player_crown_cities(P0), vec![cap, a, b, c, d, e], "the capital first, then in order");
+    assert_eq!(g.player_crown_over(P0), vec![e]);
+    // Same size, same count: the city beyond pays triple the city-count maintenance.
+    let (nd, ne) = (g.city_calculate_num_cities_maintenance_times100(d), g.city_calculate_num_cities_maintenance_times100(e));
+    assert!(nd > 0);
+    assert_eq!(ne, 3 * nd);
+    assert!(g.player_crown_over_cost_times100(P0) > 0);
+    assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0), "the finance total follows");
+    let court = g.court_view(P0);
+    assert_eq!((court.crown_limit, court.crown_over.clone()), (Some(5), vec![e]));
+    // A grant brings the Crown under its limit: the preview counts the saving, the grant does it.
+    let m = g.grant_maintenance(d);
+    assert!(m.now_times100 - m.after_times100 > g.cities[d].maintenance, "more than the city's own: {m:?}");
+    assert_eq!(m.now_times100, cached_maintenance(&g, P0));
+    let (x, _) = enter_veteran(&mut g, 5, 6);
+    g.player_grant_city(P0, d, GrantTo::Person(x)).expect("granted");
+    assert!(g.player_crown_over(P0).is_empty());
+    assert_eq!(cached_maintenance(&g, P0), m.after_times100, "what the preview said");
+    assert_eq!(g.city_calculate_num_cities_maintenance_times100(e), nd, "e at the normal rate again");
+    // A change of civics refreshes it: under direct rule no limit (the House breaks away first).
+    let e_plot = plot(&g, e);
+    let f = g.player_init_city(P0, 15, 4, true, true);
+    assert_eq!(g.player_crown_over(P0), vec![f]);
+    government(&mut g, "CIVIC_DESPOTISM");
+    assert_eq!(g.player_crown_limit(P0), None);
+    assert!(g.player_crown_over(P0).is_empty());
+    assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0));
+    let _ = e_plot;
+}
+
+#[test]
+fn a_house_of_more_than_three_cities_grieves() {
+    let World { mut g, a, b, c, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let d = g.player_init_city(P0, 3, 7, true, true);
+    let (_, h) = land_head(&mut g, a);
+    g.player_grant_city(P0, b, GrantTo::House(h)).unwrap();
+    g.player_grant_city(P0, c, GrantTo::House(h)).unwrap();
+    assert_eq!(g.house_cities(h).len(), 3);
+    assert_eq!(g.house_size_part(h), 0);
+    assert!(!g.house_view(h).unwrap().parts.iter().any(|p| p.label.starts_with("Holds ")));
+    // The fourth city: the preview says it, the grant does it.
+    let preview = g.grant_preview(P0, d, GrantTo::House(h));
+    assert!(preview.iter().any(|l| l.text == "Holds 4 cities: -1"), "{preview:?}");
+    let before = g.house_loyalty(h);
+    g.player_grant_city(P0, d, GrantTo::House(h)).unwrap();
+    assert_eq!(g.house_size_part(h), -1);
+    assert_eq!(g.house_loyalty(h), before + GRANTED.0 - 1);
+    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Holds 4 cities" && p.amount == -1 && p.turns_left.is_none()));
+}

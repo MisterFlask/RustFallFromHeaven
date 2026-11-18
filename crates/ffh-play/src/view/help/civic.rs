@@ -129,6 +129,7 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         no_war_weariness,
         unit_rush_gold,
         direct_rule,
+        crown_cities,
     } = &d.civics[c];
     let mut b = String::new();
     let line = |b: &mut String, s: String| {
@@ -282,6 +283,10 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         line(&mut b, "[ICON_BULLET]Every city is ruled directly".to_string());
     } else if civic_option_type.is_some_and(|o| d.civic_options[o].base.type_ == "CIVICOPTION_GOVERNMENT") {
         line(&mut b, "[ICON_BULLET]Every city is governed".to_string());
+    }
+    // Persons of Note (docs/PERSONS.md, rule 14): the Crown's limit.
+    if *crown_cities > 0 {
+        line(&mut b, format!("[ICON_BULLET]The Crown holds {crown_cities} cities at the normal city-count maintenance; each further one pays triple"));
     }
     if *free_specialist != 0 {
         line(&mut b, txt(d, "TXT_KEY_CIVIC_FREE_SPECIALISTS", &[Arg::N(*free_specialist)]));

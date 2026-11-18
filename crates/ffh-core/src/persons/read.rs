@@ -7,7 +7,11 @@
 //!   parts, tribute, levy, countdown and outcome, freeing, its price to secede.
 //! - [`Game::court_view`]: a player's cast, Houses, grantable cities and default tribute.
 //! - [`Game::city_house_mark`]: a city's House colour and state for the map and the lists (cheap).
-//! - [`Game::grant_maintenance`]: what a grant does to the liege's maintenance.
+//! - [`Game::grant_maintenance`]: what a grant does to the liege's maintenance (the Crown's limit
+//!   included).
+//! - The Crown's limit (rule 14): [`Game::player_crown_limit`], [`Game::player_crown_cities`],
+//!   [`Game::player_crown_over`], [`Game::player_crown_over_cost_times100`] (`crown.rs`); a House's
+//!   size part [`Game::house_size_part`].
 //! - Tribute: [`Game::house_tribute_at`], [`Game::house_loyalty_at_tribute`] (`vassals.rs`).
 //! - Levy: [`Game::house_levy_refusal`], [`Game::city_levy_refusal`], [`Game::player_levy_cities`].
 //! - Side deals: [`Game::house_bribe_price`], [`Game::house_bribe_refusal`] (`bribes.rs`).
@@ -165,6 +169,13 @@ pub struct CourtView {
     pub pool_left: usize,
     /// The tribute a new House takes, percent.
     pub tribute_default: i32,
+    /// The Crown's limit (rule 14; `None`: no limit), its cities (the capital first), those
+    /// beyond the limit, and what they cost beyond the normal rate (hundredths of gold a turn,
+    /// inflation included).
+    pub crown_limit: Option<i32>,
+    pub crown_cities: Vec<CityId>,
+    pub crown_over: Vec<CityId>,
+    pub crown_over_cost_times100: i32,
 }
 
 /// A city's House for the map and the lists ([`Game::city_house_mark`]).
@@ -214,6 +225,10 @@ impl Game {
         if let Holder::House(h) = hd {
             let pct = self.houses[h].tribute;
             out.push(LoyaltyPart { label: format!("Tribute {pct}%"), amount: tribute_part(pct), turns_left: None });
+            let size = self.house_size_part(h);
+            if size != 0 {
+                out.push(LoyaltyPart { label: format!("Holds {} cities", self.house_cities(h).len()), amount: size, turns_left: None });
+            }
         }
         out
     }
@@ -343,6 +358,10 @@ impl Game {
             grants,
             pool_left: if self.player_has_persons(p) { self.persons_pool(p).len() } else { 0 },
             tribute_default: self.players[p].house_tribute,
+            crown_limit: self.player_crown_limit(p),
+            crown_cities: self.player_crown_cities(p),
+            crown_over: self.player_crown_over(p),
+            crown_over_cost_times100: self.player_crown_over_cost_times100(p),
         }
     }
 

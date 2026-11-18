@@ -135,6 +135,15 @@ impl Game {
             first.lines.push((format!("Tribute {pct}%: {}{part}", if part > 0 { "+" } else { "" }), part));
         }
         first.lines.push((amount_text(&format!("Granted {city}"), GRANTED), GRANTED.0));
+        // A House's size (rule 14): the standing part changes with one city more.
+        if let GrantTo::House(h) = to {
+            let n = self.house_cities(h).len() as i32;
+            let (before, after) = (Self::size_part(n), Self::size_part(n + 1));
+            if after != before {
+                let text = if before == 0 { format!("Holds {} cities: {after}", n + 1) } else { format!("Holds {} cities: {} ({after} in all)", n + 1, after - before) };
+                first.lines.push((text, after - before));
+            }
+        }
         if let Some(x) = head {
             if let Some(dm) = self.persons[x].demand {
                 let meets = match dm.kind {

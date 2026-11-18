@@ -453,6 +453,16 @@ pub fn court(v: &Viewer) -> Json {
     if g.player_has_persons(h) {
         header.push(format!("Tribute of a new House: {}%.", cv.tribute_default));
     }
+    // The Crown's limit (docs/PERSONS.md, rule 14).
+    if let Some(limit) = cv.crown_limit {
+        let n = cv.crown_cities.len();
+        let over = cv.crown_over.len();
+        header.push(if over > 0 {
+            format!("The Crown holds {n} cities, {over} over its limit of {limit}: +{} gold a turn.", gold(cv.crown_over_cost_times100))
+        } else {
+            format!("The Crown holds {n} {}; its limit is {limit}.", if n == 1 { "city" } else { "cities" })
+        });
+    }
     let (attention, badge) = if g.player_has_persons(h) { attention(v, &cv.persons, &cv.houses, &cv.grantable) } else { (Vec::new(), 0) };
     let mut crown: Vec<CityId> = g.players[h].cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
     crown.sort_by_key(|&c| (!g.city_is_capital(c), c));
@@ -460,7 +470,7 @@ pub fn court(v: &Viewer) -> Json {
         .iter()
         .map(|&c| {
             let why = g.player_check_grant_city(h, c).err();
-            city_ref(g, c).with("capital", g.city_is_capital(c)).with("grantable", why.is_none()).with("refusal", why)
+            city_ref(g, c).with("capital", g.city_is_capital(c)).with("grantable", why.is_none()).with("refusal", why).with("over", cv.crown_over.contains(&c))
         })
         .collect();
     let houses: Vec<Json> = cv.houses.iter().map(|hv| house_json(v, hv, &cv.persons, &cv.grantable)).collect();
@@ -477,6 +487,7 @@ pub fn court(v: &Viewer) -> Json {
         "persons" => Json::Arr(persons),
         "pool_left" => cv.pool_left,
         "tribute_default" => cv.tribute_default,
+        "crown_limit" => cv.crown_limit,
         "reminders" => crate::view::keywords::reminders(d, keywords(d, KEYWORDS)),
     }
 }

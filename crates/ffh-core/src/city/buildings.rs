@@ -611,15 +611,28 @@ impl Game {
         temp_maintenance
     }
 
-    /// C++ `CvCity::calculateNumCitiesMaintenanceTimes100` (CvCity.cpp:5862-5905).
+    /// C++ `CvCity::calculateNumCitiesMaintenanceTimes100` (CvCity.cpp:5862-5905). Not in FFH2
+    /// (docs/PERSONS.md, rule 14): a Crown city beyond its Crown's limit pays
+    /// `persons::CROWN_OVER_FACTOR` times it.
     pub fn city_calculate_num_cities_maintenance_times100(&self, c: CityId) -> i32 {
         self.city_num_cities_maintenance_without_times100(c, None)
     }
 
     /// [`Game::city_calculate_num_cities_maintenance_times100`] were city `without` of the same
     /// owner granted to a House (a vassal of its team): it counts as a vassal's city, no longer as
-    /// the owner's (a grant's preview, docs/PERSONS.md).
+    /// the owner's or its Crown's (a grant's preview, docs/PERSONS.md).
     pub(crate) fn city_num_cities_maintenance_without_times100(&self, c: CityId, without: Option<CityId>) -> i32 {
+        let base = self.city_num_cities_base_times100(c, without);
+        if self.city_crown_over_without(c, without) {
+            base * crate::persons::CROWN_OVER_FACTOR
+        } else {
+            base
+        }
+    }
+
+    /// The city-count maintenance of city `c` at the normal rate (C++
+    /// `CvCity::calculateNumCitiesMaintenanceTimes100`), were city `without` granted to a House.
+    pub(crate) fn city_num_cities_base_times100(&self, c: CityId, without: Option<CityId>) -> i32 {
         let d = self.d;
         let owner = self.cities[c].owner;
         let team = self.city_team(c);

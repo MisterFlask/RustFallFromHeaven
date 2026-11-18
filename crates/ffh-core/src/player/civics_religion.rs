@@ -228,6 +228,9 @@ impl Game {
             // This game's governors (docs/GOVERNORS.md): the government decides who runs the
             // cities.
             self.player_governance_sync(p);
+            // The Crown's limit (docs/PERSONS.md, rule 14) is the government's: the cities'
+            // maintenance follows it.
+            self.player_update_maintenance(p);
 
             if self.final_initialized {
                 // gDLL->isDiplomacy() / updateDiplomacyAttitude: diplomacy screen (UI).

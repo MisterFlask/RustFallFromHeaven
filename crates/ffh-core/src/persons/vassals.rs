@@ -92,6 +92,12 @@ impl Game {
     /// record, or loses it.
     pub(crate) fn team_vassal_houses(&mut self, t: TeamId, master: TeamId, value: bool, capitulated: bool) {
         let members: Vec<PlayerId> = self.player_ids().filter(|&p| self.players[p].team == t).collect();
+        // A vassal has no Crown limit (rule 14), a vassal freed has one again.
+        for &p in &members {
+            if self.players[p].alive {
+                self.player_update_maintenance(p);
+            }
+        }
         if value {
             let Some(owner) = self.team_get_leader_id(master) else { return };
             if !self.player_has_persons(owner) {
