@@ -1056,8 +1056,10 @@ html.art .tap-mode button.on:not(.link):not(.close):not(.cplot):not(.tech):not(.
 /* Fingers: targets big enough to hit (about 40 CSS px), text fields that a phone does not zoom
    into (16 px), and the tap-mode rows. */
 @media (pointer: coarse) {
-  button:not(.link):not(.close):not(.cplot):not(.tech):not(.stat),
-  html.art button:not(.link):not(.close):not(.cplot):not(.tech):not(.stat) { min-height: 40px; }
+  button:not(.link):not(.close):not(.cplot):not(.tech):not(.stat):not(.info),
+  html.art button:not(.link):not(.close):not(.cplot):not(.tech):not(.stat):not(.info) { min-height: 40px; }
+  /* A dialog's help (i): a round tap target (the rule above made it 22 px wide and 40 tall). */
+  .modal-head .info, html.iso .modal-head .info, html.iso.hd2d .modal-head .info { width: 32px; height: 32px; flex: 0 0 32px; line-height: 30px; }
   button.small, html.art button.small { min-height: 36px; min-width: 36px; }
   .close, .panel-head .deselect { min-width: 40px; min-height: 40px; }
   #mapwrap .zoom { gap: 8px; }
