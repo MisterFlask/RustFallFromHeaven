@@ -508,19 +508,69 @@ AI the human need not fight: if so, the AI's demands are tuned before the human'
 
 ## UI
 
-- **The Court screen**: one row a person: portrait, name and title, post (House with its
-  cities, or army), state, demand with its turns, rival. Opening a row shows the loyalty
-  modifiers, the ambition, the trait their House's cities have, and the record. No other screen is new.
-- **Where the state is seen at a glance**: each city's name plate carries its House's colour;
-  a Restless or Disloyal holder marks its cities' plates and its army's banner, with the
-  countdown.
-- **Previews at the decision**: the grant list, the civics screen, the war and peace dialogs,
-  the order list and the Armies screen's *Requisition from* list state what the choice does to
-  each holder before it is made: `Meets House Arne's demand.` `House Ashledger: becomes
-  Restless.` `House Arne: 1 of 3 orders left.`
-- **Text** is bare (CLAUDE.md, "Rules text and tooltips"). House, Crown, Devoted, Loyal,
-  Restless, Disloyal, Sworn and Claimant are keywords
-  (`data/json/keywords.jsonc`).
+The interface of the first build (the owner asked for particular attention to it). The rules it
+shows are "The first build"; the client's conventions are docs/HUMAN.md and docs/PLAY_DESIGN.md
+(4.8, keywords).
+
+### Principles (every part below follows them; when a case is not covered, decide by them)
+1. **No surprise.** Every act that moves a person's or a House's loyalty shows the exact change before it is done, in the place where the act is done: the grant list, the civics screen, the religion screen, declaring war, making peace, razing a city. Wording is the rules' own preview lines (`House Arne: -1 (30 turns). Becomes Restless.`).
+2. **State at a glance, never by colour alone.** One mark for a state everywhere (Court, city screen, Armies, map plates, unit panel): a word and a shape with a colour: Devoted ▲ green, Loyal ● neutral, Restless ◆ amber, Disloyal ✖ red with the turns left. One function draws it; do not restyle it per screen.
+3. **From a demand to its act in one click.** A demand line carries the button that goes where it is met (below). A demand never requires hunting through screens.
+4. **A grant is for good, and the screen says so.** Granting takes two steps (choose, then confirm on a line that names the city and the House and says `This cannot be undone.`). No other act of this system needs a confirmation except releasing a House and adopting a direct-rule civic.
+5. **Nothing blocks the turn.** No new gate on End turn. What needs attention is an alert and a line at the top of the Court screen.
+6. **Nothing empty.** Under direct rule, or before the first person, the Court screen says in one or two bare lines why there is nothing (`Government: Despotism. Every city is the Crown's.`), not empty tables. The Court button exists from the start but carries a count badge only when something needs attention (an heir to name, a Disloyal holder, a demand with 10 turns or fewer).
+7. **Readable on a phone.** Cards in one column, not wide tables; every button at least the size the other screens use; the grant list scrolls inside the dialog.
+8. **Bare text.** Labels, numbers, the rule. No adjectives, no narration. A person's backstory (the leader's civilopedia text) may be shown as flavour in the person's opened card, clearly apart from the rules lines.
+9. **Portraits.** A person with a leader shows that leader's portrait as the diplomacy screen does (app/portraits.js); a hero shows its unit's sprite or icon as the unit panel does. The same person always shows the same picture and name, with the title (`The Auditor of Oaths`) under the name where there is room.
+
+### The parts
+
+#### A. The Court screen (menu entry "Court"; a free function key, shown in the key list)
+Top to bottom:
+1. **Header**: `Government: Aristocracy.` and, under a governing civic, `A House takes 1.5 orders a city every 30 turns.` An (i) opens the help topic.
+2. **Needs attention** (only when there is something; each line has its button): `House Arne has no head. [Name an heir]` · `House Ashledger: Disloyal. Will secede with Prespur, Elam and Torrin in 8 turns. [Show]` · `Hrolf, 2nd Army: Disloyal. Will seize Vallus in 6 turns. [Show]` · `Maereth Ashledger has no post. [Grant a city]` · `3 cities of the Crown can be granted. [Show]`.
+3. **Houses**, the Crown first. A House's card: its colour as a small shield, `House Ashledger`, the state mark, the head (portrait, name, title), `Seat: Prespur`, its cities as chips (a tap opens the city), `Orders: 2 of 3 left. Next in 12 turns.` (Devoted: `Orders: no limit.` Restless: `Takes no orders.`), `Trait in its cities: Philosophical` (the trait's own help as the tooltip, with a note of which parts apply to a city), `Maintenance saved: 9 gold a turn.`, the demand line (below), and `[Release as a vassal]`. Opening the card shows the loyalty parts (`Demand refused: -3 (41 turns)`), one per line, with the total, and the record.
+   The Crown's card: `The Crown`, its cities; a city that can be granted has `[Grant]`.
+4. **Persons without a House**: commanders and persons with no post, as cards: portrait, name, title, `Veteran: level 7 Axeman, 2nd Army` with a ⌖ to show the unit, `Commander of the 2nd Army` or `No post`, the state mark, the demand line, and opened: loyalty parts, ambition, the trait a House of theirs would give its cities, the record.
+5. A person who left this game is not listed.
+
+**The demand line**: `Demands: Torrin granted to House Ashledger. 34 turns.` with one button by kind: a post / a House → `[Grant a city]` (opens the grant list of the Crown's nearest grantable city; when the Crown has none: no button, the line adds `No city of the Crown can be granted.`) · a city granted → `[Grant Torrin]` (the grant list of that city, that House first) · a city taken → `[Show]` (centres the map; the line adds `Owner: Sheaim. At peace.` when it needs a war) · war → `[Diplomacy]` (that civilization) · a state religion adopted → `[Religion]` · the state religion in a city → `[Show]` · a wonder → `[Order]` (the empire order's city step for that wonder with the seat chosen) or `In production: 12 turns. The term does not run.` With 10 turns or fewer the turns are in the amber of Restless. Between demands: `No demand. Next in 14 turns.`
+
+#### B. The grant list (a dialog for one city)
+- Title `Grant Torrin`. Under it: `A grant is for good.` and the baseline `Held by the Crown: city-count maintenance 6.2 gold a turn.`
+- Candidates as cards, claimants first (chip `Claimant`, a keyword), then other Houses, then persons without a post (`Found a House: Maereth Ashledger`), then great person units (`Found a House: Great Merchant in Prespur. A person of note is drawn. The Great Merchant is consumed.`).
+- Each card lists, bare, everything the grant does: `Maintenance: -3.1 gold a turn.` · `Trait in Torrin: Philosophical.` · `House Ashledger: +1 (30 turns).` · `Meets its demand: +3 (60 turns). Becomes Devoted.` · every snub: `House Arne (claimant): -1 (30 turns). Becomes Restless.` · `Hrolf, 2nd Army (took Torrin): -2 (30 turns).` · `Orders in Torrin: by House Ashledger's quota (2 of 3 left).`
+- `[Grant to House Ashledger]` replaces the card's foot with `Grant Torrin to House Ashledger? This cannot be undone. [Grant] [Back]`.
+- A city that cannot be granted does not open the list; where its `[Grant]` would be, the reason stands (`The capital is the Crown's.`, `Government: direct rule. No city can be granted.`).
+- After a grant: the dialog closes, a toast `Torrin granted to House Ashledger.`, the Court and the map refresh.
+
+#### C. The city screen, Governance section
+`Held by the Crown. [Grant]` or `House Ashledger. Head: Maereth Ashledger. Loyal ●. Trait here: Philosophical. Orders: 2 of 3 left.` A tap on the House opens the Court at its card. Where the player places an empire order and the House takes none, the entry is disabled with the rules' reason as its text (`House Arne is Restless. It takes no orders.`).
+
+#### D. Armies screen and the army's panel
+Each army: `Commander: Hrolf (level 7 Axeman). Loyal ●.` with the portrait small, or `No commander.` With more than one person with the army: `[Change]` lists them. Restless: `Takes no order to attack.` Disloyal: the outcome and the turns. In *Requisition from*, a House's city shows `House Arne: 1 of 3 orders left.` or the reason it gives none.
+
+#### E. Lists
+The Governors screen's and the cities list's city rows gain the House (its shield and name, or `Crown`).
+
+#### F. The unit panel
+A person's unit: its name is the person's; one line `Person of note: commander of the 2nd Army. Loyal ●.` (a tap opens the Court at the person). A great person unit while a city can be granted: an action `Found a House` (opens the grant list of the Crown's grantable city nearest the unit, this unit first). A Disloyal head's unit, when ordered: the rules' refusal.
+
+#### G. The map (HD-2D first; the plates are drawn on the 2D canvas in app/r3d/hud.js; then the isometric and flat maps the same way where they draw plates)
+On the player's own cities' name plates: the House's shield in its colour at the plate's left (none for the Crown). Restless: the amber ◆ on the shield. Disloyal: the red ✖ and the turns left as a number. No shader or mesh change.
+
+#### H. Alerts (toasts from the log's person tag; a tap opens the Court at the subject)
+With the portrait: a person enters · a demand is issued · 10 turns left on a demand · met · refused · a change of state (Restless, Disloyal with the stated outcome; back to Loyal) · an heir is needed · a succession · a House founded or ended · a secession or a league (to everyone who met the owner).
+
+#### I. Previews where the acts are done
+- Civics screen: choosing a direct-rule civic while Houses stand shows, in the warning style, `Adopting God King: 3 Houses secede with 9 cities: Prespur, Elam, … Held by armies: Torrin.` and the revolution's button reads `Adopt and face the secession`.
+- Religion screen, declaring war, making peace (the diplomacy dialogs), the raze choice: the preview lines for that act under the existing text, each `Subject: text. Becomes State.` Nothing when there are none.
+
+#### J. Help and keywords
+A help topic `Persons of Note` (the rules in short bullets, as the Governors topic does). Keywords with reminders (data/json/keywords.jsonc, data/text/en.tsv): House, Crown, Devoted, Loyal, Restless, Disloyal, Sworn, Claimant. Reminders are bare and short (`Restless: a House takes no new order; a commander's army takes no order to attack.`). The texts of this system mark the keywords and never restate a reminder (tests/keywords.rs).
+
+#### K. A staged scene: `ffh-play stage persons DIR`
+One save that shows every state, for the tests and the screenshots: the player under Aristocracy with a capital, three Crown cities (one with two claimant Houses and a commander who took it), House A (Devoted, three cities, a wonder demand in production), House B (Restless after a refused demand, two cities), House C (Disloyal, countdown at 8, two cities, one held by an army), an empty seat with two candidates, a person without a post, a great person unit, a commander (Loyal) and a commander (Disloyal, countdown), a hero. A second, `stage persons-direct DIR`: the same empire one click from adopting God King.
 
 ## Open points for the owner
 
