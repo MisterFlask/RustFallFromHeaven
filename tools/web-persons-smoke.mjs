@@ -5,10 +5,12 @@
 // (with `--shots`; else the map the page chooses). It checks the Court button's count, opens the Court with Shift+F9
 // (the header, the needs-attention lines, the Crown and the four Houses), opens a House's card
 // (its loyalty parts and record), opens the grant list of the contested Crown city (the claimants
-// first, each with its preview lines), grants in two steps (the confirmation line names the city
-// and the House and says it cannot be undone), sees the toast and the Court refreshed (the city is
-// the House's), names an heir, and on a phone (390 x 844) opens the Court and the grant list without
-// a sideways scroll. Any console error, page error or failed request fails it.
+// first, each with its preview lines), grants it to the claimant House in two steps (the
+// confirmation line names the city and the House and says it cannot be undone), sees the toast
+// and the Court refreshed (the city is the House's), opens a House's Free confirmation and backs
+// out, and on a phone (390 x 844) opens the Court and the grant list without a sideways scroll.
+// Any console error, page error or failed request fails it. (Adapted to the second build,
+// docs/PERSONS.md: the stage's Houses are named by role; heirs and a head's trait are retired.)
 //
 //   node tools/web-persons-smoke.mjs --bin <built>/ffh-play [--assets crates/ffh-play/assets]
 //                                    [--shots DIR] [--gpu]
@@ -156,13 +158,13 @@ async function main() {
   }
   try {
     const page = await open(browser, server.url, VIEW);
-    const houseA = st.houses.A;
-    const houseD = st.houses.D;
+    const houseA = st.houses.friendly;
+    const houseP = st.houses.pleased;
     const taken = st.taken;
 
-    // The Court button's count: an heir to name, a Disloyal House, a Disloyal commander.
+    // The Court button's count: a Furious House, a Furious commander.
     const badge = await until(() => page.evaluate(() => document.querySelector("#btn-court .court-badge")?.textContent ?? null), "the Court button's count", 20000 * SLOW);
-    check(Number(badge) >= 3, `the Court's count is at least 3 (got ${badge})`);
+    check(Number(badge) >= 2, `the Court's count is at least 2 (got ${badge})`);
     steps.push(`the Court button's count: ${badge}`);
     await crop(page, "#btn-court", "court-button.png", { pad: 10 });
 
@@ -182,10 +184,10 @@ async function main() {
       };
     });
     check(court.header[0]?.startsWith("Government: Aristocracy."), `the header: ${court.header}`);
-    check(court.attention.some((t) => /has no head/.test(t)) && court.attention.some((t) => /Disloyal\. Will secede/.test(t)) && court.attention.some((t) => /can be granted/.test(t)), `the needs-attention lines: ${court.attention.join(" | ")}`);
+    check(court.attention.some((t) => /Furious\. Will break away with .* in 8 turns: war\./.test(t)) && court.attention.some((t) => /can be granted/.test(t)), `the needs-attention lines: ${court.attention.join(" | ")}`);
     check(court.houses === 4 && court.crown === 4 && court.persons >= 2, `the cards: ${JSON.stringify(court)}`);
-    check(court.marks.some((t) => t.includes("Disloyal") && t.includes("✖") && t.includes("8 turns")), `the Disloyal mark with its turns: ${court.marks}`);
-    check(court.chips.includes("Claimant") && court.chips.includes("Restless"), `the keyword chips: ${court.chips}`);
+    check(court.marks.some((t) => t.includes("Furious") && t.includes("✖") && t.includes("8 turns")), `the Furious mark with its turns: ${court.marks}`);
+    check(court.chips.includes("Claimant") && court.chips.includes("Furious"), `the keyword chips: ${court.chips}`);
     steps.push(`the Court: ${court.header.join(" ")} ${court.attention.length} lines need attention; the Crown (${court.crown} cities), ${court.houses} Houses, ${court.persons} persons without a House`);
     await crop(page, ".modal[data-tag=court] .court-header, .modal[data-tag=court] .court-attention", "court-attention.png");
     await crop(page, ".modal[data-tag=court]", "court.png", { pad: 2 });
@@ -219,16 +221,18 @@ async function main() {
         first: { title: cards[0].querySelector(".pname").textContent, lines: [...cards[0].querySelectorAll("ul.plines li")].map((l) => l.textContent), effects: [...cards[0].querySelectorAll(".peffect")].map((e) => e.textContent) },
       };
     });
-    check(grant.title === `Grant ${taken.name}` && /A grant is for good\./.test(grant.head) && /Held by the Crown: .*city-count maintenance/.test(grant.head), `the grant list's head: ${grant.title} / ${grant.head}`);
+    check(grant.title === `Grant ${taken.name}` && /A grant is for good\./.test(grant.head) && /Held by the Crown: its maintenance/.test(grant.head), `the grant list's head: ${grant.title} / ${grant.head}`);
     const k = grant.claimants.indexOf(false);
     check(grant.claimants[0] && (k < 0 || grant.claimants.slice(k).every((x) => !x)), `claimants first: ${grant.claimants}`);
-    check(grant.first.lines.some((l) => l.startsWith("Maintenance:")) && grant.first.lines.some((l) => l.startsWith(`Trait in ${taken.name}:`)) && grant.first.effects.some((e) => /granted to House .*: -\d \(30 turns\)\./.test(e)), `the first card's preview: ${JSON.stringify(grant.first)}`);
+    check(grant.first.lines.some((l) => l.startsWith("Your maintenance:")) && grant.first.effects.some((e) => /granted to .*: -\d \(30 turns\)\./.test(e)), `the first card's preview: ${JSON.stringify(grant.first)}`);
     steps.push(`the grant list of ${taken.name}: ${grant.claimants.filter(Boolean).length} claimants first; ${grant.first.title}: ${grant.first.lines.join(" ")} ${grant.first.effects.length} subjects in its preview`);
     await crop(page, ".modal[data-tag=grant]", "grant-list.png", { pad: 2 });
     await crop(page, ".modal[data-tag=grant] .grant-card:first-child", "grant-claimant.png", { pad: 4 });
 
-    // Two steps: the button, then the confirmation line, then Grant.
-    const first = ".modal[data-tag=grant] .grant-card:first-child";
+    // Two steps, to the claimant House: the button, then the confirmation line, then Grant.
+    const nth = await page.evaluate((label) => [...document.querySelectorAll(".modal[data-tag=grant] .grant-card")].findIndex((c) => c.querySelector(".pname").textContent === label), houseP.label);
+    check(nth >= 0, `the claimant House ${houseP.label} has a card`);
+    const first = `.modal[data-tag=grant] .grant-card:nth-child(${nth + 1})`;
     const target = await page.evaluate((sel) => document.querySelector(sel).querySelector(".pname").textContent, first);
     await tap(page, `${first} button.pgrant-to`);
     const confirm = await until(() => page.evaluate((sel) => document.querySelector(`${sel} .pconfirm p`)?.textContent ?? null, first), "the confirmation line", 5000 * SLOW);
@@ -237,17 +241,19 @@ async function main() {
     await tap(page, `${first} button.pgrant-yes`);
     await until(async () => (await topTag(page)) === "court", "the grant list closed", 20000 * SLOW);
     const toast = await until(() => page.evaluate((t) => [...document.querySelectorAll("#toasts .toast")].map((x) => x.textContent).find((x) => x.includes(t)) ?? null, `${taken.name} granted to ${target}.`), "the grant's toast", 10000 * SLOW);
-    await until(() => page.evaluate((id) => !document.querySelector(`.modal[data-tag=court] .crown-card [data-city="${id}"]`) && !!document.querySelector(`.modal[data-tag=court] .house-card .city-chip[data-city="${id}"]`), taken.id), "the Court refreshed: the city is the House's", 10000 * SLOW);
+    // The city changes hands (a new id): the House's card names it.
+    await until(() => page.evaluate(([id, name, house]) => !document.querySelector(`.modal[data-tag=court] .crown-card [data-city="${id}"]`) && [...document.querySelectorAll(`.modal[data-tag=court] .house-card[data-house="${house}"] .city-chip`)].some((c) => c.textContent === name), [taken.id, taken.name, houseP.id]), "the Court refreshed: the city is the House's", 10000 * SLOW);
     steps.push(`granted in two steps ("${confirm}"); the toast "${toast}"; the Court refreshed`);
 
-    // Naming an heir from the needs-attention line.
+    // Freeing a House: the confirmation line, then Back (nothing changes).
     await page.evaluate(() => document.querySelectorAll("#toasts .toast").forEach((t) => t.remove()));
-    await tap(page, `.modal[data-tag=court] .pattn[data-kind=heir] button`);
-    await until(async () => (await topTag(page)) === "court-heir", "the heir's choice", 10000 * SLOW);
-    await crop(page, ".modal[data-tag=court-heir]", "court-heir.png", { pad: 2 });
-    await tap(page, ".modal[data-tag=court-heir] .heir-card:first-child button.pact");
-    await until(() => page.evaluate((id) => !!document.querySelector(`.modal[data-tag=court] .house-card[data-house="${id}"] .phouse-head .pname`), houseD.id), "the heir named", 10000 * SLOW);
-    steps.push(`an heir named for ${houseD.label} from the needs-attention line`);
+    const houseCard = `.modal[data-tag=court] .house-card[data-house="${houseA.id}"]`;
+    await tap(page, `${houseCard} button.prelease`);
+    const freeLine = await until(() => page.evaluate((sel) => document.querySelector(`${sel} .pconfirm p`)?.textContent ?? null, houseCard), "the Free confirmation", 5000 * SLOW);
+    await crop(page, houseCard, "court-free.png", { pad: 4 });
+    await tap(page, `${houseCard} .pconfirm button.small:not(.danger)`);
+    await until(() => page.evaluate((sel) => !!document.querySelector(`${sel} button.prelease`), houseCard), "back from the Free confirmation", 5000 * SLOW);
+    steps.push(`${houseA.label}'s Free confirmation ("${freeLine}"), then Back`);
     await page.keyboard.press("Escape");
     await page.close();
 

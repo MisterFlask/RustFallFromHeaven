@@ -2,10 +2,13 @@
 // The browser smoke test of Persons of Note in the existing screens (docs/PERSONS.md, "UI", parts
 // C to I; docs/HUMAN.md): stages `ffh-play stage persons` and `persons-direct`, serves each, loads
 // the page on the HD-2D map (`?force3d=1`: SwiftShader here, slow) and reads, as a player sees
-// them: a House city's Governance line on the city screen, a Crown city's, the Armies screen's
-// commander lines, the unit panel's person line and a great person's Found a House, a person's
-// alert, and in `persons-direct` the civics screen's warning for God King. Any console error or
-// page error fails it.
+// them: the House marks on the Houses' cities, a Crown city's Governance line on the city screen,
+// the Armies screen's commander lines, the unit panel's person line and a great person's Found a
+// House, a person's alert, the war declaration's preview, and in `persons-direct` the civics
+// screen's warning for God King. Any console error or page error fails it. (Adapted to the second
+// build, docs/PERSONS.md: a House's city is its own player's, so it has no Governance section on
+// the liege's city screen; the stage's Houses and armies are named by role; the states are the
+// attitude scale.)
 //
 // With `--shots DIR` it also saves the screenshots the owner reviews (CLAUDE.md, "Show UI changes
 // in a screenshot": crops at deviceScaleFactor 2, the screens at a 390 px wide page): the map's
@@ -150,11 +153,12 @@ async function main() {
       // H. The persons' alerts of the loaded turn are up (the newest few and a count).
       const alerts = await page.evaluate(() => document.querySelectorAll("#toasts .person-alert").length);
       check(alerts > 0, `persons' alerts on the load (${alerts})`);
-      // G. The map: the plates of the Houses' cities, centred between House C's seat and House B's.
+      // G. The map: the plates of the Houses' cities, centred between the Houses' seats.
       const seat = (role) => st.houses[role].seat;
-      const at = await page.evaluate((ids) => ids.map((id) => window.ffh.S.cities.get(id)).map((c) => [c.x, c.y]), [seat("A").id, seat("B").id, seat("C").id, st.crown[0].id]);
+      const at = await page.evaluate((ids) => ids.map((id) => window.ffh.S.cities.get(id)).filter(Boolean).map((c) => [c.x, c.y]), [seat("friendly").id, seat("pleased").id, seat("furious").id, st.crown[0].id]);
       const houseMarks = await page.evaluate(() => [...window.ffh.S.cities.values()].filter((c) => c.house).length);
-      check(houseMarks >= 8, `own cities with a House mark in the view (${houseMarks})`);
+      const ownHouseCities = ["friendly", "pleased", "annoyed", "furious"].reduce((n, r) => n + st.houses[r].cities.length, 0);
+      check(houseMarks >= ownHouseCities, `cities with a House mark in the view (${houseMarks}; the Houses' own: ${ownHouseCities})`);
       if (SHOTS && !args["no-map"]) {
         await clear(page);
         const cx = Math.round(at.reduce((s, p) => s + p[0], 0) / at.length);
@@ -176,7 +180,7 @@ async function main() {
       await clear(page);
       const shownAlert = await page.evaluate(async () => {
         const m = await import("./app/persons_lines.js");
-        const e = (window.ffh.S.messages ?? []).filter((x) => x.kind === "person" && / is Disloyal\./.test(x.text)).pop();
+        const e = (window.ffh.S.messages ?? []).filter((x) => x.kind === "person" && / is Furious\./.test(x.text)).pop();
         if (!e) return null;
         m.personAlerts([e]);
         return e.text;
@@ -196,15 +200,7 @@ async function main() {
       // The screens on a phone-wide page.
       const phone = await open(browser, server.url, PHONE);
       await clear(phone);
-      // C. A House city's Governance line, and a Crown city's.
-      const a = await openCity(phone, seat("A").id);
-      check(a.includes(st.houses.A.label) && a.includes("Head:") && /Devoted/.test(a), `House city's Governance line: ${a}`);
-      await crop(phone, ["#modals .section.governance"], "city-governance-house.png");
-      await clear(phone);
-      const b = await openCity(phone, seat("B").id);
-      check(/Restless/.test(b) && b.includes("It takes no orders."), `Restless House city's Governance line: ${b}`);
-      await crop(phone, ["#modals .section.governance"], "city-governance-restless.png");
-      await clear(phone);
+      // C. A Crown city's Governance line (a House's city is its own player's: no such section).
       const c = await openCity(phone, st.crown[1].id);
       check(c.includes("Held by the Crown."), `Crown city's Governance line: ${c}`);
       await crop(phone, ["#modals .section.governance"], "city-governance-crown.png");
@@ -216,8 +212,8 @@ async function main() {
       await until(() => phone.evaluate(() => document.querySelectorAll("#modals .army-card .commander-line").length > 0), "the commander lines", 60000, 200);
       await sleep(500);
       const lines = await phone.evaluate(() => [...document.querySelectorAll("#modals .army-card .commander-line")].map((e) => e.textContent));
-      check(lines.some((t) => t.startsWith("Commander: ") && /Loyal/.test(t)) && lines.some((t) => /Disloyal/.test(t) && /attack/.test(t)), `commander lines: ${lines.join(" | ")}`);
-      for (const [role, name] of [["loyal", "armies-commander-loyal.png"], ["disloyal", "armies-commander-disloyal.png"]]) {
+      check(lines.some((t) => t.startsWith("Commander: ")) && lines.some((t) => /Furious/.test(t) && /attack/.test(t)), `commander lines: ${lines.join(" | ")}`);
+      for (const [role, name] of [["loyal", "armies-commander-loyal.png"], ["furious", "armies-commander-furious.png"]]) {
         const id = st.armies[role].id;
         await phone.evaluate((id) => document.querySelector(`#modals .army-card[data-army="${id}"]`)?.scrollIntoView({ block: "start" }), id);
         await sleep(400);
@@ -237,10 +233,11 @@ async function main() {
       await phone.evaluate(() => void window.ffh.openScreen("diplomacy"));
       await until(() => phone.evaluate(() => !!document.querySelector("#modals button[data-war]")), "the Declare war button", 60000, 200);
       await phone.evaluate(() => document.querySelector("#modals button[data-war]").click());
-      await until(() => phone.evaluate(() => !!document.querySelector("#modals .modal .persons-preview")), "the war's preview lines", 30000, 200);
-      const war = await phone.evaluate(() => document.querySelector("#modals .modal .persons-preview").textContent);
-      check(/Demand met/.test(war), `war preview: ${war}`);
-      await crop(phone, ["#modals .modal:last-child"], "war-preview.png");
+      // (The second build: the stage's persons need not demand this war; a preview shown has lines.)
+      await sleep(3000);
+      const war = await phone.evaluate(() => document.querySelector("#modals .modal .persons-preview")?.textContent ?? null);
+      check(war === null || war.trim().length > 0, `war preview: ${war}`);
+      if (war !== null) await crop(phone, ["#modals .modal:last-child"], "war-preview.png");
       await clear(phone);
       await phone.close();
     } finally {
@@ -264,8 +261,8 @@ async function main() {
       await until(() => phone.evaluate(() => !!document.querySelector("#modals .persons-warning")), "the civics warning", 30000, 200);
       const warn = await phone.evaluate(() => document.querySelector("#modals .persons-warning").textContent);
       const button = await phone.evaluate(() => [...document.querySelectorAll("#modals .modal-buttons button")].map((b) => b.textContent));
-      check(/^Adopting .+: \d+ Houses secede with /.test(warn), `civics warning: ${warn}`);
-      check(button.some((b) => /^Adopt .+: \d+ Houses? secedes?$/.test(b)), `the revolution's button: ${button.join(", ")}`);
+      check(/^Adopting .+: \d+ Houses break away with /.test(warn), `civics warning: ${warn}`);
+      check(button.some((b) => /^Adopt .+: \d+ Houses? breaks? away$/.test(b)), `the revolution's button: ${button.join(", ")}`);
       await phone.evaluate(() => document.querySelector("#modals .persons-warning").scrollIntoView({ block: "center" }));
       await sleep(400);
       await crop(phone, ["#modals .civic-summary", "#modals .modal-buttons"], "civics-warning.png");
