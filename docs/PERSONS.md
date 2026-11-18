@@ -1,54 +1,61 @@
 # Persons of Note
 
 This game's own rules, not FFH2's. **A design: nothing here is built.** A civilization has a small
-cast of named people (its heroes, its best veterans, its great people, the leaders who
-capitulated to it). Its cities are held by Houses, each presided over by one of them; its armies
-are commanded by them; its vassals are ruled by them. Each wants one thing, and can take what
-they hold when they are disloyal. The owner's concept and decisions of 2026-11-18; the numbers
-are first guesses, and "Open points" lists what is not decided.
+cast of named, authored characters (its heroes, and the minor leaders of docs/minor-leaders who
+join it as its best veterans and great people). Its cities are held by Houses, each presided over
+by one of them; its armies are commanded by them; its vassals are ruled by them. Each makes
+demands, gives less when crossed, and can take what they hold. The owner's concept and decisions
+of 2026-11-18; the numbers are first guesses. "Open points" says which rules are the owner's
+decisions and which are proposals still to be confirmed.
 
 | Stage | What | Status |
 |---|---|---|
-| 0 | the vassal levy: an army requisitions from its owner's vassals' cities | not built |
-| 1 | the cast, the Court screen, Houses and grants, the commander's post, wants and loyalty; no consequences. The per-city named governors and their traits go | not built |
-| 2 | consequences: a House's and a commander's secession, dismissal, heirs | not built |
-| 3 | vassals: a House released as a vassal, a capitulated leader as a person, claims | not built |
+| 0 | the vassal levy: an army requisitions from its owner's vassals' cities, by a quota | not built |
+| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | not built |
+| 2 | consequences: quotas and withholding, secession, leagues, the civil war of direct rule, heirs | not built |
+| 3 | vassals: a House released as a vassal, a capitulated leader as a person, claims abroad | not built |
 | 4 | foreign persons: seeing them, courting them, agents abroad | not built |
+| 5 | the annals: what each character did in the player's earlier games | not built |
 
 Stage 0 needs no persons and can be built first. Stage 1 alone shows whether the cast is worth
 looking at before anything can go wrong.
 
 ## What it is for
 
-A large empire is shared with people who have a view of how it is ruled. Today growth adds more
-cities and units of the same kind; with this system each city gained is granted to someone, and
-the decisions the player already makes (war and peace, religion, government, who gets a command)
-have an audience inside its own borders that can act.
+Two goals (the owner, 2026-11-18): **administering an empire is tricky**, and **the game makes
+stories about particular people**, the stellar ones and the pains.
+
+A large empire is shared with people who have a view of how it is ruled. Each city gained is
+granted to someone, for good; what the ruler may order in it then depends on how that someone
+stands with the ruler; and the decisions the player already makes (war and peace, religion,
+government, who gets a command, who gets the city) are watched by people who can withhold and,
+in the end, leave with what they hold.
 
 Wanted:
 - **A cast known by name**, 6 to 10 people, each of whom arrived through something the player
-  watched happen. Nobody arrives as a stranger.
-- **Dilemmas about trust**: who to give power to, when the capable and the loyal differ.
-- **Weight on choices already made.** No new decision screens: a war, a religion, a government
-  cost or earn something at home.
+  watched happen, and each the same character in every game, so that a player meets them again.
+- **Dilemmas about trust**: the general who wins is the general who can take a city.
+- **Demands that cannot all be met.** Trickiness is conflict between what the holders want and
+  what the board asks for, not a meter to watch.
+- **A middle register.** A person can be a pain for a hundred turns without being a traitor.
 - **Governments that differ in kind**: each a different deal with the holders (the Crown's size,
-  the levy quota; docs/GOVERNORS.md part 5, not built, is the same idea).
-- **Flat attention as the empire grows.** A thirty-city empire has five or six Houses to think
-  about, not thirty governors.
-- **Trouble seen coming and answered on the map**: a countdown, a stated outcome, a counter.
-- **The same on the other side**: rivals have holders too, a way to hurt a rival without armies.
+  the quotas, and direct rule, which has no holders at all).
+- **Flat attention as the empire grows.** A thirty-city empire has five or six Houses to deal
+  with, and less to decide in a House's city than in the Crown's.
+- **Trouble seen coming and answered on the map**: a term, a stated outcome, a counter.
+- **The same on the other side**: rivals have holders too.
 
 Not wanted:
 - **Crusader Kings' breadth**: no families, marriages, ageing, trait lists or scheme screens.
-- **A bench of stat sticks.** A person gives no yield and has no traits, and nothing is matched
-  to anything: the first governor rules were dropped for that (docs/GOVERNORS.md, History), and
-  a named governor with a trait in every city is the same fiddle (the owner, 2026-11-18).
+- **Stat sticks.** A person gives no yield, and nothing is matched to anything: the first
+  governor rules were dropped for that (docs/GOVERNORS.md, History), and a named governor with a
+  trait in every city is the same fiddle (the owner, 2026-11-18).
 - **Dice.** No betrayal a roll decides, no event pop-up with two flavoured options.
-- **Upkeep chores.** No meter topped up with gifts; a person asks for attention only when a
-  threshold is crossed.
-- **Kicking the loser.** Loyalty follows what the player chose, never how the game is going.
+- **Upkeep chores.** No meter topped up with gifts. A demand is an act on the board (a city
+  taken, a war declared, a wonder ordered), one at a time per holder, with a long term.
+- **Kicking the loser.** Loyalty follows what the player chose, never how the game is going,
+  and no demand asks for what the Crown lacks the means to do.
 - **A second game beside the map.** Politics ends in armies, cities and borders.
-- **Losses that end the game.** A defection takes what one person holds, which the player chose.
 - **A human-only weapon.** What the human can do to an AI's cast the AI defends against and does.
 
 Out of scope (the owner's decision, 2026-11-18): **a human as a vassal.** No rule here acts on a
@@ -59,141 +66,187 @@ nobody's cast.
 
 ### The cast
 
-A person (`Game::persons`, saved) has a name, an origin, one want, a loyalty, at most one post
-and at most one rival. No traits. A person is tied to a unit while that unit is on the map, and
-outlives it only in a post that takes the unit off the map (below).
+**A person is an authored character** (the owner's decision, 2026-11-18): a hero, or a minor
+leader of the civilization (docs/minor-leaders: a name, a title, a portrait, a backstory, an
+alignment, personal traits). The same person is the same in every game. Which of them a game
+sees is drawn with the game RNG, among those of the civilization not yet seen in this game, when
+an entry below happens. A person (`Game::persons`, saved) is tied to a unit on the map, which
+takes their name.
 
 **Who enters.**
-- *Heroes*: a unit with `PROMOTION_HERO`, when its owner gains it. Its want is authored in its
-  unit's data.
+- *Heroes*: a unit with `PROMOTION_HERO`, when its owner gains it.
 - *Veterans*: an army unit (docs/ARMIES.md, "Army units") that reaches level
   `PERSON_VETERAN_LEVEL` (5) plus the number of its owner's living veterans in the cast. The bar
-  rises as the cast fills, so the cast stays small without a cap. It takes a name from its
-  civilization's list and a want by the list below.
-- *Great people*: a great person unit, while it lives. Spending it (a card, settling, hurrying)
-  ends the person as it ends the unit; a post is a third use and keeps it.
+  rises as the cast fills. The unit becomes a drawn person.
+- *Great people*: a great person unit, while it lives, becomes a drawn person. Spending it (a
+  card, settling, hurrying) ends the person as it ends the unit; a post is a third use.
 - *Capitulated leaders* (stage 3): the leader of a civilization that becomes this player's
   vassal, holding the vassal ruler's post from the start.
 
 **Who leaves.** The unit dies; the great person is spent; the person secedes, defects or resigns
-(below); a vassal ruler's vassal dies. There is no ageing. A House's head who leaves is
-followed by an heir (Houses, below).
+(below); a vassal ruler's vassal dies. There is no ageing. A person who has left does not return
+in that game.
 
-**Wants.** One each. A want is always something the player can do on the board at that moment
-(the owner's rule, 2026-11-18): a city granted, an army given, a war declared, a city taken, a
-wonder ordered. Never an outcome the player does not control (a score, a rival's choice, luck),
-and never something out of reach: a want whose act becomes impossible (the named civilization is
-dead or was never met, the city is razed) is replaced by another from the same list, without a
-grievance. The Court screen states the act: `Wants: war on the Sheaim.`
+**What is authored**, the same in every game, and what a player learns about a character:
+- *An ambition*: the kind of demand they make (below). Until one is authored it follows the
+  person's first personal trait: Aggressive, Raiders: War. Expansive, Organized: Land. Spiritual:
+  Faith. Industrious, Creative, Philosophical, Arcane: Works. Financial: Trade. Any other: Land.
+- *A temper*: one line that changes how they answer the player, never a yield. Examples of the
+  kind: *Steadfast* (never passes Restless). *Proud* (a refused demand counts double). *Patient*
+  (their demands last twice as long). *Grasping* (every demand is for a city). *Kingmaker*
+  (joins any secession). Most persons have none; it is what makes the few who do known.
+- *Their alignment* (authored already): a state religion of the opposite alignment is
+  `State religion opposed: -2` while it lasts.
+- When a person leads a civilization (a secession, a released vassal) they are its leader, with
+  their portrait and traits, as breakaway factions' leaders already are (docs/CARDS.md).
 
-| Origin | Want |
+The cast to be authored (how many a civilization needs, which enter as soldiers and which as
+great people) is the owner's, later.
+
+**The record.** Every person keeps a list of their deeds (`Person::deeds`: battles won and lost
+in command, cities taken, sieges their House's cities withstood, grants, demands met and
+refused, who was preferred to them). The Court screen shows it, and the game's messages name the
+person, not the army: `Maereth Ashledger took Torrin with the 2nd Army.`
+
+### Demands and loyalty
+
+**Loyalty** is a sum of listed modifiers, each with a cause and, where it is timed, its turns
+left: `Demand refused: -3 (41 turns)`. Only chosen acts move it: a demand met or let lapse, a
+grant, an appointment, a dismissal, an order beyond the quota, the state religion. Losing a city,
+a battle or ground in the score moves nothing. There is no RNG in it.
+
+**Demands.** Every person has one standing demand at a time, of their ambition's kind: an act
+the player can do on the board (the owner's rule, 2026-11-18), named exactly:
+`Demands: Torrin (Sheaim) taken and granted to House Ashledger. 34 turns.`
+
+| Ambition | The demand, the first that applies |
 |---|---|
-| Hero | authored, one line of data per hero |
-| Veteran | a command; or land (a House, then a larger one than its rival's); or war on a named civilization (the one it earned most of its experience against) |
-| Great Prophet | the state religion kept |
-| Great Merchant | peace |
-| Great Engineer | a world wonder under way or built in the last `PERSON_WONDER_TURNS` (30) turns |
-| Great Commander | a command |
-| Great Bard, Sage | land |
-| Vassal ruler | below |
+| any, without a post | a command (War, Works) or a House (the others) |
+| Land | the Crown's city nearest its lands granted; else a named foreign city nearest its lands taken and granted |
+| War | war declared on a named civilization; at war with it, a named city of it taken |
+| Faith | its religion the state religion; else its temple ordered in its seat; else its religion spread to a named city of ours |
+| Works | a named wonder, or the costliest building its seat can build, ordered in its seat |
+| Trade | peace with a named civilization we are at war with; else open borders with a named neighbour |
+| Vassal ruler | a named city it once held taken and returned; else as its ambition |
 
-**A vassal ruler's wants** (stage 3; a released House's head changes to one of these, a
-capitulated leader starts with one), each an act on the map:
-- *a city returned*: a named city it once held, taken (if another holds it) and given to it;
-- *war on a named neighbour*: the civilization it likes least among those the master has met;
-- *protection*: while it is at war, an army of the master's standing in its land;
-- *a resource*: a named bonus it lacks and the master has, given in a standing deal.
+- *Within the Crown's means when it is made*: a war or a conquest only against a civilization
+  of less power than ours; a building the city can build. A demand that becomes impossible (the
+  civilization dead, the city razed) is replaced, without a grievance.
+- *The term* is `PERSON_DEMAND_TURNS` (40). Met: `Demand met: +3 (60 turns)`. Lapsed:
+  `Demand refused: -3 (60 turns)`. The next demand comes `PERSON_DEMAND_REST` (20) turns later.
+- *Demands conflict on purpose*: one House wants the war another wants ended; two want the same
+  city. The player meets some and not others, and which is the politics.
 
-**Rivals.** When a command is given or a House founded, each other person of the cast who wants
-that and holds no post becomes the appointee's rival (one rival at most: the first passed over
-keeps it). What a rival is given after is a grievance.
+**States**, by loyalty. In the plain case they are the record of the last two demands:
 
-### Loyalty
+| State | Loyalty | A House | A commander |
+|---|---|---|---|
+| **Devoted** | +3 or more | takes every order, without a quota; joins no secession | cannot be courted |
+| **Loyal** | | takes orders within its quota | commands |
+| **Restless** | -3 or less | takes no new order: no empire order, no requisition | its army takes no order to attack |
+| **Disloyal** | -6 or less | a countdown of `PERSON_DISLOYAL_TURNS` (10) turns to its secession | the same |
 
-Loyalty is a sum of listed modifiers, each with a cause and, where it is timed, its turns left,
-shown as attitude is shown: `Passed over for the 2nd Army: -2 (18 turns)`.
-
-- *Only chosen acts move it*: a grant, an appointment or a dismissal, a change of
-  civics or state religion, a declaration of war or a peace, a levy beyond the quota. Losing a
-  city, a battle or ground in the score moves nothing.
-- *The want*: met, +2 while it is; unmet with no post, -1 every `PERSON_IDLE_TURNS` (20) turns,
-  to -3 at most. Idle ambition sours, slowly.
-- *States* (thresholds, `PERSON_*` defines): **Loyal**; **Restless** at -3 or below: nothing
-  happens, and rivals may court the person (stage 4); **Disloyal** at -6 or below: a countdown of
-  `PERSON_DISLOYAL_TURNS` (10) turns begins and states its outcome:
-  `House Valdric will secede with Prespur, Elam and Torrin in 8 turns.` Loyalty back above -6
-  stops it.
-- *Only holders act.* A person with no post who reaches Disloyal leaves the game (stage 4: to
-  the rival that courted them).
-
-There is no RNG in loyalty: every change has a listed cause and every outcome a stated date.
+The countdown states its outcome: `House Ashledger will secede with Prespur, Elam and Torrin in
+8 turns.` Loyalty back above -6 stops it. A person without a post who reaches Disloyal leaves
+the game (stage 4: for the rival that courted them).
 
 ### Houses
 
-Every city belongs to a House. The **Crown** is the leader's own House: it always holds the
-capital, it has no person at its head and it cannot be disloyal. Every other House has a name of
-its own (from its civilization's list: `governor_names.jsonc` becomes the Houses'), is presided
-over by one person of the cast and holds one city or more. A House outlives its head.
+Every city belongs to a House. The **Crown** is the leader's own House: it always administers
+the capital, it has no person at its head and it cannot be disloyal. Every other House has a
+name of its own (from its civilization's list: `governor_names.jsonc` becomes the Houses'), is
+presided over by one person and holds one city or more.
 
-- **A city gained** (founded, captured, traded, flipped) is the Crown's until it is granted.
-- **Granting** a Crown city (never the capital) is one click, on the city or on the Court
-  screen: to a House that exists, or to a person without a post, which founds a House
-  ("House Valdric"). The list shows each candidate's want, state and cities.
-  `Granted Torrin: +1 (30 turns)` for the House; `Torrin granted to House Valdric: -1 (30
-  turns)` for its head's rival.
-- **A grant is for good** (the owner's decision, 2026-11-18). A city cannot be revoked from a
+**Grants.**
+- *A city gained* (founded, captured, traded, flipped) is the Crown's until it is granted.
+- *Granting* a Crown city (never the capital) is one click: to a House that exists, or to a
+  person without a post, which founds a House. `Granted Torrin: +1 (30 turns)`.
+- *Claims.* A city has claimants: each House with a city within `PERSON_CLAIM_RANGE` (6) plots
+  of it, and the commander whose army took it in the last 20 turns. Granting it to one snubs the
+  others: `Torrin granted to House Arne: -1 (30 turns)`, -2 for the commander who took it. The
+  one preferred becomes the snubbed person's rival (one rival each: the latest). The list of
+  candidates shows the claimants and what each choice does. Keeping the city in the Crown snubs
+  nobody and costs maintenance (below).
+- *A grant is for good* (the owner's decision, 2026-11-18). A city cannot be revoked from a
   House, and a House's head cannot be replaced. A city leaves its House only by leaving its
   owner (captured, traded, flipped, razed), by the House's secession or by its release as a
   vassal; a city won back is the Crown's again. A House that has lost its last city ends, and
   its head is a person without a post.
-- **The head stays on the map.** A hero or a veteran who presides over a House still fights.
-- **Heirs.** When a House's head dies or leaves the cast, the House takes its heir from the
-  cast: the player names one of its persons without a post, at once (with one such person, that
-  one). With none the seat is empty until a person without a post enters the cast, who takes it.
-  While the seat is empty the House cannot become Disloyal and its cities count as the Crown's
-  for maintenance.
-- **Loyalty is the House's.** The modifiers earned by what was done to the House (grants,
-  levies, its rival's gains) stay with it when its head changes; the heir brings only their own
-  want. Changing the head does not clear a grievance.
-- **A Disloyal head's unit is the House's, not the player's**: from the turn the countdown
-  begins it goes to the House's largest city and takes no orders (as a marching recruit takes
-  none, docs/ARMIES.md), so the countdown cannot be ended by sending the head to die. Before
-  that the unit is the player's to risk as any other.
-- **What a House does.** Nothing to the city's yields. Its cities are built as governed cities
-  are today (docs/GOVERNORS.md: roles, priorities, empire orders and requisition are the
-  player's, unchanged). The House's name is the governor's: the per-city named governor and its
-  trait are removed.
-- **Why grant at all.** A city of a House counts half toward its owner's city-count maintenance
-  (`PERSON_HOUSE_MAINTENANCE_PERCENT`, 50), and the government civic sets how many cities the
-  Crown holds before each further one counts double (`CivicInfo::crown_cities`). And a landless
-  person who wants land sours.
-- **Under a direct-rule civic** (Despotism, God King) Houses stand as under any government:
-  the civic says who picks the cities' queues (docs/GOVERNORS.md), not who holds them.
+- *Granting a city to a commander* founds their House and ends their command (one post each):
+  the way to reward a general and take the army from them at once.
+
+**What the Crown may do in a House's city.** A Crown city is the player's as cities are today
+(docs/GOVERNORS.md: roles, priorities, empire orders, requisition). A House's city is the
+House's:
+- *Its role* is proposed with the head's ambition as the priority (War: Garrison or Production.
+  Land: Growth. Faith: Culture. Works: Production or Research. Trade: Commerce), not the
+  empire's priorities, and the player cannot overrule it.
+- *Orders by quota.* Each empire order and each requisition order placed in a House's cities
+  counts against the House's quota: `CivicInfo::house_orders` (hundredths of an order per city
+  of the House) in every `PERSON_LEVY_TURNS` (30) turns. At the quota the House takes no more
+  until the turns run out. Devoted, it has no quota; Restless, it takes none (the states above).
+  The Armies screen and the order list show what is left: `House Arne: 1 of 3 orders left.`
+- *Everything else is unchanged*: its commerce, research and culture are the owner's, its
+  garrison defends it, its cultural channel is the player's (docs/CULTURE.md).
+- The House's name is the governor's: the per-city named governor and its trait are removed.
+
+**Why grant at all.** A city of a House counts half toward its owner's city-count maintenance
+(`PERSON_HOUSE_MAINTENANCE_PERCENT`, 50), and the government civic sets how many cities the
+Crown holds before each further one counts double (`CivicInfo::crown_cities`). A person without
+a post demands one. And a commander with a claim is safer landed than snubbed.
+
+**Heads and heirs.**
+- *The head stays on the map.* A hero or a veteran who presides over a House still fights.
+- *Heirs.* A House outlives its head. When the head dies or leaves the cast, the player names
+  the heir among its persons without a post, at once (with one such person, that one). With
+  none, the seat is empty until a person without a post enters the cast, who takes it. While the
+  seat is empty the House makes no demand, cannot become Disloyal, and its cities count as the
+  Crown's for maintenance.
+- *Loyalty is the House's.* Its modifiers stay with it when its head changes; the heir brings
+  their own ambition and temper, and a new demand. Changing the head clears no grievance.
+- *A Disloyal head's unit is the House's, not the player's*: from the turn the countdown begins
+  it goes to the House's largest city and takes no orders (as a marching recruit takes none,
+  docs/ARMIES.md). Before that the unit is the player's to risk as any other.
 
 **A House's secession.** At the countdown's end the House's cities become a new civilization of
 the owner's kind led by its head (`world::birth` with `release`, as the Sundering's factions:
 buildings, culture and garrisons go with the cities; docs/CARDS.md), at war with its former
 owner. An ordinary war: peace, and taking it back as a vassal, are possible.
 - *The counter on the map*: a city of the House in which an army of the owner stands at the
-  countdown's end does not go (a Disloyal commander's army does not count). Occupy the cities, meet the want, or accept the loss.
-- *The exposure is chosen, once*: a House can take what it was granted and nothing else, and
-  what it was granted cannot be taken back. One large House is cheap to keep content and costly
-  to lose; several small ones are the reverse.
+  countdown's end does not go, and is the Crown's from then (a Disloyal commander's army does
+  not count). Occupy the cities, meet the demand, or accept the loss.
+- *Leagues.* Every other House whose countdown is running goes with it at once, as one
+  civilization led by the head of the House with the most cities. Not a House whose head is the
+  rival of a head already in the league: rivals never secede together.
+- *The exposure is chosen, once*: a House takes what it was granted, and what it was granted
+  cannot be taken back.
+
+**Direct rule is civil war** (the owner's decision, 2026-11-18). Under a direct-rule civic
+(Despotism, God King; docs/GOVERNORS.md) there are no Houses: every city is the Crown's, no city
+counts double and none can be granted. A game starts so. Adopting one while Houses stand is
+their secession, all of them, Devoted and rivals included, at once and as one league; the
+counter on the map holds as above, and a House with every city held ends, its head leaving the
+cast. The civics screen states it before the choice:
+`Adopting God King: 3 Houses secede with 9 cities. Held by armies: Torrin, Elam.`
 
 ### Commanders
 
-An army has one commander's post (the slot docs/ARMIES.md leaves for phases 6-7; what a loyal
-commander is worth in battle is decided there). A veteran in the army, a hero travelling with it
-or a Great Commander may hold it. A House's head holds no command (one post each).
+An army has one commander's post. A veteran in the army, a hero travelling with it or a Great
+Commander may hold it; a House's head may not (one post each).
 
-**Dismissal.** Before the countdown: the post is empty, `Dismissed: -3 (30 turns)`. After it
-began: the outcome happens at once.
+- *What a commander is worth* in battle rises with the commander's unit's level (the commander
+  auras of docs/ENGAGEMENTS.md, phase 7, decided there). The capable commander is the one who
+  has fought most, and so the one with the most claims.
+- *Claims*: the commander whose army takes a city is a claimant to it (Houses, above).
+- *Restless*, the army takes no order to attack: it moves and defends.
+- *Dismissal.* Before the countdown: the post is empty, `Dismissed: -3 (30 turns)`. After it
+  began: the outcome happens at once.
 
 **A commander's secession.** An army needs a supply line to a city of its owner
 (docs/SUPPLY.md), so a seceding army needs a home. At the countdown's end, in this order:
 
-1. **It joins a Disloyal House**: if the commander's rival is not that House's head, the sworn
-   units go with the House when it secedes, and wait for it.
+1. **It joins a league**: if a House is seceding or its countdown is running, and its head is
+   not the commander's rival, the sworn units go with that House.
 2. **It seizes a city**: the nearest city of its owner its sworn units can reach by the rules'
    path whose garrison is smaller than they are. The city and the sworn units become a new
    civilization as a seceding House does, led by the commander.
@@ -202,10 +255,9 @@ began: the outcome happens at once.
 4. **Otherwise the commander resigns** and leaves the game. The army stays.
 
 - *Sworn units*: the army's units on the turn the countdown begins. They are the ones that go,
-  wherever they are moved after: splitting the army on the last turn saves nothing.
+  wherever they are moved after.
 - *The counter on the map*: a sworn unit standing in a city of its owner with more of the
   owner's other land combat units than sworn units there does not go.
-- *One army, one city.* Nothing else follows a commander's secession.
 
 ### The vassal levy (stage 0)
 
@@ -213,19 +265,15 @@ A master commands its vassals' soldiers through the armies' requisition (docs/AR
 "Requisition"), the owner's decision of 2026-11-18. An army's *Requisition from* list accepts the
 cities of its owner's vassals as well as its own.
 
-- *The order* is a requisition order at the front of the vassal city's queue, as in a city of
-  the master's. The vassal pays its production; what it was building keeps its progress.
+- *The order* is a requisition order at the front of the vassal city's queue. The vassal pays
+  its production; what it was building keeps its progress.
 - *The unit* is the master's when trained (its type by the master's `requisition_unit`, among
   what the vassal's city can train) and marches to the army as any recruit.
-- *The quota*: the master's government civic sets how many levies a vassal owes in every
-  `PERSON_LEVY_TURNS` (30) turns, per city of the vassal's (`CivicInfo::levy_quota`, in
-  hundredths of a unit per city). Within the quota a levy costs the master nothing.
-- *Over the quota* each order placed is a grievance of the vassal's ruler:
-  `Levied beyond quota: -1 (20 turns)`. Before stage 3 there is no ruler: an AI vassal counts it
-  in its attitude toward its master, which its choice to stay a vassal reads.
+- *The quota*: `CivicInfo::levy_quota` of the master's government, counted as a House's is, and
+  smaller. Before stage 3 a vassal has no ruler in a cast: at its quota it takes no more.
+  From stage 3 its ruler's state sets it as a House's does (Devoted, Loyal, Restless).
 
-A human vassal is levied nothing (above). Requisition from the master's own cities, the Crown's
-and the Houses', is free as today.
+A human vassal is levied nothing (above).
 
 ### Vassals (stage 3)
 
@@ -234,89 +282,109 @@ Crown, House, vassal is one ladder: each step gives up more of a city and costs 
 | | Crown | House | Vassal |
 |---|---|---|---|
 | Commerce and research | the owner's | the owner's | the vassal's |
-| What it builds | the owner's roles and orders | the owner's roles and orders | its ruler's choice, and the levies |
+| What it builds | the owner's roles and orders | the House's role; orders by quota | its ruler's choice; levies by a smaller quota |
 | City-count maintenance | full (double beyond the Crown's size) | half | none |
-| Requisition | free | free | by the quota |
 | Can leave | no | with its head | with its ruler |
 
 - **Release.** A House is released as a vassal: its cities become a civilization of the owner's
   kind, its vassal, led by the House's head (`world::birth` with `release` and `vassal`).
-  `Released as a vassal: +3`, and the want for land is met for good.
-- **Staying a vassal** is the ruler's loyalty: Loyal or Restless it stays; Disloyal, the
-  vassalage ends at the countdown. The rules' own conditions (`team_can_vassal_revolt`: the
-  vassal or the master having lost half its land) still free a vassal. For a vassal whose ruler
-  is in a cast this replaces the AI's own choice to leave.
-- **Claims.** A person who defects to another civilization arrives with a claim on the cities
-  they held or seized. A civilization that captures such a city may grant it to that person at
-  once, without the capture's disorder.
+  `Released as a vassal: +3`.
+- **Staying a vassal** is the ruler's loyalty: Disloyal, the vassalage ends at the countdown.
+  The rules' own conditions (`team_can_vassal_revolt`) still free a vassal. For a vassal whose
+  ruler is in a cast this replaces the AI's own choice to leave.
+- **Claims abroad.** A person who defects to another civilization arrives as a claimant to the
+  cities they held or seized. A civilization that captures such a city may grant it to that
+  person at once, without the capture's disorder.
 
 ### Foreign persons (stage 4)
 
 - **Seen by contact**: a rival's person is known only through what they hold that the player
   touches: the commander of an army it has fought, the head of a House with a city it channels
-  at or borders, a vassal ruler it has met. Their state is shown once they are Restless.
+  at or borders, a vassal ruler it has met. Their state and their demand are shown once they
+  are Restless.
 - **Courting**: an offer to a rival's Restless person the player knows: gold a turn, a House in
-  the player's realm, or their want. While it stands it is a grievance of theirs against their
-  own ruler (`Courted by the Hippus: -1`) and names the courting civilization as where they go:
-  a courted House secedes as the courter's vassal, not as an independent civilization. It is
-  public to the person's owner, as a hostile channel is.
+  the player's realm, or their demand met by the player. While it stands it is a grievance of
+  theirs against their own ruler (`Courted by the Hippus: -1`) and names the courting
+  civilization as where they go: a courted House secedes as the courter's vassal. It is public
+  to the person's owner, as a hostile channel is.
 - **Agents abroad**: a Great Bard, a Great Prophet or a hero, off the map, running a channel
   (docs/CULTURE.md) aimed at one city at full effect whatever the distance. An agent holds
   nothing: Disloyal, the channel ends and its target is told who ran it.
+
+### The annals (stage 5)
+
+The client keeps, outside the game's state, what each character did in the player's finished
+games (served to the end, seceded, fell in battle, cities taken). The Court screen shows it
+under the record: `Earlier games: seceded twice; held Prespur to the end once.`
 
 ## AI
 
 A rules change is not gated on the AI (CLAUDE.md, "How AI changes are checked"): the AI does
 something reasonable with it. First version:
-- it grants each city gained beyond the Crown's size to the Loyal House with the fewest cities,
-  and founds a House for a landless person who wants land before enlarging one;
-- commands go to its most loyal eligible person; a Restless person gets no army;
+- it grants each city gained beyond the Crown's size to the claimant in the best state, and
+  founds a House for a person without a post before enlarging one;
+- each turn it works toward the standing demand that is cheapest for it among those of its
+  Restless holders, then its Loyal ones (a demand for a war it was preparing anyway first);
+- commands go to its highest-level eligible person who is not Restless;
 - an army marches into the cities of a Disloyal House, the largest first; a Disloyal
   commander's army marches to its most garrisoned city;
-- it does not make a choice that would turn a holder Disloyal when another choice of near value
-  does not;
-- it levies its vassals to the quota and no further for its main army (`requisition_cities`);
+- it adopts a direct-rule civic only with no House, or when its armies hold every House's city;
+- it places orders in Houses' and vassals' cities up to the quota and no further;
 - it courts a rival's Restless holder when at war with that rival.
 
-To measure before stage 4 is kept: secessions per AI game and who caused them (telemetry
-`person`: `entered`, `posted`, `granted`, `restless`, `disloyal`, `seceded`, `courted`). If a
-human can peel an AI empire apart by courting and the AI cannot answer, courting is cut back.
+To measure as each stage lands: secessions and leagues per AI game and what caused them, the
+share of demands met, the turns Houses spend Restless (telemetry `person`: `entered`, `posted`,
+`granted`, `demand`, `state`, `seceded`, `courted`). An AI that loses a House every game is an
+AI the human need not fight: if so, the AI's demands are tuned before the human's are.
 
 ## UI
 
-- **The Court screen**: one row a person: portrait, name, origin, want, post (House with its
-  cities, or army), state, rival. Opening a row lists the loyalty modifiers. No other screen is
-  new.
+- **The Court screen**: one row a person: portrait, name and title, post (House with its
+  cities, or army), state, demand with its turns, rival. Opening a row shows the loyalty
+  modifiers, the ambition and temper, and the record. No other screen is new.
 - **Where the state is seen at a glance**: each city's name plate carries its House's colour;
   a Restless or Disloyal holder marks its cities' plates and its army's banner, with the
   countdown.
-- **Previews at the decision**: the grant list, the civics screen, the war and peace dialogs
-  and the Armies screen's *Requisition from* list state what the choice does to each holder
-  before it is made: `House Valdric: becomes Restless.` `Over quota. Ruler: -1.`
-- **Text** is bare (CLAUDE.md, "Rules text and tooltips"). House, Crown, Loyal, Restless,
-  Disloyal and Sworn are keywords (`data/json/keywords.jsonc`).
+- **Previews at the decision**: the grant list, the civics screen, the war and peace dialogs,
+  the order list and the Armies screen's *Requisition from* list state what the choice does to
+  each holder before it is made: `Meets House Arne's demand.` `House Ashledger: becomes
+  Restless.` `House Arne: 1 of 3 orders left.`
+- **Text** is bare (CLAUDE.md, "Rules text and tooltips"). House, Crown, Devoted, Loyal,
+  Restless, Disloyal, Sworn, Claimant and each temper are keywords
+  (`data/json/keywords.jsonc`).
 
 ## Open points for the owner
 
-- **The Crown.** Whether the leader's own cities are a House like any other, and what holds its
-  size down: here, city-count maintenance doubling beyond a number the government sets.
-- **Who names the heir.** Here the player, among its persons without a post. The other
-  reading: the House takes one by a rule (the longest in the cast), and the player has no say.
-- **A Restless head sent to die** is allowed here (the unit is the player's until the
-  countdown); the loyalty stays with the House, so it buys a new want and nothing else.
-- **A House's secession when its head dies during the countdown**: here the heir inherits the
-  countdown.
-- **A House takes every city it holds.** The alternative is its seat alone, the others
-  returning to the Crown; that makes large Houses nearly safe.
-- **Whether a House's cities owe a levy quota too**, larger than a vassal's, so that
-  requisition has a political price inside the realm as well.
-- **A person holding both** a House and a command (the feudal lord leading his own levy): here
-  one post each.
-- **Steadfast heroes**: whether a hero's data may say it never passes Restless.
-- **The vassal rulers' wants** above are a first list; which of them a ruler has is by its
-  situation (a lost city first, then an enemy, then a missing resource), not drawn.
-- **Calling up a vassal's standing units** (not only its production) at a larger grievance.
-- **A seceded or released civilization's leader** needs a leader head: the person's name over a
-  `preferred_breakaway` minor leader's portrait and traits (docs/CARDS.md), or its own.
-- **Quotas and Crown sizes by government**: which civics levy freely, which hold a large Crown.
+**Proposed on 2026-11-18 to meet the two goals, not yet confirmed.** The owner's decisions so
+far are: the three sources of the cast; authored, recurring characters from the minor leaders;
+Houses of several cities; no per-city governors or traits; grants for good, heads not replaced,
+heirs from the cast; the capital the Crown's; direct rule as civil war; leverage; the vassal
+levy by requisition; wants as acts on the board; no human vassals. The rest is proposal:
+- **Demands with a term**, for holders too, renewing: without them a holder's unmet want cost
+  nothing and a careful player never saw a secession.
+- **A House's city is the House's**: its role by the head's ambition, the Crown's orders by a
+  quota, none while Restless, no limit while Devoted. Without it a loyal House was a name and a
+  maintenance discount, and there was nothing to administer.
+- **Restless withholds** (a House its orders, a commander its attacks): the register between
+  content and traitor.
+- **A temper**: one authored line for some persons. It is a trait, which the owner dropped for
+  governors; the case for it here is that without one a recurring character is a portrait.
+- **Claims at the grant**, and the commander's claim on what the army took.
+- **Leagues**, and rivals never seceding together.
+- **A commander's worth by the unit's level**, in place of any authored skill.
+- **The record and the annals.**
+
+Still open beyond those:
+- **Who names the heir.** Here the player. The other reading: the House takes one by a rule.
+- **A head who never fights never dies** (a Great Merchant). The House then changes hands only
+  by secession or release.
+- **A House setting its own cultural channel** by its head's ambition (a Faith head spreading
+  its religion, a War head fomenting revolt in the civilization it wants war with), forbidden
+  at a grievance. It would give Houses acts of their own on the map; channels are the player's
+  by the decision of 2026-10-30.
+- **A person holding both** a House and a command: here one post each.
+- **Leaving direct rule**: every city is the Crown's and those beyond its size count double
+  until granted; with few persons free to found Houses that is a steep first step.
+- **Calling up a vassal's standing units** (not only its production) at a grievance.
+- **Quotas and Crown sizes by government**, and the numbers throughout.
 - **Whether a levied unit is the master's for good** or returns when the war ends.
