@@ -412,8 +412,8 @@ impl Game {
                     // human can't be vassal of AI
                     let vassal_team = team;
                     let master_team = to_team;
-                    // Not in C++: no vassal under a direct-rule civic (every vassal is a House, and
-                    // no House stands under direct rule; docs/PERSONS.md, rule 11).
+                    // (`team_vassal_refusal`: No Vassal States, a master that is a vassal; the
+                    // rules for every vassal, docs/PERSONS.md.)
                     if self.team_vassal_refusal(master_team).is_some() {
                         return false;
                     }
