@@ -587,7 +587,9 @@ export class Map3D {
       const n = map.w * map.h;
       const cityKey = new Map();
       for (const [i, c] of env.cityAt) cityKey.set(i, `${c.id}|${c.owner}|${c.size}|${c.walls}|${c.capital}|${c.name}`);
-      const civKey = [...S.players.values()].map((p) => `${p.id}:${p.civ}`).join(",");
+      // (With the colours players are drawn in: a House takes its liege's, docs/PERSONS.md, rule 1;
+      // the banners and flags are redressed when one changes.)
+      const civKey = [...S.players.values()].map((p) => `${p.id}:${p.civ}`).join(",") + `|${T.colourKey()}`;
       const seen = this.dressSeen;
       let plots = null;
       if (seen && seen.n === n && seen.civKey === civKey && this.byPlot && (!mapChanged || mapDirty)) {

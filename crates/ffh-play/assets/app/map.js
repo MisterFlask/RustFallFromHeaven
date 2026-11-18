@@ -975,6 +975,14 @@ export class MapView {
   }
 
   draw() {
+    // A player drawn in another colour (a House in its liege's, docs/PERSONS.md, rule 1; a House
+    // breaking away): the drawn territory and the minimap go.
+    if (T.colourKey() !== this.colourSeen) {
+      this.colourSeen = T.colourKey();
+      this.chunks.clear();
+      this.pixels = 0;
+      this.miniImage = null;
+    }
     if (this.r3d) {
       try {
         this.r3d.draw();

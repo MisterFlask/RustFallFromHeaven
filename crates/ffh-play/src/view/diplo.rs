@@ -212,20 +212,148 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
     }
     let can = contact(v, with);
     let (ours, theirs) = if can.is_ok() { (trade_table(g, v.h, with), trade_table(g, with, v.h)) } else { (Vec::new(), Vec::new()) };
-    let troops = if can.is_ok() { troops(v, with) } else { Json::Null };
+    // A House (docs/PERSONS.md, "The second build", rule 9): it takes gold and gold per turn and
+    // gives Secede and Become your vassal, each listed with the rules' refusal when it would not;
+    // the values are its price and the gold offered (`house_trade_items`). No troops.
+    let house = g.player_house(with);
+    let troops = if can.is_ok() && house.is_none() { troops(v, with) } else { Json::Null };
+    let (we_give, they_give): (Vec<Json>, Vec<Json>) = match house {
+        Some(hh) if can.is_ok() => house_trade_items(v, hh, &ours),
+        _ => (ours.iter().map(|t| item_json(g, with, v.h, with, t)).collect(), theirs.iter().map(|t| item_json(g, with, with, v.h, t)).collect()),
+    };
     Ok(crate::jobj! {
         "with" => with,
         "contact" => can.is_ok(),
         "why_not" => can.err(),
         "war" => g.at_war(v.team, g.players[with].team),
-        "we_give" => Json::Arr(ours.iter().map(|t| item_json(g, with, v.h, with, t)).collect()),
-        "they_give" => Json::Arr(theirs.iter().map(|t| item_json(g, with, with, v.h, t)).collect()),
+        "we_give" => Json::Arr(we_give),
+        "they_give" => Json::Arr(they_give),
         "troops" => troops,
+        "house" => house.map_or(Json::Null, |hh| house_trade_json(v, hh)),
         "tribute" => tribute_json(g, with, v.h),
         // Persons of Note (docs/PERSONS.md, "UI", part I): what making peace with them does to
         // the cast (at war only; empty when nothing).
         "peace_preview" => if g.at_war(v.team, g.players[with].team) { crate::view::house_marks::act_preview(v, &ffh_core::persons::PersonsAct::MakePeace(g.players[with].team)) } else { Json::Arr(Vec::new()) },
     })
+}
+
+/// Whether the human's team is House `hh`'s liege's (its own House: no side deal, it pays tribute).
+fn own_house(v: &Viewer, hh: HouseId) -> bool {
+    v.g.players[v.g.houses[hh].owner].team == v.team
+}
+
+/// The trade tables with House `hh` (docs/PERSONS.md, "The second build", rule 9): what the human
+/// can give it (`ours`, the rules' table: gold and gold per turn), each worth what it counts toward
+/// the House's price (gold 1, gold per turn [`BRIBE_GOLD_PER_TURN_TURNS`]: `value_turns`); and
+/// what it gives, Secede and Become your vassal, each with `refusal` (the rules' reason it would
+/// not give it to the human now, `House Arne is Pleased with the Bannor.`; null: it would) and
+/// worth its price (negative: what it gives; null when refused). None for the human's own House.
+fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>, Vec<Json>) {
+    use ffh_core::persons::{BribeKind, BRIBE_GOLD_PER_TURN_TURNS};
+    let g = v.g;
+    let hp = g.houses[hh].player;
+    if own_house(v, hh) {
+        return (Vec::new(), Vec::new());
+    }
+    let we = ours
+        .iter()
+        .map(|t| {
+            let mut j = item_json(g, hp, v.h, hp, t);
+            match t.item_type {
+                TradeableItem::TRADE_GOLD => {
+                    j.set("value", 1);
+                }
+                TradeableItem::TRADE_GOLD_PER_TURN => {
+                    j.set("value", BRIBE_GOLD_PER_TURN_TURNS);
+                    j.set("value_turns", BRIBE_GOLD_PER_TURN_TURNS);
+                }
+                _ => {
+                    j.set("value", Json::Null);
+                }
+            }
+            j
+        })
+        .collect();
+    let price = g.house_bribe_price(hh);
+    let they = [BribeKind::Secede, BribeKind::Vassal]
+        .into_iter()
+        .map(|kind| {
+            let t = item(kind.item(), 0);
+            let refusal = g.house_bribe_refusal(hh, v.h, kind);
+            let mut j = item_json(g, hp, hp, v.h, &t);
+            j.set("value", if refusal.is_none() { price.map_or(Json::Null, |p| Json::from(-p)) } else { Json::Null });
+            j.set("refusal", refusal);
+            j
+        })
+        .collect();
+    (we, they)
+}
+
+/// House `hh` as a party, the `trade` reply's `house` (docs/PERSONS.md, "The second build", rules
+/// 7 and 9): `{id, label, liege, liege_name, colour, own, price, trades_through, liege_contact,
+/// line, secede_war, vassal_war}`. `own`: the human is its liege (no side deal: `line` says why,
+/// the rules' `House Arne pays its liege by tribute.`); `price`: the gold it asks (gold per turn
+/// counted ten times; null: it takes no offer); `trades_through`: `Trades through the Bannor.` (the
+/// rest is its liege's to trade; `liege_contact`: the human can open the liege's trade screen);
+/// `secede_war` and `vassal_war`: what accepting does (`House Arne will break away from the
+/// Bannor: war between them.`, `You become its liege: war with the Bannor.`).
+fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
+    use ffh_core::persons::BribeKind;
+    let g = v.g;
+    let liege = g.houses[hh].owner;
+    let label = g.house_label(hh);
+    let civ = g.player_get_civilization_short_description(liege);
+    let own = own_house(v, hh);
+    crate::jobj! {
+        "id" => hh,
+        "label" => label.as_str(),
+        "liege" => liege,
+        "liege_name" => civ.as_str(),
+        "colour" => g.houses[hh].color as i32,
+        "own" => own,
+        "price" => if own { None } else { g.house_bribe_price(hh) },
+        "trades_through" => (!own).then(|| format!("Trades through the {civ}.")),
+        "liege_contact" => !own && liege != v.h && contact(v, liege).is_ok(),
+        "line" => if own { g.house_bribe_refusal(hh, v.h, BribeKind::Secede) } else { None },
+        "secede_war" => format!("{label} will break away from the {civ}: war between them."),
+        "vassal_war" => format!("You become its liege: war with the {civ}."),
+    }
+}
+
+/// A rules' sentence as the screen's `Reason: ...` takes it (no closing full stop: the screen adds
+/// one).
+fn reason_text(s: String) -> String {
+    match s.strip_suffix('.') {
+        Some(t) => t.to_string(),
+        None => s,
+    }
+}
+
+/// What House `hh` answers if the human proposes `give` for `get` (docs/PERSONS.md, "The second
+/// build", rule 9), from the rules alone: refused with the rules' reason when it would not give
+/// an item asked for (`House Arne is Pleased with the Bannor`), or when the deal is not one it
+/// takes (`propose_deal`'s checks); else accepted when the gold offered (gold per turn counted ten
+/// times) covers its price (`margin`: offered less price; refused: `House Arne asks 450 gold`).
+fn house_answer(g: &Game, hh: HouseId, h: PlayerId, give: &[TradeData], get: &[TradeData]) -> ffh_core::controller::OfferVerdict {
+    use ffh_core::controller::OfferVerdict;
+    use ffh_core::persons::{house_item, house_offer_value};
+    let no = |why: String| OfferVerdict { accept: false, margin: None, why: Some(reason_text(why)) };
+    let label = g.house_label(hh);
+    let kinds: Vec<_> = get.iter().filter_map(|t| house_item(t.item_type)).collect();
+    if kinds.is_empty() {
+        return no(format!("{label} trades only Secede and Become your vassal"));
+    }
+    if let Some(why) = kinds.iter().find_map(|&k| g.house_bribe_refusal(hh, h, k)) {
+        return no(why);
+    }
+    if let Err(e) = check_deal(g, h, g.houses[hh].player, give, get) {
+        return no(e.detail());
+    }
+    let offered = house_offer_value(give);
+    match g.house_bribe_price(hh) {
+        Some(price) => OfferVerdict { accept: offered >= price, margin: Some(offered - price), why: (offered < price).then(|| format!("{label} asks {price} gold")) },
+        None => no(format!("{label} takes no offer")),
+    }
 }
 
 fn tribute_json(g: &Game, ai: PlayerId, h: PlayerId) -> Json {
@@ -260,6 +388,11 @@ pub fn trade_answer(v: &Viewer, with: PlayerId, give: &[TradeData], get: &[Trade
     }
     if g.players[with].human {
         return Ok(crate::jobj! { "accept" => Json::Null, "margin" => Json::Null, "why" => Json::Null });
+    }
+    // A House answers by the rules' price and reasons (docs/PERSONS.md, rule 9), whatever plays it.
+    if let Some(hh) = g.player_house(with) {
+        let verdict = house_answer(g, hh, v.h, give, get);
+        return Ok(crate::jobj! { "accept" => verdict.accept, "margin" => verdict.margin, "why" => verdict.why });
     }
     let verdict = match check_deal(g, v.h, with, give, get) {
         Ok(()) => g.controller(with).judge_offer(g, with, v.h, give, get),

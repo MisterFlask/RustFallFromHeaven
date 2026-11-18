@@ -2,7 +2,7 @@
 // DOM). The server computes everything: this holds what it sent (status, view, map, static
 // data) with lookups, the selection, and what the player has set aside this turn.
 
-import { humanize, plotIndex } from "./tiles.js";
+import { humanize, plotIndex, setColourPlayers } from "./tiles.js";
 
 export const S = {
   /** `/api/data`: `{kinds, tables: {Kind: [{type, name, ...}]}}`. */
@@ -114,7 +114,10 @@ export function setView(view) {
   S.cities = new Map();
   S.players = new Map();
   S.unitsAt = new Map();
-  if (!view) return;
+  if (!view) {
+    setColourPlayers([]);
+    return;
+  }
   for (const u of view.units) {
     S.units.set(u.id, u);
     const k = plotKey(u.x, u.y);
@@ -124,6 +127,12 @@ export function setView(view) {
   for (const g of view.groups) S.groups.set(g.id, g);
   for (const c of view.cities) S.cities.set(c.id, c);
   for (const p of view.players) S.players.set(p.id, p);
+  // A House is drawn in its liege's colour (docs/PERSONS.md, "The second build", rule 1): from the
+  // players met, and from the Houses' cities (whose owner may not be met).
+  const pairs = [];
+  for (const c of view.cities) if (c.owner !== undefined && Number.isInteger(c.house?.liege)) pairs.push([c.owner, c.house.liege]);
+  for (const p of view.players) if (Number.isInteger(p.color_player)) pairs.push([p.id, p.color_player]);
+  setColourPlayers(pairs);
 }
 
 export function setMap(map) {

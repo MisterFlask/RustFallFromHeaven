@@ -8,7 +8,7 @@ import { S, observing } from "./state.js";
 import { h, toastNode } from "./dom.js";
 import { leaderPortrait, PORTRAIT } from "./portraits.js";
 import { stateMark, houseShield, openCourt } from "./persons.js";
-import { SHIELD, SHIELD_EDGE, houseColour, shieldMark, stateKey } from "./persons_mark.js";
+import { SHIELD, SHIELD_EDGE, houseColour, stateColour, stateGlyph, stateKey } from "./persons_mark.js";
 
 // The unit figures (look.js) are loaded in the page only: look.js reads the generated art, which
 // the node tests of the modules that import this one do not have.
@@ -123,11 +123,22 @@ export function personLine(u) {
 
 let shieldPath = null;
 
+/** What a plate's shield carries for the House's liege (docs/PERSONS.md, rule 13: "its attitude
+ *  mark for the liege"): the one mark of its state, `{glyph, colour, count}` (▲ △ ● ◆ ✖ in the
+ *  states' colours; `count`: the Furious countdown's turns left, else null); null when the state
+ *  is not sent (a House not ours: its shield only). */
+export function plateMark(state, turns) {
+  if (state === null || state === undefined) return null;
+  const k = stateKey(state);
+  return { glyph: stateGlyph(k), colour: stateColour(k), count: k === "furious" ? (turns ?? null) : null };
+}
+
 /** The plate's House shield (the view's `city.house`: `{colour, state, turns}`) drawn on canvas
- *  `g`, `ht` px high, its centre at (`cx`, `cy`): the House's colour with a dark edge; Restless:
- *  the amber ◆ on a dark disc on it; Disloyal: the red ✖ there and the turns left in a pill
- *  under its point (not at its right, where the plate's size disc is). Returns the width it
- *  takes (0 without a House). */
+ *  `g`, `ht` px high, its centre at (`cx`, `cy`): the House's colour with a dark edge; for its
+ *  liege, the state's mark on a dark disc on it ({@link plateMark}), and Furious's turns left in a
+ *  pill at its left (not at its right, where the plate's size disc is; not under its point, where
+ *  a garrison's badge stands). Returns the width it takes, the pill's included (0 without a
+ *  House). */
 export function drawPlateShield(g, house, cx, cy, ht) {
   if (!house) return 0;
   const s = ht / SHIELD.h;
@@ -145,7 +156,8 @@ export function drawPlateShield(g, house, cx, cy, ht) {
     g.stroke(shieldPath);
   }
   g.restore();
-  const mk = shieldMark(house.state, house.turns);
+  const mk = plateMark(house.state, house.turns);
+  let pillW = 0;
   if (mk) {
     const r = ht * 0.3;
     const my = cy - ht * 0.06;
@@ -160,14 +172,17 @@ export function drawPlateShield(g, house, cx, cy, ht) {
     g.textBaseline = "middle";
     g.fillText(mk.glyph, cx, my + 0.5);
     if (mk.count !== null && mk.count !== undefined) {
+      // At the shield's left, on the plate's line: under its point a garrison's stack badge
+      // (drawn over the plates) covered it.
       const txt = String(mk.count);
-      const fs = Math.max(8, Math.round(ht * 0.5));
+      const fs = Math.max(8, Math.round(ht * 0.55));
       g.font = `700 ${fs}px system-ui, 'DejaVu Sans', sans-serif`;
       const tw = g.measureText(txt).width;
       const pw = tw + fs * 0.6;
       const ph = fs + 2;
-      const px = cx - pw / 2;
-      const py = cy + ht * 0.5 - ph * 0.4;
+      const px = cx - w / 2 - PILL_GAP - pw;
+      const py = cy - ph / 2;
+      pillW = pw + PILL_GAP;
       g.beginPath();
       const rr = ph / 2;
       g.moveTo(px + rr, py);
@@ -186,8 +201,11 @@ export function drawPlateShield(g, house, cx, cy, ht) {
     }
     g.restore();
   }
-  return w;
+  return w + pillW;
 }
+
+/** The gap between the countdown's pill and the shield, px. */
+const PILL_GAP = 2;
 
 // ---- alerts (part H) ---------------------------------------------------------------------------
 
@@ -220,21 +238,62 @@ export function personAlerts(entries, { fresh = false } = {}) {
     const more = all.length - shown.length;
     toastNode(h("div.toast.log.person-alert.more", { role: "status", title: "Click to dismiss" }, h("span.person-alert-mark", { "aria-hidden": "true" }, "✦"), h("span.person-alert-text", `Persons of note: ${more} more ${more === 1 ? "message" : "messages"} in the log.`)), 12000);
   }
+  // The human's Houses (the players' `house` whose liege is the human), for the news of a House
+  // without a head (no person on the entry: its label in the text says which).
+  const mine = S.view?.me?.player;
+  const houses = [...(S.players?.values() ?? [])].map((p) => p.house).filter((x) => x && x.liege === mine);
   for (const e of shown) {
     const p = e.person !== undefined && e.person !== null ? cast.get(e.person) : null;
     const face = p && p.leader !== null && p.leader !== undefined ? leaderPortrait(p.leader, { size: PORTRAIT.small, title: p.name }) : null;
+    const focus = alertFocus(e, p, houses);
     const court = e.kind !== "secession";
-    // A change of state (`House Arne is Restless.`): the one mark of the new state over the text.
-    const changed = e.kind === "person" ? /^([^.]*) is (Friendly|Pleased|Cautious|Annoyed|Furious)\.\s*(.*)$/.exec(e.text ?? "") : null;
+    const sub = alertSubject(e, p, houses);
     const el = h(
       `div.toast.log.person-alert${e.kind === "secession" ? ".secession" : ""}`,
-      { role: "status", title: court ? "Click: open the Court" : "Click to dismiss", "data-person": e.person ?? "" },
+      { role: "status", title: court ? "Click: open the Court" : "Click to dismiss", "data-person": e.person ?? "", "data-house": focus?.house ?? "" },
       face ?? h("span.person-alert-mark", { "aria-hidden": "true" }, e.kind === "secession" ? "✖" : "✦"),
-      // `Sera Vell is Disloyal. Sera Vell will seize Vallus ...`: the mark says the state, so the
-      // first sentence goes; with nothing after it, the subject and the mark (`House Arne ◆ Restless`).
-      h("span.person-alert-text", changed ? (changed[3] ? [stateMark(changed[2]), h("br"), changed[3]] : [changed[1], " ", stateMark(changed[2])]) : e.text),
+      h("span.person-alert-text", alertBody(e.text, sub)),
     );
-    if (court) el.addEventListener("click", () => openCourt(e.person !== undefined && e.person !== null ? { person: e.person } : null));
+    if (court) el.addEventListener("click", () => openCourt(focus));
     toastNode(el, 12000);
   }
+}
+
+/** Where a tap on a person alert opens the Court (part H): at the House for a House's news (its
+ *  head's entry, or the House whose label the text names when the entry names no person), else
+ *  at the person, else at the top. `p`: the entry's person in the cast brief (`{id, house}`). */
+export function alertFocus(e, p, houses = []) {
+  if (p && p.house !== null && p.house !== undefined) return { house: p.house };
+  if (e.person !== undefined && e.person !== null) return { person: e.person };
+  const text = e.text ?? "";
+  // The longest label the text names (`House Arne` before a vassal civilization's `Arne`).
+  const named = houses.filter((x) => x.label && text.includes(x.label)).sort((a, b) => b.label.length - a.label.length)[0];
+  return named ? { house: named.id } : null;
+}
+
+/** What an alert is about, for the consequence of a change of state: `{house}` (a House's news)
+ *  or `{army}` (a commander's: the army's name), else null. */
+function alertSubject(e, p, houses) {
+  if (p?.house !== null && p?.house !== undefined) return { house: true };
+  if (p?.army) return { army: p.army };
+  if ((e.person === undefined || e.person === null) && alertFocus(e, null, houses)) return { house: true };
+  return null;
+}
+
+/** An alert's text (part H). A change of state (`House Arne is Annoyed.`, `Sera Vell is Furious.
+ *  Sera Vell will seize Vallus ...`): the one mark of the new state over the rest of the text, the
+ *  first sentence dropped (the mark says it), or with nothing after it the subject and the mark
+ *  (`House Arne ◆ Annoyed`); a House turned Annoyed or Furious adds that it takes no levy
+ *  (`House Arne takes no levy.`), a commander that the army takes no order to attack (`The 3rd
+ *  Army takes no order to attack.`): the rules' withholding (rule 5). Any other text as it is.
+ *  `subject`: `{house}`, `{army}` (its name) or null. */
+export function alertBody(text, subject = null) {
+  const changed = /^([^.]*) is (Friendly|Pleased|Cautious|Annoyed|Furious)\.\s*(.*)$/.exec(text ?? "");
+  if (!changed) return text;
+  const [, who, state, rest] = changed;
+  const withholds = state === "Annoyed" || state === "Furious";
+  const then = !withholds ? null : subject?.house ? `${who} takes no levy.` : subject?.army ? `The ${subject.army} takes no order to attack.` : null;
+  const head = rest ? [stateMark(state)] : [who, " ", stateMark(state)];
+  const tail = [rest || null, then].filter(Boolean);
+  return tail.length ? [...head, ...tail.flatMap((t) => [h("br"), t])] : head;
 }

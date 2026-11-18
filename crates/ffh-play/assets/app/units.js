@@ -1790,10 +1790,10 @@ export function renderPanel() {
         "div.found-house-line",
         h(
           "button.small.found-house",
-          { disabled: !can, title: can ? `Open the grant list of ${fh.name}, this unit first. A person of note is drawn and founds a House; the unit is consumed.` : fh.why, onclick: () => openGrant(fh.city, { unit: lead.id }) },
+          { disabled: !can, title: can ? `Open the grant list of ${fh.name}, this unit first. A leader is drawn and founds a House at ${fh.name}: a new civilization, your vassal. The unit is consumed.` : fh.why, onclick: () => openGrant(fh.city, { unit: lead.id }) },
           "Found a House",
         ),
-        h("span.dim", can ? ` Nearest city to grant: ${fh.name}.` : ` ${fh.why}`),
+        h("span.dim", can ? ` Nearest city to grant: ${fh.name}. A leader is drawn; the House is a new civilization, your vassal.` : ` ${fh.why}`),
       ),
     );
   }

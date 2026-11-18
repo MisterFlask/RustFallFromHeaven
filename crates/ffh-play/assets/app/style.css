@@ -813,6 +813,20 @@ table.scores.diplo td { vertical-align: top; }
 .trade-value.none { color: var(--dim); font-size: 13px; }
 .trade-summary { margin-top: 10px; padding: 6px 10px; background: var(--panel-2); border-left: 3px solid var(--frame); }
 input.amount { width: 80px; }
+/* Houses as parties (docs/PERSONS.md, "The second build", rule 13): a House's row under its liege's,
+   indented, with its shield and `House Arne, vassal of the Bannor`; on its trade screen the line of
+   what is its liege's to trade and, in the answer, what accepting does (war). */
+table.scores.diplo tr.house-row > td:first-child { padding-left: 26px; }
+table.scores.diplo tr.house-row > td:first-child .leader-cell { border-left: 2px solid var(--frame); padding-left: 8px; }
+.house-of { white-space: nowrap; }
+.house-of .house-shield { vertical-align: -2px; }
+.trades-through { margin: 8px 0 0; }
+.trade-summary .house-war { margin-top: 4px; font-weight: 700; }
+.own-house p { margin: 6px 0; }
+@media (max-width: 520px) {
+  table.scores.diplo tr.house-row > td:first-child { padding-left: 10px; }
+  .house-of { white-space: normal; }
+}
 /* A leader speaking (diplo.js `leaderHead`): the portrait, then the name, civilization and mood
    over the line they say. */
 .leader-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 10px; }
