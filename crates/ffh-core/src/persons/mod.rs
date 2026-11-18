@@ -37,6 +37,8 @@ mod preview;
 mod read;
 mod turn;
 
+pub use entry::{leader_name, leader_title};
+pub use houses::Claimant;
 pub use preview::{GrantCandidate, PersonsAct, PreviewLine};
 pub use read::{CourtView, DemandView, HouseMark, HouseView, LoyaltyPart, PersonView, PersonWhere};
 
