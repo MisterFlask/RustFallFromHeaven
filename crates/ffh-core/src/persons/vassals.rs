@@ -139,6 +139,12 @@ impl Game {
         let existing = leader.and_then(|l| self.players[owner].persons.iter().copied().find(|&x| self.persons.get(x).is_some_and(|person| person.leader == Some(l) && !matches!(person.post, Post::Head(_)))));
         // A person of the cast with its leader founded it (a founding names it and tells it).
         let origin = if existing.is_some() { HouseOrigin::Founded } else { origin };
+        // A founding's civilization is described `House <name>` (houses.rs); the record keeps the
+        // name, and its label adds `House` again.
+        let name = match origin {
+            HouseOrigin::Founded => name.strip_prefix("House ").map_or(name.clone(), str::to_string),
+            _ => name,
+        };
         let head = leader.map(|l| existing.unwrap_or_else(|| self.person_new_quiet(owner, PersonOrigin::Ruler, l, &format!("ruler of the {name}"))));
         let turn = self.game_turn();
         let color = self.house_new_color(owner);

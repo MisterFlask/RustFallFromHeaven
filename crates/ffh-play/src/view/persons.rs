@@ -1,9 +1,10 @@
-//! Persons of Note as the human sees them (docs/PERSONS.md, "UI": parts A, B and J; "The second
-//! build": Houses are vassal civilizations): the Court screen (`court`), a city's grant list
-//! (`grant {city}`), the count of what needs attention (the view's `court_attention`, the menu's
-//! badge) and the check of the command `set_commander`. The second build's screens (the House
-//! cards' tribute selector, levies, bribes) are still to be laid out; the lines here are kept true
-//! to the rules as built.
+//! Persons of Note as the human sees them (docs/PERSONS.md, "The second build", rule 13; "UI":
+//! parts A, B and J): the Court screen (`court`: the realm, the Crown and its limit, a card per
+//! House with its tribute selector, levy and Free, the commanders and persons without a post), a
+//! city's grant list (`grant {city}`), the count of what needs attention (the view's
+//! `court_attention`, the menu's badge), a requisition candidate's House line (the levy, for the
+//! Armies screen), a Crown city's Governance line (the city screen) and the check of the command
+//! `set_commander`.
 //!
 //! Every line the page shows about the rules is made here, from the rules' own read API
 //! (`ffh_core::persons`: `court_view`, `house_view`, `person_view`, `grant_candidates`, the
@@ -11,7 +12,7 @@
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::persons::{Claimant, DemandKind, GrantCandidate, GrantTo, HouseView, LoyaltyPart, LoyaltyState, PersonOrigin, PersonView, PersonWhere, Post, PreviewLine, DEMAND_WARNING_TURNS};
+use ffh_core::persons::{Claimant, CourtView, DemandKind, GrantCandidate, GrantTo, HouseOrigin, HouseView, LoyaltyPart, LoyaltyState, PersonOrigin, PersonView, PersonWhere, Post, PreviewLine, DEMAND_WARNING_TURNS};
 use ffh_data::*;
 
 use crate::json::Json;
@@ -141,6 +142,8 @@ fn demand_json(v: &Viewer, pv: &PersonView, grantable: &[CityId]) -> Json {
         Some(if g.teams[team].at_war[ot] { format!("Owner: {civ}. At war.") } else { format!("Owner: {civ}. At peace.") })
     };
     let (kind, note, button): (&str, Option<String>, Json) = match dm.kind {
+        // A hero cannot head a House: its post is a command (the Armies screen names commanders).
+        DemandKind::Post if pv.leader.is_none() => ("post", None, crate::jobj! { "label" => "Armies", "act" => crate::jobj! { "kind" => "armies" } }),
         DemandKind::Post | DemandKind::House => {
             let kind = if dm.kind == DemandKind::Post { "post" } else { "house" };
             match nearest_grantable(g, h, pv.id, grantable) {
@@ -282,33 +285,209 @@ fn person_json(v: &Viewer, pv: &PersonView, grantable: &[CityId]) -> Json {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Houses
+// The Crown
 // ---------------------------------------------------------------------------------------------
 
-/// `Tribute 30%: 12 gold, 8 research last turn.` (`Tribute 30%.` before its first payment).
-fn tribute_text(hv: &HouseView) -> String {
-    let t = &hv.tribute;
-    if t.last_turn < 0 {
-        format!("Tribute {}%.", t.pct)
+/// Whether player `h` counts settlements apart (a city cap: the Kuriotates).
+fn has_settlements(g: &Game, h: PlayerId) -> bool {
+    g.players[h].max_cities != -1
+}
+
+/// `1 city`, `4 cities`.
+fn cities_text(n: i32) -> String {
+    if n == 1 {
+        "1 city".to_string()
     } else {
-        format!("Tribute {}%: {} gold, {} research last turn.", t.pct, t.last_gold, t.last_research)
+        format!("{n} cities")
     }
 }
 
-/// A House's card: who leads it (the head's card), its attitude and countdown, its cities, its
-/// tribute, whether it takes levies, its price to secede, and Free.
+/// Why city `c` pays no maintenance now (`Myrean pays none while disorder lasts.`), if it pays
+/// none for a while: in disorder, or during We Love the King Day.
+fn pays_none_now(g: &Game, c: CityId) -> Option<String> {
+    let city = &g.cities[c];
+    if g.city_is_disorder(c) {
+        Some(format!("{} pays none while disorder lasts.", city_name(g, c)))
+    } else if city.we_love_the_king_day {
+        Some(format!("{} pays none while We Love the King Day lasts.", city_name(g, c)))
+    } else {
+        None
+    }
+}
+
+/// City `c`'s own maintenance at its lasting rate (hundredths of gold a turn, inflation included):
+/// what it pays once a disorder or a We Love the King Day ends (the rules' base maintenance, the
+/// Crown's limit included, times its modifier).
+fn lasting_maintenance_times100(g: &Game, c: CityId) -> i32 {
+    let city = &g.cities[c];
+    if city.population <= 0 || city.outpost {
+        return 0;
+    }
+    let own = g.city_calculate_base_maintenance_times100(c) * (city.maintenance_modifier + 100).max(0) / 100;
+    own * (g.player_calculate_inflation_rate(city.owner) + 100).max(0) / 100
+}
+
+/// What the Crown's cities over its limit cost beyond the normal rate, at their lasting rate
+/// (hundredths of gold a turn): the rules' `player_crown_over_cost_times100`, with a city that
+/// pays none now counted at what it pays once that ends (its city-count maintenance, the limit's
+/// factor included, less the normal rate).
+fn crown_over_lasting_times100(g: &Game, h: PlayerId, over: &[CityId]) -> i32 {
+    let f = ffh_core::persons::CROWN_OVER_FACTOR;
+    let mut extra = 0;
+    for &c in over {
+        let city = &g.cities[c];
+        if city.population <= 0 {
+            continue;
+        }
+        let num = g.city_calculate_num_cities_maintenance_times100(c);
+        extra += num * (f - 1) / f * (city.maintenance_modifier + 100).max(0) / 100;
+    }
+    extra * (g.player_calculate_inflation_rate(h) + 100).max(0) / 100
+}
+
+/// The Crown's limit as the rules state it (docs/PERSONS.md, rule 14): `The Crown holds 5
+/// cities, 2 over its limit of 3: +8.4 gold a turn.` or `The Crown holds 3 cities; its limit is
+/// 3.`, with `Settlements are not counted.` for a civilization with settlements; `over`: beyond the
+/// limit (the caution colour). The cost is at the cities' lasting rate, a city that pays none now
+/// said apart (`Myrean pays none while disorder lasts.`), but for city `told` (the grant list's
+/// city: its baseline says it). `None` where there is no limit (no city can be granted).
+fn crown_line(g: &Game, h: PlayerId, cv: &CourtView, told: Option<CityId>) -> Option<Json> {
+    let limit = cv.crown_limit?;
+    let n = cv.crown_cities.len() as i32;
+    let over = cv.crown_over.len();
+    let mut text = if over > 0 {
+        let cost = crown_over_lasting_times100(g, h, &cv.crown_over).max(cv.crown_over_cost_times100);
+        let mut t = format!("The Crown holds {}, {over} over its limit of {limit}: +{} gold a turn.", cities_text(n), gold(cost));
+        for &c in cv.crown_over.iter().filter(|&&c| Some(c) != told) {
+            if let Some(why) = pays_none_now(g, c) {
+                t.push(' ');
+                t.push_str(&why);
+            }
+        }
+        t
+    } else {
+        format!("The Crown holds {}; its limit is {limit}.", cities_text(n))
+    };
+    if has_settlements(g, h) {
+        text.push_str(" Settlements are not counted.");
+    }
+    Some(crate::jobj! { "text" => text, "over" => over > 0 })
+}
+
+/// The Crown's card's cities: the Crown's in its order (the capital first), then the player's
+/// settlements and outposts: `{city, name, x, y, capital, grantable, refusal, over, note}`
+/// (`note`: `Over the Crown's limit.`, `Settlement: not counted.`).
+fn crown_cities_json(g: &Game, h: PlayerId, cv: &CourtView) -> Vec<Json> {
+    let mut list: Vec<CityId> = cv.crown_cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
+    let rest: Vec<CityId> = g.players[h].cities.iter().copied().filter(|&c| g.cities.contains(c) && !list.contains(&c)).collect();
+    list.extend(rest);
+    list.iter()
+        .map(|&c| {
+            let why = g.player_check_grant_city(h, c).err();
+            let over = cv.crown_over.contains(&c);
+            let note = if over {
+                Some("Over the Crown's limit.")
+            } else if g.cities[c].settlement && cv.crown_limit.is_some() {
+                Some("Settlement: not counted.")
+            } else {
+                None
+            };
+            city_ref(g, c).with("capital", g.city_is_capital(c)).with("grantable", why.is_none()).with("refusal", why).with("over", over).with("note", note)
+        })
+        .collect()
+}
+
+// ---------------------------------------------------------------------------------------------
+// Houses
+// ---------------------------------------------------------------------------------------------
+
+/// `Founded on turn 3.`, `Capitulated on turn 120.`, `Vassal since turn 40.`
+fn since_text(hv: &HouseView) -> String {
+    match hv.origin {
+        HouseOrigin::Founded => format!("Founded on turn {}.", hv.founded_turn),
+        HouseOrigin::Capitulated => format!("Capitulated on turn {}.", hv.founded_turn),
+        HouseOrigin::Vassal => format!("Vassal since turn {}.", hv.founded_turn),
+    }
+}
+
+/// A House's size against its realm's threshold (rule 14), from the rules' read: `Size: 2 of 3
+/// cities without a grievance.`, or beyond it `Size: 5 cities, more than 3: -2.`; `over`.
+fn size_json(hv: &HouseView) -> Json {
+    let (n, t) = (hv.great_cities, hv.size_threshold);
+    if n > t {
+        crate::jobj! { "text" => format!("Size: {}, more than {t}: {}.", cities_text(n), t - n), "over" => true }
+    } else {
+        crate::jobj! { "text" => format!("Size: {n} of {} without a grievance.", cities_text(t)), "over" => false }
+    }
+}
+
+/// `12 gold, 8 research`.
+fn gold_research(gold: i32, research: i32) -> String {
+    format!("{gold} gold, {research} research")
+}
+
+/// A House's tribute (rule 4) and its selector: `pct`; `line` (`Tribute 30%: 12 gold, 8 research
+/// last turn.`, or `Tribute 30%. Not paid yet.`); `rates`: each rate it may be set to (0 to 50 by
+/// 10), from the rules' read (`TributeView::at`): `{pct, current, estimate (what it would pay this
+/// turn), part (its tribute part at that rate), part_text, loyalty (its total), loyalty_text,
+/// state, changes (its state differs from now)}`.
+fn tribute_json(g: &Game, hv: &HouseView) -> Json {
+    let t = &hv.tribute;
+    let line = if t.last_turn < 0 {
+        format!("Tribute {}%. Not paid yet.", t.pct)
+    } else if t.last_turn >= g.game_turn() - 1 {
+        format!("Tribute {}%: {} last turn.", t.pct, gold_research(t.last_gold, t.last_research))
+    } else {
+        format!("Tribute {}%: {} on turn {}.", t.pct, gold_research(t.last_gold, t.last_research), t.last_turn)
+    };
+    // The tribute part now (the parts' `Tribute N%`), and at each rate: the part changes by what
+    // the total does.
+    let part_now = hv.parts.iter().find(|p| p.label.starts_with("Tribute ") && p.turns_left.is_none()).map_or(0, |p| p.amount);
+    let rates: Vec<Json> = t
+        .at
+        .iter()
+        .map(|&(pct, gold, research, loyalty, state)| {
+            let part = part_now + loyalty - hv.loyalty;
+            crate::jobj! {
+                "pct" => pct,
+                "current" => pct == t.pct,
+                "estimate" => format!("Pays {}.", gold_research(gold, research)),
+                "part" => part,
+                "part_text" => format!("Tribute: {}", signed(part)),
+                "loyalty" => loyalty,
+                "loyalty_text" => format!("Loyalty: {}", signed(loyalty)),
+                "state" => state_name(state),
+                "changes" => state != hv.state,
+            }
+        })
+        .collect();
+    crate::jobj! { "pct" => t.pct, "line" => line, "rates" => Json::Arr(rates) }
+}
+
+/// A House's levy status (rule 6): `{takes, text}`: `Takes levies. Each levy: -1 (20 turns).` or
+/// the rules' reason it takes none (`House Arne is Annoyed. It takes no levy.`).
+fn levy_status(reason: Option<&str>) -> Json {
+    let (amount, t) = ffh_core::persons::LEVIED;
+    let text = match reason {
+        Some(why) => why.to_string(),
+        None => format!("Takes levies. Each levy: {} ({}).", signed(amount), turns(t)),
+    };
+    crate::jobj! { "takes" => reason.is_none(), "text" => text }
+}
+
+/// A House's card (rule 13): who leads it (the head's card: portrait, name, title, demand,
+/// record), its attitude, countdown and outcome, its loyalty parts, its tribute and the selector,
+/// its levy, its cities and its size, its price to secede, and Free.
 fn house_json(v: &Viewer, hv: &HouseView, persons: &[PersonView], grantable: &[CityId]) -> Json {
     let g = v.g;
     let head = hv.head.and_then(|x| persons.iter().find(|p| p.id == x)).map(|pv| person_json(v, pv, grantable));
     let (parts, total) = parts_json(&hv.parts, hv.loyalty);
     let (_, held) = g.house_cities_held(hv.id);
     let cities: Vec<Json> = hv.cities.iter().filter(|&&c| g.cities.contains(c)).map(|&c| city_ref(g, c).with("held", held.contains(&c)).with("seat", hv.seat == Some(c))).collect();
-    let tribute_at: Vec<Json> = hv
-        .tribute
-        .at
-        .iter()
-        .map(|&(pct, gold, research, loyalty, state)| crate::jobj! { "pct" => pct, "gold" => gold, "research" => research, "loyalty" => loyalty, "state" => state_name(state) })
-        .collect();
+    let price = match hv.bribe_price {
+        Some(p) => format!("Price to secede: {p} gold."),
+        None => "Refuses any offer to secede.".to_string(),
+    };
     crate::jobj! {
         "id" => hv.id,
         "player" => hv.player,
@@ -321,18 +500,15 @@ fn house_json(v: &Viewer, hv: &HouseView, persons: &[PersonView], grantable: &[C
         "outcome" => hv.outcome.as_deref().map(|s| core(g, s)),
         "held" => (hv.countdown_turns.is_some() && !held.is_empty()).then(|| crate::view::house_marks::stays_line(g, &held)),
         "head" => head,
-        "seat" => hv.seat.filter(|&c| g.cities.contains(c)).map(|c| format!("Capital: {}.", city_name(g, c))),
+        "since" => since_text(hv),
         "cities" => Json::Arr(cities),
-        "tribute" => tribute_text(hv),
-        "tribute_pct" => hv.tribute.pct,
-        "tribute_at" => Json::Arr(tribute_at),
-        "levy" => match &hv.levy.reason { Some(why) => why.clone(), None => "Takes levies.".to_string() },
-        "takes_levy" => hv.levy.takes,
-        "bribe_price" => hv.bribe_price,
+        "size" => size_json(hv),
+        "tribute" => tribute_json(g, hv),
+        "levy" => levy_status(hv.levy.reason.as_deref()),
+        "price" => price,
         "free" => crate::jobj! { "ok" => hv.free.is_ok(), "refusal" => hv.free.err(), "confirm" => format!("Free {}? It is no longer our vassal, at peace with us. This cannot be undone.", hv.label) },
         "parts" => parts,
         "total" => total,
-        "founded" => format!("Our House since turn {}.", hv.founded_turn),
     }
 }
 
@@ -359,10 +535,35 @@ fn empty_lines(g: &Game, h: PlayerId, grants: Result<(), &'static str>, persons:
     Vec::new()
 }
 
-/// The lines that need attention (part A.2), each with its button, and the badge count
-/// (principle 6: a Furious holder, a demand with 10 turns or fewer).
-fn attention(v: &Viewer, persons: &[PersonView], houses: &[HouseView], grantable: &[CityId]) -> (Vec<Json>, usize) {
+/// An outcome (`House Ashledger will break away ...`) as a line after `House Ashledger:
+/// Furious.`: without its subject, capitalized (`Will break away ...`).
+fn outcome_rest(subject: &str, outcome: &str) -> String {
+    match outcome.strip_prefix(&format!("{subject} ")) {
+        Some(r) => {
+            let mut c = r.chars();
+            c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default()
+        }
+        None => outcome.to_string(),
+    }
+}
+
+/// `A`, `A and B`, `A, B and C`.
+fn and_list(items: &[String]) -> String {
+    match items {
+        [] => String::new(),
+        [a] => a.clone(),
+        [rest @ .., last] => format!("{} and {last}", rest.join(", ")),
+    }
+}
+
+/// The lines that need attention (rule 13; part A.2), each with its button, in this order: a
+/// Furious House or commander with its stated outcome, a House that takes no levy, a demand with
+/// 10 turns or fewer, a person without a post, the Crown's cities over its limit, the Crown's
+/// cities that can be granted; and the badge count (principle 6: a Furious holder, a demand with
+/// 10 turns or fewer).
+fn attention(v: &Viewer, cv: &CourtView) -> (Vec<Json>, usize) {
     let g = v.g;
+    let (persons, houses, grantable) = (&cv.persons, &cv.houses, &cv.grantable);
     let mut out = Vec::new();
     let mut badge = 0;
     let line = |text: String, label: &str, act: Json, kind: &str| crate::jobj! { "kind" => kind, "text" => text, "button" => crate::jobj! { "label" => label, "act" => act } };
@@ -370,11 +571,7 @@ fn attention(v: &Viewer, persons: &[PersonView], houses: &[HouseView], grantable
         if hv.state == LoyaltyState::Furious {
             badge += 1;
             let outcome = hv.outcome.as_deref().map(|s| core(g, s)).unwrap_or_default();
-            let rest = outcome.strip_prefix(&format!("{} ", hv.label)).map(|r| {
-                let mut c = r.chars();
-                c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default()
-            });
-            let text = format!("{}: Furious. {}", hv.label, rest.unwrap_or(outcome));
+            let text = format!("{}: Furious. {}", hv.label, outcome_rest(&hv.label, &outcome));
             out.push(line(text, "Show", crate::jobj! { "kind" => "card", "house" => hv.id }, "furious"));
         }
     }
@@ -383,11 +580,15 @@ fn attention(v: &Viewer, persons: &[PersonView], houses: &[HouseView], grantable
             badge += 1;
             let subject = g.person_subject(pv.id);
             let outcome = pv.outcome.as_deref().map(|s| core(g, s)).unwrap_or_default();
-            let rest = outcome.strip_prefix(&format!("{} ", pv.name)).map(|r| {
-                let mut c = r.chars();
-                c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default()
-            });
-            out.push(line(format!("{subject}: Furious. {}", rest.unwrap_or(outcome)), "Show", crate::jobj! { "kind" => "card", "person" => pv.id }, "furious"));
+            out.push(line(format!("{subject}: Furious. {}", outcome_rest(&pv.name, &outcome)), "Show", crate::jobj! { "kind" => "card", "person" => pv.id }, "furious"));
+        }
+    }
+    // A House that takes no levy (a Furious one is told above).
+    for hv in houses {
+        if hv.state != LoyaltyState::Furious {
+            if let Some(why) = &hv.levy.reason {
+                out.push(line(why.clone(), "Show", crate::jobj! { "kind" => "card", "house" => hv.id }, "levy"));
+            }
         }
     }
     for pv in persons {
@@ -413,6 +614,16 @@ fn attention(v: &Viewer, persons: &[PersonView], houses: &[HouseView], grantable
             }
         }
     }
+    // The Crown's cities over its limit that can be granted, first; then every grantable one.
+    let over: Vec<CityId> = cv.crown_over.iter().copied().filter(|c| grantable.contains(c)).collect();
+    if let (Some(&first), Some(limit)) = (over.first(), cv.crown_limit) {
+        let names = and_list(&over.iter().map(|&c| city_name(g, c)).collect::<Vec<_>>());
+        let verb = if over.len() == 1 { "is" } else { "are" };
+        let lasting = crown_over_lasting_times100(g, v.h, &cv.crown_over).max(cv.crown_over_cost_times100);
+        let cost = if lasting > 0 { format!(": +{} gold a turn", gold(lasting)) } else { String::new() };
+        let text = format!("{names} {verb} over the Crown's limit of {limit}{cost}.");
+        out.push(line(text, &format!("Grant {}", city_name(g, first)), crate::jobj! { "kind" => "grant", "city" => first }, "crown_over"));
+    }
     if !grantable.is_empty() {
         let n = grantable.len();
         let text = if n == 1 { "1 city of the Crown can be granted.".to_string() } else { format!("{n} cities of the Crown can be granted.") };
@@ -435,62 +646,44 @@ pub fn attention_count(v: &Viewer) -> usize {
     n
 }
 
-/// The keywords of this system (part J).
-const KEYWORDS: &[&str] = &["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_FRIENDLY", "KEYWORD_PLEASED", "KEYWORD_CAUTIOUS", "KEYWORD_ANNOYED", "KEYWORD_FURIOUS", "KEYWORD_SWORN", "KEYWORD_CLAIMANT"];
+/// The keywords of this system (rule 13; part J). The loyalty states are the game's attitude
+/// words, no keywords: a state mark's tooltip is the attitude's own help (attitudes.jsonc).
+const KEYWORDS: &[&str] = &["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_SWORN", "KEYWORD_CLAIMANT"];
 
 fn keywords(d: &GameData, names: &[&str]) -> Vec<KeywordType> {
     names.iter().filter_map(|n| d.ty::<KeywordType>(n)).collect()
 }
 
-/// `court`: the Court screen (docs/PERSONS.md, "UI", part A).
+/// `court`: the Court screen (docs/PERSONS.md, rule 13; "UI", part A): the realm.
 pub fn court(v: &Viewer) -> Json {
     let g = v.g;
     let d = g.d;
     let h = v.h;
     let cv = g.court_view(h);
     let gov = government(g, h);
-    let mut header = vec![format!("Government: {}.", gov.map(|c| names::display(d, c).into_owned()).unwrap_or_else(|| "none".into()))];
-    if g.player_has_persons(h) {
-        header.push(format!("Tribute of a new House: {}%.", cv.tribute_default));
-    }
-    // The Crown's limit (docs/PERSONS.md, rule 14).
-    if let Some(limit) = cv.crown_limit {
-        let n = cv.crown_cities.len();
-        let over = cv.crown_over.len();
-        header.push(if over > 0 {
-            format!("The Crown holds {n} cities, {over} over its limit of {limit}: +{} gold a turn.", gold(cv.crown_over_cost_times100))
-        } else {
-            format!("The Crown holds {n} {}; its limit is {limit}.", if n == 1 { "city" } else { "cities" })
-        });
-    }
+    let has = g.player_has_persons(h);
+    let header = vec![format!("Government: {}.", gov.map(|c| names::display(d, c).into_owned()).unwrap_or_else(|| "none".into()))];
     // A House's size (rule 14): the realm's threshold.
-    if !cv.houses.is_empty() {
-        header.push(format!("Realm: {} cities. A House holds {} without a grievance.", cv.realm_cities, cv.house_size_threshold));
-    }
-    let (attention, badge) = if g.player_has_persons(h) { attention(v, &cv.persons, &cv.houses, &cv.grantable) } else { (Vec::new(), 0) };
-    let mut crown: Vec<CityId> = g.players[h].cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
-    crown.sort_by_key(|&c| (!g.city_is_capital(c), c));
-    let crown: Vec<Json> = crown
-        .iter()
-        .map(|&c| {
-            let why = g.player_check_grant_city(h, c).err();
-            city_ref(g, c).with("capital", g.city_is_capital(c)).with("grantable", why.is_none()).with("refusal", why).with("over", cv.crown_over.contains(&c))
-        })
-        .collect();
+    let realm = (!cv.houses.is_empty()).then(|| format!("Realm: {}. A House holds {} without a grievance.", cities_text(cv.realm_cities), cv.house_size_threshold));
+    let (attention, badge) = if has { attention(v, &cv) } else { (Vec::new(), 0) };
     let houses: Vec<Json> = cv.houses.iter().map(|hv| house_json(v, hv, &cv.persons, &cv.grantable)).collect();
     let persons: Vec<Json> = cv.persons.iter().filter(|p| !matches!(p.post, Post::Head(_))).map(|pv| person_json(v, pv, &cv.grantable)).collect();
+    let steps: Vec<i32> = (0..=ffh_core::persons::TRIBUTE_MAX).step_by(ffh_core::persons::TRIBUTE_STEP as usize).collect();
     crate::jobj! {
         "government" => Json::opt_idx(gov),
         "header" => header,
+        "crown_line" => crown_line(g, h, &cv, None),
+        "realm" => realm,
+        "tribute_default" => has.then_some(cv.tribute_default),
+        "tribute_steps" => steps,
         "grants" => cv.grants.err(),
         "empty" => empty_lines(g, h, cv.grants, cv.persons.len(), cv.houses.len()),
         "attention" => Json::Arr(attention),
         "badge" => badge,
-        "crown" => Json::Arr(crown),
+        "crown" => Json::Arr(crown_cities_json(g, h, &cv)),
         "houses" => Json::Arr(houses),
         "persons" => Json::Arr(persons),
         "pool_left" => cv.pool_left,
-        "tribute_default" => cv.tribute_default,
         "crown_limit" => cv.crown_limit,
         "reminders" => crate::view::keywords::reminders(d, keywords(d, KEYWORDS)),
     }
@@ -509,10 +702,20 @@ pub fn grant_to_json(to: GrantTo) -> Json {
     }
 }
 
+/// Whether a preview line moves loyalty (`Granted Torrin: +1 (30 turns)`, `Tribute 20%: -1`):
+/// it ends in an amount, with or without its turns.
+fn moves_loyalty(text: &str) -> bool {
+    let Some(i) = text.rfind(": ") else { return false };
+    let rest = text[i + 2..].trim_end_matches('.');
+    let n = rest.split(' ').next().unwrap_or("");
+    n.trim_start_matches(['+', '-']).parse::<i32>().is_ok()
+}
+
 /// The preview's lines grouped by subject (each subject's state now, its tag when it claims the
 /// city, its lines, the state after when it changes).
 /// `own`: the grantee's own subject (its House's label, or the founder's subject): its block is
-/// marked `self`, and the client folds it into the candidate's card, whose header names it.
+/// marked `self`, and the client folds it into the candidate's card, whose header names it; it
+/// keeps only the lines that move loyalty (the card's own lines say the rest).
 fn effects_json(g: &Game, c: CityId, lines: &[PreviewLine], own: &[String]) -> Vec<Json> {
     let h = g.cities[c].owner;
     let city = city_name(g, c);
@@ -533,15 +736,20 @@ fn effects_json(g: &Game, c: CityId, lines: &[PreviewLine], own: &[String]) -> V
     }
     let mut out: Vec<(String, Vec<String>, Option<LoyaltyState>)> = Vec::new();
     for l in lines {
+        let mine = own.iter().any(|o| *o == l.subject);
         let text = format!("{}.", core(g, &l.text));
-        match out.iter_mut().find(|(s, _, _)| *s == l.subject) {
-            Some(e) => {
-                e.1.push(text);
-                if l.state_after.is_some() {
-                    e.2 = l.state_after;
-                }
+        let entry = match out.iter_mut().position(|(s, _, _)| *s == l.subject) {
+            Some(i) => &mut out[i],
+            None => {
+                out.push((l.subject.clone(), Vec::new(), None));
+                out.last_mut().expect("pushed")
             }
-            None => out.push((l.subject.clone(), vec![text], l.state_after)),
+        };
+        if l.state_after.is_some() {
+            entry.2 = l.state_after;
+        }
+        if !mine || moves_loyalty(&l.text) {
+            entry.1.push(text);
         }
     }
     out.into_iter()
@@ -561,20 +769,43 @@ fn effects_json(g: &Game, c: CityId, lines: &[PreviewLine], own: &[String]) -> V
 }
 
 /// A grant's maintenance line: `Your maintenance: -3.2 gold a turn.` (the rules' maintenance of
-/// the owner's cities now and with the city a House's, inflation included).
+/// the owner's cities now and with the city a House's, inflation and the Crown's limit included),
+/// at the city's lasting rate: a city that pays none now (disorder) is counted at what it pays once
+/// that ends (the list's head says it pays none now).
 fn maintenance_line(g: &Game, c: CityId) -> String {
     let m = g.grant_maintenance(c);
-    if m.gold_change_times100 == 0 {
+    let change = if pays_none_now(g, c).is_some() { m.gold_change_times100 - lasting_maintenance_times100(g, c) } else { m.gold_change_times100 };
+    if change == 0 {
         "Your maintenance: no change.".to_string()
     } else {
-        format!("Your maintenance: {} gold a turn.", gold(m.gold_change_times100))
+        format!("Your maintenance: {} gold a turn.", gold(change))
     }
 }
 
-/// One candidate of the grant list.
+/// The Crown after granting city `c` (rule 14), while it is over its limit: `The Crown after the
+/// grant: 3 cities, within its limit of 3.` or `... 4 cities, 1 over its limit of 3.`; `None` when
+/// the Crown is within its limit now, or the city does not count.
+fn crown_after_line(g: &Game, h: PlayerId, c: CityId) -> Option<String> {
+    let limit = g.player_crown_limit(h)?;
+    let crown = g.player_crown_cities(h);
+    if !crown.contains(&c) || g.player_crown_over(h).is_empty() {
+        return None;
+    }
+    let n = crown.len() as i32 - 1;
+    Some(if n > limit {
+        format!("The Crown after the grant: {}, {} over its limit of {limit}.", cities_text(n), n - limit)
+    } else {
+        format!("The Crown after the grant: {}, within its limit of {limit}.", cities_text(n))
+    })
+}
+
+/// One candidate of the grant list: who, what the grant does (`lines`: the city moves to the
+/// House's realm, the maintenance, the Crown's limit, the tribute, the founder leaving the map),
+/// and its loyalty changes (`effects`).
 fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
     let g = v.g;
     let d = g.d;
+    let city = city_name(g, c);
     let mut lines: Vec<String> = Vec::new();
     let (kind, title, house_label, state, color, leader, unit_type, person) = match cand.to {
         GrantTo::House(hh) => {
@@ -592,20 +823,37 @@ fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
             ("great_person", format!("Found a House: {unit}{at}"), label, None, None, None, Some(g.units[u].unit_type), None)
         }
     };
-    // What the grant does: the city leaves the Crown for the House's player (its production and
-    // most of its commerce go with it; the House pays its tribute).
+    // What the grant does: the city leaves the Crown for the House's player.
+    lines.push(format!("Moves to {house_label}'s realm: its production and commerce are the House's."));
     lines.push(maintenance_line(g, c));
+    if let Some(l) = crown_after_line(g, v.h, c) {
+        lines.push(l);
+    }
     let tribute = match cand.to {
         GrantTo::House(hh) => g.houses[hh].tribute,
         _ => g.players[v.h].house_tribute,
     };
-    lines.push(format!("{} pays a tribute of {tribute}% of its gold and research.", house_label));
+    lines.push(format!("Tribute from it at {tribute}%."));
+    match cand.to {
+        GrantTo::Person(x) => {
+            let name = &g.persons[x].name;
+            if let Some(a) = g.person_army(x) {
+                lines.push(format!("Command of the {} ends.", g.armies[a].name));
+            }
+            lines.push(format!("{name} leaves the map and leads {house_label}."));
+        }
+        GrantTo::GreatPerson(u) => {
+            let unit = names::display(d, g.units[u].unit_type).into_owned();
+            lines.push(format!("The {unit} is consumed. A person of note is drawn and leads {house_label}."));
+        }
+        GrantTo::House(_) => {}
+    }
     let own_subjects: Vec<String> = match cand.to {
         GrantTo::House(_) => vec![house_label.clone()],
         GrantTo::Person(x) => vec![g.person_subject(x), house_label.clone()],
         GrantTo::GreatPerson(_) => vec![house_label.clone()],
     };
-    let confirm = format!("Grant {} to {house_label}? This cannot be undone.", city_name(g, c));
+    let confirm = format!("Grant {city} to {house_label}? This cannot be undone.");
     let button = match cand.to {
         GrantTo::House(_) => format!("Grant to {house_label}"),
         _ => format!("Found {house_label}"),
@@ -629,8 +877,9 @@ fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
     }
 }
 
-/// `grant {city}`: the grant list of one of the human's cities (part B). A city that cannot be
-/// granted has its `refusal` and no candidates.
+/// `grant {city}`: the grant list of one of the human's cities (rule 13; part B). A city that
+/// cannot be granted has its `refusal` and no candidates. Heroes are no candidates (a hero cannot
+/// head a House).
 pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     let g = v.g;
     let d = g.d;
@@ -641,11 +890,19 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     }
     let name = city_name(g, c);
     let refusal = g.player_check_grant_city(v.h, c).err();
-    // What the Crown pays for it now (the city's own maintenance; a grant moves it to the House).
-    let own = g.cities[c].maintenance;
+    // What the Crown pays for it (the city's own maintenance at its lasting rate; a grant moves it
+    // to the House), and whether it pays none now.
+    let mut baseline = format!("Held by the Crown: its maintenance {} gold a turn.", gold(lasting_maintenance_times100(g, c)));
+    if let Some(why) = pays_none_now(g, c) {
+        baseline.push(' ');
+        baseline.push_str(&why);
+    }
     let mut candidates: Vec<(u8, Json)> = Vec::new();
     if refusal.is_none() {
         for cand in g.grant_candidates(v.h, c) {
+            if matches!(cand.to, GrantTo::Person(x) if g.persons[x].leader.is_none()) {
+                continue;
+            }
             // Claimants first, then the other Houses, then persons without a House, then great
             // people (the core lists Houses, persons, great people).
             let rank = match (cand.claimant, cand.to) {
@@ -658,10 +915,11 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         }
     }
     candidates.sort_by_key(|(r, _)| *r);
-    let mut kws = vec!["KEYWORD_HOUSE", "KEYWORD_CROWN"];
+    let mut kws = vec!["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_TRIBUTE"];
     if candidates.iter().any(|(_, j)| j.get("claimant").and_then(Json::as_bool) == Some(true)) {
         kws.push("KEYWORD_CLAIMANT");
     }
+    let cv = g.court_view(v.h);
     Ok(crate::jobj! {
         "city" => c,
         "name" => name.as_str(),
@@ -669,12 +927,51 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "y" => g.cities[c].y,
         "title" => format!("Grant {name}"),
         "note" => "A grant is for good.",
-        "baseline" => format!("Held by the Crown: its maintenance {} gold a turn.", gold(own)),
+        "baseline" => baseline,
+        "crown_line" => crown_line(g, v.h, &cv, Some(c)),
         "refusal" => refusal,
         "none" => (refusal.is_none() && candidates.is_empty()).then_some("No House, person or great person to grant it to."),
         "candidates" => Json::Arr(candidates.into_iter().map(|(_, j)| j).collect()),
         "reminders" => crate::view::keywords::reminders(d, keywords(d, &kws)),
     })
+}
+
+// ---------------------------------------------------------------------------------------------
+// The other screens: the levy (the Armies screen) and a Crown city's Governance section
+// ---------------------------------------------------------------------------------------------
+
+/// A requisition candidate's House (the levy, rule 6; the Armies screen's *Requisition from*):
+/// `{id, label, colour, state, turns, takes_levy, text}`, `text` `Takes levies. Each levy: -1 (20
+/// turns).` or the rules' reason it takes none (`House Arne is Annoyed. It takes no levy.`);
+/// null for a city of no House.
+pub fn levy_house(g: &Game, c: CityId) -> Json {
+    let Some(h) = g.city_house(c) else { return Json::Null };
+    let refusal = g.house_levy_refusal(h);
+    let status = levy_status(refusal.as_deref());
+    crate::jobj! {
+        "id" => h,
+        "label" => g.house_label(h),
+        "colour" => g.houses[h].color as i32,
+        "state" => g.house_state(h).name(),
+        "turns" => g.houses[h].standing.countdown.map(|end| (end - g.game_turn()).max(0)),
+        "takes_levy" => refusal.is_none(),
+        "text" => status.get("text").cloned().unwrap_or(Json::Null),
+    }
+}
+
+/// The city screen's Governance line for one of the human's cities (rule 13; part C): every city
+/// of the human's is the Crown's (a House's city is its own player's), so `crown: {grantable,
+/// refusal (why it cannot be granted, else null), over (`Over the Crown's limit of 3.` or
+/// null)}` and `house: null`. Nothing for a human without Houses.
+pub fn governance_fields(v: &Viewer, c: CityId, j: &mut Json) {
+    let g = v.g;
+    if !g.player_has_persons(v.h) || g.cities[c].owner != v.h {
+        return;
+    }
+    let why = g.player_check_grant_city(v.h, c).err();
+    let over = g.player_crown_limit(v.h).filter(|_| g.player_crown_over(v.h).contains(&c)).map(|limit| format!("Over the Crown's limit of {limit}."));
+    j.set("house", Json::Null);
+    j.set("crown", crate::jobj! { "grantable" => why.is_none(), "refusal" => why, "over" => over });
 }
 
 // ---------------------------------------------------------------------------------------------

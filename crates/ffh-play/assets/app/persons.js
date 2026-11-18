@@ -1,16 +1,19 @@
-// Persons of Note in the browser client (docs/PERSONS.md, "UI"): the one mark of a loyalty state
-// (every screen draws it with stateMark, never restyled), a House's shield, the Court screen (part
-// A: Shift+F9, the menu's Court), a city's grant list (part B) and the help topic (part J).
+// Persons of Note in the browser client (docs/PERSONS.md, "The second build", rule 13; "UI"): the
+// one mark of a loyalty state (every screen draws it with stateMark, never restyled), a House's
+// shield, the Court screen (the realm: Shift+F9, the menu's Court), a city's grant list and the
+// help topic.
 //
 // The server makes every line about the rules (`court`, `grant {city}`: view/persons.rs); this
-// module lays them out, puts the buttons where the lines say, and sends `grant_city` and
-// `free_house` (and an empire order for a first build's Works demand), which the server checks. A grant, and
-// a House's release, take two steps: the choice, then a line that names what is given and says it
-// cannot be undone. Nothing here blocks the turn: what needs attention is a line at the top of the
-// Court and the count on its menu button (the view's `court_attention`).
+// module lays them out, puts the buttons where the lines say, and sends `grant_city`,
+// `house_tribute`, `tribute_default` and `free_house` (and an empire order for a first build's
+// Works demand), which the server checks. A grant, and freeing a House, take two steps: the choice,
+// then a line that names what is given and says it cannot be undone. A tribute is chosen from a
+// list that states, for every rate, what the House would pay this turn and its loyalty part and
+// total at that rate. Nothing here blocks the turn: what needs attention is a line at the top of
+// the Court and the count on its menu button (the view's `court_attention`).
 
 import * as api from "./api.js";
-import { S, emit, me, info } from "./state.js";
+import { S, emit, me } from "./state.js";
 import { h, fill, toast, errorText } from "./dom.js";
 import { openModal, closeTag } from "./modals.js";
 import { run } from "./commands.js";
@@ -40,27 +43,26 @@ const SVG = "http://www.w3.org/2000/svg";
 
 // ---- the state mark and the shield (principle 2: one function draws each) ---------------------
 
-/** The reminder boxes of loyalty state `key` (the data's KeywordType entry `KEYWORD_<STATE>` and
- *  those it implies), or null before the data arrives. */
-function stateReminders(key) {
-  const table = S.data?.tables?.KeywordType ?? [];
-  const entry = table.find((k) => k.type === `KEYWORD_${key.toUpperCase()}`);
-  if (!entry?.reminder) return null;
-  const keys = entry.with ?? [entry.type];
-  const list = keys.map((t) => table.find((k) => k.type === t)).filter((k) => k?.reminder).map((k) => ({ key: k.type, name: k.name, text: k.reminder }));
-  return remindersNode(list);
+/** The tooltip of loyalty state `key`: what that state does for a House and for a commander, the
+ *  attitude's own help in the data (attitudes.jsonc, `ATTITUDE_<STATE>`); null before the data
+ *  arrives. The states are the game's attitude words, not keywords. */
+function stateTip(key) {
+  const table = S.data?.tables?.AttitudeType ?? [];
+  const entry = table.find((k) => k.type === `ATTITUDE_${key.toUpperCase()}`);
+  if (!entry?.help) return null;
+  return remindersNode([{ key: entry.type, name: entry.name ?? stateWord(key), text: entry.help }]);
 }
 
 /** The mark of a state: `span.pstate.ps-<state>` with the glyph and the word, and for a running
  *  countdown the turns left (`Furious ✖ 8 turns`). `state` as the host sends it (`Annoyed`) or
- *  a key of persons_mark.js STATES; `turns` null or undefined: none. Its tooltip is the state's
- *  reminder text (keywords.jsonc). */
+ *  a key of persons_mark.js STATES; `turns` null or undefined: none. Its tooltip says what the
+ *  state does (the attitude's help in the data). */
 export function stateMark(state, turns) {
   const key = stateKey(state);
   const hasTurns = turns !== null && turns !== undefined;
   return h(
     `span.pstate.${stateClass(key)}`,
-    { "data-state": key, tip: () => stateReminders(key) },
+    { "data-state": key, tip: () => stateTip(key) },
     h("span.pstate-glyph", { "aria-hidden": "true" }, stateGlyph(key)),
     h("span.pstate-word", stateWord(key)),
     hasTurns ? h("span.pstate-turns", turnsText(turns)) : null,
@@ -92,33 +94,39 @@ addHelp({
   group: "Game options",
   title: "Persons of Note",
   body: () => [
-    h("p", "A civilization has a court: named persons who lead its Houses and command its armies. Each has one demand at a time; meeting it raises their loyalty, letting it lapse lowers it, and their loyalty decides what they take and what they give."),
-    h("h4", "The court"),
+    h("p", "A civilization has a court: named persons who lead its Houses and command its armies. Its Houses are its vassal civilizations; the Crown is what it holds itself."),
+    h("h4", "The Crown and its Houses"),
     h(
       "ul",
-      h("li", "A hero enters the court when you have it. Your best veteran in an army enters at level 5 (one level more for each veteran already in it). A great person can found a House."),
-      h("li", "A person has one post: the head of a House, the commander of an army, or none."),
-      h("li", "An army's commander is the person with it of the highest level, unless you name another (the Armies screen)."),
+      h("li", "Every city starts as the Crown's. The capital stays the Crown's."),
+      h("li", "Under a governing civic the Crown holds a few cities at the normal maintenance (3; the Kuriotates: the capital alone, settlements not counted). Each city beyond pays triple city-count maintenance. The Court's header says how many and what they cost."),
+      h("li", "A grant moves a Crown city to a House, for good: the city, its production and its commerce are the House's. Granting it to a veteran or a great person founds a new House; its founder leaves the map and leads it. A hero cannot head a House."),
+      h("li", "A House is a civilization of its own and your vassal. Every vassal is one, whether it capitulated or sought protection."),
+      h("li", "A House holding more cities than the realm allows (3, more as the realm grows) loses loyalty for each city over."),
     ),
-    h("h4", "Houses and the Crown"),
+    h("h4", "Tribute and levies"),
     h(
       "ul",
-      h("li", "A House is a civilization of its own and your vassal, led by its head, who leaves the map. Every vassal is a House."),
-      h("li", "Every city starts as the Crown's. You grant a city to a House (the city becomes its own), or found one: grant it to a veteran or to a great person (who is consumed and draws the founder). A hero cannot head a House. A grant is for good. The capital stays the Crown's."),
-      h("li", "A House pays a tribute of its gold and research (0 to 50%); the higher the tribute, the lower its loyalty. Your armies may requisition in its cities."),
-      h("li", "Under a government of direct rule (Despotism, God King) there are no Houses. Adopting one while Houses stand makes them all break away at once, each at war with you."),
+      h("li", "Each House pays a tribute of its gold and research, 0 to 50%; the higher it is, the lower its loyalty. Choose it on the House's card: the list shows what each rate pays and does to its loyalty."),
+      h("li", "Your armies requisition in your Houses' cities too (the Armies screen): each levy costs the House loyalty for a while. An Annoyed or Furious House takes no levy."),
+    ),
+    h("h4", "Loyalty"),
+    h(
+      "ul",
+      h("li", "A House's and a person's loyalty is a sum of parts; its state is the attitude scale: Friendly, Pleased, Cautious, Annoyed, Furious. A state's mark says what it does."),
+      h("li", "Each person makes one demand at a time, with a term. Met: +3 for 60 turns. Refused at its term, or made impossible by your act: -3 for 60 turns. The demand line's button goes where it is met."),
+      h("li", "Every act that moves loyalty shows the change before it is done: the grant list, the tribute list, civics, religion, war and peace, razing a city."),
+      h("li", "A Furious House breaks away at the end of a 10-turn countdown, at war with you; a city of it where your army stands stays yours. A Furious commander's sworn units secede."),
+    ),
+    h("h4", "Breaking away, freeing, side deals"),
+    h(
+      "ul",
+      h("li", "Adopting a government of direct rule (Despotism, God King) makes every House break away at once, each at war with you."),
       h("li", "You can free a House: it is no longer your vassal, at peace with you."),
-    ),
-    h("h4", "Demands and loyalty"),
-    h(
-      "ul",
-      h("li", "Each person makes one demand at a time, with a term: a post, a House, a city granted or taken, a war, a state religion. The Court's demand line has a button that goes where it is met."),
-      h("li", "Met: +3 for 60 turns. Refused at its term, or made impossible by your act: -3 for 60 turns. A grant: +1 for 30 turns to the House that gets it, a loss to every other claimant."),
-      h("li", "Every act that moves loyalty shows the change before it is done: the grant list, civics, religion, war and peace, razing a city."),
-      h("li", "The five states are Friendly, Pleased, Cautious, Annoyed and Furious; their marks show their rules."),
+      h("li", "Others can offer your Cautious or worse Houses gold to secede (the diplomacy screen); you can do the same to theirs. A secession is a war on the old liege."),
     ),
     h("h4", "Keys"),
-    h("ul", h("li", "Shift+F9 opens the Court. Its button's count is what needs attention: a Furious holder, a demand with 10 turns or fewer.")),
+    h("ul", h("li", "Shift+F9 opens the Court. Its button's count is what needs attention: a Furious House or commander, a demand with 10 turns or fewer.")),
   ],
 });
 
@@ -167,6 +175,10 @@ async function doAct(act, m = null) {
       return emit("open-screen", "diplomacy");
     case "religion":
       return emit("open-screen", "religion");
+    case "armies":
+      m?.close(null);
+      closeTag("court");
+      return emit("open-screen", "armies");
     case "order":
       return orderWonder(act);
     case "card":
@@ -196,29 +208,28 @@ function demandLine(d, m) {
   );
 }
 
-/** The opened part of a card: loyalty parts and total, then the other lines, the record, and the
- *  backstory as flavour, apart. */
-function moreBlock(x, extra = []) {
+/** The loyalty parts, one a line, and the total. */
+function partsBlock(x) {
+  return [h("ul.pparts", x.parts.length ? x.parts.map((p) => h("li", p)) : h("li.dim", "No modifiers.")), h("div.ptotal", x.total)];
+}
+
+/** The opened part of a card: `extra` lines, the record, and the backstory as flavour, apart.
+ *  `parts`: the loyalty parts and total are in it too (a person's card; a House's shows them on
+ *  the card). */
+function moreBlock(x, extra = [], { parts = true, summary = "Loyalty and record" } = {}) {
   return h(
     "details.pmore",
-    h("summary", "Loyalty and record"),
-    h("ul.pparts", x.parts.length ? x.parts.map((p) => h("li", p)) : h("li.dim", "No modifiers.")),
-    h("div.ptotal", x.total),
+    h("summary", summary),
+    parts ? partsBlock(x) : null,
     ...extra,
     x.record?.length ? [h("div.psub", "Record"), h("ul.precord", x.record.map((r) => h("li", r)))] : null,
     x.backstory ? h("div.pbackstory", markup(x.backstory)) : null,
   );
 }
 
-/** A person's head row: portrait, name, title, state mark (`mark` false: a head's, whose state is
- *  their House's, marked once on the House). */
-function personHead(p, size = PORTRAIT.small, mark = true) {
-  return h(
-    "div.phead",
-    portrait(p, size),
-    h("div.pname", h("b", p.name), p.title ? h("div.ptitle.dim", p.title) : null),
-    mark ? stateMark(p.state, p.countdown_turns) : null,
-  );
+/** A person's head row: portrait, name, title, state mark. */
+function personHead(p, size = PORTRAIT.small) {
+  return h("div.phead", portrait(p, size), h("div.pname", h("b", p.name), p.title ? h("div.ptitle.dim", p.title) : null), stateMark(p.state, p.countdown_turns));
 }
 
 /** A person's card (part A.4): a commander or a person with no post. */
@@ -236,12 +247,64 @@ function personCard(p, m) {
   );
 }
 
-/** A House's card (part A.3). */
+// ---- a House's card (rule 13) ---------------------------------------------------------------
+
+/** The House cards whose tribute list is open (by House id): kept open when the Court is read
+ *  again after a change. */
+const tributeOpen = new Set();
+
+/** A House's tribute: its line (`Tribute 20%: 12 gold, 8 research last turn.`) and the list of
+ *  rates (0 to 50%), each with what the House would pay this turn and its tribute part and
+ *  loyalty at that rate (rule 4); a tap on a rate sets it (`house_tribute`) and the Court is read
+ *  again. The current rate is marked (`now`); a tap on it does nothing. */
+function tributeBlock(x, reload) {
+  const t = x.tribute;
+  const set = async (pct) => {
+    if (await run({ c: "house_tribute", house: x.id, pct })) reload();
+  };
+  const rows = t.rates.map((r) =>
+    h(
+      `button.trate${r.current ? ".current" : ""}${r.changes ? ".changes" : ""}`,
+      {
+        type: "button",
+        "data-pct": r.pct,
+        "aria-pressed": r.current ? "true" : "false",
+        title: r.current ? "The House's tribute now" : `Set the tribute to ${r.pct}%`,
+        onclick: () => (r.current ? null : set(r.pct)),
+      },
+      h("span.trate-pct", `${r.pct}%`, r.current ? h("span.trate-now", "now") : null),
+      h("span.trate-est", r.estimate),
+      h("span.trate-part", `${r.part_text} · ${r.loyalty_text}`),
+      h("span.trate-state", stateMark(r.state)),
+    ),
+  );
+  const box = h(
+    "details.ptribute",
+    { open: tributeOpen.has(x.id), ontoggle: (ev) => (ev.target.open ? tributeOpen.add(x.id) : tributeOpen.delete(x.id)) },
+    h("summary", h("span.ptribute-line", t.line), h("span.ptribute-change", "Change")),
+    h("div.trates-head.dim", "At each rate, this turn:"),
+    h("div.trates", { role: "group", "aria-label": `${x.label}: tribute` }, rows),
+  );
+  return box;
+}
+
+/** A House's card: who leads it (portrait, House, leader, since when), its attitude and
+ *  countdown, the demand, its loyalty parts, its tribute, its levy, its cities and size, Free;
+ *  opened: the record, the price to secede, the leader's backstory. */
 function houseCard(x, m, reload) {
   const chips = x.cities.map((c) =>
-    h(`button.small.city-chip${c.seat ? ".seat" : ""}`, { "data-city": c.city, title: "Open the city", onclick: () => (m.close(null), emit("open-city", c.city)) }, c.name),
+    h(
+      `button.small.city-chip${c.seat ? ".seat" : ""}${c.held ? ".held" : ""}`,
+      {
+        "data-city": c.city,
+        // A House's city is its own player's: the map shows it (your city screen does not open on it).
+        title: c.held ? "An army of yours stands in it. Show it on the map" : "Show it on the map",
+        onclick: () => (m.close(null), emit("center", c.x, c.y), emit("flash", c.x, c.y)),
+      },
+      c.name,
+    ),
   );
-  const head = x.head ? h("div.phouse-head", personHead(x.head, PORTRAIT.small, false), h("div.pline", x.head.where)) : null;
+  const head = x.head;
   const foot = h("div.pfoot");
   const free = () =>
     fill(foot,
@@ -253,35 +316,71 @@ function houseCard(x, m, reload) {
       h("div.pconfirm", h("p", x.free.confirm), h("button.small.danger", { onclick: async () => (await run({ c: "free_house", house: x.id })) && reload() }, "Free"), h("button.small", { onclick: free }, "Back")),
     );
   free();
+  const furious = stateKey(x.state) === "furious";
   return h(
-    `div.pcard.house-card${x.state === "Furious" ? ".alarm" : ""}`,
+    `div.pcard.house-card${furious ? ".alarm" : ""}`,
     { "data-house": x.id },
-    h("div.phead", houseShield(x.color, 22), h("div.pname", h("b", x.label)), stateMark(x.state, x.countdown_turns)),
+    h(
+      "div.phead",
+      portrait({ leader: x.leader, name: head?.name ?? x.label }),
+      h(
+        "div.pname",
+        h("div.phouse-name", houseShield(x.color, 18), h("b", x.label)),
+        head ? h("div.pleader", head.name, head.title ? h("span.ptitle.dim", `, ${head.title}`) : null) : null,
+        h("div.psince.dim", x.since),
+      ),
+      stateMark(x.state, x.countdown_turns),
+    ),
     x.outcome ? h("div.pline.warn", x.outcome) : null,
-    x.held ? h("div.pline", x.held) : null,
-    head,
-    // The demand is the line the player acts on: right under who heads the House.
-    x.head ? demandLine(x.head.demand, m) : null,
-    x.seat ? h("div.pline", x.seat) : null,
+    // The demand is the line the player acts on: right under who leads the House.
+    head ? demandLine(head.demand, m) : null,
+    h("div.pparts-block", partsBlock(x)),
+    tributeBlock(x, reload),
+    h(`div.pline.plevy${x.levy.takes ? "" : furious ? ".warn" : ".caution"}`, x.levy.text),
     h("div.pchips", chips),
-    h("div.pline", x.tribute),
-    h("div.pline", x.levy),
+    h(`div.pline.psize${x.size.over ? ".caution" : ".dim"}`, x.size.text),
     foot,
-    moreBlock({ parts: x.parts, total: x.total, record: x.head?.record, backstory: x.head?.backstory }, [h("div.pline.dim", x.founded), x.head ? h("div.pline", x.head.ambition) : null, x.head?.rival ? h("div.pline", x.head.rival) : null]),
+    moreBlock({ record: head?.record, backstory: head?.backstory }, [h("div.pline", x.price), head ? h("div.pline", head.ambition) : null, head?.rival ? h("div.pline", head.rival) : null], { parts: false, summary: "Record" }),
   );
 }
 
-/** The Crown's card: its cities, each with [Grant] or the reason it cannot be granted. */
+/** The Crown's card: its cities, each with [Grant] or the reason it cannot be granted, those over
+ *  the limit marked (the limit is the header's line). */
 function crownCard(r, m) {
   const rows = r.crown.map((c) =>
     h(
-      "li.crown-city",
+      `li.crown-city${c.over ? ".over" : ""}`,
       { "data-city": c.city },
       h("button.link", { title: "Open the city", onclick: () => (m.close(null), emit("open-city", c.city)) }, c.name),
+      c.note ? h(`span.crown-note${c.over ? ".caution" : ".dim"}`, c.note) : null,
       c.grantable ? h("button.small.pgrant", { "data-city": c.city, onclick: () => openGrant(c.city) }, "Grant") : h("span.dim.prefusal", ` ${c.refusal ?? ""}`),
     ),
   );
-  return h("div.pcard.crown-card", { "data-crown": "1" }, h("div.phead", h("span.crown-glyph", { "aria-hidden": "true" }, "♛"), h("div.pname", h("b", "The Crown"))), r.grants ? h("div.pline.dim", r.grants) : null, h("ul.crown-cities", rows));
+  return h(
+    "div.pcard.crown-card",
+    { "data-crown": "1" },
+    h("div.phead", h("span.crown-glyph", { "aria-hidden": "true" }, "♛"), h("div.pname", h("b", "The Crown"))),
+    r.grants ? h("div.pline.dim", r.grants) : null,
+    h("ul.crown-cities", rows),
+  );
+}
+
+/** The realm's default tribute (the one a new House takes) and its selector (`tribute_default`). */
+function defaultTribute(r, reload) {
+  if (r.tribute_default === null || r.tribute_default === undefined) return null;
+  const sel = h(
+    "select.tribute-default",
+    {
+      "aria-label": "Tribute of a new House",
+      onchange: async (ev) => {
+        const pct = Number(ev.target.value);
+        if (await run({ c: "tribute_default", pct })) reload();
+        else ev.target.value = String(r.tribute_default);
+      },
+    },
+    r.tribute_steps.map((p) => h("option", { value: String(p), selected: p === r.tribute_default }, `${p}%`)),
+  );
+  return h("label.ptribute-default", "Tribute of a new House: ", sel);
 }
 
 // ---- the Court screen (part A) ----------------------------------------------------------------
@@ -289,8 +388,8 @@ function crownCard(r, m) {
 /** The Court's dialog while open, and how to read it again (a grant elsewhere refreshes it). */
 let court = null;
 
-/** Scrolls the open Court to a card (`{house}`, `{person}`, `{crown}`), opens its record and marks
- *  it a moment. */
+/** Scrolls the open Court to a card (`{house}`, `{person}`, `{crown}`), opens its details and
+ *  marks it a moment. */
 function focusCard(focus) {
   const el = court?.m?.el;
   if (!el || !focus) return;
@@ -298,7 +397,7 @@ function focusCard(focus) {
   const card = el.querySelector(sel);
   if (!card) return;
   const more = card.querySelector("details.pmore");
-  if (more && !focus.crown) more.open = true;
+  if (more && focus.person !== undefined) more.open = true;
   card.scrollIntoView({ block: "start", behavior: "auto" });
   card.classList.add("pfocus");
   setTimeout(() => card.classList.remove("pfocus"), 1600);
@@ -319,7 +418,13 @@ export async function openCourt(focus = null) {
     if (m.closed) return;
     setBadge(r.badge);
     const top = m.el.querySelector(".modal-body")?.scrollTop ?? 0;
-    const header = h("div.court-header", r.header.map((l) => h("div", l)));
+    const header = h(
+      "div.court-header",
+      r.header.map((l) => h("div", l)),
+      r.crown_line ? h(`div.court-crown${r.crown_line.over ? ".caution" : ""}`, r.crown_line.text) : null,
+      r.realm ? h("div.court-realm", r.realm) : null,
+      defaultTribute(r, () => load()),
+    );
     // The keywords' chips close the screen: what needs attention comes first (a phone showed two
     // rows of chips above it).
     const chips = h("div.court-keywords", keywordChips(r.reminders));
@@ -345,9 +450,9 @@ export async function openCourt(focus = null) {
     m.setBody(
       header,
       attention,
-      h("h4", "Houses"),
-      h("div.pcards", crownCard(r, m), r.houses.map((x) => houseCard(x, m, load))),
-      r.persons.length ? [h("h4", "Persons without a House"), h("div.pcards", r.persons.map((p) => personCard(p, m)))] : null,
+      h("h4", "The realm"),
+      h("div.pcards", crownCard(r, m), r.houses.map((x) => houseCard(x, m, () => load()))),
+      r.persons.length ? [h("h4", "Commanders and persons without a post"), h("div.pcards", r.persons.map((p) => personCard(p, m)))] : null,
       chips,
     );
     const body = m.el.querySelector(".modal-body");
@@ -440,11 +545,13 @@ function effectBlock(e) {
   );
 }
 
-/** A candidate's card: who, the claim, what the grant does, and its button, which turns into the
- *  confirmation line. */
+/** A candidate's card: who, the claim, what the grant does, its loyalty changes, and its button,
+ *  which turns into the confirmation line. */
 function candidateCard(r, c, m) {
   const foot = h("div.pfoot");
-  const who = c.kind === "house" && c.color !== null && c.color !== undefined ? houseShield(c.color, 22) : portrait({ leader: c.leader, unit_type: c.unit_type, name: c.title });
+  // Its leader's portrait (a great person: its unit's figure); a House's name carries its shield.
+  const who = portrait({ leader: c.leader, unit_type: c.unit_type, name: c.title });
+  const shield = c.kind === "house" && c.color !== null && c.color !== undefined ? houseShield(c.color, 18) : null;
   const choose = () =>
     fill(foot,
       c.refusal ? h("p.warn", c.refusal) : null,
@@ -471,13 +578,14 @@ function candidateCard(r, c, m) {
   choose();
   const own = c.effects.find((e) => e.self);
   const claim = c.claimant ? keywordChips((r.reminders ?? []).filter((k) => k.key === "KEYWORD_CLAIMANT")) : null;
+  const ownLines = own?.lines ?? [];
   return h(
     "div.pcard.grant-card",
     { "data-kind": c.kind, "data-claimant": c.claimant ? "1" : "0" },
-    h("div.phead", who, h("div.pname", h("b", c.title)), claim, c.state ? stateMark(c.state) : null),
-    // The grantee's own loyalty lines join the card's: its header already names it and its state.
-    h("ul.plines", c.lines.map((l) => h("li", l)), (own?.lines ?? []).map((l) => h("li", l))),
-    own?.state_after ? becomesLine(own.state_after) : null,
+    h("div.phead", who, h("div.pname", h("div.phouse-name", shield, h("b", c.title))), claim, c.state ? stateMark(c.state) : null),
+    h("ul.plines", c.lines.map((l) => h("li", l))),
+    // The grantee's own loyalty lines: its header already names it and its state.
+    ownLines.length || own?.state_after ? h("div.peffect.self", h("ul", ownLines.map((l) => h("li", l))), own?.state_after ? becomesLine(own.state_after) : null) : null,
     c.effects.filter((e) => !e.self).map(effectBlock),
     foot,
   );
@@ -503,7 +611,7 @@ export async function openGrant(cityId, prefer = null) {
   const first = list.findIndex((c) => prefers(c, prefer));
   if (first > 0) list.unshift(...list.splice(first, 1));
   m.setBody(
-    h("div.grant-head", h("p", h("b", r.note)), h("p.dim", r.baseline)),
+    h("div.grant-head", h("p", h("b", r.note)), h("p.dim", r.baseline), r.crown_line ? h(`p${r.crown_line.over ? ".caution" : ".dim"}`, r.crown_line.text) : null),
     list.length ? h("div.pcards.one.grant-list", list.map((c) => candidateCard(r, c, m))) : h("p.dim", r.none ?? ""),
     h("div.court-keywords", keywordChips(r.reminders)),
   );

@@ -121,8 +121,8 @@ pub fn city(v: &Viewer, c: CityId) -> Json {
     }
     let mut j = city_json(v, c, false);
     j.set("government", government(v.g, v.h).map(Json::idx));
-    // Persons of Note (part C): the House holding the city in detail, or the Crown's grant.
-    crate::view::house_marks::governance_fields(v, c, &mut j);
+    // Persons of Note (rule 13, part C): the Crown's: its grant, or why it cannot be granted.
+    crate::view::persons::governance_fields(v, c, &mut j);
     j
 }
 

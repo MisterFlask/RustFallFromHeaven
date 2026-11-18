@@ -47,6 +47,8 @@ impl Game {
             None => "their House".to_string(),
         };
         match kind {
+            // A hero has no leader to head a House with (houses.rs).
+            DemandKind::Post if self.persons[x].leader.is_none() => "A post: a command.".into(),
             DemandKind::Post => "A post: a command or a House.".into(),
             DemandKind::House => "A House.".into(),
             DemandKind::GrantCity(plot) => match self.persons_city_at(plot) {

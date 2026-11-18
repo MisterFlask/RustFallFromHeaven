@@ -3,10 +3,12 @@
 // Copyright Firaxis Games 2005
 //
 // Basic Infos
+// help: what the attitude does as a loyalty state of Persons of Note (docs/PERSONS.md, rule 5): the
+//     state mark's tooltip (persons.js stateMark).
 [
-  {"type": "ATTITUDE_FURIOUS", "description": "TXT_KEY_ATTITUDE_FURIOUS"},
-  {"type": "ATTITUDE_ANNOYED", "description": "TXT_KEY_ATTITUDE_ANNOYED"},
-  {"type": "ATTITUDE_CAUTIOUS", "description": "TXT_KEY_ATTITUDE_CAUTIOUS"},
-  {"type": "ATTITUDE_PLEASED", "description": "TXT_KEY_ATTITUDE_PLEASED"},
-  {"type": "ATTITUDE_FRIENDLY", "description": "TXT_KEY_ATTITUDE_FRIENDLY"}
+  {"type": "ATTITUDE_FURIOUS", "description": "TXT_KEY_ATTITUDE_FURIOUS", "help": "TXT_KEY_ATTITUDE_FURIOUS_HELP"},
+  {"type": "ATTITUDE_ANNOYED", "description": "TXT_KEY_ATTITUDE_ANNOYED", "help": "TXT_KEY_ATTITUDE_ANNOYED_HELP"},
+  {"type": "ATTITUDE_CAUTIOUS", "description": "TXT_KEY_ATTITUDE_CAUTIOUS", "help": "TXT_KEY_ATTITUDE_CAUTIOUS_HELP"},
+  {"type": "ATTITUDE_PLEASED", "description": "TXT_KEY_ATTITUDE_PLEASED", "help": "TXT_KEY_ATTITUDE_PLEASED_HELP"},
+  {"type": "ATTITUDE_FRIENDLY", "description": "TXT_KEY_ATTITUDE_FRIENDLY", "help": "TXT_KEY_ATTITUDE_FRIENDLY_HELP"}
 ]

@@ -150,53 +150,6 @@ fn person_brief(g: &Game, x: PersonId) -> Json {
     }
 }
 
-/// The city screen's Governance line (part C), in `governance.house` or `governance.crown`:
-/// - a House's city (its liege's view): `house: {id, label, colour, state, turns, outcome, head:
-///   {person, name, title, leader} | null, levy (`Takes levies.` or the rules' reason it takes
-///   none), takes_levy, tribute (`Tribute 20%.`)}`;
-/// - a Crown city: `crown: {grantable, refusal (why it cannot be granted, else null)}`.
-///
-/// Nothing for a human without Houses.
-pub fn governance_fields(v: &Viewer, c: CityId, j: &mut Json) {
-    let g = v.g;
-    if !g.player_has_persons(v.h) {
-        return;
-    }
-    match g.city_house(c) {
-        Some(h) => {
-            let mut house = house_chip(g, h);
-            let head = g.houses[h].head.filter(|&x| g.persons.contains(x));
-            house.set("head", head.map(|x| person_brief(g, x)));
-            house.set("outcome", g.houses[h].standing.countdown.map(|_| g.house_breakaway_outcome(h)));
-            let refusal = g.house_levy_refusal(h);
-            house.set("takes_levy", refusal.is_none());
-            house.set("levy", refusal.unwrap_or_else(|| "Takes levies.".to_string()));
-            house.set("tribute", format!("Tribute {}%.", g.houses[h].tribute));
-            j.set("house", house);
-            j.set("crown", Json::Null);
-        }
-        None => {
-            let why = g.player_check_grant_city(v.h, c).err();
-            j.set("house", Json::Null);
-            j.set("crown", crate::jobj! { "grantable" => why.is_none(), "refusal" => why });
-        }
-    }
-}
-
-/// A requisition candidate's House line (part D; the levy, docs/PERSONS.md, rule 6): `{id, label,
-/// colour, state, takes_levy, text}`, `text` `House Arne: takes levies. Each is -1 (20 turns).` or
-/// the rules' reason it takes none; null for a city of no House.
-pub fn requisition_house(g: &Game, c: CityId) -> Json {
-    let Some(h) = g.city_house(c) else { return Json::Null };
-    let label = g.house_label(h);
-    let refusal = g.house_levy_refusal(h);
-    let (amount, turns) = ffh_core::persons::LEVIED;
-    let mut j = house_chip(g, h);
-    j.set("takes_levy", refusal.is_none());
-    j.set("text", refusal.unwrap_or_else(|| format!("{label}: takes levies. Each order placed: Levied {amount} ({turns} turns).")));
-    j
-}
-
 /// An army's commander (part D), in the army's `commander`: `{person, name, title, leader,
 /// unit_type, level, state, turns, outcome, withholds_attack}` (`outcome`: the countdown's stated
 /// outcome, with its turns; `withholds_attack`: the army takes no order to

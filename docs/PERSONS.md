@@ -200,8 +200,9 @@ it left open:
    the loyalty and state at each); `house_commerce(h)` the gold and research commerce it is taken
    from. Paid in `player_persons_turn` of the liege, after the break-aways.
 5. *As built:* `LoyaltyState` keeps its name, with the five variants; `withholds()` is Annoyed or
-   worse. The keywords Devoted, Loyal, Restless and Disloyal are replaced by Friendly, Pleased,
-   Cautious, Annoyed and Furious (new ids; the four could not map onto five). The define
+   worse. The keywords Devoted, Loyal, Restless and Disloyal are gone: the states are the game's
+   attitude words, no keywords (the client build; a state mark's tooltip is the attitude's own
+   help in the data, `attitudes.jsonc`; "UI", part J). The define
    `PERSON_DISLOYAL_TURNS` keeps its name: the Furious countdown.
 6. *As built:* an order already placed stays when its House turns Annoyed; only new ones are
    passed over. The AI levies only from a Pleased or Friendly House ("AI" below).
@@ -979,7 +980,67 @@ Rule 13's parts outside the Court (`view/house_marks.rs`, `view/diplo.rs`, `asse
   the trade screen's offer can be accepted.
 
 #### J. Help and keywords
-A help topic `Persons of Note` (the rules in short bullets, as the Governors topic does). Keywords with reminders (data/json/keywords.jsonc, data/text/en.tsv): House, Crown, Devoted, Loyal, Restless, Disloyal, Sworn, Claimant. Reminders are bare and short (`Restless: a House takes no new order; a commander's army takes no order to attack.`). The texts of this system mark the keywords and never restate a reminder (tests/keywords.rs).
+A help topic `Persons of Note` (the rules in short bullets, as the Governors topic does). Keywords with reminders (data/json/keywords.jsonc, data/text/en.tsv): House, Crown, Tribute, Levy, Sworn, Claimant (the second build). Reminders are bare and short. The loyalty states are the game's attitude words (Friendly, Pleased, Cautious, Annoyed, Furious), not keywords: a state mark's tooltip is the attitude's own help in the data (`attitudes.jsonc` `help`: what the state does for a House and for a commander). The texts of this system mark the keywords and never restate a reminder (tests/keywords.rs).
+
+#### The second build's Court, grant list, levy and Governance line as built (2026-11-18)
+Rule 13's interface for the Court, the grant list, the levy and a Crown city's Governance line
+(`crates/ffh-play/src/view/persons.rs`: `court`, `grant`, `levy_house`, `governance_fields`;
+`assets/app/persons.js`, `armies.js`, `governors.js`; tests `crates/ffh-play/tests/persons.rs`,
+`tools/web-persons-smoke.mjs`; the shapes in docs/HUMAN.md). Where it settles what the contract
+left open, or departs from it:
+- **The Court is the realm.** The header states the Crown's limit as the rules do (`The Crown
+  holds 4 cities, 1 over its limit of 3: +7 gold a turn.`, amber when over, `Settlements are not
+  counted.` for a civilization with settlements), the realm's size and a House's threshold, and the
+  realm's default tribute as a selector. The cost is at the cities' lasting rate: a city over the
+  limit in disorder pays nothing now, so the rules' current cost
+  (`player_crown_over_cost_times100`) is 0; the line counts it at what it pays once the disorder
+  ends and says `Myrean pays none while disorder lasts.` (as the first build's grant previews did).
+  The grant list's baseline and maintenance line do the same.
+- **The lines that need attention**, in the contract's order: a Furious House or commander with
+  its outcome, a House that takes no levy (an Annoyed one; a Furious one is told above), a demand
+  with 10 turns or fewer, a person without a post, the Crown's cities over its limit (`Myrean is
+  over the Crown's limit of 3: +7 gold a turn. [Grant Myrean]`, the first of them), the grantable
+  cities. The badge still counts only the Furious holders and the demands near their term (a levy
+  refused or a city over the limit can last for long: a standing count would stop meaning
+  "act now").
+- **A House's card**: the leader's portrait, the shield and label, the leader's name and title, its
+  origin (`Founded on turn 3.`, `Capitulated on turn 120.`, `Vassal since turn 40.`), the state mark,
+  the outcome when Furious, the head's demand, the loyalty parts and total on the card (not folded:
+  they explain the state, and the tribute list changes one of them), the tribute, the levy, its
+  cities as chips (a tap shows the city on the map: it is the House's player's, the liege's city
+  screen answers NotOwner for it), its size against the threshold (`Size: 2 of 3 cities without a
+  grievance.`; the contract's wording, `before it grows uppity`, is flavour, against the rule for
+  rules text), Free (two steps), and folded under `Record`: its price to secede (`Price to secede:
+  125 gold.` or `Refuses any offer to secede.`), the head's ambition, rival, record and backstory.
+- **The tribute selector** is a list under the tribute line (`Tribute 20%: 12 gold, 8 research last
+  turn. Change`): a row per rate, 0 to 50%, each stating what the House would pay this turn
+  (`Pays 12 gold, 8 research.`, the rules' `house_tribute_at`), its tribute part and total at that
+  rate (`Tribute: -2 · Loyalty: +3`) and the state mark at that rate; the current rate is marked
+  `now`. One tap sets a rate (no confirmation: it can be set back any turn), and the card is read
+  again with the list kept open, so the part, total and state shown are the row's (a test checks
+  they are). The realm's default is a plain selector in the header.
+- **The grant list** states what a grant does now: `Moves to House Arne's realm: its production
+  and commerce are the House's.`, `Your maintenance: -3.2 gold a turn.`, `The Crown after the
+  grant: 3 cities, within its limit of 3.` while the Crown is over its limit, `Tribute from it at
+  20%.`, and for a founding `Command of the 3rd Army ends.` and `Odran Vale leaves the map and leads
+  House Gunthar.` (a great person: `The Great Merchant is consumed. A person of note is drawn and
+  leads House Gunthar.`); then the loyalty changes (the grantee's lines with `Becomes` in the one
+  mark, each snubbed claimant's). The maintenance line is the whole change of the owner's
+  maintenance (`GrantMaintenance::gold_change_times100`: the city's own maintenance leaves with it,
+  the others' city-count part falls, the Crown's limit included), labelled `Your maintenance`
+  rather than the contract's `Your city-count maintenance`, which would name a part of the number
+  only. Heroes are not candidates (the rules refuse them: `A hero cannot head a House.`).
+- **The levy**: *Requisition from* lists the Houses' cities after the Crown's, each with the House's
+  shield and name and `Takes levies. Each levy: -1 (20 turns).` or the rules' reason it takes none
+  (`Malakim is Annoyed. It takes no levy.`, amber; red when Furious). The city can still be picked:
+  the requisition passes it over while its House refuses.
+- **The Governance line**: every city of the human's is the Crown's: `Held by the Crown. [Grant]`
+  (the reason in its place when it cannot be granted) and `Over the Crown's limit of 3.` for a city
+  beyond the limit. The House branch of the first build is gone (a House's city is never the
+  liege's).
+- **Retired from the screens**: orders and quota lines, maintenance saved, a head's trait in its
+  cities, heirs, seat lines, `Release as a vassal` (now `Free`), and the four first-build states'
+  keywords.
 
 #### K. A staged scene: `ffh-play stage persons DIR`
 One save that shows every state, for the tests and the screenshots: the player under Aristocracy with a capital, three Crown cities (one with two claimant Houses and a commander who took it), House A (Devoted, three cities, a wonder demand in production), House B (Restless after a refused demand, two cities), House C (Disloyal, countdown at 8, two cities, one held by an army), an empty seat with two candidates, a person without a post, a great person unit, a commander (Loyal) and a commander (Disloyal, countdown), a hero. A second, `stage persons-direct DIR`: the same empire one click from adopting God King.

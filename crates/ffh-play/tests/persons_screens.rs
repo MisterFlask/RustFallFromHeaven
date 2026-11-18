@@ -91,7 +91,7 @@ fn the_screens_show_houses_commanders_and_persons() {
     let cands = arr(loyal.get("requisition").unwrap(), "candidates");
     let a = house("friendly");
     let row = find(&cands, "city", a.cities[0].0 as i64);
-    assert!(s_of(row.get("house").unwrap(), "text").starts_with(&format!("{}: takes levies.", a.label)), "{row}");
+    assert_eq!(s_of(row.get("house").unwrap(), "text"), "Takes levies. Each levy: -1 (20 turns).", "{row}");
     let v = house("annoyed");
     let row = find(&cands, "city", v.cities[0].0 as i64);
     assert_eq!(s_of(row.get("house").unwrap(), "text"), format!("{} is Annoyed. It takes no levy.", v.label));
