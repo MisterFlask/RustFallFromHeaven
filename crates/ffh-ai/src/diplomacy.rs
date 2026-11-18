@@ -411,7 +411,11 @@ pub fn manage(g: &mut Game, v: &View) {
     // Telemetry: every target that passed the gates, with its score.
     let mut scored: Vec<(TeamId, i64)> = Vec::new();
     for other in g.player_ids() {
-        let Some(t) = territory_target(g, p, &bar, other, false) else { continue };
+        let Some(mut t) = territory_target(g, p, &bar, other, false) else { continue };
+        // A war a person of ours demands (docs/PERSONS.md): a tenth more.
+        if crate::persons::war_demanded(g, p, other) {
+            t.score += t.score.abs() / 10 + 1;
+        }
         let ot = g.players[other].team;
         scored.push((ot, t.score));
         if best.as_ref().map_or(true, |(_, b)| t.score > b.score) {

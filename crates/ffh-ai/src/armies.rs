@@ -246,6 +246,10 @@ pub fn requisition_cities(g: &Game, p: PlayerId, a: ArmyId) -> Vec<CityId> {
         if busy.contains(&c) || g.map.plots[g.city_plot(c)].area != area || !can_spare(g, p, c) {
             continue;
         }
+        // A House's city past its quota takes no order (docs/PERSONS.md): the rules pass it over.
+        if g.city_house_takes_order(c).is_err() {
+            continue;
+        }
         let governed = g.city_is_governed(c);
         if !governed && !interruptible(g, c, a) {
             continue;

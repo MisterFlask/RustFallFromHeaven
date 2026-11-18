@@ -716,6 +716,19 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
         }
     }
 
+    // A Disloyal commander's army (docs/PERSONS.md): to our most garrisoned city, where its sworn
+    // units stay at the secession (persons.rs).
+    if let Some(q) = crate::persons::disloyal_commander_haven(g, v, grp, u) {
+        crate::trace!(g, p, "stack {:?}: its commander is Disloyal, to {:?}", grp, g.map.xy(q));
+        if q == here {
+            hold(g, grp);
+        } else {
+            move_to(g, grp, q, 0);
+            finish(g, grp);
+        }
+        return;
+    }
+
     merge_here(g, v, grp, here);
     crate::traits::before_army(g, v, grp); // trait-play
     if !alive(g, grp) {
@@ -817,6 +830,19 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
 
     // Peacetime campaign against a barbarian city (campaign.rs).
     if crate::campaign::act(g, v, grp, u, false) {
+        return;
+    }
+
+    // A free stack stands in a city of a Disloyal House that no army of ours holds: a city an army
+    // stands in does not secede (docs/PERSONS.md; persons.rs).
+    if let Some(q) = crate::persons::disloyal_house_post(g, v, grp, u) {
+        crate::trace!(g, p, "stack {:?} holds a Disloyal House's city at {:?}", grp, g.map.xy(q));
+        if q == here {
+            hold(g, grp);
+        } else {
+            move_to(g, grp, q, 0);
+            finish(g, grp);
+        }
         return;
     }
 

@@ -190,6 +190,10 @@ fn civics(g: &mut Game, p: PlayerId) {
             if d.civics[c].civic_option_type != Some(opt) || !g.player_can_do_civics(p, Some(c)) {
                 continue;
             }
+            // A direct-rule civic while a House stands is every House's secession (persons.rs).
+            if crate::persons::civic_barred(g, p, c) {
+                continue;
+            }
             let v = civic_value(g, p, c);
             if best.map_or(true, |(_, b)| v > b) {
                 best = Some((c, v));
