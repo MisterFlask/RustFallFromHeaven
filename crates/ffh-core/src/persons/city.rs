@@ -105,7 +105,18 @@ impl Game {
     /// House's now): what a grant of it saves.
     pub fn city_house_maintenance_saved_times100(&self, c: CityId) -> i32 {
         let Some(city) = self.cities.get(c) else { return 0 };
-        if self.city_is_disorder(c) || city.we_love_the_king_day || city.population <= 0 || city.outpost {
+        if self.city_is_disorder(c) || city.we_love_the_king_day {
+            return 0;
+        }
+        self.city_house_maintenance_saved_lasting_times100(c)
+    }
+
+    /// What a grant of city `c` saves for good: [`Game::city_house_maintenance_saved_times100`]
+    /// without the turns the city pays no city-count maintenance at all (disorder, We Love the
+    /// King Day), which pass. A grant preview shows this one, with the condition.
+    pub fn city_house_maintenance_saved_lasting_times100(&self, c: CityId) -> i32 {
+        let Some(city) = self.cities.get(c) else { return 0 };
+        if city.population <= 0 || city.outpost {
             return 0;
         }
         let full = self.city_calculate_num_cities_maintenance_full_times100(c);

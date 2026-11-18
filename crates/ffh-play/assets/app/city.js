@@ -27,6 +27,7 @@ import { governanceView } from "./governors.js";
 import { addHelp } from "./help.js";
 import { keywordChips } from "./keywords.js";
 import { perkView } from "./perks.js";
+import { stateKey } from "./persons_mark.js";
 import { render as markup } from "./markup.js";
 
 // ---- Outposts in the help display (docs/NAVAL.md, section 9) -----------------------------------
@@ -895,7 +896,8 @@ function buildLists(c, choose) {
       ),
     );
   });
-  return houseWhy ? [h("p.warn.build-refusal", houseWhy), ...lists] : lists;
+  const whyCls = stateKey(c.governance?.house?.state) === "disloyal" ? "p.warn.build-refusal" : "p.caution.build-refusal";
+  return houseWhy ? [h(whyCls, houseWhy), ...lists] : lists;
 }
 
 /** The full screen's production: the current build's progress, the queue, what a tap does, then

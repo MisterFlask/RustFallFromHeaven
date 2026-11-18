@@ -1794,7 +1794,7 @@ export function renderPanel() {
           { disabled: !can, title: can ? `Open the grant list of ${fh.name}, this unit first. A person of note is drawn and founds a House; the unit is consumed.` : fh.why, onclick: () => openGrant(fh.city, { unit: lead.id }) },
           "Found a House",
         ),
-        h("span.dim", can ? ` with ${fh.name}` : ` ${fh.why}`),
+        h("span.dim", can ? ` Nearest city to grant: ${fh.name}.` : ` ${fh.why}`),
       ),
     );
   }

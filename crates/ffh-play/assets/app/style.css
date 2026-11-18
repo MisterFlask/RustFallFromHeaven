@@ -115,6 +115,9 @@ h3 { font-size: 16px; letter-spacing: 0.03em; }
 h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin: 10px 0 4px; }
 .dim { color: var(--dim); }
 .warn { color: var(--warn); }
+/* Persons of Note: the colour of Restless (docs/PERSONS.md, "UI", principle 2): a limit that is
+   not yet Disloyal, and an empty seat. Scarlet (`.warn`) is Disloyal's alone. */
+.caution { color: var(--caution); }
 .good { color: var(--good); }
 .error { color: var(--warn); min-height: 0; margin: 4px 0; }
 .error:empty { display: none; }
@@ -330,6 +333,8 @@ body.bottom-closed #bottom-toggle { transform: rotate(180deg); }
 /* A dialog's help (modals.js `help`): an (i) beside the close button opens the help display. */
 .modal-head .info {
   margin-left: auto; margin-right: 8px; width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  /* A circle at any width: on a phone the head's flex row stretched it into an oval. */
+  flex: 0 0 22px; align-self: center; box-sizing: border-box;
   font: italic 700 14px/20px Georgia, serif; text-align: center; justify-content: center;
   color: var(--dim); background: none; border: 1px solid var(--dim); box-shadow: none;
 }
@@ -1350,6 +1355,8 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .pportrait.none { font-weight: 700; color: var(--dim); font-size: 13px; }
 .pline { margin: 2px 0; }
 .pline.warn { color: var(--warn); }
+.pline.caution { color: var(--caution); }
+.court-keywords { margin-top: 12px; }
 .ptrait { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
 .pchips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
 .city-chip.seat { font-weight: 700; }

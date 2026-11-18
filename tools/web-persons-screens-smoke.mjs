@@ -265,7 +265,7 @@ async function main() {
       const warn = await phone.evaluate(() => document.querySelector("#modals .persons-warning").textContent);
       const button = await phone.evaluate(() => [...document.querySelectorAll("#modals .modal-buttons button")].map((b) => b.textContent));
       check(/^Adopting .+: \d+ Houses secede with /.test(warn), `civics warning: ${warn}`);
-      check(button.includes("Adopt and face the secession"), `the revolution's button: ${button.join(", ")}`);
+      check(button.some((b) => /^Adopt .+: \d+ Houses? secedes?$/.test(b)), `the revolution's button: ${button.join(", ")}`);
       await phone.evaluate(() => document.querySelector("#modals .persons-warning").scrollIntoView({ block: "center" }));
       await sleep(400);
       await crop(phone, ["#modals .civic-summary", "#modals .modal-buttons"], "civics-warning.png");

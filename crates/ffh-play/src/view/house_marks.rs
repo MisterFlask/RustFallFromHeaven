@@ -271,24 +271,37 @@ pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json
         }
         let names = |cs: &[CityId]| and_list(&cs.iter().map(|&c| city_name(g, c)).collect::<Vec<_>>());
         let n = houses.len();
-        let mut text = format!(
-            "Adopting {}: {} secede{} with {} cit{}",
-            crate::names::display(d, civic),
-            if n == 1 { "1 House".to_string() } else { format!("{n} Houses") },
-            if n == 1 { "s" } else { "" },
-            going.len(),
-            if going.len() == 1 { "y" } else { "ies" },
-        );
-        if going.is_empty() {
-            text.push('.');
+        let houses_n = if n == 1 { "1 House".to_string() } else { format!("{n} Houses") };
+        let civic_name = crate::names::display(d, civic);
+        let mut text = if going.is_empty() {
+            format!("Adopting {civic_name}: {houses_n} end{}: an army of ours stands in every city.", if n == 1 { "s" } else { "" })
         } else {
-            text.push_str(&format!(": {}.", names(&going)));
-        }
-        if !held.is_empty() {
-            text.push_str(&format!(" Held by armies: {}.", names(&held)));
+            format!(
+                "Adopting {civic_name}: {houses_n} secede{} with {} cit{}, as one civilization at war with us: {}.",
+                if n == 1 { "s" } else { "" },
+                going.len(),
+                if going.len() == 1 { "y" } else { "ies" },
+                names(&going),
+            )
+        };
+        if !going.is_empty() && !held.is_empty() {
+            text.push(' ');
+            text.push_str(&stays_line(g, &held));
         }
         proposed.set("persons_warning", text);
-        proposed.set("persons_button", "Adopt and face the secession");
+        proposed.set("persons_button", format!("Adopt {civic_name}: {houses_n} secede{}", if n == 1 { "s" } else { "" }));
+    }
+}
+
+/// The cities a secession leaves to their owner, because an army of the owner stands in them:
+/// `Censura stays: an army of ours stands in it.`, `Censura and Torrin stay: an army of ours
+/// stands in each.`
+pub(crate) fn stays_line(g: &Game, held: &[CityId]) -> String {
+    let names = and_list(&held.iter().map(|&c| city_name(g, c)).collect::<Vec<_>>());
+    if held.len() == 1 {
+        format!("{names} stays: an army of ours stands in it.")
+    } else {
+        format!("{names} stay: an army of ours stands in each.")
     }
 }
 

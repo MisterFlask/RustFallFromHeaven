@@ -99,7 +99,7 @@ export function commanderLine(a, { unitName, change = null, compact = false } = 
         stateMark(c.state, c.turns),
         pick ? [" ", pick] : null,
       ),
-      c.withholds_attack ? h("div.warn", "Takes no order to attack.") : null,
+      c.withholds_attack ? h(stateKey(c.state) === "disloyal" ? "div.warn" : "div.caution", "Takes no order to attack.") : null,
       !compact && c.outcome ? h("div.warn", c.outcome) : null,
     ),
   );
@@ -125,8 +125,9 @@ let shieldPath = null;
 
 /** The plate's House shield (the view's `city.house`: `{colour, state, turns}`) drawn on canvas
  *  `g`, `ht` px high, its centre at (`cx`, `cy`): the House's colour with a dark edge; Restless:
- *  the amber ◆ on a dark disc on it; Disloyal: the red ✖ there and the turns left in a pill at
- *  its lower right. Returns the width it takes (0 without a House). */
+ *  the amber ◆ on a dark disc on it; Disloyal: the red ✖ there and the turns left in a pill
+ *  under its point (not at its right, where the plate's size disc is). Returns the width it
+ *  takes (0 without a House). */
 export function drawPlateShield(g, house, cx, cy, ht) {
   if (!house) return 0;
   const s = ht / SHIELD.h;
@@ -165,8 +166,8 @@ export function drawPlateShield(g, house, cx, cy, ht) {
       const tw = g.measureText(txt).width;
       const pw = tw + fs * 0.6;
       const ph = fs + 2;
-      const px = cx + w * 0.2;
-      const py = cy + ht * 0.5 - ph * 0.7;
+      const px = cx - pw / 2;
+      const py = cy + ht * 0.5 - ph * 0.4;
       g.beginPath();
       const rr = ph / 2;
       g.moveTo(px + rr, py);
@@ -224,12 +225,14 @@ export function personAlerts(entries, { fresh = false } = {}) {
     const face = p && p.leader !== null && p.leader !== undefined ? leaderPortrait(p.leader, { size: PORTRAIT.small, title: p.name }) : null;
     const court = e.kind !== "secession";
     // A change of state (`House Arne is Restless.`): the one mark of the new state over the text.
-    const changed = e.kind === "person" ? /^[^.]* is (Devoted|Loyal|Restless|Disloyal)\./.exec(e.text ?? "") : null;
+    const changed = e.kind === "person" ? /^([^.]*) is (Devoted|Loyal|Restless|Disloyal)\.\s*(.*)$/.exec(e.text ?? "") : null;
     const el = h(
       `div.toast.log.person-alert${e.kind === "secession" ? ".secession" : ""}`,
       { role: "status", title: court ? "Click: open the Court" : "Click to dismiss", "data-person": e.person ?? "" },
       face ?? h("span.person-alert-mark", { "aria-hidden": "true" }, e.kind === "secession" ? "✖" : "✦"),
-      h("span.person-alert-text", changed ? [stateMark(changed[1]), h("br"), e.text] : e.text),
+      // `Sera Vell is Disloyal. Sera Vell will seize Vallus ...`: the mark says the state, so the
+      // first sentence goes; with nothing after it, the subject and the mark (`House Arne ◆ Restless`).
+      h("span.person-alert-text", changed ? (changed[3] ? [stateMark(changed[2]), h("br"), changed[3]] : [changed[1], " ", stateMark(changed[2])]) : e.text),
     );
     if (court) el.addEventListener("click", () => openCourt(e.person !== undefined && e.person !== null ? { person: e.person } : null));
     toastNode(el, 12000);

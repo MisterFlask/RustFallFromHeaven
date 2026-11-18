@@ -145,7 +145,7 @@ impl Game {
             self.pending_add(&mut list, hd, label, amount.0);
             if let (Some(y), Some(hx)) = (person, head) {
                 if self.persons.contains(y) && self.persons.contains(hx) {
-                    self.pending_add(&mut list, hd, format!("Rival: {}", self.persons[hx].name), 0);
+                    self.pending_add(&mut list, hd, format!("Becomes the rival of {}", self.persons[hx].name), 0);
                 }
             }
         }
@@ -306,15 +306,56 @@ impl Game {
         }
     }
 
-    /// The stated outcome of commander `x`'s countdown: `Hrolf will leave with 6 sworn units in 8
-    /// turns.`
+    /// The stated outcome of commander `x`'s countdown, from where the sworn units stand now
+    /// (`commander_sworn_going`, `commander_seize_target`: what the secession would do this turn):
+    /// `Hrolf will seize Vallus with 5 units in 8 turns. 1 stays in Torrin.`, `Hrolf will join
+    /// House Arne's secession with 5 units in 8 turns.`, `Hrolf will resign in 8 turns: no city to
+    /// seize.` Without a countdown: the same in the conditional (`Hrolf would seize ...`).
     pub fn commander_secession_outcome(&self, x: PersonId) -> String {
-        let st = &self.persons[x].standing;
         let name = &self.persons[x].name;
-        let n = st.sworn.iter().filter(|&&u| self.units.contains(u)).count();
-        match st.countdown {
-            Some(end) => format!("{name} will leave with {n} sworn units in {} turns.", (end - self.game_turn()).max(0)),
-            None => format!("{name} would leave with the army's units."),
+        let p = self.persons[x].owner;
+        let end = self.persons[x].standing.countdown;
+        let when = match end {
+            Some(end) => {
+                let t = (end - self.game_turn()).max(0);
+                format!(" in {t} {}", if t == 1 { "turn" } else { "turns" })
+            }
+            None => String::new(),
+        };
+        let will = if end.is_some() { "will" } else { "would" };
+        let units = |n: usize| format!("{n} {}", if n == 1 { "unit" } else { "units" });
+        let (going, staying) = self.commander_sworn_going(x);
+        // The units that stay, by the city they stand in.
+        let mut stays: Vec<(String, usize)> = Vec::new();
+        for &u in &staying {
+            let Some(c) = self.unit_plot_opt(u).and_then(|plot| self.persons_city_at(plot)) else { continue };
+            let city = self.persons_city_name(c);
+            match stays.iter_mut().find(|(n, _)| *n == city) {
+                Some((_, k)) => *k += 1,
+                None => stays.push((city, 1)),
+            }
+        }
+        let stay = stays
+            .iter()
+            .map(|(city, k)| format!(" {k} {} in {city}.", if *k == 1 { "stays" } else { "stay" }))
+            .collect::<String>();
+        if going.is_empty() {
+            return format!("{name} {will} resign{when}: every sworn unit stands in a garrisoned city.");
+        }
+        // A House whose countdown ends the same turn, its head not the commander's rival: its
+        // secession takes the sworn units (`commander_secede`, step 1).
+        let rival = self.persons[x].rival;
+        if let Some(end) = end {
+            let league = self.players[p].houses.iter().copied().find(|&h| {
+                self.houses.get(h).is_some_and(|house| house.standing.countdown == Some(end) && (house.head.is_none() || house.head != rival))
+            });
+            if let Some(h) = league {
+                return format!("{name} {will} join the secession of {}{when} with {}.{stay}", self.house_label(h), units(going.len()));
+            }
+        }
+        match self.commander_seize_target(x, &going) {
+            Some(c) => format!("{name} {will} seize {}{when} with {}.{stay}", self.persons_city_name(c), units(going.len())),
+            None => format!("{name} {will} resign{when}: no city to seize.{stay}"),
         }
     }
 }

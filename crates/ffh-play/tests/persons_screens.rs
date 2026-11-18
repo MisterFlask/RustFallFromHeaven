@@ -131,7 +131,8 @@ fn the_screens_show_houses_commanders_and_persons() {
     assert_eq!(s_of(cmd, "state"), "Disloyal");
     assert_eq!(cmd.get("withholds_attack").and_then(Json::as_bool), Some(true));
     assert!(cmd.get("turns").and_then(Json::as_i64).is_some());
-    assert!(s_of(cmd, "outcome").contains("sworn units"), "{cmd}");
+    let o = s_of(cmd, "outcome");
+    assert!([" will seize ", " will join the secession of ", " will resign "].iter().any(|w| o.contains(w)), "{cmd}");
     assert!(find(&armies, "id", army("no_commander").0 as i64).get("commander").unwrap().is_null());
     // The requisition's House line.
     let cands = arr(loyal.get("requisition").unwrap(), "candidates");
@@ -182,8 +183,9 @@ fn the_civics_screen_warns_of_a_direct_rule_civic() {
     let warning = s_of(p, "persons_warning");
     let houses = st.houses.len();
     assert!(warning.starts_with(&format!("Adopting {}: {houses} Houses secede with ", ffh_play::names::display(d, god_king))), "{warning}");
-    assert!(warning.contains("Held by armies: "), "{warning}");
-    assert_eq!(s_of(p, "persons_button"), "Adopt and face the secession");
+    assert!(warning.contains(", as one civilization at war with us: "), "{warning}");
+    assert!(warning.contains(" stays: an army of ours stands in it.") || warning.contains(" stay: an army of ours stands in each."), "{warning}");
+    assert_eq!(s_of(p, "persons_button"), format!("Adopt {}: {houses} Houses secede", ffh_play::names::display(d, god_king)));
     let lines = arr(p, "persons");
     assert_eq!(lines.len(), houses, "one line a House: {p}");
     for l in &lines {

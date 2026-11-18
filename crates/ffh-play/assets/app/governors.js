@@ -19,6 +19,7 @@ import { run } from "./commands.js";
 import { addHelp } from "./help.js";
 import { stateMark, houseShield, openCourt, openGrant } from "./persons.js";
 import { houseTag } from "./persons_lines.js";
+import { stateKey } from "./persons_mark.js";
 
 // ---- the rules, in the help display (help.js; the Governors screen's (i) opens it) ------------
 
@@ -88,7 +89,7 @@ export function holderLine(k, cityId) {
       stateMark(hs.state, hs.turns),
       h("span", "."),
       hs.trait !== null && hs.trait !== undefined ? h("span", ` Trait here: ${dname("TraitType", hs.trait)}.`) : null,
-      h(hs.order_refusal ? "div.warn.holder-orders" : "div.holder-orders", hs.orders_text),
+      h(hs.order_refusal ? (stateKey(hs.state) === "disloyal" ? "div.warn.holder-orders" : "div.caution.holder-orders") : "div.holder-orders", hs.orders_text),
       hs.outcome ? h("div.warn.holder-outcome", hs.outcome) : null,
     );
   }

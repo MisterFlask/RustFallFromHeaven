@@ -199,7 +199,9 @@ fn demand_json(v: &Viewer, pv: &PersonView, grantable: &[CityId]) -> Json {
     let urgent = !dm.paused && dm.turns_left <= DEMAND_WARNING_TURNS;
     let show = |plot: PlotIdx| {
         let (x, y) = g.map.xy(plot);
-        crate::jobj! { "label" => "Show", "act" => crate::jobj! { "kind" => "show", "x" => x, "y" => y } }
+        // "On the map": it closes the Court and centres the map (the attention block's "Show"
+        // opens a card within the Court).
+        crate::jobj! { "label" => "On the map", "act" => crate::jobj! { "kind" => "show", "x" => x, "y" => y } }
     };
     // The owner of a foreign city named by plot, and whether a war is needed for it.
     let owner_note = |plot: PlotIdx| -> Option<String> {
@@ -265,7 +267,7 @@ fn demand_json(v: &Viewer, pv: &PersonView, grantable: &[CityId]) -> Json {
         "kind" => kind,
         "text" => format!("Demands: {what}"),
         "turns_left" => dm.turns_left,
-        "turns" => format!("{}.", turns(dm.turns_left)),
+        "turns" => if dm.paused { format!("{} (paused).", turns(dm.turns_left)) } else { format!("{}.", turns(dm.turns_left)) },
         "urgent" => urgent,
         "paused" => dm.paused,
         "note" => note,
@@ -281,7 +283,9 @@ fn where_text(g: &Game, pv: &PersonView) -> String {
         PersonOrigin::GreatPerson => "Great person",
     };
     let Some(t) = pv.unit_type else { return format!("{origin}: no unit.") };
-    let unit = format!("level {} {}", pv.level.unwrap_or(0), names::display(g.d, t));
+    // A hero's unit type is its name (`Donal Lugh`): not said twice.
+    let type_name = names::display(g.d, t);
+    let unit = if *type_name == *pv.name { format!("level {}", pv.level.unwrap_or(0)) } else { format!("level {} {type_name}", pv.level.unwrap_or(0)) };
     let at = match pv.location {
         PersonWhere::Army(a) => format!(", {}", g.armies[a].name),
         PersonWhere::City(c) => format!(", in {}", city_name(g, c)),
@@ -392,7 +396,7 @@ fn house_json(v: &Viewer, hv: &HouseView, persons: &[PersonView], grantable: &[C
         "state" => state_name(hv.state),
         "countdown_turns" => hv.countdown_turns,
         "outcome" => hv.outcome.as_deref().map(|s| core(g, s)),
-        "held" => (hv.countdown_turns.is_some() && !held.is_empty()).then(|| format!("Held by armies: {}.", held.iter().map(|&c| city_name(g, c)).collect::<Vec<_>>().join(", "))),
+        "held" => (hv.countdown_turns.is_some() && !held.is_empty()).then(|| crate::view::house_marks::stays_line(g, &held)),
         "head" => head,
         "head_line" => head_line,
         "needs_heir" => hv.needs_heir,
@@ -575,7 +579,9 @@ pub fn grant_to_json(to: GrantTo) -> Json {
 
 /// The preview's lines grouped by subject (each subject's state now, its tag when it claims the
 /// city, its lines, the state after when it changes).
-fn effects_json(g: &Game, c: CityId, lines: &[PreviewLine]) -> Vec<Json> {
+/// `own`: the grantee's own subject (its House's label, or the founder's subject): its block is
+/// marked `self`, and the client folds it into the candidate's card, whose header names it.
+fn effects_json(g: &Game, c: CityId, lines: &[PreviewLine], own: &[String]) -> Vec<Json> {
     let h = g.cities[c].owner;
     let city = city_name(g, c);
     // The subjects' states now and their claims, by the subject's label.
@@ -616,9 +622,22 @@ fn effects_json(g: &Game, c: CityId, lines: &[PreviewLine]) -> Vec<Json> {
                 "lines" => lines,
                 "becomes" => after.map(|s| format!("Becomes {}.", s.name())),
                 "state_after" => after.map(state_name),
+                "self" => own.iter().any(|o| *o == subject),
             }
         })
         .collect()
+}
+
+/// Why city `c` pays no city-count maintenance this turn though it pays some for good: `disorder`
+/// or `We Love the King Day` (both pass); `None` when it pays as usual.
+fn maintenance_pause(g: &Game, c: CityId) -> Option<&'static str> {
+    if g.city_is_disorder(c) {
+        Some("disorder")
+    } else if g.cities[c].we_love_the_king_day {
+        Some("We Love the King Day")
+    } else {
+        None
+    }
 }
 
 /// One candidate of the grant list.
@@ -626,7 +645,8 @@ fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
     let g = v.g;
     let d = g.d;
     let city = city_name(g, c);
-    let saved = g.city_house_maintenance_saved_times100(c);
+    let saved = g.city_house_maintenance_saved_lasting_times100(c);
+    let pause = maintenance_pause(g, c);
     let mut lines: Vec<String> = Vec::new();
     let (kind, title, house_label, state, color, leader, unit_type, person, trait_t) = match cand.to {
         GrantTo::House(hh) => {
@@ -671,7 +691,10 @@ fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
     if headless {
         lines.push("Maintenance: no change while the seat is empty.".to_string());
     } else if saved > 0 {
-        lines.push(format!("Maintenance: -{} gold a turn.", gold(saved)));
+        match pause {
+            Some(why) => lines.push(format!("Maintenance: -{} gold a turn (none while {why} lasts).", gold(saved))),
+            None => lines.push(format!("Maintenance: -{} gold a turn.", gold(saved))),
+        }
     } else {
         lines.push("Maintenance: no change.".to_string());
     }
@@ -680,25 +703,37 @@ fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
         (_, Some(t)) => lines.push(format!("Trait in {city}: {}.", names::display(d, t))),
         (_, None) => lines.push(format!("Trait in {city}: none.")),
     }
-    // Orders in the city after the grant: the House's quota with one city more.
-    let orders = match cand.to {
-        GrantTo::House(hh) if g.houses[hh].head.is_none() => format!("Orders in {city}: no limit while the seat is empty."),
-        GrantTo::House(hh) => match g.house_state(hh) {
-            LoyaltyState::Devoted => format!("Orders in {city}: no limit ({house_label} is Devoted)."),
-            s @ (LoyaltyState::Restless | LoyaltyState::Disloyal) => format!("Orders in {city}: none ({house_label} is {}).", s.name()),
-            LoyaltyState::Loyal => {
-                let left = g.house_orders_left(hh).unwrap_or(0);
-                let total = g.house_orders_total(hh);
-                let after = ((g.houses[hh].cities.len() as i32 + 1) * g.player_house_orders(v.h) / 100).max(1);
-                format!("Orders in {city}: by {house_label}'s quota ({} of {after} left).", (left + after - total).max(0))
-            }
-        },
-        _ => {
+    // Orders in the city after the grant: by the grantee's state after it (the preview's
+    // `state_after` where the grant changes it), the House's quota with one city more.
+    let changed = |subject: &str| cand.lines.iter().filter(|l| l.subject == subject).find_map(|l| l.state_after);
+    let (after, now) = match cand.to {
+        GrantTo::House(hh) => (changed(&house_label), g.house_state(hh)),
+        GrantTo::Person(x) => (changed(&g.person_subject(x)).or_else(|| changed(&house_label)), g.person_state(x)),
+        GrantTo::GreatPerson(_) => (None, LoyaltyState::Loyal),
+    };
+    let state_after = after.unwrap_or(now);
+    let verb = if after.is_some_and(|a| a != now) { "becomes" } else { "is" };
+    let orders = match (cand.to, state_after) {
+        (GrantTo::House(hh), _) if g.houses[hh].head.is_none() => format!("Orders in {city}: no limit while the seat is empty."),
+        (_, LoyaltyState::Devoted) => format!("Orders in {city}: no limit ({house_label} {verb} Devoted)."),
+        (_, s @ (LoyaltyState::Restless | LoyaltyState::Disloyal)) => format!("Orders in {city}: none ({house_label} {verb} {}).", s.name()),
+        (GrantTo::House(hh), LoyaltyState::Loyal) => {
+            let left = g.house_orders_left(hh).unwrap_or(0);
+            let total = g.house_orders_total(hh);
+            let after = ((g.houses[hh].cities.len() as i32 + 1) * g.player_house_orders(v.h) / 100).max(1);
+            format!("Orders in {city}: by {house_label}'s quota ({} of {after} left).", (left + after - total).max(0))
+        }
+        (_, LoyaltyState::Loyal) => {
             let total = (g.player_house_orders(v.h) / 100).max(1);
             format!("Orders in {city}: by {house_label}'s quota ({total} of {total} left).")
         }
     };
     lines.push(orders);
+    let own_subjects: Vec<String> = match cand.to {
+        GrantTo::House(_) => vec![house_label.clone()],
+        GrantTo::Person(x) => vec![g.person_subject(x), house_label.clone()],
+        GrantTo::GreatPerson(_) => vec![house_label.clone()],
+    };
     let confirm = format!("Grant {city} to {house_label}? This cannot be undone.");
     let button = match cand.to {
         GrantTo::House(_) => format!("Grant to {house_label}"),
@@ -716,7 +751,7 @@ fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
         "unit_type" => Json::opt_idx(unit_type),
         "person" => person,
         "lines" => lines,
-        "effects" => Json::Arr(effects_json(g, c, &cand.lines)),
+        "effects" => Json::Arr(effects_json(g, c, &cand.lines, &own_subjects)),
         "refusal" => cand.refusal,
         "button" => button,
         "confirm" => confirm,
@@ -735,11 +770,12 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     }
     let name = city_name(g, c);
     let refusal = g.player_check_grant_city(v.h, c).err();
-    // What the Crown pays for it now (nothing in disorder or a "We Love the King" day, as the
-    // rules' maintenance).
+    // What the Crown pays for it: at its lasting rate (a grant is for good), with the turns it
+    // pays nothing (disorder, a "We Love the King" day) said apart.
     let city = &g.cities[c];
-    let pays = !(g.city_is_disorder(c) || city.we_love_the_king_day || city.population <= 0 || city.outpost);
+    let pays = !(city.population <= 0 || city.outpost);
     let full = if pays { g.city_calculate_num_cities_maintenance_full_times100(c) * (city.maintenance_modifier + 100).max(0) / 100 } else { 0 };
+    let pause = maintenance_pause(g, c);
     let mut candidates: Vec<(u8, Json)> = Vec::new();
     if refusal.is_none() {
         for cand in g.grant_candidates(v.h, c) {
@@ -766,7 +802,11 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "y" => g.cities[c].y,
         "title" => format!("Grant {name}"),
         "note" => "A grant is for good.",
-        "baseline" => if pays { format!("Held by the Crown: city-count maintenance {} gold a turn.", gold(full)) } else { "Held by the Crown: no city-count maintenance this turn.".to_string() },
+        "baseline" => match (pays, pause) {
+            (false, _) => "Held by the Crown: no city-count maintenance.".to_string(),
+            (true, None) => format!("Held by the Crown: city-count maintenance {} gold a turn.", gold(full)),
+            (true, Some(why)) => format!("Held by the Crown: city-count maintenance {} gold a turn (none this turn: {why}).", gold(full)),
+        },
         "refusal" => refusal,
         "none" => (refusal.is_none() && candidates.is_empty()).then_some("No House, person or great person to grant it to."),
         "candidates" => Json::Arr(candidates.into_iter().map(|(_, j)| j).collect()),

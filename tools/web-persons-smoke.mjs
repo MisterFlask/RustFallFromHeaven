@@ -177,7 +177,7 @@ async function main() {
         houses: m.querySelectorAll(".house-card").length,
         crown: m.querySelectorAll(".crown-card .crown-city").length,
         persons: m.querySelectorAll(".person-card").length,
-        chips: [...m.querySelectorAll(".court-header .kw-chip")].map((c) => c.textContent),
+        chips: [...m.querySelectorAll(".court-keywords .kw-chip")].map((c) => c.textContent),
         marks: [...m.querySelectorAll(".house-card .phead .pstate")].map((s) => s.textContent),
       };
     });

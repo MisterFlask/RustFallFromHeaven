@@ -435,7 +435,7 @@ counts double and none can be granted. A game starts so. Adopting one while Hous
 their secession, all of them, Devoted and rivals included, at once and as one league; the
 counter on the map holds as above, and a House with every city held ends, its head leaving the
 cast. The civics screen states it before the choice:
-`Adopting God King: 3 Houses secede with 9 cities. Held by armies: Torrin, Elam.`
+`Adopting God King: 3 Houses secede with 9 cities, as one civilization at war with us: ... Torrin and Elam stay: an army of ours stands in each.`
 
 ### Commanders
 
@@ -587,10 +587,27 @@ named (those persons are the candidates, and naming one is the first act); a Hou
 the lines that need attention opens its card in the Court (its city chips open the cities), a
 commander's centres nothing but opens their card too (the ⌖ on the card shows the unit); `Release
 as a vassal` asks on the card itself, as a grant does; the Crown's maintenance baseline and a
-grant's saving are 0 for a city in disorder (as the rules charge it); the trait's tooltip lists
+grant's saving are shown at the city's lasting rate, with the turns it pays none said apart
+(`Maintenance: -2.1 gold a turn (none while disorder lasts).`: a grant is for good, disorder
+passes; the critic pass of 2026-11-18); the trait's tooltip lists
 the parts of it a city carries (`Applies in a city: health, happiness.`), from the trait's data.
 The rules have no check without the act for `player_name_heir` and `player_set_commander`: the
 view reads the same conditions with the same words (`check_name_heir`, `check_set_commander`).
+
+**The critic pass (2026-11-18).** A review of the screenshots changed: a commander's countdown
+names what it costs (`Sera Vell will seize Vallus in 6 turns with 3 units. 1 stays in Torrin.`,
+or the House secession it joins, or `will resign: no city to seize.`), from where the sworn units
+stand now; a grant's preview states the orders by the grantee's state after the grant, and its
+maintenance at the city's lasting rate (disorder said apart); the civics warning says the Houses
+become one civilization at war with us, and which cities stay (`Censura stays: an army of ours
+stands in it.`), its button `Adopt God King: 4 Houses secede`; the Disloyal reminder says the
+same; Restless lines and an empty seat are amber, scarlet is Disloyal's alone; a House card's
+demand comes right under its head; a demand's map button reads `On the map`; a grant preview's
+`Becomes` uses the one state mark, the grantee's own lines join its card, and a snub reads
+`Becomes the rival of …`; a paused term reads `41 turns (paused).`; a state toast drops its first
+sentence under the mark; a hero's name is not repeated as its unit type; the keyword chips close
+the Court and the grant list instead of opening them; a Disloyal plate's pill sits under the
+shield's point; the modal's (i) stays round on a phone.
 
 ### The parts
 
@@ -632,7 +649,7 @@ On the player's own cities' name plates: the House's shield in its colour at the
 With the portrait: a person enters · a demand is issued · 10 turns left on a demand · met · refused · a change of state (Restless, Disloyal with the stated outcome; back to Loyal) · an heir is needed · a succession · a House founded or ended · a secession or a league (to everyone who met the owner).
 
 #### I. Previews where the acts are done
-- Civics screen: choosing a direct-rule civic while Houses stand shows, in the warning style, `Adopting God King: 3 Houses secede with 9 cities: Prespur, Elam, … Held by armies: Torrin.` and the revolution's button reads `Adopt and face the secession`.
+- Civics screen: choosing a direct-rule civic while Houses stand shows, in the warning style, `Adopting God King: 3 Houses secede with 9 cities, as one civilization at war with us: Prespur, Elam, … Torrin stays: an army of ours stands in it.` and the revolution's button reads `Adopt God King: 3 Houses secede`.
 - Religion screen, declaring war, making peace (the diplomacy dialogs), the raze choice: the preview lines for that act under the existing text, each `Subject: text. Becomes State.` Nothing when there are none.
 
 #### Parts C to I as built (2026-11-18)

@@ -14975,7 +14975,7 @@ TXT_KEY_KEYWORD_LOYAL_REMINDER	Loyalty from -2 to +2. A House takes empire order
 TXT_KEY_KEYWORD_RESTLESS	Restless
 TXT_KEY_KEYWORD_RESTLESS_REMINDER	Loyalty -3 or less. A House takes no empire order; a commander's army takes no order to attack.
 TXT_KEY_KEYWORD_DISLOYAL	Disloyal
-TXT_KEY_KEYWORD_DISLOYAL_REMINDER	Loyalty -6 or less. A countdown of 10 turns runs: at its end a House secedes with its cities that no army holds, and a commander leaves with the units sworn to them. Loyalty above -6 stops the countdown.
+TXT_KEY_KEYWORD_DISLOYAL_REMINDER	Loyalty -6 or less. A countdown of 10 turns runs. At its end a House secedes with its cities where no army of its owner stands, as a civilization at war with its owner; a commander's sworn units seize a city and do the same, or the commander resigns. Loyalty above -6 stops the countdown.
 TXT_KEY_KEYWORD_SWORN	Sworn
 TXT_KEY_KEYWORD_SWORN_REMINDER	The units of a commander's army when their Disloyal countdown began. At its end they leave with the commander, except those in a city where more of the owner's other units stand.
 TXT_KEY_KEYWORD_CLAIMANT	Claimant

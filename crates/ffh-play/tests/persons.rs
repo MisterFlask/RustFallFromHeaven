@@ -120,7 +120,7 @@ fn the_court_shows_every_part() {
     assert_eq!(s(c, "state"), "Disloyal");
     assert_eq!(int(c, "countdown_turns"), 8);
     assert!(s(c, "outcome").ends_with(" in 8 turns."), "{c:?}");
-    assert!(s(c, "held").starts_with("Held by armies: "));
+    assert!(s(c, "held").contains(": an army of ours stands in "), "{}", s(c, "held"));
     assert_eq!(s(c.get("release").unwrap(), "refusal"), "A Disloyal House cannot be released.");
     let dh = by("D");
     assert_eq!(dh.get("head"), Some(&Json::Null));
@@ -137,7 +137,10 @@ fn the_court_shows_every_part() {
     assert!(s(loyal, "where").starts_with("Hero: level "), "{}", s(loyal, "where"));
     let dis = p("commander_disloyal");
     assert_eq!(s(dis, "state"), "Disloyal");
-    assert!(s(dis, "outcome").contains(" sworn units in "), "{}", s(dis, "outcome"));
+    // The countdown names what it costs: the city the sworn units would seize, a House's
+    // secession they would join, or a resignation (docs/PERSONS.md, "UI", principle 1).
+    let o = s(dis, "outcome");
+    assert!([" will seize ", " will join the secession of ", " will resign "].iter().any(|w| o.contains(w)), "{o}");
     assert_eq!(s(p("no_post"), "post"), "No post.");
     let dm = p("no_post").get("demand").unwrap();
     assert_eq!(s(dm, "kind"), "post");

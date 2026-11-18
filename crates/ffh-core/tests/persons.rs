@@ -595,7 +595,18 @@ fn a_disloyal_commander_swears_its_army() {
     let mut sworn = g.persons[x].standing.sworn.clone();
     sworn.sort();
     assert_eq!(sworn, vec![v, w]);
-    assert!(g.commander_secession_outcome(x).contains("will leave with 2 sworn units in 10 turns"));
+    // The outcome names what the secession would do now: the city it would seize, else a
+    // resignation.
+    let (going, _) = g.commander_sworn_going(x);
+    let text = g.commander_secession_outcome(x);
+    assert!(text.contains("in 10 turns"), "{text}");
+    match g.commander_seize_target(x, &going) {
+        Some(c) => {
+            let city = g.d.text.name(&g.cities[c].name).to_string();
+            assert!(text.contains(&format!("will seize {city} in 10 turns with 2 units.")), "{text}");
+        }
+        None => assert!(text.contains("will resign in 10 turns"), "{text}"),
+    }
 }
 
 #[test]

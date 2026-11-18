@@ -93,7 +93,7 @@ addHelp({
   group: "Game options",
   title: "Persons of Note",
   body: () => [
-    h("p", "A civilization has a court: named persons who hold its cities and command its armies. Each wants things, and gives less when crossed."),
+    h("p", "A civilization has a court: named persons who hold its cities and command its armies. Each has one demand at a time; meeting it raises their loyalty, letting it lapse lowers it, and their loyalty decides what they take and what they give."),
     h("h4", "The court"),
     h(
       "ul",
@@ -252,7 +252,7 @@ function houseCard(x, m, reload) {
   );
   const head = x.head
     ? h("div.phouse-head", personHead(x.head, PORTRAIT.small, false), h("div.pline", x.head.where))
-    : h("div.phouse-head", h("div.pline.warn", x.head_line), x.needs_heir ? actButton({ label: "Name an heir", act: { kind: "heir", house: x.id } }, m) : null);
+    : h("div.phouse-head", h("div.pline.caution", x.head_line), x.needs_heir ? actButton({ label: "Name an heir", act: { kind: "heir", house: x.id } }, m) : null);
   const foot = h("div.pfoot");
   const release = () =>
     fill(foot,
@@ -271,12 +271,13 @@ function houseCard(x, m, reload) {
     x.outcome ? h("div.pline.warn", x.outcome) : null,
     x.held ? h("div.pline", x.held) : null,
     head,
+    // The demand is the line the player acts on: right under who heads the House.
+    x.head ? demandLine(x.head.demand, m) : null,
     x.seat ? h("div.pline", x.seat) : null,
     h("div.pchips", chips),
     h("div.pline", x.orders),
     traitLine(x.trait_line, x.trait),
     h("div.pline", x.maintenance),
-    x.head ? demandLine(x.head.demand, m) : null,
     foot,
     moreBlock({ parts: x.parts, total: x.total, record: x.head?.record, backstory: x.head?.backstory }, [h("div.pline.dim", x.founded), x.head ? h("div.pline", x.head.ambition) : null, x.head?.rival ? h("div.pline", x.head.rival) : null]),
   );
@@ -330,9 +331,12 @@ export async function openCourt(focus = null) {
     if (m.closed) return;
     setBadge(r.badge);
     const top = m.el.querySelector(".modal-body")?.scrollTop ?? 0;
-    const header = h("div.court-header", r.header.map((l) => h("div", l)), keywordChips(r.reminders));
+    const header = h("div.court-header", r.header.map((l) => h("div", l)));
+    // The keywords' chips close the screen: what needs attention comes first (a phone showed two
+    // rows of chips above it).
+    const chips = h("div.court-keywords", keywordChips(r.reminders));
     if (r.empty.length) {
-      m.setBody(header, h("div.court-empty", r.empty.map((l) => h("p", l))));
+      m.setBody(header, h("div.court-empty", r.empty.map((l) => h("p", l))), chips);
       return;
     }
     const attention = r.attention.length
@@ -356,6 +360,7 @@ export async function openCourt(focus = null) {
       h("h4", "Houses"),
       h("div.pcards", crownCard(r, m), r.houses.map((x) => houseCard(x, m, load))),
       r.persons.length ? [h("h4", "Persons without a House"), h("div.pcards", r.persons.map((p) => personCard(p, m)))] : null,
+      chips,
     );
     const body = m.el.querySelector(".modal-body");
     if (at) focusCard(at);
@@ -476,6 +481,11 @@ function prefers(c, prefer) {
   return (prefer.house !== undefined && c.to.house === prefer.house) || (prefer.person !== undefined && (c.to.person === prefer.person || c.person === prefer.person)) || (prefer.unit !== undefined && c.to.unit === prefer.unit);
 }
 
+/** `Becomes ▲ Devoted.`: the one state mark, as every preview draws it (persons_lines.js). */
+function becomesLine(state) {
+  return h("div.pbecomes", "Becomes ", stateMark(state), ".");
+}
+
 /** One subject's lines of a candidate's preview: who (with their state now and why they claim),
  *  the lines, and the state after when it changes. */
 function effectBlock(e) {
@@ -483,7 +493,7 @@ function effectBlock(e) {
     "div.peffect",
     h("div.peffect-who", h("b", e.subject), e.tag ? h("span.dim", ` (${e.tag})`) : null, e.state ? [" ", stateMark(e.state)] : null),
     h("ul", e.lines.map((l) => h("li", l))),
-    e.becomes ? h(`div.pbecomes.${stateClass(e.state_after)}`, e.becomes, " ", h("span.pstate-glyph", { "aria-hidden": "true" }, stateGlyph(e.state_after))) : null,
+    e.state_after ? becomesLine(e.state_after) : null,
   );
 }
 
@@ -516,13 +526,16 @@ function candidateCard(r, c, m) {
     reloadCourt();
   };
   choose();
+  const own = c.effects.find((e) => e.self);
   const claim = c.claimant ? keywordChips((r.reminders ?? []).filter((k) => k.key === "KEYWORD_CLAIMANT")) : null;
   return h(
     "div.pcard.grant-card",
     { "data-kind": c.kind, "data-claimant": c.claimant ? "1" : "0" },
     h("div.phead", who, h("div.pname", h("b", c.title)), claim, c.state ? stateMark(c.state) : null),
-    h("ul.plines", c.lines.map((l) => h("li", l))),
-    c.effects.map(effectBlock),
+    // The grantee's own loyalty lines join the card's: its header already names it and its state.
+    h("ul.plines", c.lines.map((l) => h("li", l)), (own?.lines ?? []).map((l) => h("li", l))),
+    own?.state_after ? becomesLine(own.state_after) : null,
+    c.effects.filter((e) => !e.self).map(effectBlock),
     foot,
   );
 }
@@ -547,8 +560,9 @@ export async function openGrant(cityId, prefer = null) {
   const first = list.findIndex((c) => prefers(c, prefer));
   if (first > 0) list.unshift(...list.splice(first, 1));
   m.setBody(
-    h("div.grant-head", h("p", h("b", r.note)), h("p.dim", r.baseline), keywordChips(r.reminders)),
+    h("div.grant-head", h("p", h("b", r.note)), h("p.dim", r.baseline)),
     list.length ? h("div.pcards.one.grant-list", list.map((c) => candidateCard(r, c, m))) : h("p.dim", r.none ?? ""),
+    h("div.court-keywords", keywordChips(r.reminders)),
   );
   return m.done;
 }

@@ -595,8 +595,9 @@ view's `src/view/house_marks.rs`). A loyalty state is always the one mark (`pers
   turns). Becomes Disloyal ✖.`, nothing when there are none: the war question (Diplomacy), the
   trade screen at war (`If peace is made:`), each religion the screen can convert to (and No state
   religion), the keep/raze question (`If razed:` in its text). On the civics screen a direct-rule
-  civic while Houses stand shows the warning `Adopting God King: 4 Houses secede with 7 cities:
-  ... Held by armies: Censura.`, the button reads `Adopt and face the secession`, and a click asks
+  civic while Houses stand shows the warning `Adopting God King: 4 Houses secede with 7 cities,
+  as one civilization at war with us: ... Censura stays: an army of ours stands in it.`, the
+  button reads `Adopt God King: 4 Houses secede`, and a click asks
   once more (`This cannot be undone.`).
 
 **Cities.** Double-click your city, use the button in the selection panel when your units

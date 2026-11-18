@@ -761,7 +761,7 @@ export async function openCivics() {
         onClick: async () => {
           // Persons of Note (principle 4): adopting a direct-rule civic while Houses stand is
           // confirmed on its warning (Cancel has the focus).
-          if (p?.persons_warning && !(await ask("Adopt and face the secession?", `${p.persons_warning}${p.anarchy ? ` ${turns(p.anarchy)} of anarchy.` : ""} This cannot be undone.`, [
+          if (p?.persons_warning && !(await ask(`${p.persons_button}?`, `${p.persons_warning}${p.anarchy ? ` ${turns(p.anarchy)} of anarchy.` : ""} This cannot be undone.`, [
             { label: p.persons_button ?? "Adopt", value: true, primary: true, danger: true },
             { label: "Cancel", value: null },
           ]))) return;
