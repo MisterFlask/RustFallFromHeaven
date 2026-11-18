@@ -32,6 +32,7 @@ demands, withhold when crossed, and can take what they hold. Design: docs/PERSON
   revoked and no head replaced; a House outlives its head and takes its heir from the cast. The
   capital is the Crown's. Adopting Despotism or God King is civil war with every House. Persons
   are the minor leaders, the same characters in every game; the cast is to be authored later.
+  A House's head brings their first leader trait the owner lacks to that House's cities.
 - Proposed, to be confirmed: docs/PERSONS.md, "Open points for the owner" (demands with a term,
-  Houses running their cities under a quota, Restless withholding, tempers, claims, leagues).
+  Houses running their cities under a quota, Restless withholding, claims, leagues).
 - First step: the vassal levy (stage 0), which needs no persons.

@@ -47,9 +47,10 @@ Wanted:
 
 Not wanted:
 - **Crusader Kings' breadth**: no families, marriages, ageing, trait lists or scheme screens.
-- **Stat sticks.** A person gives no yield, and nothing is matched to anything: the first
-  governor rules were dropped for that (docs/GOVERNORS.md, History), and a named governor with a
-  trait in every city is the same fiddle (the owner, 2026-11-18).
+- **A bench to match.** Nothing is slotted and re-slotted to fit: a grant is for good and a
+  head is not replaced. The first governor rules were dropped for the matching
+  (docs/GOVERNORS.md, History), and a named governor with a trait in every city is the same
+  fiddle (the owner, 2026-11-18). A number a person brings to what they hold is welcome.
 - **Dice.** No betrayal a roll decides, no event pop-up with two flavoured options.
 - **Upkeep chores.** No meter topped up with gifts. A demand is an act on the board (a city
   taken, a war declared, a wonder ordered), one at a time per holder, with a long term.
@@ -87,60 +88,33 @@ takes their name.
 (below); a vassal ruler's vassal dies. There is no ageing. A person who has left does not return
 in that game.
 
-**What is authored**, the same in every game, and what a player learns about a character:
+**What a person brings**, the same in every game, and what a player learns about a character:
 - *An ambition*: the kind of demand they make (below). Until one is authored it follows the
   person's first personal trait: Aggressive, Raiders: War. Expansive, Organized: Land. Spiritual:
   Faith. Industrious, Creative, Philosophical, Arcane: Works. Financial: Trade. Any other: Land.
-- *A temper*: one rule with a number, in another of the game's systems, that makes a class of
-  thing better or worse to do with what the person holds (the owner's direction, 2026-11-18).
-  Most persons have none; the rule and the candidates are below.
+- *A trait for their House's cities* (the owner's decision, 2026-11-18): below.
 - *Their alignment* (authored already): a state religion of the opposite alignment is
   `State religion opposed: -2` while it lasts.
 - When a person leads a civilization (a secession, a released vassal) they are its leader, with
   their portrait and traits, as breakaway factions' leaders already are (docs/CARDS.md).
 
-**Tempers.** A temper is written as a city perk is (docs/SPECIALTIES.md): one specific rule,
-with its number, in a system that already exists. It is a standing incentive or disincentive
-for the player to do a class of thing; it forces nothing, and it is not paid in loyalty.
-- *It acts through one post*, which its line names: a commander's on their army, a head's on
-  their House's cities. Without that post it does nothing.
-- *A temper that gives* applies while its person is Loyal or Devoted, and not while Restless
-  or Disloyal: what a person withholds includes what made them worth having. *A temper that
-  costs* always applies.
-- The same character has the same temper in every game.
-
-The candidates (proposals, the numbers first guesses; the cast and who has which are the
-owner's, later).
-
-A commander's, on their army:
-
-| Temper | Rule | The class of thing |
-|---|---|---|
-| Plunderer | Pillage by their army gives double gold. | pillaging |
-| Headlong | Under Charge, units of their army deal +20% damage in a battle's first round. | the Charge tactic (docs/TACTICS.md) |
-| Besieger | A siege by their army wears down a city's Sentinels twice as fast. | sieges before assaults (docs/SIEGES.md) |
-| Forager | Their army is hungry for four turns, not two, before it starves. | operating past its supply line (docs/SUPPLY.md) |
-| Crusader | Units lent to a crusade from their army count double toward our credit. | lending to crusades (docs/CRUSADE.md) |
-| Castellan | Their army builds roads and Forts twice as fast. | field works (docs/WORKS.md) |
-| Delver | A lair explored by their army offers three results, not two. | exploring lairs |
-| Purifier | When their army razes a city, each of its units gains 2 experience. | razing |
-| Scrupulous | Units of their army deal -20% damage to units of civilizations of their alignment. | war on that alignment |
-
-A head's, on their House's cities:
-
-| Temper | Rule | The class of thing |
-|---|---|---|
-| Builder | Wonders are built 25% faster in their House's cities. | ordering wonders there, against the quota |
-| Recruiter | Requisition orders are trained 25% faster in their House's cities. | levying them, against the quota |
-| Colonizer | Settlers are trained 50% faster in their House's cities. | expanding from their lands |
-| Proselyte | Spread Religion channelled from their House's cities has double the chance. | that channel (docs/CULTURE.md) |
-| Agitator | Foment Revolt channelled from their House's cities adds 50% more pressure. | that channel |
-| Sea-lord | Warships are built 25% faster in their House's coastal cities. | fleets (docs/NAVAL.md) |
-| Marcher | Garrison units in their House's cities cost no upkeep. | large garrisons |
-| Trader | Trade routes with other civilizations yield +50% in their House's cities. | open borders, peace |
-| Humane | While Slavery or Sacrifice the Weak is our civic: +2 unhappiness in each city of their House. | those civics |
-| Peaceable | War weariness counts double in their House's cities. | long wars |
-| Traditionalist | After a change of civics, their House's cities are in disorder for 2 turns. | changing civics |
+**A head's trait.** The first of a head's leader traits that their House's owner does not have
+applies in the cities of their House, and nowhere else.
+- *Which trait*: the person's traits in their authored order (personal, then inherited), the
+  first that is not a trait of the owner's leader or civilization. A commander's trait does
+  nothing: only a House's head runs cities. A hero has no leader traits.
+- *What applies*, as if the city's owner had the trait, for that city alone: the trait's
+  health and happiness; its commerce (`commerce_change`, `commerce_modifier`) and its plots'
+  extra yield (`extra_yield_threshold`) and trade yield; its great people rate; its wonder
+  production modifiers; the buildings and units it trains at double speed
+  (`production_traits`); and for the units trained there, its free promotions.
+- *What does not*: what a trait gives the player as a whole (civic upkeep, anarchy, the great
+  general rate, pillage gold, upgrade cost, summons) and its flags (Adaptive, Agnostic,
+  Barbarian, Insane, Sprawling, Fallow).
+- *It follows the head*: an heir brings their own trait, and the House's cities change with
+  it; units already trained keep their promotions. An empty seat has none.
+- A person who leads a civilization (a secession, a released vassal) has all their traits, as
+  any leader.
 
 The cast to be authored (how many a civilization needs, which enter as soldiers and which as
 great people) is the owner's, later.
@@ -245,7 +219,7 @@ a post demands one. And a commander with a claim is safer landed than snubbed.
   seat is empty the House makes no demand, cannot become Disloyal, and its cities count as the
   Crown's for maintenance.
 - *Loyalty is the House's.* Its modifiers stay with it when its head changes; the heir brings
-  their own ambition and temper, and a new demand. Changing the head clears no grievance.
+  their own ambition and trait, and a new demand. Changing the head clears no grievance.
 - *A Disloyal head's unit is the House's, not the player's*: from the turn the countdown begins
   it goes to the House's largest city and takes no orders (as a marching recruit takes none,
   docs/ARMIES.md). Before that the unit is the player's to risk as any other.
@@ -383,7 +357,7 @@ AI the human need not fight: if so, the AI's demands are tuned before the human'
 
 - **The Court screen**: one row a person: portrait, name and title, post (House with its
   cities, or army), state, demand with its turns, rival. Opening a row shows the loyalty
-  modifiers, the ambition and temper, and the record. No other screen is new.
+  modifiers, the ambition, the trait their House's cities have, and the record. No other screen is new.
 - **Where the state is seen at a glance**: each city's name plate carries its House's colour;
   a Restless or Disloyal holder marks its cities' plates and its army's banner, with the
   countdown.
@@ -392,7 +366,7 @@ AI the human need not fight: if so, the AI's demands are tuned before the human'
   each holder before it is made: `Meets House Arne's demand.` `House Ashledger: becomes
   Restless.` `House Arne: 1 of 3 orders left.`
 - **Text** is bare (CLAUDE.md, "Rules text and tooltips"). House, Crown, Devoted, Loyal,
-  Restless, Disloyal, Sworn, Claimant and each temper are keywords
+  Restless, Disloyal, Sworn and Claimant are keywords
   (`data/json/keywords.jsonc`).
 
 ## Open points for the owner
@@ -400,7 +374,7 @@ AI the human need not fight: if so, the AI's demands are tuned before the human'
 **Proposed on 2026-11-18 to meet the two goals, not yet confirmed.** The owner's decisions so
 far are: the three sources of the cast; authored, recurring characters from the minor leaders;
 Houses of several cities; no per-city governors or traits; grants for good, heads not replaced,
-heirs from the cast; the capital the Crown's; direct rule as civil war; leverage; the vassal
+heirs from the cast; a head's first trait the owner lacks applying in their House's cities; the capital the Crown's; direct rule as civil war; leverage; the vassal
 levy by requisition; wants as acts on the board; no human vassals. The rest is proposal:
 - **Demands with a term**, for holders too, renewing: without them a holder's unmet want cost
   nothing and a careful player never saw a secession.
@@ -409,20 +383,21 @@ levy by requisition; wants as acts on the board; no human vassals. The rest is p
   maintenance discount, and there was nothing to administer.
 - **Restless withholds** (a House its orders, a commander its attacks): the register between
   content and traitor.
-- **A temper**: one authored line for some persons (the candidates under "The cast"). The
-  owner's direction on the form (2026-11-18): a number in another system that makes a class of
-  thing better or worse to do. Not this system's own numbers (the first candidates: Steadfast,
-  Proud, Patient), not a forced action (the second: a locked tactic, a channel set by the
-  House), and not approval paid only in loyalty (the third). It is not the governors' matching
-  problem: a grant is for good and a head is not replaced, so nothing is re-matched.
-- **Whether Devoted enlarges a temper that gives** (half again). It would give a Devoted
-  commander something, which the state lacks today, at the price of two numbers a temper.
+- **Tempers were dropped** (the owner, 2026-11-18), after four forms of them: one authored
+  rule a person was no better than the leader traits the minor leaders already have. A head's
+  first trait the owner lacks applies in their House's cities instead (decided; "A head's
+  trait"). Proposed within it: which of a trait's effects a city can carry, as listed there.
 - **Claims at the grant**, and the commander's claim on what the army took.
 - **Leagues**, and rivals never seceding together.
 - **A commander's worth by the unit's level**, in place of any authored skill.
 - **The record and the annals.**
 
 Still open beyond those:
+- **A trait with nothing a city can carry** (Agnostic, Barbarian): here the person's House has
+  no trait. The other reading: the next trait in their order.
+- **Whether a Restless head's trait is withheld**, as its orders are. It would make crossing a
+  good head cost what made them good; here the trait applies whatever the state.
+- **A commander brings no trait.** Their worth is their unit's level alone.
 - **Who names the heir.** Here the player. The other reading: the House takes one by a rule.
 - **A head who never fights never dies** (a Great Merchant). The House then changes hands only
   by secession or release.
