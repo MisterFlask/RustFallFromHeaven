@@ -520,6 +520,10 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .int("met", met)
             .int("wars", wars)
             .boolean("vassal", !barbarian && g.team_is_a_vassal(team))
+            // Its master team (-1: none) and whether it is a House (docs/PERSONS.md): a realm is a
+            // liege and the players whose master it is.
+            .int("master", if barbarian { -1 } else { g.team_ids().find(|&m| m != team && g.teams[team].vassal[m]).map_or(-1, |m| m.idx() as i64) })
+            .boolean("house", g.players[p].house.is_some())
             .int("taken_civ", ev.taken_civ)
             .int("taken_barb", ev.taken_barb)
             .int("razed", ev.razed)
