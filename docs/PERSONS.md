@@ -91,43 +91,52 @@ in that game.
 - *An ambition*: the kind of demand they make (below). Until one is authored it follows the
   person's first personal trait: Aggressive, Raiders: War. Expansive, Organized: Land. Spiritual:
   Faith. Industrious, Creative, Philosophical, Arcane: Works. Financial: Trade. Any other: Land.
-- *A temper*: one line saying what they do, unasked, in another of the game's systems with
-  what they hold, or what they will not do there. Never a loyalty number and never a yield. It
-  acts only through a post and cannot be switched off, so the post decides whether it helps.
-  Most persons have none; the candidates are below.
+- *A temper*: one class of the player's acts, in another of the game's systems, and whether
+  the person approves or disapproves of it (the owner's direction, 2026-11-18: a standing
+  incentive or disincentive, never a forced action). Most persons have none; the rule and the
+  candidates are below.
 - *Their alignment* (authored already): a state religion of the opposite alignment is
   `State religion opposed: -2` while it lasts.
 - When a person leads a civilization (a secession, a released vassal) they are its leader, with
   their portrait and traits, as breakaway factions' leaders already are (docs/CARDS.md).
 
-**Tempers: the candidates** (proposals; the cast and who has which are the owner's, later).
+**Tempers.** A temper reads `Approves: a city razed.` or `Disapproves: a war we declare.` It
+judges the player's own acts across the empire, never what is done to the player.
+- *An act* of the class is `+2` or `-2` for `PERSON_TEMPER_TURNS` (40) turns; one temper's
+  modifiers sum to 4 at most either way. *A standing condition* ("while ...") is `+2` or `-2`
+  for as long as it holds.
+- So a temper alone moves its person one state, to Devoted or to Restless, and never to
+  Disloyal: that takes a refused demand as well.
+- Every dialog that does an act of a class says so before it is done:
+  `House Ashledger disapproves: -2 (40 turns). Becomes Restless.`
+- The same character judges the same class in every game, so whether they are a help or a
+  burden depends on the game the player is playing.
 
-Of a commander, acting through the army:
+The candidates (proposals; the cast and who has which are the owner's, later):
 
-| Temper | Rule | What it touches |
-|---|---|---|
-| Headlong | Their army's tactic is Charge and cannot be changed. | docs/TACTICS.md: strong mounted in the open, weak into cities and forests |
-| Leads from the front | They stand in the centre of the front row in every battle of their army. | docs/ENGAGEMENTS.md: their worth is where the fighting is, and so is their death |
-| Plunderer | Their army pillages the plot it ends a turn on in another civilization's land. | gold; the land of a city about to be taken; the roads that carry its own supply (docs/SUPPLY.md) |
-| Purifier | A city their army takes from a civilization of the opposite alignment is razed. | capture |
-| Crusader | When a crusade is called on a civilization of the opposite alignment, their army is lent to its Host. | docs/CRUSADE.md: the army is gone for the crusade, and its value is our credit in the draft |
-| Castellan | Their army builds a Fort on a plot outside a city where it has stood three turns. | field works (docs/WORKS.md), supply |
-| Paid | Their army costs 1 gold a turn for each of its units. With no gold in the treasury it takes no orders. | the treasury |
-| Scrupulous | Their army takes no order to attack a civilization of their own alignment. | war |
-| Delver | Their army explores any lair it ends a turn beside. | lairs |
-
-Of a House's head, acting through the seat (the House's first city) unless it says otherwise:
-
-| Temper | Rule | What it touches |
-|---|---|---|
-| Builder | Their seat orders the costliest wonder it can build, whenever it can build one. | empire orders: the seat's production is theirs for the length of a wonder |
-| Colonizer | Their seat trains a Settler while a free city site lies within 6 plots of their House's land. The city it founds is their House's. | expansion without a grant: the House grows on its own, toward whoever lives there |
-| Proselyte | Their seat's channel is Spread Religion of the state religion at the nearest civilization without it, and cannot be changed. | docs/CULTURE.md: half the seat's culture, and that civilization's memory |
-| Agitator | Their seat's channel is Foment Revolt at the nearest civilization of the opposite alignment, and cannot be changed. | docs/CULTURE.md: cultural hostility at peace; cities that flip to us |
-| Purist | No religion but the state religion spreads to their House's cities, and no building of another is built there. | religion: closed to rivals' Spread Religion, and to every other faith's buildings |
-| Marcher | Each city of their House keeps two more defenders. | upkeep, revolt resistance, what requisition can take |
-| Sea-lord | Each coastal city of their House keeps a warship on Patrol of its sea. | docs/NAVAL.md: sea control, at the cities' cost |
-| Infamous | While they hold a post, every Good civilization's attitude toward us is 1 lower. | diplomacy |
+| Temper | | The class of thing | System |
+|---|---|---|---|
+| Warhawk | Approves | a war we declare | war |
+| Peaceable | Disapproves | a war we declare | war |
+| Unforgiving | Disapproves | a peace made with a civilization that holds a city once ours | peace |
+| Purifier | Approves | a city razed | capture |
+| Merciful | Disapproves | a city razed | capture |
+| Plunderer | Approves | a plot pillaged by our armies | pillage, supply |
+| Headlong | Approves | a battle won by an army of ours under Charge | docs/TACTICS.md |
+| Quartermaster | Disapproves | while an army of ours is out of supply | docs/SUPPLY.md |
+| Crusader | Approves | units lent to a crusade | docs/CRUSADE.md |
+| Proselyte | Approves | the state religion spread to a foreign city by a channel of ours | docs/CULTURE.md |
+| Agitator | Approves | while a city of ours channels Foment Revolt | docs/CULTURE.md |
+| Devout | Disapproves | a change of state religion | religion |
+| Traditionalist | Disapproves | a change of civics | civics |
+| Humane | Disapproves | while Slavery or Sacrifice the Weak is a civic of ours | civics |
+| Wary | Disapproves | while we have open borders with a civilization of the opposite alignment | diplomacy |
+| Builder | Approves | a world wonder completed | wonders |
+| Colonizer | Approves | a city founded | expansion |
+| Ritualist | Approves | a ritual completed | rituals |
+| Delver | Approves | a lair explored | lairs |
+| Collector | Approves | a card of the great-person deck discovered | docs/CARDS.md |
+| Mercenary | Disapproves | while our treasury holds less than 100 gold | the treasury |
 
 The cast to be authored (how many a civilization needs, which enter as soldiers and which as
 great people) is the owner's, later.
@@ -396,13 +405,15 @@ levy by requisition; wants as acts on the board; no human vassals. The rest is p
   maintenance discount, and there was nothing to administer.
 - **Restless withholds** (a House its orders, a commander its attacks): the register between
   content and traitor.
-- **A temper**: one authored line for some persons, a habit in another system of the game (the
-  candidates under "The cast"). It is a trait, which the owner dropped for governors; the case
-  for it here is that without one a recurring character is a portrait. The first candidates
-  (Steadfast, Proud, Patient) only changed this system's own numbers and were dropped for that
-  (the owner, 2026-11-18). Three of the new ones take what earlier decisions gave the player:
-  the Proselyte's and the Agitator's channel (2026-10-30), the Builder's wonder and the
-  Colonizer's settler (empire orders, docs/GOVERNORS.md).
+- **A temper**: one authored line for some persons: a class of the player's acts they approve
+  or disapprove of (the candidates under "The cast"). The owner's direction on the form
+  (2026-11-18): not this system's own numbers (the first candidates: Steadfast, Proud,
+  Patient), and not a forced action (the second: a locked tactic, a channel set by the House),
+  but a standing incentive or disincentive. Here it is paid in loyalty. The other reading pays
+  on the board, as a city perk does (`Pillage by their army gives double gold.`); that makes a
+  person a bonus to place, which the governors' traits were dropped for.
+- **What a Devoted commander gives.** A House's Devoted state lifts its quota; a commander's
+  only bars courting, so an approving temper is worth less on a commander than on a head.
 - **Claims at the grant**, and the commander's claim on what the army took.
 - **Leagues**, and rivals never seceding together.
 - **A commander's worth by the unit's level**, in place of any authored skill.
