@@ -246,7 +246,9 @@ impl Game {
         d.buildings
             .keys()
             .filter(|&b| {
-                d.buildings[b].building_class_type.is_some_and(|k| is_world_wonder_class(d, k) || is_team_wonder_class(d, k) || is_national_wonder_class(d, k))
+                // Never a palace (its class is a national wonder's).
+                !d.buildings[b].capital
+                    && d.buildings[b].building_class_type.is_some_and(|k| is_world_wonder_class(d, k) || is_team_wonder_class(d, k) || is_national_wonder_class(d, k))
                     && self.city_can_construct(seat, b, false, false, false)
             })
             .min_by_key(|&b| (self.city_production_needed_building(seat, b) - self.cities[seat].building_production[b], b))

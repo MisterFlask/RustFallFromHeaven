@@ -602,8 +602,21 @@ impl Game {
         temp_maintenance
     }
 
-    /// C++ `CvCity::calculateNumCitiesMaintenanceTimes100` (CvCity.cpp:5862-5905).
+    /// C++ `CvCity::calculateNumCitiesMaintenanceTimes100` (CvCity.cpp:5862-5905). Not in FFH2
+    /// (docs/PERSONS.md, "Maintenance"): a city of a House with a head pays
+    /// `PERSON_HOUSE_MAINTENANCE_PERCENT` of it.
     pub fn city_calculate_num_cities_maintenance_times100(&self, c: CityId) -> i32 {
+        let full = self.city_calculate_num_cities_maintenance_full_times100(c);
+        if self.city_house_maintenance_applies(c) {
+            full * self.d.defines.person_house_maintenance_percent / 100
+        } else {
+            full
+        }
+    }
+
+    /// The number-of-cities maintenance of city `c` as a Crown city (C++
+    /// `CvCity::calculateNumCitiesMaintenanceTimes100`).
+    pub fn city_calculate_num_cities_maintenance_full_times100(&self, c: CityId) -> i32 {
         let d = self.d;
         let owner = self.cities[c].owner;
         let team = self.city_team(c);

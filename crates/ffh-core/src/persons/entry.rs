@@ -178,6 +178,10 @@ impl Game {
             Post::None => {}
         }
         self.persons.remove(x);
+        // An empty seat: the House's cities lose its trait and its maintenance share.
+        if let Post::Head(h) = post {
+            self.house_refresh_cities(h);
+        }
         self.players[p].persons.retain(|&y| y != x);
         if let Some(u) = unit {
             if origin == PersonOrigin::Veteran {

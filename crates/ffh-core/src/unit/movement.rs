@@ -371,6 +371,11 @@ impl Game {
         // Engagement combat (plan 5.2): an engagement's attack gates replace the duel's.
         let engage = attack && self.engage_applies(u, plot);
         if attack {
+            // Not in FFH2 (docs/PERSONS.md, States): a Restless or Disloyal commander's army
+            // takes no order to attack (`unit_attack_refusal` says why); it moves and defends.
+            if self.unit_attack_withheld_by(u).is_some() {
+                return false;
+            }
             if engage {
                 // One attack a turn, Blitz one more, counting engagements, bombards and missile
                 // strikes.

@@ -599,6 +599,21 @@ impl Game {
             self.unit_change_experience(unit, experience, -1, false, false, false);
         }
 
+        // Not in FFH2: its House's trait's free promotions, as its owner's are given at the
+        // unit's creation (docs/PERSONS.md, "A head's trait").
+        if let Some(t) = self.cities[c].house_trait {
+            let d = self.d;
+            if let Some(unit_combat) = self.unit_get_unit_combat_type(unit) {
+                if d.traits[t].free_promotion_unit_combat[unit_combat] {
+                    for promotion in d.promotions.keys() {
+                        if d.traits[t].free_promotion[promotion] {
+                            self.unit_set_has_promotion(unit, promotion, true);
+                        }
+                    }
+                }
+            }
+        }
+
         for promotion in self.d.promotions.keys() {
             if self.city_is_free_promotion(c, promotion) {
                 if let Some(unit_combat) = self.unit_get_unit_combat_type(unit) {
@@ -915,6 +930,13 @@ impl Game {
         let info = &d.units[unit];
 
         let mut multiplier = self.player_get_production_modifier_unit(city.owner, unit);
+        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
+        if let Some(t) = city.house_trait {
+            multiplier += info.production_traits[t];
+            if let Some(special_unit) = info.special_unit_type {
+                multiplier += d.special_units[special_unit].production_traits[t];
+            }
+        }
 
         multiplier += city.domain_production_modifier[unit_domain_of(d, unit).idx()];
 
@@ -950,6 +972,24 @@ impl Game {
         let city = &self.cities[c];
 
         let mut multiplier = self.player_get_production_modifier_building(city.owner, building);
+        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
+        if let Some(t) = city.house_trait {
+            let (info, ti) = (&d.buildings[building], &d.traits[t]);
+            multiplier += info.production_traits[t];
+            if let Some(special_building) = info.special_building_type {
+                multiplier += d.special_buildings[special_building].production_traits[t];
+            }
+            let class = building_class_of(d, building);
+            if is_world_wonder_class(d, class) {
+                multiplier += ti.max_global_building_production_modifier;
+            }
+            if is_team_wonder_class(d, class) {
+                multiplier += ti.max_team_building_production_modifier;
+            }
+            if is_national_wonder_class(d, class) {
+                multiplier += ti.max_player_building_production_modifier;
+            }
+        }
 
         for bonus in d.bonuses.keys() {
             if self.city_has_bonus(c, bonus) {

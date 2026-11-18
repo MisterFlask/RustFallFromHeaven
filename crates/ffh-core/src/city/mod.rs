@@ -333,6 +333,9 @@ pub struct City {
     pub house: Option<HouseId>,
     /// The commander whose army took it, and the game turn (a claim for `TAKEN_CLAIM_TURNS`).
     pub taken_by: Option<(PersonId, i32)>,
+    /// Its House's trait (docs/PERSONS.md, "A head's trait"): read through
+    /// `Game::city_house_trait`, kept by `Game::city_house_refresh`.
+    pub house_trait: Option<TraitType>,
 }
 
 impl City {
@@ -563,6 +566,7 @@ impl City {
             lane: Vec::new(),
             house: None,
             taken_by: None,
+            house_trait: None,
         }
     }
 

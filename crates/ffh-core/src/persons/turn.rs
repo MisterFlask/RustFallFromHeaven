@@ -5,7 +5,10 @@ use super::*;
 impl Game {
     /// Player `p`'s persons and Houses in its turn processing (`player_do_turn`, after the army
     /// sync): references to what is gone dropped, entry, empty seats filled, commanders by the
-    /// rule, modifiers expired, demands (met, impossible, lapsed, new), states and countdowns.
+    /// rule, modifiers expired, demands (met, impossible, lapsed, new), states and countdowns;
+    /// then the countdowns that ran out (secession: Houses, then commanders), the Disloyal heads'
+    /// units sent to their Houses' largest cities, and the Houses' cities refreshed (their trait
+    /// and maintenance).
     pub fn player_persons_turn(&mut self, p: PlayerId) {
         if !self.player_has_persons(p) {
             return;
@@ -17,7 +20,11 @@ impl Game {
         self.player_persons_expire(p);
         self.player_persons_demands(p);
         self.player_persons_states(p);
-        // Step 2: secession. `persons_countdowns_due(p)` lists the Houses and commanders whose
-        // countdown has run out; nothing acts on them yet.
+        self.player_persons_secessions(p);
+        if !self.players[p].alive {
+            return;
+        }
+        self.player_persons_held_heads(p);
+        self.player_persons_cities(p);
     }
 }

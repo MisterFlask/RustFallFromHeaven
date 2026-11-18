@@ -215,12 +215,13 @@ impl Game {
                 h
             }
         };
-        // The city joins the House.
+        // The city joins the House: its trait and maintenance.
         self.cities[c].house = Some(h);
         self.houses[h].cities.push(c);
         if self.houses[h].seat.is_none() {
             self.houses[h].seat = Some(c);
         }
+        self.city_house_refresh(c);
         let house = self.house_label(h);
         self.holder_add_mod(Holder::House(h), LoyaltyCause::Granted { city: city.clone() }, GRANTED);
         let head = self.houses[h].head;
@@ -329,6 +330,7 @@ impl Game {
         self.persons[x].post = Post::Head(h);
         let own = std::mem::take(&mut self.persons[x].standing);
         self.houses[h].standing.mods.extend(own.mods);
+        self.house_refresh_cities(h);
         let label = self.house_label(h);
         let name = self.persons[x].name.clone();
         self.person_add_deed(x, format!("Succeeded as head of {label}."));
@@ -387,7 +389,8 @@ impl Game {
     }
 
     // -----------------------------------------------------------------------------------------
-    // The quota (accounting only: the order code calls these in step 2)
+    // The quota: empire orders (`city_check_empire_order`, `city_push_empire_order`) and the
+    // requisition (`player_do_requisition`) ask and record it
     // -----------------------------------------------------------------------------------------
 
     /// `CivicInfo::house_orders` of player `p`'s government civic (a civic without the key: 100).
@@ -435,6 +438,12 @@ impl Game {
     pub fn house_record_order(&mut self, h: HouseId) {
         let turn = self.game_turn();
         self.houses[h].orders.push(turn);
+    }
+
+    /// Whether city `c` takes an empire or requisition order now ([`Game::city_house_takes_order`]
+    /// without the reason's text).
+    pub fn city_takes_order(&self, c: CityId) -> bool {
+        self.city_house(c).map_or(true, |h| self.house_orders_left(h) != Some(0))
     }
 
     /// Whether city `c` takes an empire or requisition order now (else why not): a Crown city

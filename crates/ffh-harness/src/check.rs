@@ -348,9 +348,12 @@ pub fn check(g: &Game) {
     // This game's persons of note and Houses (docs/PERSONS.md): a city's House is a House of its
     // owner that lists it, and a House lists only such cities and has one; a head's post names
     // their House and the House names them; a person's unit lives and is their owner's; a
-    // commander is with their army and the army names them. (No House under direct rule is not
-    // an invariant yet: step 2 of the build adds the civil war that ends them.)
+    // commander is with their army and the army names them; no House stands under direct rule
+    // (adopting it is civil war).
     for p in g.player_ids() {
+        if g.player_rules_directly(p) && !g.players[p].houses.is_empty() {
+            fail(format!("player {} rules directly with {} Houses", p.0, g.players[p].houses.len()));
+        }
         for &c in &g.players[p].cities {
             if let Some(h) = g.cities[c].house {
                 match g.houses.get(h) {

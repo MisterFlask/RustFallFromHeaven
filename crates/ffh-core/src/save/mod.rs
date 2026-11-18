@@ -158,7 +158,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 47: Persons of Note (docs/PERSONS.md): `Game::persons`, `houses`, `persons_drawn`,
 ///   `persons_barred`, `Player::persons`, `houses`, `house_names`, `City::house`, `taken_by`,
 ///   `Army::commander` a person, `Army::commander_named`, `LogMark::Person`, `LogTag::Person`.
-pub const FORMAT_VERSION: u32 = 47;
+/// - 48: a House's trait in its cities (`City::house_trait`; docs/PERSONS.md).
+pub const FORMAT_VERSION: u32 = 48;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
