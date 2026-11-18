@@ -4,19 +4,23 @@
 // the page on the HD-2D map (`?force3d=1`: SwiftShader here, slow) and reads, as a player sees
 // them: the House marks on the Houses' cities and the Houses drawn in their lieges' colours, a
 // Crown city's Governance line on the city screen, the Armies screen's commander lines, the unit
-// panel's person line and a great person's Found a House, a person's alert, the war declaration's
-// preview, the diplomacy list's Houses (yours first, the neighbour's under its liege) and the
-// neighbour's House's trade screen (a Secede offer refused, then one accepted: the House breaks
-// away and its alert shows), and in `persons-direct` the civics screen's warning for God King. Any
+// panel's person line and a great person's Found a House, a person's alert, the plates' marks'
+// tooltips (the Furious countdown's pill, a House capital's star), the war declaration's dialog
+// (the Houses it brings in, its preview), the diplomacy list's Houses (yours first with their
+// state, the neighbour's under its liege with its state and price) and the neighbour's House's
+// trade screen (a Secede offer refused, Become your vassal's war, then a Secede offer accepted
+// with its cost with the liege: the House breaks away and its alert shows), and in
+// `persons-direct` the civics screen's warning for God King. Any
 // console error or page error fails it. (The second build, docs/PERSONS.md: a House's city is its
 // own player's, so it has no Governance section on the liege's city screen; the stage's Houses
 // and armies are named by role; the states are the attitude scale.)
 //
 // With `--shots DIR` it also saves the screenshots the owner reviews (CLAUDE.md, "Show UI changes
 // in a screenshot": crops at deviceScaleFactor 2, the screens at a 390 px wide page): the map's
-// plates, the Governance sections, the commander lines, the unit panels, the alerts, the
-// diplomacy list's Houses, the House's trade screen refused and accepted, the civics warning and
-// the war declaration's preview.
+// plates and two of their marks' tooltips, the Governance sections, the commander lines, the unit
+// panels, the alerts, the diplomacy list (on a desktop page and a phone's) and its Houses, the
+// House's trade screen refused, with Become your vassal and accepted, the civics warning and the
+// war declaration's dialog.
 //
 //   node tools/web-persons-screens-smoke.mjs [--bin PATH] [--assets DIR] [--shots DIR] [--gpu]
 //
@@ -122,9 +126,20 @@ async function diplomacyHouses(page, url, st) {
   const iL = rows.findIndex((r) => r.id === liege);
   const iN = rows.findIndex((r) => r.id === nh.player);
   check(iL >= 0 && iN === iL + 1 && rows[iN].house && rows[iN].who.trim().startsWith(`${nh.label}, vassal of the `), `the neighbour's House under its liege: ${rows[iN]?.who}`);
-  check(own.every((p) => rows.slice(0, own.length).some((r) => r.id === p && /, your vassal$/.test(r.who.trim()))), `your Houses first: ${rows.slice(0, own.length).map((r) => r.who.trim()).join(" | ")}`);
-  const marks = await page.evaluate(() => [...document.querySelectorAll("#modals table.diplo tr.house-row .pstate")].map((e) => e.dataset.state));
+  check(own.every((p) => rows.slice(0, own.length).some((r) => r.id === p && /, your vassal( · |$)/.test(r.who.trim()))), `your Houses first: ${rows.slice(0, own.length).map((r) => r.who.trim()).join(" | ")}`);
+  const marks = await page.evaluate(() => [...document.querySelectorAll("#modals table.diplo tr.house-row td:nth-child(3) .pstate")].map((e) => e.dataset.state));
   check(marks.length === own.length, `your Houses' attitude marks (${marks.join(", ")})`);
+  // Each House's line states its state where a phone sees it (the Attitude column is cut there):
+  // yours toward you, with the Furious countdown; the neighbour's toward its liege, with its price.
+  const lines = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#modals table.diplo tr.house-row")].map((r) => [r.dataset.player, { text: r.querySelector(".house-who")?.textContent ?? "", state: r.querySelector(".house-who .pstate")?.dataset.state ?? null, price: r.querySelector(".house-who .house-price")?.dataset.price ?? null }])));
+  check(own.every((p) => lines[p]?.state === st.houses[["friendly", "pleased", "annoyed", "furious"][own.indexOf(p)]].state.toLowerCase()), `your Houses' lines carry their state: ${own.map((p) => lines[p]?.text).join(" | ")}`);
+  check(/ · ✖ ?Furious ?8 turns$/.test(lines[st.houses.furious.player]?.text.replace(/\s+/g, " ").trim() ?? ""), `the Furious House's line: ${lines[st.houses.furious.player]?.text}`);
+  const pl = await query(url, { q: "players" });
+  const offer = pl.players.find((p) => p.id === nh.player)?.house_offer;
+  const nline = lines[nh.player];
+  check(!!offer && nline?.state === offer.state.toLowerCase() && (offer.price === null ? nline.price === null : nline.price === String(offer.price) && nline.text.includes(`Secede: ${offer.price} gold`)), `the neighbour's House's line: ${nline?.text}`);
+  const ownPeace = await page.evaluate((ids) => ids.map((id) => document.querySelector(`#modals tr[data-player="${id}"] td:nth-child(2)`)?.textContent.trim()), own);
+  check(ownPeace.every((t) => t === ""), `your Houses' relations say no "peace": ${JSON.stringify(ownPeace)}`);
   await page.evaluate((ids) => document.querySelector(`#modals tr[data-player="${ids[0]}"]`)?.scrollIntoView({ block: "start" }), [liege]);
   await sleep(300);
   await crop(page, [`#modals tr[data-player="${liege}"]`, `#modals tr[data-player="${nh.player}"]`], "diplomacy-house-under-liege.png");
@@ -151,7 +166,26 @@ async function diplomacyHouses(page, url, st) {
   await setGold(page, 1);
   const refused = await tradeAnswer(page, "refused");
   check(refused.includes(`Reason: ${nh.label} asks ${price} gold.`) && refused.includes(`${nh.label} will break away from the `) && refused.includes(": war between them."), `refused: ${refused}`);
+  check(!/attitude toward you/.test(refused), `a refused offer states no cost: ${refused}`);
   await tradeCrop(page, "trade-house-refused.png");
+  // Become your vassal (when the rules let the human take it): the war it means and who joins it.
+  const vassalOk = await page.evaluate(() => {
+    const b = document.querySelector('#modals .trade-item[data-item="TRADE_HOUSE_VASSAL"] button');
+    if (!b || b.disabled) return false;
+    b.click();
+    return true;
+  });
+  if (vassalOk) {
+    await setGold(page, price);
+    const v = await tradeAnswer(page, "accepted");
+    const yours = ["friendly", "pleased", "annoyed", "furious"].map((r) => st.houses[r].label);
+    check(/You become its liege: war with the \S.*\./.test(v) && yours.every((l) => v.includes(l)) && v.includes("Your Houses join: "), `Become your vassal: ${v}`);
+    check(/If accepted: .*The \S.*'s attitude toward you -\d+ \(lasting\)\./.test(v), `Become your vassal's cost with the liege: ${v}`);
+    await tradeCrop(page, "trade-house-vassal.png");
+    await page.evaluate(() => document.querySelector('#modals .trade-item[data-item="TRADE_SECEDE"] button').click());
+    await setGold(page, 1);
+    await tradeAnswer(page, "refused");
+  } else check(true, "Become your vassal: not open to the human here");
   await page.evaluate(() => [...document.querySelectorAll("#modals .modal:last-child .modal-buttons button")].find((b) => b.textContent === "Propose").click());
   await until(() => page.evaluate(() => !!document.querySelector('#modals .modal:last-child [data-answer="declined"]')), "the offer refused", 30000, 100);
   check(true, "a Secede offer below the price proposed and refused");
@@ -159,6 +193,8 @@ async function diplomacyHouses(page, url, st) {
   await setGold(page, price);
   const accepted = await tradeAnswer(page, "accepted");
   check(accepted.includes(`${nh.label} will break away from the `), `accepted: ${accepted}`);
+  const grudge = await page.evaluate(() => document.querySelector("#modals .trade-summary .house-grudge")?.textContent ?? "");
+  check(/^The \S.*'s attitude toward you -\d+ \(lasting\)\.$/.test(grudge), `an accepted offer's cost with the liege: ${grudge}`);
   await tradeCrop(page, "trade-house-accepted.png");
   await page.evaluate(() => [...document.querySelectorAll("#modals .modal:last-child .modal-buttons button")].find((b) => b.textContent === "Propose").click());
   await until(() => page.evaluate(() => !!document.querySelector('#modals .modal:last-child [data-answer="accepted"]')), "the offer accepted", 30000, 100);
@@ -177,6 +213,58 @@ async function diplomacyHouses(page, url, st) {
     await crop(page, ["#shot-alert"], "alert-break-away.png");
     await page.evaluate(() => document.getElementById("shot-alert")?.remove());
   }
+}
+
+/** The plates' marks explain themselves (docs/PERSONS.md, "UI", part G): the pointer on the Furious
+ *  House's countdown pill gives `House X: Furious.` and the rules' outcome; on a House capital's
+ *  star, `Capital of House X (your vassal).`; with the House's reminder. The boxes are the ones the
+ *  map recorded as it drew (plates.js). With --shots, a crop of each. */
+async function plateTips(page, st) {
+  const f = st.houses.furious;
+  const ids = f.cities.map((c) => c.id);
+  const hitsOf = () => page.evaluate((ids) => {
+    const mv = window.ffh.mapView;
+    const hits = mv.r3d?.plateHits ?? mv.iso?.plateHits ?? mv.plateHits ?? [];
+    const rc = mv.canvas.getBoundingClientRect();
+    return hits.filter((x) => ids.includes(x.city)).map((x) => ({ ...x, cx: rc.left + (x.x0 + x.x1) / 2, cy: rc.top + (x.y0 + x.y1) / 2 }));
+  }, ids);
+  const hits = await until(async () => {
+    const h = await hitsOf();
+    return h.some((x) => x.kind === "pill") ? h : null;
+  }, "the Furious House's plate drawn with its countdown", 240000, 500);
+  const tipText = () => page.evaluate(() => {
+    const t = document.querySelector("#mapwrap .tooltip");
+    return t && !t.hidden ? t.innerText.replace(/\s+/g, " ").trim() : "";
+  });
+  const point = async (hit, want, name) => {
+    await page.mouse.move(5, 5);
+    await sleep(200);
+    await page.mouse.move(hit.cx, hit.cy);
+    const text = await until(async () => {
+      const t = await tipText();
+      return want.test(t) ? t : null;
+    }, `the ${hit.kind}'s tooltip`, 30000, 100).catch(async () => tipText());
+    check(want.test(text), `the ${hit.kind}'s tooltip: ${text}`);
+    if (SHOTS) {
+      const box = await page.evaluate((hit) => {
+        const t = document.querySelector("#mapwrap .tooltip").getBoundingClientRect();
+        return { x0: Math.min(t.left, hit.cx - 60), y0: Math.min(t.top, hit.cy - 30), x1: Math.max(t.right, hit.cx + 60), y1: Math.max(t.bottom, hit.cy + 30) };
+      }, hit);
+      const x = Math.max(0, Math.floor(box.x0 - 6));
+      const y = Math.max(0, Math.floor(box.y0 - 6));
+      await page.screenshot({ path: path.join(SHOTS, name), clip: { x, y, width: Math.min(DESK.width - x, Math.ceil(box.x1 - box.x0 + 12)), height: Math.min(DESK.height - y, Math.ceil(box.y1 - box.y0 + 12)) }, timeout: 300000 });
+      console.log(`shot ${name}`);
+    }
+  };
+  const pill = hits.find((x) => x.kind === "pill");
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await point(pill, new RegExp(`^${esc(f.label)}: Furious\\. ${esc(f.label)} will (break away|end) .*8 turns`), "plate-tip-countdown.png");
+  const house = await page.evaluate(() => (window.ffh.S.data.tables.KeywordType ?? []).find((k) => k.type === "KEYWORD_HOUSE")?.name ?? "House");
+  check((await tipText()).includes(house.toUpperCase()) || (await page.evaluate(() => !!document.querySelector('#mapwrap .tooltip .reminder[data-keyword="KEYWORD_HOUSE"]'))), "the countdown's tooltip carries the House's reminder");
+  const star = (await hitsOf()).find((x) => x.kind === "star");
+  if (star) await point(star, new RegExp(`^Capital of ${esc(f.label)} \\(your vassal\\)\\.`), "plate-tip-capital.png");
+  else check(true, "no House capital among the Furious House's cities in view");
+  await page.mouse.move(5, 5);
 }
 
 /** A page on the served game at the player's turn; console and page errors are collected. */
@@ -276,11 +364,15 @@ async function main() {
         return { own: own.map((p) => T.playerColor(p) === T.playerColor(me)), neighbour: T.playerColor(nh) === T.playerColor(liege) && T.playerColor(nh) !== T.playerColor(me) };
       }, [["friendly", "pleased", "annoyed", "furious"].map((r) => st.houses[r].player), st.houses.neighbour.player, st.neighbour.player]);
       check(colours.own.every(Boolean) && colours.neighbour, `Houses in their lieges' colours: ${JSON.stringify(colours)}`);
-      if (SHOTS && !args["no-map"]) {
+      if (!args["no-map"]) {
         await clear(page);
         const cx = Math.round(at.reduce((s, p) => s + p[0], 0) / at.length);
         const cy = Math.round(at.reduce((s, p) => s + p[1], 0) / at.length);
         await page.evaluate(([x, y]) => window.ffh.mapView.centerOn(x, y, { animate: false }), [cx, cy]);
+        await plateTips(page, st);
+      }
+      if (SHOTS && !args["no-map"]) {
+        await clear(page);
         await sleep(args.gpu ? 3000 : 30000);
         const box = await page.evaluate((pts) => {
           const ps = pts.map(([x, y]) => window.ffh.mapView.screenOf(x, y)).filter(Boolean);
@@ -292,6 +384,15 @@ async function main() {
         const h = Math.min(DESK.height - y, Math.ceil(box.y1 - box.y0 + 130));
         await page.screenshot({ path: path.join(SHOTS, "map-plates.png"), clip: { x, y, width: w, height: h }, timeout: 300000 });
         console.log(`shot map-plates.png: ${w} x ${h} CSS px`);
+      }
+      // The diplomacy list on a desktop page (the Houses' lines and the Attitude column).
+      await clear(page);
+      if (SHOTS) {
+        await page.evaluate(() => void window.ffh.openScreen("diplomacy"));
+        await until(() => page.evaluate(() => document.querySelectorAll("#modals table.diplo tr.house-row").length > 0), "the diplomacy list", 60000, 200);
+        await sleep(500);
+        await crop(page, ["#modals table.diplo"], "diplomacy-list-desktop.png");
+        await clear(page);
       }
       // H. One alert: a change of state.
       await clear(page);
@@ -350,11 +451,20 @@ async function main() {
       await phone.evaluate(() => void window.ffh.openScreen("diplomacy"));
       await until(() => phone.evaluate(() => !!document.querySelector("#modals button[data-war]")), "the Declare war button", 60000, 200);
       await phone.evaluate(() => document.querySelector("#modals button[data-war]").click());
+      // The Houses the war brings in for certain (the vassal rules): the neighbour's, at war with
+      // you as well, and yours, joining; defensive pacts only may.
+      await until(() => phone.evaluate(() => !!document.querySelector("#modals .modal:last-child .war-parties")), "the war dialog's parties", 30000, 100);
+      const parties = await phone.evaluate(() => [...document.querySelectorAll("#modals .modal:last-child .war-parties")].map((e) => e.textContent));
+      const yours = ["friendly", "pleased", "annoyed", "furious"].map((r) => st.houses[r].label);
+      check(parties[0] === `At war with you as well: ${st.houses.neighbour.label}.`, `war dialog: ${parties[0]}`);
+      check(parties[1]?.startsWith("Your Houses join: ") && yours.every((l) => parties[1].includes(l)), `war dialog: ${parties[1]}`);
+      const pactLine = await phone.evaluate(() => [...document.querySelectorAll("#modals .modal:last-child p")].some((e) => e.textContent === "Their defensive pact partners may join them."));
+      check(pactLine, "war dialog: defensive pacts may");
       // (The second build: the stage's persons need not demand this war; a preview shown has lines.)
       await sleep(3000);
       const war = await phone.evaluate(() => document.querySelector("#modals .modal .persons-preview")?.textContent ?? null);
       check(war === null || war.trim().length > 0, `war preview: ${war}`);
-      if (war !== null) await crop(phone, ["#modals .modal:last-child"], "war-preview.png");
+      await crop(phone, ["#modals .modal:last-child"], "war-dialog.png");
       await clear(phone);
       await diplomacyHouses(phone, server.url, st);
       await clear(phone);

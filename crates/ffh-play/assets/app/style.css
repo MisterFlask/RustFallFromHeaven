@@ -247,6 +247,8 @@ html.art #top .sep { display: block; }
   box-shadow: 0 0 0 1px var(--c-void);
 }
 .tooltip[hidden] { display: none; }
+/* The map's own tooltip (a city plate's mark, plates.js): its reminder boxes below its lines. */
+#mapwrap .tooltip > .tip-reminders { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
 .tip-title { color: var(--c-vellum); }
 .tip-city { color: var(--c-sand); }
 .tip-ritual { color: #c9a0ff; }
@@ -824,6 +826,13 @@ table.scores.diplo tr.house-row > td:first-child .leader-cell { border-left: 2px
 .trade-summary .house-war-title { margin-top: 6px; font-weight: 700; }
 .trade-summary .house-war { font-weight: 700; }
 .own-house p { margin: 6px 0; }
+/* A House's line in the list carries its state (and another's price to secede), where a phone sees
+   it: each part a line of its own under the House's (within the portrait's height), so the table
+   keeps to the dialog's width; the separators read only as text. */
+.leader-cell .house-who, .leader-cell .house-who .house-of { white-space: normal; }
+.house-who .house-chunk { display: block; white-space: nowrap; }
+.house-who .house-chunk > .sep { display: none; }
+.house-price { color: var(--c-sand); }
 @media (max-width: 520px) {
   table.scores.diplo tr.house-row > td:first-child { padding-left: 10px; }
   .house-of { white-space: normal; }

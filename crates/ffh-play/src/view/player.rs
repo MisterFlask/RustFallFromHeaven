@@ -1,6 +1,9 @@
 //! The empire screens (design §4.6): `techs` (the tech tree laid out by prerequisite depth),
 //! `civics`, `religions` and `players` (the diplomacy overview of the players the human knows).
 
+use std::collections::BTreeSet;
+
+use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::persons::PersonsAct;
 use ffh_data::*;
@@ -347,8 +350,89 @@ pub fn players(v: &Viewer) -> Json {
         // Persons of Note (docs/PERSONS.md, "UI", part I): what declaring war on it does to the
         // cast (the war dialog's lines; empty when nothing).
         j.set("war_preview", if can_war { crate::view::house_marks::act_preview(v, &PersonsAct::DeclareWar(t)) } else { Json::Arr(Vec::new()) });
+        // Who the war brings in for certain, by the vassal rules (docs/PERSONS.md, "The second
+        // build", rule 7; the war dialog's `At war with you as well: ..` and `Your Houses join:
+        // ..`): its vassals (a House's: its liege and the liege's other vassals) and the human's,
+        // labels in player order; empty when it cannot be declared.
+        let (against, join) = if can_war { war_parties(g, v.team, t, None) } else { (Vec::new(), Vec::new()) };
+        j.set("war_against", party_labels(g, &against));
+        j.set("war_join", party_labels(g, &join));
+        // A House not the human's (rule 9; the diplomacy list's second line): its state toward
+        // its own liege and its price to secede.
+        if let Some(hh) = g.player_house(p).filter(|&hh| g.players[g.houses[hh].owner].team != v.team) {
+            j.set("house_offer", house_offer(v, hh));
+        }
         // A crusade's Host (docs/CRUSADE.md): an army, not a civilization to talk to.
         j.set("crusade_host", g.player_is_crusade_host(p));
     }
     crate::jobj! { "me" => v.h, "players" => Json::Arr(list) }
+}
+
+/// The teams a war between teams `t` and `other` brings in, as `team_declare_war` propagates it
+/// by the vassal rules (docs/PERSONS.md, "The second build", rule 7: a vassal is at war with its
+/// master's enemies, and a war on a vassal is a war on its master): `(against, join)`, the teams
+/// newly at war with `t` other than `other` (the target's vassals), and those newly at war with
+/// `other` other than `t` (`t`'s own vassals), by team id. As the rules: no war reaches a crusade's
+/// Host nor crosses a truce. `gone`: a vassal team that has left its master before the war (a
+/// House breaking away to become `t`'s: it is in neither list). Defensive pacts are left out:
+/// the human does not see the others' pacts (the war dialog says they may bring others in).
+pub fn war_parties(g: &Game, t: TeamId, other: TeamId, gone: Option<TeamId>) -> (Vec<TeamId>, Vec<TeamId>) {
+    let is_vassal = |v: TeamId, m: TeamId| Some(v) != gone && g.teams[v].vassal[m];
+    let pair = |a: TeamId, b: TeamId| (a.min(b), a.max(b));
+    let mut new: BTreeSet<(TeamId, TeamId)> = BTreeSet::new();
+    let mut todo = vec![(t, other)];
+    while let Some((a, b)) = todo.pop() {
+        if a == b || g.team_is_crusade_host(a) || g.team_is_crusade_host(b) || g.team_has_truce(a, b) || g.teams[a].at_war[b] || !new.insert(pair(a, b)) {
+            continue;
+        }
+        for o in g.team_ids() {
+            if o == a || o == b || !g.team_is_alive(o) {
+                continue;
+            }
+            if is_vassal(o, b) || is_vassal(b, o) {
+                todo.push((a, o));
+            } else if is_vassal(o, a) || is_vassal(a, o) {
+                todo.push((o, b));
+            }
+        }
+    }
+    let against = g.team_ids().filter(|&x| x != other && x != t && new.contains(&pair(t, x))).collect();
+    let join = g.team_ids().filter(|&y| y != t && y != other && new.contains(&pair(y, other))).collect();
+    (against, join)
+}
+
+/// The players of `teams` as the screens name a party (a House by its label, `House Arne`,
+/// `Malakim`; another by its civilization, `the Svartalfar`: a House's liege, when war is declared
+/// on the House), alive, in player order.
+pub fn party_labels(g: &Game, teams: &[TeamId]) -> Json {
+    let label = |p: PlayerId| match g.player_house(p) {
+        Some(h) => g.house_label(h),
+        None => {
+            let name = g.player_house_name(p);
+            if name == g.player_get_civilization_short_description(p) {
+                format!("the {name}")
+            } else {
+                name
+            }
+        }
+    };
+    Json::Arr(g.player_ids().into_iter().filter(|&p| g.players[p].alive && teams.contains(&g.players[p].team)).map(|p| Json::from(label(p))).collect())
+}
+
+/// House `hh` (not the human's) as the diplomacy list's second line states it (docs/PERSONS.md,
+/// "The second build", rules 5 and 9): `{state, turns, price, refusal}`, its state toward its own
+/// liege (`turns`: the Furious countdown's turns left, else null), its price to secede when it
+/// would take the human's offer (else null), and the rules' reason it would not when that reason
+/// is not its state (null otherwise: the state's mark says it).
+fn house_offer(v: &Viewer, hh: HouseId) -> Json {
+    use ffh_core::persons::{BribeKind, LoyaltyState};
+    let g = v.g;
+    let state = g.house_state(hh);
+    let refusal = g.house_bribe_refusal(hh, v.h, BribeKind::Secede);
+    crate::jobj! {
+        "state" => state.name(),
+        "turns" => g.house_view(hh).and_then(|x| x.countdown_turns),
+        "price" => if refusal.is_none() { g.house_bribe_price(hh) } else { None },
+        "refusal" => refusal.filter(|_| state >= LoyaltyState::Cautious),
+    }
 }

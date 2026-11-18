@@ -63,7 +63,7 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     // docs/CARDS.md: a civilization's birth, a city bought or annexed) and a born civilization's leaning toward an
     // alignment (`Player::alignment_attitude`). They are on FfH's scale, where 4 is about a step;
     // here 2 is one, so they count half (as the Trust spell does).
-    let extra = a.ai_attitude_extra[other] / 2;
+    let extra = attitude_extra_part(a.ai_attitude_extra[other]);
     if extra != 0 {
         out.push(("attitude modifier", extra));
     }
@@ -91,6 +91,13 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
         out.push(("demands paid", demands));
     }
     out
+}
+
+/// The rules' attitude modifiers `extra` (`Player::ai_attitude_extra`, FfH's scale: 4 about a step)
+/// as a term of [`relation_parts`] (2 a step: they count half). The screens read it to state what a
+/// modifier will do (an offer to a House, docs/PERSONS.md rule 9).
+pub fn attitude_extra_part(extra: i32) -> i32 {
+    extra / 2
 }
 
 /// Relation of player `p` towards `other`: < 0 hostile, > 0 friendly.

@@ -16,6 +16,7 @@ import { stackWear, drawWearPip, drawHarbourMark } from "../sea.js";
 import { outpostTag } from "../lanes.js";
 import { drawMarksR3d } from "../marks.js";
 import { drawPlateShield } from "../persons_lines.js";
+import { shieldHits, starHit } from "../plates.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -118,6 +119,10 @@ function drawHudParts(r3d, cam) {
   // City plates: under the settlement, toward the camera; over the far-zoom counters (a city's
   // name matters more than the pins crowding round it), under the stack badges.
   const screenCity = v.overlay.city;
+  // The boxes of the plates' marks (a House's shield and countdown, a capital's star), for their
+  // tooltips (plates.js; MapView.plateAt).
+  const plateHits = [];
+  r3d.plateHits = plateHits;
   for (const c of r3d.cities ?? []) {
     // The view's entry as it is now (the dressing keeps the one it was dressed with: a House's
     // state or a siege changes without a redress).
@@ -185,6 +190,7 @@ function drawHudParts(r3d, cam) {
     // Persons of Note (docs/PERSONS.md, "UI", part G): an own city's House shield at the plate's
     // left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
     const shieldW = city.house ? drawPlateShield(g, city.house, x - h * 0.42, p.y, h * 1.05) : 0;
+    if (shieldW) plateHits.push(...shieldHits(city, x - h * 0.42, p.y, h * 1.05, shieldW));
     // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plate's left end (left of the
     // shield when there is one).
     drawHarbourMark(g, city, x - h * 0.45 - (shieldW ? shieldW + 3 : 0), p.y, h * 0.42, 1);
@@ -217,6 +223,7 @@ function drawHudParts(r3d, cam) {
       star(g, x + sizeR + 1, y - fs * 0.35, fs * 0.42, fs * 0.18);
       g.fill();
       g.stroke();
+      plateHits.push(starHit(city, x + sizeR + 1, y - fs * 0.35, fs * 0.42));
     }
     g.globalAlpha = 1;
   }
