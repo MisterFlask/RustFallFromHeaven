@@ -1992,7 +1992,10 @@ governors' empire orders): a human's grants, heirs and demands are the human's.
   no House and no person without a post, and not a great person whose card the card logic keeps
   waiting), then the House with the fewest cities; the fewest holders made Restless. A commander
   is granted a city (which ends the command) only for their claim or demand. A grant that would
-  make a holder Disloyal waits: the Crown keeping the city snubs nobody.
+  make a holder Disloyal waits: the Crown keeping the city snubs nobody. No House is enlarged past
+  the Crown: one whose cities would outnumber the Crown's after the grant gets no more. (A
+  secession takes every city of its House. Before the cap, 8 games of 300 turns with 7
+  civilizations had four secessions, of 5 to 8 cities each.)
 - **Demands** (`demands`): at most one act a turn, Restless and Disloyal holders first: a Works
   wonder becomes an empire order in its seat when the House takes the order and the AI values the
   wonder there (some value, at most 50 turns). The grant demands are the grants' first rank; a

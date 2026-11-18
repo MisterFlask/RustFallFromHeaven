@@ -10,7 +10,10 @@
 //!   standing demand met (a Restless or Disloyal grantee's first); a claimant, the one in the best
 //!   state; a person without a post founding a House, then a great person founding the first
 //!   House, then the House with the fewest cities; the fewest holders made Restless. A grant that
-//!   would make some holder Disloyal waits (the Crown snubs nobody).
+//!   would make some holder Disloyal waits (the Crown snubs nobody). No House is enlarged past
+//!   the Crown: a House whose cities would outnumber the Crown's after the grant gets no more
+//!   (a secession takes every city of its House; before the cap, in 8 games of 300 turns, the
+//!   four secessions took 5 to 8 cities each).
 //! - **Demands** ([`demands`]): at most one act a turn, Restless and Disloyal holders first: a
 //!   Works wonder ordered in its seat when the House takes the order and the AI values the wonder
 //!   there. (Grants meet the grant demands above; the state religion is adopted by the AI's own
@@ -118,12 +121,20 @@ fn great_person_spare(g: &Game, p: PlayerId, u: UnitId) -> bool {
 /// The ranking key of a grant candidate (larger is better), or `None` when the AI does not
 /// consider it. `first_house`: `p` has no House and no person without a post (a great person may
 /// then found one).
+/// The cities of `p` the Crown holds (the capital among them).
+fn crown_cities(g: &Game, p: PlayerId) -> usize {
+    g.players[p].cities.iter().filter(|&&c| g.cities.contains(c) && g.cities[c].house.is_none()).count()
+}
+
 fn grant_key(g: &Game, p: PlayerId, c: CityId, k: &GrantCandidate, first_house: bool) -> Option<(bool, i32, bool, i32, i32, i32, i32)> {
     if k.refusal.is_some() {
         return None;
     }
     let met = meets_demand(g, c, k.to);
     let kind = match k.to {
+        // No House outgrows the Crown: one whose cities would outnumber the Crown's after the
+        // grant is not enlarged, a demand or not (a secession takes every city of its House).
+        GrantTo::House(h) if g.houses[h].cities.len() + 1 > crown_cities(g, p).saturating_sub(1) => return None,
         GrantTo::House(_) => 1,
         GrantTo::Person(x) => match g.persons[x].post {
             Post::None => 3,
