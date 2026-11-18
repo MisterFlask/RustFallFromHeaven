@@ -1244,6 +1244,16 @@ fn city_of(g: &Game, h: PlayerId, c: CityId) -> Result<(), CmdErr> {
     }
 }
 
+/// A city `h`'s armies may requisition from: its own, or one of its Houses' (the levy,
+/// docs/PERSONS.md, rule 6).
+fn levy_city_of(g: &Game, h: PlayerId, c: CityId) -> Result<(), CmdErr> {
+    match g.cities.get(c) {
+        None => Err(CmdErr::Gone),
+        Some(city) if city.owner != h && !g.city_levied_by(c, h) => Err(CmdErr::NotOwner),
+        Some(_) => Ok(()),
+    }
+}
+
 /// A governed city's production is its governor's (docs/GOVERNORS.md).
 fn not_governed(g: &Game, c: CityId) -> Result<(), CmdErr> {
     if g.city_is_governed(c) {
@@ -1658,7 +1668,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::ArmyRequisition { army, city, on } => {
             army_of(g, h, *army)?;
-            city_of(g, h, *city)?;
+            levy_city_of(g, h, *city)?;
             let listed = g.armies[*army].requisition.contains(city);
             if *on {
                 g.army_check_requisition_city(h, *army, *city).map_err(cannot)?;
@@ -1675,7 +1685,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             army_of(g, h, *army)?;
             g.army_check_requisition(h, *army).map_err(cannot)?;
             for (i, c) in cities.iter().enumerate() {
-                city_of(g, h, *c)?;
+                levy_city_of(g, h, *c)?;
                 if cities[..i].contains(c) {
                     return Err(invalid(format!("field `cities`: city {} twice", c.0)));
                 }

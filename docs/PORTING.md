@@ -341,7 +341,8 @@ flag.
   - *Side deals*: a House trades only Secede and Become your vassal (new trade items), for gold
     and gold per turn, with a civilization that has met it and is not its liege, at war too; it
     accepts when Cautious or worse and the offer covers `(loyalty + 6) x 25 x its cities` gold.
-    The AI liege remembers the buyer (an attitude modifier).
+    The AI liege remembers the buyer (an attitude modifier). Only an accepted offer is noted
+    (2026-11-18): a refused one leaves no trace (no grudge, no `Offered` entry, no alert).
   - *The attitude scale*: a person's or a House's loyalty reads Friendly, Pleased, Cautious,
     Annoyed or Furious; a House's AI attitude toward its liege is its loyalty's.
   - *The Crown's limit* (rule 14): under a governing civic the Crown holds 3 great cities at the

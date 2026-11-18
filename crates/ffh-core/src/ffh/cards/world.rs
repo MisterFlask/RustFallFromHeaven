@@ -610,25 +610,39 @@ fn new_unit(g: &mut Game, p: PlayerId, nu: &NewUnit, x: i32, y: i32) -> UnitId {
     u
 }
 
-/// City `c` of its owner goes to `p` as a trade would (its buildings stay), with its culture and
-/// its garrison: the owner's land units in it that can fight, but `keep`, heroes, and with
-/// `keep_armies` the units in an army or marching. The city it becomes (a city changing hands has
-/// a new id).
-pub(crate) fn release_city(g: &mut Game, p: PlayerId, c: CityId, keep: Option<UnitId>, keep_armies: bool) -> Option<CityId> {
+/// The garrison that goes with city `c` when it is released ([`release_city`]), in its plot's
+/// order: its owner's land units in it that can fight, but `keep`, heroes, and with `keep_armies`
+/// the units in an army or marching. Pure: a grant's preview reads it.
+pub(crate) fn release_garrison(g: &Game, c: CityId, keep: Option<UnitId>, keep_armies: bool) -> Vec<UnitId> {
     let d = g.d;
     let plot = g.city_plot(c);
     let owner = g.cities[c].owner;
-    for u in g.map.plots[plot].units.clone() {
-        if !g.units.contains(u) || Some(u) == keep || g.units[u].owner != owner {
+    g.map.plots[plot]
+        .units
+        .iter()
+        .copied()
+        .filter(|&u| {
+            g.units.contains(u)
+                && Some(u) != keep
+                && g.units[u].owner == owner
+                && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
+                && d.units[g.units[u].unit_type].combat > 0
+                && !g.unit_is_hero(u)
+                && !(keep_armies && (g.units[u].army.is_some() || g.units[u].march.is_some()))
+        })
+        .collect()
+}
+
+/// City `c` of its owner goes to `p` as a trade would (its buildings stay), with its culture and
+/// its garrison ([`release_garrison`]). The city it becomes (a city changing hands has a new id).
+pub(crate) fn release_city(g: &mut Game, p: PlayerId, c: CityId, keep: Option<UnitId>, keep_armies: bool) -> Option<CityId> {
+    let plot = g.city_plot(c);
+    let owner = g.cities[c].owner;
+    for u in release_garrison(g, c, keep, keep_armies) {
+        if !g.units.contains(u) || g.units[u].owner != owner {
             continue;
         }
         let t = g.units[u].unit_type;
-        if g.unit_get_domain_type(u) != DomainType::DOMAIN_LAND || d.units[t].combat <= 0 || g.unit_is_hero(u) {
-            continue;
-        }
-        if keep_armies && (g.units[u].army.is_some() || g.units[u].march.is_some()) {
-            continue;
-        }
         let (x, y, ai) = (g.units[u].x, g.units[u].y, g.units[u].ai_type);
         let nu = g.player_init_unit(p, t, x, y, ai, None);
         g.unit_convert(nu, u);

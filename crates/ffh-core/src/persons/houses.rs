@@ -165,6 +165,16 @@ impl Game {
         names(self.d).great.contains(&self.unit_get_unit_class_type(u))
     }
 
+    /// What a grant of city `c` does to the units in it (pure, the grant list's preview): the
+    /// garrison that goes with it (`going`: [`Game::persons_move_city`]'s units, but `founder`,
+    /// the founder's unit, which leaves the map first) and its owner's units that would go but
+    /// stay because they are in an army or marching (`staying`).
+    pub fn city_grant_garrison(&self, c: CityId, founder: Option<UnitId>) -> (Vec<UnitId>, Vec<UnitId>) {
+        let going = world::release_garrison(self, c, founder, true);
+        let staying = world::release_garrison(self, c, founder, false).into_iter().filter(|u| !going.contains(u)).collect();
+        (going, staying)
+    }
+
     /// City `c` goes to player `to` as a trade would, with its buildings, culture and garrison:
     /// the land combat units of its owner in it, but those in an army or marching (they stay
     /// their owner's: a vassal's land is friendly to its master). The city it becomes.

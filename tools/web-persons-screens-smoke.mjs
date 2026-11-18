@@ -443,7 +443,7 @@ async function main() {
       check(/^Person of note: .+, commander of the /.test(pl), `person line: ${pl}`);
       await crop(phone, ["#unit-panel"], "unit-person.png", { maxH: 700 });
       const fh = await selectUnit(phone, st.great_person, ".found-house-line");
-      check(fh.startsWith("Found a House"), `Found a House: ${fh}`);
+      check(/^Found a House in .+\. The great person is consumed; a person of note leads the House\./.test(fh), `Found a House: ${fh}`);
       await crop(phone, ["#unit-panel"], "unit-great-person.png", { maxH: 700 });
       await phone.evaluate(() => window.ffh.units.clearSelection());
       await clear(phone);
@@ -490,7 +490,9 @@ async function main() {
       await until(() => phone.evaluate(() => !!document.querySelector("#modals .persons-warning")), "the civics warning", 30000, 200);
       const warn = await phone.evaluate(() => document.querySelector("#modals .persons-warning").textContent);
       const button = await phone.evaluate(() => [...document.querySelectorAll("#modals .modal-buttons button")].map((b) => b.textContent));
-      check(/^Adopting .+: \d+ Houses break away with /.test(warn), `civics warning: ${warn}`);
+      const perHouse = await phone.evaluate(() => [...document.querySelectorAll("#modals .persons-warning ul.persons-warning-houses li")].map((l) => l.textContent));
+      check(/^Adopting .+: \d+ Houses break away, taking \d+ cities, each at war with you\./.test(warn), `civics warning: ${warn}`);
+      check(perHouse.length >= 2 && perHouse.some((l) => / returns? to you \(an army of yours stands in /.test(l)), `civics warning, a line per House: ${perHouse.join(" | ")}`);
       check(button.some((b) => /^Adopt .+: \d+ Houses? breaks? away$/.test(b)), `the revolution's button: ${button.join(", ")}`);
       await phone.evaluate(() => document.querySelector("#modals .persons-warning").scrollIntoView({ block: "center" }));
       await sleep(400);

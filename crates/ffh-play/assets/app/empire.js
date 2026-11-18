@@ -748,7 +748,8 @@ export async function openCivics() {
           p.rule_change ? h("div.civic-rule-change", p.rule_change === "governed" ? "Every city will be handed to governors." : "Every city will be ruled directly.") : null,
           // Persons of Note (docs/PERSONS.md, "UI", part I): a direct-rule civic while Houses
           // stand (the warning), then what the set does to the cast.
-          p.persons_warning ? h("div.persons-warning", { role: "alert" }, p.persons_warning) : null,
+          // One line per House: how many enemies, and which cities each takes.
+          p.persons_warning ? h("div.persons-warning", { role: "alert" }, h("div", p.persons_warning), p.persons_houses?.length ? h("ul.persons-warning-houses", p.persons_houses.map((l) => h("li", l))) : null) : null,
           p.persons_warning ? null : previewList(p.persons),
         )
       : h("div.civic-summary.dim", `Upkeep ${c.upkeep} gold per turn.${c.anarchy ? ` Anarchy: ${turns(c.anarchy)}.` : ""}${c.revolution_timer ? ` Next revolution in ${turns(c.revolution_timer)}.` : ""} Pick civics to see the change.`);
@@ -761,7 +762,7 @@ export async function openCivics() {
         onClick: async () => {
           // Persons of Note (principle 4): adopting a direct-rule civic while Houses stand is
           // confirmed on its warning (Cancel has the focus).
-          if (p?.persons_warning && !(await ask(`${p.persons_button}?`, `${p.persons_warning}${p.anarchy ? ` ${turns(p.anarchy)} of anarchy.` : ""} This cannot be undone.`, [
+          if (p?.persons_warning && !(await ask(`${p.persons_button}?`, [p.persons_warning, ...(p.persons_houses?.length ? [h("ul.persons-warning-houses", p.persons_houses.map((l) => h("li", l)))] : []), `${p.anarchy ? `${turns(p.anarchy)} of anarchy. ` : ""}This cannot be undone.`], [
             { label: p.persons_button ?? "Adopt", value: true, primary: true, danger: true },
             { label: "Cancel", value: null },
           ]))) return;

@@ -1393,6 +1393,7 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .pfoot { margin-top: 6px; }
 .pconfirm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px; border: 1px solid var(--c-crimson); background: rgba(86, 20, 23, 0.35); }
 .pconfirm p { flex: 1 1 100%; margin: 0 0 2px; font-weight: 700; }
+.pconfirm p.pconfirm-garrison { font-weight: 400; }
 details.pmore { margin-top: 4px; }
 details.pmore > summary { cursor: pointer; color: var(--link); padding: 2px 0; }
 ul.pparts, ul.precord, ul.plines, .peffect ul { margin: 2px 0; padding-left: 18px; }
@@ -1472,6 +1473,8 @@ button.link.house-tag { padding: 0; }
 .persons-preview-title { font-weight: 700; }
 .persons-preview-line { line-height: 1.45; }
 .persons-warning { margin: 6px 0; padding: 6px 10px; border: 1px solid var(--warn); border-left-width: 4px; background: #2c1412; color: var(--em); font-weight: 700; }
+.persons-warning-houses { margin: 4px 0 0; padding-left: 18px; font-weight: 400; }
+.persons-warning-houses li { margin: 1px 0; }
 tr.empire-city.refused { opacity: 0.75; cursor: not-allowed; }
 .toast.person-alert { display: flex; align-items: center; gap: 8px; border-left: 3px solid var(--accent); cursor: pointer; }
 .toast.person-alert.secession { border-left-color: var(--warn); }

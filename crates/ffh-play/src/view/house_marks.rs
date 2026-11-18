@@ -202,10 +202,13 @@ pub fn unit_person(v: &Viewer, u: UnitId) -> Json {
     j
 }
 
-/// A great person's `Found a House` (part F), in the unit's `found_house`: `{city, name}` (the
-/// Crown's grantable city nearest the unit: the grant list opens there, this unit first) or
-/// `{city: null, why}` (no city can be granted now, or no person of note is left); null for a unit
-/// that is no great person, or a human without Houses.
+/// A great person's `Found a House` (part F), in the unit's `found_house`: `{city, name, label,
+/// text, reminders}` (the Crown's grantable city nearest the unit: the grant list opens there, this
+/// unit first; `label` the button's `Found a [KW=KEYWORD_HOUSE]House[\KW]`, `text` the rest of its
+/// line, ` in Vallus. The great person is consumed; a person of note leads the House.`, the
+/// House's reminder in `reminders`: the text names the keyword and does not restate it) or `{city:
+/// null, why}` (no city can be granted now, or no person of note is left); null for a unit that is
+/// no great person, or a human without Houses.
 pub fn unit_found_house(v: &Viewer, u: UnitId) -> Json {
     let g = v.g;
     let unit = &g.units[u];
@@ -223,16 +226,28 @@ pub fn unit_found_house(v: &Viewer, u: UnitId) -> Json {
         .min_by_key(|&c| (g.step_distance(unit.x, unit.y, g.cities[c].x, g.cities[c].y), c));
     let Some(c) = nearest else { return crate::jobj! { "city" => Json::Null, "why" => "No city of the Crown can be granted." } };
     match g.player_check_grant(v.h, c, ffh_core::persons::GrantTo::GreatPerson(u)) {
-        Ok(()) => crate::jobj! { "city" => c, "name" => city_name(g, c) },
+        Ok(()) => {
+            let d = g.d;
+            let house: Vec<KeywordType> = d.ty::<KeywordType>("KEYWORD_HOUSE").into_iter().collect();
+            crate::jobj! {
+                "city" => c,
+                "name" => city_name(g, c),
+                "label" => "Found a [KW=KEYWORD_HOUSE]House[\\KW]",
+                "text" => format!(" in {}. The great person is consumed; a person of note leads the House.", city_name(g, c)),
+                "reminders" => crate::view::keywords::reminders(d, house),
+            }
+        }
         Err(why) => crate::jobj! { "city" => Json::Null, "why" => why },
     }
 }
 
 /// The civics screen's preview of a proposed set (part I), set on `proposed`: `persons` (the
 /// rules' lines) and, when the set brings direct rule while Houses stand, `persons_warning`
-/// (`Adopting God King: 3 Houses break away with 9 cities, each at war with us: Prespur, Elam and
-/// Torrin. Vallus stays: an army of ours stands in it.`) and `persons_button` (`Adopt God King: 3
-/// Houses break away`).
+/// (`Adopting God King: 3 Houses break away, taking 9 cities, each at war with you.`),
+/// `persons_houses` (a line per House, from the cities its break-away takes and those an army of
+/// yours holds, `Game::house_cities_held`, as the rules' preview reads them: `House Aldric:
+/// Ventry. Corona returns to you (an army of yours stands in it).`, `Malakim (a vassal): Astrum
+/// and Golden Leane.`) and `persons_button` (`Adopt God King: 3 Houses break away`).
 pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json) {
     let g = v.g;
     let d = g.d;
@@ -245,46 +260,52 @@ pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json
     let direct = adopted.iter().copied().find(|&c| d.civics[c].direct_rule);
     let houses: Vec<HouseId> = g.players[v.h].houses.iter().copied().filter(|&h| g.houses.contains(h)).collect();
     if let (Some(civic), false, false) = (direct, houses.is_empty(), g.player_rules_directly(v.h)) {
-        let mut going = Vec::new();
-        let mut held = Vec::new();
-        for &h in &houses {
-            let (gw, hd) = g.house_cities_held(h);
-            going.extend(gw);
-            held.extend(hd);
-        }
         let names = |cs: &[CityId]| and_list(&cs.iter().map(|&c| city_name(g, c)).collect::<Vec<_>>());
+        let mut going_n = 0;
+        let mut lines = Vec::new();
+        for &h in &houses {
+            let (going, held) = g.house_cities_held(h);
+            going_n += going.len();
+            // A vassal civilization's name is not a House's: it is told as one.
+            let who = if g.houses[h].origin == ffh_core::persons::HouseOrigin::Founded { g.house_label(h) } else { format!("{} (a vassal)", g.house_label(h)) };
+            let held_text = match held.len() {
+                0 => String::new(),
+                1 => format!("{} returns to you (an army of yours stands in it).", names(&held)),
+                _ => format!("{} return to you (an army of yours stands in each).", names(&held)),
+            };
+            lines.push(match (going.is_empty(), held.is_empty()) {
+                (true, _) => format!("{who} ends: {held_text}"),
+                (false, true) => format!("{who}: {}.", names(&going)),
+                (false, false) => format!("{who}: {}. {held_text}", names(&going)),
+            });
+        }
         let n = houses.len();
         let houses_n = if n == 1 { "1 House".to_string() } else { format!("{n} Houses") };
         let civic_name = crate::names::display(d, civic);
-        let mut text = if going.is_empty() {
-            format!("Adopting {civic_name}: {houses_n} end{}: an army of ours stands in every city.", if n == 1 { "s" } else { "" })
+        let text = if going_n == 0 {
+            format!("Adopting {civic_name}: {houses_n} end{}: an army of yours stands in every city.", if n == 1 { "s" } else { "" })
         } else {
             format!(
-                "Adopting {civic_name}: {houses_n} break{} away with {} cit{}, each at war with us: {}.",
+                "Adopting {civic_name}: {houses_n} break{} away, taking {going_n} cit{}, each at war with you.",
                 if n == 1 { "s" } else { "" },
-                going.len(),
-                if going.len() == 1 { "y" } else { "ies" },
-                names(&going),
+                if going_n == 1 { "y" } else { "ies" },
             )
         };
-        if !going.is_empty() && !held.is_empty() {
-            text.push(' ');
-            text.push_str(&stays_line(g, &held));
-        }
         proposed.set("persons_warning", text);
+        proposed.set("persons_houses", lines);
         proposed.set("persons_button", format!("Adopt {civic_name}: {houses_n} break{} away", if n == 1 { "s" } else { "" }));
     }
 }
 
-/// The cities a break-away leaves to the liege, because an army of the liege stands in them:
-/// `Censura stays: an army of ours stands in it.`, `Censura and Torrin stay: an army of ours
-/// stands in each.`
+/// The cities a break-away gives back to the liege, because an army of the liege stands in them:
+/// `Censura returns to you: an army of yours stands in it.`, `Censura and Torrin return to you: an
+/// army of yours stands in each.`
 pub(crate) fn stays_line(g: &Game, held: &[CityId]) -> String {
     let names = and_list(&held.iter().map(|&c| city_name(g, c)).collect::<Vec<_>>());
     if held.len() == 1 {
-        format!("{names} stays: an army of ours stands in it.")
+        format!("{names} returns to you: an army of yours stands in it.")
     } else {
-        format!("{names} stay: an army of ours stands in each.")
+        format!("{names} return to you: an army of yours stands in each.")
     }
 }
 
