@@ -381,6 +381,7 @@ fn a_veteran_founds_a_house_a_vassal_civilization() {
     assert!(!m.iter().any(|(l, _)| l == "Sought protection"), "a founding has no starting modifier: {m:?}");
     assert_eq!(g.persons[x].demand, None, "its demand for a post met");
     assert!(logged(&g, "leaves the map"));
+    assert!(!logged(&g, "is a House of ours"), "a founding is told once");
 }
 
 #[test]

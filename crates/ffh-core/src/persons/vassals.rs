@@ -136,10 +136,10 @@ impl Game {
         self.players[hp].persons.clear();
         let leader = self.player_get_leader_type(hp);
         let name = self.player_house_name(hp);
-        let head = leader.map(|l| {
-            let existing = self.players[owner].persons.iter().copied().find(|&x| self.persons.get(x).is_some_and(|person| person.leader == Some(l) && !matches!(person.post, Post::Head(_))));
-            existing.unwrap_or_else(|| self.person_new_quiet(owner, PersonOrigin::Ruler, l, &format!("ruler of the {name}")))
-        });
+        let existing = leader.and_then(|l| self.players[owner].persons.iter().copied().find(|&x| self.persons.get(x).is_some_and(|person| person.leader == Some(l) && !matches!(person.post, Post::Head(_)))));
+        // A person of the cast with its leader founded it (a founding names it and tells it).
+        let origin = if existing.is_some() { HouseOrigin::Founded } else { origin };
+        let head = leader.map(|l| existing.unwrap_or_else(|| self.person_new_quiet(owner, PersonOrigin::Ruler, l, &format!("ruler of the {name}"))));
         let turn = self.game_turn();
         let color = self.house_new_color(owner);
         let tribute = self.players[owner].house_tribute;
