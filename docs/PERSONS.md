@@ -949,7 +949,18 @@ Rule 13's parts outside the Court (`view/house_marks.rs`, `view/diplo.rs`, `asse
   mark for the liege"; the first build marked only Restless and Disloyal), and Furious the turns
   left in a red pill at the shield's left (under its point, a garrison's stack badge, drawn over
   the plates, covered it). The plates read the view's city as it is now, so a change of state
-  reaches the page with the next view (no tile delta needed).
+  reaches the page with the next view (no tile delta needed). A House's capital keeps its star.
+  *The second critic pass (2026-11-18; the owner: keep the compact marks, give each a tooltip):*
+  the shield, the countdown's pill and a capital's star each have a tooltip (`plates.js`):
+  `House Aldric (your vassal)` and the state (`✖ Furious 8 turns`), `House Aldric: Furious.` and
+  the rules' outcome (`house_breakaway_outcome`, the view's `players[].house.outcome`), `Capital of
+  House Aldric (your vassal).` / `Capital of the Svartalfar.`; with the House keyword's reminder
+  and the state's attitude help. The plates had no hover of their own (the pointer over a plate
+  reached the plot behind it, whose tooltip names the city); each renderer now records the boxes
+  of the marks it drew (`plateHits`: `r3d/hud.js`, `iso.js`, the flat map in `map.js`) as the
+  HD-2D map records its seas' names (`seaHits`), and `MapView.hoverAt` gives a mark the hover
+  before the plot (`plateAt`, `plateHoverAt`); a tap on a mark shows its tooltip and does nothing
+  else. The map's own tooltip draws the reminders below its lines.
 - **Diplomacy** (rules 9 and 13): the list shows the human's Houses first, then each civilization
   with its Houses under it, by `players[].house` (`{id, label, liege, liege_name, colour}`, and for
   the liege `state`, `turns`, `outcome`, `parts`, `loyalty`); a House's Attitude toward its liege is
@@ -959,7 +970,27 @@ Rule 13's parts outside the Court (`view/house_marks.rs`, `view/diplo.rs`, `asse
   and gold per turn at `BRIBE_GOLD_PER_TURN_TURNS`; the screen's totals and answer then read as for
   any deal (`Total offered: 1`, `Total requested: 150`, `Reason: House Alyndra asks 150 gold.`).
   `trade_answer` for a House is the rules' answer whoever plays it. The war a deal means is said
-  under the answer (`If accepted:`, `secede_war`, `vassal_war`). A House's vassal deal, which the
+  under the answer (`If accepted:`, `secede_war`, `vassal_war`). *The second critic pass
+  (2026-11-18):* each House in the list carries its state under its line, where a phone sees it
+  (yours: `✖ Furious 8 turns` under `House Aldric, your vassal`, and no `peace` among its
+  relations; another's: its state toward its liege and, when it would take the human's offer,
+  `Secede: 150 gold`, from `players[].house_offer`; Pleased or Friendly, the state's mark alone
+  says why it takes none, the liege being named just above, rather than the rules' `Pleased with
+  the Svartalfar`). Each part is a line of its own rather than the brief's `· ` run on one line:
+  the leader column is narrow on a desktop dialog too, and a run-on line wrapped at a separator or
+  widened the table past the dialog (the Attitude column cut); the parts stay within the portrait's
+  height. The war
+  question names the parties the war brings in for certain by the vassal rules (`At war with you
+  as well: House Alyndra, Malakim.`, `Your Houses join: House Aldric.`: `war_against`, `war_join`,
+  `view::player::war_parties`, which follows `team_declare_war`'s vassal cascade, truces and
+  crusade Hosts included; a war declared on a House, which the rules allow, names its liege and
+  the liege's other Houses: `At war with you as well: the Svartalfar, House Bertram.`) and keeps
+  `may` for defensive pacts, which the human does not see; Become
+  your vassal names the same for its war with the liege (`vassal_war_against`, `vassal_war_join`).
+  An accepted offer's cost with an AI liege is one of the `If accepted:` lines (`The Svartalfar's
+  attitude toward you -2 (lasting).`, `grudge`), shown when the proposal will be accepted: the
+  amount is `BRIBE_GRUDGE` (-4 on FfH's scale) as the attitude's parts count it (ffh-ai
+  `attitude_extra_part`: half), the number the liege's attitude tooltip then shows. A House's vassal deal, which the
   rules never let be cancelled, shows no `cancel in` count in the list (it showed one). Departure: **no gift to one's own House.** The
   contract asked that the usual gift items (gold) work for one's own Houses; the rules refuse
   every item between a House and its liege's team (`house_trade_item_allowed`), and a gift would

@@ -28,6 +28,7 @@ import { MANA_SPRITES, improvementContainsMana, manaSpriteKey } from "./mana-art
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { drawPlateShield } from "./persons_lines.js";
+import { shieldHits, starHit } from "./plates.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
 import { drawLanesIso, outpostTag } from "./lanes.js";
 import { drawMarksIso } from "./marks.js";
@@ -1558,6 +1559,9 @@ export class IsoMap {
     g.font = `700 ${fs}px ${HERALD}`;
     g.textAlign = "left";
     g.textBaseline = "alphabetic";
+    // The boxes of the plaques' marks (a House's shield and countdown, a capital's star), for
+    // their tooltips (plates.js; MapView.plateAt).
+    this.plateHits = [];
     for (const { city, c } of cities) {
       // A ritual under way: a violet ring on the plot and a beam above the city, under the plaque.
       if (city.ritual) drawRitualMark(g, c.sx, c.sy + (c.drop ?? 0), f.TW * 0.42, f.TH * 0.42, f.TH * 1.8, u);
@@ -1603,6 +1607,7 @@ export class IsoMap {
         star(g, x0 - 2, y0 + 1, 5, Math.max(4, 6 * u), Math.max(2, 2.6 * u));
         g.fill();
         g.stroke();
+        this.plateHits.push(starHit(city, x0 - 2, y0 + 1, Math.max(4, 6 * u)));
       }
       // Revolt pressure (docs/CULTURE.md): a mark at the plaque's right end by its level.
       drawRevoltMark(g, city, x0 + w + Math.max(4, 5 * u) - u, y0 + h / 2, Math.max(4, 5 * u), u, base);
@@ -1610,6 +1615,7 @@ export class IsoMap {
       // plaque's left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
       const shieldH = h + 2 * u;
       const shieldW = city.house ? drawPlateShield(g, city.house, x0 - (shieldH * 16) / 36 - 2 * u, y0 + h / 2, shieldH) : 0;
+      if (shieldW) this.plateHits.push(...shieldHits(city, x0 - (shieldH * 16) / 36 - 2 * u, y0 + h / 2, shieldH, shieldW));
       // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plaque's left end (left of
       // the shield when there is one).
       drawHarbourMark(g, city, x0 - Math.max(5, 6 * u) + u - (shieldW ? shieldW + 2 * u : 0), y0 + h / 2, Math.max(5, 6 * u), u);

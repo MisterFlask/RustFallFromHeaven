@@ -291,19 +291,26 @@ fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>,
 
 /// House `hh` as a party, the `trade` reply's `house` (docs/PERSONS.md, "The second build", rules
 /// 7 and 9): `{id, label, liege, liege_name, colour, own, price, trades_through, liege_contact,
-/// line, secede_war, vassal_war}`. `own`: the human is its liege (no side deal: `line` says why,
-/// the rules' `House Arne pays its liege by tribute.`); `price`: the gold it asks (gold per turn
-/// counted ten times; null: it takes no offer); `trades_through`: `Trades through the Bannor.` (the
-/// rest is its liege's to trade; `liege_contact`: the human can open the liege's trade screen);
-/// `secede_war` and `vassal_war`: what accepting does (`House Arne will break away from the
-/// Bannor: war between them.`, `You become its liege: war with the Bannor.`).
+/// line, secede_war, vassal_war, vassal_war_against, vassal_war_join, grudge}`. `own`: the human is
+/// its liege (no side deal: `line` says why, the rules' `House Arne pays its liege by tribute.`);
+/// `price`: the gold it asks (gold per turn counted ten times; null: it takes no offer);
+/// `trades_through`: `Trades through the Bannor.` (the rest is its liege's to trade;
+/// `liege_contact`: the human can open the liege's trade screen); `secede_war` and `vassal_war`:
+/// what accepting does (`House Arne will break away from the Bannor: war between them.`, `You
+/// become its liege: war with the Bannor.`), with `vassal_war_against` and `vassal_war_join` the
+/// parties Become your vassal brings into that war by the vassal rules (the liege's other vassals,
+/// the human's own: `view::player::war_parties`, labels); `grudge`: what an accepted offer costs
+/// with its liege (`The Bannor's attitude toward you -2 (lasting).`, under `If accepted:`; null
+/// for the human's own House and for a human liege, which has no attitude).
 fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
+    use crate::view::player::{party_labels, war_parties};
     use ffh_core::persons::BribeKind;
     let g = v.g;
     let liege = g.houses[hh].owner;
     let label = g.house_label(hh);
     let civ = g.player_get_civilization_short_description(liege);
     let own = own_house(v, hh);
+    let (against, join) = if own { (Vec::new(), Vec::new()) } else { war_parties(g, v.team, g.players[liege].team, Some(g.players[g.houses[hh].player].team)) };
     crate::jobj! {
         "id" => hh,
         "label" => label.as_str(),
@@ -317,6 +324,27 @@ fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
         "line" => if own { g.house_bribe_refusal(hh, v.h, BribeKind::Secede) } else { None },
         "secede_war" => format!("{label} will break away from the {civ}: war between them."),
         "vassal_war" => format!("You become its liege: war with the {civ}."),
+        "vassal_war_against" => party_labels(g, &against),
+        "vassal_war_join" => party_labels(g, &join),
+        "grudge" => (!own && !g.players[liege].human).then(|| format!("The {civ}'s attitude toward you {} (lasting).", signed(offer_grudge(g, liege, v.h)))),
+    }
+}
+
+/// How far an accepted offer to one of `liege`'s Houses moves its attitude toward `buyer`
+/// (docs/PERSONS.md, "The second build", rule 9): the rules' modifier (`BRIBE_GRUDGE`, on FfH's scale) as the
+/// attitude's parts count it (ffh-ai's `attitude_extra_part`: 2 a step), from its modifiers now.
+fn offer_grudge(g: &Game, liege: PlayerId, buyer: PlayerId) -> i32 {
+    use ffh_ai::diplomacy::attitude_extra_part;
+    let extra = g.players[liege].ai_attitude_extra[buyer];
+    attitude_extra_part(extra + ffh_core::persons::BRIBE_GRUDGE) - attitude_extra_part(extra)
+}
+
+/// `+2`, `-2`, `0`.
+fn signed(n: i32) -> String {
+    if n > 0 {
+        format!("+{n}")
+    } else {
+        n.to_string()
     }
 }
 

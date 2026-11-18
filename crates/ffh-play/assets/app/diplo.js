@@ -47,8 +47,9 @@ export async function openDiplomacy() {
         // mark, with its loyalty parts as the tip.
         const house = p.house;
         const ownHouse = !!house && house.liege === me()?.player;
-        const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us && !ownHouse ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
-        const who = house ? houseLine(house) : `${dname("CivilizationType", p.civ)} · team ${p.team}`;
+        // (Your own House is always at peace with you: its relations do not say it.)
+        const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : ownHouse ? null : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us && !ownHouse ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
+        const who = house ? [houseLine(house), houseState(p)] : `${dname("CivilizationType", p.civ)} · team ${p.team}`;
         const attitude = ownHouse && house.state
           ? h("td", { tip: () => houseAttitudeTip(p) }, stateMark(house.state, house.turns))
           : h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-");
@@ -66,7 +67,7 @@ export async function openDiplomacy() {
         return h(
           "tr",
           { class: [p.alive ? "" : "dead", house ? "house-row" : ""].filter(Boolean).join(" "), "data-player": p.id, "data-house": house?.id ?? null },
-          h("td", { tip: infoTip("LeaderHeadType", p.leader, { title: p.name }) }, h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", who)))),
+          h("td", { tip: infoTip("LeaderHeadType", p.leader, { title: p.name }) }, h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h(house ? "div.dim.house-who" : "div.dim", who)))),
           h("td", relation.flatMap((x, i) => (i ? [", ", x] : [x]))),
           attitude,
           h("td", p.alignment !== null && p.alignment !== undefined ? dname("AlignmentType", p.alignment) : h("span.dim", "-"), h("div.dim", p.state_religion !== null && p.state_religion !== undefined ? dname("ReligionType", p.state_religion) : "no state religion")),
@@ -128,6 +129,35 @@ export function byLiege(players, mine) {
 function houseLine(house) {
   const yours = house.liege === me()?.player;
   return h("span.house-of", houseShield(house.colour, 13), ` ${house.label}, ${yours ? "your vassal" : `vassal of the ${house.liege_name}`}`);
+}
+
+/** A House's state under its line in the list, where a phone sees it (docs/PERSONS.md, "UI"; the
+ *  Attitude column is cut at 390 px), each part a line of its own (style.css; the separators read
+ *  as text only): yours, its attitude toward you with its countdown (`✖ Furious 8 turns`);
+ *  another's, its state toward its own liege and, when it would take your offer, its price (`◆
+ *  Annoyed`, `Secede: 150 gold`; the rules' reason when that is not its state). Null when the view
+ *  sends no state. */
+function houseState(p) {
+  // Each part a chunk that wraps whole, after a space a line may break at (on a phone a line of its
+  // own, without the separator).
+  const chunk = (...c) => [" ", h("span.house-chunk", h("span.sep", "· "), ...c)];
+  const x = p.house;
+  if (x.liege === me()?.player) return x.state ? h("span.house-state", chunk(stateMark(x.state, x.turns))) : null;
+  const o = p.house_offer;
+  if (!o) return null;
+  const hasPrice = o.price !== null && o.price !== undefined;
+  const offer = hasPrice ? h("span.house-price", { "data-price": o.price }, `Secede: ${o.price} gold`) : o.refusal ? h("span.house-refusal", o.refusal.replace(/\.$/, "")) : null;
+  return h("span.house-state", chunk(stateMark(o.state, o.turns)), offer ? chunk(offer) : null);
+}
+
+/** The parties a war brings in for certain, by the vassal rules (docs/PERSONS.md, "The second
+ *  build", rule 7; `against` and `join`: the view's labels): `At war with you as well: House
+ *  Alyndra, Malakim.` and `Your Houses join: House Aldric, House Bertram.` */
+export function warPartyLines(against, join) {
+  const out = [];
+  if (against?.length) out.push(`At war with you as well: ${against.join(", ")}.`);
+  if (join?.length) out.push(`Your Houses join: ${join.join(", ")}.`);
+  return out;
 }
 
 /** Your House's attitude toward you (its loyalty, docs/PERSONS.md, rule 5): its parts and total,
@@ -300,10 +330,13 @@ function itemTip(it, techHelp) {
 }
 
 async function declareWar(p) {
-  // Persons of Note (docs/PERSONS.md, "UI", part I): what the war does to the cast, under the
-  // question (nothing when nothing).
+  // Who the war brings in for certain (the vassal rules: their Houses and yours), then what is not
+  // certain (defensive pacts, which you do not see); Persons of Note (docs/PERSONS.md, "UI", part
+  // I): what the war does to the cast, under the question (nothing when nothing).
   const pv = previewList(p.war_preview);
-  const v = await ask("Declare war?", pv ? [h("p", `Declare war on ${teamName(p.team)}? Their allies may join them.`), pv] : `Declare war on ${teamName(p.team)}? Their allies may join them.`, [
+  const parties = warPartyLines(p.war_against, p.war_join).map((t) => h("p.war-parties", t));
+  const body = [h("p", `Declare war on ${teamName(p.team)}?`), ...parties, h("p", "Their defensive pact partners may join them."), pv].filter(Boolean);
+  const v = await ask("Declare war?", body, [
     { label: "Declare war", value: true, primary: true, danger: true },
     { label: "Cancel", value: null },
   ]);
@@ -451,17 +484,24 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       const most = Math.max(0, requested + (r.margin ?? -requested));
       const effect = `Effect: −1 relations for ${tr.turns} turns. No further demands for ${tr.demands.pause_turns} turns.`;
       summary.replaceChildren(...[h("div", `Maximum possible value extorted: ${most}.`), ...lines, answer, r.accept ? h("div", effect) : reason].filter(Boolean));
-    } else summary.replaceChildren(...[...lines, answer, reason, ...houseWar(get)].filter(Boolean));
+    } else summary.replaceChildren(...[...lines, answer, reason, ...houseWar(get, r.accept)].filter(Boolean));
   };
   // What a House's side deal does once accepted (docs/PERSONS.md, rule 7: breaking away is war),
   // stated before the deal: `House Arne will break away from the Bannor: war between them.`, and
-  // for Become your vassal `You become its liege: war with the Bannor.`
-  const houseWar = (get) => {
+  // for Become your vassal `You become its liege: war with the Bannor.` with the parties the vassal
+  // rules bring into that war (the liege's other Houses, yours); when it will be accepted, what it
+  // costs with the liege (rule 9: `The Bannor's attitude toward you -2 (lasting).`; a refused
+  // offer moves nothing).
+  const houseWar = (get, accept) => {
     if (!t.house) return [];
     const kinds = new Set(get.map((x) => tname("TradeableItem", x.item)));
-    const out = [];
-    if (kinds.has("TRADE_SECEDE") || kinds.has("TRADE_HOUSE_VASSAL")) out.push(h("div.house-war-title", "If accepted:"), h("div.warn.house-war", t.house.secede_war));
-    if (kinds.has("TRADE_HOUSE_VASSAL")) out.push(h("div.warn.house-war", t.house.vassal_war));
+    if (!kinds.has("TRADE_SECEDE") && !kinds.has("TRADE_HOUSE_VASSAL")) return [];
+    const out = [h("div.house-war-title", "If accepted:"), h("div.warn.house-war", t.house.secede_war)];
+    if (kinds.has("TRADE_HOUSE_VASSAL")) {
+      out.push(h("div.warn.house-war", t.house.vassal_war));
+      for (const line of warPartyLines(t.house.vassal_war_against, t.house.vassal_war_join)) out.push(h("div.warn.house-war.war-parties", line));
+    }
+    if (accept && t.house.grudge) out.push(h("div.caution.house-grudge", t.house.grudge));
     return out;
   };
   const HOUSE_ITEMS = ["TRADE_SECEDE", "TRADE_HOUSE_VASSAL"];
