@@ -9,12 +9,13 @@
 //! reads): `(loyalty + 6) x 25 x its cities` gold (0 when Furious), gold per turn counted ten
 //! times.
 //!
-//! The liege learns of every offer ([`Game::house_note_offer`]): an AI liege's attitude modifier
-//! toward the buyer ([`BRIBE_GRUDGE`]), the House's loyalty list shows `Offered 300 gold by the
-//! Hippus` (no amount, [`OFFER_NOTED_TURNS`] turns), and the liege is told (an alert). An accepted
-//! offer is noted where the deal is implemented (`deal_start_trade`); a refused one where it is
-//! proposed ([`Game::player_offer_house`], the one way to propose it that the client and the AI
-//! share).
+//! The liege learns of an accepted offer ([`Game::house_note_offer`], where the deal takes effect:
+//! `house_trade`, from `deal_start_trade`): an AI liege's attitude modifier toward the buyer
+//! ([`BRIBE_GRUDGE`]), the House's loyalty list shows `Offered 300 gold by the Hippus` (no amount,
+//! [`OFFER_NOTED_TURNS`] turns), and the liege is told (an alert). A refused offer leaves no trace
+//! (the owner's decision, 2026-11-18): no grudge, no entry, no alert, no telemetry; the trade table
+//! says before an offer is made whether it will be accepted. [`Game::player_offer_house`] is the
+//! one way to propose it that the client and the AI share.
 
 use ffh_data::*;
 
@@ -145,7 +146,8 @@ impl Game {
         })
     }
 
-    /// The liege of House player `hp` learns of an offer of `give` by `buyer`: an AI liege's
+    /// The liege of House player `hp` learns of an accepted offer of `give` by `buyer` (called
+    /// where the deal takes effect, `house_trade`; a refused offer is not noted): an AI liege's
     /// attitude modifier toward the buyer ([`BRIBE_GRUDGE`]), `Offered N gold by the <buyer>` in
     /// the House's loyalty list, and an alert to the liege.
     pub fn house_note_offer(&mut self, buyer: PlayerId, hp: PlayerId, give: &[TradeData]) {
@@ -164,11 +166,11 @@ impl Game {
     }
 
     /// `buyer` proposes to House player `hp` a deal of `give` (from the buyer: gold, gold per
-    /// turn) for `get` (from the House: Secede or Become your vassal): the liege learns of it, the
-    /// House's controller answers (`Controller::consider_offer`), and an accepted deal is
-    /// implemented. Returns whether it was accepted. The one way the client and the AI propose a
-    /// side deal to a House (an offer the House refuses is noted here; an accepted one where the
-    /// deal is implemented).
+    /// turn) for `get` (from the House: Secede or Become your vassal): the House's controller
+    /// answers (`Controller::consider_offer`), and an accepted deal is implemented, where the liege
+    /// learns of it (`house_trade`). Returns whether it was accepted. A refused offer, or one the
+    /// rules refuse at its implementation, moves nothing: the liege does not learn of it. The one
+    /// way the client and the AI propose a side deal to a House.
     pub fn player_offer_house(&mut self, buyer: PlayerId, hp: PlayerId, give: &[TradeData], get: &[TradeData]) -> bool {
         if self.player_house(hp).is_none() || !get.iter().any(|t| house_item(t.item_type).is_some()) {
             return false;
@@ -176,19 +178,13 @@ impl Game {
         let accept = self.controller(hp).consider_offer(self, hp, buyer, give, get);
         if accept {
             self.implement_deal(buyer, hp, give, get, false);
-            // (A deal the rules refused moved nothing: the offer is still noted.)
-            if self.player_house(hp).is_some() {
-                self.house_note_offer(buyer, hp, give);
-            }
-        } else {
-            self.house_note_offer(buyer, hp, give);
         }
         accept
     }
 
     /// The trade item of House player `hp` given to `buyer` takes effect (`deal_start_trade`):
-    /// the offer is noted, then the House breaks away (rule 7); for Become your vassal it then
-    /// becomes the buyer's vassal (a House of the buyer's).
+    /// the accepted offer is noted (the only place an offer is), then the House breaks away (rule
+    /// 7); for Become your vassal it then becomes the buyer's vassal (a House of the buyer's).
     pub(crate) fn house_trade(&mut self, hp: PlayerId, buyer: PlayerId, kind: BribeKind, offered: &[TradeData]) {
         let Some(h) = self.player_house(hp) else { return };
         if self.house_bribe_refusal(h, buyer, kind).is_some() {

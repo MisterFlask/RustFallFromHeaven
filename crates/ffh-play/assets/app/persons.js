@@ -56,13 +56,15 @@ function stateTip(key) {
 /** The mark of a state: `span.pstate.ps-<state>` with the glyph and the word, and for a running
  *  countdown the turns left (`Furious ✖ 8 turns`). `state` as the host sends it (`Annoyed`) or
  *  a key of persons_mark.js STATES; `turns` null or undefined: none. Its tooltip says what the
- *  state does (the attitude's help in the data). */
-export function stateMark(state, turns) {
+ *  state does (the attitude's help in the data); `note`: a line of the row's own about the state
+ *  (`Annoyed after 2 levies.`) at the tooltip's head, where a crowded row puts it rather than in
+ *  another sentence. */
+export function stateMark(state, turns, { note = null } = {}) {
   const key = stateKey(state);
   const hasTurns = turns !== null && turns !== undefined;
   return h(
     `span.pstate.${stateClass(key)}`,
-    { "data-state": key, tip: () => stateTip(key) },
+    { "data-state": key, "data-note": note ?? null, tip: () => [note ? h("div.tip-title", note) : null, stateTip(key)] },
     h("span.pstate-glyph", { "aria-hidden": "true" }, stateGlyph(key)),
     h("span.pstate-word", stateWord(key)),
     hasTurns ? h("span.pstate-turns", turnsText(turns)) : null,
@@ -99,7 +101,7 @@ addHelp({
     h(
       "ul",
       h("li", "Every city starts as the Crown's. The capital stays the Crown's."),
-      h("li", "Under a governing civic the Crown holds a few cities at the normal maintenance (3; the Kuriotates: the capital alone, settlements not counted). Each city beyond pays triple city-count maintenance. The Court's header says how many and what they cost."),
+      h("li", "Under a governing civic the Crown holds a few cities at the normal maintenance (3; the Kuriotates: the capital alone, settlements not counted). Each city beyond pays triple city-count maintenance. The Court says how many and what they cost."),
       h("li", "A grant moves a Crown city to a House, for good: the city, its production and its commerce are the House's. Granting it to a veteran or a great person founds a new House; its founder leaves the map and leads it. A hero cannot head a House."),
       h("li", "A House is a civilization of its own and your vassal. Every vassal is one, whether it capitulated or sought protection."),
       h("li", "A House holding more cities than the realm allows (3, more as the realm grows) loses loyalty for each city over."),
@@ -194,15 +196,22 @@ function actButton(b, m, cls = "") {
   return h(`button.small.pact${cls}`, { disabled: !!b.refusal, title: b.refusal ?? null, "data-act": b.act?.kind ?? "", onclick: () => doAct(b.act, m) }, b.label);
 }
 
-/** The demand line (`Demands: Torrin granted to House Ashledger. 34 turns.`), its note and its
- *  button; between demands `No demand. Next in 14 turns.` */
+/** What a demand's term lapsing does (`At its term: -3 (60 turns), becomes ✖ Furious.`): the
+ *  host's `lapse` and the state after in the one mark, when it changes. */
+function lapseText(d) {
+  if (!d?.lapse) return null;
+  return h("span.pdemand-lapse", " ", d.lapse, d.lapse_state ? [", becomes ", stateMark(d.lapse_state), "."] : ".");
+}
+
+/** The demand line (`Demands: Torrin granted to House Ashledger. 34 turns. At its term: -3 (60
+ *  turns).`), its note and its button; between demands `No demand. Next in 14 turns.` */
 function demandLine(d, m) {
   if (!d) return null;
   if (!d.kind) return h("div.pdemand.dim", d.text);
   return h(
     "div.pdemand",
     { "data-kind": d.kind },
-    h("span.pdemand-text", d.text, " ", h(`span.pdemand-turns${d.urgent ? ".urgent" : ""}`, d.turns)),
+    h("span.pdemand-text", d.text, " ", h(`span.pdemand-turns${d.urgent ? ".urgent" : ""}`, d.turns), lapseText(d)),
     d.note ? h("span.pdemand-note.dim", ` ${d.note}`) : null,
     d.button ? actButton(d.button, m) : null,
   );
@@ -232,18 +241,22 @@ function personHead(p, size = PORTRAIT.small) {
   return h("div.phead", portrait(p, size), h("div.pname", h("b", p.name), p.title ? h("div.ptitle.dim", p.title) : null), stateMark(p.state, p.countdown_turns));
 }
 
-/** A person's card (part A.4): a commander or a person with no post. */
+/** A person's card (part A.4): a commander or a person with no post. A Furious one shows its
+ *  loyalty parts on the card, by its countdown (as a House's card does): the reason is seen where
+ *  the countdown is. */
 function personCard(p, m) {
   const show = p.x !== null && p.x !== undefined ? h("button.small.plocate", { title: "Show the unit on the map", "aria-label": "Show the unit", onclick: () => doAct({ kind: "unit", x: p.x, y: p.y, unit: p.unit }, m) }, "⌖") : null;
+  const furious = stateKey(p.state) === "furious";
   return h(
-    "div.pcard.person-card",
+    `div.pcard.person-card${furious ? ".alarm" : ""}`,
     { "data-person": p.id },
     personHead(p),
     h("div.pline", p.where, " ", show),
     h("div.pline", p.post),
     p.outcome ? h("div.pline.warn", p.outcome) : null,
     demandLine(p.demand, m),
-    moreBlock(p, [h("div.pline", p.ambition), p.rival ? h("div.pline", p.rival) : null]),
+    furious ? h("div.pparts-block", partsBlock(p)) : null,
+    moreBlock(p, [h("div.pline", p.ambition), p.rival ? h("div.pline", p.rival) : null], furious ? { parts: false, summary: "Record" } : {}),
   );
 }
 
@@ -339,8 +352,10 @@ function houseCard(x, m, reload) {
     h(`div.pline.plevy${x.levy.takes ? "" : furious ? ".warn" : ".caution"}`, x.levy.text),
     h("div.pchips", chips),
     h(`div.pline.psize${x.size.over ? ".caution" : ".dim"}`, x.size.text),
+    // Its price while it would accept an offer (Cautious or worse); a refusal is under Record.
+    x.price ? h("div.pline.pprice", x.price) : null,
     foot,
-    moreBlock({ record: head?.record, backstory: head?.backstory }, [h("div.pline", x.price), head ? h("div.pline", head.ambition) : null, head?.rival ? h("div.pline", head.rival) : null], { parts: false, summary: "Record" }),
+    moreBlock({ record: head?.record, backstory: head?.backstory }, [x.price_refusal ? h("div.pline", x.price_refusal) : null, head ? h("div.pline", head.ambition) : null, head?.rival ? h("div.pline", head.rival) : null], { parts: false, summary: "Record" }),
   );
 }
 
@@ -441,6 +456,7 @@ export async function openCourt(focus = null) {
               `div.pattn${a.urgent || a.kind === "furious" ? ".urgent" : ""}`,
               { role: "listitem", "data-kind": a.kind },
               h("span", a.text),
+              lapseText(a),
               a.note ? h("span.dim", ` ${a.note}`) : null,
               actButton(a.button, m),
             ),
@@ -563,6 +579,8 @@ function candidateCard(r, c, m) {
         "div.pconfirm",
         { role: "alertdialog", "aria-label": c.confirm },
         h("p", c.confirm),
+        // What goes with the city: its garrison, and the army units that stay yours.
+        (c.garrison ?? []).map((l) => h("p.pconfirm-garrison", l)),
         h("button.primary.danger.pgrant-yes", { onclick: () => send() }, "Grant"),
         h("button.pgrant-back", { onclick: choose }, "Back"),
       ),

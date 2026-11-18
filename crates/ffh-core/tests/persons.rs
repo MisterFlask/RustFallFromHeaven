@@ -5,6 +5,7 @@
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_core::log::Audience;
 use ffh_core::map::{Map, MapInitData};
 use ffh_core::persons::*;
 use ffh_core::setup::GameSetup;
@@ -314,7 +315,7 @@ fn loyalty_expires_and_a_furious_house_counts_down() {
     let end = g.houses[h].standing.countdown.expect("the countdown");
     assert_eq!(end, g.game_turn() + 10);
     let outcome = g.house_breakaway_outcome(h);
-    assert!(outcome.ends_with(" in 10 turns: war."), "{outcome}");
+    assert!(outcome.contains(" will break away in 10 turns, taking ") && outcome.ends_with(": war."), "{outcome}");
     assert!(logged(&g, &format!("{} is Furious. {outcome}", g.house_label(h))));
     let city = city_at(&g, a_plot);
     assert_eq!(g.city_house_mark(city).map(|m| (m.state, m.countdown_turns)), Some((LoyaltyState::Furious, Some(10))));
@@ -381,7 +382,7 @@ fn a_veteran_founds_a_house_a_vassal_civilization() {
     assert!(!m.iter().any(|(l, _)| l == "Sought protection"), "a founding has no starting modifier: {m:?}");
     assert_eq!(g.persons[x].demand, None, "its demand for a post met");
     assert!(logged(&g, "leaves the map"));
-    assert!(!logged(&g, "is a House of ours"), "a founding is told once");
+    assert!(!logged(&g, "is your House"), "a founding is told once");
 }
 
 #[test]
@@ -403,12 +404,23 @@ fn a_grant_to_a_house_moves_the_city_to_its_player() {
     let (_, h) = land_head(&mut g, a);
     let b_plot = plot(&g, b);
     let warrior = unit(&mut g, P0, "UNIT_WARRIOR", 11, 4);
+    let warrior2 = unit(&mut g, P0, "UNIT_WARRIOR", 11, 4);
+    let soldier = unit(&mut g, P0, "UNIT_WARRIOR", 11, 4);
+    g.army_form(P0, &[soldier]).expect("an army");
+    // The grant list's preview of the garrison is the rules' own: the two warriors go, the
+    // army's stays the liege's.
+    let (going, staying) = g.city_grant_garrison(b, None);
+    assert_eq!((going.clone(), staying.clone()), (vec![warrior, warrior2], vec![soldier]));
     g.player_grant_city(P0, b, GrantTo::House(h)).expect("granted");
     let hp = g.houses[h].player;
     let now = city_at(&g, b_plot);
     assert_eq!(g.cities[now].owner, hp);
     assert_eq!(g.house_cities(h).len(), 2);
-    assert!(!g.units.contains(warrior) || g.units[warrior].death_delay, "the garrison went (converted)");
+    for u in going {
+        assert!(!g.units.contains(u) || g.units[u].death_delay, "the garrison went (converted)");
+    }
+    assert_eq!(g.map.plots[b_plot].units.iter().filter(|&&u| g.units.contains(u) && g.units[u].owner == hp && !g.units[u].death_delay).count(), 2, "the House's now");
+    assert_eq!(g.units[soldier].owner, P0, "the army's unit stays the liege's");
     assert_eq!(mods(&g, h).iter().filter(|(l, n)| l.starts_with("Granted ") && *n == 1).count(), 2);
 }
 
@@ -640,8 +652,8 @@ fn a_furious_house_breaks_away_and_its_held_cities_return() {
     assert!(g.at_war(t0, ht), "at war");
     assert_eq!(g.cities[city_at(&g, a_plot)].owner, hp, "A goes");
     assert_eq!(g.cities[city_at(&g, b_plot)].owner, P0, "B, held, went back to the liege");
-    assert!(logged(&g, &format!("{label} breaks away from the Bannor with ")), "told");
-    assert!(logged(&g, "stays: an army of ours stands in it."));
+    assert!(logged(&g, &format!("{label} breaks away from the Bannor, taking ")), "told");
+    assert!(logged(&g, " returns to you: an army of yours stands in it."));
 }
 
 #[test]
@@ -715,17 +727,24 @@ fn a_houses_price_and_its_refusals() {
     assert_eq!(house_offer_value(&[gold(100), TradeData { item_type: TradeableItem::TRADE_GOLD_PER_TURN, data: 5, offering: false, hidden: false }]), 150);
 }
 
+/// A refused offer leaves no trace (the owner's decision, 2026-11-18): no grudge of the liege, no
+/// `Offered` entry in the House's loyalty, no message.
 #[test]
-fn an_offer_refused_is_noted() {
+fn an_offer_refused_leaves_no_trace() {
     let (mut g, h) = bribe_world(-1);
     let hp = g.houses[h].player;
+    g.players[P1].gold = 500;
+    let price = g.house_bribe_price(h).unwrap();
     let extra = g.players[P0].ai_attitude_extra[P1];
-    // The House's controller (the null controller here) refuses.
-    assert!(!g.player_offer_house(P1, hp, &[gold(50)], &[item(TradeableItem::TRADE_SECEDE)]));
+    let before = mods(&g, h);
+    let messages = g.log.entries.len();
+    // Below the price (and the null controller of this world refuses any offer).
+    assert!(!g.player_offer_house(P1, hp, &[gold(price - 1)], &[item(TradeableItem::TRADE_SECEDE)]));
     assert!(g.houses.contains(h));
-    assert!(mods(&g, h).contains(&("Offered 50 gold by the Elohim".into(), 0)), "{:?}", mods(&g, h));
-    assert_eq!(g.players[P0].ai_attitude_extra[P1], extra + BRIBE_GRUDGE, "the AI liege remembers");
-    assert!(logged(&g, "The Elohim offered "));
+    assert_eq!(mods(&g, h), before, "no Offered entry");
+    assert_eq!(g.players[P0].ai_attitude_extra[P1], extra, "the liege bears no grudge");
+    assert_eq!(g.log.entries.len(), messages, "no message");
+    assert_eq!(g.players[P1].gold, 500);
 }
 
 #[test]
@@ -734,13 +753,20 @@ fn secede_breaks_away_for_the_buyer() {
     let hp = g.houses[h].player;
     g.players[P1].gold = 500;
     let price = g.house_bribe_price(h).unwrap();
+    let extra = g.players[P0].ai_attitude_extra[P1];
     g.implement_deal(P1, hp, &[gold(price)], &[item(TradeableItem::TRADE_SECEDE)], false);
     assert!(!g.houses.contains(h), "broke away");
     let (t0, t1, ht) = (g.players[P0].team, g.players[P1].team, g.players[hp].team);
     assert!(g.at_war(t0, ht), "at war with its old liege");
     assert!(!g.at_war(t1, ht));
     assert_eq!(g.players[P1].gold, 500 - price);
-    assert!(logged(&g, "for the Elohim: war."));
+    // An accepted offer is noted: the liege is told, an AI liege remembers.
+    assert!(logged(&g, "The Elohim offered "));
+    assert_eq!(g.players[P0].ai_attitude_extra[P1], extra + BRIBE_GRUDGE, "the AI liege remembers");
+    // The news names the cities after "taking"; the buyer reads "you".
+    let told = |p: PlayerId, s: &str| g.log.entries.iter().any(|e| e.text.contains(s) && matches!(&e.audience, Audience::Players(l) if l.contains(&p)));
+    assert!(told(P0, ", taking ") && told(P0, ". Bought by the Elohim: war."), "the liege's news");
+    assert!(told(P1, ". Bought by you: war.") && !told(P1, "Bought by the Elohim"), "the buyer's news");
 }
 
 #[test]

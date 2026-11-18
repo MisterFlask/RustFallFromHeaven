@@ -107,8 +107,10 @@ post, the Court screen, the previews, claims).
    gold per turn counted ten times; refusals in the screen's words (`House Arne is Pleased with
    the Bannor.`). The liege learns of a bribe: an AI liege's attitude memory toward the buyer
    (-2, as a broken deal); the House's loyalty list shows `Offered 300 gold by the Hippus` and a
-   human liege gets an alert. The price is one rules function every controller reads. Threats
-   are not in this build.
+   human liege gets an alert. **Only an accepted offer is noted** (the owner's decision of the
+   same day): a refused offer leaves no trace, since the trade table already says in advance
+   whether an offer will be accepted, so the player never risks a refusal. The price is one rules
+   function every controller reads. Threats are not in this build.
 10. **Retired:** the order quota, the half maintenance (a grant lowers the liege's city count, and
     its city-count maintenance with it), the head's trait in a House's cities (the House's leader
     has its traits), heirs and empty seats, leagues, the Works demand of a head (a head with
@@ -176,7 +178,7 @@ it left open:
    has one (`House Arne`, `Bannor of House Arne`), else its short description (`Hippus`).
 2. *As built:* the hook is `team_vassal_houses`, called at the end of `team_set_vassal` both ways;
    the head is the person of the liege's cast with the vassal's leader (a founder), else a new one
-   (origin `Ruler`, entered without a message: the liege is told `Hippus is a House of ours: it
+   (origin `Ruler`, entered without a message: the liege is told `Hippus is your House: it
    capitulated.`). `HouseOrigin`: `Founded`, `Capitulated`, `Vassal` (a vassal deal, a card's
    birth, a colony; the births clear the starting modifier). A human vassal gets no House (out of
    scope). The record also ends when the House's player dies. A player that becomes a House loses
@@ -219,8 +221,12 @@ it left open:
    between the buyer and the House first (a deal at war makes peace), then the House breaks away.
    `player_offer_house(buyer, house_player, give, get) -> bool` is the one way to propose it (the
    client's `propose_deal` to a House and the AI use it): the House's controller answers
-   (`consider_offer`; ffh-ai by `house_bribe_price`), an offer refused is noted there, an accepted
-   one where the deal is implemented. The AI liege's memory is an attitude modifier
+   (`consider_offer`; ffh-ai by `house_bribe_price`); an accepted offer is noted where the deal
+   takes effect (`house_trade`, after `house_bribe_refusal` passes: `house_note_offer`), and a
+   refused one, or one the rules refuse at its implementation, moves nothing (no grudge, no
+   `Offered` entry, no alert, no telemetry; built first noting every offer, changed by the
+   owner's decision of 2026-11-18). The AI's `offered_lately` reads the `Offered` entry, which an
+   accepted offer leaves only on a House that then breaks away. The AI liege's memory is an attitude modifier
    (`ai_attitude_extra -4`, the AI's relation -2), which does not fade (FfH's modifiers do not);
    `Offered N gold by the X` stands in the House's parts for 20 turns, amount 0.
 10. *As built:* all retired, with `house_orders`, `PERSON_HOUSE_MAINTENANCE_PERCENT` and
@@ -987,18 +993,21 @@ Rule 13's interface for the Court, the grant list, the levy and a Crown city's G
 `assets/app/persons.js`, `armies.js`, `governors.js`; tests `crates/ffh-play/tests/persons.rs`,
 `tools/web-persons-smoke.mjs`; the shapes in docs/HUMAN.md). Where it settles what the contract
 left open, or departs from it:
-- **The Court is the realm.** The header states the Crown's limit as the rules do (`The Crown
-  holds 4 cities, 1 over its limit of 3: +7 gold a turn.`, amber when over, `Settlements are not
+- **The Court is the realm.** The header states the Crown's limit as the rules do, without its
+  cost (`The Crown holds 4 cities, 1 over its limit of 3.`, amber when over, `Settlements are not
   counted.` for a civilization with settlements), the realm's size and a House's threshold, and the
-  realm's default tribute as a selector. The cost is at the cities' lasting rate: a city over the
-  limit in disorder pays nothing now, so the rules' current cost
-  (`player_crown_over_cost_times100`) is 0; the line counts it at what it pays once the disorder
-  ends and says `Myrean pays none while disorder lasts.` (as the first build's grant previews did).
-  The grant list's baseline and maintenance line do the same.
+  realm's default tribute as a selector. The cost is the line that needs attention's (below), at
+  the cities' lasting rate: a city over the limit in disorder pays nothing now, so the rules'
+  current cost (`player_crown_over_cost_times100`) is 0; the line counts it at what it pays once the
+  disorder ends (`player_crown_over_cost_without_times100(p, None, lasting: true)`) and says `It
+  pays none while disorder lasts.` there, once. The grant list's baseline and maintenance line do
+  the same.
 - **The lines that need attention**, in the contract's order: a Furious House or commander with
   its outcome, a House that takes no levy (an Annoyed one; a Furious one is told above), a demand
   with 10 turns or fewer, a person without a post, the Crown's cities over its limit (`Myrean is
-  over the Crown's limit of 3: +7 gold a turn. [Grant Myrean]`, the first of them), the grantable
+  over the Crown's limit of 3: maintenance +7 gold a turn. [Grant Myrean]`, the first of them; a
+  maintenance change is always labelled `maintenance` and signed as a change in what the player
+  pays, + costs more, - costs less), the grantable
   cities. The badge still counts only the Furious holders and the demands near their term (a levy
   refused or a city over the limit can last for long: a standing count would stop meaning
   "act now").
@@ -1009,8 +1018,14 @@ left open, or departs from it:
   cities as chips (a tap shows the city on the map: it is the House's player's, the liege's city
   screen answers NotOwner for it), its size against the threshold (`Size: 2 of 3 cities without a
   grievance.`; the contract's wording, `before it grows uppity`, is flavour, against the rule for
-  rules text), Free (two steps), and folded under `Record`: its price to secede (`Price to secede:
-  125 gold.` or `Refuses any offer to secede.`), the head's ambition, rival, record and backstory.
+  rules text), its price to secede while it would accept an offer (Cautious or worse: `Price to
+  secede: 125 gold.`), Free (two steps), and folded under `Record`: `Refuses any offer to secede.`
+  (Pleased or Friendly), the head's ambition, rival, record and backstory. A demand with a term
+  says what its lapse does, from the rules' refusal and state function: `Demands: Vallus granted to
+  Malakim. 40 turns. At its term: -3 (60 turns), becomes ✖ Furious.` (the state after in the one
+  mark, only when it changes), on the House's card, a person's card and the attention line.
+- **A Furious person's card** (a commander) shows its loyalty parts on the card, by its countdown,
+  as a House's card does; the rest stays under `Record`.
 - **The tribute selector** is a list under the tribute line (`Tribute 20%: 12 gold, 8 research last
   turn. Change`): a row per rate, 0 to 50%, each stating what the House would pay this turn
   (`Pays 12 gold, 8 research.`, the rules' `house_tribute_at`), its tribute part and total at that
@@ -1019,7 +1034,13 @@ left open, or departs from it:
   again with the list kept open, so the part, total and state shown are the row's (a test checks
   they are). The realm's default is a plain selector in the header.
 - **The grant list** states what a grant does now: `Moves to House Arne's realm: its production
-  and commerce are the House's.`, `Your maintenance: -3.2 gold a turn.`, `The Crown after the
+  and commerce are the House's.`, its garrison (rule 3, the rules' own predicate,
+  `city_grant_garrison`: `Its garrison goes to House Bertram: 2 Warriors, 1 Archer.` or `No garrison
+  goes with it.`, and `Units of your armies in it stay yours.` when the liege's army units stand in
+  it; the confirmation repeats them), `Your maintenance: -3.2 gold a turn.` (when the grant takes
+  the Crown back toward its limit, the limit's part of the saving, from the rules' cost of the
+  cities over it before and after: `Your maintenance: -11 gold a turn (7 of it the Crown's
+  limit).`), `The Crown after the
   grant: 3 cities, within its limit of 3.` while the Crown is over its limit, `Tribute from it at
   20%.`, and for a founding `Command of the 3rd Army ends.` and `Odran Vale leaves the map and leads
   House Gunthar.` (a great person: `The Great Merchant is consumed. A person of note is drawn and
@@ -1030,13 +1051,35 @@ left open, or departs from it:
   rather than the contract's `Your city-count maintenance`, which would name a part of the number
   only. Heroes are not candidates (the rules refuse them: `A hero cannot head a House.`).
 - **The levy**: *Requisition from* lists the Houses' cities after the Crown's, each with the House's
-  shield and name and `Takes levies. Each levy: -1 (20 turns).` or the rules' reason it takes none
-  (`Malakim is Annoyed. It takes no levy.`, amber; red when Furious). The city can still be picked:
-  the requisition passes it over while its House refuses.
+  shield, name and state mark and `Takes levies. Each levy: -1 (20 turns).` or `Takes no levy.`
+  (amber; red when Furious). The row is crowded, so the rest is the state mark's tooltip (the
+  owner's note of 2026-11-18: a compact mark explains itself on hover or tap), over what the state
+  does: how many levies the House takes before it takes none (`Annoyed after 2 levies.`, from the
+  rules' `LEVIED` and state function), or the rules' reason it takes none (`Malakim is Annoyed. It
+  takes no levy.`). The city can still be picked: the requisition passes it over while its House
+  refuses, and the army's requisition head says so (`Requisition from Torrin · Ventry: passed over
+  (House Aldric takes no levy).`). The House's card in the Court says the count in its levy line
+  (`Takes levies. Each levy: -1 (20 turns). Annoyed after 2 levies.`), which has no mark.
 - **The Governance line**: every city of the human's is the Crown's: `Held by the Crown. [Grant]`
   (the reason in its place when it cannot be granted) and `Over the Crown's limit of 3.` for a city
   beyond the limit. The House branch of the first build is gone (a House's city is never the
   liege's).
+- **The civics warning** names each House (`civics_preview`, from `house_cities_held` as the rules'
+  preview reads it): `Adopting God King: 3 Houses break away, taking 5 cities, each at war with
+  you.`, then a line per House: `House Aldric: Ventry. Corona returns to you (an army of yours
+  stands in it).`, `Malakim (a vassal): Astrum and Golden Leane.` (the period between the cities a
+  House takes and the one that returns: `Ventry, Corona returns` would read as one list).
+- **The unit panel's Found a House** marks the House keyword and states the cost, no reminder
+  restated: `[Found a House] in Vallus. The great person is consumed; a person of note leads the
+  House.` with the House chip (the button's title likewise).
+- **Second person and "taking"** (the second critic pass): the persons texts the player reads say
+  `you`/`your`, not `us`/`ours` (`Hippus is your House: it capitulated.`, `Free House Arne? It is
+  no longer your vassal, at peace with you.`); a break-away names its cities after `taking`, never
+  after `with`, which reads as a person (`House Alyndra breaks away from the Svartalfar, taking
+  Gereth Minar: war.`, `..., taking Gereth Minar. Bought by the Bannor: war.`, `..., taking Gereth
+  Minar, as a vassal of the Bannor: war.`, the buyer reading `Bought by you` / `as your vassal`;
+  `House Aldric will break away in 8 turns, taking Ventry: war.`); a held city `Corona returns to
+  you: an army of yours stands in it.` (the outcome, the civics preview and the message).
 - **Retired from the screens**: orders and quota lines, maintenance saved, a head's trait in its
   cities, heirs, seat lines, `Release as a vassal` (now `Free`), and the four first-build states'
   keywords.

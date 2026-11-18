@@ -94,7 +94,8 @@ fn the_screens_show_houses_commanders_and_persons() {
     assert_eq!(s_of(row.get("house").unwrap(), "text"), "Takes levies. Each levy: -1 (20 turns).", "{row}");
     let v = house("annoyed");
     let row = find(&cands, "city", v.cities[0].0 as i64);
-    assert_eq!(s_of(row.get("house").unwrap(), "text"), format!("{} is Annoyed. It takes no levy.", v.label));
+    assert_eq!(s_of(row.get("house").unwrap(), "text"), "Takes no levy.");
+    assert_eq!(s_of(row.get("house").unwrap(), "reason"), format!("{} is Annoyed. It takes no levy.", v.label));
     assert!(find(&cands, "city", st.capital.0 as i64).get("house").unwrap().is_null());
 
     // F. The unit panel: a commander's unit and the great person's Found a House.
@@ -301,9 +302,24 @@ fn the_civics_screen_warns_of_a_direct_rule_civic() {
     let p = r.get("proposed").unwrap();
     let warning = s_of(p, "persons_warning");
     let houses = g.players[st.human].houses.len();
-    assert!(warning.starts_with(&format!("Adopting {}: {houses} Houses break away with ", ffh_play::names::display(d, god_king))), "{warning}");
-    assert!(warning.contains(", each at war with us: "), "{warning}");
-    assert!(warning.contains(" stays: an army of ours stands in it.") || warning.contains(" stay: an army of ours stands in each."), "{warning}");
+    assert!(warning.starts_with(&format!("Adopting {}: {houses} Houses break away, taking ", ffh_play::names::display(d, god_king))), "{warning}");
+    assert!(warning.ends_with(" cities, each at war with you."), "{warning}");
+    // A line per House: the cities it takes, those an army of yours holds.
+    let ph = arr(p, "persons_houses");
+    let per_house: Vec<&str> = ph.iter().filter_map(Json::as_str).collect();
+    assert_eq!(per_house.len(), houses, "{p}");
+    for &h in &g.players[st.human].houses {
+        let label = g.house_label(h);
+        let line = per_house.iter().find(|l| l.starts_with(&format!("{label}: ")) || l.starts_with(&format!("{label} (a vassal): ")) || l.starts_with(&format!("{label} ends: "))).unwrap_or_else(|| panic!("{label}: {per_house:?}"));
+        let (going, held) = g.house_cities_held(h);
+        for c in going {
+            assert!(line.contains(&ffh_play::view::city_name(g, c)), "{line}");
+        }
+        for c in &held {
+            assert!(line.contains(&format!("{} return", ffh_play::view::city_name(g, *c))) && line.contains("(an army of yours stands in "), "{line}");
+        }
+    }
+    assert!(per_house.iter().any(|l| l.contains(" returns to you (an army of yours stands in it).")), "the held city: {per_house:?}");
     assert_eq!(s_of(p, "persons_button"), format!("Adopt {}: {houses} Houses break away", ffh_play::names::display(d, god_king)));
     let lines = arr(p, "persons");
     assert_eq!(lines.len(), houses, "one line a House: {p}");
@@ -326,9 +342,12 @@ fn the_log_tags_persons_and_break_aways_for_the_alerts() {
     assert_eq!(j.get("person").and_then(Json::as_i64), Some(7));
     assert_eq!(j.get("mark").and_then(Json::as_str), Some("person"));
     for text in [
-        "House Arne breaks away from the Bannor with Prespur and Elam: war.",
-        "Hippus breaks away from the Bannor with Prespur for the Elohim: war.",
-        "Civil war: House Arne breaks away from the Bannor with Prespur: war.",
+        "House Arne breaks away from the Bannor, taking Prespur and Elam: war.",
+        "Hippus breaks away from the Bannor, taking Prespur. Bought by the Elohim: war.",
+        "Hippus breaks away from the Bannor, taking Prespur. Bought by you: war.",
+        "Hippus breaks away from the Bannor, taking Prespur, as a vassal of the Elohim: war.",
+        "Hippus breaks away from the Bannor, taking Prespur, as your vassal: war.",
+        "Civil war: House Arne breaks away from the Bannor, taking Prespur: war.",
         "Hrolf, 2nd Army goes over to House Arne with 4 units.",
         "Hrolf, 2nd Army seizes Vallus and secedes from the Bannor with 4 units.",
         "House Arne is freed by the Bannor.",

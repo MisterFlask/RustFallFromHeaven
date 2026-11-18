@@ -12,7 +12,7 @@ mod common;
 use std::sync::Arc;
 
 use ffh_core::ids::*;
-use ffh_core::persons::{GrantTo, LoyaltyState};
+use ffh_core::persons::{GrantTo, LoyaltyState, DEMAND_REFUSED, LEVIED};
 use ffh_core::structs::TradeData;
 use ffh_data::*;
 use ffh_play::command::{CmdErr, CmdOk, Command, COMMAND_NAMES};
@@ -78,6 +78,13 @@ fn signed(n: i32) -> String {
     }
 }
 
+/// `Takes levies. Each levy: -1 (20 turns).` and how many levies a House at `loyalty` takes before
+/// it takes none, by the rules' numbers (`Annoyed after 2 levies.`).
+fn levies_until(loyalty: i32) -> String {
+    let k = (1..100).find(|k| LoyaltyState::of(loyalty + k * LEVIED.0).withholds()).expect("a levy moves loyalty");
+    format!("{} after {k} {}.", LoyaltyState::of(loyalty + k * LEVIED.0).name(), if k == 1 { "levy" } else { "levies" })
+}
+
 /// The Court's card of House `h`.
 fn house_card(court: &Json, h: HouseId) -> Json {
     arr(court, "houses").iter().find(|x| int(x, "id") == h.0 as i64).unwrap_or_else(|| panic!("no card of House {}", h.0)).clone()
@@ -95,7 +102,7 @@ fn the_court_shows_the_realm() {
     assert_eq!(strs(&r, "header"), ["Government: Aristocracy."]);
     let crown_line = r.get("crown_line").unwrap();
     let text = s(crown_line, "text");
-    assert!(text.starts_with("The Crown holds 4 cities, 1 over its limit of 3: +") && text.ends_with('.'), "the Crown's limit (rule 14): {text}");
+    assert_eq!(text, "The Crown holds 4 cities, 1 over its limit of 3.", "the Crown's limit (rule 14): its cost is the attention line's");
     assert!(bool_of(crown_line, "over"));
     assert!(s(&r, "realm").starts_with("Realm: ") && s(&r, "realm").ends_with(" cities. A House holds 3 without a grievance."), "{}", s(&r, "realm"));
     assert!(arr(&r, "empty").is_empty());
@@ -112,13 +119,13 @@ fn the_court_shows_the_realm() {
     assert_eq!(kinds.iter().filter(|&&k| k == "furious").count(), 2, "the House and the commander: {kinds:?}");
     assert!(at("furious") < at("levy") && at("levy") < at("crown_over") && at("crown_over") < at("grantable"), "{kinds:?}");
     let f_label = &st.houses.iter().find(|x| x.role == "furious").unwrap().label;
-    assert!(att.iter().any(|a| s(a, "text").starts_with(&format!("{f_label}: Furious. Will break away with ")) && s(a, "text").contains(" in 8 turns: war.")), "{att:?}");
+    assert!(att.iter().any(|a| s(a, "text").starts_with(&format!("{f_label}: Furious. Will break away in 8 turns, taking ")) && s(a, "text").contains(": war.")), "{att:?}");
     let v_label = &st.houses.iter().find(|x| x.role == "annoyed").unwrap().label;
     assert_eq!(s(&att[at("levy")], "text"), format!("{v_label} is Annoyed. It takes no levy."));
     let over = &att[at("crown_over")];
     let over_city = g.player_crown_over(h)[0];
     let over_name = ffh_play::view::city_name(g, over_city);
-    assert!(s(over, "text").starts_with(&format!("{over_name} is over the Crown's limit of 3")), "{over:?}");
+    assert!(s(over, "text").starts_with(&format!("{over_name} is over the Crown's limit of 3: maintenance +")) && s(over, "text").contains(" gold a turn."), "the cost, signed as a change in what you pay: {over:?}");
     let button = over.get("button").unwrap();
     assert_eq!(s(button, "label"), format!("Grant {over_name}"));
     assert_eq!(int(button.get("act").unwrap(), "city"), over_city.0 as i64);
@@ -142,13 +149,16 @@ fn the_court_shows_the_realm() {
     let a = house_card(&r, house_id(&st, "friendly"));
     assert_eq!(s(&a, "state"), "Friendly");
     assert!(s(&a, "since").starts_with("Founded on turn "), "{}", s(&a, "since"));
-    assert_eq!(s(a.get("levy").unwrap(), "text"), "Takes levies. Each levy: -1 (20 turns).");
+    let a_loyalty = g.house_loyalty(house_id(&st, "friendly"));
+    assert_eq!(s(a.get("levy").unwrap(), "text"), format!("Takes levies. Each levy: -1 (20 turns). {}", levies_until(a_loyalty)));
     assert!(bool_of(a.get("levy").unwrap(), "takes"));
     assert_eq!(arr(&a, "cities").len(), 2);
     assert_eq!(s(a.get("size").unwrap(), "text"), "Size: 2 of 3 cities without a grievance.");
     assert!(strs(&a, "parts").iter().any(|p| p == "Tribute 0%: +1"), "{:?}", strs(&a, "parts"));
     assert!(s(&a, "total").starts_with("Loyalty: +"));
-    assert_eq!(s(&a, "price"), "Refuses any offer to secede.");
+    // A Friendly House refuses any offer: said under Record; no price in the card's body.
+    assert!(a.get("price").unwrap().is_null());
+    assert_eq!(s(&a, "price_refusal"), "Refuses any offer to secede.");
     let head = a.get("head").unwrap();
     assert_eq!(int(head, "id"), person_id(&st, "head_friendly").0 as i64);
     // Its tribute: the line, and a rate for each step with the rules' numbers.
@@ -172,14 +182,35 @@ fn the_court_shows_the_realm() {
     assert!(s(&v, "since").starts_with("Capitulated on turn "), "{}", s(&v, "since"));
     assert_eq!(s(v.get("levy").unwrap(), "text"), format!("{} is Annoyed. It takes no levy.", s(&v, "label")));
     assert!(strs(&v, "parts").iter().any(|p| p.starts_with("Capitulated: -4 (")), "{:?}", strs(&v, "parts"));
-    assert!(s(&v, "price").starts_with("Price to secede: "), "{}", s(&v, "price"));
+    assert_eq!(s(&v, "price"), format!("Price to secede: {} gold.", g.house_bribe_price(house_id(&st, "annoyed")).unwrap()));
+    assert!(v.get("price_refusal").unwrap().is_null());
     let c = house_card(&r, house_id(&st, "furious"));
     assert_eq!(s(&c, "state"), "Furious");
     assert_eq!(int(&c, "countdown_turns"), 8);
-    assert!(s(&c, "outcome").contains(" in 8 turns: war."), "{c:?}");
-    assert!(s(&c, "held").contains(": an army of ours stands in "), "{}", s(&c, "held"));
+    assert!(s(&c, "outcome").contains(" will break away in 8 turns, taking ") && s(&c, "outcome").contains(": war."), "{c:?}");
+    assert!(s(&c, "outcome").contains(" returns to you: an army of yours stands in it."), "the held city: {c:?}");
+    assert!(s(&c, "held").contains(" to you: an army of yours stands in "), "{}", s(&c, "held"));
     assert_eq!(c.get("free").and_then(|f| f.get("ok")).and_then(Json::as_bool), Some(true));
-    assert_eq!(s(c.get("free").unwrap(), "confirm"), format!("Free {f_label}? It is no longer our vassal, at peace with us. This cannot be undone."));
+    assert_eq!(s(c.get("free").unwrap(), "confirm"), format!("Free {f_label}? It is no longer your vassal, at peace with you. This cannot be undone."));
+
+    // Every demand with a term says what its lapse does: the rules' refusal, and the state the
+    // holder would be in (the rules' state of its loyalty less the refusal) when that changes.
+    let mut demands = 0;
+    let heads = arr(&r, "houses").iter().filter_map(|x| x.get("head").filter(|h| !h.is_null()));
+    for p in heads.chain(arr(&r, "persons").iter()) {
+        let dm = p.get("demand").unwrap();
+        if dm.get("kind").unwrap().is_null() {
+            continue;
+        }
+        demands += 1;
+        let x = PersonId(int(p, "id") as u32);
+        let loyalty = g.person_loyalty(x);
+        assert_eq!(s(dm, "lapse"), format!("At its term: {} ({} turns)", DEMAND_REFUSED.0, DEMAND_REFUSED.1), "{dm}");
+        let after = LoyaltyState::of(loyalty + DEMAND_REFUSED.0);
+        let want = (after != g.person_state(x)).then(|| after.name());
+        assert_eq!(dm.get("lapse_state").and_then(Json::as_str), want, "{dm}");
+    }
+    assert!(demands > 0, "the stage has demands with a term");
 
     // The persons without a House: the commanders and the person with no post.
     let persons = arr(&r, "persons");
@@ -278,7 +309,19 @@ fn a_grant_does_what_its_preview_says() {
     assert_eq!(s(cand, "confirm"), format!("Grant {name} to {label}? This cannot be undone."));
     let lines = strs(cand, "lines");
     assert_eq!(lines[0], format!("Moves to {label}'s realm: its production and commerce are the House's."));
-    assert!(lines[1].starts_with("Your maintenance: "), "{lines:?}");
+    // Its garrison, as the rules move it (the army that took the city stays the liege's).
+    let (going, staying) = ses.g.city_grant_garrison(c, None);
+    let garrison = strs(cand, "garrison");
+    if going.is_empty() {
+        assert_eq!(garrison[0], "No garrison goes with it.");
+    } else {
+        assert!(garrison[0].starts_with(&format!("Its garrison goes to {label}: ")), "{garrison:?}");
+    }
+    assert_eq!(garrison.contains(&"Units of your armies in it stay yours.".to_string()), !staying.is_empty(), "{garrison:?}");
+    assert_eq!(lines[1..=garrison.len()], garrison[..], "the card lists the garrison");
+    // The city is the one over the Crown's limit: the saving names the limit's part.
+    let m = lines.iter().find(|l| l.starts_with("Your maintenance: ")).expect("a maintenance line");
+    assert!(m.starts_with("Your maintenance: -") && m.ends_with(" of it the Crown's limit)."), "{m}");
     assert!(lines.contains(&"The Crown after the grant: 3 cities, within its limit of 3.".to_string()), "{lines:?}");
     assert!(lines.contains(&"Tribute from it at 10%.".to_string()), "{lines:?}");
     // Each subject's loyalty and state before, and what the preview says changes.
@@ -302,6 +345,8 @@ fn a_grant_does_what_its_preview_says() {
     let g = &ses.g;
     let now = g.map.plots[plot].plot_city.unwrap();
     assert_eq!(g.cities[now].owner, g.houses[grantee].player, "the city is the House's player's");
+    assert!(going.iter().all(|&u| !g.units.contains(u) || g.units[u].owner != h || g.units[u].death_delay), "the garrison went");
+    assert!(staying.iter().all(|&u| g.units.contains(u) && g.units[u].owner == h), "the army's units stayed");
     assert_eq!(g.city_house(now), Some(grantee));
     for (subject, before, after, delta) in &subjects {
         let (now, state) = match g.players[h].houses.iter().find(|&&x| g.house_label(x) == *subject) {
@@ -357,7 +402,7 @@ fn a_founding_says_who_leaves_the_map() {
 /// city's Governance line (the city screen).
 #[test]
 fn the_levy_list_and_the_governance_line() {
-    let (_dir, st, ses) = staged("persons-levy");
+    let (_dir, st, mut ses) = staged("persons-levy");
     let r = ses.query(&Query::Armies).unwrap();
     let army = arr(&r, "armies").iter().find(|x| int(x, "id") == army_id(&st, "loyal").0 as i64).unwrap().clone();
     let cands = arr(army.get("requisition").unwrap(), "candidates");
@@ -368,16 +413,31 @@ fn the_levy_list_and_the_governance_line() {
     assert_eq!(s(house, "label"), a.label);
     assert!(bool_of(house, "takes_levy"));
     assert_eq!(s(house, "text"), "Takes levies. Each levy: -1 (20 turns).");
+    assert_eq!(s(house, "until"), levies_until(ses.g.house_loyalty(a.id)), "its state mark's tooltip");
+    assert!(house.get("passed").unwrap().is_null());
     for role in ["annoyed", "furious"] {
         let v = st.houses.iter().find(|x| x.role == role).unwrap();
-        let house = row(v.cities[0]).get("house").unwrap().clone();
+        let c = v.cities[0];
+        let house = row(c).get("house").unwrap().clone();
         assert!(!bool_of(&house, "takes_levy"));
-        assert_eq!(s(&house, "text"), format!("{} is {}. It takes no levy.", v.label, v.state.name()));
+        assert_eq!(s(&house, "text"), "Takes no levy.");
+        assert_eq!(s(&house, "state"), v.state.name());
+        assert_eq!(s(&house, "reason"), format!("{} is {}. It takes no levy.", v.label, v.state.name()));
+        assert_eq!(s(&house, "passed"), format!("{}: passed over ({} takes no levy).", ffh_play::view::city_name(&ses.g, c), v.label));
+        assert!(house.get("until").unwrap().is_null());
     }
     assert!(row(st.capital).get("house").unwrap().is_null(), "a Crown city");
     // The Crown's cities come first.
     let first_house = cands.iter().position(|x| !x.get("house").unwrap().is_null()).unwrap();
     assert!(cands[first_house..].iter().all(|x| !x.get("house").unwrap().is_null()));
+
+    // A House's city can be picked (the requisition passes it over while its House refuses).
+    let loyal = army_id(&st, "loyal");
+    let v = st.houses.iter().find(|x| x.role == "annoyed").unwrap();
+    ses.execute(&Command::ArmyRequisition { army: loyal, city: v.cities[0], on: true }).expect("a House's city is picked");
+    assert!(ses.g.armies[loyal].requisition.contains(&v.cities[0]));
+    ses.execute(&Command::ArmyRequisition { army: loyal, city: v.cities[0], on: false }).expect("and released");
+    assert!(matches!(ses.execute(&Command::ArmyRequisition { army: loyal, city: st.neighbour_near, on: true }), Err(CmdErr::NotOwner)), "a foreign city is not levied");
 
     // The Governance line: every city of ours is the Crown's.
     let over = ses.g.player_crown_over(ses.human)[0];
@@ -443,8 +503,8 @@ fn freeing_a_house() {
     common::check::check(&ses.g);
 }
 
-/// An offer to the neighbour's House: below its price refused (and noted), at its price it
-/// secedes, at war with its old liege.
+/// An offer to the neighbour's House: below its price refused (and not noted: a refused offer
+/// leaves no trace), at its price it secedes, at war with its old liege.
 #[test]
 fn an_offer_to_a_house() {
     let (_dir, st, mut ses) = staged("persons-offer");
@@ -456,9 +516,11 @@ fn an_offer_to_a_house() {
     let gold = |data: i32| TradeData { item_type: TradeableItem::TRADE_GOLD, data, offering: false, hidden: false };
     let secede = TradeData { item_type: TradeableItem::TRADE_SECEDE, data: 0, offering: false, hidden: false };
     if price > 1 {
+        let mods_before = ses.g.houses[n].standing.mods.len();
         let out = ses.execute(&Command::ProposeDeal { to: hp, give: vec![gold(price - 1)], get: vec![secede.clone()] }).unwrap();
         assert!(matches!(out, CmdOk::Applied { accepted: Some(false), .. }), "{out:?}");
-        assert!(ses.g.houses[n].standing.mods.iter().any(|m| m.cause.label().starts_with("Offered ")), "the offer is noted");
+        assert_eq!(ses.g.houses[n].standing.mods.len(), mods_before, "a refused offer is not noted");
+        assert_eq!(ses.g.players[h].gold, price + 100, "nothing paid");
     }
     let price = ses.g.house_bribe_price(n).expect("a price");
     let out = ses.execute(&Command::ProposeDeal { to: hp, give: vec![gold(price.max(1))], get: vec![secede] }).unwrap();

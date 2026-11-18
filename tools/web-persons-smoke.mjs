@@ -210,13 +210,13 @@ async function main() {
       };
     });
     check(court.header[0]?.startsWith("Government: Aristocracy."), `the header: ${court.header}`);
-    check(/^The Crown holds 4 cities, 1 over its limit of 3: \+[\d.]+ gold a turn\./.test(court.crown) && court.crownCaution, `the Crown's limit, in the caution colour: ${court.crown}`);
+    check(/^The Crown holds 4 cities, 1 over its limit of 3\.$/.test(court.crown) && court.crownCaution, `the Crown's limit, in the caution colour, without its cost: ${court.crown}`);
     check(court.tributeDefault === "20", `the realm's default tribute: ${court.tributeDefault}`);
     const kinds = court.attention.map((a) => a.kind);
     check(kinds.indexOf("furious") === 0 && kinds.indexOf("levy") > kinds.lastIndexOf("furious") && kinds.indexOf("crown_over") > kinds.indexOf("levy") && kinds.indexOf("grantable") > kinds.indexOf("crown_over"), `the needs-attention lines' order: ${kinds}`);
-    check(court.attention.some((a) => /Furious\. Will break away with .* in 8 turns: war\./.test(a.text)), `the Furious House's line: ${court.attention.map((a) => a.text).join(" | ")}`);
+    check(court.attention.some((a) => /Furious\. Will break away in 8 turns, taking .*: war\./.test(a.text)), `the Furious House's line: ${court.attention.map((a) => a.text).join(" | ")}`);
     check(court.attention.some((a) => a.text.startsWith(`${houseV.label} is Annoyed. It takes no levy.`)), `the House that takes no levy: ${court.attention.map((a) => a.text).join(" | ")}`);
-    check(court.attention.some((a) => a.kind === "crown_over" && a.text.includes(`${taken.name} is over the Crown's limit of 3`)), `the city over the Crown's limit: ${court.attention.map((a) => a.text).join(" | ")}`);
+    check(court.attention.some((a) => a.kind === "crown_over" && a.text.includes(`${taken.name} is over the Crown's limit of 3: maintenance +`)), `the city over the Crown's limit, its cost signed: ${court.attention.map((a) => a.text).join(" | ")}`);
     check(court.houses === 4 && court.crownCities === 4 && court.over.length === 1 && court.persons >= 2, `the cards: ${JSON.stringify(court)}`);
     check(court.marks.some((t) => t.includes("Furious") && t.includes("✖") && t.includes("8 turns")), `the Furious mark with its turns: ${court.marks}`);
     check(["House", "Crown", "Tribute", "Levy", "Claimant"].every((k) => court.chips.includes(k)) && !court.chips.includes("Furious"), `the keyword chips: ${court.chips}`);
@@ -232,6 +232,35 @@ async function main() {
       await crop(page, ".modal[data-tag=court]", "court-realm-2.png", { pad: 2 });
       await scrollTo(".modal[data-tag=court] .person-card");
       await crop(page, ".modal[data-tag=court]", "court-persons.png", { pad: 2 });
+      await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
+    }
+
+    // A demand's term says what its lapse does; a House that would accept an offer shows its price
+    // on the card; a Furious person's card shows its loyalty parts by its countdown.
+    const cards = await page.evaluate((v) => {
+      const m = document.querySelector(".modal[data-tag=court]");
+      const lapse = [...m.querySelectorAll(".pdemand-lapse")].map((e) => e.textContent);
+      const price = (id) => m.querySelector(`.house-card[data-house="${id}"] > .pprice`)?.textContent ?? null;
+      const fur = m.querySelector(".person-card.alarm");
+      return { lapse, priceV: price(v.annoyed), priceA: price(v.friendly), furiousParts: fur ? [...fur.querySelectorAll(":scope > .pparts-block ul.pparts li")].map((l) => l.textContent) : null };
+    }, { annoyed: houseV.id, friendly: houseA.id });
+    check(cards.lapse.length > 0 && cards.lapse.every((t) => /^ At its term: -3 \(60 turns\)(, becomes .+)?\.$/.test(t)), `the demands' lapse: ${JSON.stringify(cards.lapse)}`);
+    check(/^Price to secede: \d+ gold\.$/.test(cards.priceV ?? "") && cards.priceA === null, `the price in the card (Annoyed: ${cards.priceV}; Friendly: ${cards.priceA})`);
+    check(cards.furiousParts?.length > 0, `a Furious person's parts on the card: ${JSON.stringify(cards.furiousParts)}`);
+    steps.push(`demand terms: "${cards.lapse[0].trim()}"; ${houseV.label}: "${cards.priceV}"; a Furious person's parts: ${cards.furiousParts.join(", ")}`);
+    if (SHOTS) {
+      const shoot = async (sel, name) => {
+        await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
+        await sleep(300);
+        await crop(page, sel, name, { pad: 4 });
+      };
+      await shoot(houseSel(houseV.id), "court-house-price.png");
+      const demandCard = await page.evaluate(() => {
+        const c = document.querySelector(".modal[data-tag=court] .house-card .pdemand-lapse")?.closest(".house-card");
+        return c ? `.modal[data-tag=court] .house-card[data-house="${c.dataset.house}"]` : null;
+      });
+      if (demandCard) await shoot(demandCard, "court-house-demand.png");
+      await shoot(".modal[data-tag=court] .person-card.alarm", "court-person-furious.png");
       await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
     }
 
@@ -294,7 +323,7 @@ async function main() {
     const k = grant.claimants.indexOf(false);
     check(grant.claimants[0] && (k < 0 || grant.claimants.slice(k).every((x) => !x)), `claimants first: ${grant.claimants}`);
     const l = grant.first.lines;
-    check(/^Moves to .*'s realm: its production and commerce are the House's\.$/.test(l[0]) && /^Your maintenance: /.test(l[1]) && l.includes("The Crown after the grant: 3 cities, within its limit of 3.") && l.some((x) => /^Tribute from it at \d+%\.$/.test(x)), `the first card's lines: ${JSON.stringify(l)}`);
+    check(/^Moves to .*'s realm: its production and commerce are the House's\.$/.test(l[0]) && /^(Its garrison goes to .+: .+|No garrison goes with it)\.$/.test(l[1]) && l.some((x) => /^Your maintenance: -[\d.]+ gold a turn \([\d.]+ of it the Crown's limit\)\.$/.test(x)) && l.includes("The Crown after the grant: 3 cities, within its limit of 3.") && l.some((x) => /^Tribute from it at \d+%\.$/.test(x)), `the first card's lines: ${JSON.stringify(l)}`);
     check(grant.first.effects.some((e) => /granted to .*: -\d \(30 turns\)\./.test(e)), `the first card's snubs: ${JSON.stringify(grant.first.effects)}`);
     check(grant.kinds.includes("great_person") && grant.kinds.filter((x) => x === "person").length >= 1, `the founders (a veteran, a great person; no hero): ${grant.kinds}`);
     steps.push(`the grant list of ${taken.name}: ${grant.claimants.filter(Boolean).length} claimants first; ${grant.first.title}: ${l.join(" ")} ${grant.first.effects.length} other subjects in its preview`);
@@ -310,6 +339,8 @@ async function main() {
     await tap(page, `${sel} button.pgrant-to`);
     const confirm = await until(() => page.evaluate((sel) => document.querySelector(`${sel} .pconfirm p`)?.textContent ?? null, sel), "the confirmation line", 5000 * SLOW);
     check(confirm === `Grant ${taken.name} to ${target}? This cannot be undone.`, `the confirmation: ${confirm}`);
+    const garrison = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .pconfirm p.pconfirm-garrison`)].map((p) => p.textContent), sel);
+    check(garrison.length > 0 && /^(Its garrison goes to .+|No garrison goes with it)\.$/.test(garrison[0]), `the confirmation's garrison: ${JSON.stringify(garrison)}`);
     await crop(page, sel, "grant-confirm.png", { pad: 4 });
     await tap(page, `${sel} button.pgrant-yes`);
     await until(async () => (await topTag(page)) === "court", "the grant list closed", 20000 * SLOW);
@@ -333,7 +364,7 @@ async function main() {
     await page.evaluate(() => document.querySelectorAll("#toasts .toast").forEach((t) => t.remove()));
     await tap(page, `${card} button.prelease`);
     const freeLine = await until(() => page.evaluate((sel) => document.querySelector(`${sel} .pconfirm p`)?.textContent ?? null, card), "the Free confirmation", 5000 * SLOW);
-    check(freeLine === `Free ${houseA.label}? It is no longer our vassal, at peace with us. This cannot be undone.`, `the Free confirmation: ${freeLine}`);
+    check(freeLine === `Free ${houseA.label}? It is no longer your vassal, at peace with you. This cannot be undone.`, `the Free confirmation: ${freeLine}`);
     await page.evaluate((sel) => document.querySelector(`${sel} .pfoot`).scrollIntoView({ block: "center" }), card);
     await crop(page, `${card} .pfoot`, "court-free.png", { pad: 4 });
     await tap(page, `${card} .pconfirm button.small:not(.danger)`);
@@ -351,13 +382,33 @@ async function main() {
       d.open = true;
       d.scrollIntoView({ block: "start" });
     }, armySel);
-    const levy = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .requisition-city`)].map((r) => ({ city: Number(r.dataset.city), house: r.querySelector(".requisition-house")?.dataset.house ?? null, levy: r.querySelector(".requisition-house")?.dataset.levy ?? null, text: r.querySelector(".levy-text")?.textContent ?? null })), armySel);
+    const levy = await page.evaluate((sel) => [...document.querySelectorAll(`${sel} .requisition-city`)].map((r) => ({ city: Number(r.dataset.city), house: r.querySelector(".requisition-house")?.dataset.house ?? null, levy: r.querySelector(".requisition-house")?.dataset.levy ?? null, text: r.querySelector(".levy-text")?.textContent ?? null, mark: r.querySelector(".requisition-house .pstate")?.dataset.state ?? null, note: r.querySelector(".requisition-house .pstate")?.dataset.note ?? null })), armySel);
     const takes = levy.find((x) => x.levy === "yes");
     const refuses = levy.find((x) => x.levy === "no" && x.house === String(houseV.id));
-    check(takes?.text === "Takes levies. Each levy: -1 (20 turns)." && refuses?.text === `${houseV.label} is Annoyed. It takes no levy.`, `the levy lines: ${JSON.stringify(levy)}`);
+    check(takes?.text === "Takes levies. Each levy: -1 (20 turns)." && /^Annoyed after \d+ lev(y|ies)\.$/.test(takes?.note ?? "") && takes?.mark, `the levy line that takes, its mark's note: ${JSON.stringify(takes)}`);
+    check(refuses?.text === "Takes no levy." && refuses?.mark === "annoyed" && refuses?.note === `${houseV.label} is Annoyed. It takes no levy.`, `the levy line that refuses: ${JSON.stringify(refuses)}`);
     check(levy.findIndex((x) => x.house) > levy.findIndex((x) => !x.house), `the Crown's cities first: ${JSON.stringify(levy)}`);
-    steps.push(`Requisition from: ${levy.filter((x) => !x.house).length} Crown cities, ${levy.filter((x) => x.house).length} Houses' cities ("${takes.text}" / "${refuses.text}")`);
+    steps.push(`Requisition from: ${levy.filter((x) => !x.house).length} Crown cities, ${levy.filter((x) => x.house).length} Houses' cities ("${takes.text}", the mark's tip "${takes.note}" / "${refuses.text}")`);
     await crop(page, `${armySel} .requisition-cities`, "armies-levy.png", { pad: 4 });
+    // The mark's tooltip: the levies before it takes none, over what the state does.
+    const tipSel = `${armySel} .requisition-city[data-city="${takes.city}"] .requisition-house .pstate`;
+    const tip = await page.evaluate(async (sel) => {
+      const mark = document.querySelector(sel);
+      const r = mark.getBoundingClientRect();
+      mark.dispatchEvent(new MouseEvent("mouseenter", { bubbles: false, clientX: r.left + 4, clientY: r.bottom + 2 }));
+      await new Promise((res) => setTimeout(res, 300));
+      return document.querySelector(".tooltip.richtip:not([hidden]) .tip-title")?.textContent ?? null;
+    }, tipSel);
+    check(tip === takes.note, `the levy mark's tooltip: ${tip}`);
+    await crop(page, `${tipSel}, .tooltip.richtip:not([hidden]), .tip-side:not([hidden])`, "armies-levy-tip.png", { pad: 6 });
+    await page.evaluate((sel) => document.querySelector(sel).dispatchEvent(new MouseEvent("mouseleave", { bubbles: true })), tipSel);
+    // A picked city whose House takes no levy: the requisition's head says it is passed over.
+    await page.evaluate(([sel, city]) => document.querySelector(`${sel} .requisition-city[data-city="${city}"] input`).click(), [armySel, refuses.city]);
+    const head = await until(() => page.evaluate((sel) => document.querySelector(`${sel} .requisition-passed`)?.closest(".requisition-head")?.textContent ?? null, armySel), "the passed-over city in the requisition's head", 10000 * SLOW);
+    check(head.includes(`: passed over (${houseV.label} takes no levy).`), `the requisition's head: ${head}`);
+    steps.push(`the requisition's head: "${head}"`);
+    await page.evaluate((sel) => document.querySelector(`${sel} .requisition-head`).scrollIntoView({ block: "center" }), armySel);
+    await crop(page, `${armySel} .requisition-head`, "armies-passed.png", { pad: 4 });
     await page.keyboard.press("Escape");
     await page.close();
 

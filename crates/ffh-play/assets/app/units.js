@@ -23,6 +23,7 @@ import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
 import { personLine, commanderLine } from "./persons_lines.js";
 import { openGrant } from "./persons.js";
+import { keywordChips } from "./keywords.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -1785,15 +1786,16 @@ export function renderPanel() {
   const fh = leadFull?.found_house;
   if (fh && S.sel.units.length === 1) {
     const can = fh.city !== null && fh.city !== undefined;
+    // The host's words: the button `Found a House` (the keyword marked), then where and what it
+    // costs (` in Vallus. The great person is consumed; ...`); the House's reminder is its chip.
+    const label = fh.label ?? "Found a House";
+    const plain = `${label.replace(/\[\\?KW[^\]]*\]/g, "")}${fh.text ?? ""}`;
     personBits.push(
       h(
         "div.found-house-line",
-        h(
-          "button.small.found-house",
-          { disabled: !can, title: can ? `Open the grant list of ${fh.name}, this unit first. A leader is drawn and founds a House at ${fh.name}: a new civilization, your vassal. The unit is consumed.` : fh.why, onclick: () => openGrant(fh.city, { unit: lead.id }) },
-          "Found a House",
-        ),
-        h("span.dim", can ? ` Nearest city to grant: ${fh.name}. A leader is drawn; the House is a new civilization, your vassal.` : ` ${fh.why}`),
+        h("button.small.found-house", { disabled: !can, title: can ? plain : fh.why, onclick: () => openGrant(fh.city, { unit: lead.id }) }, markup(label)),
+        h("span.dim", can ? fh.text : ` ${fh.why}`),
+        can ? [" ", keywordChips(fh.reminders)] : null,
       ),
     );
   }

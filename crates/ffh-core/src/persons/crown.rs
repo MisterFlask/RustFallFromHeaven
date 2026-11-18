@@ -114,13 +114,21 @@ impl Game {
     /// beyond the limit above the normal rate: their city-count maintenance times
     /// `CROWN_OVER_FACTOR - 1` (0 in disorder or We Love the King Day, as a city pays none then).
     pub fn player_crown_over_cost_times100(&self, p: PlayerId) -> i32 {
+        self.player_crown_over_cost_without_times100(p, None, false)
+    }
+
+    /// [`Game::player_crown_over_cost_times100`] were city `without` granted to a House (a
+    /// grant's preview; `None`: as it is). `lasting`: a city that pays none for a while (disorder,
+    /// We Love the King Day) is counted at what it pays once that ends.
+    pub fn player_crown_over_cost_without_times100(&self, p: PlayerId, without: Option<CityId>, lasting: bool) -> i32 {
+        let Some(limit) = self.player_crown_limit(p) else { return 0 };
         let mut extra = 0;
-        for c in self.player_crown_over(p) {
+        for c in self.player_crown_cities_without(p, without).into_iter().skip(limit.max(0) as usize) {
             let city = &self.cities[c];
-            if self.city_is_disorder(c) || city.we_love_the_king_day || city.population <= 0 {
+            if city.population <= 0 || (!lasting && (self.city_is_disorder(c) || city.we_love_the_king_day)) {
                 continue;
             }
-            let base = self.city_num_cities_base_times100(c, None);
+            let base = self.city_num_cities_base_times100(c, without);
             extra += base * (CROWN_OVER_FACTOR - 1) * (city.maintenance_modifier + 100).max(0) / 100;
         }
         let inflation = (self.player_calculate_inflation_rate(p) + 100).max(0);

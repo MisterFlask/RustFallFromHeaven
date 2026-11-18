@@ -5,8 +5,8 @@
 //!   its liege's turn processing (Houses before commanders), when its liege comes under a
 //!   direct-rule civic (every House at once: the civil war), or when it accepts an offer to secede
 //!   (`bribes.rs`): first every city of the House in which an army of the liege stands goes back
-//!   to the liege (as a trade: its buildings and garrison; `Censura stays: an army of ours stands
-//!   in it.`), then the vassalage ends (the record ends, its head leaves the cast: they lead the
+//!   to the liege (as a trade: its buildings and garrison; `Censura returns to you: an army of
+//!   yours stands in it.`), then the vassalage ends (the record ends, its head leaves the cast: they lead the
 //!   civilization), and the House's team declares war on the liege's team, [`GRUDGE`] both ways.
 //!   Everyone who has met the liege is told. Houses breaking away the same turn are not merged.
 //! - **A commander's secession** ([`Game::commander_secede`]): their sworn units, but those
@@ -25,6 +25,7 @@ use ffh_data::*;
 
 use super::*;
 use crate::ffh::cards::world::{self, Birth};
+use crate::log::Audience;
 
 /// The attitude modifier between a civilization that broke away or seceded and its former liege,
 /// both ways (FFH's scale, 4 a step; the Sundering's grudge).
@@ -141,7 +142,7 @@ impl Game {
             }
             self.persons_move_city(c, p);
             let at = self.map.xy(plot);
-            self.log.msg_marked(turn, Some(p), at, LogMark::Person, LogTag::None, || format!("{city} stays: an army of ours stands in it."));
+            self.log.msg_marked(turn, Some(p), at, LogMark::Person, LogTag::None, || format!("{city} returns to you: an army of yours stands in it."));
         }
         if let Some(x) = head {
             self.person_add_deed(x, format!("Broke away from the {civ_name} with {label}."));
@@ -160,18 +161,44 @@ impl Game {
             self.team_declare_war(ht, pt, false, None);
         }
         let names = self.city_names(&going.iter().copied().filter(|&c| self.cities.contains(c)).collect::<Vec<_>>());
-        let to = self.audience_met(pt);
         let at = self.player_get_capital_city(hp).map(|c| (self.cities[c].x, self.cities[c].y));
-        let text = match (why, alive) {
+        // The news names the cities a House takes after "taking" (after "with", a name reads as a
+        // person's); the buyer of a bribe reads `you`.
+        let news = |buyer: Option<&str>| match (why, alive) {
             (_, false) => format!("{label} ends: every city of it stands held by an army of the {civ_name}."),
-            (Why::CivilWar, _) => format!("Civil war: {label} breaks away from the {civ_name} with {names}: war."),
-            (Why::Countdown, _) => format!("{label} breaks away from the {civ_name} with {names}: war."),
-            (Why::Bribe { buyer, vassal: false }, _) => format!("{label} breaks away from the {civ_name} with {names} for the {}: war.", self.player_get_civilization_short_description(buyer)),
-            (Why::Bribe { buyer, vassal: true }, _) => format!("{label} breaks away from the {civ_name} with {names} as a vassal of the {}: war.", self.player_get_civilization_short_description(buyer)),
+            (Why::CivilWar, _) => format!("Civil war: {label} breaks away from the {civ_name}, taking {names}: war."),
+            (Why::Countdown, _) => format!("{label} breaks away from the {civ_name}, taking {names}: war."),
+            (Why::Bribe { vassal: false, .. }, _) => format!("{label} breaks away from the {civ_name}, taking {names}. Bought by {}: war.", buyer.unwrap_or("you")),
+            (Why::Bribe { vassal: true, .. }, _) => match buyer {
+                Some(b) => format!("{label} breaks away from the {civ_name}, taking {names}, as a vassal of {b}: war."),
+                None => format!("{label} breaks away from the {civ_name}, taking {names}, as your vassal: war."),
+            },
         };
+        // The buyer's own message is in the second person; everyone else who met the liege reads
+        // the buyer's name.
+        let buyer = match why {
+            Why::Bribe { buyer, .. } if alive => Some(buyer),
+            _ => None,
+        };
+        let buyer_name = buyer.map(|b| format!("the {}", self.player_get_civilization_short_description(b)));
+        let (others, own) = match (self.audience_met(pt), buyer) {
+            (Audience::Players(list), Some(b)) => {
+                let own = list.contains(&b).then(|| Audience::Players(vec![b]));
+                (Audience::Players(list.into_iter().filter(|&q| q != b).collect()), own)
+            }
+            (to, _) => (to, None),
+        };
+        let text = news(buyer_name.as_deref());
+        let own_text = own.as_ref().map(|_| news(None));
         match at {
-            Some(at) => self.log.msg_to_at(turn, to, at, LogMark::Person, || text),
-            None => self.log.msg_to(turn, to, || text),
+            Some(at) => self.log.msg_to_at(turn, others, at, LogMark::Person, || text),
+            None => self.log.msg_to(turn, others, || text),
+        }
+        if let (Some(own), Some(own_text)) = (own, own_text) {
+            match at {
+                Some(at) => self.log.msg_to_at(turn, own, at, LogMark::Person, || own_text),
+                None => self.log.msg_to(turn, own, || own_text),
+            }
         }
         let tel = match why {
             Why::CivilWar => "civil_war",

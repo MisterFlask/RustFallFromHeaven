@@ -130,6 +130,11 @@ fn the_court_does_not_restate_reminder_text() {
     for c in s.g.players[s.human].cities.clone() {
         strings_of(&s.query(&ffh_play::query::Query::Grant { city: c }).unwrap(), &mut texts);
     }
+    // The great person's Found a House line (the unit panel): it marks the House keyword.
+    let grp = s.query(&ffh_play::query::Query::Group { units: vec![st.great_person] }).unwrap();
+    let fh = grp.get("units").and_then(Json::as_arr).and_then(|u| u.first()).and_then(|u| u.get("found_house")).cloned().unwrap_or(Json::Null);
+    assert!(fh.get("label").and_then(Json::as_str).is_some_and(|l| l.contains("[KW=KEYWORD_HOUSE]")), "{fh}");
+    strings_of(&fh, &mut texts);
     assert!(texts.len() > 100, "{}", texts.len());
     for t in &texts {
         check("persons payload", t, &bad);

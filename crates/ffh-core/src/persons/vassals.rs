@@ -204,7 +204,7 @@ impl Game {
             HouseOrigin::Vassal | HouseOrigin::Founded => "vassal",
         };
         if origin != HouseOrigin::Founded {
-            self.house_msg(h, || format!("{label} is a House of ours: {}.", if origin == HouseOrigin::Capitulated { "it capitulated" } else { "it became our vassal" }));
+            self.house_msg(h, || format!("{label} is your House: {}.", if origin == HouseOrigin::Capitulated { "it capitulated" } else { "it became your vassal" }));
         }
         self.tel_person(owner, "house", what);
         Some(h)
@@ -286,7 +286,7 @@ impl Game {
         if let Some(x) = self.houses[h].head.filter(|&x| self.persons.contains(x)) {
             self.person_add_deed(x, format!("{label} freed."));
         }
-        self.house_msg(h, || format!("{label} is freed: it is no longer our vassal."));
+        self.house_msg(h, || format!("{label} is freed: it is no longer your vassal."));
         self.team_end_vassalage(ht, pt);
         // (The vassal rules ended the record; a vassalage no deal recorded too.)
         if self.houses.contains(h) {
