@@ -232,6 +232,10 @@ html.iso #iso-rail button.attention::after, html.iso #menu button.attention::aft
   background: var(--iso-bad); border: 2px solid var(--iso-gold); outline: 2px solid #0c0703;
 }
 
+/* The Court's count (persons.js, Persons of Note): a number on the rail icon's corner. */
+html.iso #btn-court { position: relative; }
+html.iso #btn-court .court-badge { position: absolute; top: 1px; right: 1px; margin: 0; font: 700 12px/16px var(--iso-font); border: 1px solid #0c0703; }
+
 /* --- the turn report (collapsed to its tabs unless opened) --------------------------------- */
 
 html.iso #bottom {

@@ -35,6 +35,7 @@ pub mod map;
 pub mod marks;
 pub mod player;
 pub mod perks;
+pub mod persons;
 pub mod sieges;
 pub mod outposts;
 pub mod place;
@@ -537,6 +538,9 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // World rituals (docs/CARDS.md, "World rituals"): every civilization's ritual as the human
         // may know it (the HUD's rituals element and its full list).
         "rituals" => rituals::rituals(v),
+        // Persons of Note (docs/PERSONS.md, "UI"): how many things need attention on the Court
+        // screen (the menu button's badge; 0: none).
+        "court_attention" => persons::attention_count(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

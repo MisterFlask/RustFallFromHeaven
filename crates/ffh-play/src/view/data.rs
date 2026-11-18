@@ -210,6 +210,14 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             // Standard one (the city roles' suitability).
             j.set("core_effect_percent", d.building_tiers[BuildingTierType::from_usize(i)].core_effect_percent);
         }
+        "KeywordType" => {
+            // A keyword's reminder text (keywords.jsonc), for a mark drawn on many screens (the
+            // loyalty states of Persons of Note: persons.js `stateMark`).
+            let k = KeywordType::from_usize(i);
+            j.set("reminder", crate::view::keywords::reminder(d, k));
+            // The keywords whose reminders show with it (itself first, then what it implies).
+            j.set("with", Json::Arr(crate::view::keywords::expand(d, [k]).into_iter().map(|w| Json::from(d.keywords[w].base.type_.as_str())).collect()));
+        }
         "CommandType" => {
             let c = &d.commands[CommandType::from_usize(i)];
             j.set("confirm", c.confirm_command);

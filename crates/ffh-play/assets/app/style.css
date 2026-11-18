@@ -1325,3 +1325,57 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .pstate.ps-restless { color: var(--caution); }
 .pstate.ps-disloyal { color: var(--warn); }
 .house-shield { display: inline-block; vertical-align: -2px; flex: none; }
+
+/* The Court screen and the grant list (persons.js; docs/PERSONS.md, "UI", parts A and B): cards,
+   one column on a phone (principle 7), two or more side by side when there is room. */
+.court-header { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.court-header .kw-chips { margin-top: 4px; }
+.court-empty p { margin: 6px 0; }
+.court-attention { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; padding: 6px 8px; border: 1px solid var(--c-ochre); background: rgba(219, 166, 59, 0.08); }
+.pattn { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.pattn > span:first-child { flex: 1 1 14em; min-width: 0; }
+.pattn.urgent > span:first-child { color: var(--caution); }
+.pattn[data-kind="disloyal"] > span:first-child { color: var(--warn); }
+.pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 8px; align-items: start; }
+.pcards.one { grid-template-columns: minmax(0, 1fr); }
+.pcard { border: 1px solid var(--c-iron); background: rgba(38, 51, 79, 0.45); padding: 6px 8px; min-width: 0; overflow-wrap: anywhere; }
+.pcard.alarm { border-color: var(--c-crimson); }
+.pcard.pfocus { outline: 2px solid var(--accent); }
+.phead { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.phead .pname { flex: 1 1 auto; min-width: 0; line-height: 1.2; }
+.phead .ptitle { font-size: 12px; font-style: italic; }
+.phouse-head { margin: 4px 0; padding: 4px 0 2px; border-top: 1px solid rgba(132, 139, 152, 0.35); }
+.pportrait { flex: none; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--c-ochre); background: var(--c-soot); overflow: hidden; }
+.pportrait img, .pportrait canvas { display: block; max-width: 40px; max-height: 40px; }
+.pportrait.none { font-weight: 700; color: var(--dim); font-size: 13px; }
+.pline { margin: 2px 0; }
+.pline.warn { color: var(--warn); }
+.ptrait { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
+.pchips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.city-chip.seat { font-weight: 700; }
+.pdemand { margin: 4px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.pdemand-text { flex: 1 1 14em; min-width: 0; }
+.pdemand-turns.urgent { color: var(--caution); font-weight: 700; }
+.pfoot { margin-top: 6px; }
+.pconfirm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px; border: 1px solid var(--c-crimson); background: rgba(86, 20, 23, 0.35); }
+.pconfirm p { flex: 1 1 100%; margin: 0 0 2px; font-weight: 700; }
+details.pmore { margin-top: 4px; }
+details.pmore > summary { cursor: pointer; color: var(--link); padding: 2px 0; }
+ul.pparts, ul.precord, ul.plines, .peffect ul { margin: 2px 0; padding-left: 18px; }
+.ptotal { font-weight: 700; margin: 2px 0 4px; }
+.psub { margin-top: 4px; color: var(--dim); }
+.pbackstory { margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(132, 139, 152, 0.35); font-style: italic; color: var(--dim); font-size: 12px; }
+.crown-glyph { font-size: 20px; line-height: 1; color: var(--accent); }
+ul.crown-cities { list-style: none; margin: 2px 0; padding: 0; }
+li.crown-city { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 3px 0; }
+li.crown-city > .link { margin-right: auto; text-align: left; justify-content: flex-start; }
+.grant-head p { margin: 2px 0; }
+.grant-list { margin-top: 6px; }
+.modal.grant .modal-body { max-height: 70vh; overflow-y: auto; }
+.peffect { margin: 4px 0; padding-left: 6px; border-left: 2px solid rgba(132, 139, 152, 0.45); }
+.pbecomes { font-weight: 700; }
+.pbecomes.ps-devoted { color: var(--good); }
+.pbecomes.ps-restless { color: var(--caution); }
+.pbecomes.ps-disloyal { color: var(--warn); }
+#btn-court { position: relative; }
+.court-badge { display: inline-block; min-width: 16px; margin-left: 4px; padding: 0 4px; border-radius: 8px; background: var(--c-crimson); color: var(--c-rime); font: 700 11px/16px var(--font); text-align: center; vertical-align: 1px; }

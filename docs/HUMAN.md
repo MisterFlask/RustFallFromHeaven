@@ -307,6 +307,7 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | `F1` `F2` `F3` `F4` `F6` `F7` | cities, finances (the sliders), civics, diplomacy, the tech tree, religion |
 | `F5` | armies (this game's armies: docs/ARMIES.md) |
 | `F9` | governors (this game's governors: docs/GOVERNORS.md) |
+| `Shift+F9` | the Court (Persons of Note: docs/PERSONS.md, "UI") |
 | `F8` | cultural pressure (this game's cultural actions: docs/CULTURE.md) |
 | `Ctrl+S` / `Ctrl+L` | save / load |
 | `Ctrl+1` `Ctrl+2` `Ctrl+3`, `?` | ffh-play's own: the terrain, political and yield layers; the help (How to play, then the keys) |
@@ -693,6 +694,38 @@ role marked proposed or overruled, the role's key buildings with the city's
 tier of each (in the tier's colour), the other roles with their suitability as buttons (disabled,
 with the reason, under 75%), the governor's plan ("Plan: Forge, Granary, Market"), its empire and
 requisition orders with their turns (an empire order with a ✕) and what the governor builds.
+**Court** (`Shift+F9`, the menu's Court; Persons of Note, docs/PERSONS.md "UI", parts A and B):
+the menu button carries a count only when something needs attention (an heir to name, a Disloyal
+House or commander, a demand with 10 turns or fewer: the view's `court_attention`). The screen:
+the header (`Government: Aristocracy.`, `A House takes 1.5 orders a city every 30 turns.`, the
+system's keyword chips, (i) the help topic "Persons of Note"); the lines that need attention, each
+with its button (`House Aldric has no head. [Name an heir]`, `House Bertram: Disloyal. Will secede
+with Solium in 8 turns. [Show]` (its card), `Sera Vell, 3rd Army: Disloyal. Will leave with 3
+sworn units in 6 turns. [Show]`, a demand near its term with the demand's button, `<person> has
+no post. [Grant a city]` (not while an heir is to be named: they are the candidates), `3 cities of
+the Crown can be granted. [Show]`); then the cards, one column on a phone: the Crown (its cities,
+each `[Grant]` or the reason it cannot be, `The capital is the Crown's.`), each House (its shield,
+the state mark with a countdown's turns, the outcome, the head with portrait, name and title, the
+seat, the cities as chips that open the city, `Orders: 2 of 3 left. Next in 12 turns.`, the trait
+in its cities with the trait's help and which of its parts a city carries as its tooltip,
+`Maintenance saved: 9 gold a turn.`, the head's demand line, `Release as a vassal` (two steps;
+disabled with the rules' reason), and opened: the loyalty parts, the total, the record, the
+leader's text as flavour); then the persons without a House (commanders and persons with no post:
+`Veteran: level 7 Axeman, 2nd Army.` with ⌖ to show the unit, the post, the demand). The demand
+line's button goes where it is met: `Grant a city` / `Grant <city>` (the grant list), `Show`
+(centres the map; `Owner: Sheaim. At peace.` when a war is needed), `Diplomacy`, `Religion`, `Order`
+(the wonder ordered in the seat, ahead of what it builds), or, with the wonder in production, `In
+production: 12 turns. The term does not run.` **The grant list** (from a `[Grant]`, a demand, or
+another screen through `persons.openGrant(city, prefer)`): `Grant <city>`, `A grant is for good.`,
+the baseline (`Held by the Crown: city-count maintenance 6.2 gold a turn.`), then the candidates,
+claimants first (a `Claimant` chip), then the other Houses, the persons who would found one, the
+great people; each card lists what the grant does (maintenance, the trait in the city, the orders
+in it, then each subject's lines with its state now and `Becomes Restless.` when it changes), and
+its button turns into `Grant <city> to <House>? This cannot be undone. [Grant] [Back]`. A city that
+cannot be granted opens no list: its reason is told. After a grant the list closes, the message
+`<city> granted to <House>.` shows and the Court refreshes. The state mark (`persons.js`
+`stateMark`: ▲ Devoted, ● Loyal, ◆ Restless, ✖ Disloyal with the turns, a word and a shape with
+the colour) is the same on every screen, and its tooltip is the state's reminder text.
 **Finances** (`F2`, or click the
 commerce split in the top bar): each commerce's share with `−`/`+` by Civ4's step (only the ones
 you may change; gold takes the rest), and the gold per turn by its parts, as in the gold's tooltip.
@@ -1186,7 +1219,14 @@ is marching to the 2nd Army: it takes no orders until it arrives". A requisition
 taken off by hand: `pop_order` refuses it, and `do_task TASK_CLEAR_ORDERS` while one is queued,
 "requisitioned by the 2nd Army: release the city from the army's requisition on the Armies
 screen"), `govern_role {city, role}`, `govern_priorities {roles}`, `empire_order {city, order,
-data, dest?}` (`dest` as `recruit_dest`'s, a unit only), `empire_order_remove {city, index}`
+data, dest?}` (`dest` as `recruit_dest`'s, a unit only), `empire_order_remove {city, index}`,
+`grant_city {city, house | person | unit}` (Persons of Note, docs/PERSONS.md: grant city `city` for
+good to a House, to a person who founds one, or to a great person unit, consumed; the rules'
+`player_check_grant` and its reasons, "The capital is the Crown's.", "The city is a House's. A
+grant is for good.", "Government: direct rule. No city can be granted."), `name_heir {house,
+person}` ("The seat is not empty.", "The heir must hold no post."), `set_commander {army, person}`
+("Not with this army.", "A House's head does not command."), `release_house {house}` ("A Disloyal
+House cannot be released.", "The seat is empty.", "Game option: no vassal states.")
 (this game's governors, docs/GOVERNORS.md: the rules' own checks and reasons, "Role requires
 suitability 75%.", "Empire orders: units, wonders, palaces and projects only."; in a governed
 city `push_order` places an empire order and `pop_order` takes one off, the governor's and the
@@ -1351,6 +1391,8 @@ source); and each unit's `army`, `garrison`, `army_unit` and `march` (null, or a
 | `city {city}` | the city screen of one of your cities: plots (with `can_work`, and `can_alter`: a click on it does something, `do_task TASK_CHANGE_WORKING_PLOT`, the rules' `city_can_alter_working_plot`; the centre automates the citizens), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, `commerces` (each with its `rate`, the empire's `percent` and its parts: `rates`, `specialists`, `buildings`, `religions`, `empire`, `process`, `modifier`), `next_worker` (who a click on a plot the city does not work takes: `{idle}`, `{specialist}` or `{plot}`; null for nobody), happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions; pressures and amounts in hundredths of culture, chances in hundredths of a percent): `rate`, `amount` (what a channel takes a turn), `diverted` (what it took this turn), `channel` (null, or `{city, caster, action, target, religion, since_turn, hostile, amount, reach, unseen, chance}`), `options` (every channel it could set, one per action, civilization with a city in reach and religion of the city: `ok` or `why`, `hostile`, `reach`, `unseen` (cities in reach you have not seen), a spread's `chance`), each `reach` entry `{city, name, owner, distance, effect}` (the distance effect, percent) and `amount` (pressure or chance a turn), for Foment Revolt with `resist` (the city's resistance a turn now), `resist_revolt` (its defenders' part: all it resists in revolt, making no culture), `rest` (the other casters' pressure there), `in_revolt` (in revolt now: its full resistance cannot be read, so `resist_revolt` holds both ways), `settles` (where the caster's pressure settles from now under this city's channel alone, with the city's resistance falling to `resist_revolt` from the turn after the total reaches the revolt: docs/CULTURE.md, "Predictions"), `now` (the caster's pressure there), `others` (what the caster's other cities add a turn), `capital`, for Spread Religion with `has` and `religions`; `pressure` (on this city: `total`, `casters` `[{caster, pressure, inflow, settles, rest}]` (`rest`: the others' pressure), `unknown`, `resist`, `resist_revolt`, `in_revolt`, `defenders`, `level`, `unhappiness`, `capital`); `thresholds` (`unhappy_step`, `unhappy_max`, `disorder`, `near_flip`, `flip`, `fade_percent`, `resist_percent`, `garrison`, `channel_percent`, `full_range`, `range`, `spread_per_culture`, `spread_max`, `flipping`); `recruit` (null without armies): the city's default destination, the destinations it may choose, its garrison, `garrison_tactic` and `garrison_tactic_next` (its garrison's battle tactic and the one from your next turn, docs/TACTICS.md), the armies that requisition from it (`requisitioned_by`: `{army, name, target_size, shortfall}`); with armies, each queue entry of a land combat unit has `dest`, `dest_name` and `requisition` (an army's requisition order: first in the queue, not removable by hand) |
 | `governors` | the Governors screen: `government` (the government civic), `direct_rule`, `min_suitability`, `max_priorities`, `priority_weight`, `priorities`, `diagnoses` (`{kind: role_unfilled, role}`, `{kind: poor_fit, city, name, role, suitability}`, `{kind: slow_order, city, name, turns, order, type}`), each city (capital first: `governed`, `role`, `role_overridden`, `proposal`, `suitability`, `production`, `population`, `requisitioned_by`; a governed one its `card`: `roles` (each `{role, suitability, allowed, why}`), `key_buildings` (the role's, each `{class, building, tier, effect, none}`), `plan` (the governor's next buildings, `ffh_ai::governor::plan`), `orders` (its requisition and empire orders, each `{index, order, type, turns, empire, requisition, dest_name}`), `governor_order`); the city query's `governance` is the city's entry without the card, with `government` |
 | `empire_items {army?}` | an empire order's first step: `governed` (your governed cities), `items` (every unit, wonder, palace and project one of your cities lists: `{order, type, cities}`, `cities` the governed cities that can build it now, 0 unavailable; a unit's `army_unit`); with `army`, the units that serve in armies only |
+| `court` | Persons of Note's Court screen (docs/PERSONS.md, "UI", part A; `view/persons.rs`): `government`, `header` (lines), `grants` (null, or why no city can be granted), `empty` (the lines shown instead of the cards when there is nothing: direct rule, no person yet), `attention` (`{kind: heir \| disloyal \| demand \| no_post \| grantable, text, note?, urgent?, button: {label, act, refusal?}}`), `badge`, `crown` (`{city, name, x, y, capital, grantable, refusal}`), `houses` (`{id, label, color, state, countdown_turns, outcome, held, head, head_line, needs_heir, heir_candidates, seat, cities: [{city, name, x, y, held, seat}], orders, trait: {trait, name, applies} \| null, trait_line, maintenance, release: {ok, refusal, confirm}, parts, total, founded}`), `persons` (the persons without a House, as a House's `head`: `{id, name, title, leader, origin, unit, unit_type, x, y, where, post, army, house, state, countdown_turns, outcome, demand: {kind, text, turns_left, turns, urgent, paused, note, button}, ambition, trait, trait_line, rival, parts, total, record, backstory}`), `pool_left`, `reminders`. A button's `act`: `{kind: grant, city, prefer}`, `{kind: show, x, y}`, `{kind: diplomacy, player}`, `{kind: religion}`, `{kind: order, city, name, order, data, what, line}`, `{kind: heir, house}`, `{kind: card, house \| person}`, `{kind: crown}`. The view's `court_attention` is `badge` |
+| `grant {city}` | part B, the grant list of one of your cities: `city`, `name`, `x`, `y`, `title`, `note`, `baseline`, `refusal` (why it cannot be granted; then no candidates), `none`, `candidates` (claimants first, then Houses, persons, great people: `{to: {house} \| {person} \| {unit}, kind: house \| person \| great_person, title, house, claimant, state, color, leader, unit_type, person, lines, effects: [{subject, state, tag, lines, becomes, state_after}], refusal, button, confirm}`), `reminders` |
 | `empire_cities {order, data, army?}` | the second step: each governed city able to build it, `{city, name, x, y, turns, own_turns, ahead, ahead_turns, displaces, distance, cost_percent?, tier?, suggested}` (`turns` behind the `ahead` orders; `displaces` the governor's order it goes ahead of, delayed `own_turns`; `distance` in plots to the army; one `suggested`: with an army the nearest, ties to the fewest turns, without the fewest turns), and `dest` (the army, as `empire_order` takes it) |
 | `armies` | the Armies screen: the `armies` (as the view's, with `recruits`: the recruits marching to it in full, each its `march` with `id`, `unit`, `x`, `y`; and the requisition's `candidates`: every city of yours with `picked`, `governed`, the `unit` it would train for the army, its `production_turns` and `march_turns` (null: no way by land), its `order` in progress; `open`: whether the requisition may change; `on_order`: its empire orders in your cities, each `{city, name, unit, index, turns}`), each city's garrison (`units`, `governed`) with the recruits marching to it (`recruits`), `supply_budget` (`SUPPLY_LINE_BUDGET`), `stall_turns`; the Fleets section (docs/NAVAL.md, section 7): `fleets` (as `armies`, with `domain` `sea`, `supply`, `tactic` and `tactic_next` null, `station` (`kind` `none`, `patrol` with `sea`, or `escort` with `army` or `group`; `text`, the order in bare words), `wear` (its ships' highest, in percent) and `wear_text`, `sea` (the name of the sea it is in), its requisition's candidates the coastal cities only), `seas` (the seas a fleet may patrol: `{id, name}`), `escort_targets` (your armies and fleets: `{army, name, fleet}`) |
 | `culture` | the Cultural Pressure panel: the channels you see (each `{city, city_name, x, y, caster, action, religion, target, since_turn, hostile}`): `ours` and `aimed` (at your team) also with `amount`, `reach`, `unseen` and a spread's `chance` as in the city query (for `aimed` the reach is your cities), `others`; `pressure`: your cities under revolt pressure (the city query's `pressure` with `city` and `name`); `memories`: what met leaders remember of your cultural actions (`{player, hostility, friendship}`, at most `memory_max`); `thresholds` as in the city query |
@@ -1558,6 +1600,7 @@ node tools/web-smoke.mjs                 # headless Chromium plays through the p
 node tools/web-touch-smoke.mjs           # the same on an emulated phone, with touch only; target/web-touch-smoke
 node tools/web-pad-smoke.mjs             # an emulated phone with an emulated controller; target/web-pad-smoke
 node tools/web-orient-smoke.mjs          # an emulated phone turned and locked; target/web-orient-smoke
+node tools/web-persons-smoke.mjs --bin B # Persons of Note: the Court, a House's card, a grant in two steps, an heir, a phone
 ```
 
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
@@ -1598,6 +1641,15 @@ node tools/web-orient-smoke.mjs          # an emulated phone turned and locked; 
   focus on its buttons, the D-pad moves it and B closes the menu, Start ends the turn (the end-turn
   check's dialog takes the focus; the D-pad reaches "End turn anyway" and A answers it), and a tap
   ends the mode. Any console error, page error, failed request or HTTP error fails it.
+* `web-persons-smoke.mjs [--bin B] [--assets DIR] [--shots DIR] [--gpu]` (Persons of Note,
+  `stage persons`): the Court button's count, Shift+F9 opens the Court (the header, the lines that
+  need attention, the Crown, the four Houses, the Disloyal mark with its turns, the keyword chips),
+  a House's card opened (its loyalty parts, total and record), the grant list of the contested Crown
+  city from the Crown's `[Grant]` (its head, the claimants first, a card's preview), the grant in
+  two steps (the confirmation line's exact words), the message and the Court refreshed, an heir
+  named from its line; then on a phone (390 x 844) the Court and a grant list without a sideways
+  scroll. With `--shots DIR` the screenshots of these, on the HD-2D map (SwiftShader: minutes). Any
+  console error, page error, failed request or HTTP error fails it.
 * `web-orient-smoke.mjs [--seed 3] [--out DIR] [--assets DIR] [--headed]`, against one
   `ffh-play serve --new`: on a computer a stored lock changes nothing and Options does not offer
   it; on an emulated phone the layout follows it upright, on its side and upright again (the card

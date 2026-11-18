@@ -829,6 +829,15 @@ pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> us
         None => (OrderType::ORDER_TRAIN, 0),
     };
     ask(Query::EmpireCities { order, data, army: None }, May::BeInvalid);
+    // Persons of Note: the Court and the grant list of each city (a city that cannot be granted
+    // answers with its reason).
+    ask(Query::Court, May::Answer);
+    for c in &mine {
+        ask(Query::Grant { city: CityId(int(c, "id") as u32) }, May::Answer);
+    }
+    if mine.is_empty() {
+        ask(Query::Grant { city: CityId(u32::MAX) }, May::BeGone);
+    }
     if let Some(armies) = ask(Query::Armies, May::Answer) {
         if let Some(a) = arr(&armies, "armies").iter().chain(arr(&armies, "fleets")).next() {
             ask(Query::EmpireItems { army: Some(ArmyId(int(a, "id") as u32)) }, May::BeInvalid);
