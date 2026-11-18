@@ -21,10 +21,13 @@ wants done next into this file.
 
 ## Persons of Note
 
-A cast of named people (heroes, veterans, great people, capitulated leaders) who hold armies,
-cities and vassals, each want one thing, and can take what they hold. Design: docs/PERSONS.md.
+A cast of named people (heroes, veterans, great people, capitulated leaders) who preside over the
+Houses that hold cities, command armies and rule vassals, each want one thing, and can take what
+they hold. Design: docs/PERSONS.md.
 
 - Decided (2026-11-18): a disloyal holder takes what it holds; a master levies its vassals
   through the armies' requisition, with a quota by government; a human as a vassal is out of scope.
+  Cities are held by Houses of several cities, not by per-city governors (the named governors and
+  their traits go); a want is always an act the player can do on the board.
 - Open: docs/PERSONS.md, "Open points for the owner".
 - First step: the vassal levy (stage 0), which needs no persons.
