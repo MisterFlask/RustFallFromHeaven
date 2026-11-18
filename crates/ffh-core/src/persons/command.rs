@@ -88,9 +88,36 @@ impl Game {
                 self.persons[x].post = Post::Commander(a);
                 let name = self.persons[x].name.clone();
                 let army = self.armies[a].name.clone();
-                self.person_add_deed(x, format!("Took command of the {army}."));
-                self.person_msg(x, || format!("{name} commands the {army}."));
-                self.tel_person(p, "posted", "commander");
+                let deed = format!("Took command of the {army}.");
+                // Back in command of the same army after a regrouping (the unit left its group
+                // and came back): no new deed or message.
+                if self.persons[x].deeds.last().map(|d| d.text.as_str()) != Some(deed.as_str()) {
+                    self.person_add_deed(x, deed);
+                    self.person_msg(x, || format!("{name} commands the {army}."));
+                    self.tel_person(p, "posted", "commander");
+                }
+            }
+        }
+    }
+
+    /// Hook of `unit_join_group`: unit `u` changed groups. A commander whose unit is no longer in
+    /// its army's group loses the command at once, silently (the army sync names the commander
+    /// again: the same person when the army's group follows them).
+    pub(crate) fn unit_persons_regrouped(&mut self, u: UnitId) {
+        let owner = self.units[u].owner;
+        if self.players[owner].persons.is_empty() {
+            return;
+        }
+        let Some(x) = self.unit_person(u) else { return };
+        let Post::Commander(a) = self.persons[x].post else { return };
+        let grp = self.units[u].group;
+        let with = self.armies.get(a).is_some_and(|army| army.group.is_some() && army.group == grp);
+        if !with {
+            self.persons[x].post = Post::None;
+            if let Some(army) = self.armies.get_mut(a) {
+                if army.commander == Some(x) {
+                    army.commander = None;
+                }
             }
         }
     }

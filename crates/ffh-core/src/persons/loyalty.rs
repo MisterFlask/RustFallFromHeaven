@@ -192,7 +192,10 @@ impl Game {
             if state != old {
                 self.holder_standing_mut(hd).state = state;
                 self.tel_person(p, "state", state.name());
-                let label = self.holder_label(hd);
+                let label = match hd {
+                    Holder::House(h) => self.house_label(h),
+                    Holder::Person(x) => self.persons[x].name.clone(),
+                };
                 let outcome = match (state, hd) {
                     (LoyaltyState::Disloyal, Holder::House(h)) => format!(" {}", self.house_secession_outcome(h)),
                     (LoyaltyState::Disloyal, Holder::Person(x)) => format!(" {}", self.commander_secession_outcome(x)),

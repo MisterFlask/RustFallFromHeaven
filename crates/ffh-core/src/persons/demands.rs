@@ -370,7 +370,7 @@ impl Game {
         let turn = self.game_turn();
         let turns = self.d.defines.person_demand_turns;
         self.persons[x].demand = Some(Demand { kind, issued: turn, deadline: turn + turns });
-        let subject = self.person_subject(x);
+        let subject = self.persons[x].name.clone();
         let text = self.demand_kind_text(x, kind);
         self.person_msg(x, || format!("{subject} demands: {text} {turns} turns."));
         self.tel_person(self.persons[x].owner, "demand", "issued");
@@ -384,7 +384,7 @@ impl Game {
         let short = self.demand_kind_short(x, dm.kind);
         self.holder_add_mod(self.person_holder(x), LoyaltyCause::DemandMet, DEMAND_MET);
         self.person_add_deed(x, format!("Demand met: {short}."));
-        let subject = self.person_subject(x);
+        let subject = self.persons[x].name.clone();
         self.person_msg(x, || format!("{subject}: demand met ({short}): +{} ({} turns).", DEMAND_MET.0, DEMAND_MET.1));
         self.tel_person(self.persons[x].owner, "demand", "met");
     }
@@ -398,7 +398,7 @@ impl Game {
         let short = self.demand_kind_short(x, dm.kind);
         self.holder_add_mod(self.person_holder(x), LoyaltyCause::DemandRefused, DEMAND_REFUSED);
         self.person_add_deed(x, format!("Demand refused: {short}."));
-        let subject = self.person_subject(x);
+        let subject = self.persons[x].name.clone();
         self.person_msg(x, || format!("{subject}: demand refused ({short}): {} ({} turns).", DEMAND_REFUSED.0, DEMAND_REFUSED.1));
         self.tel_person(self.persons[x].owner, "demand", "refused");
     }
@@ -427,7 +427,7 @@ impl Game {
                     if turn >= deadline {
                         self.person_demand_refused(x);
                     } else if deadline - turn == DEMAND_WARNING_TURNS {
-                        let subject = self.person_subject(x);
+                        let subject = self.persons[x].name.clone();
                         let text = self.demand_kind_text(x, dm.kind);
                         self.person_msg(x, || format!("{subject} demands: {text} {DEMAND_WARNING_TURNS} turns left."));
                     }

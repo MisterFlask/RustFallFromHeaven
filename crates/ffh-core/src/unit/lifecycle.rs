@@ -887,6 +887,10 @@ impl Game {
                 }
 
                 // UI: plot flag and plot list dirty bits.
+
+                // This game's persons of note (docs/PERSONS.md): a commander whose unit leaves
+                // its army's group loses the command (the next army sync names another).
+                self.unit_persons_regrouped(u);
             }
 
             // UI: `bRemoveSelected` (interface selection list).
