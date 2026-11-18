@@ -20,6 +20,156 @@ decisions and which are proposals still to be confirmed.
 Stage 0 needs no persons and can be built first. Stage 1 alone shows whether the cast is worth
 looking at before anything can go wrong.
 
+## The first build (2026-11-18)
+
+The owner asked for the system to be built, with the ambiguous cases settled as seems sensible.
+This section is the contract for that build: **where it and the rules further down differ, this
+section holds.** The rules below remain the design; after the build they are rewritten as built.
+
+**In the build:** the cast (heroes, veterans, great people as founders), the Court screen,
+Houses, grants and claims, heirs, commanders, demands and loyalty with the four states, the
+order quota and withholding, a head's trait in their House's cities, half city-count
+maintenance, secession and leagues, a commander's secession, the civil war of direct rule, a
+House released as a vassal, the AI's minimum, telemetry, the removal of per-city governors.
+
+**Not in the build:** the vassal levy (stage 0), a vassal ruler's loyalty and demands (a
+released head leaves the cast), capitulated leaders as persons, foreign persons, courting and
+agents (stage 4), the annals (stage 5), a commander's effect in battle (docs/ENGAGEMENTS.md,
+phase 7), dismissal and its grievance, the Crown's size (`crown_cities`: no city counts
+double), a House's role for its cities (roles stay the player's in every city), the Trade
+ambition (a peace or open borders are not the player's alone to make).
+
+**Who has persons.** Every living civilization, human or AI. Not the barbarians, a minor
+civilization or a crusade Host.
+
+**The pool.** A civilization's persons other than heroes are its `preferred_breakaway` minor
+leaders (`LeaderHeadInfo::minor_leader_of`). One is drawn with the game RNG among those not in
+play as a leader and not drawn before in this game (`Game::persons_drawn`); a pool of one needs
+no draw. With none left, the event makes no person. The Sundering's and the other revolts'
+leader choice (`ffh/cards/sundering.rs`, `leader_in_play`) counts a drawn leader as in play.
+
+**Entry**, in its owner's turn processing, once a turn:
+- *Heroes*: every unit of the owner with `PROMOTION_HERO`, no duration, that is no person yet.
+  Name: the unit's. No leader, so no portrait of a leader, no alignment of its own (its owner's)
+  and no trait. Ambition: Faith for `UNITCOMBAT_DISCIPLE`, Works for `UNITCOMBAT_ADEPT`, War
+  otherwise.
+- *Veterans*: at most one a turn. The army unit (`unit_is_army_unit`) of the highest level
+  (ties: the lower unit id) that is no person, if its level is at least `PERSON_VETERAN_LEVEL`
+  (5) plus the number of the owner's living persons of origin Veteran, and the pool is not
+  empty. The unit takes the person's name (`unit_set_name`).
+- *Great people*: not at birth. A great person unit (the five card suits' unit classes and the
+  Great Commander's) is a candidate in the grant list: granting a city to it draws a person,
+  who founds the House, and **the unit is consumed** (the third use of a great person, beside
+  the card and the settled specialist). That head has no unit on the map and so never dies.
+- A person follows its unit through an upgrade or a conversion that keeps the owner
+  (`unit_convert`), and leaves the cast when the unit dies or changes owner.
+
+**Ambition**, from the leader's first personal trait: Aggressive, Raiders, Horselord,
+Dexterous, Barbarian: War. Spiritual, Tolerant, Sinister: Faith. Industrious, Creative,
+Philosophical, Arcane, Ingenuity, Summoner, Financial: Works. Any other: Land.
+
+**Commanders** are not appointed one by one. A person is *with* an army when its unit is in the
+army's group (a veteran in it, a hero grouped with it). An army's commander is the person with
+it that the player named (`player_set_commander`, among the persons with it), else the one of
+the highest level (ties: the earlier in the cast). A House's head never commands. The command
+follows the unit: a person who leaves the group loses it without a grievance. `Army::commander`
+holds the person.
+
+**Demands** (one standing at a time for each person; checked and issued in the owner's turn
+processing). A demand that names a city names its plot, since a city changes id with its owner.
+- *A person without a post*: `a post` (met by a command or a House).
+- *A commander*: War: the War list. Faith: the Faith list. Land, Works: `a House` (met when
+  they head one).
+- *A head*: the list of their ambition, then the Land list, then none this turn.
+- *Land list*: (1) the Crown's city nearest their seat (not the capital) granted to their
+  House; (2) else a city of another owner within 12 plots of a city of their House, of the
+  barbarians first, else of a civilization that is not our team, vassal or master and whose
+  team has less power than ours, the nearest: taken and granted to their House.
+- *War list*: (1) while our team is at war with a civilization: its city nearest the person's
+  unit (a head: their seat), taken; (2) else war with a named civilization: one we have met,
+  are at peace with and may declare war on, whose team has less power than ours, of the
+  alignment opposite the person's first, then the nearest capital. Met while our team is at war
+  with it.
+- *Faith list*: (1) with no state religion and a religion in one of our cities that we may
+  adopt: a state religion adopted; (2) else the state religion in a named city of ours without
+  it (a city of their House first, then the nearest to their seat or unit).
+- *Works list*: a named wonder (world, team or national) their seat can build now, the one
+  with the least production left: built in their seat. The term does not run while the wonder
+  is in the seat's queue.
+- *Met*: `Demand met: +3 (60 turns)`. *Lapsed* at its term (`PERSON_DEMAND_TURNS`, 40):
+  `Demand refused: -3 (60 turns)`. *Made impossible by an act of ours* (the city granted to
+  another House or razed by us, peace made with the civilization of a city to be taken): refused
+  at once. *Made impossible otherwise*: replaced, no grievance. The next demand is issued
+  `PERSON_DEMAND_REST` (20) turns after one was met or refused. With these numbers a House that
+  is only ever refused stays Restless and does not reach Disloyal without a further grievance.
+
+**Loyalty** belongs to the House for a head (`House::standing`) and to the person otherwise
+(`Person::standing`); a founder's own modifiers move to the House they found. Modifiers:
+`Demand met` +3 (60), `Demand refused` -3 (60), `Granted <city>` +1 (30),
+`<city> granted to <House>` -1 (30) for a claimant House and -2 (30) for the claimant
+commander, `State religion opposed` -2 while the state religion's alignment is the opposite of
+the person's (a head's; standing, not stored), `Released kin` none. A modifier ends on the turn
+its turns run out.
+
+**States.** Devoted at +3 or more, Restless at -3 or less, Disloyal at -6 or less; an empty
+seat is Loyal. A change of state is told to the owner. Disloyal starts the countdown
+(`PERSON_DISLOYAL_TURNS`, 10) unless one runs; loyalty above the threshold stops it.
+
+**Claims.** A city's claimants: each House of its owner with a city within
+`PERSON_CLAIM_RANGE` (6) plots, and the commander whose army took it in the last 20 turns
+(`City::taken_by`). The grantee's head becomes the rival of each snubbed claimant.
+
+**Quota.** Each empire order and each requisition order placed in a House's cities is recorded
+(`House::orders`, the turns placed). Orders left: Devoted: no limit. Loyal: the larger of 1 and
+`cities x house_orders / 100`, less those placed in the last `PERSON_LEVY_TURNS` (30) turns.
+Restless, Disloyal: none. An empty seat: no limit. `house_orders` is the government civic's
+(Aristocracy 150, Republic 100, Theocracy 100, City States 50; a civic without the key: 100).
+At no orders left an empire order is refused with the reason, and the requisition passes the
+city over.
+
+**A head's trait** applies in their House's cities for every state. A trait with nothing a
+city can carry gives nothing (no falling through to the next).
+
+**Maintenance.** A city of a House with a head pays `PERSON_HOUSE_MAINTENANCE_PERCENT` (50) of
+its number-of-cities maintenance.
+
+**Heirs.** When a head leaves, an owner with exactly one person without a post has that one
+succeed at once. With several the seat is empty until the owner names one (`player_name_heir`;
+the AI in its turn); with none, until a person without a post exists, who then takes it.
+
+**Secession.** Processed in the owner's turn, Houses before commanders.
+- The new civilization: the owner's civilization type; its leader the head's leader, or for a
+  hero a faction leader as the Sundering chooses one (`choose_faction_leader`); with no leader
+  to be had there is no secession: the head resigns (leaves the cast) and the seat is empty.
+  Named "<civilization> of House <name>" (a commander's: "<civilization> of <city>"). Its
+  parent is the owner (`Birth::parent`: the owner's techs); it is played by the game's AI; it
+  declares war on its former owner; `ai_attitude_extra` -4 both ways.
+- The cities that go are released as the Sundering's are (buildings, culture, the owner's land
+  combat units in them but heroes). A city where an army of the owner stands (an army that is
+  not a Disloyal commander's) stays and is the Crown's. The head's unit goes with the House.
+  With every city held the House ends and its head leaves the cast (their unit is removed).
+- A league: every other House whose countdown is running joins, unless its head is the rival
+  of a head already in it (or the reverse); the leader is the head of the House with the most
+  cities (ties: the lower House id).
+- A commander's sworn units are the army's units and the commander's own when the countdown
+  starts. At its end a sworn unit standing in a city of its owner with more of the owner's
+  other land combat units (not sworn) than sworn units there stays. The others: join a league
+  formed this turn whose leader is not the commander's rival (they become its units in its
+  capital, as the Sundering's defectors do); else seize the nearest city of the owner (not the
+  capital) on their land area whose land combat units of the owner that are not sworn are fewer
+  than they are; else the commander resigns and the units stay.
+- Everyone who has met the owner is told: `House Ashledger secedes from the Bannor with
+  Prespur, Elam and Torrin.`
+
+**Direct rule.** While `player_rules_directly` there are no Houses and no grant
+(`Government: direct rule. No city can be granted.`). When a player with Houses comes under a
+direct-rule civic, by any means, every House secedes at once as one league, whatever its state
+and its rivalries; the counter on the map holds. Commanders are not touched.
+
+**Release.** `player_release_house`: a House with a head, not Disloyal, of an owner that is no
+vassal, becomes the owner's vassal civilization (`Birth::vassal`), led as a secession is, at
+peace; the head leaves the cast. Refused under No Vassal States.
+
 ## What it is for
 
 Two goals (the owner, 2026-11-18): **administering an empire is tricky**, and **the game makes
