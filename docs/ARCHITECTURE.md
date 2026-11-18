@@ -111,7 +111,7 @@ asks its decisions through `Controller` methods, and is described in its own doc
 | Crusades and loans | `crusade/` | `Game::crusades`, `crusade_reports` | CRUSADE.md |
 | The Armageddon deck | `deck/` | `Game::doom` | DECKS.md |
 | The cards' content | `ffh/cards/`, `ffh/world_rituals*`, `ffh/world_ritual_spells/` | `Game::area_effects`, `delves`, fields on the objects | CARDS.md |
-| Governors | `governors.rs` | `Game::governors` | GOVERNORS.md |
+| Governors | `governors.rs` | fields on `City`, `Player` | GOVERNORS.md |
 | Cultural actions | `culture.rs` | fields on `City`, `Player` | CULTURE.md |
 | City works | `works.rs` | fields on `City` | WORKS.md |
 | The sea: range, boats, wear, seas, lanes, outposts | `naval.rs`, `seas.rs`, `outposts.rs` | `Map::seas`, fields on `Unit`, `City` | NAVAL.md |

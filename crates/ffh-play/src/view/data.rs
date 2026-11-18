@@ -205,11 +205,6 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
                 j.set("embarked_moves_change", c.embarked_moves_change);
             }
         }
-        "GovernorTraitType" => {
-            // The governors' help: what the trait adds to its city's garrison quota.
-            let t = &d.governor_traits[GovernorTraitType::from_usize(i)];
-            j.set("defenders", t.defenders);
-        }
         "BuildingTierType" => {
             // The governors' help: a building's core effect at the tier, in percent of the
             // Standard one (the city roles' suitability).

@@ -21,19 +21,6 @@ fn government(g: &Game, h: PlayerId) -> Option<CivicType> {
     d.civic_options.keys().find(|&o| d.civic_options[o].base.type_ == "CIVICOPTION_GOVERNMENT").and_then(|o| g.players[h].civics[o])
 }
 
-/// A governor: name, trait, the city it holds.
-fn governor_json(v: &Viewer, g: GovernorId) -> Json {
-    let gv = &v.g.governors[g];
-    crate::jobj! {
-        "id" => g,
-        "name" => gv.name.as_str(),
-        "trait" => gv.trait_.map(Json::idx),
-        "city" => gv.city,
-        "since" => gv.since_turn,
-        "born" => gv.born_turn,
-    }
-}
-
 /// Order `i` of city `c`'s queue: `index`, `order`, `type`, `turns` (left to finish it there),
 /// `empire`, `requisition`, `dest_name` (a unit's destination; null for the city's own garrison
 /// or default).
@@ -107,7 +94,6 @@ fn city_json(v: &Viewer, c: CityId, card: bool) -> Json {
         "name" => city_name(g, c),
         "capital" => g.city_is_capital(c),
         "governed" => governed,
-        "governor" => city.governor.filter(|&x| governed && g.governors.contains(x)).map(|x| governor_json(v, x)),
         "role" => g.city_role(c).map(Json::idx),
         "role_overridden" => city.role_overridden,
         "proposal" => governed.then(|| Json::idx(g.city_role_proposal(c))),
@@ -123,7 +109,7 @@ fn city_json(v: &Viewer, c: CityId, card: bool) -> Json {
     j
 }
 
-/// The city screen's `governance`: the city's rule, role and governor (null for another's city).
+/// The city screen's `governance`: the city's rule and role (null for another's city).
 pub fn city(v: &Viewer, c: CityId) -> Json {
     if v.g.cities[c].owner != v.h {
         return Json::Null;

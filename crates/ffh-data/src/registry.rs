@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::enums::*;
 use crate::infos::building::BuildingTierType;
-use crate::infos::{BattleTacticType, CulturalActionType, GovernorNameType, CityRoleType, GovernorTraitType, KeywordType, ResearchPathType, SeaNameType};
+use crate::infos::{BattleTacticType, CulturalActionType, GovernorNameType, CityRoleType, KeywordType, ResearchPathType, SeaNameType};
 use crate::idx::{Idx, IdxVec};
 use crate::jsonc::Value;
 
@@ -94,7 +94,6 @@ info_ids! {
     DirectionType => "DirectionTypes",
     CulturalActionType => "CulturalActionInfo",
     CityRoleType => "CityRoleInfo",
-    GovernorTraitType => "GovernorTraitInfo",
     GovernorNameType => "GovernorNameInfo",
     BuildingTierType => "BuildingTierInfo",
     ResearchPathType => "ResearchPathInfo",

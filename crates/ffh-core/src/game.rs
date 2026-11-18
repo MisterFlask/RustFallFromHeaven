@@ -77,8 +77,6 @@ pub struct Game {
     pub deals: Slab<DealId, Deal>,
     /// This game's armies (docs/ARMIES.md). Owner lists: `Player::armies`.
     pub armies: Slab<ArmyId, crate::army::Army>,
-    /// This game's governors (docs/GOVERNORS.md). Owner lists: `Player::governors`.
-    pub governors: Slab<GovernorId, crate::governors::Governor>,
     /// Engagement combat's battle reports, oldest first: those of the current and the previous
     /// turn and the last `ENGAGEMENT_REPORTS_KEPT` (`engagement/report.rs`; add with
     /// `battle_report_add`).
@@ -378,7 +376,6 @@ impl Game {
             plot_groups: Slab::new(),
             deals: Slab::new(),
             armies: Slab::new(),
-            governors: Slab::new(),
             battle_reports: Vec::new(),
             battle_report_next: 0,
             map_rand: Rng::new(0),

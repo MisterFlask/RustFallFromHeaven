@@ -112,36 +112,29 @@ fn city_roles_have_four_generic_key_buildings_each_none_in_two_roles() {
 fn the_government_hands_every_city_over_and_takes_every_city_back() {
     let (mut g, cities) = game(4);
     assert!(g.player_rules_directly(P0), "Despotism rules directly");
-    assert!(cities.iter().all(|&c| !g.city_is_governed(c) && g.cities[c].governor.is_none()));
+    assert!(cities.iter().all(|&c| !g.city_is_governed(c)));
     let before = g.log.entries.len();
     government(&mut g, P0, "CIVIC_ARISTOCRACY");
     assert!(!g.player_rules_directly(P0));
-    let mut governors = Vec::new();
     for &c in &cities {
         assert!(g.city_is_governed(c), "every city governed, the capital included");
         assert!(g.cities[c].production_automated);
         assert!(g.city_role(c).is_some());
-        let gv = g.cities[c].governor.expect("a governor");
-        assert_eq!(g.governors[gv].city, c);
-        assert_eq!(g.governors[gv].owner, P0);
-        governors.push(gv);
     }
     let news: Vec<&str> = g.log.entries[before..].iter().map(|m| m.text.as_str()).filter(|t| t.starts_with("Government:")).collect();
     assert_eq!(news.len(), 1, "one message: {news:?}");
-    // Back to a direct-rule civic: every city taken back, the governors dormant in their cities.
+    // Back to a direct-rule civic: every city taken back.
     government(&mut g, P0, "CIVIC_GOD_KING");
-    for (&c, &gv) in cities.iter().zip(&governors) {
+    for &c in &cities {
         assert!(!g.city_is_governed(c));
         assert!(!g.cities[c].production_automated);
         assert_eq!(g.city_role(c), None);
-        assert_eq!(g.cities[c].governor, Some(gv), "the governor stays with the city");
     }
-    // Governed again: the same governors, no new ones.
+    // Governed again: every city has a role.
     government(&mut g, P0, "CIVIC_ARISTOCRACY");
-    for (&c, &gv) in cities.iter().zip(&governors) {
-        assert_eq!(g.cities[c].governor, Some(gv));
+    for &c in &cities {
+        assert!(g.city_is_governed(c) && g.city_role(c).is_some());
     }
-    assert_eq!(g.players[P0].governors.len(), cities.len());
 }
 
 #[test]
@@ -165,7 +158,7 @@ fn a_new_city_takes_its_owners_mode() {
     let (x, y) = free_plot(&g);
     let founded = g.player_init_city(P0, x, y, true, true);
     assert!(g.city_is_governed(founded));
-    assert!(g.cities[founded].governor.is_some() && g.city_role(founded).is_some());
+    assert!(g.city_role(founded).is_some());
     assert!(g.cities[founded].recruit_default.is_none());
     // Acquired from a player that rules directly.
     assert!(g.player_rules_directly(P1));
@@ -174,15 +167,12 @@ fn a_new_city_takes_its_owners_mode() {
     assert!(!g.city_is_governed(theirs));
     g.player_acquire_city(P0, theirs, false, true, true);
     let ours = g.map.plots[g.map.plot_xy(x, y).unwrap()].plot_city.expect("the city");
-    assert!(g.city_is_governed(ours));
-    let gv = g.cities[ours].governor.expect("a governor");
-    assert_eq!(g.governors[gv].owner, P0);
-    // Given to a player that rules directly: ruled directly, its governor out of the game.
+    assert!(g.city_is_governed(ours) && g.city_role(ours).is_some());
+    // Given to a player that rules directly: ruled directly.
     g.player_acquire_city(P1, ours, false, true, true);
     let back = g.map.plots[g.map.plot_xy(x, y).unwrap()].plot_city.expect("the city");
     assert!(!g.city_is_governed(back));
-    assert!(!g.governors.contains(gv));
-    assert!(!g.players[P0].governors.contains(&gv));
+    assert_eq!(g.city_role(back), None);
 }
 
 #[test]
@@ -417,20 +407,6 @@ fn a_city_handed_over_keeps_its_requisition_and_empire_orders_only() {
 }
 
 #[test]
-fn governors_have_at_most_one_trait_and_a_name() {
-    let (mut g, _) = governed_game(1);
-    for _ in 0..8 {
-        let (x, y) = free_plot(&g);
-        g.player_init_city(P0, x, y, true, true);
-    }
-    for &gv in &g.players[P0].governors {
-        let gov = &g.governors[gv];
-        assert!(!gov.name.is_empty());
-        assert!(g.cities[gov.city].governor == Some(gv));
-    }
-}
-
-#[test]
 fn governors_v2_survive_a_save() {
     let (mut g, cities) = governed_game(3);
     let c = cities[1];
@@ -443,8 +419,6 @@ fn governors_v2_survive_a_save() {
     g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, warrior.i(), -1, None).unwrap();
     let bytes = g.save();
     let h = Game::load(g.d, &bytes).unwrap();
-    let gv = g.cities[c].governor.unwrap();
-    assert_eq!(h.governors[gv], g.governors[gv]);
     assert_eq!(h.cities[c].role, Some(commerce));
     assert!(h.cities[c].role_overridden);
     assert_eq!(h.players[P0].governor_priorities, vec![research]);

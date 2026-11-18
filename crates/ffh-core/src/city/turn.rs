@@ -209,8 +209,6 @@ impl Game {
         self.city_culture_lost(c);
         // This game's armies: it leaves every requisition; recruits marching to it go elsewhere.
         self.city_army_lost(c);
-        // This game's governors: its governor leaves the game.
-        self.city_governance_lost(c);
 
         let plot = self.city_plot(c);
 

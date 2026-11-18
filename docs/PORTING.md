@@ -287,7 +287,7 @@ flag.
   A governed city has a role (Growth, Research, Commerce, Culture, Garrison, Production), proposed
   from its building tiers of the role's four key buildings and the owner's up to two empire
   priorities; the player may overrule it with any role the city has 75% suitability for. Its
-  governor (a name, at most one judgment trait: Cautious, Ambitious; no modifiers) builds it; the
+  governor (no name or trait since 2026-11-18; no modifiers) builds it; the
   player places only empire orders there (any unit, wonders, palaces, rituals), ahead of the
   governor's choice. Settlers, wonders, palaces and rituals are no longer forbidden in governed
   cities. Hand-run civics cost more with size: Despotism city-count maintenance +25% -> +40%; God

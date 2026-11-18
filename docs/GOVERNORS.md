@@ -18,18 +18,19 @@ cities was the same micromanagement in another form.
 |---|---|---|
 | 1 | the civic decides who runs cities; no cap, no bench | done |
 | 2 | city roles from building tiers, empire priorities, diagnoses, overrule | done |
-| 3 | governors as characters: a name and one judgment trait | done (death and defection events: not built) |
+| 3 | governors as characters: a name and one judgment trait | removed 2026-11-18 (below) |
 | 4 | empire orders: units, wonders, palaces and rituals at a chosen city | done |
 | 5 | governors that differ by civic (Republic, Theocracy, City States, Aristocracy) | not built (below) |
 
 Code: rules `crates/ffh-core/src/governors.rs` (hooks: `player_set_civics`, `player_init_city`,
 `city_kill`, the player turn, the production queue in `city/turn.rs`); data
-`data/json/city_roles.jsonc`, `governor_traits.jsonc`, `governor_names.jsonc`, the civics'
+`data/json/city_roles.jsonc`, `governor_names.jsonc` (read by nothing now; kept for the Houses of
+docs/PERSONS.md), the civics'
 `direct_rule`, the tiers' `core_effect_percent` (`ffh-data` `infos/governor.rs`), tuning
 `data/json/rules_defines.jsonc` (`GOVERNOR_*`); AI `crates/ffh-ai/src/governor.rs` (what a governor
 builds, its plan, the AI's priorities and empire orders); UI `crates/ffh-play/src/view/governors.rs`,
 `assets/app/governors.js`. Tests: `crates/ffh-core/tests/governors.rs`; the harness checks that every
-city is in its owner's mode, that a governed city has production, a role and a governor, and that
+city is in its owner's mode, that a governed city has production and a role, and that
 requisition orders, then empire orders, lead its queue (`ffh_harness::check`).
 
 Every game has governors (no game option).
@@ -82,19 +83,16 @@ They weigh in every proposal (above). The game reports diagnoses: a priority rol
 role, in an empire of six or more governed cities); an overruled city under 100% suitability for
 its role; an empire order more than 30 turns from done.
 
-**Governors.** A city gets a governor the first time it is governed: a name from its
-civilization's list and, with 50% (`GOVERNOR_TRAIT_CHANCE`, the game's RNG), one trait. Traits are
-about judgment, not yield: *Cautious* keeps one more defender; *Ambitious* builds the costliest
-building it may first. The governor stays with the city (without effect while it is ruled
-directly) and leaves the game when the city is lost. Governors have no yield, happiness, health,
-production or experience modifiers, there is no bench, and nothing is assigned.
+**Governors.** A governor is not a character: it has no name and no trait. Named governors (a name
+from the civilization's list and, with 50%, one trait: *Cautious*, one more defender; *Ambitious*,
+the costliest building first) were removed on 2026-11-18 by the owner's decision (docs/PERSONS.md:
+the House's name takes their place). Governors have no yield, happiness, health, production or
+experience modifiers, there is no bench, and nothing is assigned.
 
 **What a governor builds** (ffh-ai `governor.rs`, for the human's cities and the AI's alike):
-1. the garrison the city's danger asks for (the city AI's quota, the role's and the trait's
-   defenders; against a Foment Revolt or Flip City aimed at the city, defenders up to three);
+1. the garrison the city's danger asks for (the city AI's quota and the role's defenders; against a Foment Revolt or Flip City aimed at the city, defenders up to three);
 2. the best building by the city AI's value per turn of production, weighted by the role (up to
-   +50% for a building whose flavors are all ones the role weighs 5); an Ambitious governor takes
-   the costliest instead;
+   +50% for a building whose flavors are all ones the role weighs 5);
 3. a missionary, for a role that weighs religion, while the state religion misses our cities;
 4. the process the role prefers (research, gold or culture).
 
@@ -153,8 +151,6 @@ changes or ends a city's channel (docs/CULTURE.md).
 - **A great-people role**, and whether every role should have an empire-level output shown.
 - **The standing requisition** fills by a role mix the player does not choose; with unit orders it
   may no longer be needed for the human.
-- **Death and defection** of governors as events; a line a governor says when it takes a city or
-  is overruled (the messages are bare today).
 - **The AI's wonders.** With empire orders the AIs build about 60% more world wonders by turn 300
   than before the change (8 seeds; docs/AI.md, "Governors"); founding, captures and army sizes are
   level. The bar of the AI's wonder step can be raised if that is too many.

@@ -327,8 +327,8 @@ pub fn check(g: &Game) {
     }
 
     // This game's governors (docs/GOVERNORS.md): a governed city always has production (an FfH
-    // settlement builds nothing at all) and a role; a governor is its owner's and holds the city
-    // that names it; every city of a player is in the mode its civics give.
+    // settlement builds nothing at all) and a role; every city of a player is in the mode its
+    // civics give.
     for p in g.player_ids() {
         let direct = g.player_rules_directly(p);
         for &c in &g.players[p].cities {
@@ -339,25 +339,8 @@ pub fn check(g: &Game) {
             if g.city_is_governed(c) && !g.cities[c].settlement && g.cities[c].order_queue.is_empty() {
                 fail(format!("governed city {} of player {} has no production", g.cities[c].name, p.0));
             }
-            if g.city_is_governed(c) && (g.cities[c].role.is_none() || g.cities[c].governor.is_none()) {
-                fail(format!("governed city {} of player {} has no role or no governor", g.cities[c].name, p.0));
-            }
-            if let Some(gv) = g.cities[c].governor {
-                match g.governors.get(gv) {
-                    Some(x) if x.owner == p && x.city == c => {}
-                    _ => fail(format!("city {} of player {} names governor {gv:?}, not its own", g.cities[c].name, p.0)),
-                }
-            }
-        }
-        for &gv in &g.players[p].governors {
-            match g.governors.get(gv) {
-                None => fail(format!("player {} lists dead governor {gv:?}", p.0)),
-                Some(x) if x.owner != p => fail(format!("player {} lists governor {gv:?} of player {}", p.0, x.owner.0)),
-                Some(x) => {
-                    if !g.cities.contains(x.city) || g.cities[x.city].governor != Some(gv) {
-                        fail(format!("governor {gv:?} of player {} holds city {:?}, which does not name it", p.0, x.city));
-                    }
-                }
+            if g.city_is_governed(c) && g.cities[c].role.is_none() {
+                fail(format!("governed city {} of player {} has no role", g.cities[c].name, p.0));
             }
         }
     }

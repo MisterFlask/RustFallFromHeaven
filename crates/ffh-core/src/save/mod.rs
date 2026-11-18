@@ -153,7 +153,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 43: a ritual's sight (`Game::ritual_sight`).
 /// - 44: a human's event popups (`Player::event_popups`), which were kept by ffh-play's sidecar.
 /// - 45: a log entry's audience, mark and tag (`LogEntry::audience`, `mark`, `tag`).
-pub const FORMAT_VERSION: u32 = 45;
+/// - 46: named governors and their traits gone (`Game::governors`, `Player::governors`,
+///   `governor_count`, `City::governor`; docs/GOVERNORS.md).
+pub const FORMAT_VERSION: u32 = 46;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -307,7 +309,6 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         plot_groups,
         deals,
         armies,
-        governors,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -431,7 +432,6 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     plot_groups.grow(slots);
     deals.grow(slots);
     armies.grow(slots);
-    governors.grow(slots);
     battle_reports.grow(slots);
     battle_report_next.grow(slots);
     map_rand.grow(slots);
@@ -554,7 +554,6 @@ fn write_game(g: &Game, w: &mut Writer) {
         plot_groups,
         deals,
         armies,
-        governors,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -677,7 +676,6 @@ fn write_game(g: &Game, w: &mut Writer) {
     plot_groups.write(w);
     deals.write(w);
     armies.write(w);
-    governors.write(w);
     battle_reports.write(w);
     battle_report_next.write(w);
     map_rand.write(w);
@@ -797,7 +795,6 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         plot_groups: Persist::read(r)?,
         deals: Persist::read(r)?,
         armies: Persist::read(r)?,
-        governors: Persist::read(r)?,
         battle_reports: Persist::read(r)?,
         battle_report_next: Persist::read(r)?,
         map_rand: Persist::read(r)?,

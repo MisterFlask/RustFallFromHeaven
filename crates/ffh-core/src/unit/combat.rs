@@ -915,6 +915,10 @@ impl Game {
                         self.unit_change_moves(u, cost);
                         // UI: checkRemoveSelectionAfterAttack.
                     }
+                    // Entering the plot can kill it (as above, when the defender died).
+                    if !self.units.contains(u) {
+                        return;
+                    }
 
                     let group = group_of(self, u);
                     self.group_clear_mission_queue(group);

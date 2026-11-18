@@ -321,7 +321,6 @@ kinds! {
         // ---- This game's own rules ----
         CulturalActionType => cultural_actions,
         CityRoleType => city_roles,
-        GovernorTraitType => governor_traits,
         GovernorNameType => governor_names,
         BuildingTierType => building_tiers,
         ResearchPathType => research_paths,

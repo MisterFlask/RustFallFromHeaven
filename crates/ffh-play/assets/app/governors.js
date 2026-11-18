@@ -4,7 +4,7 @@
 // The government civic decides who runs the cities: under Despotism or God King every city is
 // ruled directly; under any other government every city, the capital included, is governed. A
 // governed city has a role (proposed from its building tiers, or chosen by the player when it
-// suits the city well enough) and a governor, who builds by it. The player sets up to two empire
+// suits the city well enough), and its governor builds by it. The player sets up to two empire
 // priorities (roles that weigh more in the proposals) and places empire orders in governed cities:
 // a unit (for an army too), a wonder, a palace or a ritual, ahead of the governor's choice. The
 // `governors` query has the screen; `empire_items` and `empire_cities` the order's two steps; the
@@ -12,9 +12,8 @@
 // which the server checks. Cultural channels are the player's alone (culture.js).
 
 import * as api from "./api.js";
-import { S, dname, info, turns, orderName, emit } from "./state.js";
+import { S, dname, turns, orderName, emit } from "./state.js";
 import { h, toast, errorText } from "./dom.js";
-import { plain } from "./markup.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
@@ -31,15 +30,6 @@ function standardSuitability() {
   return typeof t?.core_effect_percent === "number" ? `${t.core_effect_percent}%` : "full";
 }
 
-/** What the Cautious trait adds to its city's garrison quota ("one more defender": its
- *  `defenders` in the served data), or "more defenders" when it is not served. */
-function cautiousDefenders() {
-  const t = (S.data?.tables?.GovernorTraitType ?? []).find((x) => x.type === "GOVERNORTRAIT_CAUTIOUS");
-  const n = t?.defenders;
-  if (typeof n !== "number") return "more defenders";
-  return n === 1 ? "one more defender" : `${n} more defenders`;
-}
-
 addHelp({
   id: "governors",
   group: "Game options",
@@ -53,7 +43,6 @@ addHelp({
       h("li", `Standard buildings give every role ${standardSuitability()} suitability. The proposed role follows your empire priorities.`),
       h("li", `You may choose another role for a city if its suitability is ${rules ? `${rules.min}%` : "high enough"} or more. Choosing the proposed role again lets the role follow the proposal.`),
       h("li", `Priorities: ${rules ? `up to ${rules.max} roles` : "the roles you pick"} weigh ${rules ? `+${rules.weight}%` : "more"} in every city's proposal.`),
-      h("li", `A governor has a name and at most one trait: Cautious (${cautiousDefenders()}) or Ambitious (the costliest building first).`),
     ),
     h("h4", "Empire orders"),
     h(
@@ -68,14 +57,6 @@ addHelp({
  *  Standard), as the city screen shows tiers. */
 function tierSel(t) {
   return t === null || t === undefined || t === 1 ? "" : `.tier-${t}`;
-}
-
-/** "Steward (Cautious)" with the trait's rule as the title. */
-function governorNode(gv) {
-  if (!gv) return h("span.dim", "No governor");
-  if (gv.trait === null || gv.trait === undefined) return h("span.governor-name", gv.name);
-  const help = info("GovernorTraitType", gv.trait)?.help;
-  return h("span.governor-name", { title: help ? plain(help) : "" }, `${gv.name} (${dname("GovernorTraitType", gv.trait)})`);
 }
 
 /** "Research (proposed)" or "Research (overruled)" for a governed city. */
@@ -99,7 +80,7 @@ export function governanceView(c) {
   return h(
     "div.section.governance",
     h("h4", "Governance"),
-    h("p", "Governed by ", governorNode(k.governor), `. Role: ${roleLabel(k)}${k.suitability !== null && k.suitability !== undefined ? `, suitability ${k.suitability}%` : ""}.`),
+    h("p", `Role: ${roleLabel(k)}${k.suitability !== null && k.suitability !== undefined ? `, suitability ${k.suitability}%` : ""}.`),
   );
 }
 
@@ -165,8 +146,6 @@ function roleCard(c, r, act, go) {
       "div.role-card-head",
       h("button.link", { onclick: () => go(c.city), title: "Open the city" }, h("b", c.name)),
       c.capital ? h("span.dim", " (capital)") : null,
-      h("span", " · "),
-      governorNode(c.governor),
     ),
     h("div.role-line", h("span", "Role: "), h("b", dname("CityRoleType", c.role)), h("span.dim", ` (${c.role_overridden ? "overruled" : "proposed"}), suitability ${c.suitability}%`)),
     h("ul.role-keys", keys),

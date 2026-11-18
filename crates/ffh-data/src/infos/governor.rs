@@ -1,5 +1,5 @@
 //! This game's own info classes for governors (not FFH2's; docs/GOVERNORS.md):
-//! `city_roles.jsonc`, `governor_traits.jsonc`, `governor_names.jsonc`.
+//! `city_roles.jsonc`, `governor_names.jsonc`.
 
 use super::InfoBase;
 use crate::define_idx;
@@ -9,8 +9,6 @@ use crate::registry::Rd;
 
 define_idx!(/// A governed city's role (`ROLE_*`).
 CityRoleType);
-define_idx!(/// A governor trait (`GOVERNORTRAIT_*`).
-GovernorTraitType);
 define_idx!(/// A list of governor names (`GOVERNORNAMES_*`).
 GovernorNameType);
 
@@ -37,20 +35,6 @@ pub fn read_city_role(rd: &Rd) -> CityRoleInfo {
         defenders: rd.int("defenders"),
         key_buildings: rd.ref_list("key_buildings"),
     }
-}
-
-/// How a governor judges (this game's `GovernorTraitInfo`): never a modifier of its city.
-#[derive(Debug, Clone, Default)]
-pub struct GovernorTraitInfo {
-    pub base: InfoBase,
-    /// Added to its city's garrison quota.
-    pub defenders: i32,
-    /// It prefers the costliest building it may build.
-    pub ambitious: bool,
-}
-
-pub fn read_governor_trait(rd: &Rd) -> GovernorTraitInfo {
-    GovernorTraitInfo { base: InfoBase::read(rd), defenders: rd.int("defenders"), ambitious: rd.bool("ambitious") }
 }
 
 /// Governor names of a civilization, or the generic list (no `Civilization`).

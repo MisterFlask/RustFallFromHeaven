@@ -288,9 +288,6 @@ pub struct City {
     /// This game's governors (docs/GOVERNORS.md): ruled directly (else governed); its owner's
     /// government civic decides (`Game::player_rules_directly`).
     pub direct_rule: bool,
-    /// Its governor: given the first time the city is governed, kept (dormant) while it is ruled
-    /// directly.
-    pub governor: Option<GovernorId>,
     /// Its role (`None` until it is first governed): the proposal (`Game::city_role_proposal`)
     /// unless the player chose another (`role_overridden`).
     pub role: Option<CityRoleType>,
@@ -543,7 +540,6 @@ impl City {
             culture_revolt_level: 0,
             recruit_default: None,
             direct_rule: true,
-            governor: None,
             role: None,
             role_overridden: false,
             specialty: None,

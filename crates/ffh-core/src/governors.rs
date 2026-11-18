@@ -12,10 +12,6 @@
 //! empire priorities weighing more) unless the player chose another one for it, which needs a
 //! suitability of `GOVERNOR_ROLE_MIN_SUITABILITY` ([`Game::player_set_city_role`]).
 //!
-//! **Governors** are characters: a name and at most one trait (`governor_traits.jsonc`: how it
-//! judges, never a modifier of the city). A city gets one the first time it is governed; it stays
-//! with the city, dormant while the city is ruled directly, and leaves the game with a city lost.
-//!
 //! **Production.** A governed city's production is the governor's (the controller's production
 //! choice). The player places empire orders there ([`Game::city_push_empire_order`]: a unit, a
 //! wonder, a palace, a project), which go behind an army's requisition orders (docs/ARMIES.md) and
@@ -30,22 +26,6 @@ use crate::game::Game;
 use crate::ids::*;
 use crate::structs::OrderKind;
 use crate::utils::{is_national_wonder_class, is_team_wonder_class, is_world_wonder_class};
-
-/// A governor (`Game::governors`; owner list `Player::governors`).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Governor {
-    pub id: GovernorId,
-    pub owner: PlayerId,
-    pub name: String,
-    /// Its trait, if any (`GOVERNOR_TRAIT_CHANCE`%).
-    pub trait_: Option<GovernorTraitType>,
-    /// The turn it was given to its player.
-    pub born_turn: i32,
-    /// The city it governs (dormant while the city is ruled directly).
-    pub city: CityId,
-    /// The turn it took its city.
-    pub since_turn: i32,
-}
 
 /// Something about a player's governed cities worth its attention ([`Game::player_governor_diagnoses`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -86,14 +66,6 @@ impl Game {
             return None;
         }
         self.cities[c].role
-    }
-
-    /// City `c`'s governor's trait (`None` without a trait, and for a directly ruled city).
-    pub fn city_governor_trait(&self, c: CityId) -> Option<GovernorTraitType> {
-        if !self.city_is_governed(c) {
-            return None;
-        }
-        self.cities[c].governor.and_then(|g| self.governors.get(g)).and_then(|g| g.trait_)
     }
 
     /// Player `p`'s governed cities.
@@ -295,7 +267,6 @@ impl Game {
     /// proposed for the city as it is (its civilization).
     pub fn city_governance_init(&mut self, c: CityId, assign: bool) {
         let p = self.cities[c].owner;
-        self.cities[c].governor = None;
         self.cities[c].role = None;
         self.cities[c].role_overridden = false;
         self.cities[c].direct_rule = self.player_rules_directly(p);
@@ -305,7 +276,7 @@ impl Game {
         self.cities[c].production_automated = true;
         self.cities[c].recruit_default = None;
         if assign {
-            self.city_become_governed(c, true);
+            self.city_become_governed(c);
         }
     }
 
@@ -318,21 +289,10 @@ impl Game {
         if !self.cities.contains(c) || !self.city_is_governed(c) {
             return;
         }
-        self.city_become_governed(c, true);
+        self.city_become_governed(c);
         let p = self.cities[c].owner;
         if !self.players[p].turn_active && self.cities[c].order_queue.is_empty() {
             self.city_choose_production(c, None, None, None, false, false);
-        }
-    }
-
-    /// City `c` leaves its owner (captured, traded, flipped, razed): its governor leaves the game.
-    pub fn city_governance_lost(&mut self, c: CityId) {
-        if let Some(g) = self.cities[c].governor.take() {
-            if let Some(gov) = self.governors.get(g) {
-                let owner = gov.owner;
-                self.governors.remove(g);
-                self.players[owner].governors.retain(|&x| x != g);
-            }
         }
     }
 
@@ -354,7 +314,7 @@ impl Game {
                 self.city_become_direct(c);
                 changed += 1;
             } else if !direct && !governed {
-                self.city_become_governed(c, false);
+                self.city_become_governed(c);
                 changed += 1;
                 if self.cities.contains(c) && self.cities[c].order_queue.is_empty() && !self.cities[c].settlement && !self.cities[c].outpost {
                     self.city_choose_production(c, None, None, None, false, false);
@@ -373,20 +333,14 @@ impl Game {
         }
     }
 
-    /// City `c` goes to its governor (a new one the first time; `announce`: its owner is told):
-    /// production automated, its units for its own garrison, its role proposed (unless the player
-    /// chose one) and its emphasis applied. Its queue keeps the requisition orders and the orders
+    /// City `c` goes to its governor: production automated, its units for its own garrison, its
+    /// role proposed (unless the player chose one) and its emphasis applied. Its queue keeps the requisition orders and the orders
     /// that may be empire orders (they become empire orders); the others are dropped, and the
     /// governor chooses.
-    fn city_become_governed(&mut self, c: CityId, announce: bool) {
-        let p = self.cities[c].owner;
+    fn city_become_governed(&mut self, c: CityId) {
         self.cities[c].direct_rule = false;
         self.cities[c].production_automated = true;
         self.cities[c].recruit_default = None;
-        let new_governor = self.cities[c].governor.is_none();
-        if new_governor {
-            self.governor_generate(p, c);
-        }
         if self.cities[c].role.is_none() || !self.cities[c].role_overridden {
             self.cities[c].role_overridden = false;
             self.cities[c].role = Some(self.city_role_proposal(c));
@@ -408,26 +362,11 @@ impl Game {
             }
         }
         self.city_governor_changed(c);
-        if new_governor && announce {
-            let turn = self.game_turn();
-            let city = self.d.text.name(&self.cities[c].name).to_string();
-            let msg = self.governor_intro(c);
-            self.log.msg_at(turn, Some(p), (self.cities[c].x, self.cities[c].y), || format!("{msg} governs {city}."));
-        }
     }
 
-    /// "Name" or "Name (Trait)" of city `c`'s governor, for messages.
-    fn governor_intro(&self, c: CityId) -> String {
-        let Some(gov) = self.cities[c].governor.and_then(|g| self.governors.get(g)) else { return "A governor".to_string() };
-        match gov.trait_ {
-            Some(t) => format!("{} ({})", gov.name, self.d.text.name(&self.d.governor_traits[t].base.description)),
-            None => gov.name.clone(),
-        }
-    }
-
-    /// City `c` becomes directly ruled: its governor stays, dormant; its production is the
-    /// player's again (the queue kept, empire orders as ordinary orders) and its role's emphasis
-    /// is dropped (the player sets the emphasis).
+    /// City `c` becomes directly ruled: its production is the player's again (the queue kept,
+    /// empire orders as ordinary orders) and its role's emphasis is dropped (the player sets the
+    /// emphasis).
     fn city_become_direct(&mut self, c: CityId) {
         if let Some(role) = self.city_role(c) {
             for e in self.d.city_roles[role].emphasizes.clone() {
@@ -551,43 +490,5 @@ impl Game {
         }
         let controller = self.controller(p);
         controller.govern_cities(self, p);
-    }
-
-    // ---------------------------------------------------------------------------------------
-    // Governors
-    // ---------------------------------------------------------------------------------------
-
-    /// A new governor of player `p` for city `c`: a name of its civilization's list, a trait with
-    /// `GOVERNOR_TRAIT_CHANCE`% (drawn uniformly; the game's RNG).
-    fn governor_generate(&mut self, p: PlayerId, c: CityId) -> GovernorId {
-        let d = self.d;
-        let n = d.governor_traits.len() as i32;
-        let trait_ = if n > 0 && self.soren_rand_num(100, "Governor trait chance") < d.defines.governor_trait_chance {
-            Some(GovernorTraitType::from_usize(self.soren_rand_num(n, "Governor trait") as usize))
-        } else {
-            None
-        };
-        let name = self.governor_new_name(p);
-        let turn = self.game_turn();
-        let g = self.governors.insert_with(|id| Governor { id, owner: p, name, trait_, born_turn: turn, city: c, since_turn: turn });
-        self.players[p].governors.push(g);
-        self.players[p].governor_count += 1;
-        self.cities[c].governor = Some(g);
-        g
-    }
-
-    /// A name for a new governor of `p`: the first of its civilization's list none of its governors
-    /// has, else of the generic list, else "Governor N".
-    fn governor_new_name(&self, p: PlayerId) -> String {
-        let d = self.d;
-        let civ = self.player_get_civilization_type(p);
-        let taken: BTreeSet<&str> = self.players[p].governors.iter().filter_map(|&g| self.governors.get(g)).map(|g| g.name.as_str()).collect();
-        let lists = [d.governor_names.keys().find(|&k| d.governor_names[k].civilization.is_some() && d.governor_names[k].civilization == civ), d.governor_names.keys().find(|&k| d.governor_names[k].civilization.is_none())];
-        for list in lists.into_iter().flatten() {
-            if let Some(n) = d.governor_names[list].names.iter().find(|n| !taken.contains(n.as_str())) {
-                return n.clone();
-            }
-        }
-        format!("Governor {}", self.players[p].governor_count + 1)
     }
 }

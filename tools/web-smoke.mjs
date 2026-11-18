@@ -928,7 +928,7 @@ async function stagedGovernors(bin, saves) {
   // The capital's city screen: empire orders only, and the line that says so.
   await b.eval(`window.ffh.emit("open-city", ${st.capital})`);
   await until2(`/The governor builds the rest/.test(document.querySelector(${q(`${TOP} .governed-note`)})?.textContent ?? "")`, "the governed city's production note");
-  await until2(`/Governed by /.test(document.querySelector(${q(`${TOP} .section.governance`)})?.textContent ?? "")`, "the city's governor and role");
+  await until2(`/Role: /.test(document.querySelector(${q(`${TOP} .section.governance`)})?.textContent ?? "")`, "the city's role");
   await shot("city-governed");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");

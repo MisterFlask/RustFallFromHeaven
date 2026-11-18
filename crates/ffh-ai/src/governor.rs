@@ -11,9 +11,7 @@
 //! empire orders (docs/ARMIES.md, docs/GOVERNORS.md) go ahead of the governor's choice, which
 //! resumes after them (the rules do not ask the governor while they lead the queue).
 //!
-//! A trait changes what the governor does with its role, not how well: a cautious governor keeps
-//! its trait's defenders on top of the garrison quota, an ambitious one ranks buildings by score
-//! times production cost. [`plan`] is the governor's next buildings in that order.
+//! [`plan`] is the governor's next buildings in the order it would build them.
 //!
 //! **The AI's governed empire** ([`turn`], once a turn): its priorities (the war roles while a
 //! civilization at war threatens its cities, else the roles of its leader's flavors), and its
@@ -52,8 +50,6 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
 
     // 1. The garrison the city's danger asks for.
     let mut needed = 1 + i32::from(threat > 0 && !held) + crate::defense::rival_defenders(g, c) + profile.map_or(0, |pr| pr.defenders);
-    // A cautious governor keeps more (its trait's defenders, alongside the role's).
-    needed += g.city_governor_trait(c).map_or(0, |t| d.governor_traits[t].defenders);
     if prod::barbarian_lair_near(g, p, plot, 3) || !held && prod::barbarians_near(g, p, plot, 3) {
         needed += 1;
     }
@@ -125,13 +121,11 @@ pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
 
 /// The buildings city `c`'s governor may choose, best first by its score (ties: the first
 /// building type): the city AI's value (`building_value`) per turn of production, up to half again
-/// for a building all of whose flavor its role weighs 5; an ambitious governor's score is that
-/// times the building's production cost, so it prefers the costliest. Not a wonder or a palace
+/// for a building all of whose flavor its role weighs 5. Not a wonder or a palace
 /// (the player's empire orders), nothing of no value, nothing taking more than 50 turns.
 fn ranked_buildings(g: &Game, c: CityId, threat: i32) -> Vec<(BuildingType, i64)> {
     let d = g.d;
     let profile = g.city_role(c).map(|k| &d.city_roles[k]);
-    let ambitious = g.city_governor_trait(c).is_some_and(|t| d.governor_traits[t].ambitious);
     let flavors: Vec<FlavorType> = (0..d.reg.count::<FlavorType>()).map(FlavorType::from_usize).collect();
     let mut out: Vec<(BuildingType, i64)> = Vec::new();
     for b in d.buildings.keys() {
@@ -158,10 +152,7 @@ fn ranked_buildings(g: &Game, c: CityId, threat: i32) -> Vec<(BuildingType, i64)
             Some(pr) if total > 0 => 10 * flavors.iter().map(|&f| pr.flavor_value[f] * bf[f].max(0)).sum::<i32>() / total,
             _ => 0,
         };
-        let mut score = value as i64 * (100 + lean as i64) / (turns as i64 + 3);
-        if ambitious {
-            score *= g.city_production_needed_building(c, b).max(1) as i64;
-        }
+        let score = value as i64 * (100 + lean as i64) / (turns as i64 + 3);
         out.push((b, score));
     }
     out.sort_by_key(|&(b, score)| (std::cmp::Reverse(score), b));
@@ -469,12 +460,6 @@ mod tests {
         }
     }
 
-    fn set_trait(g: &mut Game, c: CityId, name: Option<&str>) {
-        let t = name.map(|n| g.d.t::<GovernorTraitType>(n));
-        let gov = g.cities[c].governor.expect("a governor");
-        g.governors[gov].trait_ = t;
-    }
-
     /// What the governor builds itself is never an empire order: a city defender, an ordinary
     /// building, a process; every other unit (with its unit AI), a wonder and a project are.
     #[test]
@@ -572,34 +557,12 @@ mod tests {
         assert!(q[0].order_type == OrderType::ORDER_TRAIN && q[0].data2 == UnitAIType::UNITAI_CITY_DEFENSE.i(), "the governor's defender");
     }
 
-    /// A cautious governor keeps its trait's defenders more than a governor without a trait.
+    /// The plan is the governor's ranking: its first building is what it builds.
     #[test]
-    fn a_cautious_governor_keeps_more_defenders() {
-        let (mut g, cities) = governed(&[(4, 5)]);
-        let c = cities[0];
-        set_trait(&mut g, c, None);
-        let garrison = |g: &Game| matches!(decide(g, c), Some((Choice::Train(_, UnitAIType::UNITAI_CITY_DEFENSE), ..)));
-        let mut n = 0;
-        while garrison(&g) {
-            defenders(&mut g, c, 1);
-            n += 1;
-            assert!(n < 10, "the quota is reached");
-        }
-        set_trait(&mut g, c, Some("GOVERNORTRAIT_CAUTIOUS"));
-        assert!(garrison(&g), "a cautious governor wants another defender ({n} held)");
-        let more = g.d.governor_traits[g.d.t::<GovernorTraitType>("GOVERNORTRAIT_CAUTIOUS")].defenders as usize;
-        defenders(&mut g, c, more);
-        assert!(!garrison(&g));
-    }
-
-    /// The plan is the governor's ranking: its first building is what it builds, and an ambitious
-    /// governor's choice costs at least as much as the plain governor's.
-    #[test]
-    fn the_plan_is_the_governors_order_and_ambition_builds_big() {
+    fn the_plan_is_the_governors_order() {
         let (mut g, cities) = governed(&[(4, 5)]);
         let c = cities[0];
         defenders(&mut g, c, 4);
-        set_trait(&mut g, c, None);
         let plain = plan(&g, c, 5);
         assert!(!plain.is_empty() && plain.len() <= 5);
         let mut distinct = plain.clone();
@@ -608,11 +571,6 @@ mod tests {
         assert_eq!(distinct.len(), plain.len());
         assert!(matches!(decide(&g, c), Some((Choice::Construct(b), ..)) if b == plain[0]));
         assert!(plain.iter().all(|&b| !g.order_may_be_empire(OrderType::ORDER_CONSTRUCT, b.i())), "no wonder in the plan");
-        set_trait(&mut g, c, Some("GOVERNORTRAIT_AMBITIOUS"));
-        let big = plan(&g, c, 5);
-        assert!(matches!(decide(&g, c), Some((Choice::Construct(b), ..)) if b == big[0]));
-        let cost = |b: BuildingType| g.city_production_needed_building(c, b);
-        assert!(cost(big[0]) >= cost(plain[0]));
     }
 
     /// At peace the priorities are the roles of the leader's strongest flavors; a civilization at

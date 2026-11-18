@@ -1912,12 +1912,9 @@ governed. Three things live here: what a governor builds (the human's governed c
 the AI's), the AI's empire priorities, and the AI's empire orders.
 
 - **The governor's production** (`decide`, called by `production::choose` for a governed city): the
-  garrison the city's danger asks for (the AI's own quota, plus the role's defenders and a
-  Cautious governor's trait defenders); against revolt pressure aimed at the city, the defenders
+  garrison the city's danger asks for (the AI's own quota, plus the role's defenders); against revolt pressure aimed at the city, the defenders
   that hold it off (`culture::defenders_needed`); the best building by `building_value` per turn
-  of production, up to half again for the role's flavors (`ranked_buildings`; an Ambitious
-  governor's score is multiplied by the building's production cost, so it prefers the costliest
-  building it may build); a missionary for a role that weighs religion; the role's process. Never
+  of production, up to half again for the role's flavors (`ranked_buildings`); a missionary for a role that weighs religion; the role's process. Never
   a wonder or a palace (those are empire orders). `plan(g, c, n)` is the next `n` buildings in the
   order `decide` picks them (one ranking by the same score, no simulation of what each one changes;
   the client shows it as the governor's plan). An army's requisition and the empire orders go

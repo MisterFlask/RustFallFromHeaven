@@ -156,7 +156,6 @@ fn a_governed_government_gives_every_city_a_role_card_and_roles_and_priorities_a
     for c in [a, b] {
         let e = screen_city(&g, c);
         assert!(flag(&e, "governed"), "{e}");
-        assert!(e.get("governor").is_some_and(|x| x.get("name").and_then(Json::as_str).is_some()), "{e}");
         let card = e.get("card").expect("a role card");
         assert_eq!(arr(card, "roles").len(), n_roles, "{card}");
         assert_eq!(arr(card, "key_buildings").len(), 4, "{card}");

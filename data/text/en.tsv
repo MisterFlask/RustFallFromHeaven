@@ -8032,10 +8032,6 @@ TXT_KEY_GOODY_SETTLER	The villagers have provided you with a Settler!
 TXT_KEY_GOODY_TECH	The villagers have given you the secrets of a new Technology!
 TXT_KEY_GOODY_WARRIOR	The villagers have provided you with a Warrior!
 TXT_KEY_GOODY_WORKER	The villagers have provided you with a Worker!
-TXT_KEY_GOVERNORTRAIT_AMBITIOUS	Ambitious
-TXT_KEY_GOVERNORTRAIT_AMBITIOUS_HELP	Prefers the costliest building it may build.
-TXT_KEY_GOVERNORTRAIT_CAUTIOUS	Cautious
-TXT_KEY_GOVERNORTRAIT_CAUTIOUS_HELP	+1 defender in its city's garrison.
 TXT_KEY_ROLE_COMMERCE	Commerce
 TXT_KEY_ROLE_COMMERCE_HELP	Builds toward gold and trade. Citizens: [ICON_COMMERCE] emphasis. Key buildings: Market, Moneychanger, Gambling House, Tax Office.
 TXT_KEY_ROLE_CULTURE	Culture

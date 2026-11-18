@@ -103,8 +103,6 @@
   // turns an outpost's lane may be cut (or missing) before the outpost starves
   "LANE_STARVE_TURNS": 5,
   // ==== Governors (docs/GOVERNORS.md) ====
-  // percent chance a new governor has a trait (governor_traits.jsonc, drawn uniformly)
-  "GOVERNOR_TRAIT_CHANCE": 50,
   // the suitability (percent) a city needs for a role the player chooses for it
   "GOVERNOR_ROLE_MIN_SUITABILITY": 75,
   // percent added to a role's weight in a city's proposal when the role is one of the owner's priorities
