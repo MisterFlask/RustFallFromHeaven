@@ -78,6 +78,11 @@ pub fn new_game(s: &Settings) -> Result<Game, String> {
         g.controllers[p] = ai.clone();
     }
     g.autorun = true;
+    // FFH_TELEMETRY=1: record the telemetry aggregates (docs/TELEMETRY.md); `run` prints them
+    // at the end, one `TELEMETRY` line. Telemetry only observes: the game plays the same.
+    if std::env::var_os("FFH_TELEMETRY").is_some() {
+        g.telemetry = ffh_core::telemetry::Telemetry::new(None);
+    }
     // FFH_STRESS_LOG=1: print the game log (messages, events) as it grows.
     g.log.enabled = std::env::var_os("FFH_STRESS_LOG").is_some();
     g.game_init();
@@ -191,6 +196,12 @@ pub fn run_caught(s: &Settings) -> Outcome {
         start_turn = g.game_turn();
         set_turn(start_turn);
         play(s, &mut g);
+        if let Some(j) = g.telemetry_json() {
+            println!("TELEMETRY\t{}", j.replace('\n', " "));
+            // Player slots at the end (a House founded is a player of its own) and the Houses.
+            let houses = g.player_ids().filter(|&p| g.players[p].alive && g.players[p].house.is_some()).count();
+            println!("SLOTS\t{}\thouses={houses}", g.player_ids().count());
+        }
         Ok((end_state(&g), g.calculate_sync_checksum()))
     });
     let turn = harness_panic::turn();

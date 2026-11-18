@@ -13,6 +13,8 @@
 //!   ffh-stress list [opts]           print the games of a matrix (one `run` command each)
 //!
 //! FFH_STRESS_LOG=1 makes `run` print the game log (LOG lines) turn by turn.
+//! FFH_TELEMETRY=1 makes `run` record the telemetry aggregates and print them at the end (one
+//! `TELEMETRY` line of JSON, docs/TELEMETRY.md).
 //! `run` cross-checks the rules' redundant bookkeeping (`ffh_harness::check`) every 5 turns
 //! (FFH_STRESS_CHECK=N: every N turns, 0 = never).
 //!
