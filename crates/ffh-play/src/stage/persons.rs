@@ -9,9 +9,10 @@
 //! `player_set_house_tribute`, the commander's claim comes from a real capture (the army moves
 //! into a barbarian city), states are told by the persons turn. Set by hand only what no call
 //! reaches: a unit's level (the veterans' bar), a demand's term and a person's rest (so a refusal
-//! falls due now, as a lapse would 40 turns later), the countdowns' turns left, and, only when
-//! the draw gives no such leader, the ambition a role needs (said in the stage's JSON,
-//! `hand_set`).
+//! falls due now, as a lapse would 40 turns later), the countdowns' turns left, the human's
+//! treasury (at least [`STAGE_GOLD`] and twice the neighbour's House's price: the trade screen's
+//! offer can be accepted), and, only when the draw gives no such leader, the ambition a role needs
+//! (said in the stage's JSON, `hand_set`).
 
 use std::path::{Path, PathBuf};
 
@@ -23,6 +24,9 @@ use ffh_data::*;
 
 use crate::command::{CmdOk, Command};
 use crate::json::Json;
+
+/// The human's treasury at least (see the module doc).
+const STAGE_GOLD: i32 = 400;
 
 /// One House of the scene.
 pub struct StagedHouse {
@@ -563,6 +567,15 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         a
     };
 
+    // The human's treasury: enough for the neighbour's House's price (the trade screen's accepted
+    // offer, docs/PERSONS.md rule 9), set by hand.
+    if let Some(price) = s.g.house_bribe_price(house_n) {
+        let want = (price * 2).max(STAGE_GOLD);
+        if s.g.players[h].gold < want {
+            s.g.players[h].gold = want;
+        }
+    }
+
     // Checks: what the scene promises.
     {
         let g = &s.g;
@@ -588,6 +601,9 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         }
         if g.house_bribe_price(house_n).is_none() || g.house_bribe_refusal(house_n, h, ffh_core::persons::BribeKind::Secede).is_some() {
             return Err(format!("the neighbour's House takes no offer: {:?}", g.house_bribe_refusal(house_n, h, ffh_core::persons::BribeKind::Secede)));
+        }
+        if g.house_bribe_price(house_n).is_some_and(|p| g.players[h].gold < p) {
+            return Err("the human cannot pay the neighbour's House's price".into());
         }
         g.player_check_grant(h, crown_y, GrantTo::GreatPerson(great_person)).map_err(|e| format!("the Great Merchant cannot found a House: {e}"))?;
         if direct {
