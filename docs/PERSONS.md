@@ -11,7 +11,7 @@ decisions and which are proposals still to be confirmed.
 | Stage | What | Status |
 |---|---|---|
 | 0 | the vassal levy: an army requisitions from its owner's vassals' cities, by a quota | not built |
-| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | rules, state and read API built (`crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`); the governors gone; Court screen and AI to come |
+| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | rules, state and read API built (`crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`); the governors gone; the AI's minimum; the Court screen and the grant list (UI parts A, B, J) |
 | 2 | consequences: quotas and withholding, secession, leagues, the civil war of direct rule, heirs | rules built (`persons/secession.rs`, `persons/city.rs`, hooks in the order code, the attack rule, the city's reads); release as a vassal built too |
 | 3 | vassals: a House released as a vassal, a capitulated leader as a person, claims abroad | not built |
 | 4 | foreign persons: seeing them, courting them, agents abroad | not built |
@@ -559,6 +559,21 @@ shows are "The first build"; the client's conventions are docs/HUMAN.md and docs
 7. **Readable on a phone.** Cards in one column, not wide tables; every button at least the size the other screens use; the grant list scrolls inside the dialog.
 8. **Bare text.** Labels, numbers, the rule. No adjectives, no narration. A person's backstory (the leader's civilopedia text) may be shown as flavour in the person's opened card, clearly apart from the rules lines.
 9. **Portraits.** A person with a leader shows that leader's portrait as the diplomacy screen does (app/portraits.js); a hero shows its unit's sprite or icon as the unit panel does. The same person always shows the same picture and name, with the title (`The Auditor of Oaths`) under the name where there is room.
+
+**Built (2026-11-18):** parts A (the Court screen), B (the grant list) and J (help and keywords):
+`crates/ffh-play/src/view/persons.rs` (queries `court` and `grant {city}`, the view's
+`court_attention`, the checks of `grant_city`, `name_heir`, `set_commander`, `release_house`),
+`assets/app/persons.js`, tests `crates/ffh-play/tests/persons.rs`, `tools/web-persons-smoke.mjs`;
+the shapes in docs/HUMAN.md. Departures: the key is `Shift+F9` (F1 to F10 are taken and F11, F12
+are the browser's); `<person> has no post. [Grant a city]` is not listed while an heir is to be
+named (those persons are the candidates, and naming one is the first act); a House's `[Show]` in
+the lines that need attention opens its card in the Court (its city chips open the cities), a
+commander's centres nothing but opens their card too (the ⌖ on the card shows the unit); `Release
+as a vassal` asks on the card itself, as a grant does; the Crown's maintenance baseline and a
+grant's saving are 0 for a city in disorder (as the rules charge it); the trait's tooltip lists
+the parts of it a city carries (`Applies in a city: health, happiness.`), from the trait's data.
+The rules have no check without the act for `player_name_heir` and `player_set_commander`: the
+view reads the same conditions with the same words (`check_name_heir`, `check_set_commander`).
 
 ### The parts
 

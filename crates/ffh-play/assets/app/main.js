@@ -36,8 +36,8 @@ import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { ritualAlerts } from "./rituals.js";
-// Persons of Note (docs/PERSONS.md, "UI"): the Court and the grant list, reached from window.ffh
-// until their menu entries are built.
+// Persons of Note (docs/PERSONS.md, "UI"): the Court (Shift+F9, the menu's Court, its count of what
+// needs attention) and the grant list; also reached from window.ffh.persons.
 import * as persons from "./persons.js";
 import { endTurn, sending } from "./commands.js";
 import { h, $, toast, compactScreen, setErrorHook, errorText } from "./dom.js";
@@ -193,7 +193,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "culture", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "culture", "armies", "governors", "court", "court-heir", "court-order", "grant", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -259,6 +259,7 @@ async function refreshView(st) {
   units.viewChanged();
   syncSeaLayer();
   empire.viewChanged();
+  persons.viewChanged();
   renderTop();
   renderBottom();
   renderCityPanel();
@@ -436,6 +437,8 @@ function openScreen(name) {
       return openCulture();
     case "governors":
       return openGovernors({ openCity: (id) => openCity(id) });
+    case "court":
+      return persons.openCourt();
     case "armies":
       return openArmies({ select: (ids) => units.select(ids), centerOn: (x, y) => mapView.centerOn(x, y) });
     case "research":
@@ -553,6 +556,11 @@ function onKey(ev) {
     if (lower === "l" && !ev.shiftKey) return handled(), screens.loadScreen();
     const layer = { 1: "terrain", 2: "political", 3: "yield", 4: "sea" }[k];
     if (layer) return handled(), setLayer(layer);
+  }
+  // Shift+F9: the Court (Persons of Note), beside F9's Governors.
+  if (k === "F9" && ev.shiftKey && !ctrl && !ev.altKey) {
+    handled();
+    return openScreen("court");
   }
   if (F_KEYS[k] && !ctrl && !ev.altKey) {
     handled();
@@ -680,6 +688,7 @@ function wire() {
   click("btn-culture", () => openScreen("culture"));
   click("btn-armies", () => openScreen("armies"));
   click("btn-governors", () => openScreen("governors"));
+  click("btn-court", () => openScreen("court"));
   click("btn-diplo", () => openScreen("diplomacy"));
   click("btn-crusades", () => openScreen("crusades"));
   crusade.init({ centerOn: (x, y) => mapView.centerOn(x, y) });

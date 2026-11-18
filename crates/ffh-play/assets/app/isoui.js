@@ -431,6 +431,7 @@ const RAIL = [
   ["btn-culture", "culture"],
   ["btn-armies", "units"],
   ["btn-governors", "promo_command"],
+  ["btn-court", "building_hall_of_kings"],
   ["btn-diplo", "diplomacy"],
   ["btn-crusades", "attack"],
   ["btn-seas", "promo_navigation"],
