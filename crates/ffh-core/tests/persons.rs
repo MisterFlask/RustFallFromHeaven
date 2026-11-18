@@ -790,3 +790,477 @@ fn read_api_and_save_round_trip() {
     assert_eq!(g2.armies[army].commander, Some(xv));
     assert_eq!(g2.person_view(x), g.person_view(x));
 }
+
+// ---------------------------------------------------------------------------------------------
+// Step 2: the consequences
+// ---------------------------------------------------------------------------------------------
+
+/// A loyalty modifier of `amount` for 50 turns on House `h` (its other modifiers gone).
+fn set_house_loyalty(g: &mut Game, h: HouseId, amount: i32) {
+    let t = g.game_turn();
+    g.houses[h].standing.mods = vec![LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount, until: Some(t + 50) }];
+}
+
+fn set_person_loyalty(g: &mut Game, x: PersonId, amount: i32) {
+    let t = g.game_turn();
+    g.persons[x].standing.mods = vec![LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount, until: Some(t + 50) }];
+}
+
+#[test]
+fn the_quota_refuses_empire_orders_and_records_them() {
+    let World { mut g, a, cap, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (_, h) = land_head(&mut g, a);
+    g.houses[h].standing.mods.clear();
+    assert_eq!(g.house_orders_left(h), Some(1), "one city x 150 / 100");
+    let warrior = g.d.t::<UnitType>("UNIT_WARRIOR").idx() as i32;
+    assert_eq!(g.city_check_empire_order(P0, a, OrderType::ORDER_TRAIN, warrior), Ok(()));
+    g.city_push_empire_order(P0, a, OrderType::ORDER_TRAIN, warrior, -1, None).expect("placed");
+    assert_eq!(g.houses[h].orders, vec![g.game_turn()], "recorded");
+    assert_eq!(g.house_orders_left(h), Some(0));
+    assert_eq!(g.city_check_empire_order(P0, a, OrderType::ORDER_TRAIN, warrior), Err("The House takes no more orders now."));
+    assert!(g.city_push_empire_order(P0, a, OrderType::ORDER_TRAIN, warrior, -1, None).is_err());
+    assert!(g.city_house_takes_order(a).unwrap_err().contains("takes no more orders for 30 turns"));
+    assert_eq!(g.city_check_empire_order(P0, cap, OrderType::ORDER_TRAIN, warrior), Ok(()), "the Crown's city");
+    // Withdrawn: not refunded.
+    let index = g.cities[a].order_queue.iter().position(|o| o.empire).expect("the empire order");
+    g.city_remove_empire_order(P0, a, index).unwrap();
+    assert_eq!(g.house_orders_left(h), Some(0), "not refunded");
+    // Restless: refused with the state; Devoted: no limit, still recorded.
+    set_house_loyalty(&mut g, h, -3);
+    assert_eq!(g.city_check_empire_order(P0, a, OrderType::ORDER_TRAIN, warrior), Err("The House is Restless. It takes no orders."));
+    set_house_loyalty(&mut g, h, 3);
+    g.city_push_empire_order(P0, a, OrderType::ORDER_TRAIN, warrior, -1, None).expect("Devoted: no limit");
+    assert_eq!(g.houses[h].orders.len(), 2);
+}
+
+#[test]
+fn the_requisition_passes_over_a_house_at_its_quota() {
+    let World { mut g, a, b, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (_, h) = land_head(&mut g, a);
+    g.houses[h].standing.mods.clear();
+    let w = unit(&mut g, P0, "UNIT_WARRIOR", 9, 5);
+    let army = g.army_form(P0, &[w]).unwrap();
+    g.army_add_requisition(P0, army, a).unwrap();
+    g.army_set_target_size(P0, army, 4).unwrap();
+    g.player_do_requisition(P0);
+    assert_eq!(g.army_requisition_orders(army).len(), 1, "one order in the House's city");
+    assert_eq!(g.houses[h].orders.len(), 1, "recorded");
+    // A second army: the House has no order left, the Crown's city takes one.
+    let w2 = unit(&mut g, P0, "UNIT_WARRIOR", 9, 6);
+    let army2 = g.army_form(P0, &[w2]).unwrap();
+    g.army_add_requisition(P0, army2, a).unwrap();
+    g.army_add_requisition(P0, army2, b).unwrap();
+    g.army_set_target_size(P0, army2, 4).unwrap();
+    g.player_do_requisition(P0);
+    let orders2 = g.army_requisition_orders(army2);
+    assert_eq!(orders2.iter().map(|&(c, _)| c).collect::<Vec<_>>(), vec![b], "the House's city passed over");
+    assert_eq!(g.army_requisition_orders(army).len(), 1, "the order already placed stays");
+    assert_eq!(g.houses[h].orders.len(), 1);
+}
+
+#[test]
+fn a_restless_commanders_army_takes_no_order_to_attack() {
+    let World { mut g, .. } = world();
+    let (t0, t1) = (g.players[P0].team, g.players[P1].team);
+    g.team_declare_war(t0, t1, false, None);
+    let v = veteran(&mut g, 12, 5, 9);
+    let w = unit(&mut g, P0, "UNIT_WARRIOR", 12, 5);
+    let army = g.army_form(P0, &[v, w]).unwrap();
+    turn(&mut g);
+    let x = g.unit_person(v).expect("a veteran");
+    assert_eq!(g.armies[army].commander, Some(x));
+    let foe = unit(&mut g, P1, "UNIT_WARRIOR", 13, 5);
+    let target = g.map.plot_xy(13, 5).unwrap();
+    assert!(g.unit_can_move_into(w, target, true, false, false), "Loyal: it attacks");
+    set_person_loyalty(&mut g, x, -3);
+    assert_eq!(g.person_state(x), LoyaltyState::Restless);
+    assert!(!g.unit_can_move_into(w, target, true, false, false), "Restless: no attack");
+    assert!(!g.unit_can_move_into(v, target, true, false, false));
+    let name = g.persons[x].name.clone();
+    assert_eq!(g.unit_attack_refusal(w), Some(format!("Commander {name} is Restless. The {} takes no order to attack.", g.armies[army].name)));
+    let empty = g.map.plot_xy(12, 6).unwrap();
+    assert!(g.unit_can_move_into(w, empty, false, false, false), "it still moves");
+    let grp = g.units[w].group.unwrap();
+    let (attacked, _) = g.group_attack(grp, 13, 5, ffh_core::defs::MOVE_DIRECT_ATTACK);
+    assert!(!attacked, "the group attack is refused too");
+    assert!(g.units.contains(foe));
+    let other = unit(&mut g, P0, "UNIT_WARRIOR", 12, 4);
+    assert!(g.unit_can_move_into(other, target, true, false, false), "a unit in no army attacks");
+    set_person_loyalty(&mut g, x, 0);
+    assert_eq!(g.unit_attack_refusal(w), None);
+    assert!(g.unit_can_move_into(w, target, true, false, false));
+}
+
+#[test]
+fn battles_go_into_the_commanders_record() {
+    let World { mut g, .. } = world();
+    let (t0, t1) = (g.players[P0].team, g.players[P1].team);
+    g.team_declare_war(t0, t1, false, None);
+    let v = veteran(&mut g, 12, 5, 9);
+    let w = unit(&mut g, P0, "UNIT_AXEMAN", 12, 5);
+    g.army_form(P0, &[v, w]).unwrap();
+    turn(&mut g);
+    let x = g.unit_person(v).expect("a veteran");
+    unit(&mut g, P1, "UNIT_WARRIOR", 13, 5);
+    let grp = g.units[w].group.unwrap();
+    let (attacked, _) = g.group_attack(grp, 13, 5, ffh_core::defs::MOVE_DIRECT_ATTACK);
+    assert!(attacked);
+    if g.persons.contains(x) {
+        assert!(g.persons[x].deeds.iter().any(|d| d.text.ends_with("a battle at (13, 5).")), "{:?}", g.persons[x].deeds);
+    }
+}
+
+#[test]
+fn a_disloyal_heads_unit_goes_to_the_largest_city_and_takes_no_orders() {
+    let World { mut g, a, c, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (x, h) = land_head(&mut g, a);
+    g.player_grant_city(P0, c, GrantTo::House(h)).unwrap();
+    g.cities[c].population = 5;
+    let u = g.persons[x].unit.unwrap();
+    let unit_plot = g.unit_plot(u);
+    assert_ne!(unit_plot, plot(&g, c));
+    assert_eq!(g.unit_house_refusal(u), None);
+    set_house_loyalty(&mut g, h, -6);
+    turn(&mut g);
+    assert!(g.houses[h].standing.countdown.is_some());
+    assert_eq!(g.unit_held_by_house(u), Some(h));
+    assert_eq!(g.unit_house_refusal(u), Some(format!("{} is Disloyal. Its head's unit takes no orders.", g.house_label(h))));
+    let m = g.unit_march(u).expect("it marches");
+    assert_eq!(m.dest, ffh_core::army::RecruitDest::Garrison(c), "to the largest city");
+    set_house_loyalty(&mut g, h, 0);
+    turn(&mut g);
+    assert_eq!(g.unit_held_by_house(u), None, "the countdown stopped");
+}
+
+/// The figures of city `c` a trait can move.
+fn city_figures(g: &Game, c: CityId) -> Vec<i32> {
+    let mut out = vec![g.city_good_health(c), g.city_bad_health(c, false, 0), g.city_happy_level(c), g.city_unhappy_level(c, 0), g.city_total_great_people_rate_modifier(c), g.city_great_people_rate(c)];
+    for y in 0..YieldType::NUM {
+        out.push(g.city_yield_rate(c, YieldType::from_usize(y)));
+    }
+    for k in 0..CommerceType::NUM {
+        out.push(g.city_commerce_rate_times100(c, CommerceType::from_usize(k)));
+        out.push(g.city_total_commerce_rate_modifier(c, CommerceType::from_usize(k)));
+    }
+    for q in g.map.plot_ids() {
+        let (x, y) = g.map.xy(q);
+        if g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 2 {
+            for yt in 0..YieldType::NUM {
+                out.push(g.plot_calculate_yield(q, YieldType::from_usize(yt)));
+            }
+        }
+    }
+    for u in g.d.units.keys() {
+        out.push(g.city_production_modifier_unit(c, u));
+    }
+    for b in g.d.buildings.keys() {
+        out.push(g.city_production_modifier_building(c, b));
+    }
+    out
+}
+
+#[test]
+fn a_house_trait_is_the_owners_trait_in_its_city() {
+    let d = ffh_data::global();
+    let (mut seen, mut moved) = (0, 0);
+    for name in ["TRAIT_FINANCIAL", "TRAIT_CREATIVE", "TRAIT_PHILOSOPHICAL", "TRAIT_INDUSTRIOUS", "TRAIT_SPIRITUAL", "TRAIT_EXPANSIVE", "TRAIT_CHARISMATIC", "TRAIT_ORGANIZED", "TRAIT_AGGRESSIVE"] {
+        let Some(t) = d.ty::<TraitType>(name) else { continue };
+        let Some(l) = d.leader_heads.keys().find(|&l| d.leader_heads[l].traits.first() == Some(&t)) else { continue };
+        // A: the owner without the trait, city A granted to a House whose head has it.
+        let World { mut g, a, .. } = world();
+        if g.players[P0].traits[t] {
+            continue;
+        }
+        government(&mut g, "CIVIC_ARISTOCRACY");
+        let x = enter_hero(&mut g, 7, 5);
+        g.persons[x].leader = Some(l);
+        g.player_grant_city(P0, a, GrantTo::Person(x)).unwrap();
+        assert_eq!(g.city_house_trait(a), Some(t), "{name}");
+        assert!(g.city_has_trait(a, t));
+        // B: the owner with the trait, city A the Crown's.
+        let World { g: mut g2, a: a2, .. } = world();
+        government(&mut g2, "CIVIC_ARISTOCRACY");
+        enter_hero(&mut g2, 7, 5);
+        g2.player_set_has_trait(P0, t, true);
+        assert_eq!(city_figures(&g, a), city_figures(&g2, a2), "{name}");
+        // C: neither; the trait moves something.
+        let World { g: mut g3, a: a3, .. } = world();
+        government(&mut g3, "CIVIC_ARISTOCRACY");
+        enter_hero(&mut g3, 7, 5);
+        if city_figures(&g3, a3) != city_figures(&g, a) {
+            moved += 1;
+        }
+        // A unit trained there has the trait's free promotions.
+        let axeman = g.d.t::<UnitType>("UNIT_AXEMAN");
+        let (ua, ub) = (g.player_init_unit(P0, axeman, 7, 4, None, None), g2.player_init_unit(P0, axeman, 7, 4, None, None));
+        g.city_add_production_experience(a, ua, false);
+        g2.city_add_production_experience(a2, ub, false);
+        assert_eq!(g.units[ua].has_promotion, g2.units[ub].has_promotion, "{name}");
+        seen += 1;
+    }
+    assert!(seen >= 5, "{seen} traits tested");
+    assert!(moved >= 4, "{moved} of {seen} traits change the city's figures");
+}
+
+#[test]
+fn a_house_with_a_head_pays_half_its_city_count_maintenance() {
+    let World { mut g, a, b, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    for c in [a, b] {
+        g.cities[c].population = 6;
+        g.city_update_maintenance(c);
+    }
+    let full = g.city_calculate_num_cities_maintenance_times100(a);
+    assert!(full > 0);
+    let saved = g.city_house_maintenance_saved_times100(a);
+    assert!(saved > 0);
+    let before = g.cities[a].maintenance;
+    let (x, h) = land_head(&mut g, a);
+    assert_eq!(g.city_calculate_num_cities_maintenance_times100(a), full * g.d.defines.person_house_maintenance_percent / 100);
+    assert_eq!(g.cities[a].maintenance, before - saved, "the cache is refreshed by the grant");
+    assert_eq!(g.house_maintenance_saved_times100(h), saved);
+    // The head leaves: the seat is empty, the city pays in full.
+    let u = g.persons[x].unit.unwrap();
+    g.unit_kill(u, false, None);
+    assert_eq!(g.houses[h].head, None);
+    assert_eq!(g.cities[a].maintenance, before);
+    assert_eq!(g.house_maintenance_saved_times100(h), 0);
+}
+
+/// Player 0's House `h` to the end of its countdown.
+fn countdown_ends(g: &mut Game, h: HouseId) {
+    set_house_loyalty(g, h, -6);
+    turn(g);
+    assert!(g.houses[h].standing.countdown.is_some());
+    for _ in 0..g.d.defines.person_disloyal_turns {
+        if !g.houses.contains(h) {
+            return;
+        }
+        set_house_loyalty(g, h, -6);
+        turn(g);
+    }
+}
+
+#[test]
+fn a_house_secedes_with_the_cities_no_army_holds() {
+    let World { mut g, a, b, c, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (x, h) = land_head(&mut g, a);
+    g.persons[x].leader = Some(g.persons_pool(P0)[0]);
+    g.player_grant_city(P0, b, GrantTo::House(h)).unwrap();
+    g.player_grant_city(P0, c, GrantTo::House(h)).unwrap();
+    // An army stands in C.
+    let w = unit(&mut g, P0, "UNIT_WARRIOR", 7, 7);
+    g.army_form(P0, &[w]).unwrap();
+    let (a_plot, b_plot, c_plot) = (plot(&g, a), plot(&g, b), plot(&g, c));
+    let names: Vec<String> = [a, b].iter().map(|&c| g.d.text.name(&g.cities[c].name).to_string()).collect();
+    let (going, held) = g.house_cities_held(h);
+    assert_eq!((going, held), (vec![a, b], vec![c]));
+    let outcome = g.house_secession_outcome(h);
+    assert!(outcome.contains(&format!("{} and {}", names[0], names[1])), "{outcome}");
+    let label = g.house_label(h);
+    let players_before = g.num_players();
+    countdown_ends(&mut g, h);
+    assert!(!g.houses.contains(h), "gone");
+    assert!(!g.persons.contains(x), "the head left the cast");
+    assert_eq!(g.num_players(), players_before + 1, "a new civilization");
+    let np = PlayerId(players_before as u8);
+    assert!(g.players[np].alive);
+    assert_eq!(g.players[np].parent, Some(P0));
+    let (t0, nt) = (g.players[P0].team, g.players[np].team);
+    assert!(g.teams[nt].at_war[t0] && g.teams[t0].at_war[nt], "at war");
+    assert_eq!(g.players[np].ai_attitude_extra[P0], -4);
+    assert_eq!(g.players[P0].ai_attitude_extra[np], -4);
+    // What the preview said went: A and B; C, held, is the Crown's.
+    for q in [a_plot, b_plot] {
+        assert_eq!(g.cities[g.map.plots[q].plot_city.unwrap()].owner, np);
+    }
+    let held_city = g.map.plots[c_plot].plot_city.unwrap();
+    assert_eq!(g.cities[held_city].owner, P0);
+    assert_eq!(g.cities[held_city].house, None, "the Crown's");
+    assert!(g.players[P0].houses.is_empty());
+    assert!(logged(&g, &format!("{label} secedes from the Bannor with {} and {}.", names[0], names[1])), "told");
+    // The head's unit went with it.
+    assert!(g.players[np].units.iter().any(|&u| g.unit_is_hero(u)), "the head's hero unit is the new civilization's");
+}
+
+#[test]
+fn a_house_with_every_city_held_ends() {
+    let World { mut g, a, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (x, h) = land_head(&mut g, a);
+    let u = g.persons[x].unit.unwrap();
+    let w = unit(&mut g, P0, "UNIT_WARRIOR", 7, 4);
+    g.army_form(P0, &[w]).unwrap();
+    let players_before = g.num_players();
+    countdown_ends(&mut g, h);
+    assert!(!g.houses.contains(h));
+    assert!(!g.persons.contains(x));
+    assert!(!g.units.contains(u), "the head's unit is removed");
+    assert_eq!(g.num_players(), players_before, "no civilization");
+    assert_eq!(g.cities[a].owner, P0);
+    assert_eq!(g.cities[a].house, None);
+}
+
+#[test]
+fn a_league_secedes_together_but_not_with_a_rival() {
+    let World { mut g, a, b, c, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (x1, h1) = land_head(&mut g, a);
+    let (_, h2) = land_head(&mut g, b);
+    let (x3, h3) = land_head(&mut g, c);
+    g.persons[x3].rival = Some(x1);
+    set_house_loyalty(&mut g, h2, -6);
+    set_house_loyalty(&mut g, h3, -6);
+    assert_eq!(g.house_league(h1, false), vec![h1], "no countdown runs yet");
+    turn(&mut g);
+    assert!(g.houses[h2].standing.countdown.is_some() && g.houses[h3].standing.countdown.is_some());
+    assert_eq!(g.house_league(h1, false), vec![h1, h2], "the rival stays out");
+    assert_eq!(g.house_league(h1, true), vec![h1, h2, h3], "the civil war takes all");
+}
+
+#[test]
+fn direct_rule_is_civil_war() {
+    let World { mut g, a, b, c, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (x1, h1) = land_head(&mut g, a);
+    g.persons[x1].leader = Some(g.persons_pool(P0)[0]);
+    let (_, h2) = land_head(&mut g, b);
+    let (_, h3) = land_head(&mut g, c);
+    set_house_loyalty(&mut g, h2, 6);
+    // An army holds C.
+    let w = unit(&mut g, P0, "UNIT_WARRIOR", 7, 7);
+    g.army_form(P0, &[w]).unwrap();
+    let c_plot = plot(&g, c);
+    let players_before = g.num_players();
+    government(&mut g, "CIVIC_DESPOTISM");
+    assert!(g.players[P0].houses.is_empty(), "no House under direct rule");
+    for h in [h1, h2, h3] {
+        assert!(!g.houses.contains(h));
+    }
+    assert_eq!(g.num_players(), players_before + 1, "one league");
+    let np = PlayerId(players_before as u8);
+    assert_eq!(g.players[np].cities.len(), 2, "A and B, Devoted included");
+    let held = g.map.plots[c_plot].plot_city.unwrap();
+    assert_eq!(g.cities[held].owner, P0, "the counter on the map holds");
+    assert!(logged(&g, "Civil war:"));
+}
+
+#[test]
+fn a_commander_secedes_by_seizing_a_city() {
+    let World { mut g, b, cap, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    // Three units by city B (no other unit in it): a Disloyal commander's army.
+    let v = veteran(&mut g, 12, 5, 9);
+    let w1 = unit(&mut g, P0, "UNIT_WARRIOR", 12, 5);
+    let w2 = unit(&mut g, P0, "UNIT_WARRIOR", 12, 5);
+    g.army_form(P0, &[v, w1, w2]).unwrap();
+    turn(&mut g);
+    let x = g.unit_person(v).expect("a veteran");
+    set_person_loyalty(&mut g, x, -6);
+    turn(&mut g);
+    assert_eq!(g.persons[x].standing.sworn.len(), 3);
+    let (going, staying) = g.commander_sworn_going(x);
+    assert_eq!((going.len(), staying.len()), (3, 0));
+    assert_eq!(g.commander_seize_target(x, &going), Some(b), "the nearest, not the capital");
+    let b_plot = plot(&g, b);
+    let players_before = g.num_players();
+    for _ in 0..g.d.defines.person_disloyal_turns {
+        if !g.persons.contains(x) {
+            break;
+        }
+        set_person_loyalty(&mut g, x, -6);
+        turn(&mut g);
+    }
+    assert!(!g.persons.contains(x), "left the cast");
+    assert_eq!(g.num_players(), players_before + 1);
+    let np = PlayerId(players_before as u8);
+    assert_eq!(g.cities[g.map.plots[b_plot].plot_city.unwrap()].owner, np, "B seized");
+    assert!(g.players[np].units.len() >= 3, "the sworn units went");
+    assert_eq!(g.cities[cap].owner, P0);
+    let nt = g.players[np].team;
+    assert!(g.teams[nt].at_war[g.players[P0].team]);
+}
+
+#[test]
+fn sworn_units_outnumbered_in_a_city_stay() {
+    let World { mut g, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let v = veteran(&mut g, 7, 4, 9);
+    g.army_form(P0, &[v]).unwrap();
+    unit(&mut g, P0, "UNIT_WARRIOR", 7, 4);
+    unit(&mut g, P0, "UNIT_WARRIOR", 7, 4);
+    turn(&mut g);
+    let x = g.unit_person(v).expect("a veteran");
+    set_person_loyalty(&mut g, x, -6);
+    turn(&mut g);
+    let (going, staying) = g.commander_sworn_going(x);
+    assert_eq!((going, staying), (vec![], vec![v]), "two of the owner's other units in city A");
+}
+
+#[test]
+fn a_house_is_released_as_a_vassal() {
+    let World { mut g, a, b, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (x, h) = land_head(&mut g, a);
+    g.persons[x].leader = Some(g.persons_pool(P0)[0]);
+    g.player_grant_city(P0, b, GrantTo::House(h)).unwrap();
+    assert_eq!(g.player_check_release_house(P0, h), Ok(()));
+    set_house_loyalty(&mut g, h, -6);
+    assert_eq!(g.player_check_release_house(P0, h), Err("A Disloyal House cannot be released."));
+    set_house_loyalty(&mut g, h, 0);
+    let a_plot = plot(&g, a);
+    let np = g.player_release_house(P0, h).expect("released");
+    assert!(!g.houses.contains(h) && !g.persons.contains(x));
+    let (t0, nt) = (g.players[P0].team, g.players[np].team);
+    assert!(g.teams[nt].vassal[t0], "a vassal of its former owner");
+    assert!(!g.teams[nt].at_war[t0]);
+    assert_eq!(g.cities[g.map.plots[a_plot].plot_city.unwrap()].owner, np);
+    assert_eq!(g.players[np].cities.len(), 2);
+}
+
+#[test]
+fn a_foreign_city_demanded_by_land_is_refused_when_granted_to_another_house() {
+    let World { mut g, a, b, c, enemy, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (x, h) = land_head(&mut g, b);
+    g.player_grant_city(P0, a, GrantTo::House(h)).unwrap();
+    g.player_grant_city(P0, c, GrantTo::House(h)).unwrap();
+    for _ in 0..21 {
+        turn(&mut g);
+    }
+    let enemy_plot = plot(&g, enemy);
+    assert_eq!(g.persons[x].demand.map(|d| d.kind), Some(DemandKind::GrantCity(enemy_plot)));
+    // Taken: the Crown's, still demanded.
+    g.player_acquire_city(P0, enemy, false, true, true);
+    turn(&mut g);
+    assert_eq!(g.persons[x].demand.map(|d| d.kind), Some(DemandKind::GrantCity(enemy_plot)), "taken, not yet granted");
+    let taken = g.map.plots[enemy_plot].plot_city.unwrap();
+    let other = enter_hero(&mut g, 14, 6);
+    let before = g.house_loyalty(h);
+    g.player_grant_city(P0, taken, GrantTo::Person(other)).unwrap();
+    assert_eq!(g.persons[x].demand, None, "refused at once");
+    assert!(g.house_loyalty(h) <= before - 3);
+}
+
+#[test]
+fn a_works_demand_never_names_a_palace() {
+    let World { mut g, b, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let t0 = g.players[P0].team;
+    for tech in g.d.techs.keys() {
+        g.teams[t0].has_tech[tech] = true;
+    }
+    let (x, _) = war_head(&mut g, b);
+    g.persons[x].ambition = Ambition::Works;
+    // A palace the seat could build, nearly done: the least production left of all.
+    let palace = g.d.buildings.keys().find(|&k| g.d.buildings[k].capital && g.city_can_construct(b, k, false, false, false)).expect("a palace the seat could build");
+    let needed = g.city_production_needed_building(b, palace);
+    g.cities[b].building_production[palace] = needed - 1;
+    turn(&mut g);
+    let Some(DemandKind::Wonder { building, .. }) = g.persons[x].demand.map(|d| d.kind) else { panic!("{:?}", g.persons[x].demand) };
+    assert!(!g.d.buildings[building].capital, "{}", g.d.buildings[building].base.type_);
+}

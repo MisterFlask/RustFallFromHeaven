@@ -421,6 +421,7 @@ impl Game {
                 "granted" => "person_granted",
                 "demand" => "person_demand",
                 "state" => "person_state",
+                "seceded" => "person_seceded",
                 _ => "person_house",
             };
             t.count(p, key, what, 1);

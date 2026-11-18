@@ -324,6 +324,10 @@ impl Game {
                     if !self.cities.contains(c) || self.cities[c].owner != p || self.city_has_requisition(c, a) {
                         continue;
                     }
+                    // A House's city at its quota is passed over (docs/PERSONS.md, "Quota").
+                    if !self.city_takes_order(c) {
+                        continue;
+                    }
                     let Some((unit, ai)) = controller.requisition_unit(self, c, a) else { continue };
                     if !self.unit_type_fits_army(unit, a) || !self.city_can_train(c, unit, false, false, false, false) {
                         continue;
@@ -345,9 +349,14 @@ impl Game {
     /// City `c` trains a unit of `unit` for army `a` first: a requisition order at the front of its
     /// queue (behind any other requisition orders). Returns whether it was placed.
     fn city_place_requisition(&mut self, c: CityId, a: ArmyId, unit: UnitType, ai: UnitAIType) -> bool {
+        let house = self.city_house(c);
         let Some(index) = self.city_push_order_kind(c, OrderType::ORDER_TRAIN, unit.i(), ai.i(), false, false, false, false, OrderKind::Requisition) else { return false };
         if !self.cities.contains(c) {
             return false;
+        }
+        // Counted against the House's quota (docs/PERSONS.md, "Quota"; never refunded).
+        if let Some(h) = house.filter(|&h| self.houses.contains(h)) {
+            self.house_record_order(h);
         }
         self.cities[c].order_queue[index].dest = Some(RecruitDest::Army(a));
         let p = self.cities[c].owner;

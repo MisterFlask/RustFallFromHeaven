@@ -99,7 +99,9 @@ the player places for an army (empire orders, docs/GOVERNORS.md: a unit type, at
 **Requisition** (`army/requisition.rs`). An army requisitions soldiers from the cities its owner
 picks for it (`Army::requisition`, in the order they were added): any of the owner's cities,
 directly ruled or governed, the capital included. A city lost, traded, razed or flipped leaves
-every list. Requisition needs a target size: an army with none (0) requisitions nothing.
+every list. Requisition needs a target size: an army with none (0) requisitions nothing. A House's
+city (docs/PERSONS.md) at its quota is passed over, and each order placed in one counts against it;
+an army whose commander is Restless or Disloyal takes no order to attack (`unit_attack_refusal`).
 
 - *The shortfall*: the target size less the army's units, its recruits marching to it, its
   requisition orders in production and the other orders bound for it at the head of a city's queue

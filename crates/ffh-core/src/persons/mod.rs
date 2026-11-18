@@ -15,8 +15,13 @@
 //! **Demands and loyalty** (`demands.rs`, `loyalty.rs`). Each person makes one demand at a time,
 //! an act on the board with a term; met or refused, it leaves a timed modifier on the loyalty of
 //! the House (a head's) or the person (the others). The sum gives one of four states; Disloyal
-//! starts a countdown. What happens at the countdown's end (secession) is step 2 of the build:
-//! [`Game::persons_countdowns_due`] lists what is due and nothing acts on it yet.
+//! starts a countdown, at whose end the House or the commander secedes (`secession.rs`; a
+//! direct-rule civic is the secession of every House at once). Restless and Disloyal withhold: a
+//! House's city takes no order (the quota, `houses.rs`), a commander's army no order to attack
+//! (`command.rs`), a Disloyal head's unit no order at all.
+//!
+//! **What a House does to its cities** (`city.rs`): its head's trait applies in them, and they
+//! pay a share of their number-of-cities maintenance.
 //!
 //! **Read API** (`read.rs`) and **previews** (`preview.rs`) are what the client and the AI see.
 
@@ -28,6 +33,7 @@ use crate::game::Game;
 use crate::ids::*;
 use crate::log::{LogMark, LogTag};
 
+mod city;
 mod command;
 mod demands;
 mod entry;
@@ -35,6 +41,7 @@ mod houses;
 mod loyalty;
 mod preview;
 mod read;
+mod secession;
 mod turn;
 
 pub use entry::{leader_name, leader_title};

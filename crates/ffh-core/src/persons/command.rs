@@ -132,6 +132,65 @@ impl Game {
         self.armies[a].commander.filter(|&x| self.persons.contains(x))
     }
 
+    /// The commander who withholds unit `u`'s attacks, if any: the commander of the army it is in
+    /// or with ([`Game::unit_army_commander`]) while Restless or Disloyal (docs/PERSONS.md,
+    /// States). The one rule every attack asks (`unit_can_move_into` with `attack`), so the
+    /// human's commands, the AI and the path finder agree.
+    pub fn unit_attack_withheld_by(&self, u: UnitId) -> Option<PersonId> {
+        let owner = self.units.get(u)?.owner;
+        if self.players[owner].persons.is_empty() {
+            return None;
+        }
+        let x = self.unit_army_commander(u)?;
+        matches!(self.person_state(x), LoyaltyState::Restless | LoyaltyState::Disloyal).then_some(x)
+    }
+
+    /// Why unit `u` takes no order to attack, if its commander withholds it: `Commander Hrolf is
+    /// Restless. The 2nd Army takes no order to attack.`
+    pub fn unit_attack_refusal(&self, u: UnitId) -> Option<String> {
+        let x = self.unit_attack_withheld_by(u)?;
+        let state = self.person_state(x).name();
+        let name = &self.persons[x].name;
+        Some(match self.person_army(x) {
+            Some(a) => format!("Commander {name} is {state}. The {} takes no order to attack.", self.armies[a].name),
+            None => format!("Commander {name} is {state}. The army takes no order to attack."),
+        })
+    }
+
+    /// The persons a battle at `to` goes into the record of: the commanders of the first
+    /// committed unit in an army on each side, and the head of the House of a city on `to`.
+    pub(crate) fn persons_battle_parties(&self, att: &[UnitId], def: &[UnitId], to: PlotIdx) -> [Option<PersonId>; 3] {
+        let commander = |units: &[UnitId]| units.iter().find_map(|&u| self.unit_army_commander(u));
+        let head = self.persons_city_at(to).and_then(|c| self.city_house(c)).and_then(|h| self.houses[h].head).filter(|&x| self.persons.contains(x));
+        [commander(att), commander(def), head]
+    }
+
+    /// Battle report `id` in the records of `parties` ([`Game::persons_battle_parties`]): `Won a
+    /// battle at Torrin.` / `Lost a battle at Torrin.` for each commander, `Torrin withstood an
+    /// assault.` for the head when the city held.
+    pub(crate) fn persons_battle_deeds(&mut self, id: u32, parties: [Option<PersonId>; 3]) {
+        if parties.iter().all(Option::is_none) {
+            return;
+        }
+        let Some(r) = self.battle_report(id) else { return };
+        let place = match &r.place.city {
+            Some(c) => self.d.text.name(&c.name).to_string(),
+            None => format!("({}, {})", r.place.x, r.place.y),
+        };
+        let won = matches!(r.outcome.result, crate::engagement::report::EngageResult::Taken | crate::engagement::report::EngageResult::Cleared);
+        let held = r.place.city.is_some() && matches!(r.outcome.result, crate::engagement::report::EngageResult::Repulsed | crate::engagement::report::EngageResult::Held);
+        let [att, def, head] = parties;
+        for (x, side_won) in [(att, won), (def, !won)] {
+            if let Some(x) = x.filter(|&x| self.persons.contains(x)) {
+                let verb = if side_won { "Won" } else { "Lost" };
+                self.person_add_deed(x, format!("{verb} a battle at {place}."));
+            }
+        }
+        if let Some(x) = head.filter(|&x| held && self.persons.contains(x)) {
+            self.person_add_deed(x, format!("{place} withstood an assault."));
+        }
+    }
+
     /// Hook of a capture (`unit_set_xy`): the city now on `plot` was taken by a unit of its owner
     /// whose army had `commander`; it records the commander's claim and deed.
     pub(crate) fn city_persons_taken(&mut self, plot: PlotIdx, commander: Option<PersonId>) {

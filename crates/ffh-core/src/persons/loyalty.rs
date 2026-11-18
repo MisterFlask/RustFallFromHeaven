@@ -211,7 +211,7 @@ impl Game {
     }
 
     /// The countdowns of player `p` that have run out (pure): Houses first, then commanders.
-    /// Step 2 of the build (secession) acts on them; nothing does yet.
+    /// The persons turn's secession acts on them (`secession.rs`).
     pub fn persons_countdowns_due(&self, p: PlayerId) -> Vec<CountdownDue> {
         let turn = self.game_turn();
         let mut out = Vec::new();

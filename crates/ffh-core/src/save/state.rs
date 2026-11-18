@@ -469,7 +469,7 @@ persist_struct!(City {
     culture_revolt_level, recruit_default, direct_rule, role, role_overridden,
     specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
-    garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane, house, taken_by,
+    garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane, house, taken_by, house_trait,
 });
 
 persist_struct!(Player {
