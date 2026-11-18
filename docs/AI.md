@@ -1975,6 +1975,39 @@ step fires on a near second as well as on the ladder's first choice). Average po
 300: 52.4 base, 53.1 rules only, 52.6 with empire orders; research 203 / 233 / 183 (wide spread
 between seeds).
 
+## Persons of Note (`persons.rs`)
+
+This game's own system (docs/PERSONS.md). A rules change, so not gated on the AI (CLAUDE.md): the
+AI's minimum, reasonable and unmeasured. AI players only (`persons::turn`, once a turn before the
+governors' empire orders): a human's grants, heirs and demands are the human's.
+
+- **Heirs.** A House with an empty seat takes the heir candidate in the best state (ties: the
+  earlier in the cast); with one candidate the rules seat them.
+- **Grants** (`choose_grant`), one a turn while the government allows them: a Crown city other
+  than the capital and the AI's best production city (`kept_city`: the empire orders go to its
+  most productive cities, and a House's city takes them only within its quota), to the candidate
+  of `grant_candidates` ranked by, in order: no holder made Disloyal by the preview; a standing
+  demand met (a Restless or Disloyal grantee's first); a claimant, the one in the best state; a
+  person without a post founding a House, then a great person founding the first House (only with
+  no House and no person without a post, and not a great person whose card the card logic keeps
+  waiting), then the House with the fewest cities; the fewest holders made Restless. A commander
+  is granted a city (which ends the command) only for their claim or demand. A grant that would
+  make a holder Disloyal waits: the Crown keeping the city snubs nobody.
+- **Demands** (`demands`): at most one act a turn, Restless and Disloyal holders first: a Works
+  wonder becomes an empire order in its seat when the House takes the order and the AI values the
+  wonder there (some value, at most 50 turns). The grant demands are the grants' first rank; a
+  demanded state religion is what `empire::religion` adopts whenever it may; a demanded war adds a
+  tenth to that civilization's score in the war planning (`diplomacy::manage`), never a war of
+  its own.
+- **Civics.** A direct-rule civic (Despotism, God King) is not considered while a House stands
+  (`civic_barred`): the rules would make every House secede.
+- **Armies.** A stack with nothing else to do (before gathering, `military::army`) stands in the
+  largest city of a Disloyal House where no army of ours stands, within 8 turns (a city where an
+  army stands does not secede). A Disloyal commander's army goes first of all to our city with the
+  largest garrison of other land units, within 10 turns (its sworn units there stay).
+- **Requisition** passes over a House's city that takes no order (`armies::requisition_cities`).
+- It never releases a House as a vassal.
+
 ## Random events (`events.rs`)
 
 The rules offer an AI player the trigger's events it can do, in trigger order (`player_trigger_data`).

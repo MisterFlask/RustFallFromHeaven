@@ -489,7 +489,20 @@ under the record: `Earlier games: seceded twice; held Prespur to the end once.`
 ## AI
 
 A rules change is not gated on the AI (CLAUDE.md, "How AI changes are checked"): the AI does
-something reasonable with it. First version:
+something reasonable with it.
+
+**Built** (2026-11-18, `crates/ffh-ai/src/persons.rs`; docs/AI.md, "Persons of Note"), for AI
+players only: heirs in the best state; one grant a turn of a Crown city (not the capital, not its
+best production city), ranked: no holder made Disloyal, a demand met (Restless holders first), a
+claimant in the best state, a person without a post founding a House (a great person founds only
+the first House), then the House with the fewest cities; a Works wonder ordered in its seat when
+the House takes the order and the AI values it; a demanded war weighs a tenth more in the war
+planning; no direct-rule civic while a House stands; an idle army stands in an unheld city of a
+Disloyal House; a Disloyal commander's army goes to the most garrisoned city; requisition passes
+over a House's city that takes no order; never a release. Not built: commands by the AI (the
+rules' default commander stands), the order quota's use beyond the requisition's skip, courting.
+
+The design's first version:
 - it grants each city gained beyond the Crown's size to the claimant in the best state, and
   founds a House for a person without a post before enlarging one;
 - each turn it works toward the standing demand that is cheapest for it among those of its

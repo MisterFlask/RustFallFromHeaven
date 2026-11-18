@@ -51,7 +51,7 @@ const END_TURNS: &[fn(&mut Game, PlayerId)] = &[
 const WAIT_TURNS: i32 = 30;
 
 /// How many of its card's needs may be missing for a great person to wait.
-const WAIT_MISSING: usize = 2;
+pub(crate) const WAIT_MISSING: usize = 2;
 
 /// `SPELL_DISCOVER_CARD`.
 pub fn discover_spell(d: &GameData) -> SpellType {

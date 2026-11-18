@@ -56,6 +56,7 @@ pub mod military;
 pub mod naval;
 pub mod offers;
 pub mod outposts;
+pub mod persons;
 pub mod pacts;
 pub mod predict;
 pub mod probes;
@@ -217,6 +218,7 @@ impl Controller for Ai {
             v.analyze(g);
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
+            persons::turn(g, p); // Persons of Note: heirs, a grant, a demand met (docs/PERSONS.md)
             governor::turn(self, g, p); // governed cities: priorities, empire orders (docs/GOVERNORS.md)
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)
