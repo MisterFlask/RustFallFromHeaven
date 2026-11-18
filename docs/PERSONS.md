@@ -195,6 +195,22 @@ peace; the head leaves the cast. Refused under No Vassal States.
 also refused with an empty seat or without a leader to be had; all the House's cities go; the
 vassal is played by the game's AI.
 
+**Known gaps of the first build** (2026-11-18):
+- A Disloyal head's unit is marched to its House's largest city by the rules, but once there
+  only the human's command layer refuses its orders (`unit_house_refusal`); the AI moves it as
+  any unit and the rules march it back.
+- The secession news other civilizations receive carries no log tag: the client recognises it
+  by its wording (`ffh-play` `report.rs`, `is_secession_text`).
+- For the AI, a commander's demand for a House is the demand most often refused: meeting it
+  ends the command, and the Crown runs short of cities once the AI grants one a turn.
+- A civilization has five minor leaders, so at most five persons who are not heroes in a game.
+- A commander going over to a rival waits for courting (stage 4): a Disloyal commander joins a
+  league formed that turn, seizes a city or resigns.
+- Measured once (8 AI games of 300 turns, 7 civilizations, standard maps, the merged build):
+  8 to 22 persons entered a game, 3 to 12 Houses were founded, 30 to 71 cities granted; one
+  secession in the eight games, of 3 cities, after the AI stopped enlarging a House past the
+  Crown (before: four secessions of 5 to 8 cities).
+
 ## What it is for
 
 Two goals (the owner, 2026-11-18): **administering an empire is tricky**, and **the game makes
