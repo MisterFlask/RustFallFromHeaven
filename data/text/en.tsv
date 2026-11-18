@@ -14967,7 +14967,7 @@ TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER	One in progress per player. Each completio
 TXT_KEY_KEYWORD_HOUSE	House
 TXT_KEY_KEYWORD_HOUSE_REMINDER	A civilization of its own and the vassal of its liege, led by a person of the liege's court. It pays the liege a tribute of its gold and research, and the liege's armies may requisition in its cities.
 TXT_KEY_KEYWORD_CROWN	Crown
-TXT_KEY_KEYWORD_CROWN_REMINDER	The cities the civilization holds itself. The capital is always the Crown's. A city of the Crown can be granted to a House, or to found one.
+TXT_KEY_KEYWORD_CROWN_REMINDER	The cities the civilization holds itself. The capital is always the Crown's. A city of the Crown can be granted to a House, or to found one. Under a governing civic, the Crown's cities beyond its limit (the capital first, settlements not counted) pay triple city-count maintenance.
 TXT_KEY_KEYWORD_FRIENDLY	Friendly
 TXT_KEY_KEYWORD_FRIENDLY_REMINDER	Loyalty +3 or more. A House refuses any offer to secede.
 TXT_KEY_KEYWORD_PLEASED	Pleased

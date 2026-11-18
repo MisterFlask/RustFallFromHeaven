@@ -1,37 +1,76 @@
 //! The Crown's limit and a House's size (docs/PERSONS.md, "The second build", rule 14; the owner's
 //! request of 2026-11-18: "the typical state should be the player managing 2-5 Houses depending on
-//! empire size").
+//! empire size", and its revision of the same day).
 //!
-//! - **The Crown's limit** ([`Game::player_crown_limit`]): each governing civic sets how many
-//!   cities the Crown holds at the normal city-count maintenance (`CivicInfo::crown_cities`; 0: no
-//!   limit). The Crown's cities are the player's own that pay city-count maintenance (not a
-//!   settlement, not an outpost), the capital first, then in the player's city order
-//!   ([`Game::player_crown_cities`]); those beyond the limit pay [`CROWN_OVER_FACTOR`] times their
-//!   city-count maintenance (`city_calculate_num_cities_maintenance_times100`). There is no limit
-//!   where no city can be granted (direct rule, a vassal, No Vassal States, a civilization without
-//!   Houses): the remedy is a grant.
-//! - **A House's size**: a House holding more than [`HOUSE_CITIES_FREE`] cities has the standing
-//!   loyalty part `Holds N cities: -(N - 3)` (`loyalty.rs`), as `State religion opposed` is.
+//! - **The Crown's limit** ([`Game::player_crown_limit`]): under every governing civic the Crown
+//!   holds `PERSON_CROWN_CITIES` (3) cities at the normal city-count maintenance, plus its traits'
+//!   `crown_cities_change` (the Kuriotates' Sprawling: -2, the capital alone), never below 1. The
+//!   Crown's cities are the player's own great cities (not a settlement, not an outpost), the
+//!   capital first, then in the player's city order ([`Game::player_crown_cities`]); those beyond
+//!   the limit pay [`CROWN_OVER_FACTOR`] times their city-count maintenance
+//!   (`city_calculate_num_cities_maintenance_times100`). There is no limit where no city can be
+//!   granted (direct rule, a vassal, No Vassal States, a civilization without Houses): the remedy
+//!   is a grant.
+//! - **The realm's great cities** ([`Game::player_realm_great_cities`]): a player with a city cap
+//!   (the Kuriotates' `max_cities`) counts its liege's and every House's of that liege together
+//!   against it, so a House founding or receiving cities does not raise the realm's number of
+//!   great cities. A city granted keeps what it was (a great city or a settlement).
+//! - **A House's size** ([`Game::house_size_part`]): a House holding more great cities than its
+//!   realm's threshold ([`Game::player_house_size_threshold`]: `max(PERSON_HOUSE_SIZE_MIN,
+//!   PERSON_HOUSE_SIZE_BASE + the realm's great cities / PERSON_HOUSE_SIZE_PER)`, 3 up to 15, 4
+//!   from 16, 5 from 24) has the standing loyalty part `Holds N cities, more than T: -(N - T)`
+//!   (`loyalty.rs`), as `State religion opposed` is. A grant or a founding moves a city within the
+//!   realm and leaves the threshold as it is; a capture or a loss moves it.
 
 use super::*;
 
 /// The Crown's cities beyond its limit pay this many times their city-count maintenance.
 pub const CROWN_OVER_FACTOR: i32 = 3;
-/// A House holds this many cities without a grievance; each further one is -1, standing.
-pub const HOUSE_CITIES_FREE: i32 = 3;
 
 impl Game {
     /// The cities player `p`'s Crown holds at the normal city-count maintenance (`None`: no
-    /// limit): the largest `crown_cities` of its civics, where it may grant cities.
+    /// limit, where it cannot grant cities): `PERSON_CROWN_CITIES` plus its traits'
+    /// `crown_cities_change`, never below 1.
     pub fn player_crown_limit(&self, p: PlayerId) -> Option<i32> {
         if self.player_check_grants(p).is_err() {
             return None;
         }
-        let limit = self.players[p].civics.iter().flatten().map(|&c| self.d.civics[c].crown_cities).max().unwrap_or(0);
-        (limit > 0).then_some(limit)
+        let d = self.d;
+        let change: i32 = d.traits.keys().filter(|&t| self.players[p].traits[t]).map(|t| d.traits[t].crown_cities_change).sum();
+        Some((d.defines.person_crown_cities + change).max(1))
     }
 
-    /// Whether city `c` counts in its Crown (it pays city-count maintenance: no settlement, no
+    /// The great cities (no settlement, no outpost) of player `p`'s realm: its liege's (or its
+    /// own, for a player that is no House) and those of every House of that liege. A player's
+    /// city cap (`max_cities`, the Kuriotates) counts them.
+    pub fn player_realm_great_cities(&self, p: PlayerId) -> i32 {
+        let head = self.player_house(p).map_or(p, |h| self.houses[h].owner);
+        let great = |q: PlayerId| self.players[q].num_cities() - self.player_get_num_settlements(q) - self.player_get_num_outposts(q);
+        great(head) + self.players[head].houses.iter().filter_map(|&h| self.houses.get(h)).map(|house| great(house.player)).sum::<i32>()
+    }
+
+    /// City `c`, which moved to a House or back from one (a grant, a founding, a break-away's
+    /// held city), keeps what it was before (`settlement`): a great city stays great, a
+    /// settlement stays one, whatever its new owner's count, where its new owner has a city cap
+    /// (a player without one has no settlements).
+    pub(crate) fn city_keep_settlement(&mut self, c: CityId, settlement: bool) {
+        let d = self.d;
+        let owner = self.cities[c].owner;
+        if self.players[owner].max_cities == -1 || self.cities[c].outpost {
+            return;
+        }
+        let changed = self.cities[c].settlement != settlement;
+        self.cities[c].settlement = settlement;
+        // Its radius as a great city or a settlement, or its radius building's.
+        let building = d.buildings.keys().filter(|&b| d.buildings[b].plot_radius != 0 && self.city_num_active_building(c, b) > 0).map(|b| d.buildings[b].plot_radius).max().unwrap_or(0);
+        let radius = self.city_base_plot_radius(c).max(building);
+        self.city_set_plot_radius(c, radius);
+        if changed {
+            self.player_update_maintenance(owner);
+        }
+    }
+
+    /// Whether city `c` counts in its Crown (a great city: no settlement, no
     /// outpost).
     fn city_counts_for_crown(&self, c: CityId) -> bool {
         self.cities.get(c).is_some_and(|city| !city.settlement && !city.outpost)
@@ -88,14 +127,39 @@ impl Game {
         extra * inflation / 100
     }
 
-    /// The standing loyalty part of House `h`'s size: `-(N - 3)` for more than
-    /// [`HOUSE_CITIES_FREE`] cities.
-    pub fn house_size_part(&self, h: HouseId) -> i32 {
-        Self::size_part(self.house_cities(h).len() as i32)
+    /// The great cities a House of player `p`'s realm (its liege's, or its own) holds without a
+    /// grievance: `max(PERSON_HOUSE_SIZE_MIN, PERSON_HOUSE_SIZE_BASE + the realm's great cities /
+    /// PERSON_HOUSE_SIZE_PER)`.
+    pub fn player_house_size_threshold(&self, p: PlayerId) -> i32 {
+        let defines = &self.d.defines;
+        let base = defines.person_house_size_base + self.player_realm_great_cities(p) / defines.person_house_size_per.max(1);
+        base.max(defines.person_house_size_min)
     }
 
-    /// The standing part of a House of `n` cities.
-    pub(crate) fn size_part(n: i32) -> i32 {
-        -(n - HOUSE_CITIES_FREE).max(0)
+    /// The threshold of House `h`'s realm ([`Game::player_house_size_threshold`]).
+    pub fn house_size_threshold(&self, h: HouseId) -> i32 {
+        self.player_house_size_threshold(self.houses[h].owner)
+    }
+
+    /// House `h`'s great cities (no settlement, no outpost): what its size counts.
+    pub fn house_great_cities(&self, h: HouseId) -> i32 {
+        let q = self.houses[h].player;
+        self.players[q].num_cities() - self.player_get_num_settlements(q) - self.player_get_num_outposts(q)
+    }
+
+    /// The standing loyalty part of House `h`'s size: `-(N - T)` for `N` great cities above its
+    /// realm's threshold `T`.
+    pub fn house_size_part(&self, h: HouseId) -> i32 {
+        Self::size_part(self.house_great_cities(h), self.house_size_threshold(h))
+    }
+
+    /// The standing part of a House of `n` great cities under threshold `t`.
+    pub(crate) fn size_part(n: i32, t: i32) -> i32 {
+        -(n - t).max(0)
+    }
+
+    /// The label of House `h`'s size part with `n` great cities (`Holds N cities, more than T`).
+    pub(crate) fn house_size_label(&self, h: HouseId, n: i32) -> String {
+        format!("Holds {n} cities, more than {}", self.house_size_threshold(h))
     }
 }

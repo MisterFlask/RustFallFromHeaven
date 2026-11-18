@@ -169,7 +169,10 @@ impl Game {
     /// the land combat units of its owner in it, but those in an army or marching (they stay
     /// their owner's: a vassal's land is friendly to its master). The city it becomes.
     pub(crate) fn persons_move_city(&mut self, c: CityId, to: PlayerId) -> Option<CityId> {
-        world::release_city(self, to, c, None, true)
+        let settlement = self.cities[c].settlement;
+        let moved = world::release_city(self, to, c, None, true)?;
+        self.city_keep_settlement(moved, settlement);
+        Some(moved)
     }
 
     /// Person `x` (with a leader, no House) founds a House of their owner `p` with city `c`: a new
@@ -182,6 +185,7 @@ impl Game {
         let leader = self.persons[x].leader?;
         let civ = self.player_get_civilization_type(p)?;
         let plot = self.city_plot(c);
+        let settlement = self.cities[c].settlement;
         // The person leaves the map first (their unit's death is not theirs).
         if let Some(u) = self.person_unit(x) {
             self.persons[x].unit = None;
@@ -219,6 +223,8 @@ impl Game {
         house.name = name;
         house.standing.mods.retain(|m| m.cause != LoyaltyCause::SoughtProtection);
         let new_c = self.persons_city_at(plot)?;
+        // A great city stays great, a settlement stays one (rule 14: the realm's count).
+        self.city_keep_settlement(new_c, settlement);
         Some((h, new_c))
     }
 

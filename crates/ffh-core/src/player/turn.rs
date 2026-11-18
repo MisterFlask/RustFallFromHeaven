@@ -937,12 +937,6 @@ impl Game {
             return false;
         }
 
-        // Not in C++: the colony is a vassal, so a House (docs/PERSONS.md): none under a
-        // direct-rule civic.
-        if self.team_vassal_refusal(self.players[p].team).is_some() {
-            return false;
-        }
-
         if self.player_get_split_empire_leaders(p).is_empty() {
             return false;
         }

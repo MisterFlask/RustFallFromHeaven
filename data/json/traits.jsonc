@@ -189,7 +189,9 @@
     "happiness": 3,
     "max_anarchy": -1,
     "sprawling": true,
-    "max_cities": 3
+    "max_cities": 3,
+    // Persons of Note (docs/PERSONS.md, rule 14): the Crown's limit is the capital alone
+    "crown_cities_change": -2
   },
   {
     "type": "TRAIT_INGENUITY",

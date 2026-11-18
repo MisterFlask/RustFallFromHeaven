@@ -550,8 +550,7 @@ pub fn birth(g: &mut Game, b: &Birth) -> PlayerId {
 
     if let (Some(founder), true) = (b.founder, b.vassal) {
         let ft = g.players[founder].team;
-        // (`team_vassal_refusal`: No Vassal States, a vassal founder, and not in FFH2 a founder under
-        // a direct-rule civic: every vassal is a House, none stands under direct rule.)
+        // (`team_vassal_refusal`: No Vassal States, a vassal founder.)
         if g.team_vassal_refusal(ft).is_none() {
             g.team_assign_vassal(ft, nt, false);
             // A card's vassal birth is a House that sought no protection (docs/PERSONS.md).

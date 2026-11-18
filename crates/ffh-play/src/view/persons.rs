@@ -463,6 +463,10 @@ pub fn court(v: &Viewer) -> Json {
             format!("The Crown holds {n} {}; its limit is {limit}.", if n == 1 { "city" } else { "cities" })
         });
     }
+    // A House's size (rule 14): the realm's threshold.
+    if !cv.houses.is_empty() {
+        header.push(format!("Realm: {} cities. A House holds {} without a grievance.", cv.realm_cities, cv.house_size_threshold));
+    }
     let (attention, badge) = if g.player_has_persons(h) { attention(v, &cv.persons, &cv.houses, &cv.grantable) } else { (Vec::new(), 0) };
     let mut crown: Vec<CityId> = g.players[h].cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
     crown.sort_by_key(|&c| (!g.city_is_capital(c), c));

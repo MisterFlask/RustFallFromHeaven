@@ -121,6 +121,17 @@
   "PERSON_DISLOYAL_TURNS": 10,
   // a House with a city within this many plots of a city is a claimant to it
   "PERSON_CLAIM_RANGE": 6,
+  // the Crown's limit under a governing civic (docs/PERSONS.md, "The second build", rule 14): the
+  //      cities the Crown holds at the normal city-count maintenance, the capital first; each
+  //      further one pays triple (a trait's crown_cities_change adds to it; never below 1)
+  "PERSON_CROWN_CITIES": 3,
+  // a House's size (rule 14): a House holds max(PERSON_HOUSE_SIZE_MIN, PERSON_HOUSE_SIZE_BASE +
+  //      the realm's great cities / PERSON_HOUSE_SIZE_PER) great cities without a grievance; each
+  //      further one is -1, standing (the realm: the liege's cities and its Houses', settlements
+  //      left out)
+  "PERSON_HOUSE_SIZE_BASE": 2,
+  "PERSON_HOUSE_SIZE_PER": 8,
+  "PERSON_HOUSE_SIZE_MIN": 3,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
   //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
   //      engage_row_order in units.jsonc; plot

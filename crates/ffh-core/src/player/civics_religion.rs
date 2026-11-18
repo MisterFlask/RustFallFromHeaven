@@ -212,6 +212,7 @@ impl Game {
         let old_civic = self.players[p].civics[civic_option];
 
         if old_civic != civic {
+            let was_direct = self.player_rules_directly(p);
             self.players[p].civics[civic_option] = civic;
 
             if let Some(old_civic) = old_civic {
@@ -225,6 +226,11 @@ impl Game {
 
             game_ai_make_assign_work_dirty(self);
 
+            // Persons of Note (docs/PERSONS.md, rule 11): adopting direct rule is civil war (every
+            // House breaks away).
+            if !was_direct && self.player_rules_directly(p) {
+                self.player_persons_civil_war(p);
+            }
             // This game's governors (docs/GOVERNORS.md): the government decides who runs the
             // cities.
             self.player_governance_sync(p);
@@ -1717,6 +1723,10 @@ impl Game {
         }
 
         self.player_update_max_anarchy_turns(p);
+        // This game's Crown's limit (docs/PERSONS.md, rule 14) moves with the trait.
+        if info.crown_cities_change != 0 {
+            self.player_update_maintenance(p);
+        }
     }
 }
 

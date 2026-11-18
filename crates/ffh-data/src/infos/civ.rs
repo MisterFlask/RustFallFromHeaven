@@ -46,6 +46,9 @@ pub struct TraitInfo {
     pub starting_gold: i32,
     pub summon_duration: i32,
     pub upgrade_cost_modifier: i32,
+    /// Persons of Note (docs/PERSONS.md, "The second build", rule 14): added to the Crown's limit
+    /// of a player with this trait (`PERSON_CROWN_CITIES`; the limit is never below 1).
+    pub crown_cities_change: i32,
     // ---- arrays ----
     pub extra_yield_threshold: [i32; YieldType::NUM],
     pub trade_yield_modifier: [i32; YieldType::NUM],
@@ -94,6 +97,7 @@ pub fn read_trait(rd: &Rd) -> TraitInfo {
         starting_gold: rd.int("starting_gold"),
         summon_duration: rd.int("summon_duration"),
         upgrade_cost_modifier: rd.int("upgrade_cost_modifier"),
+        crown_cities_change: rd.int("crown_cities_change"),
         extra_yield_threshold: rd.yields("extra_yield_thresholds"),
         trade_yield_modifier: rd.yields("trade_yield_modifiers"),
         commerce_change: rd.commerces("commerce_changes"),

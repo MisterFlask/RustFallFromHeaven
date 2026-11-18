@@ -135,12 +135,17 @@ impl Game {
             first.lines.push((format!("Tribute {pct}%: {}{part}", if part > 0 { "+" } else { "" }), part));
         }
         first.lines.push((amount_text(&format!("Granted {city}"), GRANTED), GRANTED.0));
-        // A House's size (rule 14): the standing part changes with one city more.
+        // A House's size (rule 14): the standing part changes with one great city more (a
+        // settlement does not count). A grant moves a city within the realm: the threshold
+        // stays.
         if let GrantTo::House(h) = to {
-            let n = self.house_cities(h).len() as i32;
-            let (before, after) = (Self::size_part(n), Self::size_part(n + 1));
+            let n = self.house_great_cities(h);
+            let more = n + i32::from(!self.cities[c].settlement);
+            let t = self.house_size_threshold(h);
+            let (before, after) = (Self::size_part(n, t), Self::size_part(more, t));
             if after != before {
-                let text = if before == 0 { format!("Holds {} cities: {after}", n + 1) } else { format!("Holds {} cities: {} ({after} in all)", n + 1, after - before) };
+                let label = self.house_size_label(h, more);
+                let text = if before == 0 { format!("{label}: {after}") } else { format!("{label}: {} ({after} in all)", after - before) };
                 first.lines.push((text, after - before));
             }
         }

@@ -304,11 +304,6 @@ impl Game {
             return;
         }
         let direct = self.player_rules_directly(p);
-        // Persons of Note (docs/PERSONS.md, rule 11): direct rule is civil war (every House breaks
-        // away).
-        if direct && !self.players[p].houses.is_empty() {
-            self.player_persons_civil_war(p);
-        }
         let mut changed = 0;
         for c in self.players[p].cities.clone() {
             if !self.cities.contains(c) {

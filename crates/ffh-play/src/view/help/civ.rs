@@ -67,6 +67,7 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
         starting_gold,
         summon_duration,
         upgrade_cost_modifier,
+        crown_cities_change,
         extra_yield_threshold,
         trade_yield_modifier,
         commerce_change,
@@ -243,6 +244,10 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
         if n != 0 {
             add(&mut b, key, &[Arg::N(n)]);
         }
+    }
+    // This game's Persons of Note (docs/PERSONS.md, rule 14).
+    if *crown_cities_change != 0 {
+        b.push_str(&format!("{NEWLINE}[ICON_BULLET]Crown's limit: {crown_cities_change:+} cities (at least 1)"));
     }
     // This game's (the Summoner trait's Summoner's Bond).
     if let Some(p) = summon_promotion {

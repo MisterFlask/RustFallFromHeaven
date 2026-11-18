@@ -325,8 +325,9 @@ impl Game {
         }
     }
 
-    /// Player `p` under direct rule with Houses: every House breaks away at once (docs/PERSONS.md,
-    /// rule 11). Called where the government's change is noticed (`player_governance_sync`).
+    /// Player `p` adopting direct rule with Houses: every House breaks away at once
+    /// (docs/PERSONS.md, rule 11). Called when its civics change into direct rule
+    /// (`player_set_civics`); a vassal taken later under direct rule is a House and stays.
     pub fn player_persons_civil_war(&mut self, p: PlayerId) {
         if self.players[p].houses.is_empty() || !self.player_rules_directly(p) {
             return;
@@ -337,7 +338,7 @@ impl Game {
             if self.houses.contains(h) {
                 self.house_break_away(h, Why::CivilWar);
             }
-            // (Whatever could not break away ends too: no House stands under direct rule.)
+            // (Whatever could not break away ends too.)
             if self.houses.contains(h) {
                 self.house_record_end(h);
             }

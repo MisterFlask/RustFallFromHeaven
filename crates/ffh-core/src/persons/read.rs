@@ -152,6 +152,9 @@ pub struct HouseView {
     pub free: Result<(), &'static str>,
     /// Its price to secede (`None`: it refuses any offer: Pleased or Friendly).
     pub bribe_price: Option<i32>,
+    /// Its great cities (its size, rule 14) and the realm's threshold above which each is -1.
+    pub great_cities: i32,
+    pub size_threshold: i32,
 }
 
 /// A player's court.
@@ -176,6 +179,10 @@ pub struct CourtView {
     pub crown_cities: Vec<CityId>,
     pub crown_over: Vec<CityId>,
     pub crown_over_cost_times100: i32,
+    /// The realm's great cities (the player's and its Houses') and the great cities a House holds
+    /// without a grievance (rule 14).
+    pub realm_cities: i32,
+    pub house_size_threshold: i32,
 }
 
 /// A city's House for the map and the lists ([`Game::city_house_mark`]).
@@ -227,7 +234,7 @@ impl Game {
             out.push(LoyaltyPart { label: format!("Tribute {pct}%"), amount: tribute_part(pct), turns_left: None });
             let size = self.house_size_part(h);
             if size != 0 {
-                out.push(LoyaltyPart { label: format!("Holds {} cities", self.house_cities(h).len()), amount: size, turns_left: None });
+                out.push(LoyaltyPart { label: self.house_size_label(h, self.house_great_cities(h)), amount: size, turns_left: None });
             }
         }
         out
@@ -343,6 +350,8 @@ impl Game {
             levy: LevyStatus { takes: refusal.is_none(), reason: refusal },
             free: self.player_check_free_house(house.owner, h),
             bribe_price: self.house_bribe_price(h),
+            great_cities: self.house_great_cities(h),
+            size_threshold: self.house_size_threshold(h),
         })
     }
 
@@ -362,6 +371,8 @@ impl Game {
             crown_cities: self.player_crown_cities(p),
             crown_over: self.player_crown_over(p),
             crown_over_cost_times100: self.player_crown_over_cost_times100(p),
+            realm_cities: self.player_realm_great_cities(p),
+            house_size_threshold: self.player_house_size_threshold(p),
         }
     }
 

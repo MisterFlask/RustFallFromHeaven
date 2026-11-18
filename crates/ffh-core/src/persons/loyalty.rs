@@ -4,7 +4,7 @@
 //! A head's loyalty is their House's (`House::standing`); everyone else's is their own
 //! (`Person::standing`). The sum is the modifiers still running plus the standing parts: `State
 //! religion opposed: -2` (the state religion's alignment the opposite of the person's; a House's
-//! is its head's) and, for a House, `Tribute N%: 1 - N/10` and `Holds N cities: -(N - 3)` (rule 14).
+//! is its head's) and, for a House, `Tribute N%: 1 - N/10` and `Holds N cities, more than T: -(N - T)` (rule 14).
 
 use ffh_data::*;
 
@@ -103,7 +103,7 @@ impl Game {
         self.holder_standing(hd).mods.iter().filter(|m| m.until.map_or(true, |u| u > turn)).map(|m| m.amount).sum()
     }
 
-    /// The holder's standing size part (a House's: `Holds N cities: -(N - 3)`, rule 14; 0 for a
+    /// The holder's standing size part (a House's: `Holds N cities, more than T: -(N - T)`, rule 14; 0 for a
     /// person).
     pub(crate) fn holder_size_part(&self, hd: Holder) -> i32 {
         match hd {

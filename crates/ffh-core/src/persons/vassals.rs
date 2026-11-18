@@ -12,7 +12,8 @@
 //!   head leaves the cast. A player that becomes a House loses its own cast (its own Houses are
 //!   freed by the vassal rules: a vassal cannot have vassals).
 //! - **Who may hold vassals** ([`Game::team_vassal_refusal`]): not a vassal, not under No Vassal
-//!   States, and not under a direct-rule civic (no House stands under direct rule, rule 11).
+//!   States (the Civ4 rules). A liege under a direct-rule civic holds its vassals as Houses too: it
+//!   grants them no city, and adopting direct rule is civil war (rule 11, `secession.rs`).
 //! - **Tribute** ([`Game::player_persons_tribute`], the liege's turn processing): for each House
 //!   in id order, its tribute percent of its cities' gold commerce, from its treasury (no more
 //!   than it holds) to the liege's, and of their research commerce, added to the liege team's
@@ -67,18 +68,14 @@ impl Game {
     // Who may hold vassals
     // -----------------------------------------------------------------------------------------
 
-    /// Why team `master` may not take a vassal now (`None`: it may): under No Vassal States, a
-    /// vassal itself, or its leading player under a direct-rule civic (no House stands under
-    /// direct rule).
+    /// Why team `master` may not take a vassal now (`None`: it may): under No Vassal States, or a
+    /// vassal itself.
     pub fn team_vassal_refusal(&self, master: TeamId) -> Option<&'static str> {
         if self.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) {
             return Some("Game option: no vassal states.");
         }
         if self.team_is_a_vassal(master) {
             return Some("A vassal cannot have vassals.");
-        }
-        if self.team_get_leader_id(master).is_some_and(|l| self.player_rules_directly(l) && !self.player_is_barbarian(l)) {
-            return Some("Government: direct rule. No vassal can be held.");
         }
         None
     }

@@ -147,7 +147,9 @@ impl Game {
         let max_cities = self.players[owner].max_cities;
         if max_cities != -1 && !outpost {
             let num_cities = self.players[owner].num_cities();
-            if num_cities - self.player_get_num_settlements(owner) - self.player_get_num_outposts(owner) - 1 >= max_cities {
+            // This game's Houses (docs/PERSONS.md, rule 14): the cap counts the realm's great
+            // cities, the liege's and its Houses' together (C++: the owner's own).
+            if self.player_realm_great_cities(owner) - 1 >= max_cities {
                 self.cities[c].settlement = true;
             } else if !self.players[owner].human || num_cities == 1 || self.is_game_multi_player() {
                 self.city_set_plot_radius(c, 3);

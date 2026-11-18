@@ -324,9 +324,6 @@ pub struct CivicInfo {
     /// This game's governors (docs/GOVERNORS.md): under this civic every city of its player is
     /// ruled directly (else every city is governed).
     pub direct_rule: bool,
-    /// Persons of Note (docs/PERSONS.md, rule 14): the cities the Crown holds at the normal
-    /// city-count maintenance under this civic; beyond them, triple (0: no limit).
-    pub crown_cities: i32,
 }
 
 impl CivicInfo {
@@ -415,7 +412,6 @@ pub fn read_civic(rd: &Rd) -> CivicInfo {
         no_war_weariness: rd.bool("no_war_weariness"),
         unit_rush_gold: rd.int("unit_rush_gold"),
         direct_rule: rd.bool("direct_rule"),
-        crown_cities: rd.int("crown_cities"),
     }
 }
 

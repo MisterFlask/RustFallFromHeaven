@@ -348,9 +348,8 @@ pub fn check(g: &Game) {
     // This game's persons of note and Houses (docs/PERSONS.md, "The second build"): a House is a
     // player of its own, the vassal of its liege: every House record's player is alive, no human,
     // a vassal of its owner's team, and names the record (`Player::house`); every living vassal
-    // that is no human, whose master's leading player has persons, is a House; no House stands
-    // under direct rule (adopting it is civil war); a head's post names their House and the House
-    // names them; a person's unit lives and is their owner's; a commander is with their army and
+    // that is no human, whose master's leading player has persons, is a House; a head's post names
+    // their House and the House names them; a person's unit lives and is their owner's; a commander is with their army and
     // the army names them.
     for (h, house) in g.houses.iter() {
         let hp = house.player;
@@ -385,9 +384,6 @@ pub fn check(g: &Game) {
         }
     }
     for p in g.player_ids() {
-        if g.player_rules_directly(p) && !g.players[p].houses.is_empty() {
-            fail(format!("player {} rules directly with {} Houses", p.0, g.players[p].houses.len()));
-        }
         for &h in &g.players[p].houses {
             let Some(house) = g.houses.get(h) else { fail(format!("player {} lists dead House {h:?}", p.0)) };
             if house.owner != p {

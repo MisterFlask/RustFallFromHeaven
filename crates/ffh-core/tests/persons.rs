@@ -28,12 +28,17 @@ struct World {
 }
 
 fn world() -> World {
+    world_of("CIVILIZATION_BANNOR", "LEADER_SABATHIEL")
+}
+
+/// [`world`] with player 0 of civilization `civ`, led by `leader`.
+fn world_of(civ: &str, leader: &str) -> World {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
     setup.options[GameOptionType::GAMEOPTION_NO_BARBARIANS] = true;
-    setup.players[0].civ = Some(d.t::<CivilizationType>("CIVILIZATION_BANNOR"));
+    setup.players[0].civ = Some(d.t::<CivilizationType>(civ));
     setup.players[1].civ = Some(d.t::<CivilizationType>("CIVILIZATION_ELOHIM"));
-    setup.players[0].leader = Some(d.t::<LeaderHeadType>("LEADER_SABATHIEL"));
+    setup.players[0].leader = Some(d.t::<LeaderHeadType>(leader));
     setup.players[1].leader = Some(d.t::<LeaderHeadType>("LEADER_EINION"));
     let mut g = Game::new(d, setup);
     g.game_init();
@@ -486,18 +491,20 @@ fn a_capitulation_makes_a_house_and_ends_with_the_vassalage() {
 }
 
 #[test]
-fn a_vassal_deal_seeks_protection_and_direct_rule_takes_no_vassal() {
+fn a_vassal_deal_seeks_protection_even_under_direct_rule() {
     let World { mut g, .. } = world();
     let (t0, t1) = (g.players[P0].team, g.players[P1].team);
-    // Under Despotism (direct rule) no vassal is held: the trade is refused.
-    assert_eq!(g.team_vassal_refusal(t0), Some("Government: direct rule. No vassal can be held."));
-    assert!(!g.player_can_trade_item(P1, P0, &item(TradeableItem::TRADE_VASSAL), false));
-    government(&mut g, "CIVIC_ARISTOCRACY");
+    // Under Despotism (direct rule) a vassal is held, as a House: no city can be granted to it.
     assert_eq!(g.team_vassal_refusal(t0), None);
     g.team_set_vassal(t1, t0, true, false);
     let h = g.player_house(P1).expect("a House");
     assert_eq!(g.houses[h].origin, HouseOrigin::Vassal);
     assert!(mods(&g, h).contains(&("Sought protection".into(), 2)));
+    assert_eq!(g.player_check_grants(P0), Err("Government: direct rule. No city can be granted."));
+    // Its turn under direct rule keeps it: only adopting direct rule is civil war.
+    g.player_governance_turn(P0);
+    assert_eq!(g.player_house(P1), Some(h));
+    assert!(g.teams[t1].vassal[t0]);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -645,7 +652,7 @@ fn direct_rule_is_civil_war() {
     set_house_loyalty(&mut g, h2, 6);
     let (p1, p2) = (g.houses[h1].player, g.houses[h2].player);
     government(&mut g, "CIVIC_DESPOTISM");
-    assert!(g.players[P0].houses.is_empty(), "no House under direct rule");
+    assert!(g.players[P0].houses.is_empty(), "adopting direct rule: every House breaks away");
     let t0 = g.players[P0].team;
     for hp in [p1, p2] {
         assert!(g.at_war(t0, g.players[hp].team), "every House breaks away, Friendly included");
@@ -975,38 +982,92 @@ fn the_crown_beyond_its_limit_pays_triple() {
     let World { mut g, cap, a, b, c, .. } = world();
     // Despotism (direct rule): no limit.
     assert_eq!(g.player_crown_limit(P0), None);
-    government(&mut g, "CIVIC_ARISTOCRACY");
-    assert_eq!(g.player_crown_limit(P0), Some(5));
-    let d = g.player_init_city(P0, 3, 7, true, true);
-    let e = g.player_init_city(P0, 11, 7, true, true);
-    assert_eq!(g.player_crown_cities(P0), vec![cap, a, b, c, d, e], "the capital first, then in order");
-    assert_eq!(g.player_crown_over(P0), vec![e]);
+    // Every governing civic: PERSON_CROWN_CITIES (3).
+    for civic in ["CIVIC_CITY_STATES", "CIVIC_REPUBLIC", "CIVIC_ARISTOCRACY"] {
+        government(&mut g, civic);
+        assert_eq!(g.player_crown_limit(P0), Some(g.d.defines.person_crown_cities));
+    }
+    assert_eq!(g.player_crown_limit(P0), Some(3));
+    assert_eq!(g.player_crown_cities(P0), vec![cap, a, b, c], "the capital first, then in order");
+    assert_eq!(g.player_crown_over(P0), vec![c]);
     // Same size, same count: the city beyond pays triple the city-count maintenance.
-    let (nd, ne) = (g.city_calculate_num_cities_maintenance_times100(d), g.city_calculate_num_cities_maintenance_times100(e));
-    assert!(nd > 0);
-    assert_eq!(ne, 3 * nd);
+    let (nb, nc) = (g.city_calculate_num_cities_maintenance_times100(b), g.city_calculate_num_cities_maintenance_times100(c));
+    assert!(nb > 0);
+    assert_eq!(nc, 3 * nb);
     assert!(g.player_crown_over_cost_times100(P0) > 0);
     assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0), "the finance total follows");
     let court = g.court_view(P0);
-    assert_eq!((court.crown_limit, court.crown_over.clone()), (Some(5), vec![e]));
+    assert_eq!((court.crown_limit, court.crown_over.clone()), (Some(3), vec![c]));
     // A grant brings the Crown under its limit: the preview counts the saving, the grant does it.
-    let m = g.grant_maintenance(d);
-    assert!(m.now_times100 - m.after_times100 > g.cities[d].maintenance, "more than the city's own: {m:?}");
+    let m = g.grant_maintenance(b);
+    assert!(m.now_times100 - m.after_times100 > g.cities[b].maintenance, "more than the city's own: {m:?}");
     assert_eq!(m.now_times100, cached_maintenance(&g, P0));
     let (x, _) = enter_veteran(&mut g, 5, 6);
-    g.player_grant_city(P0, d, GrantTo::Person(x)).expect("granted");
+    g.player_grant_city(P0, b, GrantTo::Person(x)).expect("granted");
+    assert_eq!(g.player_crown_cities(P0), vec![cap, a, c]);
     assert!(g.player_crown_over(P0).is_empty());
     assert_eq!(cached_maintenance(&g, P0), m.after_times100, "what the preview said");
-    assert_eq!(g.city_calculate_num_cities_maintenance_times100(e), nd, "e at the normal rate again");
+    assert_eq!(g.city_calculate_num_cities_maintenance_times100(c), g.city_calculate_num_cities_maintenance_times100(a), "c at the normal rate again");
     // A change of civics refreshes it: under direct rule no limit (the House breaks away first).
-    let e_plot = plot(&g, e);
     let f = g.player_init_city(P0, 15, 4, true, true);
     assert_eq!(g.player_crown_over(P0), vec![f]);
     government(&mut g, "CIVIC_DESPOTISM");
     assert_eq!(g.player_crown_limit(P0), None);
     assert!(g.player_crown_over(P0).is_empty());
     assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0));
-    let _ = e_plot;
+}
+
+/// The Kuriotates (Sprawling: a city cap, here 2 great cities on a Duel map, and
+/// `crown_cities_change` -2): the Crown's limit is the capital alone; settlements never count
+/// toward it and are granted like any city, staying settlements; the cap counts the realm, the
+/// Houses' great cities with the liege's.
+#[test]
+fn the_kuriotates_crown_is_the_capital_and_the_realm_counts_its_houses() {
+    let World { mut g, cap, a, b, c, .. } = world_of("CIVILIZATION_KURIOTATES", "LEADER_CARDITH");
+    let cap_of_great = g.players[P0].max_cities;
+    assert_eq!(cap_of_great, 2, "Sprawling's 3, the Duel map's -1");
+    assert!(!g.cities[cap].settlement && !g.cities[a].settlement);
+    assert!(g.cities[b].settlement && g.cities[c].settlement, "beyond the cap: settlements");
+    assert_eq!(g.player_realm_great_cities(P0), 2);
+    // (c) The Crown's limit: 3 - 2 = 1, the capital alone.
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    assert_eq!(g.player_crown_limit(P0), Some(1));
+    // (b) Settlements never count toward it, nor are over it.
+    assert_eq!(g.player_crown_cities(P0), vec![cap, a]);
+    assert_eq!(g.player_crown_over(P0), vec![a]);
+    assert!(g.player_crown_over_cost_times100(P0) > 0);
+    assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0));
+    // (b) A settlement is granted like any city: it founds a House and stays a settlement.
+    let b_plot = plot(&g, b);
+    let (x, _) = enter_veteran(&mut g, 11, 5);
+    assert_eq!(g.player_check_grant(P0, b, GrantTo::Person(x)), Ok(()));
+    let h = g.player_grant_city(P0, b, GrantTo::Person(x)).expect("granted");
+    let hp = g.houses[h].player;
+    let b2 = city_at(&g, b_plot);
+    assert_eq!(g.cities[b2].owner, hp);
+    assert!(g.cities[b2].settlement, "a settlement stays one");
+    assert_eq!(g.cities[b2].plot_radius, 2);
+    assert_eq!(g.players[hp].max_cities, cap_of_great, "the House is Kuriotate: the same cap");
+    assert_eq!(g.player_crown_cities(P0), vec![cap, a], "the Crown's count unchanged");
+    // (d) The realm's great cities: the liege's and its Houses' together, from either side.
+    assert_eq!(g.player_realm_great_cities(P0), 2);
+    assert_eq!(g.player_realm_great_cities(hp), 2);
+    // A great city granted stays great; the realm's count is unchanged.
+    let a_plot = plot(&g, a);
+    g.player_grant_city(P0, a, GrantTo::House(h)).expect("granted");
+    let a2 = city_at(&g, a_plot);
+    assert_eq!(g.cities[a2].owner, hp);
+    assert!(!g.cities[a2].settlement, "a great city stays great");
+    assert_eq!(g.cities[a2].plot_radius, 3);
+    assert_eq!(g.player_realm_great_cities(P0), 2);
+    assert!(g.player_crown_over(P0).is_empty(), "the capital alone");
+    assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0));
+    // (d) A city the House founds beyond the realm's cap is a settlement, as one its liege founds.
+    let new = g.player_init_city(hp, 11, 7, true, true);
+    assert!(g.cities[new].settlement, "the realm is at its cap");
+    let own = g.player_init_city(P0, 15, 4, true, true);
+    assert!(g.cities[own].settlement);
+    assert_eq!(g.player_realm_great_cities(P0), 2);
 }
 
 #[test]
@@ -1022,10 +1083,71 @@ fn a_house_of_more_than_three_cities_grieves() {
     assert!(!g.house_view(h).unwrap().parts.iter().any(|p| p.label.starts_with("Holds ")));
     // The fourth city: the preview says it, the grant does it.
     let preview = g.grant_preview(P0, d, GrantTo::House(h));
-    assert!(preview.iter().any(|l| l.text == "Holds 4 cities: -1"), "{preview:?}");
+    assert!(preview.iter().any(|l| l.text == "Holds 4 cities, more than 3: -1"), "{preview:?}");
     let before = g.house_loyalty(h);
     g.player_grant_city(P0, d, GrantTo::House(h)).unwrap();
     assert_eq!(g.house_size_part(h), -1);
     assert_eq!(g.house_loyalty(h), before + GRANTED.0 - 1);
-    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Holds 4 cities" && p.amount == -1 && p.turns_left.is_none()));
+    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Holds 4 cities, more than 3" && p.amount == -1 && p.turns_left.is_none()));
+}
+
+/// The size grievance's threshold scales with the realm (the liege's great cities and its
+/// Houses'): `max(3, 2 + realm / 8)`, 3 at 9 cities, 4 at 16, 5 at 24. A House's settlements do
+/// not count; a grant leaves the threshold as it is, a loss moves it.
+#[test]
+fn a_house_grieves_beyond_a_threshold_that_scales_with_the_realm() {
+    let World { mut g, cap, a, b, c, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let mut free: Vec<(i32, i32)> = (3..=8).flat_map(|y| (2..=17).map(move |x| (x, y))).filter(|&(x, y)| g.map.plot_xy(x, y).is_some_and(|q| g.map.plots[q].plot_city.is_none())).collect();
+    free.reverse();
+    let (_, h) = land_head(&mut g, a);
+    g.player_grant_city(P0, b, GrantTo::House(h)).unwrap();
+    g.player_grant_city(P0, c, GrantTo::House(h)).unwrap();
+    let hp = g.houses[h].player;
+    let mut found = |g: &mut Game, p: PlayerId, n: usize| -> Vec<CityId> {
+        (0..n)
+            .map(|_| loop {
+                let (x, y) = free.pop().expect("a free plot");
+                if g.map.plot_xy(x, y).is_some_and(|q| g.map.plots[q].plot_city.is_none()) {
+                    break g.player_init_city(p, x, y, true, true);
+                }
+            })
+            .collect()
+    };
+    // The House holds 5, the Crown 4: 9 in the realm, from either side.
+    found(&mut g, hp, 2);
+    found(&mut g, P0, 3);
+    assert_eq!((g.house_great_cities(h), g.player_realm_great_cities(P0), g.player_realm_great_cities(hp)), (5, 9, 9));
+    assert_eq!(g.player_house_size_threshold(P0), 3);
+    assert_eq!(g.house_size_threshold(h), 3);
+    assert_eq!(g.house_size_part(h), -2);
+    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Holds 5 cities, more than 3" && p.amount == -2));
+    // A settlement of the House is not counted, in its size or in the realm's.
+    let s = g.players[hp].cities[1];
+    g.cities[s].settlement = true;
+    assert_eq!((g.house_great_cities(h), g.player_realm_great_cities(P0), g.house_size_part(h)), (4, 8, -1));
+    g.cities[s].settlement = false;
+    // 16 in the realm: 4.
+    found(&mut g, P0, 7);
+    assert_eq!(g.player_realm_great_cities(P0), 16);
+    assert_eq!(g.house_size_threshold(h), 4);
+    assert_eq!(g.house_size_part(h), -1);
+    // A grant moves a city within the realm: the threshold stays, the preview counts the city.
+    let crown: Vec<CityId> = g.players[P0].cities.iter().copied().filter(|&k| k != cap).collect();
+    let k = crown[crown.len() - 1];
+    let preview = g.grant_preview(P0, k, GrantTo::House(h));
+    assert!(preview.iter().any(|l| l.text == "Holds 6 cities, more than 4: -1 (-2 in all)"), "{preview:?}");
+    g.player_grant_city(P0, k, GrantTo::House(h)).unwrap();
+    assert_eq!((g.player_realm_great_cities(P0), g.house_size_threshold(h), g.house_size_part(h)), (16, 4, -2));
+    // 24 in the realm: 5.
+    found(&mut g, P0, 8);
+    assert_eq!(g.player_realm_great_cities(P0), 24);
+    assert_eq!(g.house_size_threshold(h), 5);
+    assert_eq!(g.house_size_part(h), -1);
+    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Holds 6 cities, more than 5" && p.amount == -1));
+    // A loss moves it: 23, back to 4.
+    let lost = *g.players[P0].cities.last().unwrap();
+    g.city_kill(lost, true);
+    assert_eq!(g.player_realm_great_cities(P0), 23);
+    assert_eq!((g.house_size_threshold(h), g.house_size_part(h)), (4, -2));
 }

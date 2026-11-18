@@ -335,18 +335,22 @@ flag.
     cities where an army of the liege stands go back to the liege first. Civ4's own vassal
     revolt rule (`canVassalRevolt`: free when master or vassal lost land) no longer frees a House,
     and no player cancels a House's vassal deal; its liege can free it (at peace).
-  - *No vassal under a direct-rule civic* (Despotism, God King): the vassal and capitulation
-    trades are refused to a master under one, a card's vassal birth takes open borders and a
-    defensive pact instead, a colony cannot be split off, the Oath of Fealty targets no one.
+  - *Direct rule*: a liege under a direct-rule civic (Despotism, God King) holds vassals as
+    Houses, but grants no city; adopting direct rule (a change of civics) breaks every House
+    away.
   - *Side deals*: a House trades only Secede and Become your vassal (new trade items), for gold
     and gold per turn, with a civilization that has met it and is not its liege, at war too; it
     accepts when Cautious or worse and the offer covers `(loyalty + 6) x 25 x its cities` gold.
     The AI liege remembers the buyer (an attitude modifier).
   - *The attitude scale*: a person's or a House's loyalty reads Friendly, Pleased, Cautious,
     Annoyed or Furious; a House's AI attitude toward its liege is its loyalty's.
-  - *The Crown's limit* (rule 14): each governing civic sets how many cities the Crown holds at
-    the normal city-count maintenance (City States 4, Aristocracy 5, Theocracy 5, Republic 6);
-    each further one pays triple. A House of more than 3 cities: `Holds N cities: -(N - 3)`.
+  - *The Crown's limit* (rule 14): under a governing civic the Crown holds 3 great cities at the
+    normal city-count maintenance (the capital first; settlements not counted; the Kuriotates 1,
+    the trait key `crown_cities_change`); each further one pays triple. A House of more great
+    cities than `T = max(3, 2 + the realm's great cities / 8)`: `Holds N cities, more than T:
+    -(N - T)`.
+  - *The Kuriotates' city cap* counts the realm: the liege's great cities and its Houses'
+    together; a city moving between a liege and its House keeps its settlement status.
   Why: a large empire is shared with holders who have a view of how it is ruled, in the game's
   own idioms (vassalage, attitude, the diplomacy screen, requisition, war). Save format 49.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):

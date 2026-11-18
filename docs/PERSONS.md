@@ -132,16 +132,30 @@ post, the Court screen, the previews, claims).
     under its liege (`House Arne, vassal of the Bannor`) and offers Secede and Become your vassal
     in its trade table.
 14. **The Crown's limit and a House's size** (the owner's request of 2026-11-18: "the typical
-    state should be the player managing 2-5 Houses depending on empire size"). (a) Each governing
-    civic (not direct rule) sets how many cities the Crown holds at the normal rate: the civic key
-    `crown_cities` (`CivicInfo::crown_cities`, 0: no limit): City States 4, Aristocracy 5,
-    Theocracy 5, Republic 6. The Crown's cities in the player's city order with the capital first:
-    those beyond the limit pay triple city-count maintenance. Under a direct-rule civic, no limit.
-    The screens read the limit, the Crown's count, the cities over it and the gold a turn they
-    cost beyond the normal rate (`The Crown holds 7 cities, 2 over its limit of 5: +8.4 gold a
-    turn.`); a grant's maintenance line includes the saving of coming back under the limit.
-    (b) A House holding more than 3 cities has a standing loyalty part `Holds N cities: -(N-3)`,
-    computed like `State religion opposed`, shown in its parts and counted in previews. The
+    state should be the player managing 2-5 Houses depending on empire size"; revised by the
+    owner the same day, replacing per-civic numbers). (a) Under every governing civic the Crown
+    holds 3 cities at the normal rate (the define `PERSON_CROWN_CITIES`); under a direct-rule
+    civic, no limit. The Crown's cities in the player's city order with the capital first: those
+    beyond the limit pay triple city-count maintenance. The screens read the limit, the Crown's
+    count, the cities over it and the gold a turn they cost beyond the normal rate (`The Crown
+    holds 7 cities, 4 over its limit of 3: +8.4 gold a turn.`); a grant's maintenance line
+    includes the saving of coming back under the limit. (b) Settlements (`City::settlement`, the
+    Kuriotates') never count toward the Crown's limit and are never over it; they are granted
+    like any city (granting one only moves borders). (c) The Kuriotates: the Crown's limit is the
+    capital alone, as data: the trait key `crown_cities_change` (`TraitInfo`, default 0),
+    `TRAIT_SPRAWLING` -2, added to the limit, never below 1. (d) The Sprawling city cap
+    (`max_cities`: a city beyond it is a settlement) counts the realm: the liege's great cities
+    and its Houses' together (settlements left out), so a Kuriotate House founding or receiving
+    cities does not raise the realm's number of great cities; a city a Kuriotate House founds
+    beyond the realm's cap is a settlement. A granted great city stays a great city (the count is
+    unchanged by a grant). (e) A House's size: a House holding more great cities `N` (settlements
+    left out) than its realm's threshold `T` has a standing loyalty part `Holds N cities, more
+    than T: -(N-T)`, computed like `State religion opposed`, shown in its parts and counted in
+    previews. The threshold scales with the realm (the owner's change of the same day): `T =
+    max(3, 2 + realm cities / 8)` (integer division; the realm: the liege's cities and all its
+    Houses', settlements left out), the defines `PERSON_HOUSE_SIZE_MIN` 3, `PERSON_HOUSE_SIZE_BASE`
+    2 and `PERSON_HOUSE_SIZE_PER` 8: 3 up to 15 cities, 4 from 16, 5 from 24. A grant or a founding
+    moves a city within the realm and leaves `T` as it is; a capture or a loss moves it. The
     numbers are first guesses.
 
 ### The second build as built (2026-11-18)
@@ -166,12 +180,14 @@ it left open:
    birth, a colony; the births clear the starting modifier). A human vassal gets no House (out of
    scope). The record also ends when the House's player dies. A player that becomes a House loses
    its own cast; its own Houses are freed by the vassal rules (a vassal holds no vassals).
-   **No vassal under a direct-rule civic** (`team_vassal_refusal`): "every vassal is a House" with
-   "no House under direct rule" means a direct-rule master holds no vassal: the vassal and
-   capitulation trades are refused to one, a card's vassal birth takes open borders and a defensive
-   pact instead (as under No Vassal States), a colony cannot be split off, the Oath of Fealty has no
-   target. Not checked: a permanent alliance merging a vassal into a direct-rule team (the master's
-   next civics sync breaks it away).
+   **Vassals under direct rule** (a call the contract left open: rule 2 against rule 11's "no
+   Houses under it"): a master under a direct-rule civic takes vassals as the Civ4 rules allow
+   (capitulation, vassal deals, a card's vassal birth, a colony, the Oath of Fealty), and every one
+   is a House; direct rule refuses grants and foundings only, and *adopting* it (a change of civics
+   into one) is the civil war of rule 11. So a House can stand under a direct-rule liege, taken
+   after the change. (Built first the other way, refusing every vassal to a direct-rule master;
+   that stopped capitulation and vassalage under Despotism, where every civilization starts,
+   against the AI's standing vassal rules, and every card's vassal birth.)
 3. *As built:* a founding is `world::birth` with the city released (`Birth::keep_armies`: the
    owner's units in an army or marching stay its own), the founder's unit removed first; the
    vassal rules make the record, which the founding names (`House <name>`, origin `Founded`, no
@@ -208,18 +224,31 @@ it left open:
 10. *As built:* all retired, with `house_orders`, `PERSON_HOUSE_MAINTENANCE_PERCENT` and
     `PERSON_LEVY_TURNS`. A first build's `DemandKind::Wonder` stays readable in saves; nothing
     makes one.
-11. *As built:* `player_persons_civil_war` breaks every House away (each its own war).
+11. *As built:* `player_persons_civil_war` breaks every House away (each its own war), called by
+    `player_set_civics` on a change from a governing civic into a direct-rule one; a vassal taken
+    later under direct rule is a House and stays (note 2).
 12. *Not in this build:* the AI keeps the first build's grant choices mapped onto the scale
     (Furious for Disloyal), and answers a House's offers by the price; the AI build does the rest.
 13. *Not in this build:* the client's screens were kept true with a minimum (the Court's House
     card shows the tribute, the levy and Free; the commands `house_tribute`, `tribute_default`,
     `free_house`; the House marks on every House's city; Secede and Become your vassal in the
     trade table); the client build lays them out.
-14. *As built:* the Crown's cities leave out settlements and outposts (they pay no city-count
-    maintenance); there is no limit wherever no city can be granted (direct rule, a vassal, No
-    Vassal States, no persons): a grant is the remedy. `player_crown_limit`,
-    `player_crown_cities`, `player_crown_over`, `player_crown_over_cost_times100` (the gold a turn
-    beyond the normal rate, inflation included), on `CourtView` too; `house_size_part(h)`.
+14. *As built:* `player_crown_limit` (`PERSON_CROWN_CITIES` plus the player's traits'
+    `crown_cities_change`, at least 1), `player_crown_cities`, `player_crown_over`,
+    `player_crown_over_cost_times100` (the gold a turn beyond the normal rate, inflation
+    included), on `CourtView` too; `house_size_part(h)`, `house_great_cities(h)`,
+    `player_house_size_threshold(p)` / `house_size_threshold(h)` (on `CourtView` and `HouseView`
+    too); `player_realm_great_cities(p)`. The
+    Crown's cities also leave out outposts (the naval outposts, which pay no city-count
+    maintenance and cannot be granted); there is no limit wherever no city can be granted (direct
+    rule, a vassal, No Vassal States, no persons): a grant is the remedy. The realm's count
+    (d) is used wherever the cap is read: a city founded or acquired (`city_init`), an outpost
+    raised, the Promote Settlement spell's requirement. A city moving between a liege and its
+    House (a grant, a founding, a held city back from a break-away) keeps its settlement status
+    and radius (`city_keep_settlement`), where its new owner has a cap; a city captured is judged
+    by the count, as before. The realm's count, a House's size and the threshold leave out the naval
+    outposts with the settlements. The AI's site values (`found_value`) still read the player's
+    own count.
 
 ## The first build (2026-11-18)
 
