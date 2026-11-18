@@ -21,6 +21,113 @@ decisions and which are proposals still to be confirmed.
 interface as built. The sections between them ("Rules") are the design the build came from and
 describe the stages not built yet.
 
+## The second build (2026-11-18): Houses as vassal civilizations
+
+The owner's decisions of 2026-11-18, after the first build: **a House is a civilization of its
+own, a vassal of its liege**, which gives the liege part of its income and can be requisitioned
+from; a slider (the tribute) moves its attitude toward the Crown; **any break-away a House
+starts is a declaration of war**, whether from its own loyalty or from a bribe; capitulation and
+vassalage happen at the level of the House; **side deals with Houses are ordinary diplomacy**,
+while war and peace go through the Crown; **heads leave the map** and lead their House (heirs
+go). The aim (the owner): intuitive, not cumbersome, reusing the game's existing idioms
+(vassalage, attitude, the diplomacy screen, requisition, war).
+
+**This section is the contract for the second build; where it and "The first build" differ, this
+section holds.** What it does not mention of the first build stays as built (the cast and how
+persons enter, commanders and their secession, demands of commanders and of persons without a
+post, the Court screen, the previews, claims).
+
+1. **A House is a player.** `House { id, owner (the liege player), player, name, head, standing,
+   founded_turn, color, tribute }`; the House player has `Player::house: Some(id)`. Its team is a
+   vassal of the liege's team. It is played by the game's AI, never by the liege's controller.
+   Its leader is its head's leader; its civilization is the liege's (a founded House) or its own
+   (a civilization that became a vassal). A founded House is named `House <name>`; a vassal
+   civilization keeps its name. Its colour is its liege's (the realm reads as one on the map; the
+   shield on a city's plate tells the Houses apart). It has met everyone its liege has met.
+   `city_house(c)` is the House of the city's owner.
+2. **Every vassal is a House.** When a team becomes a vassal by any means (capitulation, a vassal
+   deal, a card's vassal birth, a founding), each of its players gets a House record owned by the
+   master team's leading player, headed by a person for its leader (origin `Ruler`, no unit).
+   Starting modifier: `Capitulated: -4 (100 turns)` for a capitulation, `Sought protection: +2
+   (60 turns)` for a vassal deal, none for a founding or a card. When a vassalage ends by any
+   means, its House record ends and its head leaves the cast.
+3. **Founding and grants.** Granting a Crown city (never the capital; not under direct rule) to a
+   person with a leader (a veteran, or a great person, who draws one and is consumed) founds a
+   House: a new player (`world::birth` with `release: [city]`, the liege's vassal). The person
+   leaves the map (their unit is removed) and is the House's leader. A hero cannot found a House
+   (it has no leader; heroes command). Granting a Crown city to a House moves the city to that
+   House's player. Either way the city keeps its buildings and culture, its garrison (the land
+   combat units in it in no army and not marching) goes with it, and the liege's army units in it
+   stay the liege's (a vassal's land is friendly to its master). Claims and snubs stay as built.
+   **No heirs:** a head is a leader and does not die.
+4. **Tribute.** `House::tribute` is one of 0, 10, 20, 30, 40, 50 (%); a new House takes its
+   liege's realm default (`Player::house_tribute`, 20). In the liege's turn processing, for each
+   of its Houses in id order: gold = tribute% of the House's gold commerce (the sum of its cities'
+   gold commerce), taken from the House's treasury (no more than it holds) and given to the liege;
+   research = tribute% of the House's research commerce, added to the liege team's current
+   research (not taken from the House: knowledge is shared; lost when the liege researches
+   nothing). Recorded per House for display: `Tribute 30%: 12 gold, 8 research last turn.`
+   A standing loyalty part, as `State religion opposed` is: `Tribute N%: 1 - N/10` (0%: +1,
+   10%: 0, 20%: -1, ..., 50%: -4).
+5. **The attitude scale replaces the four states.** Loyalty total: **Friendly** 3 or more,
+   **Pleased** 1 to 2, **Cautious** -2 to 0, **Annoyed** -5 to -3, **Furious** -6 or less. A
+   House's AI attitude toward its liege is this (`player_ai_get_attitude`). Commanders and persons
+   without a post use the same scale. Effects: a House Annoyed or worse takes no levy; a House
+   Furious starts the stated countdown of 10 turns to breaking away (rule 7). A commander Annoyed
+   or worse: the army takes no order to attack; Furious: the countdown as built. A person without
+   a post Furious leaves the cast.
+6. **The levy (stage 0).** An army's *Requisition from* list accepts the cities of its owner's
+   Houses (every vassal). The order is placed in the House city's queue as in the liege's own
+   cities; the unit trained is the liege's (created for the army's owner) and marches to the
+   army. Each order placed is a House grievance `Levied: -1 (20 turns)`. A House Annoyed or worse
+   takes no levy: the requisition passes its cities over, and the screen says why.
+7. **Breaking away is war.** At the end of a Furious House's countdown, when its liege comes under
+   a direct-rule civic (every House at once: the civil war), or when the House accepts a bribe to
+   secede (rule 9): first every city of the House in which an army of the liege stands goes back
+   to the liege (`Censura stays: an army of ours stands in it.`); then the House's team leaves the
+   vassalage and declares war on the liege's team. Its House record ends; its head leads the
+   civilization. Everyone who has met the liege is told. Civ4's own vassal freedom rule
+   (`team_can_vassal_revolt`: free when master or vassal lost land) no longer frees a House, and
+   the AI never cancels a House's vassalage on its own: the countdown and bribes are the only ways
+   out by the House's will. Houses breaking away the same turn are not merged (leagues go); being
+   at war with the same liege, they ally by ordinary diplomacy.
+8. **Freeing a House** (the liege's act; was "release as a vassal"): the vassalage ends at peace;
+   the House record ends.
+9. **Side deals.** A House is a party on the diplomacy screen for anyone who has met it. War,
+   peace, open borders, pacts, techs and vassalage are its liege's to trade; the House trades only
+   this: it takes gold and gold per turn, and gives **Secede** (it breaks away at once, rule 7)
+   or **Become your vassal** (it breaks away and becomes the buyer's House; by the vassal rules
+   the buyer then shares its war with the old liege). It accepts when its loyalty is Cautious or
+   worse and the offer covers its price: `(loyalty + 6) x 25 x its cities` gold (0 when Furious),
+   gold per turn counted ten times; refusals in the screen's words (`House Arne is Pleased with
+   the Bannor.`). The liege learns of a bribe: an AI liege's attitude memory toward the buyer
+   (-2, as a broken deal); the House's loyalty list shows `Offered 300 gold by the Hippus` and a
+   human liege gets an alert. The price is one rules function every controller reads. Threats
+   are not in this build.
+10. **Retired:** the order quota, the half maintenance (a grant lowers the liege's city count, and
+    its city-count maintenance with it), the head's trait in a House's cities (the House's leader
+    has its traits), heirs and empty seats, leagues, the Works demand of a head (a head with
+    Works ambition demands land), `house_orders` in civics and `PERSON_HOUSE_MAINTENANCE_PERCENT`.
+11. **Direct rule** stays as built: no Houses and no grants under it; adopting it is every House
+    breaking away (rule 7), the counter on the map holding.
+12. **AI.** As a liege: tribute 20% by default, 10% for a Cautious House, 0% for an Annoyed one;
+    levy only from Pleased or Friendly Houses; grants as built (the capital and the best
+    production city kept, no House outgrowing the Crown) and only beyond the Crown's six most
+    populous cities (a grant now gives the city's production and most of its commerce away). As
+    a House: its own turn, trimmed for cost (no war planning, no diplomacy of its own beyond
+    answering offers). As a buyer: at war with a civilization, it offers Secede to that
+    civilization's Houses that are Cautious or worse, gold up to their price when it can pay,
+    one offer per House per 10 turns.
+13. **Interface.** The Court lists the realm: the Crown's cities, and each House as a card (its
+    leader's portrait, attitude mark and parts, the tribute selector and what it gave last turn,
+    whether it takes levies, the countdown, Free); the realm's default tribute. The grant list
+    states what a grant does now (`Your city-count maintenance: -3.2 gold a turn.`, the tribute,
+    the founding person leaving the map). The Armies screen lists the Houses' cities in
+    *Requisition from* with their status. On the map a House's cities show its shield on their
+    plates for everyone, and its attitude mark for the liege. The diplomacy screen lists a House
+    under its liege (`House Arne, vassal of the Bannor`) and offers Secede and Become your vassal
+    in its trade table.
+
 ## The first build (2026-11-18)
 
 The owner asked for the system to be built, with the ambiguous cases settled as seems sensible.
