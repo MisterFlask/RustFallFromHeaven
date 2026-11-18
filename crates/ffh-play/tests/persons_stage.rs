@@ -1,14 +1,16 @@
-//! `ffh-play stage persons|persons-direct` (docs/PERSONS.md, "UI", part K): the staged scenes load,
-//! the rules' invariants hold on them (`ffh_harness::check`), and each shows what the stage
-//! promises: the four Houses' states, the commanders, the empty seat and its candidates, the taken
-//! city's claimants, the held city, the wonder in production and a great person that can found a
-//! House; `persons-direct` can adopt God King at once.
+//! `ffh-play stage persons|persons-direct` (docs/PERSONS.md, "UI", part K; "The second build"):
+//! the staged scenes load, the rules' invariants hold on them (`ffh_harness::check`), and each
+//! shows what the stage promises: the Houses as vassal civilizations in each state (Friendly,
+//! Pleased or Cautious, the capitulated one Annoyed, Furious with its countdown and a city held by
+//! an army), two tributes, the commanders, a person without a post, the taken city's claimants, a
+//! great person that can found a House, and the neighbour's own House that takes an offer;
+//! `persons-direct` can adopt God King at once.
 
 mod common;
 
 use std::sync::Arc;
 
-use ffh_core::persons::{Claimant, DemandKind, GrantTo, LoyaltyState, Post};
+use ffh_core::persons::{BribeKind, Claimant, GrantTo, HouseOrigin, LoyaltyState, Post};
 use ffh_data::*;
 use ffh_play::json::Json;
 
@@ -36,51 +38,56 @@ fn the_staged_persons_scenes_hold_every_state() {
         assert_eq!(st.crown.len(), 3);
         for &c in &st.crown {
             assert_eq!(g.cities[c].owner, h);
-            assert_eq!(g.cities[c].house, None);
         }
 
-        // The Houses.
-        assert_eq!(g.house_state(house("A")), LoyaltyState::Devoted);
-        assert_eq!(g.houses[house("A")].cities.len(), 3);
-        assert_eq!(g.house_state(house("B")), LoyaltyState::Restless);
-        assert_eq!(g.houses[house("B")].cities.len(), 2);
-        assert!(g.houses[house("B")].standing.mods.iter().any(|m| m.amount == ffh_core::persons::DEMAND_REFUSED.0), "B was refused a demand");
-        assert_eq!(g.house_state(house("C")), LoyaltyState::Disloyal);
-        assert_eq!(g.houses[house("C")].cities.len(), 2);
-        assert_eq!(g.houses[house("C")].standing.countdown, Some(g.game_turn() + 8));
-        assert_eq!(g.house_cities_held(house("C")).1.len(), 1, "one of House C's cities is held by an army");
-        assert_eq!(g.houses[house("D")].head, None);
-        assert!(g.house_view(house("D")).unwrap().needs_heir);
+        // The Houses: each a vassal civilization of the human, in its state.
+        for role in ["friendly", "pleased", "annoyed", "furious"] {
+            let hh = house(role);
+            assert_eq!(g.houses[hh].owner, h, "{role}");
+            let hp = g.houses[hh].player;
+            assert_eq!(g.players[hp].house, Some(hh));
+            assert!(g.teams[g.players[hp].team].vassal[g.players[h].team], "{role} is a vassal");
+            assert!(!g.players[hp].human);
+        }
+        assert_eq!(g.house_state(house("friendly")), LoyaltyState::Friendly);
+        assert_eq!(g.house_cities(house("friendly")).len(), 2);
+        assert_eq!(g.houses[house("friendly")].tribute, 0);
+        assert!([LoyaltyState::Pleased, LoyaltyState::Cautious].contains(&g.house_state(house("pleased"))));
+        assert_eq!(g.houses[house("pleased")].tribute, 10);
+        assert_eq!(g.house_state(house("annoyed")), LoyaltyState::Annoyed);
+        assert_eq!(g.houses[house("annoyed")].origin, HouseOrigin::Capitulated);
+        assert_eq!(g.persons[g.houses[house("annoyed")].head.unwrap()].origin, ffh_core::persons::PersonOrigin::Ruler);
+        assert!(g.house_levy_refusal(house("annoyed")).is_some(), "an Annoyed House takes no levy");
+        assert_eq!(g.house_state(house("furious")), LoyaltyState::Furious);
+        assert_eq!(g.houses[house("furious")].standing.countdown, Some(g.game_turn() + 8));
+        assert_eq!(g.house_cities(house("furious")).len(), 2);
+        assert_eq!(g.house_cities_held(house("furious")).1.len(), 1, "one of its cities is held by an army");
+        assert_eq!(g.houses[house("furious")].tribute, 20);
 
-        // House A's wonder demand, in production in its seat.
-        let a_head = person("head_a");
-        let dm = g.persons[a_head].demand.expect("House A's head has a demand");
-        assert!(matches!(dm.kind, DemandKind::Wonder { .. }));
-        assert!(g.demand_is_paused(dm.kind));
-
-        // The commanders, the persons without a post (the heir candidates), the hero.
+        // The commanders, the person without a post.
         assert_eq!(g.persons[person("commander_loyal")].post, Post::Commander(army("loyal")));
-        assert_eq!(g.person_state(person("commander_loyal")), LoyaltyState::Loyal);
+        assert!(!g.person_state(person("commander_loyal")).withholds());
         assert!(g.unit_is_hero(g.person_unit(person("commander_loyal")).unwrap()));
-        assert_eq!(g.persons[person("commander_disloyal")].post, Post::Commander(army("disloyal")));
-        assert_eq!(g.person_state(person("commander_disloyal")), LoyaltyState::Disloyal);
-        assert!(g.persons[person("commander_disloyal")].standing.countdown.is_some());
-        assert!(!g.persons[person("commander_disloyal")].standing.sworn.is_empty());
-        assert_eq!(g.armies[army("no_commander")].commander, None);
-        assert_eq!(g.army_units(army("holds_c")).len(), 2);
-        assert_eq!(g.player_heir_candidates(h), vec![person("candidate_1"), person("candidate_2"), person("no_post")]);
+        assert_eq!(g.persons[person("commander_furious")].post, Post::Commander(army("furious")));
+        assert_eq!(g.person_state(person("commander_furious")), LoyaltyState::Furious);
+        assert!(g.persons[person("commander_furious")].standing.countdown.is_some());
+        assert!(!g.persons[person("commander_furious")].standing.sworn.is_empty());
+        assert_eq!(g.army_units(army("holds_furious")).len(), 2);
+        assert_eq!(g.persons[person("no_post")].post, Post::None);
 
-        // The taken city: claimed by Houses A and B and by the commander who took it.
+        // The taken city: claimed by House `pleased` and by the commander who took it.
         let claims = g.city_claimants(st.taken);
-        assert_eq!(claims.len(), 3, "{claims:?}");
-        assert!(claims.contains(&Claimant::House(house("A"))) && claims.contains(&Claimant::House(house("B"))));
-        assert!(claims.contains(&Claimant::Commander(person("commander_loyal"))));
+        assert!(claims.contains(&Claimant::House(house("pleased"))), "{claims:?}");
+        assert!(claims.contains(&Claimant::Commander(person("commander_loyal"))), "{claims:?}");
 
-        // The great person can found a House; the neighbour's near city is in Land range.
+        // The great person can found a House; the neighbour's House takes an offer.
         assert!(g.unit_is_great_person(st.great_person));
         assert_eq!(g.player_check_grant(h, st.crown[1], GrantTo::GreatPerson(st.great_person)), Ok(()));
-        assert_eq!(g.cities[st.neighbour_near].owner, st.neighbour);
-        assert_eq!(st.neighbour_cities.len(), 2);
+        let n = house("neighbour");
+        assert_eq!(g.houses[n].owner, st.neighbour);
+        assert!(g.house_state(n) >= LoyaltyState::Cautious);
+        assert!(g.house_bribe_price(n).is_some());
+        assert_eq!(g.house_bribe_refusal(n, h, BribeKind::Secede), None);
         let court = g.court_view(h);
         assert_eq!(court.grants, Ok(()));
         assert_eq!(court.houses.len(), 4);

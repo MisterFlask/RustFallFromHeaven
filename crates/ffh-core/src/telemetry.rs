@@ -405,10 +405,13 @@ impl Game {
         });
     }
 
-    /// Persons of Note (docs/PERSONS.md): `kind` `entered` (what: hero / veteran / great_person),
-    /// `posted` (commander / head / heir), `granted` (house / founded), `demand` (issued / met /
-    /// refused), `state` (Devoted / Loyal / Restless / Disloyal / left), `house` (ended); counted
-    /// as `person_<kind>` by what.
+    /// Persons of Note (docs/PERSONS.md): `kind` `entered` (what: hero / veteran / great_person /
+    /// ruler), `posted` (commander), `granted` (house / founded), `demand` (issued / met /
+    /// refused), `state` (Friendly / Pleased / Cautious / Annoyed / Furious / left), `house`
+    /// (vassal / capitulated: a vassal became a House; ended; freed), `seceded` (countdown /
+    /// civil_war / bribe / bribe_vassal / held, commander_house / commander_city /
+    /// commander_resigned), `levy` (placed), `bribe` (offered); counted as `person_<kind>` by what,
+    /// for the player whose cast or Houses they are.
     pub(crate) fn tel_person(&self, p: PlayerId, kind: &'static str, what: &'static str) {
         if !self.telemetry.on() {
             return;
@@ -422,10 +425,26 @@ impl Game {
                 "demand" => "person_demand",
                 "state" => "person_state",
                 "seceded" => "person_seceded",
+                "levy" => "person_levy",
+                "bribe" => "person_bribe",
                 _ => "person_house",
             };
             t.count(p, key, what, 1);
             t.event(|| ev(turn, "person", p).s("how", kind).s("what", what).end());
+        });
+    }
+
+    /// A House's tribute paid to its liege `p` (docs/PERSONS.md): counted as `person_tribute`
+    /// `gold` and `research` (the amounts); the event `tribute` with both.
+    pub(crate) fn tel_tribute(&self, p: PlayerId, gold: i32, research: i32) {
+        if !self.telemetry.on() {
+            return;
+        }
+        let turn = self.game_turn();
+        self.telemetry.with(|t| {
+            t.count(p, "person_tribute", "gold", gold as i64);
+            t.count(p, "person_tribute", "research", research as i64);
+            t.event(|| ev(turn, "tribute", p).i("gold", gold as i64).i("research", research as i64).end());
         });
     }
 

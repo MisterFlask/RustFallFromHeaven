@@ -304,7 +304,8 @@ impl Game {
             return;
         }
         let direct = self.player_rules_directly(p);
-        // Persons of Note (docs/PERSONS.md, "Direct rule"): direct rule is civil war.
+        // Persons of Note (docs/PERSONS.md, rule 11): direct rule is civil war (every House breaks
+        // away).
         if direct && !self.players[p].houses.is_empty() {
             self.player_persons_civil_war(p);
         }
@@ -427,17 +428,6 @@ impl Game {
         if !can {
             return Err("The city cannot build this.");
         }
-        // Persons of Note (docs/PERSONS.md, "Quota"): a House's city takes orders by its quota
-        // (`city_house_takes_order` gives the reason with the House's name and the turns).
-        if let Some(h) = self.city_house(c) {
-            if self.house_orders_left(h) == Some(0) {
-                return Err(match self.house_state(h) {
-                    crate::persons::LoyaltyState::Restless => "The House is Restless. It takes no orders.",
-                    crate::persons::LoyaltyState::Disloyal => "The House is Disloyal. It takes no orders.",
-                    _ => "The House takes no more orders now.",
-                });
-            }
-        }
         Ok(())
     }
 
@@ -456,14 +446,9 @@ impl Game {
             }
         }
         let data2 = if order_type == OrderType::ORDER_TRAIN { data2 } else { -1 };
-        let house = self.city_house(c);
         let Some(index) = self.city_push_order_kind(c, order_type, data1, data2, false, false, false, false, OrderKind::Empire) else {
             return Err("The city cannot build this.");
         };
-        // Counted against the House's quota (docs/PERSONS.md, "Quota"; never refunded).
-        if let Some(h) = house.filter(|&h| self.houses.contains(h)) {
-            self.house_record_order(h);
-        }
         if self.cities.contains(c) && dest.is_some() {
             self.cities[c].order_queue[index].dest = dest;
         }

@@ -115,8 +115,8 @@ h3 { font-size: 16px; letter-spacing: 0.03em; }
 h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin: 10px 0 4px; }
 .dim { color: var(--dim); }
 .warn { color: var(--warn); }
-/* Persons of Note: the colour of Restless (docs/PERSONS.md, "UI", principle 2): a limit that is
-   not yet Disloyal, and an empty seat. Scarlet (`.warn`) is Disloyal's alone. */
+/* Persons of Note: the colour of Annoyed (docs/PERSONS.md, "UI", principle 2): a limit that is
+   not yet Furious. Scarlet (`.warn`) is Furious's alone. */
 .caution { color: var(--caution); }
 .good { color: var(--good); }
 .error { color: var(--warn); min-height: 0; margin: 4px 0; }
@@ -1327,10 +1327,10 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .pstate { display: inline-flex; align-items: baseline; gap: 3px; font-weight: 700; white-space: nowrap; }
 .pstate-glyph { font-family: var(--serif); font-size: 0.9em; line-height: 1; }
 .pstate-turns { font-weight: 400; margin-left: 2px; }
-.pstate.ps-devoted { color: var(--good); }
+.pstate.ps-friendly, .pstate.ps-pleased { color: var(--good); }
 .pstate.ps-loyal { color: var(--dim); }
-.pstate.ps-restless { color: var(--caution); }
-.pstate.ps-disloyal { color: var(--warn); }
+.pstate.ps-annoyed { color: var(--caution); }
+.pstate.ps-furious { color: var(--warn); }
 .house-shield { display: inline-block; vertical-align: -2px; flex: none; }
 
 /* The Court screen and the grant list (persons.js; docs/PERSONS.md, "UI", parts A and B): cards,
@@ -1342,7 +1342,7 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .pattn { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .pattn > span:first-child { flex: 1 1 14em; min-width: 0; }
 .pattn.urgent > span:first-child { color: var(--caution); }
-.pattn[data-kind="disloyal"] > span:first-child { color: var(--warn); }
+.pattn[data-kind="furious"] > span:first-child { color: var(--warn); }
 .pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 8px; align-items: start; }
 .pcards.one { grid-template-columns: minmax(0, 1fr); }
 .pcard { border: 1px solid var(--c-iron); background: rgba(38, 51, 79, 0.45); padding: 6px 8px; min-width: 0; overflow-wrap: anywhere; }
@@ -1383,9 +1383,9 @@ li.crown-city > .link { margin-right: auto; text-align: left; justify-content: f
 .modal.grant .modal-body { max-height: 70vh; overflow-y: auto; }
 .peffect { margin: 4px 0; padding-left: 6px; border-left: 2px solid rgba(132, 139, 152, 0.45); }
 .pbecomes { font-weight: 700; }
-.pbecomes.ps-devoted { color: var(--good); }
-.pbecomes.ps-restless { color: var(--caution); }
-.pbecomes.ps-disloyal { color: var(--warn); }
+.pbecomes.ps-friendly, .pbecomes.ps-pleased { color: var(--good); }
+.pbecomes.ps-annoyed { color: var(--caution); }
+.pbecomes.ps-furious { color: var(--warn); }
 #btn-court { position: relative; }
 .court-badge { display: inline-block; min-width: 16px; margin-left: 4px; padding: 0 4px; border-radius: 8px; background: var(--c-crimson); color: var(--c-rime); font: 700 11px/16px var(--font); text-align: center; vertical-align: 1px; }
 /* Persons of Note in the existing screens (docs/PERSONS.md, "UI", parts C to I; persons_lines.js):

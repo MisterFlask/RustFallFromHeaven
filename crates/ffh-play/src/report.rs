@@ -176,15 +176,17 @@ pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
     }
 }
 
-/// Whether an untagged message is the news of a secession, a commander going over or a House
-/// released (docs/PERSONS.md, "Secession"), told to everyone who met the owner: the rules log them
-/// untagged (`Game::log.msg_to`), so the client's alerts know them by the rules' wording
-/// (`kind: "secession"`).
+/// Whether an untagged message is the news of a House breaking away, a commander seceding or going
+/// over, or a House freed (docs/PERSONS.md, "The second build", rules 7 and 8), told to everyone who
+/// met the liege: the rules log them untagged (`Game::log.msg_to`), so the client's alerts know
+/// them by the rules' wording (`kind: "secession"`).
 pub fn is_secession_text(text: &str) -> bool {
     text.starts_with("Civil war: ")
-        || ((text.starts_with("House ") || text.contains(", ")) && (text.contains(" secedes from the ") || text.contains(" secede from the ")))
+        || (text.contains(" breaks away from the ") && text.ends_with(": war."))
+        || (text.contains(" seizes ") && text.contains(" and secedes from the "))
         || (text.contains(" goes over to ") && text.ends_with(" units."))
-        || (text.starts_with("House ") && text.contains(" is released from the ") && text.contains(" as a vassal with "))
+        || text.contains(" is freed by the ")
+        || text.contains(" ends: every city of it stands held by an army of the ")
 }
 
 /// The mark and the tag [`entry_fields`] wrote, read back (absent or unknown: the defaults).

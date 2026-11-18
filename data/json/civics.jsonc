@@ -36,9 +36,6 @@
     "num_cities_maintenance_modifier": -25,
     "war_weariness_modifier": 25,
     "commerce_modifiers": [0, 0, -20],
-    // Persons of Note (docs/PERSONS.md): hundredths of an order per city of a House in each
-    //     PERSON_LEVY_TURNS turns.
-    "house_orders": 50,
     "improvement_yield_changes": "",
     "we_love_the_king": "TXT_KEY_CIVIC_WE_LOVE_MONARCH"
   },
@@ -74,9 +71,6 @@
     "upkeep": "UPKEEP_LOW",
     "ai_weight": 300,
     "distance_maintenance_modifier": -40,
-    // Persons of Note (docs/PERSONS.md): hundredths of an order per city of a House in each
-    //     PERSON_LEVY_TURNS turns.
-    "house_orders": 150,
     "improvement_yield_changes": [{"improvement_type": "IMPROVEMENT_FARM", "improvement_yields": [-1, 0, 2]}],
     "we_love_the_king": "TXT_KEY_CIVIC_WE_LOVE_MONARCH"
   },
@@ -94,9 +88,6 @@
     "state_religion_happiness": 1,
     "state_religion_free_experience": 2,
     "specialist_valids": {"SPECIALIST_PRIEST": true},
-    // Persons of Note (docs/PERSONS.md): hundredths of an order per city of a House in each
-    //     PERSON_LEVY_TURNS turns.
-    "house_orders": 100,
     "improvement_yield_changes": "",
     "we_love_the_king": "TXT_KEY_CIVIC_WE_LOVE_PRIME_MINISTER"
   },
@@ -114,9 +105,6 @@
     "largest_city_happiness": 3,
     "civic_percent_anger": 200,
     "commerce_modifiers": [0, 0, 20],
-    // Persons of Note (docs/PERSONS.md): hundredths of an order per city of a House in each
-    //     PERSON_LEVY_TURNS turns.
-    "house_orders": 100,
     "improvement_yield_changes": "",
     "we_love_the_king": "TXT_KEY_CIVIC_WE_LOVE_PRIME_MINISTER"
   },

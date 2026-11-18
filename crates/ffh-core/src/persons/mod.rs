@@ -1,27 +1,34 @@
-//! Persons of Note (this game's own rules, not FFH2's; docs/PERSONS.md, "The first build").
+//! Persons of Note (this game's own rules, not FFH2's; docs/PERSONS.md, "The second build":
+//! Houses as vassal civilizations).
 //!
-//! **The cast.** Every living civilization (not the barbarians, a minor civilization or a crusade
-//! Host) has a small cast of named persons (`Game::persons`, its list `Player::persons` in the
-//! order they entered): its heroes, its best veterans and the founders it draws from its great
-//! people. A person other than a hero is one of the civilization's preferred minor leaders, drawn
-//! with the game RNG from those not in play and not drawn before in this game
-//! (`Game::persons_drawn`). Entry (`entry.rs`) runs once a turn in the owner's turn processing.
+//! **The cast.** Every living civilization that is no House (not the barbarians, a minor
+//! civilization or a crusade Host) has a small cast of named persons (`Game::persons`, its list
+//! `Player::persons` in the order they entered): its heroes, its best veterans, the founders it
+//! draws from its great people, and the rulers of its Houses. A person other than a hero is a
+//! leader: one of the civilization's preferred minor leaders, drawn with the game RNG from those not
+//! in play and not drawn before in this game (`Game::persons_drawn`), or the leader of a vassal
+//! civilization (origin `Ruler`). Entry (`entry.rs`) runs once a turn in the owner's turn
+//! processing.
+//!
+//! **Houses are vassal civilizations** (`houses.rs`, `vassals.rs`). A House is a player of its own
+//! (`House::player`, `Player::house`), the vassal of its liege (`House::owner`), headed by a person
+//! of the liege's cast who is its leader. Every vassal is a House: the vassal rules
+//! (`team_set_vassal`) make and end the records. A grant of a Crown city founds one (a new player
+//! born of the liege, led by the person granted it) or enlarges one (the city moves to its player).
+//! A House pays tribute, can be levied by its liege's armies, and answers offers to secede.
 //!
 //! **Posts.** A person holds at most one post: the command of an army (`command.rs`: the person
-//! with the army that the player named, else the one of the highest level) or the head of a House
-//! (`houses.rs`). A House holds cities of its owner granted to it, for good; every other city is
-//! the Crown's (`City::house` `None`).
+//! with the army that the player named, else the one of the highest level) or the head of a House.
 //!
 //! **Demands and loyalty** (`demands.rs`, `loyalty.rs`). Each person makes one demand at a time,
 //! an act on the board with a term; met or refused, it leaves a timed modifier on the loyalty of
-//! the House (a head's) or the person (the others). The sum gives one of four states; Disloyal
-//! starts a countdown, at whose end the House or the commander secedes (`secession.rs`; a
-//! direct-rule civic is the secession of every House at once). Restless and Disloyal withhold: a
-//! House's city takes no order (the quota, `houses.rs`), a commander's army no order to attack
-//! (`command.rs`), a Disloyal head's unit no order at all.
+//! the House (a head's) or the person (the others). The sum gives one of five states, the attitude
+//! scale (Friendly to Furious); a Furious House or commander starts a countdown, at whose end the
+//! House breaks away (war) or the commander secedes (`secession.rs`; a direct-rule civic is every
+//! House breaking away at once). Annoyed or worse withholds: a House takes no levy, a commander's
+//! army no order to attack (`command.rs`).
 //!
-//! **What a House does to its cities** (`city.rs`): its head's trait applies in them, and they
-//! pay a share of their number-of-cities maintenance.
+//! **Side deals** (`bribes.rs`): a House gives Secede or Become your vassal (trade items) for gold.
 //!
 //! **Read API** (`read.rs`) and **previews** (`preview.rs`) are what the client and the AI see.
 
@@ -33,7 +40,7 @@ use crate::game::Game;
 use crate::ids::*;
 use crate::log::{LogMark, LogTag};
 
-mod city;
+mod bribes;
 mod command;
 mod demands;
 mod entry;
@@ -43,14 +50,16 @@ mod preview;
 mod read;
 mod secession;
 mod turn;
+mod vassals;
 
+pub use bribes::{house_item, house_offer_value, BribeKind};
 pub use entry::{leader_name, leader_title};
 pub use houses::Claimant;
 pub use preview::{GrantCandidate, PersonsAct, PreviewLine};
-pub use read::{CourtView, DemandView, HouseMark, HouseView, LoyaltyPart, PersonView, PersonWhere};
+pub use read::{CourtView, DemandView, GrantMaintenance, HouseMark, HouseView, LevyStatus, LoyaltyPart, PersonView, PersonWhere};
 
 // ---------------------------------------------------------------------------------------------
-// Numbers of the first build that are not defines (docs/PERSONS.md, "The first build")
+// Numbers of the build that are not defines (docs/PERSONS.md, "The second build")
 // ---------------------------------------------------------------------------------------------
 
 /// `Demand met: +3 (60 turns)`.
@@ -63,14 +72,37 @@ pub const GRANTED: (i32, i32) = (1, 30);
 pub const SNUB_HOUSE: (i32, i32) = (-1, 30);
 /// `<city> granted to <House>`: the claimant commander who took it.
 pub const SNUB_COMMANDER: (i32, i32) = (-2, 30);
+/// `Levied: -1 (20 turns)`: each levy order placed in a House's city.
+pub const LEVIED: (i32, i32) = (-1, 20);
+/// `Capitulated: -4 (100 turns)`: a House that became a vassal by capitulating.
+pub const CAPITULATED: (i32, i32) = (-4, 100);
+/// `Sought protection: +2 (60 turns)`: a House that became a vassal by a deal.
+pub const SOUGHT_PROTECTION: (i32, i32) = (2, 60);
+/// `Offered 300 gold by the Hippus`: an offer to secede, shown (no amount) for this many turns.
+pub const OFFER_NOTED_TURNS: i32 = 20;
 /// `State religion opposed: -2`, standing (not stored).
 pub const RELIGION_OPPOSED: i32 = -2;
-/// Devoted at this loyalty or more.
-pub const DEVOTED_AT: i32 = 3;
-/// Restless at this loyalty or less.
-pub const RESTLESS_AT: i32 = -3;
-/// Disloyal at this loyalty or less.
-pub const DISLOYAL_AT: i32 = -6;
+/// Friendly at this loyalty or more.
+pub const FRIENDLY_AT: i32 = 3;
+/// Pleased at this loyalty or more (below Friendly).
+pub const PLEASED_AT: i32 = 1;
+/// Annoyed at this loyalty or less (above Furious).
+pub const ANNOYED_AT: i32 = -3;
+/// Furious at this loyalty or less.
+pub const FURIOUS_AT: i32 = -6;
+/// A new realm's default tribute (`Player::house_tribute`), percent.
+pub const TRIBUTE_DEFAULT: i32 = 20;
+/// The highest tribute, percent.
+pub const TRIBUTE_MAX: i32 = 50;
+/// The tribute's step, percent.
+pub const TRIBUTE_STEP: i32 = 10;
+/// A House's price to secede: `(loyalty + 6) x` this `x` its cities, gold.
+pub const BRIBE_PER_CITY: i32 = 25;
+/// Gold per turn in an offer counts this many times.
+pub const BRIBE_GOLD_PER_TURN_TURNS: i32 = 10;
+/// The attitude modifier (`ai_attitude_extra`, FfH's scale: 4 a step, the AI's relation 2) an AI
+/// liege takes toward a civilization that offered one of its Houses to secede.
+pub const BRIBE_GRUDGE: i32 = -4;
 /// The commander whose army took a city is a claimant to it for this many turns.
 pub const TAKEN_CLAIM_TURNS: i32 = 20;
 /// The Land list's foreign cities: within this many plots of a city of the House.
@@ -95,6 +127,8 @@ pub enum PersonOrigin {
     Veteran,
     /// A great person unit spent on founding a House.
     GreatPerson,
+    /// The leader of a civilization that became a vassal (a House's head; no unit).
+    Ruler,
 }
 
 /// The kind of demand a person makes.
@@ -116,37 +150,60 @@ pub enum Post {
     Head(HouseId),
 }
 
-/// The four states of loyalty.
+/// The five states of loyalty: the attitude scale (best first).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LoyaltyState {
-    Devoted,
+    Friendly,
+    Pleased,
     #[default]
-    Loyal,
-    Restless,
-    Disloyal,
+    Cautious,
+    Annoyed,
+    Furious,
 }
 
 impl LoyaltyState {
+    /// Every state, best first.
+    pub const ALL: [LoyaltyState; 5] = [LoyaltyState::Friendly, LoyaltyState::Pleased, LoyaltyState::Cautious, LoyaltyState::Annoyed, LoyaltyState::Furious];
+
     /// The state at loyalty `total`.
     pub fn of(total: i32) -> LoyaltyState {
-        if total <= DISLOYAL_AT {
-            LoyaltyState::Disloyal
-        } else if total <= RESTLESS_AT {
-            LoyaltyState::Restless
-        } else if total >= DEVOTED_AT {
-            LoyaltyState::Devoted
+        if total <= FURIOUS_AT {
+            LoyaltyState::Furious
+        } else if total <= ANNOYED_AT {
+            LoyaltyState::Annoyed
+        } else if total >= FRIENDLY_AT {
+            LoyaltyState::Friendly
+        } else if total >= PLEASED_AT {
+            LoyaltyState::Pleased
         } else {
-            LoyaltyState::Loyal
+            LoyaltyState::Cautious
         }
     }
 
     pub fn name(self) -> &'static str {
         match self {
-            LoyaltyState::Devoted => "Devoted",
-            LoyaltyState::Loyal => "Loyal",
-            LoyaltyState::Restless => "Restless",
-            LoyaltyState::Disloyal => "Disloyal",
+            LoyaltyState::Friendly => "Friendly",
+            LoyaltyState::Pleased => "Pleased",
+            LoyaltyState::Cautious => "Cautious",
+            LoyaltyState::Annoyed => "Annoyed",
+            LoyaltyState::Furious => "Furious",
         }
+    }
+
+    /// The matching attitude (`AttitudeType`).
+    pub fn attitude(self) -> AttitudeType {
+        match self {
+            LoyaltyState::Friendly => AttitudeType::ATTITUDE_FRIENDLY,
+            LoyaltyState::Pleased => AttitudeType::ATTITUDE_PLEASED,
+            LoyaltyState::Cautious => AttitudeType::ATTITUDE_CAUTIOUS,
+            LoyaltyState::Annoyed => AttitudeType::ATTITUDE_ANNOYED,
+            LoyaltyState::Furious => AttitudeType::ATTITUDE_FURIOUS,
+        }
+    }
+
+    /// Annoyed or Furious: a House takes no levy, a commander's army no order to attack.
+    pub fn withholds(self) -> bool {
+        self >= LoyaltyState::Annoyed
     }
 }
 
@@ -162,6 +219,15 @@ pub enum LoyaltyCause {
     Granted { city: String },
     /// A city the holder claimed granted to another House (`house`: its label).
     GrantedElsewhere { city: String, house: String },
+    /// A levy order placed in a city of the House.
+    Levied,
+    /// The House became a vassal by capitulating.
+    Capitulated,
+    /// The House became a vassal by a deal.
+    SoughtProtection,
+    /// An offer to secede (`gold`: its worth, gold per turn counted ten times; `by`: the
+    /// civilization, `Hippus`).
+    Offered { gold: i32, by: String },
 }
 
 impl LoyaltyCause {
@@ -172,6 +238,10 @@ impl LoyaltyCause {
             LoyaltyCause::DemandRefused => "Demand refused".into(),
             LoyaltyCause::Granted { city } => format!("Granted {city}"),
             LoyaltyCause::GrantedElsewhere { city, house } => format!("{city} granted to {house}"),
+            LoyaltyCause::Levied => "Levied".into(),
+            LoyaltyCause::Capitulated => "Capitulated".into(),
+            LoyaltyCause::SoughtProtection => "Sought protection".into(),
+            LoyaltyCause::Offered { gold, by } => format!("Offered {gold} gold by the {by}"),
         }
     }
 }
@@ -185,7 +255,7 @@ pub struct LoyaltyMod {
     pub until: Option<i32>,
 }
 
-/// The loyalty of a House or a person: its modifiers, a running Disloyal countdown, the units
+/// The loyalty of a House or a person: its modifiers, a running Furious countdown, the units
 /// sworn to a commander when its countdown began, and the state last told to the owner.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Standing {
@@ -215,7 +285,8 @@ pub enum DemandKind {
     AdoptReligion,
     /// The state religion in the city at this plot.
     SpreadReligion(PlotIdx),
-    /// This wonder built in the city at this plot (their seat).
+    /// This wonder built in the city at this plot (kept for saves of the first build: no demand
+    /// names a wonder now).
     Wonder { city: PlotIdx, building: BuildingType },
 }
 
@@ -242,9 +313,9 @@ pub struct Person {
     pub id: PersonId,
     pub owner: PlayerId,
     pub origin: PersonOrigin,
-    /// The minor leader they are (`None` for a hero).
+    /// The leader they are (`None` for a hero).
     pub leader: Option<LeaderHeadType>,
-    /// Their unit on the map (`None` for a great person's founder: no unit, never dies).
+    /// Their unit on the map (`None` for a House's head and a great person's founder).
     pub unit: Option<UnitId>,
     pub name: String,
     pub ambition: Ambition,
@@ -261,34 +332,54 @@ pub struct Person {
     pub entered_turn: i32,
 }
 
-/// A House (`Game::houses`): cities of its owner granted for good, presided over by a person.
+/// How a House came to be.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum HouseOrigin {
+    /// Founded by a grant (`House <name>`, the liege's civilization).
+    Founded,
+    /// A civilization that capitulated (it keeps its name).
+    Capitulated,
+    /// A civilization that became a vassal otherwise: a vassal deal, a card's birth, a colony (it
+    /// keeps its name).
+    Vassal,
+}
+
+/// A House (`Game::houses`): a vassal civilization (`player`) of its liege (`owner`), headed by a
+/// person of the liege's cast who is its leader.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct House {
     pub id: HouseId,
+    /// The liege.
     pub owner: PlayerId,
-    /// Its name without the word "House" ([`Game::house_label`] adds it).
+    /// The House's own player (`Player::house` names this record).
+    pub player: PlayerId,
+    pub origin: HouseOrigin,
+    /// A founded House's name without the word "House"; a vassal civilization's short
+    /// description ([`Game::house_label`]).
     pub name: String,
-    /// `None`: the seat is empty.
+    /// Its leader, in the liege's cast (`None` only when the person left without the House
+    /// ending, which the rules do not do).
     pub head: Option<PersonId>,
-    /// Its first city; when lost, its most populous city (ties: the lower id).
-    pub seat: Option<CityId>,
-    /// Its cities, in the order granted.
-    pub cities: Vec<CityId>,
     pub standing: Standing,
     pub founded_turn: i32,
     /// The colour index of its shield (below [`HOUSE_COLORS`]).
     pub color: u8,
-    /// The game turns an empire or requisition order was placed in its cities (pruned past
-    /// `PERSON_LEVY_TURNS`).
-    pub orders: Vec<i32>,
+    /// The tribute, percent (0 to [`TRIBUTE_MAX`] by [`TRIBUTE_STEP`]).
+    pub tribute: i32,
+    /// The gold its last tribute gave.
+    pub last_gold: i32,
+    /// The research its last tribute gave (0 when the liege researched nothing).
+    pub last_research: i32,
+    /// The game turn its last tribute was paid (-1: none yet).
+    pub last_turn: i32,
 }
 
 /// Whom a city is granted to ([`Game::player_grant_city`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum GrantTo {
-    /// A House that exists.
+    /// A House that exists: the city moves to its player.
     House(HouseId),
-    /// A person without a post, who founds a House.
+    /// A person with a leader (a veteran), who founds a House and leaves the map.
     Person(PersonId),
     /// A great person unit: a person is drawn, founds the House, and the unit is consumed.
     GreatPerson(UnitId),
@@ -314,7 +405,6 @@ pub(crate) struct Names {
     pub adept: Option<UnitCombatType>,
     /// The great person classes: the five card suits' and the Great Commander's.
     pub great: Vec<UnitClassType>,
-    pub government: Option<CivicOptionType>,
     pub good: Option<AlignmentType>,
     pub evil: Option<AlignmentType>,
 }
@@ -330,7 +420,6 @@ pub(crate) fn names(d: &GameData) -> &'static Names {
             disciple: d.ty::<UnitCombatType>("UNITCOMBAT_DISCIPLE"),
             adept: d.ty::<UnitCombatType>("UNITCOMBAT_ADEPT"),
             great: ["UNITCLASS_SCIENTIST", "UNITCLASS_PROPHET", "UNITCLASS_ENGINEER", "UNITCLASS_MERCHANT", "UNITCLASS_ARTIST", "UNITCLASS_COMMANDER"].iter().filter_map(|n| d.ty::<UnitClassType>(n)).collect(),
-            government: d.ty::<CivicOptionType>("CIVICOPTION_GOVERNMENT"),
             good: d.ty::<AlignmentType>("ALIGNMENT_GOOD"),
             evil: d.ty::<AlignmentType>("ALIGNMENT_EVIL"),
         }
@@ -363,14 +452,23 @@ pub(crate) fn and_list(items: &[String]) -> String {
 
 impl Game {
     /// Whether player `p` has persons and Houses: a living civilization, not the barbarians, a
-    /// minor civilization or a crusade Host.
+    /// minor civilization, a crusade Host or a House.
     pub fn player_has_persons(&self, p: PlayerId) -> bool {
-        self.players[p].alive && !self.player_is_barbarian(p) && !self.player_is_minor_civ(p) && !self.player_is_crusade_host(p)
+        self.players[p].alive && self.players[p].house.is_none() && !self.player_is_barbarian(p) && !self.player_is_minor_civ(p) && !self.player_is_crusade_host(p)
     }
 
-    /// A House's label: `House Arne`.
+    /// A House's label: `House Arne` (a founded House), `Hippus` (a vassal civilization).
     pub fn house_label(&self, h: HouseId) -> String {
-        format!("House {}", self.houses[h].name)
+        let house = &self.houses[h];
+        match house.origin {
+            HouseOrigin::Founded => format!("House {}", house.name),
+            _ => house.name.clone(),
+        }
+    }
+
+    /// The House player `p` is, if it is one.
+    pub fn player_house(&self, p: PlayerId) -> Option<HouseId> {
+        self.players.get(p)?.house.filter(|&h| self.houses.contains(h))
     }
 
     /// A city's display name.
@@ -415,13 +513,25 @@ impl Game {
         }
     }
 
-    /// The plot a message about person `x` points at: their unit's, else their seat's, else
-    /// their owner's capital's.
+    /// House `h`'s seat: its player's capital (its most populous city without one).
+    pub fn house_seat(&self, h: HouseId) -> Option<CityId> {
+        let hp = self.houses.get(h)?.player;
+        self.player_get_capital_city(hp).or_else(|| self.players[hp].cities.iter().copied().filter(|&c| self.cities.contains(c)).max_by_key(|&c| (self.cities[c].population, std::cmp::Reverse(c))))
+    }
+
+    /// House `h`'s cities (its player's), in its player's order.
+    pub fn house_cities(&self, h: HouseId) -> Vec<CityId> {
+        let Some(house) = self.houses.get(h) else { return Vec::new() };
+        self.players[house.player].cities.iter().copied().filter(|&c| self.cities.contains(c)).collect()
+    }
+
+    /// The plot a message about person `x` points at: their unit's, else their House's seat's,
+    /// else their owner's capital's.
     pub(crate) fn person_at(&self, x: PersonId) -> Option<(i32, i32)> {
         if let Some(plot) = self.person_unit(x).and_then(|u| self.unit_plot_opt(u)) {
             return Some(self.map.xy(plot));
         }
-        if let Some(c) = self.person_house(x).and_then(|h| self.houses[h].seat).filter(|&c| self.cities.contains(c)) {
+        if let Some(c) = self.person_house(x).and_then(|h| self.house_seat(h)) {
             return Some((self.cities[c].x, self.cities[c].y));
         }
         let p = self.persons[x].owner;
@@ -441,15 +551,15 @@ impl Game {
         }
     }
 
-    /// A message to the owner of House `h` about it, marked for the client's alerts.
+    /// A message to the liege of House `h` about it, marked for the client's alerts.
     pub(crate) fn house_msg(&mut self, h: HouseId, f: impl FnOnce() -> String) {
         if !self.log.enabled {
             return;
         }
         let turn = self.game_turn();
         let p = self.houses[h].owner;
-        let at = self.houses[h].seat.filter(|&c| self.cities.contains(c)).map(|c| (self.cities[c].x, self.cities[c].y));
-        let head = self.houses[h].head;
+        let at = self.house_seat(h).map(|c| (self.cities[c].x, self.cities[c].y));
+        let head = self.houses[h].head.filter(|&x| self.persons.contains(x));
         match (at, head) {
             (Some(at), Some(x)) => self.log.msg_marked(turn, Some(p), at, LogMark::Person, LogTag::Person(x), f),
             (Some(at), None) => self.log.msg_marked(turn, Some(p), at, LogMark::Person, LogTag::None, f),

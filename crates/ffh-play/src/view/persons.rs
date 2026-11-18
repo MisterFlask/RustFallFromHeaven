@@ -1,7 +1,9 @@
-//! Persons of Note as the human sees them (docs/PERSONS.md, "UI": parts A, B and J): the Court
-//! screen (`court`), a city's grant list (`grant {city}`), the count of what needs attention (the
-//! view's `court_attention`, the menu's badge) and the checks of the commands `grant_city`,
-//! `name_heir`, `set_commander` and `release_house`.
+//! Persons of Note as the human sees them (docs/PERSONS.md, "UI": parts A, B and J; "The second
+//! build": Houses are vassal civilizations): the Court screen (`court`), a city's grant list
+//! (`grant {city}`), the count of what needs attention (the view's `court_attention`, the menu's
+//! badge) and the check of the command `set_commander`. The second build's screens (the House
+//! cards' tribute selector, levies, bribes) are still to be laid out; the lines here are kept true
+//! to the rules as built.
 //!
 //! Every line the page shows about the rules is made here, from the rules' own read API
 //! (`ffh_core::persons`: `court_view`, `house_view`, `person_view`, `grant_candidates`, the
@@ -74,84 +76,8 @@ fn government(g: &Game, h: PlayerId) -> Option<CivicType> {
     d.civic_options.keys().find(|&o| d.civic_options[o].base.type_ == "CIVICOPTION_GOVERNMENT").and_then(|o| g.players[h].civics[o])
 }
 
-/// `1.5` for 150 (the government's `house_orders`, in hundredths of an order a city).
-fn per_city(n: i32) -> String {
-    if n % 100 == 0 {
-        (n / 100).to_string()
-    } else if n % 10 == 0 {
-        format!("{}.{}", n / 100, (n % 100) / 10)
-    } else {
-        format!("{}.{:02}", n / 100, n % 100)
-    }
-}
-
 fn city_ref(g: &Game, c: CityId) -> Json {
     crate::jobj! { "city" => c, "name" => city_name(g, c), "x" => g.cities[c].x, "y" => g.cities[c].y }
-}
-
-/// The trait `t`'s parts a city carries (docs/PERSONS.md, "A head's trait"; `persons/city.rs`):
-/// `Applies in a city: health, happiness. Its other effects do not.` (`None` without a trait).
-fn trait_applies(d: &GameData, t: TraitType) -> String {
-    let ti = &d.traits[t];
-    let mut parts: Vec<&str> = Vec::new();
-    if ti.health != 0 {
-        parts.push("health");
-    }
-    if ti.happiness != 0 || d.buildings.keys().any(|b| d.buildings[b].happiness_traits[t] != 0) {
-        parts.push("happiness");
-    }
-    if ti.commerce_change.iter().chain(ti.commerce_modifier.iter()).any(|&v| v != 0) {
-        parts.push("commerce");
-    }
-    if ti.extra_yield_threshold.iter().any(|&v| v != 0) {
-        parts.push("plot yields");
-    }
-    if ti.trade_yield_modifier.iter().any(|&v| v != 0) {
-        parts.push("trade routes");
-    }
-    if ti.great_people_rate_modifier != 0 {
-        parts.push("great people");
-    }
-    if ti.max_global_building_production_modifier != 0 || ti.max_team_building_production_modifier != 0 || ti.max_player_building_production_modifier != 0 {
-        parts.push("wonder production");
-    }
-    if d.buildings.keys().any(|b| d.buildings[b].production_traits[t] != 0) || d.units.keys().any(|u| d.units[u].production_traits[t] != 0) {
-        parts.push("production");
-    }
-    if ti.free_promotion.iter().any(|&p| p) {
-        parts.push("promotions of the units it trains");
-    }
-    let rest = ti.upkeep_modifier != 0
-        || ti.max_anarchy != 0
-        || ti.great_general_rate_modifier != 0
-        || ti.domestic_great_general_rate_modifier != 0
-        || ti.level_experience_modifier != 0
-        || ti.pillaging_gold != 0
-        || ti.upgrade_cost_modifier != 0
-        || ti.summon_duration != 0
-        || ti.free_xp_from_combat != 0
-        || ti.summon_promotion.is_some()
-        || ti.adaptive
-        || ti.agnostic
-        || ti.assimilation
-        || ti.barbarian_ally
-        || ti.ignore_food
-        || ti.insane
-        || ti.sprawling;
-    match (parts.is_empty(), rest) {
-        (true, _) => "Nothing of it applies in a city.".to_string(),
-        (false, true) => format!("Applies in a city: {}. Its other effects do not.", parts.join(", ")),
-        (false, false) => format!("Applies in a city: {}.", parts.join(", ")),
-    }
-}
-
-/// A trait for the page: its index (the page's tooltip is the trait's own help, `data`), its name
-/// and which parts a city carries.
-fn trait_json(d: &GameData, t: Option<TraitType>) -> Json {
-    match t {
-        None => Json::Null,
-        Some(t) => crate::jobj! { "trait" => Json::idx(t), "name" => names::display(d, t).into_owned(), "applies" => trait_applies(d, t) },
-    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -163,7 +89,7 @@ fn person_plot(g: &Game, x: PersonId) -> Option<(i32, i32)> {
     if let Some(plot) = g.person_unit(x).and_then(|u| g.unit_plot_opt(u)) {
         return Some(g.map.xy(plot));
     }
-    if let Some(c) = g.person_house(x).and_then(|h| g.houses[h].seat).filter(|&c| g.cities.contains(c)) {
+    if let Some(c) = g.person_house(x).and_then(|h| g.house_seat(h)) {
         return Some((g.cities[c].x, g.cities[c].y));
     }
     let p = g.persons[x].owner;
@@ -281,7 +207,14 @@ fn where_text(g: &Game, pv: &PersonView) -> String {
         PersonOrigin::Hero => "Hero",
         PersonOrigin::Veteran => "Veteran",
         PersonOrigin::GreatPerson => "Great person",
+        PersonOrigin::Ruler => "Ruler",
     };
+    // A House's head leads it, off the map.
+    if let Post::Head(hh) = pv.post {
+        if g.houses.contains(hh) {
+            return format!("{origin}: leads {}.", g.house_label(hh));
+        }
+    }
     let Some(t) = pv.unit_type else { return format!("{origin}: no unit.") };
     // A hero's unit type is its name (`Donal Lugh`): not said twice.
     let type_name = names::display(g.d, t);
@@ -321,13 +254,12 @@ fn person_json(v: &Viewer, pv: &PersonView, grantable: &[CityId]) -> Json {
     let unit_at = pv.unit.and_then(|u| g.unit_plot_opt(u)).map(|q| g.map.xy(q));
     let (parts, total) = parts_json(&pv.parts, pv.loyalty);
     let record: Vec<Json> = pv.deeds.iter().rev().map(|dd| Json::from(format!("Turn {}: {}", dd.turn, core(g, &dd.text)))).collect();
-    let trait_line = pv.house_trait.map(|t| format!("Trait a House of theirs gives its cities: {}.", names::display(g.d, t)));
     crate::jobj! {
         "id" => pv.id,
         "name" => pv.name.as_str(),
         "title" => pv.title.clone(),
         "leader" => Json::opt_idx(pv.leader),
-        "origin" => match pv.origin { PersonOrigin::Hero => "hero", PersonOrigin::Veteran => "veteran", PersonOrigin::GreatPerson => "great_person" },
+        "origin" => match pv.origin { PersonOrigin::Hero => "hero", PersonOrigin::Veteran => "veteran", PersonOrigin::GreatPerson => "great_person", PersonOrigin::Ruler => "ruler" },
         "unit" => pv.unit,
         "unit_type" => Json::opt_idx(pv.unit_type),
         "x" => unit_at.map(|p| p.0),
@@ -341,8 +273,6 @@ fn person_json(v: &Viewer, pv: &PersonView, grantable: &[CityId]) -> Json {
         "outcome" => pv.outcome.as_deref().map(|s| core(g, s)),
         "demand" => demand_json(v, pv, grantable),
         "ambition" => ambition_text(pv),
-        "trait" => trait_json(g.d, pv.house_trait),
-        "trait_line" => trait_line,
         "rival" => pv.rival_name.as_ref().map(|r| format!("Rival: {r}.")),
         "parts" => parts,
         "total" => total,
@@ -355,62 +285,54 @@ fn person_json(v: &Viewer, pv: &PersonView, grantable: &[CityId]) -> Json {
 // Houses
 // ---------------------------------------------------------------------------------------------
 
-/// `Orders: 2 of 3 left. Next in 12 turns.` / `Orders: no limit.` / `Orders: none.`
-fn orders_text(hv: &HouseView) -> String {
-    match hv.orders_left {
-        None => "Orders: no limit.".to_string(),
-        Some(_) if matches!(hv.state, LoyaltyState::Restless | LoyaltyState::Disloyal) => "Orders: none.".to_string(),
-        Some(n) => match hv.order_frees_in {
-            Some(t) if n < hv.orders_total => format!("Orders: {n} of {} left. Next in {}.", hv.orders_total, turns(t)),
-            _ => format!("Orders: {n} of {} left.", hv.orders_total),
-        },
+/// `Tribute 30%: 12 gold, 8 research last turn.` (`Tribute 30%.` before its first payment).
+fn tribute_text(hv: &HouseView) -> String {
+    let t = &hv.tribute;
+    if t.last_turn < 0 {
+        format!("Tribute {}%.", t.pct)
+    } else {
+        format!("Tribute {}%: {} gold, {} research last turn.", t.pct, t.last_gold, t.last_research)
     }
 }
 
-/// A House's card.
+/// A House's card: who leads it (the head's card), its attitude and countdown, its cities, its
+/// tribute, whether it takes levies, its price to secede, and Free.
 fn house_json(v: &Viewer, hv: &HouseView, persons: &[PersonView], grantable: &[CityId]) -> Json {
     let g = v.g;
-    let h = v.h;
     let head = hv.head.and_then(|x| persons.iter().find(|p| p.id == x)).map(|pv| person_json(v, pv, grantable));
     let (parts, total) = parts_json(&hv.parts, hv.loyalty);
     let (_, held) = g.house_cities_held(hv.id);
     let cities: Vec<Json> = hv.cities.iter().filter(|&&c| g.cities.contains(c)).map(|&c| city_ref(g, c).with("held", held.contains(&c)).with("seat", hv.seat == Some(c))).collect();
-    let saved = g.house_maintenance_saved_times100(hv.id);
-    let release = g.player_check_release_house(h, hv.id);
-    let candidates: Vec<Json> = if hv.head.is_none() {
-        hv.heir_candidates.iter().filter_map(|&x| persons.iter().find(|p| p.id == x)).map(|pv| person_json(v, pv, grantable)).collect()
-    } else {
-        Vec::new()
-    };
-    let head_line = if hv.head.is_some() {
-        None
-    } else if hv.needs_heir {
-        Some(format!("{} has no head.", hv.label))
-    } else {
-        Some(format!("{} has no head. The first person without a post to enter the court succeeds.", hv.label))
-    };
+    let tribute_at: Vec<Json> = hv
+        .tribute
+        .at
+        .iter()
+        .map(|&(pct, gold, research, loyalty, state)| crate::jobj! { "pct" => pct, "gold" => gold, "research" => research, "loyalty" => loyalty, "state" => state_name(state) })
+        .collect();
     crate::jobj! {
         "id" => hv.id,
+        "player" => hv.player,
         "label" => hv.label.as_str(),
+        "civilization" => core(g, &hv.civilization_name),
+        "leader" => Json::opt_idx(hv.leader),
         "color" => hv.color as i64,
         "state" => state_name(hv.state),
         "countdown_turns" => hv.countdown_turns,
         "outcome" => hv.outcome.as_deref().map(|s| core(g, s)),
         "held" => (hv.countdown_turns.is_some() && !held.is_empty()).then(|| crate::view::house_marks::stays_line(g, &held)),
         "head" => head,
-        "head_line" => head_line,
-        "needs_heir" => hv.needs_heir,
-        "heir_candidates" => Json::Arr(candidates),
-        "seat" => hv.seat.filter(|&c| g.cities.contains(c)).map(|c| format!("Seat: {}.", city_name(g, c))),
+        "seat" => hv.seat.filter(|&c| g.cities.contains(c)).map(|c| format!("Capital: {}.", city_name(g, c))),
         "cities" => Json::Arr(cities),
-        "orders" => orders_text(hv),
-        "trait" => trait_json(g.d, hv.house_trait),
-        "trait_line" => hv.house_trait.map(|t| format!("Trait in its cities: {}.", names::display(g.d, t))),
-        "maintenance" => if hv.head.is_some() { format!("Maintenance saved: {} gold a turn.", gold(saved)) } else { "Maintenance saved: none while the seat is empty.".to_string() },
-        "release" => crate::jobj! { "ok" => release.is_ok(), "refusal" => release.err(), "confirm" => format!("Release {} as a vassal? Its cities go with it. This cannot be undone.", hv.label) },
+        "tribute" => tribute_text(hv),
+        "tribute_pct" => hv.tribute.pct,
+        "tribute_at" => Json::Arr(tribute_at),
+        "levy" => match &hv.levy.reason { Some(why) => why.clone(), None => "Takes levies.".to_string() },
+        "takes_levy" => hv.levy.takes,
+        "bribe_price" => hv.bribe_price,
+        "free" => crate::jobj! { "ok" => hv.free.is_ok(), "refusal" => hv.free.err(), "confirm" => format!("Free {}? It is no longer our vassal, at peace with us. This cannot be undone.", hv.label) },
         "parts" => parts,
         "total" => total,
-        "founded" => format!("Founded on turn {}.", hv.founded_turn),
+        "founded" => format!("Our House since turn {}.", hv.founded_turn),
     }
 }
 
@@ -438,32 +360,26 @@ fn empty_lines(g: &Game, h: PlayerId, grants: Result<(), &'static str>, persons:
 }
 
 /// The lines that need attention (part A.2), each with its button, and the badge count
-/// (principle 6: an heir to name, a Disloyal holder, a demand with 10 turns or fewer).
+/// (principle 6: a Furious holder, a demand with 10 turns or fewer).
 fn attention(v: &Viewer, persons: &[PersonView], houses: &[HouseView], grantable: &[CityId]) -> (Vec<Json>, usize) {
     let g = v.g;
     let mut out = Vec::new();
     let mut badge = 0;
     let line = |text: String, label: &str, act: Json, kind: &str| crate::jobj! { "kind" => kind, "text" => text, "button" => crate::jobj! { "label" => label, "act" => act } };
     for hv in houses {
-        if hv.needs_heir {
-            badge += 1;
-            out.push(line(format!("{} has no head.", hv.label), "Name an heir", crate::jobj! { "kind" => "heir", "house" => hv.id }, "heir"));
-        }
-    }
-    for hv in houses {
-        if hv.state == LoyaltyState::Disloyal {
+        if hv.state == LoyaltyState::Furious {
             badge += 1;
             let outcome = hv.outcome.as_deref().map(|s| core(g, s)).unwrap_or_default();
             let rest = outcome.strip_prefix(&format!("{} ", hv.label)).map(|r| {
                 let mut c = r.chars();
                 c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default()
             });
-            let text = format!("{}: Disloyal. {}", hv.label, rest.unwrap_or(outcome));
-            out.push(line(text, "Show", crate::jobj! { "kind" => "card", "house" => hv.id }, "disloyal"));
+            let text = format!("{}: Furious. {}", hv.label, rest.unwrap_or(outcome));
+            out.push(line(text, "Show", crate::jobj! { "kind" => "card", "house" => hv.id }, "furious"));
         }
     }
     for pv in persons.iter().filter(|p| !matches!(p.post, Post::Head(_))) {
-        if pv.state == LoyaltyState::Disloyal {
+        if pv.state == LoyaltyState::Furious {
             badge += 1;
             let subject = g.person_subject(pv.id);
             let outcome = pv.outcome.as_deref().map(|s| core(g, s)).unwrap_or_default();
@@ -471,7 +387,7 @@ fn attention(v: &Viewer, persons: &[PersonView], houses: &[HouseView], grantable
                 let mut c = r.chars();
                 c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default()
             });
-            out.push(line(format!("{subject}: Disloyal. {}", rest.unwrap_or(outcome)), "Show", crate::jobj! { "kind" => "card", "person" => pv.id }, "disloyal"));
+            out.push(line(format!("{subject}: Furious. {}", rest.unwrap_or(outcome)), "Show", crate::jobj! { "kind" => "card", "person" => pv.id }, "furious"));
         }
     }
     for pv in persons {
@@ -491,7 +407,7 @@ fn attention(v: &Viewer, persons: &[PersonView], houses: &[HouseView], grantable
         }
     }
     for pv in persons {
-        if pv.post == Post::None && !houses.iter().any(|hv| hv.needs_heir) {
+        if pv.post == Post::None && pv.leader.is_some() {
             if let Some(c) = nearest_grantable(g, v.h, pv.id, grantable) {
                 out.push(line(format!("{} has no post.", pv.name), "Grant a city", crate::jobj! { "kind" => "grant", "city" => c, "prefer" => crate::jobj! { "person" => pv.id } }, "no_post"));
             }
@@ -513,14 +429,14 @@ pub fn attention_count(v: &Viewer) -> usize {
         return 0;
     }
     let court = g.court_view(v.h);
-    let mut n = court.houses.iter().filter(|hv| hv.needs_heir || hv.state == LoyaltyState::Disloyal).count();
-    n += court.persons.iter().filter(|p| !matches!(p.post, Post::Head(_)) && p.state == LoyaltyState::Disloyal).count();
+    let mut n = court.houses.iter().filter(|hv| hv.state == LoyaltyState::Furious).count();
+    n += court.persons.iter().filter(|p| !matches!(p.post, Post::Head(_)) && p.state == LoyaltyState::Furious).count();
     n += court.persons.iter().filter(|p| p.demand.as_ref().is_some_and(|dm| !dm.paused && dm.turns_left <= DEMAND_WARNING_TURNS)).count();
     n
 }
 
 /// The keywords of this system (part J).
-const KEYWORDS: &[&str] = &["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_DEVOTED", "KEYWORD_LOYAL", "KEYWORD_RESTLESS", "KEYWORD_DISLOYAL", "KEYWORD_SWORN", "KEYWORD_CLAIMANT"];
+const KEYWORDS: &[&str] = &["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_FRIENDLY", "KEYWORD_PLEASED", "KEYWORD_CAUTIOUS", "KEYWORD_ANNOYED", "KEYWORD_FURIOUS", "KEYWORD_SWORN", "KEYWORD_CLAIMANT"];
 
 fn keywords(d: &GameData, names: &[&str]) -> Vec<KeywordType> {
     names.iter().filter_map(|n| d.ty::<KeywordType>(n)).collect()
@@ -534,11 +450,11 @@ pub fn court(v: &Viewer) -> Json {
     let cv = g.court_view(h);
     let gov = government(g, h);
     let mut header = vec![format!("Government: {}.", gov.map(|c| names::display(d, c).into_owned()).unwrap_or_else(|| "none".into()))];
-    if cv.grants.is_ok() {
-        header.push(format!("A House takes {} orders a city every {}.", per_city(g.player_house_orders(h)), turns(d.defines.person_levy_turns)));
+    if g.player_has_persons(h) {
+        header.push(format!("Tribute of a new House: {}%.", cv.tribute_default));
     }
     let (attention, badge) = if g.player_has_persons(h) { attention(v, &cv.persons, &cv.houses, &cv.grantable) } else { (Vec::new(), 0) };
-    let mut crown: Vec<CityId> = g.players[h].cities.iter().copied().filter(|&c| g.cities.contains(c) && g.city_house(c).is_none()).collect();
+    let mut crown: Vec<CityId> = g.players[h].cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
     crown.sort_by_key(|&c| (!g.city_is_capital(c), c));
     let crown: Vec<Json> = crown
         .iter()
@@ -560,6 +476,7 @@ pub fn court(v: &Viewer) -> Json {
         "houses" => Json::Arr(houses),
         "persons" => Json::Arr(persons),
         "pool_left" => cv.pool_left,
+        "tribute_default" => cv.tribute_default,
         "reminders" => crate::view::keywords::reminders(d, keywords(d, KEYWORDS)),
     }
 }
@@ -628,15 +545,14 @@ fn effects_json(g: &Game, c: CityId, lines: &[PreviewLine], own: &[String]) -> V
         .collect()
 }
 
-/// Why city `c` pays no city-count maintenance this turn though it pays some for good: `disorder`
-/// or `We Love the King Day` (both pass); `None` when it pays as usual.
-fn maintenance_pause(g: &Game, c: CityId) -> Option<&'static str> {
-    if g.city_is_disorder(c) {
-        Some("disorder")
-    } else if g.cities[c].we_love_the_king_day {
-        Some("We Love the King Day")
+/// A grant's maintenance line: `Your maintenance: -3.2 gold a turn.` (the rules' maintenance of
+/// the owner's cities now and with the city a House's, inflation included).
+fn maintenance_line(g: &Game, c: CityId) -> String {
+    let m = g.grant_maintenance(c);
+    if m.gold_change_times100 == 0 {
+        "Your maintenance: no change.".to_string()
     } else {
-        None
+        format!("Your maintenance: {} gold a turn.", gold(m.gold_change_times100))
     }
 }
 
@@ -644,97 +560,37 @@ fn maintenance_pause(g: &Game, c: CityId) -> Option<&'static str> {
 fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
     let g = v.g;
     let d = g.d;
-    let city = city_name(g, c);
-    let saved = g.city_house_maintenance_saved_lasting_times100(c);
-    let pause = maintenance_pause(g, c);
     let mut lines: Vec<String> = Vec::new();
-    let (kind, title, house_label, state, color, leader, unit_type, person, trait_t) = match cand.to {
+    let (kind, title, house_label, state, color, leader, unit_type, person) = match cand.to {
         GrantTo::House(hh) => {
             let hv = g.house_view(hh).expect("a standing House");
-            let head = hv.head.filter(|&x| g.persons.contains(x));
-            (
-                "house",
-                hv.label.clone(),
-                hv.label.clone(),
-                Some(hv.state),
-                Some(hv.color as i64),
-                head.and_then(|x| g.persons[x].leader),
-                head.and_then(|x| g.person_unit(x)).map(|u| g.units[u].unit_type),
-                head,
-                hv.house_trait,
-            )
+            ("house", hv.label.clone(), hv.label.clone(), Some(hv.state), Some(hv.color as i64), hv.leader, None, hv.head)
         }
         GrantTo::Person(x) => {
             let label = format!("House {}", g.house_new_name(v.h));
-            (
-                "person",
-                format!("Found a House: {}", g.persons[x].name),
-                label,
-                Some(g.person_state(x)),
-                None,
-                g.persons[x].leader,
-                g.person_unit(x).map(|u| g.units[u].unit_type),
-                Some(x),
-                g.person_house_trait(x),
-            )
+            ("person", format!("Found a House: {}", g.persons[x].name), label, Some(g.person_state(x)), None, g.persons[x].leader, g.person_unit(x).map(|u| g.units[u].unit_type), Some(x))
         }
         GrantTo::GreatPerson(u) => {
             let label = format!("House {}", g.house_new_name(v.h));
             let unit = names::display(d, g.units[u].unit_type).into_owned();
             let at = g.unit_plot_opt(u).and_then(|q| g.map.plots[q].plot_city).filter(|&k| g.cities.contains(k)).map(|k| format!(" in {}", city_name(g, k))).unwrap_or_default();
-            lines.push(format!("A person of note is drawn. The {unit} is consumed."));
-            ("great_person", format!("Found a House: {unit}{at}"), label, None, None, None, Some(g.units[u].unit_type), None, None)
+            ("great_person", format!("Found a House: {unit}{at}"), label, None, None, None, Some(g.units[u].unit_type), None)
         }
     };
-    // What the grant does to the city.
-    let headless = matches!(cand.to, GrantTo::House(hh) if g.houses[hh].head.is_none());
-    if headless {
-        lines.push("Maintenance: no change while the seat is empty.".to_string());
-    } else if saved > 0 {
-        match pause {
-            Some(why) => lines.push(format!("Maintenance: -{} gold a turn (none while {why} lasts).", gold(saved))),
-            None => lines.push(format!("Maintenance: -{} gold a turn.", gold(saved))),
-        }
-    } else {
-        lines.push("Maintenance: no change.".to_string());
-    }
-    match (cand.to, trait_t) {
-        (GrantTo::GreatPerson(_), _) => lines.push(format!("Trait in {city}: that of the person drawn.")),
-        (_, Some(t)) => lines.push(format!("Trait in {city}: {}.", names::display(d, t))),
-        (_, None) => lines.push(format!("Trait in {city}: none.")),
-    }
-    // Orders in the city after the grant: by the grantee's state after it (the preview's
-    // `state_after` where the grant changes it), the House's quota with one city more.
-    let changed = |subject: &str| cand.lines.iter().filter(|l| l.subject == subject).find_map(|l| l.state_after);
-    let (after, now) = match cand.to {
-        GrantTo::House(hh) => (changed(&house_label), g.house_state(hh)),
-        GrantTo::Person(x) => (changed(&g.person_subject(x)).or_else(|| changed(&house_label)), g.person_state(x)),
-        GrantTo::GreatPerson(_) => (None, LoyaltyState::Loyal),
+    // What the grant does: the city leaves the Crown for the House's player (its production and
+    // most of its commerce go with it; the House pays its tribute).
+    lines.push(maintenance_line(g, c));
+    let tribute = match cand.to {
+        GrantTo::House(hh) => g.houses[hh].tribute,
+        _ => g.players[v.h].house_tribute,
     };
-    let state_after = after.unwrap_or(now);
-    let verb = if after.is_some_and(|a| a != now) { "becomes" } else { "is" };
-    let orders = match (cand.to, state_after) {
-        (GrantTo::House(hh), _) if g.houses[hh].head.is_none() => format!("Orders in {city}: no limit while the seat is empty."),
-        (_, LoyaltyState::Devoted) => format!("Orders in {city}: no limit ({house_label} {verb} Devoted)."),
-        (_, s @ (LoyaltyState::Restless | LoyaltyState::Disloyal)) => format!("Orders in {city}: none ({house_label} {verb} {}).", s.name()),
-        (GrantTo::House(hh), LoyaltyState::Loyal) => {
-            let left = g.house_orders_left(hh).unwrap_or(0);
-            let total = g.house_orders_total(hh);
-            let after = ((g.houses[hh].cities.len() as i32 + 1) * g.player_house_orders(v.h) / 100).max(1);
-            format!("Orders in {city}: by {house_label}'s quota ({} of {after} left).", (left + after - total).max(0))
-        }
-        (_, LoyaltyState::Loyal) => {
-            let total = (g.player_house_orders(v.h) / 100).max(1);
-            format!("Orders in {city}: by {house_label}'s quota ({total} of {total} left).")
-        }
-    };
-    lines.push(orders);
+    lines.push(format!("{} pays a tribute of {tribute}% of its gold and research.", house_label));
     let own_subjects: Vec<String> = match cand.to {
         GrantTo::House(_) => vec![house_label.clone()],
         GrantTo::Person(x) => vec![g.person_subject(x), house_label.clone()],
         GrantTo::GreatPerson(_) => vec![house_label.clone()],
     };
-    let confirm = format!("Grant {city} to {house_label}? This cannot be undone.");
+    let confirm = format!("Grant {} to {house_label}? This cannot be undone.", city_name(g, c));
     let button = match cand.to {
         GrantTo::House(_) => format!("Grant to {house_label}"),
         _ => format!("Found {house_label}"),
@@ -770,12 +626,8 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     }
     let name = city_name(g, c);
     let refusal = g.player_check_grant_city(v.h, c).err();
-    // What the Crown pays for it: at its lasting rate (a grant is for good), with the turns it
-    // pays nothing (disorder, a "We Love the King" day) said apart.
-    let city = &g.cities[c];
-    let pays = !(city.population <= 0 || city.outpost);
-    let full = if pays { g.city_calculate_num_cities_maintenance_full_times100(c) * (city.maintenance_modifier + 100).max(0) / 100 } else { 0 };
-    let pause = maintenance_pause(g, c);
+    // What the Crown pays for it now (the city's own maintenance; a grant moves it to the House).
+    let own = g.cities[c].maintenance;
     let mut candidates: Vec<(u8, Json)> = Vec::new();
     if refusal.is_none() {
         for cand in g.grant_candidates(v.h, c) {
@@ -802,11 +654,7 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "y" => g.cities[c].y,
         "title" => format!("Grant {name}"),
         "note" => "A grant is for good.",
-        "baseline" => match (pays, pause) {
-            (false, _) => "Held by the Crown: no city-count maintenance.".to_string(),
-            (true, None) => format!("Held by the Crown: city-count maintenance {} gold a turn.", gold(full)),
-            (true, Some(why)) => format!("Held by the Crown: city-count maintenance {} gold a turn (none this turn: {why}).", gold(full)),
-        },
+        "baseline" => format!("Held by the Crown: its maintenance {} gold a turn.", gold(own)),
         "refusal" => refusal,
         "none" => (refusal.is_none() && candidates.is_empty()).then_some("No House, person or great person to grant it to."),
         "candidates" => Json::Arr(candidates.into_iter().map(|(_, j)| j).collect()),
@@ -818,23 +666,6 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
 // The commands' checks (the rules' own reasons; the rules have no separate check for these two,
 // so their apply's checks are read here with the same words)
 // ---------------------------------------------------------------------------------------------
-
-/// `player_name_heir`'s checks, without applying it.
-pub fn check_name_heir(g: &Game, p: PlayerId, h: HouseId, x: PersonId) -> Result<(), &'static str> {
-    if !g.houses.contains(h) || g.houses[h].owner != p {
-        return Err("Not a House of yours.");
-    }
-    if g.houses[h].head.is_some() {
-        return Err("The seat is not empty.");
-    }
-    if !g.persons.contains(x) || g.persons[x].owner != p {
-        return Err("Not a person of yours.");
-    }
-    if g.persons[x].post != Post::None {
-        return Err("The heir must hold no post.");
-    }
-    Ok(())
-}
 
 /// `player_set_commander`'s checks, without applying it.
 pub fn check_set_commander(g: &Game, p: PlayerId, a: ArmyId, x: PersonId) -> Result<(), &'static str> {
@@ -867,9 +698,6 @@ mod tests {
         assert_eq!(gold(314), "3.1");
         assert_eq!(gold(-314), "-3.1");
         assert_eq!(gold(0), "0");
-        assert_eq!(per_city(150), "1.5");
-        assert_eq!(per_city(100), "1");
-        assert_eq!(per_city(50), "0.5");
         assert_eq!(signed(3), "+3");
         assert_eq!(signed(-3), "-3");
         assert_eq!(turns(1), "1 turn");

@@ -129,9 +129,6 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         no_war_weariness,
         unit_rush_gold,
         direct_rule,
-        // Persons of Note (docs/PERSONS.md): a House's order quota; not shown yet (the client's
-        // step of the build shows it with the Houses).
-        house_orders: _,
     } = &d.civics[c];
     let mut b = String::new();
     let line = |b: &mut String, s: String| {

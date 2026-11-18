@@ -345,38 +345,56 @@ pub fn check(g: &Game) {
         }
     }
 
-    // This game's persons of note and Houses (docs/PERSONS.md): a city's House is a House of its
-    // owner that lists it, and a House lists only such cities and has one; a head's post names
-    // their House and the House names them; a person's unit lives and is their owner's; a
-    // commander is with their army and the army names them; no House stands under direct rule
-    // (adopting it is civil war).
+    // This game's persons of note and Houses (docs/PERSONS.md, "The second build"): a House is a
+    // player of its own, the vassal of its liege: every House record's player is alive, no human,
+    // a vassal of its owner's team, and names the record (`Player::house`); every living vassal
+    // that is no human, whose master's leading player has persons, is a House; no House stands
+    // under direct rule (adopting it is civil war); a head's post names their House and the House
+    // names them; a person's unit lives and is their owner's; a commander is with their army and
+    // the army names them.
+    for (h, house) in g.houses.iter() {
+        let hp = house.player;
+        if !g.players[hp].alive || g.players[hp].human {
+            fail(format!("House {h:?} of player {}: its player {} is dead or human", house.owner.0, hp.0));
+        }
+        if g.players[hp].house != Some(h) {
+            fail(format!("House {h:?}: its player {} names {:?}", hp.0, g.players[hp].house));
+        }
+        let (ht, ot) = (g.players[hp].team, g.players[house.owner].team);
+        if !g.teams[ht].vassal[ot] {
+            fail(format!("House {h:?}: player {} is not a vassal of player {}'s team", hp.0, house.owner.0));
+        }
+        if !g.players[house.owner].houses.contains(&h) {
+            fail(format!("House {h:?}: its liege {} does not list it", house.owner.0));
+        }
+    }
+    for p in g.player_ids() {
+        let pl = &g.players[p];
+        if let Some(h) = pl.house {
+            if g.houses.get(h).map_or(true, |house| house.player != p) {
+                fail(format!("player {} names House {h:?}, which is not its", p.0));
+            }
+        }
+        if pl.alive && !pl.human && pl.house.is_none() && g.team_is_a_vassal(pl.team) {
+            let master = g.team_ids().find(|&m| g.team_is_alive(m) && g.teams[pl.team].vassal[m]);
+            if let Some(owner) = master.and_then(|m| g.team_get_leader_id(m)) {
+                if g.player_has_persons(owner) {
+                    fail(format!("player {} is a vassal of player {} without a House", p.0, owner.0));
+                }
+            }
+        }
+    }
     for p in g.player_ids() {
         if g.player_rules_directly(p) && !g.players[p].houses.is_empty() {
             fail(format!("player {} rules directly with {} Houses", p.0, g.players[p].houses.len()));
-        }
-        for &c in &g.players[p].cities {
-            if let Some(h) = g.cities[c].house {
-                match g.houses.get(h) {
-                    Some(house) if house.owner == p && house.cities.contains(&c) => {}
-                    _ => fail(format!("city {} of player {} names House {h:?}, which does not hold it", g.cities[c].name, p.0)),
-                }
-            }
         }
         for &h in &g.players[p].houses {
             let Some(house) = g.houses.get(h) else { fail(format!("player {} lists dead House {h:?}", p.0)) };
             if house.owner != p {
                 fail(format!("player {} lists House {h:?} of player {}", p.0, house.owner.0));
             }
-            if house.cities.is_empty() {
-                fail(format!("House {h:?} of player {} holds no city", p.0));
-            }
-            for &c in &house.cities {
-                if !g.cities.contains(c) || g.cities[c].owner != p || g.cities[c].house != Some(h) {
-                    fail(format!("House {h:?} of player {} lists city {c:?}, which is not its", p.0));
-                }
-            }
             if let Some(x) = house.head {
-                if g.persons.get(x).map_or(true, |person| person.post != ffh_core::persons::Post::Head(h)) {
+                if g.persons.get(x).map_or(true, |person| person.post != ffh_core::persons::Post::Head(h) || person.owner != p) {
                     fail(format!("House {h:?} of player {} names head {x:?}, whose post is not it", p.0));
                 }
             }

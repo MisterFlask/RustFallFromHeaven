@@ -852,8 +852,13 @@ impl Game {
     /// garrison); `None` = it stays here (the city's own garrison, a destination gone, no armies).
     pub fn city_recruit_dest(&self, c: CityId, order_dest: Option<RecruitDest>, unit_type: UnitType) -> Option<RecruitDest> {
         let domain = self.unit_type_army_domain(unit_type)?;
-        let owner = self.cities[c].owner;
         let dest = order_dest.or(self.cities[c].recruit_default)?;
+        // A levy's unit in a House's city is its liege's (docs/PERSONS.md): its army is the
+        // liege's.
+        let owner = match dest {
+            RecruitDest::Army(a) if self.armies.contains(a) && self.city_levied_by(c, self.armies[a].owner) => self.armies[a].owner,
+            _ => self.cities[c].owner,
+        };
         if !self.recruit_dest_valid(owner, dest) || dest == RecruitDest::Garrison(c) {
             return None;
         }
@@ -886,6 +891,12 @@ impl Game {
             // otherwise it would refuse requisitions and never reach a garrison.
             if self.armies[a].disband_to == Some(c) {
                 self.armies[a].disband_to = None;
+            }
+        }
+        // A House's city leaves its liege's lists too (the levy, docs/PERSONS.md).
+        if let Some(liege) = self.player_liege(owner) {
+            for a in self.players[liege].armies.clone() {
+                self.armies[a].requisition.retain(|&x| x != c);
             }
         }
         for u in self.players[owner].units.clone() {

@@ -978,9 +978,14 @@ impl Game {
         false
     }
 
-    /// C++ `CvTeam::canVassalRevolt`.
+    /// C++ `CvTeam::canVassalRevolt`. Not in C++: a House is never freed by it (docs/PERSONS.md,
+    /// rule 7: its countdown and offers to secede are the only ways out by its own will).
     pub fn team_can_vassal_revolt(&self, t: TeamId, master: TeamId) -> bool {
         let defs = &self.d.defines;
+
+        if self.player_ids().any(|p| self.players[p].team == t && self.players[p].house.is_some()) {
+            return false;
+        }
 
         if self.teams[t].vassal[master] {
             if 100 * self.team_get_total_land(t, false) < defs.vassal_revolt_own_losses_factor * self.teams[t].vassal_power {
@@ -1159,6 +1164,10 @@ impl Game {
             if self.final_initialized {
                 self.ev_vassal_state(master, t, value);
             }
+
+            // This game's Houses (docs/PERSONS.md, "The second build", rule 2): every vassal is a
+            // House; the record begins and ends with the vassalage.
+            self.team_vassal_houses(t, master, value, capitulated);
         }
     }
 

@@ -1780,7 +1780,6 @@ export function renderPanel() {
   const leadFull = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
   // (The isometric and HD-2D card shows them under the unit's numbers, in view on a phone.)
   const personBits = [];
-  if (r?.held) personBits.push(h("div.held-line.warn", r.held));
   const person = personLine(leadFull);
   if (person) personBits.push(person);
   const fh = leadFull?.found_house;

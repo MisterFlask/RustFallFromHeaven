@@ -198,7 +198,7 @@ function requisitionView(a, act) {
       candidateLine(c, a.domain === "sea"),
       // Persons of Note (docs/PERSONS.md, "UI", part D): a House's city and its quota, or the
       // reason it gives none (the requisition then passes it over).
-      c.house ? h(`div.requisition-house${c.house.orders_left === 0 ? ".warn" : ".dim"}`, houseShield(c.house.colour, 14), h("span", ` ${c.house.text}`)) : null,
+      c.house ? h(`div.requisition-house${c.house.takes_levy === false ? ".warn" : ".dim"}`, houseShield(c.house.colour, 14), h("span", ` ${c.house.text}`)) : null,
       c.order ? h("span.badge", { title: "Training for the army now" }, `${turns(c.order.turns)}`) : null,
     ),
   );

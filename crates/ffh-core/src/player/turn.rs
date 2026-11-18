@@ -488,6 +488,8 @@ impl Game {
                 // gDLL->openSlot(getID()): network.
             } else {
                 self.tel_autopsy_civ_died(p);
+                // This game's Houses (docs/PERSONS.md): a House's player dead, its record ends.
+                self.player_persons_died(p);
                 self.player_clear_research_queue(p);
 
                 self.player_kill_units(p);
@@ -935,6 +937,12 @@ impl Game {
             return false;
         }
 
+        // Not in C++: the colony is a vassal, so a House (docs/PERSONS.md): none under a
+        // direct-rule civic.
+        if self.team_vassal_refusal(self.players[p].team).is_some() {
+            return false;
+        }
+
         if self.player_get_split_empire_leaders(p).is_empty() {
             return false;
         }
@@ -1135,6 +1143,8 @@ impl Game {
             }
 
             self.team_assign_vassal(team, new_team, false);
+            // A colony is a House that sought no protection (docs/PERSONS.md).
+            self.player_house_birth(new_player);
             new_player
         };
 

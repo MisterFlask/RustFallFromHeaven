@@ -105,8 +105,11 @@ impl Game {
                 }
                 //FfH: End Add
 
-                // C++ default `bAllowVassal = false`.
-                if !self.team_can_change_war_peace(team, other_team, false) {
+                // C++ default `bAllowVassal = false`. Not in C++: a House is a party for anyone
+                // who has met it, at war too (its side deals; docs/PERSONS.md, rule 9): what it
+                // may trade is `player_can_trade_item`'s.
+                let house = self.players[p].house.is_some() || self.players[other].house.is_some();
+                if !house && !self.team_can_change_war_peace(team, other_team, false) {
                     return false;
                 }
             }
@@ -308,6 +311,13 @@ impl Game {
             return false;
         }
 
+        // Not in C++: a House trades only its side deals (docs/PERSONS.md, rule 9): it gives
+        // Secede or Become your vassal, and takes gold and gold per turn from a civilization that
+        // is not its liege; war, peace and the rest are its liege's.
+        if let Some(allowed) = self.house_trade_item_allowed(p, who_to, item) {
+            return allowed;
+        }
+
         let team = self.players[p].team;
         let to_team = self.players[who_to].team;
 
@@ -402,6 +412,11 @@ impl Game {
                     // human can't be vassal of AI
                     let vassal_team = team;
                     let master_team = to_team;
+                    // Not in C++: no vassal under a direct-rule civic (every vassal is a House, and
+                    // no House stands under direct rule; docs/PERSONS.md, rule 11).
+                    if self.team_vassal_refusal(master_team).is_some() {
+                        return false;
+                    }
                     if self.team_is_vassal_state_trading(master_team) {
                         // the master must possess the tech
                         if !self.team_is_a_vassal(vassal_team) && !self.team_is_a_vassal(master_team) && team != to_team {

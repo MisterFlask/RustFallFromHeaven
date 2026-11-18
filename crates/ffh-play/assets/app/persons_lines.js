@@ -18,12 +18,12 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
 }
 
 /** A House in a list or a line: its shield and `House Arne`, and the state mark when it is
- *  Restless or Disloyal (with the countdown's turns). `house` as the host sends it (`{id, label,
+ *  Annoyed or Furious (with the countdown's turns). `house` as the host sends it (`{id, label,
  *  colour, state, turns}`); null: `Crown`. `open`: a click opens the Court at the House. */
 export function houseTag(house, { open = false, mark = true } = {}) {
   if (!house) return h("span.house-tag.crown", "Crown");
   const k = stateKey(house.state);
-  const body = [houseShield(house.colour, 14), h("span.house-name", house.label), mark && (k === "restless" || k === "disloyal") ? [" ", stateMark(house.state, house.turns)] : null];
+  const body = [houseShield(house.colour, 14), h("span.house-name", house.label), mark && house.state && (k === "annoyed" || k === "furious") ? [" ", stateMark(house.state, house.turns)] : null];
   if (!open) return h("span.house-tag", { "data-house": house.id }, body);
   return h("button.link.house-tag", { "data-house": house.id, title: "Open the Court at this House", onclick: (ev) => (ev.stopPropagation(), openCourt({ house: house.id })) }, body);
 }
@@ -99,7 +99,7 @@ export function commanderLine(a, { unitName, change = null, compact = false } = 
         stateMark(c.state, c.turns),
         pick ? [" ", pick] : null,
       ),
-      c.withholds_attack ? h(stateKey(c.state) === "disloyal" ? "div.warn" : "div.caution", "Takes no order to attack.") : null,
+      c.withholds_attack ? h(stateKey(c.state) === "furious" ? "div.warn" : "div.caution", "Takes no order to attack.") : null,
       !compact && c.outcome ? h("div.warn", c.outcome) : null,
     ),
   );
@@ -225,7 +225,7 @@ export function personAlerts(entries, { fresh = false } = {}) {
     const face = p && p.leader !== null && p.leader !== undefined ? leaderPortrait(p.leader, { size: PORTRAIT.small, title: p.name }) : null;
     const court = e.kind !== "secession";
     // A change of state (`House Arne is Restless.`): the one mark of the new state over the text.
-    const changed = e.kind === "person" ? /^([^.]*) is (Devoted|Loyal|Restless|Disloyal)\.\s*(.*)$/.exec(e.text ?? "") : null;
+    const changed = e.kind === "person" ? /^([^.]*) is (Friendly|Pleased|Cautious|Annoyed|Furious)\.\s*(.*)$/.exec(e.text ?? "") : null;
     const el = h(
       `div.toast.log.person-alert${e.kind === "secession" ? ".secession" : ""}`,
       { role: "status", title: court ? "Click: open the Court" : "Click to dismiss", "data-person": e.person ?? "" },

@@ -429,7 +429,9 @@ fn spell_usurpers_crown(g: &mut Game, caster: UnitId, _call: &PyCall) {
 /// No Vassal States, or while `p`'s team is a vassal.
 pub fn oath_targets(g: &Game, p: PlayerId) -> Vec<PlayerId> {
     let team = g.players[p].team;
-    if g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) || g.team_is_a_vassal(team) {
+    // (`team_vassal_refusal`: No Vassal States, a vassal, and not in FFH2 a caster's team under a
+    // direct-rule civic: the vassal is a House, docs/PERSONS.md.)
+    if g.team_vassal_refusal(team).is_some() {
         return Vec::new();
     }
     let power = g.team_get_power(team, false);

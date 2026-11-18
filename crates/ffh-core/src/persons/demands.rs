@@ -1,7 +1,8 @@
-//! Demands (docs/PERSONS.md, "The first build": Demands).
+//! Demands (docs/PERSONS.md, "The first build": Demands; a head makes no Works demand since the
+//! second build: a head of Works ambition demands land).
 //!
 //! One standing demand a person, checked and made in the owner's turn processing. What a person
-//! demands depends on their post and ambition (the Land, War, Faith and Works lists). Met: `Demand
+//! demands depends on their post and ambition (the Land, War and Faith lists). Met: `Demand
 //! met: +3 (60 turns)`. Lapsed at its term: `Demand refused: -3 (60 turns)`. Made impossible by an
 //! act of the owner (the city granted to another House or razed by the owner, peace made with the
 //! civilization of a city to be taken): refused at once. Made impossible otherwise: replaced,
@@ -11,7 +12,6 @@
 use ffh_data::*;
 
 use super::*;
-use crate::utils::{is_national_wonder_class, is_team_wonder_class, is_world_wonder_class};
 
 impl Game {
     // -----------------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ impl Game {
 
     /// The plot a person's demands are measured from: a head's seat, else their unit's.
     fn person_reference_plot(&self, x: PersonId) -> Option<PlotIdx> {
-        if let Some(c) = self.person_house(x).and_then(|h| self.houses[h].seat).filter(|&c| self.cities.contains(c)) {
+        if let Some(c) = self.person_house(x).and_then(|h| self.house_seat(h)) {
             return Some(self.city_plot(c));
         }
         self.person_unit(x).and_then(|u| self.unit_plot_opt(u))
@@ -117,18 +117,18 @@ impl Game {
     fn demand_land(&self, x: PersonId, h: HouseId) -> Option<DemandKind> {
         let p = self.persons[x].owner;
         let team = self.players[p].team;
-        let seat = self.houses[h].seat.filter(|&c| self.cities.contains(c))?;
+        let seat = self.house_seat(h)?;
         let seat_plot = self.city_plot(seat);
         let crown = self.players[p]
             .cities
             .iter()
             .copied()
-            .filter(|&c| self.cities[c].house.is_none() && !self.city_is_capital(c) && !self.cities[c].outpost)
+            .filter(|&c| !self.city_is_capital(c) && !self.cities[c].outpost)
             .min_by_key(|&c| (self.plot_dist(self.city_plot(c), seat_plot), c));
         if let Some(c) = crown {
             return Some(DemandKind::GrantCity(self.city_plot(c)));
         }
-        let own: Vec<PlotIdx> = self.houses[h].cities.iter().filter(|&&c| self.cities.contains(c)).map(|&c| self.city_plot(c)).collect();
+        let own: Vec<PlotIdx> = self.house_cities(h).iter().map(|&c| self.city_plot(c)).collect();
         let barbarian = self.barbarian_player();
         let mut best: Option<((bool, i32, CityId), PlotIdx)> = None;
         for q in self.player_ids() {
@@ -213,7 +213,7 @@ impl Game {
 
     /// The Faith list of person `x`: (1) with no state religion and a religion in one of our
     /// cities that we may adopt, a state religion adopted; (2) else the state religion in a city
-    /// of ours without it (a city of their House first, then the nearest to their seat or unit).
+    /// of ours without it (the nearest to their House's seat or their unit).
     fn demand_faith(&self, x: PersonId) -> Option<DemandKind> {
         let p = self.persons[x].owner;
         match self.player_get_state_religion(p) {
@@ -222,42 +222,21 @@ impl Game {
                 any.then_some(DemandKind::AdoptReligion)
             }
             Some(r) => {
-                let house = self.person_house(x);
                 let from = self.person_reference_plot(x);
                 self.players[p]
                     .cities
                     .iter()
                     .copied()
                     .filter(|&c| !self.cities[c].has_religion[r])
-                    .min_by_key(|&c| {
-                        let theirs = house.is_some() && self.cities[c].house == house;
-                        (!theirs, from.map_or(0, |f| self.plot_dist(f, self.city_plot(c))), c)
-                    })
+                    .min_by_key(|&c| (from.map_or(0, |f| self.plot_dist(f, self.city_plot(c))), c))
                     .map(|c| DemandKind::SpreadReligion(self.city_plot(c)))
             }
         }
     }
 
-    /// The Works list of person `x`, head of House `h`: the wonder (world, team or national) their
-    /// seat can build now with the least production left (ties: the lower id), built there.
-    fn demand_works(&self, h: HouseId) -> Option<DemandKind> {
-        let d = self.d;
-        let seat = self.houses[h].seat.filter(|&c| self.cities.contains(c))?;
-        d.buildings
-            .keys()
-            .filter(|&b| {
-                // Never a palace (its class is a national wonder's).
-                !d.buildings[b].capital
-                    && d.buildings[b].building_class_type.is_some_and(|k| is_world_wonder_class(d, k) || is_team_wonder_class(d, k) || is_national_wonder_class(d, k))
-                    && self.city_can_construct(seat, b, false, false, false)
-            })
-            .min_by_key(|&b| (self.city_production_needed_building(seat, b) - self.cities[seat].building_production[b], b))
-            .map(|building| DemandKind::Wonder { city: self.city_plot(seat), building })
-    }
-
     /// The demand person `x` would make now: without a post, a post; a commander, the list of
-    /// their ambition (War, Faith; Land and Works: a House); a head, the list of their ambition,
-    /// then the Land list.
+    /// their ambition (War, Faith; Land and Works: a House); a head, the list of their ambition
+    /// (War, Faith; Land and Works: none), then the Land list.
     pub fn person_next_demand(&self, x: PersonId) -> Option<DemandKind> {
         let ambition = self.persons[x].ambition;
         match self.persons[x].post {
@@ -272,10 +251,9 @@ impl Game {
                     return None;
                 }
                 let first = match ambition {
-                    Ambition::Land => None,
+                    Ambition::Land | Ambition::Works => None,
                     Ambition::War => self.demand_war(x),
                     Ambition::Faith => self.demand_faith(x),
-                    Ambition::Works => self.demand_works(h),
                 };
                 first.or_else(|| self.demand_land(x, h))
             }
@@ -293,7 +271,7 @@ impl Game {
         match kind {
             DemandKind::Post => self.persons[x].post != Post::None,
             DemandKind::House => self.person_house(x).is_some(),
-            DemandKind::GrantCity(plot) => self.persons_city_at(plot).is_some_and(|c| self.cities[c].owner == p && self.cities[c].house.is_some() && self.cities[c].house == self.person_house(x)),
+            DemandKind::GrantCity(plot) => self.persons_city_at(plot).is_some_and(|c| self.person_house(x).is_some_and(|h| self.cities[c].owner == self.houses[h].player)),
             DemandKind::TakeCity(plot) => self.persons_city_at(plot).is_some_and(|c| self.players[self.cities[c].owner].team == team),
             DemandKind::War(q) => self.teams[team].at_war[self.players[q].team],
             DemandKind::AdoptReligion => self.player_get_state_religion(p).is_some(),
@@ -331,7 +309,7 @@ impl Game {
                 }
                 let owner = self.cities[c].owner;
                 if owner == p {
-                    self.city_is_capital(c) || self.cities[c].house.is_some() || self.cities[c].outpost
+                    self.city_is_capital(c) || self.cities[c].outpost
                 } else {
                     let ot = self.players[owner].team;
                     ot == team || self.teams_vassal_bound(team, ot)
@@ -436,7 +414,7 @@ impl Game {
                 }
             }
             if self.persons[x].demand.is_none() && turn >= self.persons[x].demand_rest_until {
-                // An empty seat makes no demand; a head's House must stand.
+                // A head's House must stand.
                 if let Some(kind) = self.person_next_demand(x) {
                     if !self.demand_is_met(x, kind) {
                         self.person_issue_demand(x, kind);

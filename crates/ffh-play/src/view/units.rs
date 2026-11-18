@@ -646,11 +646,10 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     j.set("card_detail", unit.card.map(|c| crate::view::cards::card_json(v, c)));
     // The sea (docs/NAVAL.md, section 10): range, wear, in boats (null for a land unit on land).
     j.set("sea", crate::view::sea::unit_panel(v, u));
-    // Persons of Note (docs/PERSONS.md, "UI", part F): the person the unit is, a great person's
-    // Found a House, and why a Disloyal head's unit takes no orders.
+    // Persons of Note (docs/PERSONS.md, "UI", part F): the person the unit is and a great person.s
+    // Found a House.
     j.set("person", crate::view::house_marks::unit_person(v, u));
     j.set("found_house", crate::view::house_marks::unit_found_house(v, u));
-    j.set("held", g.unit_house_refusal(u));
     j
 }
 
@@ -664,9 +663,6 @@ pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
     let (x, y) = g.map.xy(plot);
     let mirrored = selection::mirrors_group(g, units);
     let marching = units.iter().find_map(|&u| g.unit_march_refusal(u));
-    // Persons of Note (docs/PERSONS.md, "UI", part F): a Disloyal head's unit takes no orders
-    // (`held`: the rules' reason); the command layer refuses them too.
-    let held = units.iter().find_map(|&u| g.unit_house_refusal(u));
     Ok(crate::jobj! {
         "units" => Json::Arr(units.iter().map(|&u| unit_details(v, u)).collect()),
         "plot" => crate::jarr![x, y],
@@ -674,9 +670,8 @@ pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
         // The group waits for orders (`pending.ready_groups`).
         "ready" => mirrored.is_some_and(|grp| crate::decision::is_ready_group(g, grp)),
         "busy" => selection::is_busy(g, units),
-        "actions" => Json::Arr(if marching.is_some() || held.is_some() { Vec::new() } else { actions(v, units) }),
+        "actions" => Json::Arr(if marching.is_some() { Vec::new() } else { actions(v, units) }),
         "marching" => marching,
-        "held" => held,
     })
 }
 

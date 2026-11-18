@@ -442,9 +442,7 @@ impl Game {
             unhappiness -= self.city_commerce_happiness(c).min(0);
             unhappiness -= self.map.areas[self.city_area(c)].building_happiness[owner].min(0);
             unhappiness -= player.building_happiness.min(0);
-            // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-            let house = self.city_house_trait_info(c).map_or(0, |t| t.happiness);
-            unhappiness -= (city.extra_happiness + player.extra_happiness + house).min(0);
+            unhappiness -= (city.extra_happiness + player.extra_happiness).min(0);
             unhappiness -= self.d.handicaps[self.city_handicap_type(c)].happy_bonus.min(0);
             unhappiness += self.city_vassal_unhappiness(c).max(0);
             // This game's Incite Unrest (docs/CULTURE.md).
@@ -472,9 +470,7 @@ impl Game {
         happiness += self.city_commerce_happiness(c).max(0);
         happiness += self.map.areas[self.city_area(c)].building_happiness[owner].max(0);
         happiness += player.building_happiness.max(0);
-        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-        let house = self.city_house_trait_info(c).map_or(0, |t| t.happiness);
-        happiness += (city.extra_happiness + player.extra_happiness + house).max(0);
+        happiness += (city.extra_happiness + player.extra_happiness).max(0);
         happiness += self.d.handicaps[self.city_handicap_type(c)].happy_bonus.max(0);
         happiness += self.city_vassal_happiness(c).max(0);
 
@@ -594,8 +590,7 @@ impl Game {
             total_health += health;
         }
 
-        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-        health = self.players[city.owner].extra_health + city.extra_health + self.city_house_trait_info(c).map_or(0, |t| t.health);
+        health = self.players[city.owner].extra_health + city.extra_health;
         if health > 0 {
             total_health += health;
         }
@@ -644,8 +639,7 @@ impl Game {
             total_health += health;
         }
 
-        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-        health = self.players[city.owner].extra_health + city.extra_health + self.city_house_trait_info(c).map_or(0, |t| t.health);
+        health = self.players[city.owner].extra_health + city.extra_health;
         if health < 0 {
             total_health += health;
         }
@@ -823,8 +817,6 @@ impl Game {
         let mut modifier = self.cities[c].great_people_rate_modifier;
 
         modifier += player.great_people_rate_modifier;
-        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-        modifier += self.city_house_trait_info(c).map_or(0, |t| t.great_people_rate_modifier);
 
         if let Some(state_religion) = self.player_get_state_religion(owner) {
             if self.cities[c].has_religion[state_religion] {
@@ -1058,10 +1050,6 @@ impl Game {
         }
 
         happiness += player.extra_building_happiness[building];
-        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-        if let Some(t) = self.cities[c].house_trait {
-            happiness += info.happiness_traits[t];
-        }
 
         for i in 0..CommerceType::NUM {
             happiness += (info.commerce_happiness[i] * player.commerce_percent[i]) / 100;
@@ -1099,9 +1087,7 @@ impl Game {
         let mut new_bad = 0;
 
         for building in self.d.buildings.keys() {
-            // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-            let house = self.cities[c].house_trait.map_or(0, |t| self.d.buildings[building].happiness_traits[t]);
-            let change = self.city_num_active_building(c, building) * (self.players[owner].extra_building_happiness[building] + house);
+            let change = self.city_num_active_building(c, building) * self.players[owner].extra_building_happiness[building];
 
             if change > 0 {
                 new_good += change;

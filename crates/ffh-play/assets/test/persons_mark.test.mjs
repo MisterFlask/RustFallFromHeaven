@@ -5,25 +5,25 @@ import assert from "node:assert/strict";
 import * as M from "../app/persons_mark.js";
 
 test("one mark for each state: word, glyph, class", () => {
-  assert.deepEqual(M.STATES, ["devoted", "loyal", "restless", "disloyal"]);
-  assert.deepEqual(M.STATES.map(M.stateWord), ["Devoted", "Loyal", "Restless", "Disloyal"]);
-  assert.deepEqual(M.STATES.map(M.stateGlyph), ["▲", "●", "◆", "✖"]);
-  assert.deepEqual(M.STATES.map(M.stateClass), ["ps-devoted", "ps-loyal", "ps-restless", "ps-disloyal"]);
-  // The host's names, any case; an unknown or missing state is Loyal (an empty seat).
-  assert.equal(M.stateKey("Restless"), "restless");
-  assert.equal(M.stateKey("DISLOYAL"), "disloyal");
-  assert.equal(M.stateKey(null), "loyal");
-  assert.equal(M.stateKey("Wavering"), "loyal");
+  assert.deepEqual(M.STATES, ["friendly", "pleased", "cautious", "annoyed", "furious"]);
+  assert.deepEqual(M.STATES.map(M.stateWord), ["Friendly", "Pleased", "Cautious", "Annoyed", "Furious"]);
+  assert.deepEqual(M.STATES.map(M.stateGlyph), ["▲", "△", "●", "◆", "✖"]);
+  assert.deepEqual(M.STATES.map(M.stateClass), ["ps-friendly", "ps-pleased", "ps-cautious", "ps-annoyed", "ps-furious"]);
+  // The host's names, any case; an unknown or missing state is Cautious (loyalty 0).
+  assert.equal(M.stateKey("Annoyed"), "annoyed");
+  assert.equal(M.stateKey("FURIOUS"), "furious");
+  assert.equal(M.stateKey(null), "cautious");
+  assert.equal(M.stateKey("Wavering"), "cautious");
   for (const s of M.STATES) assert.match(M.stateColour(s), /^#[0-9a-f]{6}$/);
-  assert.equal(new Set(M.STATES.map(M.stateColour)).size, 4);
+  assert.equal(new Set(M.STATES.map(M.stateColour)).size, 5);
 });
 
 test("the mark as text, with the turns of a countdown", () => {
-  assert.equal(M.stateText("Disloyal", 8), "Disloyal ✖ 8 turns");
-  assert.equal(M.stateText("disloyal", 1), "Disloyal ✖ 1 turn");
-  assert.equal(M.stateText("Loyal"), "Loyal ●");
-  assert.equal(M.stateText("Devoted", null), "Devoted ▲");
-  assert.equal(M.stateText("Restless", 0), "Restless ◆ 0 turns");
+  assert.equal(M.stateText("Furious", 8), "Furious ✖ 8 turns");
+  assert.equal(M.stateText("furious", 1), "Furious ✖ 1 turn");
+  assert.equal(M.stateText("Cautious"), "Cautious ●");
+  assert.equal(M.stateText("Friendly", null), "Friendly ▲");
+  assert.equal(M.stateText("Annoyed", 0), "Annoyed ◆ 0 turns");
 });
 
 test("eight distinct House colours, wrapped by index", () => {
@@ -68,8 +68,9 @@ test("the shield: a path and a polygon in the same box", () => {
 });
 
 test("what the map draws on a shield", () => {
-  assert.equal(M.shieldMark("Devoted"), null);
-  assert.equal(M.shieldMark("Loyal", 3), null);
-  assert.deepEqual(M.shieldMark("Restless"), { glyph: "◆", colour: M.stateColour("restless"), count: null });
-  assert.deepEqual(M.shieldMark("Disloyal", 8), { glyph: "✖", colour: M.stateColour("disloyal"), count: 8 });
+  assert.equal(M.shieldMark("Friendly"), null);
+  assert.equal(M.shieldMark("Cautious", 3), null);
+  assert.equal(M.shieldMark(null), null, "a House not ours: no state");
+  assert.deepEqual(M.shieldMark("Annoyed"), { glyph: "◆", colour: M.stateColour("annoyed"), count: null });
+  assert.deepEqual(M.shieldMark("Furious", 8), { glyph: "✖", colour: M.stateColour("furious"), count: 8 });
 });

@@ -73,14 +73,14 @@ function modeLine(government, direct) {
   return `Government: ${dname("CivicType", government)}. Every city is ${direct ? "ruled directly" : "governed"}.`;
 }
 
-/** Persons of Note (docs/PERSONS.md, "UI", part C): who holds the city. `House Ashledger. Head:
- *  Maereth Ashledger. Loyal ●. Trait here: Philosophical. Orders: 2 of 3 left.` (a tap on the
+/** Persons of Note (docs/PERSONS.md, "UI", part C; "The second build"): who holds the city. A
+ *  House's: `House Ashledger. Head: Maereth Ashledger. Cautious ●. Takes levies.` (a tap on the
  *  House opens the Court at its card), or `Held by the Crown. [Grant]` (where it cannot be
  *  granted, the reason in place of the button). Null for a civilization without Houses. */
 export function holderLine(k, cityId) {
   if (k.house) {
     const hs = k.house;
-    const head = hs.head ? hs.head.name : "none (an heir is to be named)";
+    const head = hs.head ? hs.head.name : "none";
     return h(
       "div.holder-line.holder-house",
       { "data-house": hs.id, "data-state": hs.state },
@@ -88,8 +88,8 @@ export function holderLine(k, cityId) {
       h("span", `. Head: ${head}. `),
       stateMark(hs.state, hs.turns),
       h("span", "."),
-      hs.trait !== null && hs.trait !== undefined ? h("span", ` Trait here: ${dname("TraitType", hs.trait)}.`) : null,
-      h(hs.order_refusal ? (stateKey(hs.state) === "disloyal" ? "div.warn.holder-orders" : "div.caution.holder-orders") : "div.holder-orders", hs.orders_text),
+      hs.tribute ? h("span", ` ${hs.tribute}`) : null,
+      h(hs.takes_levy === false ? (stateKey(hs.state) === "furious" ? "div.warn.holder-orders" : "div.caution.holder-orders") : "div.holder-orders", hs.levy ?? ""),
       hs.outcome ? h("div.warn.holder-outcome", hs.outcome) : null,
     );
   }

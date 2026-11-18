@@ -133,7 +133,7 @@ impl Game {
     }
 
     /// The commander who withholds unit `u`'s attacks, if any: the commander of the army it is in
-    /// or with ([`Game::unit_army_commander`]) while Restless or Disloyal (docs/PERSONS.md,
+    /// or with ([`Game::unit_army_commander`]) while Annoyed or Furious (docs/PERSONS.md,
     /// States). The one rule every attack asks (`unit_can_move_into` with `attack`), so the
     /// human's commands, the AI and the path finder agree.
     pub fn unit_attack_withheld_by(&self, u: UnitId) -> Option<PersonId> {
@@ -142,11 +142,11 @@ impl Game {
             return None;
         }
         let x = self.unit_army_commander(u)?;
-        matches!(self.person_state(x), LoyaltyState::Restless | LoyaltyState::Disloyal).then_some(x)
+        self.person_state(x).withholds().then_some(x)
     }
 
     /// Why unit `u` takes no order to attack, if its commander withholds it: `Commander Hrolf is
-    /// Restless. The 2nd Army takes no order to attack.`
+    /// Annoyed. The 2nd Army takes no order to attack.`
     pub fn unit_attack_refusal(&self, u: UnitId) -> Option<String> {
         let x = self.unit_attack_withheld_by(u)?;
         let state = self.person_state(x).name();

@@ -328,6 +328,13 @@ impl Game {
     /// (a teammate, or the master of our non-capitulated vassal team, is FRIENDLY; anything
     /// involving the barbarians is FURIOUS); otherwise the controller's attitude.
     pub fn player_ai_get_attitude(&self, p: PlayerId, towards: PlayerId, forced: bool) -> AttitudeType {
+        // This game's Houses (docs/PERSONS.md, rule 5): a House's attitude toward its liege is
+        // its loyalty's state.
+        if let Some(h) = self.player_house(p) {
+            if self.houses[h].owner == towards {
+                return self.house_state(h).attitude();
+            }
+        }
         if forced {
             let team = self.players[p].team;
             let their_team = self.players[towards].team;

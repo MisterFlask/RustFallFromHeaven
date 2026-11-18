@@ -113,13 +113,26 @@ impl Game {
                 pd.subject = house.clone();
                 pd
             }
-            None => Pending { subject: house.clone(), holder: None, total: 0, state: LoyaltyState::Loyal, lines: Vec::new() },
+            None => Pending { subject: house.clone(), holder: None, total: 0, state: LoyaltyState::of(0), lines: Vec::new() },
         };
         if let GrantTo::Person(x) = to {
-            first.lines.push((format!("Founded by {} at {city}", self.persons[x].name), 0));
+            let name = &self.persons[x].name;
+            first.lines.push((format!("Founded by {name} at {city}: a civilization of its own, our vassal"), 0));
             if let Some(a) = self.person_army(x) {
                 first.lines.push((format!("Command of the {} ends", self.armies[a].name), 0));
             }
+            if self.person_unit(x).is_some() {
+                first.lines.push((format!("{name} leaves the map"), 0));
+            }
+        }
+        if let GrantTo::GreatPerson(u) = to {
+            first.lines.push((format!("A person of note is drawn. The {} is consumed", self.unit_get_name(u)), 0));
+        }
+        if !matches!(to, GrantTo::House(_)) {
+            // A new House pays the realm's default tribute (a standing part of its loyalty).
+            let pct = self.players[p].house_tribute;
+            let part = super::loyalty::tribute_part(pct);
+            first.lines.push((format!("Tribute {pct}%: {}{part}", if part > 0 { "+" } else { "" }), part));
         }
         first.lines.push((amount_text(&format!("Granted {city}"), GRANTED), GRANTED.0));
         if let Some(x) = head {
@@ -186,7 +199,8 @@ impl Game {
             }
             let to = GrantTo::Person(x);
             let claimant = claimants.contains(&Claimant::Commander(x));
-            out.push(GrantCandidate { to, label: self.persons[x].name.clone(), claimant, lines: self.grant_preview(p, c, to), refusal: None });
+            let refusal = self.persons[x].leader.is_none().then_some("A hero cannot head a House.");
+            out.push(GrantCandidate { to, label: self.persons[x].name.clone(), claimant, lines: self.grant_preview(p, c, to), refusal });
         }
         let pool_empty = self.persons_pool(p).is_empty();
         for &u in &self.players[p].units {
@@ -259,10 +273,9 @@ impl Game {
                             continue;
                         }
                         let (going, held) = self.house_cities_held(h);
-                        let names = |v: &[CityId]| and_list(&v.iter().map(|&c| self.persons_city_name(c)).collect::<Vec<_>>());
-                        let mut text = if going.is_empty() { "Every city is held by an army: the House ends.".to_string() } else { format!("Secedes with {}.", names(&going)) };
-                        if !held.is_empty() && !going.is_empty() {
-                            text.push_str(&format!(" Held by armies: {}.", names(&held)));
+                        let mut text = if going.is_empty() { "Every city is held by an army: the House ends.".to_string() } else { format!("Breaks away with {}: war.", self.city_names_of(&going)) };
+                        for &c in &held {
+                            text.push_str(&format!(" {} stays: an army of ours stands in it.", self.persons_city_name(c)));
                         }
                         out.push(PreviewLine { subject: self.house_label(h), text, state_after: None });
                     }
@@ -281,26 +294,33 @@ impl Game {
         self.pending_lines(list)
     }
 
-    /// The stated outcome of House `h`'s countdown: `House Ashledger will secede with Prespur, Elam
-    /// and Torrin in 8 turns.` (without a countdown: what would go now).
-    pub fn house_secession_outcome(&self, h: HouseId) -> String {
+    /// City names joined: `Prespur, Elam and Torrin`.
+    pub(crate) fn city_names_of(&self, cities: &[CityId]) -> String {
+        and_list(&cities.iter().map(|&c| self.persons_city_name(c)).collect::<Vec<_>>())
+    }
+
+    /// The stated outcome of House `h`'s countdown: `House Ashledger will break away with Prespur
+    /// and Elam in 8 turns: war. Torrin stays: an army of ours stands in it.` (without a countdown:
+    /// what would happen now).
+    pub fn house_breakaway_outcome(&self, h: HouseId) -> String {
         let label = self.house_label(h);
-        let (going, _) = self.house_cities_held(h);
-        let cities = and_list(&going.iter().map(|&c| self.persons_city_name(c)).collect::<Vec<_>>());
+        let (going, held) = self.house_cities_held(h);
+        let cities = self.city_names_of(&going);
+        let stays: String = held.iter().map(|&c| format!(" {} stays: an army of ours stands in it.", self.persons_city_name(c))).collect();
         match self.houses[h].standing.countdown {
             Some(end) => {
                 let turns = (end - self.game_turn()).max(0);
                 if going.is_empty() {
                     format!("{label} will end in {turns} turns: every city is held.")
                 } else {
-                    format!("{label} will secede with {cities} in {turns} turns.")
+                    format!("{label} will break away with {cities} in {turns} turns: war.{stays}")
                 }
             }
             None => {
                 if going.is_empty() {
                     format!("{label} would end: every city is held.")
                 } else {
-                    format!("{label} would secede with {cities}.")
+                    format!("{label} would break away with {cities}: war.{stays}")
                 }
             }
         }
@@ -343,14 +363,14 @@ impl Game {
             return format!("{name} {will} resign{when}: every sworn unit stands in a garrisoned city.");
         }
         // A House whose countdown ends the same turn, its head not the commander's rival: its
-        // secession takes the sworn units (`commander_secede`, step 1).
+        // break-away takes the sworn units (`commander_secede`, step 1).
         let rival = self.persons[x].rival;
         if let Some(end) = end {
             let league = self.players[p].houses.iter().copied().find(|&h| {
                 self.houses.get(h).is_some_and(|house| house.standing.countdown == Some(end) && (house.head.is_none() || house.head != rival))
             });
             if let Some(h) = league {
-                return format!("{name} {will} join the secession of {}{when} with {}.{stay}", self.house_label(h), units(going.len()));
+                return format!("{name} {will} join {} as it breaks away{when}, with {}.{stay}", self.house_label(h), units(going.len()));
             }
         }
         match self.commander_seize_target(x, &going) {

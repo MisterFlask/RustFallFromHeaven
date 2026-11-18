@@ -109,8 +109,41 @@ impl Game {
             PersonOrigin::Hero => "hero",
             PersonOrigin::Veteran => "veteran",
             PersonOrigin::GreatPerson => "great_person",
+            PersonOrigin::Ruler => "ruler",
         };
         self.tel_person(p, "entered", how);
+        x
+    }
+
+    /// A new person of player `p` without a word (no message, no record line): the head a House
+    /// takes when a civilization becomes a vassal (origin `Ruler`), told by the vassalage's own
+    /// message.
+    pub(crate) fn person_new_quiet(&mut self, p: PlayerId, origin: PersonOrigin, leader: LeaderHeadType, line: &str) -> PersonId {
+        let turn = self.game_turn();
+        let name = leader_name(self.d, leader);
+        let ambition = ambition_of_leader(self.d, leader);
+        let x = self.persons.insert_with(|id| Person {
+            id,
+            owner: p,
+            origin,
+            leader: Some(leader),
+            unit: None,
+            name,
+            ambition,
+            post: Post::None,
+            standing: Standing::default(),
+            demand: None,
+            demand_rest_until: turn,
+            rival: None,
+            deeds: Vec::new(),
+            entered_turn: turn,
+        });
+        self.players[p].persons.push(x);
+        if !self.persons_drawn.contains(&leader) {
+            self.persons_drawn.push(leader);
+        }
+        self.person_add_deed(x, format!("Entered the court: {line}."));
+        self.tel_person(p, "entered", "ruler");
         x
     }
 
@@ -150,9 +183,9 @@ impl Game {
         self.person_new(p, PersonOrigin::Veteran, Some(l), Some(u), name, ambition, &line);
     }
 
-    /// Person `x` leaves the cast: their command or seat is empty (an heir may take the seat),
-    /// their veteran's unit loses the name and stays an ordinary unit, a hero's unit stays a hero
-    /// without a person; neither unit enters again.
+    /// Person `x` leaves the cast: their command is empty, their veteran's unit loses the name and
+    /// stays an ordinary unit, a hero's unit stays a hero without a person; neither unit enters
+    /// again. (A House's head leaves only with their House's record: `house_record_end`.)
     pub(crate) fn person_leave(&mut self, x: PersonId) {
         let Some(person) = self.persons.get(x) else { return };
         let p = person.owner;
@@ -178,10 +211,6 @@ impl Game {
             Post::None => {}
         }
         self.persons.remove(x);
-        // An empty seat: the House's cities lose its trait and its maintenance share.
-        if let Post::Head(h) = post {
-            self.house_refresh_cities(h);
-        }
         self.players[p].persons.retain(|&y| y != x);
         if let Some(u) = unit {
             if origin == PersonOrigin::Veteran {
@@ -189,11 +218,6 @@ impl Game {
             }
             if !self.persons_barred.contains(&u) {
                 self.persons_barred.push(u);
-            }
-        }
-        if let Post::Head(h) = post {
-            if self.houses.contains(h) {
-                self.house_seat_vacated(h);
             }
         }
     }
@@ -256,10 +280,11 @@ impl Game {
                     self.persons[x].post = Post::None;
                 }
             }
+            // A head whose House is gone leads a civilization of their own: out of the cast.
             if let Post::Head(h) = self.persons[x].post {
                 if !self.houses.contains(h) {
-                    self.persons[x].post = Post::None;
-                    self.persons[x].standing = Standing::default();
+                    self.person_leave(x);
+                    continue;
                 }
             }
             let hd = self.person_holder(x);

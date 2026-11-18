@@ -1,19 +1,24 @@
-//! `ffh-play stage persons|persons-direct DIR`: Persons of Note (docs/PERSONS.md, "UI", part K):
-//! one empire that shows every state of the system, for the tests and the screenshots.
+//! `ffh-play stage persons|persons-direct DIR`: Persons of Note (docs/PERSONS.md, "UI", part K;
+//! "The second build": Houses as vassal civilizations): one realm that shows every state of the
+//! system, for the tests and the screenshots.
 //!
 //! Made with the rules' own calls wherever they reach: the cast enters by the persons turn
 //! (`player_persons_turn`: heroes, then a veteran a turn), Houses are founded and granted cities by
-//! `player_grant_city`, the commander's claim comes from a real capture (the army moves into a
-//! barbarian city), states are told by the persons turn. Set by hand only what no call reaches:
-//! a unit's level (the veterans' bar), a demand's term and a person's rest (so a refusal falls due
-//! now, as a lapse would 40 turns later), the countdowns' turns left, and, only when the draw
-//! gives no such leader, the ambition a role needs (said in the stage's JSON, `hand_set`).
+//! `player_grant_city` (each a vassal civilization of its own), the capitulated civilization is
+//! born (`world::birth`) and capitulates (`team_assign_vassal`), the tributes are set by
+//! `player_set_house_tribute`, the commander's claim comes from a real capture (the army moves
+//! into a barbarian city), states are told by the persons turn. Set by hand only what no call
+//! reaches: a unit's level (the veterans' bar), a demand's term and a person's rest (so a refusal
+//! falls due now, as a lapse would 40 turns later), the countdowns' turns left, and, only when
+//! the draw gives no such leader, the ambition a role needs (said in the stage's JSON,
+//! `hand_set`).
 
 use std::path::{Path, PathBuf};
 
 use ffh_core::game::Game;
+use ffh_core::ffh::cards::world::{self, Birth, NewCity};
 use ffh_core::ids::{ArmyId, CityId, HouseId, PersonId, PlayerId, PlotIdx, UnitId};
-use ffh_core::persons::{Ambition, Claimant, DemandKind, GrantTo, LoyaltyState, Post};
+use ffh_core::persons::{Ambition, Claimant, GrantTo, LoyaltyState, Post};
 use ffh_data::*;
 
 use crate::command::{CmdOk, Command};
@@ -21,25 +26,31 @@ use crate::json::Json;
 
 /// One House of the scene.
 pub struct StagedHouse {
-    /// `A` (Devoted, a wonder demand in production), `B` (Restless after a refused demand), `C`
-    /// (Disloyal, countdown 8, one city held by an army), `D` (an empty seat).
+    /// The human's: `friendly` (two cities, tribute 0%), `pleased` (Pleased or Cautious, tribute
+    /// 10%, a claimant of the taken city), `annoyed` (a civilization that capitulated, with its own
+    /// leader), `furious` (countdown 8, two cities, one held by an army of the human); the
+    /// neighbour's: `neighbour` (Cautious or worse: a bribe can be offered).
     pub role: &'static str,
     pub id: HouseId,
-    /// Its label (`House Arne`).
+    /// Its label (`House Arne`, `Hippus`).
     pub label: String,
+    /// Its own player.
+    pub player: PlayerId,
     pub head: Option<PersonId>,
     pub seat: Option<CityId>,
     pub cities: Vec<CityId>,
+    pub state: LoyaltyState,
+    pub tribute: i32,
 }
 
-/// A saved game at a human control point (a duel, the human the Bannor under Aristocracy): the
-/// capital, three Crown cities (`taken`, claimed by Houses A and B and by the commander whose army
-/// took it this turn; `crown` holds all three), the four Houses of [`StagedHouse`], the persons by
-/// role (`persons`), the armies by role (`armies`), a Great Merchant (`great_person`) in the
-/// capital that can found a House (one leader is left in the pool), and the neighbour
-/// civilization (`neighbour`, met, at peace, weaker) with two cities, one (`neighbour_near`) within
-/// 12 plots of a House's city. `persons-direct` is the same empire with Mysticism known: the
-/// civics screen can adopt God King at once (no anarchy, no revolution timer).
+/// A saved game at a human control point (the human the Bannor under Aristocracy): the capital,
+/// three Crown cities (`taken`, claimed by House `pleased` and by the commander whose army took it
+/// this turn; `crown` holds all three), the Houses of [`StagedHouse`], the persons by role
+/// (`persons`), the armies by role (`armies`), a Great Merchant (`great_person`) in the capital
+/// that can found a House (a leader is left in the pool), and the neighbour civilization
+/// (`neighbour`, met, at peace) with two cities, one (`neighbour_near`) within 12 plots of a
+/// House's city, the other its House's. `persons-direct` is the same realm with Mysticism known:
+/// the civics screen can adopt God King at once (no anarchy, no revolution timer).
 pub struct StagedPersons {
     pub save: PathBuf,
     pub stage: &'static str,
@@ -75,8 +86,8 @@ impl StagedPersons {
                 .iter()
                 .map(|h| {
                     let j = crate::jobj! {
-                        "id" => h.id, "label" => h.label.clone(), "head" => h.head, "seat" => h.seat.map(city).unwrap_or_default(),
-                        "cities" => Json::Arr(h.cities.iter().map(|&c| city(c)).collect()),
+                        "id" => h.id, "label" => h.label.clone(), "player" => h.player, "head" => h.head, "seat" => h.seat.map(city).unwrap_or_default(),
+                        "cities" => Json::Arr(h.cities.iter().map(|&c| city(c)).collect()), "state" => h.state.name(), "tribute" => h.tribute,
                     };
                     (h.role.to_string(), j)
                 })
@@ -111,7 +122,7 @@ impl StagedPersons {
 }
 
 /// The seeds tried, in order, until one's map has the room the scene needs.
-const SEEDS: [u32; 6] = [11, 12, 13, 14, 15, 16];
+const SEEDS: [u32; 8] = [11, 12, 13, 14, 15, 16, 17, 18];
 
 /// Writes a [`StagedPersons`] into `dir` (a game directory): `persons`, or with `direct`
 /// `persons-direct`.
@@ -180,19 +191,21 @@ fn refuse_until(g: &mut Game, h: PlayerId, x: PersonId, want: LoyaltyState, who:
     }
 }
 
-/// The roles of the 11 city sites around the capital.
+/// The roles of the city sites around the capital.
 struct Layout {
     taken: PlotIdx,
     crown: [PlotIdx; 2],
-    a: [PlotIdx; 3],
-    b: [PlotIdx; 2],
+    a: [PlotIdx; 2],
+    b: PlotIdx,
     c: [PlotIdx; 2],
-    d: PlotIdx,
+    /// The capitulated civilization's capital.
+    v: PlotIdx,
 }
 
 /// 11 city sites of player `h` (its capital's land first, nearest the capital first, 3 plots or
 /// more from each other and from every city) and their roles: the taken Crown city within claim
-/// range of a city of House A and one of House B, and beyond it from every city of Houses C and D.
+/// range of a city of House `pleased` (b) and one of House `friendly` (a), and beyond it from every
+/// city of House `furious` (c) and of the capitulated civilization (v).
 fn layout(g: &Game, h: PlayerId) -> Result<Layout, String> {
     let capital = g.player_get_capital_city(h).ok_or("no capital")?;
     let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
@@ -219,7 +232,7 @@ fn layout(g: &Game, h: PlayerId) -> Result<Layout, String> {
             break;
         }
     }
-    if sites.len() < 11 {
+    if sites.len() < 10 {
         return Err(format!("only {} city sites", sites.len()));
     }
     let range = g.d.defines.person_claim_range;
@@ -235,17 +248,26 @@ fn layout(g: &Game, h: PlayerId) -> Result<Layout, String> {
         }
         near.sort_by_key(|&s| (pd(s, taken), s));
         far.sort_by_key(|&s| (pd(s, taken), s));
-        let (a1, b1) = (near[0], near[1]);
-        let (c1, c2, d) = (far[0], far[1], far[2]);
-        let mut rest: Vec<PlotIdx> = sites.iter().copied().filter(|s| ![taken, a1, b1, c1, c2, d].contains(s)).collect();
+        let (b, a1) = (near[0], near[1]);
+        let (c1, c2, v) = (far[0], far[1], far[2]);
+        let mut rest: Vec<PlotIdx> = sites.iter().copied().filter(|s| ![taken, a1, b, c1, c2, v].contains(s)).collect();
+        if rest.len() < 3 {
+            continue;
+        }
         rest.sort_by_key(|&s| (pd(s, a1), s));
-        let (a2, a3) = (rest[0], rest[1]);
-        rest.drain(..2);
-        rest.sort_by_key(|&s| (pd(s, b1), s));
-        let b2 = rest.remove(0);
-        return Ok(Layout { taken, crown: [rest[0], rest[1]], a: [a1, a2, a3], b: [b1, b2], c: [c1, c2], d });
+        let a2 = rest.remove(0);
+        return Ok(Layout { taken, crown: [rest[0], rest[1]], a: [a1, a2], b, c: [c1, c2], v });
     }
-    Err("no site for the taken city between Houses A and B".into())
+    Err("no site for the taken city near two Houses' cities".into())
+}
+
+/// A civilization in no one's hands and its first leader: the capitulated civilization's.
+fn free_civ(g: &Game) -> Option<(CivilizationType, LeaderHeadType)> {
+    let d = g.d;
+    let taken: Vec<CivilizationType> = g.player_ids().filter_map(|p| g.player_get_civilization_type(p)).collect();
+    d.civilizations.keys().filter(|&c| d.civilizations[c].playable && !taken.contains(&c)).find_map(|c| {
+        d.leader_heads.keys().find(|&l| d.civilizations[c].leaders[l] && !ffh_core::ffh::cards::sundering::leader_in_play(g, l)).map(|l| (c, l))
+    })
 }
 
 fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, String> {
@@ -255,27 +277,25 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
     let h = s.human;
     let team = s.g.players[h].team;
     let mut hand_set: Vec<String> = Vec::new();
-
-    // The government: Aristocracy (its tech known); God King's tech too for persons-direct.
-    {
-        let g = &mut s.g;
-        let mut techs = vec!["TECH_CODE_OF_LAWS"];
-        if direct {
-            techs.push("TECH_MYSTICISM");
-        }
-        for t in techs {
-            g.team_set_has_tech(team, d.t::<TechType>(t), true, Some(h), false, false);
-        }
-        let aristocracy = d.t::<CivicType>("CIVIC_ARISTOCRACY");
-        let option = d.civics[aristocracy].civic_option_type.ok_or("no civic option")?;
-        g.player_set_civics(h, option, Some(aristocracy));
-        g.player_check_grants(h).map_err(|e| format!("grants: {e}"))?;
+    let ai = s.g.civ_player_ids().find(|&p| p != h && s.g.players[p].alive && !s.g.player_is_barbarian(p)).ok_or("no neighbour")?;
+    if s.g.persons_pool(ai).is_empty() {
+        return Err("the neighbour's civilization has no persons of note".into());
     }
 
-    // The neighbour: met, at peace.
-    let ai = s.g.civ_player_ids().find(|&p| p != h && s.g.players[p].alive && !s.g.player_is_barbarian(p)).ok_or("no neighbour")?;
+    // The government: Aristocracy (its tech known) for the human and the neighbour; God King's
+    // tech too for persons-direct.
     {
         let g = &mut s.g;
+        let aristocracy = d.t::<CivicType>("CIVIC_ARISTOCRACY");
+        let option = d.civics[aristocracy].civic_option_type.ok_or("no civic option")?;
+        for (p, techs) in [(h, if direct { vec!["TECH_CODE_OF_LAWS", "TECH_MYSTICISM"] } else { vec!["TECH_CODE_OF_LAWS"] }), (ai, vec!["TECH_CODE_OF_LAWS"])] {
+            let t = g.players[p].team;
+            for tech in techs {
+                g.team_set_has_tech(t, d.t::<TechType>(tech), true, Some(p), false, false);
+            }
+            g.player_set_civics(p, option, Some(aristocracy));
+            g.player_check_grants(p).map_err(|e| format!("grants: {e}"))?;
+        }
         let their = g.players[ai].team;
         g.team_meet(team, their, false);
     }
@@ -287,14 +307,13 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         let (x, y) = g.map.xy(q);
         g.player_init_city(p, x, y, true, true)
     };
-    let (crown_y, crown_z, a_cities, b_cities, c_cities, d_city, barb_city) = {
+    let (crown_y, crown_z, a_cities, b_city, c_cities, barb_city) = {
         let g = &mut s.g;
         let y = found(g, h, lay.crown[0]);
         let z = found(g, h, lay.crown[1]);
         let a: Vec<CityId> = lay.a.iter().map(|&q| found(g, h, q)).collect();
-        let b: Vec<CityId> = lay.b.iter().map(|&q| found(g, h, q)).collect();
+        let b = found(g, h, lay.b);
         let c: Vec<CityId> = lay.c.iter().map(|&q| found(g, h, q)).collect();
-        let dc = found(g, h, lay.d);
         let barb = g.barbarian_player();
         let bc = found(g, barb, lay.taken);
         g.city_set_population(bc, 3);
@@ -304,21 +323,25 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         for k in 0..g.city_sentinel_count(bc) {
             g.city_set_sentinel_damage(bc, k, 100);
         }
-        (y, z, a, b, c, dc, bc)
+        (y, z, a, b, c, bc)
     };
 
     // The neighbour's second city: within 12 plots of a House's city, 4 or more from the human's.
     let (neighbour_cities, neighbour_near) = {
         let g = &mut s.g;
-        let house_cities: Vec<CityId> = a_cities.iter().chain(&b_cities).chain(&c_cities).chain(std::iter::once(&d_city)).copied().collect();
+        let house_cities: Vec<CityId> = a_cities.iter().chain(std::iter::once(&b_city)).chain(&c_cities).copied().collect();
         let human_cities: Vec<CityId> = g.players[h].cities.clone();
+        let (vx, vy) = g.map.xy(lay.v);
         let mut best: Option<((i32, PlotIdx), PlotIdx)> = None;
         for q in g.map.plot_ids() {
             let (x, y) = g.map.xy(q);
             if g.plot_is_water(q) || g.plot_is_impassable(q) || !g.player_can_found(ai, x, y, false) {
                 continue;
             }
-            if human_cities.iter().any(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) < 4) || g.plot_distance(x, y, g.map.xy(lay.taken).0, g.map.xy(lay.taken).1) < 4 {
+            if human_cities.iter().any(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) < 4)
+                || g.plot_distance(x, y, g.map.xy(lay.taken).0, g.map.xy(lay.taken).1) < 4
+                || g.plot_distance(x, y, vx, vy) < 4
+            {
                 continue;
             }
             let near = house_cities.iter().map(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y)).min().unwrap_or(i32::MAX);
@@ -341,11 +364,14 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         }
         (g.players[ai].cities.iter().copied().take(2).collect::<Vec<_>>(), near)
     };
+    // (By plot: a city granted to a House changes id.)
+    let neighbour_plots: Vec<PlotIdx> = neighbour_cities.iter().map(|&c| s.g.city_plot(c)).collect();
+    let near_plot = s.g.city_plot(neighbour_near);
 
-    // The units: two armies each led by a level 7 Axeman (the veterans to come), the army with Donal
-    // Lugh next to the barbarian city, the heroes in the capital, a plain army in a city of House C.
+    // The units: two armies each led by a level 7 Axeman (the veterans to come), the army with
+    // Donal Lugh next to the barbarian city, a hero in the capital (a person without a post).
     let ty = |n: &str| d.t::<UnitType>(n);
-    let (vet1, vet2, army1, army2, army3, donal, e, f, gg, hh) = {
+    let (vet1, vet2, army1, army2, army3, donal, rantine) = {
         let g = &mut s.g;
         let (kx, ky) = (g.cities[capital].x, g.cities[capital].y);
         let place = |g: &mut Game, c: CityId| {
@@ -387,13 +413,9 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         let donal = g.player_init_unit(h, ty("UNIT_DONAL"), g.map.xy(q3).0, g.map.xy(q3).1, None, None);
         let grp = g.armies[army3].group;
         g.unit_join_group(donal, grp, false);
-        // The heroes who are no commanders.
-        let e = g.player_init_unit(h, ty("UNIT_RANTINE"), kx, ky, None, None);
-        let f = g.player_init_unit(h, ty("UNIT_GILDEN"), kx, ky, None, None);
-        let gg = g.player_init_unit(h, ty("UNIT_MAROS"), kx, ky, None, None);
-        let hh = g.player_init_unit(h, ty("UNIT_CORLINDALE"), kx, ky, None, None);
+        let rantine = g.player_init_unit(h, ty("UNIT_RANTINE"), kx, ky, None, None);
         g.player_army_sync(h);
-        (vet1, vet2, army1, army2, army3, donal, e, f, gg, hh)
+        (vet1, vet2, army1, army2, army3, donal, rantine)
     };
 
     // The cast enters: the heroes at once, a veteran a turn (two persons turns).
@@ -403,9 +425,9 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         g.player_persons_turn(h);
     }
     let person_of = |g: &Game, u: UnitId, who: &str| g.unit_person(u).ok_or_else(|| format!("{who} is no person"));
-    let (p_vet1, p_vet2, p_donal, p_e, p_f, p_g, p_h) = {
+    let (p_vet1, p_vet2, p_donal, p_rantine) = {
         let g = &s.g;
-        (person_of(g, vet1, "the first veteran")?, person_of(g, vet2, "the second veteran")?, person_of(g, donal, "Donal Lugh")?, person_of(g, e, "Rantine")?, person_of(g, f, "Gilden")?, person_of(g, gg, "Maros")?, person_of(g, hh, "Corlindale")?)
+        (person_of(g, vet1, "the first veteran")?, person_of(g, vet2, "the second veteran")?, person_of(g, donal, "Donal Lugh")?, person_of(g, rantine, "Rantine")?)
     };
     if s.g.persons[p_donal].post != Post::Commander(army3) {
         return Err("Donal Lugh does not command his army".into());
@@ -426,106 +448,112 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         return Err("the taken city does not record Donal Lugh".into());
     }
 
-    // Roles of the two veterans: House A's head has the Works ambition (their House's demand is a
-    // wonder); the other commands and turns Disloyal.
-    let (p_a, p_cmd) = {
-        let g = &mut s.g;
-        let works = |x: PersonId| g.persons[x].ambition == Ambition::Works;
-        match (works(p_vet1), works(p_vet2)) {
-            (_, true) if !works(p_vet1) => (p_vet2, p_vet1),
-            (true, _) => (p_vet1, p_vet2),
-            _ => {
-                g.persons[p_vet1].ambition = Ambition::Works;
-                hand_set.push(format!("{}: ambition Works (the draw gave House A no Works head)", g.persons[p_vet1].name));
-                (p_vet1, p_vet2)
-            }
-        }
+    // The Houses, each a vassal civilization: `furious` and `pleased` founded by a great person (a
+    // person of note drawn), `friendly` by the first veteran. Granted in this order so that the
+    // claimant House `pleased` is passed over by no grant before the taken city.
+    let merchant = |g: &Game, p: PlayerId| -> Result<UnitType, String> {
+        let civ = g.player_get_civilization_type(p).ok_or("no civilization")?;
+        d.civ_unit(civ, d.t::<UnitClassType>("UNITCLASS_MERCHANT")).ok_or_else(|| "no Great Merchant".to_string())
     };
-
-    // The Houses, granted in this order so that House A, granted last, is passed over by no grant:
-    // D (founded by Rantine, who then dies: the seat is empty), C and B (each founded by a great
-    // person: a person of note drawn), A (founded by the veteran).
-    let merchant = {
-        let civ = s.g.player_get_civilization_type(h).ok_or("no civilization")?;
-        d.civ_unit(civ, d.t::<UnitClassType>("UNITCLASS_MERCHANT")).ok_or("no Great Merchant")?
-    };
-    let (house_a, house_b, house_c, house_d) = {
+    let (house_a, house_b, house_c) = {
         let g = &mut s.g;
-        let grant = |g: &mut Game, c: CityId, to: GrantTo| g.player_grant_city(h, c, to).map_err(|e| format!("grant of {}: {e}", g.cities[c].name));
-        let hd = grant(g, d_city, GrantTo::Person(p_e))?;
-        g.unit_kill(e, false, None);
+        let grant = |g: &mut Game, p: PlayerId, c: CityId, to: GrantTo| g.player_grant_city(p, c, to).map_err(|e| format!("grant of {}: {e}", g.cities[c].name));
         let (kx, ky) = (g.cities[capital].x, g.cities[capital].y);
-        let gp = g.player_init_unit(h, merchant, kx, ky, None, None);
-        let hc = grant(g, c_cities[0], GrantTo::GreatPerson(gp))?;
-        grant(g, c_cities[1], GrantTo::House(hc))?;
-        let gp = g.player_init_unit(h, merchant, kx, ky, None, None);
-        let hb = grant(g, b_cities[0], GrantTo::GreatPerson(gp))?;
-        grant(g, b_cities[1], GrantTo::House(hb))?;
-        let ha = grant(g, a_cities[0], GrantTo::Person(p_a))?;
-        grant(g, a_cities[1], GrantTo::House(ha))?;
-        grant(g, a_cities[2], GrantTo::House(ha))?;
-        (ha, hb, hc, hd)
+        let gm = merchant(g, h)?;
+        let gp = g.player_init_unit(h, gm, kx, ky, None, None);
+        let hc = grant(g, h, c_cities[0], GrantTo::GreatPerson(gp))?;
+        let c2 = g.map.plots[lay.c[1]].plot_city.ok_or("House C's second city")?;
+        grant(g, h, c2, GrantTo::House(hc))?;
+        let gp = g.player_init_unit(h, gm, kx, ky, None, None);
+        let hb = grant(g, h, b_city, GrantTo::GreatPerson(gp))?;
+        let a1 = g.map.plots[lay.a[0]].plot_city.ok_or("House A's first city")?;
+        let ha = grant(g, h, a1, GrantTo::Person(p_vet1))?;
+        let a2 = g.map.plots[lay.a[1]].plot_city.ok_or("House A's second city")?;
+        grant(g, h, a2, GrantTo::House(ha))?;
+        (ha, hb, hc)
     };
+    let p_vet1 = s.g.houses[house_a].head.ok_or("House A has no head")?;
     let (p_b, p_c) = {
         let g = &s.g;
         (g.houses[house_b].head.ok_or("House B has no head")?, g.houses[house_c].head.ok_or("House C has no head")?)
     };
 
-    // States: B Restless, C Disloyal, the commander Disloyal (demands refused, as lapsed).
+    // The tributes: House `friendly` 0%, House `pleased` 10% (the others at the realm's 20%).
     {
         let g = &mut s.g;
-        g.player_persons_turn(h);
-        refuse_until(g, h, p_b, LoyaltyState::Restless, "House B")?;
-        refuse_until(g, h, p_c, LoyaltyState::Disloyal, "House C")?;
-        if g.persons[p_cmd].demand.is_none() && g.person_next_demand(p_cmd).is_none() {
-            let name = g.persons[p_cmd].name.clone();
-            g.persons[p_cmd].ambition = Ambition::War;
-            hand_set.push(format!("{name}: ambition War (theirs makes no demand here)"));
-        }
-        refuse_until(g, h, p_cmd, LoyaltyState::Disloyal, "the Disloyal commander")?;
+        g.player_set_house_tribute(h, house_a, 0).map_err(|e| format!("tribute: {e}"))?;
+        g.player_set_house_tribute(h, house_b, 10).map_err(|e| format!("tribute: {e}"))?;
     }
 
-    // House A's demand: a wonder in its seat, in production there (its term does not run).
+    // The capitulated civilization: born with a city of its own, then it capitulates to the human.
+    let house_v = {
+        let g = &mut s.g;
+        let (civ, leader) = free_civ(g).ok_or("no civilization left for the capitulated one")?;
+        let mut b = Birth::wild(civ, leader);
+        b.found = vec![NewCity { plot: lay.v, buildings: Vec::new(), units: Vec::new() }];
+        let vp = world::birth(g, &b);
+        let vt = g.players[vp].team;
+        g.team_meet(team, vt, false);
+        g.team_assign_vassal(team, vt, true);
+        g.player_house(vp).ok_or("the capitulated civilization is no House")?
+    };
+    let p_v = s.g.houses[house_v].head.ok_or("the capitulated House has no head")?;
+
+    // The neighbour's own House (a great person's founding): Cautious or worse.
+    let house_n = {
+        let g = &mut s.g;
+        let (nx, ny) = {
+            let cap = g.player_get_capital_city(ai).ok_or("the neighbour has no capital")?;
+            (g.cities[cap].x, g.cities[cap].y)
+        };
+        let gm = merchant(g, ai)?;
+        let gp = g.player_init_unit(ai, gm, nx, ny, None, None);
+        let c = neighbour_cities.iter().copied().find(|&c| !g.city_is_capital(c)).ok_or("the neighbour's second city")?;
+        g.player_grant_city(ai, c, GrantTo::GreatPerson(gp)).map_err(|e| format!("the neighbour's grant: {e}"))?
+    };
+
+    // States: House `furious` and the second veteran (who commands) Furious, by refused demands.
     {
         let g = &mut s.g;
-        let turn = g.game_turn();
-        g.persons[p_a].demand_rest_until = turn;
         g.player_persons_turn(h);
-        let Some(DemandKind::Wonder { city, building }) = g.persons[p_a].demand.map(|dm| dm.kind) else {
-            return Err(format!("House A's demand is not a wonder: {:?}", g.persons[p_a].demand));
-        };
-        let seat = g.map.plots[city].plot_city.ok_or("House A's seat")?;
-        g.city_push_order(seat, OrderType::ORDER_CONSTRUCT, building.idx() as i32, -1, false, false, false, true);
-        if !g.demand_is_paused(DemandKind::Wonder { city, building }) {
-            return Err("House A's wonder is not in production".into());
+        refuse_until(g, h, p_c, LoyaltyState::Furious, "House C")?;
+        if g.persons[p_vet2].demand.is_none() && g.person_next_demand(p_vet2).is_none() {
+            let name = g.persons[p_vet2].name.clone();
+            g.persons[p_vet2].ambition = Ambition::War;
+            hand_set.push(format!("{name}: ambition War (theirs makes no demand here)"));
         }
+        refuse_until(g, h, p_vet2, LoyaltyState::Furious, "the Furious commander")?;
     }
 
     // The Great Merchant who can found a House, and the last persons turn (states told).
     let great_person = {
         let g = &mut s.g;
         let (kx, ky) = (g.cities[capital].x, g.cities[capital].y);
-        let gp = g.player_init_unit(h, merchant, kx, ky, None, None);
+        let gm = merchant(g, h)?;
+        let gp = g.player_init_unit(h, gm, kx, ky, None, None);
         // The cities founded and taken this turn choose their production now, as the end of the
         // turn would (a governed city never stands without one).
-        for c in g.players[h].cities.iter().chain(&g.players[ai].cities).copied().collect::<Vec<_>>() {
+        let all: Vec<CityId> = g.cities.iter().map(|(c, _)| c).collect();
+        for c in all {
             if g.city_is_governed(c) && g.cities[c].order_queue.is_empty() && !g.cities[c].settlement {
                 g.city_choose_production(c, None, None, None, false, false);
             }
         }
         g.player_army_sync(h);
         g.player_persons_turn(h);
-        // The countdowns' turns left (set by the rules at Disloyal to 10).
+        g.player_persons_turn(ai);
+        // The countdowns' turns left (set by the rules at Furious to 10).
         let turn = g.game_turn();
         g.houses[house_c].standing.countdown = Some(turn + 8);
-        g.persons[p_cmd].standing.countdown = Some(turn + 6);
+        g.persons[p_vet2].standing.countdown = Some(turn + 6);
         gp
     };
 
-    // The plain army in House C's second city (formed last: it holds the city).
+    // An army of the human in House C's second city (formed last: it holds the city).
     let army_c = {
         let g = &mut s.g;
-        let (ccx, ccy) = (g.cities[c_cities[1]].x, g.cities[c_cities[1]].y);
+        let c2 = g.house_cities(house_c).into_iter().find(|&c| g.city_plot(c) == lay.c[1]).ok_or("House C's second city")?;
+        let (ccx, ccy) = (g.cities[c2].x, g.cities[c2].y);
         let uc: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, ty("UNIT_WARRIOR"), ccx, ccy, None, None)).collect();
         let a = g.army_form(h, &uc)?;
         g.player_army_sync(h);
@@ -538,29 +566,28 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
     // Checks: what the scene promises.
     {
         let g = &s.g;
-        let want = |what: &str, got: LoyaltyState, want: LoyaltyState| if got == want { Ok(()) } else { Err(format!("{what} is {}, not {}", got.name(), want.name())) };
-        want("House A", g.house_state(house_a), LoyaltyState::Devoted)?;
-        want("House B", g.house_state(house_b), LoyaltyState::Restless)?;
-        want("House C", g.house_state(house_c), LoyaltyState::Disloyal)?;
-        want("the commander", g.person_state(p_cmd), LoyaltyState::Disloyal)?;
-        want("Donal Lugh", g.person_state(p_donal), LoyaltyState::Loyal)?;
-        if g.houses[house_d].head.is_some() {
-            return Err("House D's seat is not empty".into());
+        let want = |what: &str, got: LoyaltyState, ok: &[LoyaltyState]| if ok.contains(&got) { Ok(()) } else { Err(format!("{what} is {}, not {ok:?}", got.name())) };
+        want("House friendly", g.house_state(house_a), &[LoyaltyState::Friendly])?;
+        want("House pleased", g.house_state(house_b), &[LoyaltyState::Pleased, LoyaltyState::Cautious])?;
+        want("House annoyed", g.house_state(house_v), &[LoyaltyState::Annoyed])?;
+        want("House furious", g.house_state(house_c), &[LoyaltyState::Furious])?;
+        want("the neighbour's House", g.house_state(house_n), &[LoyaltyState::Cautious, LoyaltyState::Annoyed, LoyaltyState::Furious])?;
+        want("the Furious commander", g.person_state(p_vet2), &[LoyaltyState::Furious])?;
+        want("Donal Lugh", g.person_state(p_donal), &[LoyaltyState::Friendly, LoyaltyState::Pleased, LoyaltyState::Cautious])?;
+        if g.persons[p_vet2].post != Post::Commander(army2) && g.persons[p_vet2].post != Post::Commander(army1) {
+            return Err("the Furious commander has no command".into());
         }
-        if g.player_heir_candidates(h) != vec![p_f, p_g, p_h] {
-            return Err(format!("the heir candidates are {:?}", g.player_heir_candidates(h)));
+        if g.persons[p_rantine].post != Post::None {
+            return Err("Rantine holds a post".into());
         }
-        if g.persons[p_cmd].post != Post::Commander(army2) && g.persons[p_cmd].post != Post::Commander(army1) {
-            return Err("the Disloyal commander has no command".into());
+        if !g.city_claimants(taken).iter().any(|&c| c == Claimant::House(house_b)) || !g.city_claimants(taken).contains(&Claimant::Commander(p_donal)) {
+            return Err(format!("the taken city's claimants are {:?}", g.city_claimants(taken)));
         }
-        let claims = g.city_claimants(taken);
-        if claims != vec![Claimant::House(house_a), Claimant::House(house_b), Claimant::Commander(p_donal)]
-            && claims != vec![Claimant::House(house_b), Claimant::House(house_a), Claimant::Commander(p_donal)]
-        {
-            return Err(format!("the taken city's claimants are {claims:?}"));
-        }
-        if !g.house_cities_held(house_c).1.contains(&c_cities[1]) {
+        if g.house_cities_held(house_c).1.len() != 1 {
             return Err("House C's city is not held by an army".into());
+        }
+        if g.house_bribe_price(house_n).is_none() || g.house_bribe_refusal(house_n, h, ffh_core::persons::BribeKind::Secede).is_some() {
+            return Err(format!("the neighbour's House takes no offer: {:?}", g.house_bribe_refusal(house_n, h, ffh_core::persons::BribeKind::Secede)));
         }
         g.player_check_grant(h, crown_y, GrantTo::GreatPerson(great_person)).map_err(|e| format!("the Great Merchant cannot found a House: {e}"))?;
         if direct {
@@ -572,30 +599,42 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
     }
 
     let g = &s.g;
-    let houses = [("A", house_a), ("B", house_b), ("C", house_c), ("D", house_d)]
-        .iter()
-        .map(|&(role, id)| StagedHouse { role, id, label: g.house_label(id), head: g.houses[id].head, seat: g.houses[id].seat, cities: g.houses[id].cities.clone() })
-        .collect();
+    let staged = |role: &'static str, id: HouseId| StagedHouse {
+        role,
+        id,
+        label: g.house_label(id),
+        player: g.houses[id].player,
+        head: g.houses[id].head,
+        seat: g.house_seat(id),
+        cities: g.house_cities(id),
+        state: g.house_state(id),
+        tribute: g.houses[id].tribute,
+    };
+    let houses = vec![staged("friendly", house_a), staged("pleased", house_b), staged("annoyed", house_v), staged("furious", house_c), staged("neighbour", house_n)];
     let persons: Vec<(&'static str, PersonId)> = vec![
-        ("head_a", p_a),
-        ("head_b", p_b),
-        ("head_c", p_c),
+        ("head_friendly", p_vet1),
+        ("head_pleased", p_b),
+        ("head_annoyed", p_v),
+        ("head_furious", p_c),
         ("commander_loyal", p_donal),
-        ("commander_disloyal", p_cmd),
-        ("candidate_1", p_f),
-        ("candidate_2", p_g),
-        ("no_post", p_h),
+        ("commander_furious", p_vet2),
+        ("no_post", p_rantine),
     ];
-    let cmd_army = match g.persons[p_cmd].post {
+    let cmd_army = match g.persons[p_vet2].post {
         Post::Commander(a) => a,
         _ => unreachable!("checked"),
     };
-    let headless = if cmd_army == army1 { army2 } else { army1 };
-    let armies: Vec<(&'static str, ArmyId)> = vec![("loyal", army3), ("disloyal", cmd_army), ("no_commander", headless), ("holds_c", army_c)];
-    let city_names = g.players[h].cities.iter().chain(&g.players[ai].cities).map(|&c| (c, d.text.name(&g.cities[c].name).to_string())).collect();
+    let armies: Vec<(&'static str, ArmyId)> = vec![("loyal", army3), ("furious", cmd_army), ("holds_furious", army_c)];
+    let mut named: Vec<CityId> = g.players[h].cities.iter().chain(&g.players[ai].cities).copied().collect();
+    for hs in &houses {
+        named.extend(hs.cities.iter().copied());
+    }
+    let city_names = named.iter().map(|&c| (c, d.text.name(&g.cities[c].name).to_string())).collect();
     let person_names = persons.iter().map(|&(_, x)| (x, g.persons[x].name.clone(), g.person_unit(x))).collect();
     let army_names = armies.iter().map(|&(_, a)| (a, g.armies[a].name.clone())).collect();
     let crown = vec![taken, crown_y, crown_z];
+    let neighbour_cities: Vec<CityId> = neighbour_plots.iter().filter_map(|&q| g.map.plots[q].plot_city).collect();
+    let neighbour_near = g.map.plots[near_plot].plot_city.ok_or("the neighbour's near city")?;
     let turn = g.game_turn();
     let paths = s.save(stage).map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedPersons {

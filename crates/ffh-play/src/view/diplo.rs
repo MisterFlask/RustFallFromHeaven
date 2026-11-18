@@ -51,6 +51,9 @@ pub fn trade_table(g: &Game, from: PlayerId, to: PlayerId) -> Vec<TradeData> {
     add(item(TradeableItem::TRADE_OPEN_BORDERS, 0), true);
     add(item(TradeableItem::TRADE_DEFENSIVE_PACT, 0), true);
     add(item(TradeableItem::TRADE_PERMANENT_ALLIANCE, 0), true);
+    // Not in C++: a House's side deals (docs/PERSONS.md, rule 9; only a House gives them).
+    add(item(TradeableItem::TRADE_SECEDE, 0), true);
+    add(item(TradeableItem::TRADE_HOUSE_VASSAL, 0), true);
     let (team, to_team) = (g.players[from].team, g.players[to].team);
     if g.at_war(team, to_team) {
         // "We are at war, allow a peace treaty option" (no canTradeItem check).
@@ -146,6 +149,11 @@ fn item_json(g: &Game, judge: PlayerId, from: PlayerId, to: PlayerId, t: &TradeD
 /// (`CvPlayerAI::AI_doCounter`) is AI code that ffh-ai does not run, so the memory would never
 /// fade and the AI would refuse to talk for the rest of the game.
 pub fn ai_willing_to_talk(g: &Game, ai: PlayerId, other: PlayerId) -> bool {
+    // Not in C++: a House is a party for anyone who has met it, at war too (its side deals,
+    // docs/PERSONS.md, rule 9; what it trades is the rules').
+    if g.player_house(ai).is_some() {
+        return true;
+    }
     let (team, their) = (g.players[ai].team, g.players[other].team);
     if their == team || g.teams[their].vassal[team] || g.teams[team].vassal[their] {
         return true;
@@ -356,8 +364,10 @@ pub fn check_deal(g: &Game, h: PlayerId, to: PlayerId, give: &[TradeData], get: 
             }
         }
     }
-    // At war every deal makes peace (`CvDeal::addTrades`): it has to be a peace deal.
-    if g.at_war(g.players[h].team, g.players[to].team) {
+    // At war every deal makes peace (`CvDeal::addTrades`): it has to be a peace deal. (Not a House's
+    // side deal, docs/PERSONS.md: it secedes, and the deal ends its share in its liege's war.)
+    let house_deal = get.iter().any(|t| ffh_core::persons::house_item(t.item_type).is_some());
+    if !house_deal && g.at_war(g.players[h].team, g.players[to].team) {
         let has = |kind: TradeableItem| give.iter().chain(get).any(|t| t.item_type == kind);
         if !has(TradeableItem::TRADE_PEACE_TREATY) && !has(TradeableItem::TRADE_SURRENDER) {
             return Err(CmdErr::Invalid("at war a deal makes peace: it needs the peace treaty (both sides) or a capitulation".into()));

@@ -824,10 +824,12 @@ impl TradeableItem {
     pub const TRADE_EMBARGO: TradeableItem = TradeableItem(14);
     pub const TRADE_CIVIC: TradeableItem = TradeableItem(15);
     pub const TRADE_RELIGION: TradeableItem = TradeableItem(16);
+    pub const TRADE_SECEDE: TradeableItem = TradeableItem(17);
+    pub const TRADE_HOUSE_VASSAL: TradeableItem = TradeableItem(18);
     /// C++ `NUM_TRADEABLE_ITEMS`
-    pub const NUM: usize = 17;
+    pub const NUM: usize = 19;
     /// C++ member names in declaration order (index = value).
-    pub const NAMES: &'static [&'static str] = &["TRADE_GOLD", "TRADE_GOLD_PER_TURN", "TRADE_MAPS", "TRADE_VASSAL", "TRADE_SURRENDER", "TRADE_OPEN_BORDERS", "TRADE_DEFENSIVE_PACT", "TRADE_PERMANENT_ALLIANCE", "TRADE_PEACE_TREATY", "TRADE_TECHNOLOGIES", "TRADE_RESOURCES", "TRADE_CITIES", "TRADE_PEACE", "TRADE_WAR", "TRADE_EMBARGO", "TRADE_CIVIC", "TRADE_RELIGION"];
+    pub const NAMES: &'static [&'static str] = &["TRADE_GOLD", "TRADE_GOLD_PER_TURN", "TRADE_MAPS", "TRADE_VASSAL", "TRADE_SURRENDER", "TRADE_OPEN_BORDERS", "TRADE_DEFENSIVE_PACT", "TRADE_PERMANENT_ALLIANCE", "TRADE_PEACE_TREATY", "TRADE_TECHNOLOGIES", "TRADE_RESOURCES", "TRADE_CITIES", "TRADE_PEACE", "TRADE_WAR", "TRADE_EMBARGO", "TRADE_CIVIC", "TRADE_RELIGION", "TRADE_SECEDE", "TRADE_HOUSE_VASSAL"];
 }
 
 define_idx!(/// C++ `TraitTypes`

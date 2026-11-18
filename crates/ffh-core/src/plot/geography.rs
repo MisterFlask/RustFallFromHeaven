@@ -1282,15 +1282,7 @@ impl Game {
         yield_ += self.plot_extra_yield(pl.x, pl.y, yield_type);
 
         if let Some(player) = player {
-            let mut threshold = self.players[player].extra_yield_threshold[y];
-            // Not in FFH2: the working city's House trait (docs/PERSONS.md, "A head's trait"),
-            // the lower threshold of the two as the owner's best trait's is.
-            if let Some(t) = pl.working_city.filter(|&c| self.cities.contains(c) && self.cities[c].owner == player).and_then(|c| self.cities[c].house_trait) {
-                let house = self.d.traits[t].extra_yield_threshold[y];
-                if house > 0 && (threshold == 0 || house < threshold) {
-                    threshold = house;
-                }
-            }
+            let threshold = self.players[player].extra_yield_threshold[y];
             if threshold > 0 && yield_ >= threshold {
                 yield_ += self.d.defines.extra_yield;
             }

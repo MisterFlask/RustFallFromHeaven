@@ -107,7 +107,11 @@ WANT = {
 
 # Members this game adds after a C++ enum's own (rules of its own, not FFH2's; docs/PORTING.md
 # "Changes from FFH2"). They follow the C++ members in this order, so the XML lists them last.
-EXTRA_MEMBERS = {}
+EXTRA_MEMBERS = {
+    # A House's side deals (docs/PERSONS.md, "The second build", rule 9): it gives Secede or
+    # Become your vassal.
+    "TradeableItems": ["TRADE_SECEDE", "TRADE_HOUSE_VASSAL"],
+}
 
 # C++ members this game removed (docs/PORTING.md "Changes from FFH2"). The members after one move
 # down to keep the indices dense, and `NUM` shrinks; the XML no longer lists them.

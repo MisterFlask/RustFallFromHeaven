@@ -61,12 +61,16 @@ persist_newtype!(
 
 // ---- Persons of Note (docs/PERSONS.md) ----
 
-use crate::persons::{Ambition, Deed, Demand, DemandKind, House, LoyaltyCause, LoyaltyMod, LoyaltyState, Person, PersonOrigin, Post, Standing};
-persist_enum!(PersonOrigin { 0 => Hero, 1 => Veteran, 2 => GreatPerson });
+use crate::persons::{Ambition, Deed, Demand, DemandKind, House, HouseOrigin, LoyaltyCause, LoyaltyMod, LoyaltyState, Person, PersonOrigin, Post, Standing};
+persist_enum!(PersonOrigin { 0 => Hero, 1 => Veteran, 2 => GreatPerson, 3 => Ruler });
+persist_enum!(HouseOrigin { 0 => Founded, 1 => Capitulated, 2 => Vassal });
 persist_enum!(Ambition { 0 => Land, 1 => War, 2 => Faith, 3 => Works });
 persist_enum!(Post { 0 => None, 1 => Commander(army), 2 => Head(house) });
-persist_enum!(LoyaltyState { 0 => Devoted, 1 => Loyal, 2 => Restless, 3 => Disloyal });
-persist_enum!(LoyaltyCause { 0 => DemandMet, 1 => DemandRefused, 2 => Granted { city }, 3 => GrantedElsewhere { city, house } });
+persist_enum!(LoyaltyState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
+persist_enum!(LoyaltyCause {
+    0 => DemandMet, 1 => DemandRefused, 2 => Granted { city }, 3 => GrantedElsewhere { city, house }, 4 => Levied,
+    5 => Capitulated, 6 => SoughtProtection, 7 => Offered { gold, by },
+});
 persist_struct!(LoyaltyMod { cause, amount, until });
 persist_struct!(Standing { mods, countdown, sworn, state });
 persist_enum!(DemandKind {
@@ -76,7 +80,7 @@ persist_enum!(DemandKind {
 persist_struct!(Demand { kind, issued, deadline });
 persist_struct!(Deed { turn, text });
 persist_struct!(Person { id, owner, origin, leader, unit, name, ambition, post, standing, demand, demand_rest_until, rival, deeds, entered_turn });
-persist_struct!(House { id, owner, name, head, seat, cities, standing, founded_turn, color, orders });
+persist_struct!(House { id, owner, player, origin, name, head, standing, founded_turn, color, tribute, last_gold, last_research, last_turn });
 
 
 use crate::culture::CultureChannel;
@@ -469,7 +473,7 @@ persist_struct!(City {
     culture_revolt_level, recruit_default, direct_rule, role, role_overridden,
     specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
-    garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane, house, taken_by, house_trait,
+    garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane, taken_by,
 });
 
 persist_struct!(Player {
@@ -527,7 +531,7 @@ persist_struct!(Player {
     ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
     governor_priorities, once_spells, card_traits, alignment_attitude, research_path,
     world_ritual_completions, world_ritual_refunds, world_spell_casts, tithe_target,
-    world_ritual_pending, persons, houses, house_names,
+    world_ritual_pending, persons, houses, house_names, house, house_tribute,
 });
 
 persist_struct!(Team {

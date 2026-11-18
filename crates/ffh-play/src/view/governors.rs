@@ -260,21 +260,13 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
         _ => g.city_production_turns_left_project(c, ProjectType::from_usize(data as usize), num),
     };
     let mut rows: Vec<(CityId, i32, Option<i32>, Json)> = Vec::new();
-    // Persons of Note (docs/PERSONS.md, "UI", part C): a House's city that could build the item
-    // but takes no order now, with the rules' named reason (the list shows it disabled).
-    let mut refused: Vec<Json> = Vec::new();
     let mut cities: Vec<CityId> = g.players[v.h].cities.clone();
     cities.sort();
     for c in cities {
         if !g.cities.contains(c) {
             continue;
         }
-        if let Err(why) = g.city_check_empire_order(v.h, c, order, data) {
-            if why.starts_with("The House") {
-                if let Err(named) = g.city_house_takes_order(c) {
-                    refused.push(crate::jobj! { "city" => c, "name" => city_name(g, c), "why" => named });
-                }
-            }
+        if g.city_check_empire_order(v.h, c, order, data).is_err() {
             continue;
         }
         let lead = g.city_lead_orders(c);
@@ -318,7 +310,6 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
         "army" => army,
         "dest" => crate::command::recruit_dest_json(army.map(RecruitDest::Army)),
         "cities" => Json::Arr(out),
-        "refused" => Json::Arr(refused),
     })
 }
 

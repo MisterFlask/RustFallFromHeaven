@@ -896,7 +896,7 @@ function buildLists(c, choose) {
       ),
     );
   });
-  const whyCls = stateKey(c.governance?.house?.state) === "disloyal" ? "p.warn.build-refusal" : "p.caution.build-refusal";
+  const whyCls = stateKey(c.governance?.house?.state) === "furious" ? "p.warn.build-refusal" : "p.caution.build-refusal";
   return houseWhy ? [h(whyCls, houseWhy), ...lists] : lists;
 }
 

@@ -113,9 +113,8 @@ impl Game {
     }
 
     /// C++ `CvCity::hasTrait` (CvCity.cpp:4309-4312).
-    /// Not in FFH2: also its House's trait (docs/PERSONS.md, "A head's trait").
     pub fn city_has_trait(&self, c: CityId, trait_type: TraitType) -> bool {
-        self.players[self.cities[c].owner].traits[trait_type] || self.cities[c].house_trait == Some(trait_type)
+        self.players[self.cities[c].owner].traits[trait_type]
     }
 
     /// C++ `CvCity::isBarbarian` (CvCity.cpp:4315-4318).
@@ -667,8 +666,7 @@ impl Game {
 
     /// C++ `CvCity::calculateTradeYield` (CvCity.cpp:8327-8337).
     pub fn city_calculate_trade_yield(&self, c: CityId, yield_type: YieldType, trade_profit: i32) -> i32 {
-        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-        let trade_yield_modifier = self.players[self.cities[c].owner].trade_yield_modifier[yield_type.idx()] + self.city_house_trait_info(c).map_or(0, |t| t.trade_yield_modifier[yield_type.idx()]);
+        let trade_yield_modifier = self.players[self.cities[c].owner].trade_yield_modifier[yield_type.idx()];
         if (trade_profit > 0) && (trade_yield_modifier > 0) {
             (trade_profit * trade_yield_modifier) / 100
         } else {
@@ -772,8 +770,6 @@ impl Game {
         // FfH: End Modify
 
         base_commerce_rate += 100 * (city.building_commerce[i] + city.specialist_commerce[i] + city.religion_commerce[i] + city.corporation_commerce[i] + player.free_city_commerce[i]);
-        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-        base_commerce_rate += 100 * self.city_house_trait_info(c).map_or(0, |t| t.commerce_change[i]);
 
         if self.city_has_specialty(c, SAGES) && commerce == CommerceType::COMMERCE_RESEARCH {
             base_commerce_rate += 100 * self.d.specialists.keys().map(|s| city.specialist_count[s] + city.free_specialist_count[s]).sum::<i32>();
@@ -790,9 +786,7 @@ impl Game {
         let city = &self.cities[c];
         let player = &self.players[city.owner];
         let capital_modifier = if self.city_is_capital(c) { player.capital_commerce_rate_modifier[i] } else { 0 };
-        // Not in FFH2: its House's trait (docs/PERSONS.md, "A head's trait").
-        let house = self.city_house_trait_info(c).map_or(0, |t| t.commerce_modifier[i]);
-        max(0, city.commerce_rate_modifier[i] + player.commerce_rate_modifier[i] + house + capital_modifier + 100)
+        max(0, city.commerce_rate_modifier[i] + player.commerce_rate_modifier[i] + capital_modifier + 100)
     }
 
     /// C++ `CvCity::updateCommerce(CommerceTypes)` (CvCity.cpp:8489-8524).

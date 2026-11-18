@@ -324,10 +324,6 @@ pub struct CivicInfo {
     /// This game's governors (docs/GOVERNORS.md): under this civic every city of its player is
     /// ruled directly (else every city is governed).
     pub direct_rule: bool,
-    /// Persons of Note (docs/PERSONS.md): a House's order quota under this government civic, in
-    /// hundredths of an order per city of the House in each `PERSON_LEVY_TURNS` turns (0: the key
-    /// is absent, which the rules read as 100).
-    pub house_orders: i32,
 }
 
 impl CivicInfo {
@@ -416,7 +412,6 @@ pub fn read_civic(rd: &Rd) -> CivicInfo {
         no_war_weariness: rd.bool("no_war_weariness"),
         unit_rush_gold: rd.int("unit_rush_gold"),
         direct_rule: rd.bool("direct_rule"),
-        house_orders: rd.int("house_orders"),
     }
 }
 

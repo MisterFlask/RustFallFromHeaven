@@ -404,10 +404,15 @@ pub struct Player {
     pub world_ritual_pending: Option<ProjectType>,
     /// This game's persons of note (docs/PERSONS.md), in the order they entered (the cast order).
     pub persons: Vec<PersonId>,
-    /// Its Houses, in the order founded.
+    /// Its Houses (its vassals, docs/PERSONS.md), in the order they became its Houses.
     pub houses: Vec<HouseId>,
-    /// The names its Houses took in this game (a name is not used twice).
+    /// The names its founded Houses took in this game (a name is not used twice).
     pub house_names: Vec<String>,
+    /// The House this player is (docs/PERSONS.md, "The second build": a House is a vassal
+    /// civilization of its own).
+    pub house: Option<HouseId>,
+    /// The tribute a new House of this player takes, percent (`persons::TRIBUTE_DEFAULT`).
+    pub house_tribute: i32,
 }
 
 impl Player {
@@ -672,6 +677,8 @@ impl Player {
             persons: Vec::new(),
             houses: Vec::new(),
             house_names: Vec::new(),
+            house: None,
+            house_tribute: crate::persons::TRIBUTE_DEFAULT,
         }
     }
 

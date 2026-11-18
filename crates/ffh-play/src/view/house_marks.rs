@@ -11,7 +11,8 @@ use ffh_data::*;
 use crate::json::Json;
 use crate::view::{city_name, Viewer};
 
-/// A state as the client's mark takes it (`Devoted`, `Loyal`, `Restless`, `Disloyal`).
+/// A state as the client's mark takes it (`Friendly`, `Pleased`, `Cautious`, `Annoyed`,
+/// `Furious`).
 pub fn state_name(s: LoyaltyState) -> &'static str {
     s.name()
 }
@@ -72,36 +73,21 @@ pub fn city_house_field(v: &Viewer, c: CityId) -> Option<Json> {
     Some(g.city_house(c).map_or(Json::Null, |h| house_chip(g, h)))
 }
 
-/// The map's mark of one of the human's own cities (part G): `{colour, state, turns}` from
-/// `Game::city_house_mark` (cheap), with the House's `id` and `label` for the plate's tooltip;
-/// `None` for a Crown city, another's city or a human without Houses.
+/// The map's mark of a House's city (part G; docs/PERSONS.md, rule 13): its shield for everyone
+/// (`{id, label, colour}`), and for its liege its attitude mark (`state`, `turns`; null for the
+/// others), from `Game::city_house_mark` (cheap); `None` for a city of a civilization that is no
+/// House.
 pub fn city_map_mark(v: &Viewer, c: CityId) -> Option<Json> {
     let g = v.g;
-    if g.cities[c].owner != v.h {
-        return None;
-    }
     let m = g.city_house_mark(c)?;
+    let liege = m.owner == v.h;
     Some(crate::jobj! {
         "id" => m.house,
         "label" => g.house_label(m.house),
         "colour" => m.color as i32,
-        "state" => m.state.name(),
-        "turns" => m.countdown_turns,
+        "state" => liege.then(|| m.state.name()),
+        "turns" => if liege { m.countdown_turns } else { None },
     })
-}
-
-/// The quota of House `h` in words (parts C and D): `Orders: no limit.`, `Orders: 2 of 3 left.`,
-/// `Orders: 0 of 3 left. Next in 12 turns.`, or the rules' reason it takes none
-/// (`House Arne is Restless. It takes no orders.`).
-fn orders_text(g: &Game, h: HouseId, c: CityId) -> String {
-    match g.house_orders_left(h) {
-        None => "Orders: no limit.".to_string(),
-        Some(n) if n > 0 => format!("Orders: {n} of {} left.", g.house_orders_total(h)),
-        Some(_) => match g.city_house_takes_order(c) {
-            Err(why) => why,
-            Ok(()) => format!("Orders: 0 of {} left.", g.house_orders_total(h)),
-        },
-    }
 }
 
 /// A person in brief: `{person, name, title, leader}` (`leader`: the portrait, null for a hero).
@@ -116,10 +102,9 @@ fn person_brief(g: &Game, x: PersonId) -> Json {
 }
 
 /// The city screen's Governance line (part C), in `governance.house` or `governance.crown`:
-/// - a House's city: `house: {id, label, colour, state, turns, outcome, head: {person, name,
-///   title, leader} | null, trait (TraitType | null: the trait that applies here now),
-///   orders_left (null: no limit), orders_total, orders_text, order_refusal (the rules' named
-///   reason an empire order is refused here now, else null)}`;
+/// - a House's city (its liege's view): `house: {id, label, colour, state, turns, outcome, head:
+///   {person, name, title, leader} | null, levy (`Takes levies.` or the rules' reason it takes
+///   none), takes_levy, tribute (`Tribute 20%.`)}`;
 /// - a Crown city: `crown: {grantable, refusal (why it cannot be granted, else null)}`.
 ///
 /// Nothing for a human without Houses.
@@ -133,12 +118,11 @@ pub fn governance_fields(v: &Viewer, c: CityId, j: &mut Json) {
             let mut house = house_chip(g, h);
             let head = g.houses[h].head.filter(|&x| g.persons.contains(x));
             house.set("head", head.map(|x| person_brief(g, x)));
-            house.set("outcome", g.houses[h].standing.countdown.map(|_| g.house_secession_outcome(h)));
-            house.set("trait", g.city_house_trait(c).map(Json::idx));
-            house.set("orders_left", g.house_orders_left(h));
-            house.set("orders_total", g.house_orders_total(h));
-            house.set("orders_text", orders_text(g, h, c));
-            house.set("order_refusal", g.city_house_takes_order(c).err());
+            house.set("outcome", g.houses[h].standing.countdown.map(|_| g.house_breakaway_outcome(h)));
+            let refusal = g.house_levy_refusal(h);
+            house.set("takes_levy", refusal.is_none());
+            house.set("levy", refusal.unwrap_or_else(|| "Takes levies.".to_string()));
+            house.set("tribute", format!("Tribute {}%.", g.houses[h].tribute));
             j.set("house", house);
             j.set("crown", Json::Null);
         }
@@ -150,28 +134,24 @@ pub fn governance_fields(v: &Viewer, c: CityId, j: &mut Json) {
     }
 }
 
-/// A requisition candidate's House line (part D): `{id, label, colour, state, orders_left,
-/// orders_total, text}`, `text` `House Arne: 1 of 3 orders left.`, `House Arne: no limit.` or the
-/// rules' reason it gives none; null for a Crown city.
+/// A requisition candidate's House line (part D; the levy, docs/PERSONS.md, rule 6): `{id, label,
+/// colour, state, takes_levy, text}`, `text` `House Arne: takes levies. Each is -1 (20 turns).` or
+/// the rules' reason it takes none; null for a city of no House.
 pub fn requisition_house(g: &Game, c: CityId) -> Json {
     let Some(h) = g.city_house(c) else { return Json::Null };
     let label = g.house_label(h);
-    let text = match g.house_orders_left(h) {
-        None => format!("{label}: no limit."),
-        Some(n) if n > 0 => format!("{label}: {n} of {} orders left.", g.house_orders_total(h)),
-        Some(_) => g.city_house_takes_order(c).err().unwrap_or_else(|| format!("{label}: 0 of {} orders left.", g.house_orders_total(h))),
-    };
+    let refusal = g.house_levy_refusal(h);
+    let (amount, turns) = ffh_core::persons::LEVIED;
     let mut j = house_chip(g, h);
-    j.set("orders_left", g.house_orders_left(h));
-    j.set("orders_total", g.house_orders_total(h));
-    j.set("text", text);
+    j.set("takes_levy", refusal.is_none());
+    j.set("text", refusal.unwrap_or_else(|| format!("{label}: takes levies. Each order placed: Levied {amount} ({turns} turns).")));
     j
 }
 
 /// An army's commander (part D), in the army's `commander`: `{person, name, title, leader,
 /// unit_type, level, state, turns, outcome, withholds_attack}` (`outcome`: the countdown's stated
-/// outcome, with its turns; `withholds_attack`: Restless or Disloyal, the army takes no order to
-/// attack), or null; and `persons_with` (`[{person, name, unit_type, level}]`: every person with
+/// outcome, with its turns; `withholds_attack`: the army takes no order to
+/// attack: Annoyed or Furious), or null; and `persons_with` (`[{person, name, unit_type, level}]`: every person with
 /// the army, the commander among them; `[Change]` when more than one).
 pub fn army_fields(v: &Viewer, a: ArmyId, j: &mut Json) {
     let g = v.g;
@@ -188,7 +168,7 @@ pub fn army_fields(v: &Viewer, a: ArmyId, j: &mut Json) {
             c.set("state", pv.state.name());
             c.set("turns", pv.countdown_turns);
             c.set("outcome", pv.outcome);
-            c.set("withholds_attack", matches!(pv.state, LoyaltyState::Restless | LoyaltyState::Disloyal));
+            c.set("withholds_attack", pv.state.withholds());
             c
         }),
     );
@@ -248,8 +228,9 @@ pub fn unit_found_house(v: &Viewer, u: UnitId) -> Json {
 
 /// The civics screen's preview of a proposed set (part I), set on `proposed`: `persons` (the
 /// rules' lines) and, when the set brings direct rule while Houses stand, `persons_warning`
-/// (`Adopting God King: 3 Houses secede with 9 cities: Prespur, Elam and Torrin. Held by armies:
-/// Vallus.`) and `persons_button` (`Adopt and face the secession`).
+/// (`Adopting God King: 3 Houses break away with 9 cities, each at war with us: Prespur, Elam and
+/// Torrin. Vallus stays: an army of ours stands in it.`) and `persons_button` (`Adopt God King: 3
+/// Houses break away`).
 pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json) {
     let g = v.g;
     let d = g.d;
@@ -277,7 +258,7 @@ pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json
             format!("Adopting {civic_name}: {houses_n} end{}: an army of ours stands in every city.", if n == 1 { "s" } else { "" })
         } else {
             format!(
-                "Adopting {civic_name}: {houses_n} secede{} with {} cit{}, as one civilization at war with us: {}.",
+                "Adopting {civic_name}: {houses_n} break{} away with {} cit{}, each at war with us: {}.",
                 if n == 1 { "s" } else { "" },
                 going.len(),
                 if going.len() == 1 { "y" } else { "ies" },
@@ -289,11 +270,11 @@ pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json
             text.push_str(&stays_line(g, &held));
         }
         proposed.set("persons_warning", text);
-        proposed.set("persons_button", format!("Adopt {civic_name}: {houses_n} secede{}", if n == 1 { "s" } else { "" }));
+        proposed.set("persons_button", format!("Adopt {civic_name}: {houses_n} break{} away", if n == 1 { "s" } else { "" }));
     }
 }
 
-/// The cities a secession leaves to their owner, because an army of the owner stands in them:
+/// The cities a break-away leaves to the liege, because an army of the liege stands in them:
 /// `Censura stays: an army of ours stands in it.`, `Censura and Torrin stay: an army of ours
 /// stands in each.`
 pub(crate) fn stays_line(g: &Game, held: &[CityId]) -> String {

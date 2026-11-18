@@ -383,6 +383,9 @@ pub struct Birth {
     pub release: Vec<CityId>,
     /// A unit that stays its owner's in a released city (the caster).
     pub keep: Option<UnitId>,
+    /// The owner's units in a released city that are in an army or marching stay its own (a
+    /// House's founding, docs/PERSONS.md: a vassal's land is friendly to its master).
+    pub keep_armies: bool,
     /// Units that arrive on a plot of their own, without a city (the Court of Mammon: its settlers
     /// found its cities), after the cities' units.
     pub camp: Option<(PlotIdx, Vec<NewUnit>)>,
@@ -423,6 +426,7 @@ impl Birth {
             found: Vec::new(),
             release: Vec::new(),
             keep: None,
+            keep_armies: false,
             camp: None,
             hero: None,
             techs: Vec::new(),
@@ -511,7 +515,7 @@ pub fn birth(g: &mut Game, b: &Birth) -> PlayerId {
         cities.push(g.player_init_city(p, x, y, true, true));
     }
     for &c in &b.release {
-        if let Some(c) = release_city(g, p, c, b.keep) {
+        if let Some(c) = release_city(g, p, c, b.keep, b.keep_armies) {
             cities.push(c);
         }
     }
@@ -546,8 +550,12 @@ pub fn birth(g: &mut Game, b: &Birth) -> PlayerId {
 
     if let (Some(founder), true) = (b.founder, b.vassal) {
         let ft = g.players[founder].team;
-        if !g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) && !g.team_is_a_vassal(ft) {
+        // (`team_vassal_refusal`: No Vassal States, a vassal founder, and not in FFH2 a founder under
+        // a direct-rule civic: every vassal is a House, none stands under direct rule.)
+        if g.team_vassal_refusal(ft).is_none() {
             g.team_assign_vassal(ft, nt, false);
+            // A card's vassal birth is a House that sought no protection (docs/PERSONS.md).
+            g.player_house_birth(p);
         } else {
             // Open borders and a defensive pact, each held by its own standing deal (`data` 1, as
             // `CvDeal::startTeamTrade` records an agreement), so that the ordinary rules end them:
@@ -604,9 +612,10 @@ fn new_unit(g: &mut Game, p: PlayerId, nu: &NewUnit, x: i32, y: i32) -> UnitId {
 }
 
 /// City `c` of its owner goes to `p` as a trade would (its buildings stay), with its culture and
-/// its garrison: the owner's land units in it that can fight, but `keep` and heroes. The city it
-/// becomes (a city changing hands has a new id).
-fn release_city(g: &mut Game, p: PlayerId, c: CityId, keep: Option<UnitId>) -> Option<CityId> {
+/// its garrison: the owner's land units in it that can fight, but `keep`, heroes, and with
+/// `keep_armies` the units in an army or marching. The city it becomes (a city changing hands has
+/// a new id).
+pub(crate) fn release_city(g: &mut Game, p: PlayerId, c: CityId, keep: Option<UnitId>, keep_armies: bool) -> Option<CityId> {
     let d = g.d;
     let plot = g.city_plot(c);
     let owner = g.cities[c].owner;
@@ -616,6 +625,9 @@ fn release_city(g: &mut Game, p: PlayerId, c: CityId, keep: Option<UnitId>) -> O
         }
         let t = g.units[u].unit_type;
         if g.unit_get_domain_type(u) != DomainType::DOMAIN_LAND || d.units[t].combat <= 0 || g.unit_is_hero(u) {
+            continue;
+        }
+        if keep_armies && (g.units[u].army.is_some() || g.units[u].march.is_some()) {
             continue;
         }
         let (x, y, ai) = (g.units[u].x, g.units[u].y, g.units[u].ai_type);

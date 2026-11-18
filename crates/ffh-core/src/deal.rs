@@ -63,7 +63,10 @@ impl Deal {
 
     /// C++ static `CvDeal::hasData`.
     pub fn has_data(item: TradeableItem) -> bool {
-        item != TradeableItem::TRADE_MAPS
+        // (Not in C++: a House's Secede and Become your vassal name nothing; docs/PERSONS.md.)
+        item != TradeableItem::TRADE_SECEDE
+            && item != TradeableItem::TRADE_HOUSE_VASSAL
+            && item != TradeableItem::TRADE_MAPS
             && item != TradeableItem::TRADE_VASSAL
             && item != TradeableItem::TRADE_SURRENDER
             && item != TradeableItem::TRADE_OPEN_BORDERS
@@ -211,12 +214,22 @@ impl Game {
         }
 
         for trade in first {
+            // A House's Secede or Become your vassal (docs/PERSONS.md): the other side's offer is
+            // what its liege learns of.
+            if let Some(kind) = crate::persons::house_item(trade.item_type) {
+                self.house_trade(first_player, second_player, kind, second);
+                continue;
+            }
             if self.deal_start_trade(d, trade.clone(), first_player, second_player) && self.deals.contains(d) {
                 self.deals[d].first_trades.push(trade.clone());
             }
         }
 
         for trade in second {
+            if let Some(kind) = crate::persons::house_item(trade.item_type) {
+                self.house_trade(second_player, first_player, kind, first);
+                continue;
+            }
             if self.deal_start_trade(d, trade.clone(), second_player, first_player) && self.deals.contains(d) {
                 self.deals[d].second_trades.push(trade.clone());
             }
@@ -297,10 +310,16 @@ impl Game {
         Deal::is_vassal_trade(&deal.first_trades) || Deal::is_vassal_trade(&deal.second_trades)
     }
 
-    /// C++ `CvDeal::isUncancelableVassalDeal` (`by_player = None` is NO_PLAYER).
+    /// C++ `CvDeal::isUncancelableVassalDeal` (`by_player = None` is NO_PLAYER). Not in C++: a
+    /// House's vassal deal is cancelled by no one (docs/PERSONS.md, rule 7: the House leaves by
+    /// its countdown or an offer, its liege frees it with `player_free_house`).
     pub fn deal_is_uncancelable_vassal_deal(&self, d: DealId, by_player: Option<PlayerId>) -> bool {
         let deal = &self.deals[d];
         let (first, second) = (deal.first_player, deal.second_player);
+
+        if self.deal_is_vassal_deal(d) && (self.players[first].house.is_some() || self.players[second].house.is_some()) {
+            return true;
+        }
 
         for trade in &deal.first_trades {
             if Deal::is_vassal(trade.item_type) && by_player == Some(second) {
@@ -509,6 +528,11 @@ impl Game {
                 save = true;
             }
 
+            // Not in C++: a House's side deal (docs/PERSONS.md; `deal_add_trades` passes the
+            // offer).
+            TradeableItem::TRADE_SECEDE => self.house_trade(from_player, to_player, crate::persons::BribeKind::Secede, &[]),
+            TradeableItem::TRADE_HOUSE_VASSAL => self.house_trade(from_player, to_player, crate::persons::BribeKind::Vassal, &[]),
+
             _ => debug_assert!(false, "CvDeal::startTrade: unexpected item {:?}", trade.item_type),
         }
 
@@ -660,6 +684,9 @@ mod tests {
             ("TRADE_EMBARGO", f, f, f, t, f, f, f),
             ("TRADE_CIVIC", f, f, f, t, f, f, f),
             ("TRADE_RELIGION", f, f, f, t, f, f, f),
+            // Not in C++: a House's side deal (docs/PERSONS.md).
+            ("TRADE_SECEDE", f, f, f, f, f, f, f),
+            ("TRADE_HOUSE_VASSAL", f, f, f, f, f, f, f),
         ];
         assert_eq!(expect.len(), TradeableItem::NUM);
         for (i, e) in expect.iter().enumerate() {

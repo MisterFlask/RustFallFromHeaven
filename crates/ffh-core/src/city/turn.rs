@@ -209,8 +209,6 @@ impl Game {
         self.city_culture_lost(c);
         // This game's armies: it leaves every requisition; recruits marching to it go elsewhere.
         self.city_army_lost(c);
-        // This game's Houses (docs/PERSONS.md): it leaves its House.
-        self.city_persons_lost(c);
 
         let plot = self.city_plot(c);
 
@@ -823,7 +821,13 @@ impl Game {
                     }
 
                     let (x, y) = (self.cities[c].x, self.cities[c].y);
-                    let new_unit = self.player_init_unit(owner, unit, x, y, opt_from_i32(train_unit_ai), None);
+                    // This game's Houses (docs/PERSONS.md, the levy): a requisition order of the
+                    // liege's army in a House's city trains the liege's unit.
+                    let unit_owner = match order.dest {
+                        Some(crate::army::RecruitDest::Army(a)) if order.requisition && self.armies.contains(a) && self.city_levied_by(c, self.armies[a].owner) => self.armies[a].owner,
+                        _ => owner,
+                    };
+                    let new_unit = self.player_init_unit(unit_owner, unit, x, y, opt_from_i32(train_unit_ai), None);
 
                     // Creating the unit can remove the city (entering its plot, a unit takes a city
                     // of a team it is at war with) or the unit: the unit stays built, and what

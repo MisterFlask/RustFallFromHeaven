@@ -1457,6 +1457,24 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let because = |accept: bool, why: &str| OfferVerdict { accept, margin: None, why: Some(why.to_string()) };
     let on_value = |margin: i64| OfferVerdict { accept: margin >= 0, margin: Some(margin as i32), why: None };
     let has = |items: &[TradeData], kind: TradeableItem| items.iter().any(|t| t.item_type == kind);
+    // ---- Houses (docs/PERSONS.md, "The second build", rule 9): a House answers offers to secede
+    // or become `from`'s vassal by the rules' price alone (`house_bribe_price`; gold per turn
+    // counted ten times), and trades nothing else. (Added with the rules; the AI of the second
+    // build is still to be written.)
+    if let Some(h) = g.player_house(p) {
+        if !we_give.iter().any(|t| ffh_core::persons::house_item(t.item_type).is_some()) {
+            return no("a House trades only Secede and Become your vassal");
+        }
+        let kind = we_give.iter().find_map(|t| ffh_core::persons::house_item(t.item_type)).expect("a House item");
+        if let Some(why) = g.house_bribe_refusal(h, from, kind) {
+            return OfferVerdict { accept: false, margin: None, why: Some(why) };
+        }
+        let offered = ffh_core::persons::house_offer_value(they_give);
+        return match g.house_bribe_price(h) {
+            Some(price) => OfferVerdict { accept: offered >= price, margin: Some(offered - price), why: (offered < price).then(|| format!("{} asks {price} gold", g.house_label(h))) },
+            None => no("it refuses any offer"),
+        };
+    }
     // Vassal states come with strings attached (vassals.rs): asked to become `from`'s vassal, or
     // offered `from` as ours.
     if let Some(yes) = crate::vassals::agree(g, p, from, we_give, tel) {

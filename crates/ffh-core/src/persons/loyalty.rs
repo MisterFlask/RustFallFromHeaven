@@ -1,10 +1,10 @@
-//! Loyalty: the modifiers, the sum, the four states and the Disloyal countdown
-//! (docs/PERSONS.md, "The first build": Loyalty, States).
+//! Loyalty: the modifiers, the sum, the five states (the attitude scale) and the Furious
+//! countdown (docs/PERSONS.md, "The second build", rule 5).
 //!
 //! A head's loyalty is their House's (`House::standing`); everyone else's is their own
-//! (`Person::standing`). The sum is the modifiers still running plus the standing part `State
+//! (`Person::standing`). The sum is the modifiers still running plus the standing parts: `State
 //! religion opposed: -2` (the state religion's alignment the opposite of the person's; a House's
-//! is its head's). An empty seat is Loyal whatever its sum.
+//! is its head's) and, for a House, `Tribute N%: 1 - N/10`.
 
 use ffh_data::*;
 
@@ -15,6 +15,12 @@ use super::*;
 pub(crate) enum Holder {
     House(HouseId),
     Person(PersonId),
+}
+
+/// The standing loyalty part of a tribute of `pct` percent: `1 - pct / 10` (0%: +1, 20%: -1,
+/// 50%: -4).
+pub fn tribute_part(pct: i32) -> i32 {
+    1 - pct / 10
 }
 
 impl Game {
@@ -37,6 +43,14 @@ impl Game {
         match hd {
             Holder::House(h) => &mut self.houses[h].standing,
             Holder::Person(x) => &mut self.persons[x].standing,
+        }
+    }
+
+    /// Whether the holder still stands (its House or person exists).
+    pub(crate) fn holder_alive(&self, hd: Holder) -> bool {
+        match hd {
+            Holder::House(h) => self.houses.contains(h),
+            Holder::Person(x) => self.persons.contains(x),
         }
     }
 
@@ -74,24 +88,28 @@ impl Game {
         self.person_religion_part(x, religion)
     }
 
-    /// The sum of the holder's running modifiers (without the standing religion part).
+    /// The holder's standing tribute part (a House's: [`tribute_part`] of its tribute; 0 for a
+    /// person).
+    pub(crate) fn holder_tribute_part(&self, hd: Holder) -> i32 {
+        match hd {
+            Holder::House(h) => tribute_part(self.houses[h].tribute),
+            Holder::Person(_) => 0,
+        }
+    }
+
+    /// The sum of the holder's running modifiers (without the standing parts).
     pub(crate) fn holder_mods_sum(&self, hd: Holder) -> i32 {
         let turn = self.game_turn();
         self.holder_standing(hd).mods.iter().filter(|m| m.until.map_or(true, |u| u > turn)).map(|m| m.amount).sum()
     }
 
-    /// The holder's loyalty: its running modifiers plus the standing religion part.
+    /// The holder's loyalty: its running modifiers plus the standing parts.
     pub(crate) fn holder_loyalty(&self, hd: Holder) -> i32 {
-        self.holder_mods_sum(hd) + self.holder_religion_part(hd)
+        self.holder_mods_sum(hd) + self.holder_religion_part(hd) + self.holder_tribute_part(hd)
     }
 
-    /// The holder's state at loyalty `total` (an empty seat is Loyal).
-    pub(crate) fn holder_state_at(&self, hd: Holder, total: i32) -> LoyaltyState {
-        if let Holder::House(h) = hd {
-            if self.houses[h].head.is_none() {
-                return LoyaltyState::Loyal;
-            }
-        }
+    /// The holder's state at loyalty `total`.
+    pub(crate) fn holder_state_at(&self, _hd: Holder, total: i32) -> LoyaltyState {
         LoyaltyState::of(total)
     }
 
@@ -100,14 +118,19 @@ impl Game {
         self.holder_state_at(hd, self.holder_loyalty(hd))
     }
 
-    /// House `h`'s loyalty (its head's state religion part included).
+    /// House `h`'s loyalty (its head's state religion part and its tribute part included).
     pub fn house_loyalty(&self, h: HouseId) -> i32 {
         self.holder_loyalty(Holder::House(h))
     }
 
-    /// House `h`'s state (an empty seat: Loyal).
+    /// House `h`'s state: its attitude toward its liege.
     pub fn house_state(&self, h: HouseId) -> LoyaltyState {
         self.holder_state(Holder::House(h))
+    }
+
+    /// House `h`'s loyalty were its tribute `pct` percent (the tribute selector's preview).
+    pub fn house_loyalty_at_tribute(&self, h: HouseId, pct: i32) -> i32 {
+        self.house_loyalty(h) - tribute_part(self.houses[h].tribute) + tribute_part(pct)
     }
 
     /// Person `x`'s loyalty: their House's for a head, else their own.
@@ -141,26 +164,22 @@ impl Game {
         }
     }
 
-    /// The states of player `p`'s holders: a change is told; Disloyal starts the countdown (a
+    /// The states of player `p`'s holders: a change is told; Furious starts the countdown (a
     /// commander's records its sworn units), above it the countdown stops; a person without a
-    /// post who is Disloyal leaves the cast.
+    /// post who is Furious leaves the cast.
     pub(crate) fn player_persons_states(&mut self, p: PlayerId) {
         let turn = self.game_turn();
         for hd in self.player_holders(p) {
-            let alive = match hd {
-                Holder::House(h) => self.houses.contains(h),
-                Holder::Person(x) => self.persons.contains(x),
-            };
-            if !alive {
+            if !self.holder_alive(hd) {
                 continue;
             }
             let state = self.holder_state(hd);
             let old = self.holder_standing(hd).state;
-            if state == LoyaltyState::Disloyal {
+            if state == LoyaltyState::Furious {
                 if let Holder::Person(x) = hd {
                     if self.persons[x].post == Post::None {
                         let name = self.persons[x].name.clone();
-                        self.person_msg(x, || format!("{name} is Disloyal and leaves the court."));
+                        self.person_msg(x, || format!("{name} is Furious and leaves the court."));
                         self.tel_person(p, "state", "left");
                         self.person_leave(x);
                         continue;
@@ -197,8 +216,8 @@ impl Game {
                     Holder::Person(x) => self.persons[x].name.clone(),
                 };
                 let outcome = match (state, hd) {
-                    (LoyaltyState::Disloyal, Holder::House(h)) => format!(" {}", self.house_secession_outcome(h)),
-                    (LoyaltyState::Disloyal, Holder::Person(x)) => format!(" {}", self.commander_secession_outcome(x)),
+                    (LoyaltyState::Furious, Holder::House(h)) => format!(" {}", self.house_breakaway_outcome(h)),
+                    (LoyaltyState::Furious, Holder::Person(x)) => format!(" {}", self.commander_secession_outcome(x)),
                     _ => String::new(),
                 };
                 let text = format!("{label} is {}.{outcome}", state.name());
@@ -211,7 +230,7 @@ impl Game {
     }
 
     /// The countdowns of player `p` that have run out (pure): Houses first, then commanders.
-    /// The persons turn's secession acts on them (`secession.rs`).
+    /// The persons turn's break-aways act on them (`secession.rs`).
     pub fn persons_countdowns_due(&self, p: PlayerId) -> Vec<CountdownDue> {
         let turn = self.game_turn();
         let mut out = Vec::new();

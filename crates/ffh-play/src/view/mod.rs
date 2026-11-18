@@ -389,10 +389,11 @@ pub fn cities(v: &Viewer) -> Json {
                 });
             }
         }
-        // Persons of Note (docs/PERSONS.md, "UI", parts E and G): the human's own city's House
-        // (`{id, label, colour, state, turns}`; null: the Crown's), for its plate and the lists.
-        // Left out for others' cities and for a human without Houses.
-        if let Some(house) = house_marks::city_house_field(v, c) {
+        // Persons of Note (docs/PERSONS.md, "UI", parts E and G; rule 13): a House's city carries its
+        // House (`{id, label, colour, state, turns}`, the state and turns for its liege only), for
+        // its plate; the human's own cities are the Crown's (null), for the lists. Left out for
+        // the other cities and for a human without Houses.
+        if let Some(house) = house_marks::city_map_mark(v, c).or_else(|| house_marks::city_house_field(v, c)) {
             j.set("house", house);
         }
         // Revolt pressure on a city the human sees (its banner's mark): its level

@@ -159,7 +159,13 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `persons_barred`, `Player::persons`, `houses`, `house_names`, `City::house`, `taken_by`,
 ///   `Army::commander` a person, `Army::commander_named`, `LogMark::Person`, `LogTag::Person`.
 /// - 48: a House's trait in its cities (`City::house_trait`; docs/PERSONS.md).
-pub const FORMAT_VERSION: u32 = 48;
+/// - 49: Houses as vassal civilizations (docs/PERSONS.md, "The second build"): `House::player`,
+///   `origin`, `tribute`, `last_gold`, `last_research`, `last_turn` (no `seat`, `cities`,
+///   `orders`), `Player::house`, `house_tribute`, no `City::house` nor `house_trait`, the
+///   attitude scale (`LoyaltyState`), `PersonOrigin::Ruler`, `LoyaltyCause::Levied`,
+///   `Capitulated`, `SoughtProtection`, `Offered`, the trade items `TRADE_SECEDE` and
+///   `TRADE_HOUSE_VASSAL`.
+pub const FORMAT_VERSION: u32 = 49;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
