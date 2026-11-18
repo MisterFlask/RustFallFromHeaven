@@ -11,7 +11,7 @@ decisions and which are proposals still to be confirmed.
 | Stage | What | Status |
 |---|---|---|
 | 0 | the vassal levy: an army requisitions from its owner's vassals' cities, by a quota | not built |
-| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | rules, state and read API built (`crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`); the governors gone; Court screen and AI to come |
+| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | rules, state and read API built (`crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`); the governors gone; Court screen and AI to come; UI parts C to I (the existing screens, the map's plates, the alerts, the previews) built |
 | 2 | consequences: quotas and withholding, secession, leagues, the civil war of direct rule, heirs | rules built (`persons/secession.rs`, `persons/city.rs`, hooks in the order code, the attack rule, the city's reads); release as a vassal built too |
 | 3 | vassals: a House released as a vassal, a capitulated leader as a person, claims abroad | not built |
 | 4 | foreign persons: seeing them, courting them, agents abroad | not built |
@@ -602,6 +602,33 @@ With the portrait: a person enters · a demand is issued · 10 turns left on a d
 #### I. Previews where the acts are done
 - Civics screen: choosing a direct-rule civic while Houses stand shows, in the warning style, `Adopting God King: 3 Houses secede with 9 cities: Prespur, Elam, … Held by armies: Torrin.` and the revolution's button reads `Adopt and face the secession`.
 - Religion screen, declaring war, making peace (the diplomacy dialogs), the raze choice: the preview lines for that act under the existing text, each `Subject: text. Becomes State.` Nothing when there are none.
+
+#### Parts C to I as built (2026-11-18)
+Built in the existing screens (`crates/ffh-play/src/view/house_marks.rs`, `assets/app/persons_lines.js`;
+docs/HUMAN.md, "Persons of Note in the screens"; tests `crates/ffh-play/tests/persons_screens.rs`,
+`tools/web-persons-screens-smoke.mjs`). Departures and choices the spec left open:
+- C: a House's line ends with its quota in words (`Orders: no limit.`, `Orders: 2 of 3 left.`) or the
+  rules' named reason in amber; a Disloyal House adds the countdown's outcome. In a House's city that
+  takes no order, the build lists say the reason once above them and every entry is disabled; the
+  empire order's city step lists such cities disabled, the reason as the row's text.
+- D: `[Change]` is a `Change…` list of the other persons with the army (one tap less than a list in a
+  dialog). Restless and Disloyal both say `Takes no order to attack.`; Disloyal adds the outcome. An
+  attack the commander withholds is refused in the client before the move, with the rules' reason (the
+  rules refuse it too), and the path's tooltip says it.
+- E: the House tag carries the state mark only when Restless or Disloyal.
+- F: `Found a House` is a button under the person line, not one of the server's actions; it stays,
+  disabled with the reason, where no city can be granted. The human's command layer refuses every
+  order for a unit with `unit_house_refusal` set, where it refuses a marching recruit's.
+- G: Disloyal's turns are a number in a dark-red pill at the shield's lower right; the ◆ and ✖ sit on a
+  dark disc, so they read on every tincture. The HD-2D plates read the view's city as it is now (not
+  the one the dressing kept), so a change of state shows without a redress.
+- H: the rules log a secession's news to other civilizations untagged; the client knows them by the
+  rules' wording (`kind: "secession"`, `report.rs` `is_secession_text`); a rules tag would be firmer. A
+  change of command is left to the log (it follows every regroup). At most three alerts a batch, the
+  rest counted in one more (`Persons of note: N more messages in the log.`).
+- I: making peace is previewed on the trade screen at war (`If peace is made:`), where peace is
+  proposed; razing in the keep/raze question's text (`If razed:`). Adopting a direct-rule civic asks
+  once more with the warning and `This cannot be undone.` (the anarchy in the same question).
 
 #### J. Help and keywords
 A help topic `Persons of Note` (the rules in short bullets, as the Governors topic does). Keywords with reminders (data/json/keywords.jsonc, data/text/en.tsv): House, Crown, Devoted, Loyal, Restless, Disloyal, Sworn, Claimant. Reminders are bare and short (`Restless: a House takes no new order; a commander's army takes no order to attack.`). The texts of this system mark the keywords and never restate a reminder (tests/keywords.rs).

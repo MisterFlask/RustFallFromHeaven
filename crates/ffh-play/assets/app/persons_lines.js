@@ -10,6 +10,13 @@ import { leaderPortrait, PORTRAIT } from "./portraits.js";
 import { stateMark, houseShield, openCourt } from "./persons.js";
 import { SHIELD, SHIELD_EDGE, houseColour, shieldMark, stateKey } from "./persons_mark.js";
 
+// The unit figures (look.js) are loaded in the page only: look.js reads the generated art, which
+// the node tests of the modules that import this one do not have.
+let unitIcon = null;
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  import("./look.js").then((m) => (unitIcon = m.unitIcon)).catch(() => {});
+}
+
 /** A House in a list or a line: its shield and `House Arne`, and the state mark when it is
  *  Restless or Disloyal (with the countdown's turns). `house` as the host sends it (`{id, label,
  *  colour, state, turns}`); null: `Crown`. `open`: a click opens the Court at the House. */
@@ -43,7 +50,10 @@ export function previewText(lines) {
 
 /** `Hrolf (level 7 Axeman)` for a person with a unit. */
 function personWithUnit(p, unitName) {
-  const what = p.unit_type !== null && p.unit_type !== undefined ? `${p.level !== null && p.level !== undefined ? `level ${p.level} ` : ""}${unitName(p.unit_type)}` : null;
+  const lvl = p.level !== null && p.level !== undefined ? `level ${p.level}` : null;
+  const type = p.unit_type !== null && p.unit_type !== undefined ? unitName(p.unit_type) : null;
+  // (A hero's unit type is its name: `Donal Lugh (level 1)`.)
+  const what = [lvl, type && type !== p.name ? type : null].filter(Boolean).join(" ") || null;
   return what ? `${p.name} (${what})` : p.name;
 }
 
@@ -72,7 +82,8 @@ export function commanderLine(a, { unitName, change = null, compact = false } = 
       )
     : null;
   if (!c) return h("div.commander-line", { "data-commander": "" }, h("span.dim", "No commander."), pick ? [" ", pick] : null);
-  const face = c.leader !== null && c.leader !== undefined ? leaderPortrait(c.leader, { size: PORTRAIT.small, title: c.name }) : null;
+  // A person with a leader: the portrait; a hero: its unit's figure (principle 9).
+  const face = c.leader !== null && c.leader !== undefined ? leaderPortrait(c.leader, { size: PORTRAIT.small, title: c.name }) : c.unit_type !== null && c.unit_type !== undefined && unitIcon ? h("span.commander-figure", unitIcon(c.unit_type, null)) : null;
   const k = stateKey(c.state);
   return h(
     "div.commander-line",
@@ -94,7 +105,7 @@ export function commanderLine(a, { unitName, change = null, compact = false } = 
   );
 }
 
-/** The unit panel's person line (part F): `Person of note: commander of the 2nd Army. Loyal ●.`
+/** The unit panel's person line (part F): `Person of note: Hrolf, commander of the 2nd Army. Loyal ●.`
  *  (a click opens the Court at the person); null for a unit that is no person. */
 export function personLine(u) {
   const p = u?.person;
@@ -103,7 +114,7 @@ export function personLine(u) {
     "div.person-line",
     { "data-person": p.person },
     h("button.link", { title: "Open the Court at this person", onclick: () => openCourt({ person: p.person }) }, "Person of note"),
-    `: ${p.post}. `,
+    `: ${p.name}, ${p.post}. `,
     stateMark(p.state, p.turns),
   );
 }

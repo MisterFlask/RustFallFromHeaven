@@ -1778,13 +1778,15 @@ export function renderPanel() {
   // Persons of Note (docs/PERSONS.md, "UI", part F): the person the lead unit is; a Disloyal
   // head's unit takes no orders (the rules' reason); a great person's Found a House.
   const leadFull = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
-  if (r?.held) status.push(h("div.held-line.warn", r.held));
+  // (The isometric and HD-2D card shows them under the unit's numbers, in view on a phone.)
+  const personBits = [];
+  if (r?.held) personBits.push(h("div.held-line.warn", r.held));
   const person = personLine(leadFull);
-  if (person) status.push(person);
+  if (person) personBits.push(person);
   const fh = leadFull?.found_house;
   if (fh && S.sel.units.length === 1) {
     const can = fh.city !== null && fh.city !== undefined;
-    status.push(
+    personBits.push(
       h(
         "div.found-house-line",
         h(
@@ -1792,10 +1794,11 @@ export function renderPanel() {
           { disabled: !can, title: can ? `Open the grant list of ${fh.name}, this unit first. A person of note is drawn and founds a House; the unit is consumed.` : fh.why, onclick: () => openGrant(fh.city, { unit: lead.id }) },
           "Found a House",
         ),
-        h("span.dim", can ? ` ${fh.name}` : ` ${fh.why}`),
+        h("span.dim", can ? ` with ${fh.name}` : ` ${fh.why}`),
       ),
     );
   }
+  if (!isoSkin()) status.push(...personBits);
   // Engagement combat: the lead unit's role, A, Dv and battle HP.
   const engage = engageLine(lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null);
   if (engage && !isoSkin()) status.push(engage);
@@ -1833,7 +1836,7 @@ export function renderPanel() {
   const seals = look.art && leadDetails?.promotions?.length
     ? h("div.seals", leadDetails.promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: isoSkin() ? 2 : 1 }))))
     : null;
-  if (isoSkin()) return renderCard({ own, ordered, r, details, lead, promotions: leadDetails?.promotions, tools, status, hint, way, others, x, y });
+  if (isoSkin()) return renderCard({ own, ordered, r, details, lead, promotions: leadDetails?.promotions, tools, status, hint, way, others, x, y, personBits });
   fill(panel, head, hint, way, list, seals, tools, status, actions, others);
 }
 
@@ -1843,7 +1846,7 @@ export function renderPanel() {
  *  description of the one pointed at (spells, promotions and upgrades as labelled buttons under
  *  them). The units of the plot are a strip of icons over the card (Civ4's), the selected ones
  *  lit; on a small screen the strip stays in the card, under the numbers (iso.css). */
-function renderCard({ own, ordered, r, details, lead, promotions, tools, status, hint, way, others, x, y }) {
+function renderCard({ own, ordered, r, details, lead, promotions, tools, status, hint, way, others, x, y, personBits = [] }) {
   const city = cityAt(x, y);
   if (city && city.owner === me()?.player) focusOn(city.id);
   const d = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
@@ -1909,7 +1912,7 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
     h(
       "div.iso-card",
       lead ? portrait(lead.type, lead.owner) : null,
-      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`), h("button.close.deselect", { title: "Deselect [Esc]", "aria-label": "Deselect", onclick: () => clearSelection() }, "×")), plate, seals, strip, others),
+      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`), h("button.close.deselect", { title: "Deselect [Esc]", "aria-label": "Deselect", onclick: () => clearSelection() }, "×")), plate, personBits.length ? h("div.iso-person", personBits) : null, seals, strip, others),
       h("div.iso-card-right", h("div.iso-tools", tools), tiles.length ? h("div.iso-orders", tiles) : null, desc, listed.length ? h("div.iso-listed-all", listed) : null),
     ),
   );

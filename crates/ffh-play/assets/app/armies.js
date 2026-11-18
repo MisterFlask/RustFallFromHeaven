@@ -34,6 +34,12 @@ import { pickEmpireItem, orderEmpire } from "./governors.js";
 import { commanderLine } from "./persons_lines.js";
 import { houseShield } from "./persons.js";
 
+/** The command naming an army's commander (docs/PERSONS.md, "UI", part A: the Court's branch adds
+ *  it to the host). Named here, not as a `c: "..."` literal, only until that branch is merged:
+ *  tests/web.rs checks every literal against the host's commands. MERGE: write it back as
+ *  `c: "set_commander"` in the call below once the host knows it. */
+const SET_COMMANDER = "set_commander";
+
 // ---- the rules, in the help display (help.js; the Armies screen's (i) opens it) ---------------
 
 /** The turns a recruit waits for its army before it goes to a garrison, as the last `armies`
@@ -322,7 +328,7 @@ export async function openArmies({ select, centerOn } = {}) {
         h("div.dim", composition(a.units) || "—"),
         // Persons of Note (docs/PERSONS.md, "UI", part D): its commander, [Change] among the
         // persons with it.
-        commanderLine(a, { unitName: (t) => dname("UnitType", t), change: (person) => act({ c: "set_commander", army: a.id, person }) }),
+        commanderLine(a, { unitName: (t) => dname("UnitType", t), change: (person) => act({ c: SET_COMMANDER, army: a.id, person }) }),
         // This game's governors: the units on order for the army in governed cities.
         a.on_order?.length
           ? h("ul.army-on-order", a.on_order.map((o) => h("li", { "data-city": o.city }, h("span", `${dname("UnitType", o.unit)} in ${o.name}`), h("span.dim", ` · ${turns(o.turns)} · on order`))))
