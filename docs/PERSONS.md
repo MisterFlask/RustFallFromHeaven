@@ -1142,7 +1142,7 @@ left open, or departs from it:
   force (rule 4's lag), what the House would pay (`Pays 12 gold, 8 research.`, the rules'
   `house_tribute_at`), when it would be in force were it set now, its tribute part and the total
   then (`In force in 15 turns. Tribute: -2 · Loyalty: 0`; the rate in force's row `In force.`) and
-  the state mark then; the rate set is marked `now`. One tap sets a rate (no confirmation: it can
+  the state mark then; the rate set is marked `set`. One tap sets a rate (no confirmation: it can
   be set back any turn), and the card is read again with the list kept open: the line says both
   rates, and the parts, total and state stay the rate in force's until the rate set arrives,
   when they are the row's (a test checks they are). The realm's default is a plain selector in

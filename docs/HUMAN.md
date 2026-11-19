@@ -827,7 +827,7 @@ research last turn.`, or while the rate in force moves toward the rate set `Trib
 reaches 30% in 10 turns. Paid last turn: 4 gold, 6 research.`, and `Change`: the list of the rates
 0 to 50%, each a button with `Pays 12 gold, 8 research.`, `In force in 15 turns. Tribute: -2 ·
 Loyalty: 0` (the rate in force's row `In force.`) and the state mark at that rate once in force,
-the rate set marked `now`; a tap sends `house_tribute` and the card is read again with the list
+the rate set marked `set`; a tap sends `house_tribute` and the card is read again with the list
 kept open: docs/PERSONS.md, rule 4, the rate in force moves a step of 10% every 5 turns), the
 levy (`Takes levies. Each levy: -1 (20 turns). Annoyed after 2 levies.` or the rules' reason it
 takes none, amber), its

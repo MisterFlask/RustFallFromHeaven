@@ -270,7 +270,7 @@ const tributeOpen = new Set();
  *  force moves, `Tribute 30%, now 10%: reaches 30% in 10 turns. Paid last turn: ...`) and the list
  *  of rates (0 to 50%), each once in force (rule 4): what the House would pay, when it would be in
  *  force were it set now (`In force in 15 turns.`), its tribute part and its loyalty then; a tap on
- *  a rate sets it (`house_tribute`) and the Court is read again. The rate set is marked (`now`);
+ *  a rate sets it (`house_tribute`) and the Court is read again. The rate set is marked (`set`);
  *  a tap on it does nothing. */
 function tributeBlock(x, reload) {
   const t = x.tribute;
@@ -284,10 +284,10 @@ function tributeBlock(x, reload) {
         type: "button",
         "data-pct": r.pct,
         "aria-pressed": r.current ? "true" : "false",
-        title: r.current ? "The rate set now" : `Set the tribute to ${r.pct}%`,
+        title: r.current ? "The rate set" : `Set the tribute to ${r.pct}%`,
         onclick: () => (r.current ? null : set(r.pct)),
       },
-      h("span.trate-pct", `${r.pct}%`, r.current ? h("span.trate-now", "now") : null),
+      h("span.trate-pct", `${r.pct}%`, r.current ? h("span.trate-now", "set") : null),
       h("span.trate-est", r.estimate),
       h("span.trate-part", h("span.trate-when", r.when), " ", [r.part_text, r.loyalty_text].join(" · ")),
       h("span.trate-state", stateMark(r.state)),
