@@ -19,11 +19,142 @@ decisions and which are proposals still to be confirmed.
 | 4 | foreign persons: side deals with a rival's Houses (Secede, Become your vassal); seeing persons, courting, agents abroad | side deals built (second build, rule 9, `persons/bribes.rs`); the rest not built |
 | 5 | the annals: what each character did in the player's earlier games | not built |
 | second build | Houses as vassal civilizations, rules 1 to 14 below | built (2026-11-18): the rules (ffh-core), the AI (rule 12, `crates/ffh-ai/src/persons.rs`) and the screens (rule 13: the Court, the grant list, the levy, diplomacy, the map's plates) |
+| third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | being built (2026-11-19): part 1 the persons removed (rules 1 to 3, 9); part 2 splits and ultimatums (4 to 6) with courtship, price, knowledge and tribute (7 to 10) |
+
+**"The third build" (2026-11-19, below) is being built: it removes Persons of Note and leaves the
+Houses alone. Where it differs from the second build, it holds; everything below it on persons
+(the cast, commanders, posts, persons' demands) is retired by it.**
 
 "The second build" below is the contract in force, with its "as built" notes; "The first build"
 is what was built before it, in force where the second build does not change it (the cast,
 commanders, demands, the civil war); "UI" is the interface as first built. The sections between
 them ("Rules") are the design the builds came from and describe the stages not built yet.
+
+## The third build (2026-11-19): Houses without Persons of Note
+
+The owner's decisions of 2026-11-19. Persons of Note did no work the Houses did not ("the work is
+all being done by the Great Houses"): they go, and Houses stand alone. The player never founds a
+House: a realm's first grant makes one, and Houses split on their own as they grow. A House that
+becomes Furious no longer counts down: it issues an ultimatum, and its liege chooses between
+meeting it and a civil war ("a player decision to appease a House vs have a civil war"). A rival
+who wants to buy a House courts it first with gifts, in the open ("we want to force telegraphing
+this"). Knowledge is shared within a realm, and tribute is gold. **This section is the contract
+for the third build; where it differs from the second build, it holds.**
+
+1. **No persons.** The cast and every person go: posts, commanders (an army has no commander: no
+   withheld attack, no commander's secession, no sworn units, no commander's claims), heroes and
+   veterans as persons, the veteran bar (`PERSON_VETERAN_LEVEL`), great persons founding Houses,
+   persons without a post, rivals, persons' records. Heroes and great people are as in FFH2. A
+   House carries what its head carried: its leader (the House player's leader: portrait, name,
+   title, and the ambition its first trait gives), its request (rule 2), its record. The size part
+   of loyalty (second build rule 14 (e), `Holds N cities, more than T`) goes, with its defines.
+2. **Requests and ultimatums.** A House's slow wish, one at a time with a term (the second build's
+   demands: met `+3 (60 turns)`, lapsed `-3 (60 turns)`), is a **request** in every text the
+   player reads; an **ultimatum** is rule 5's, and each is a keyword. Request kinds: a city
+   granted, a city taken, war with a civilization, a state religion adopted, a state religion
+   spread (a post and a House of one's own go with the persons).
+3. **The first grant makes a House.** A realm without a House founds one by granting a Crown city
+   (never the capital; not under direct rule): a new player, the liege's vassal, born with the
+   city (`world::birth`, as a founding was), named `House <name>`, its leader drawn with the game
+   RNG from (a) the minor leaders of the liege's civilization that lead no living player, else
+   (b) the minor leaders of other civilizations of the liege's alignment that lead no living
+   player; when none is free, no House can be founded and the grant list says so (`No leader is
+   free to found a House.`). A realm with a House grants to a House it picks (the city moves to
+   that House's player). The garrison, the liege's army units and the city itself as in the
+   second build's rule 3. The grant list shows a founding as `A new House: its leader is drawn
+   from the Bannor's minor leaders.`
+4. **Houses split.** In its liege's turn processing, each House holding 6 or more great cities
+   (settlements left out; the define `PERSON_HOUSE_SPLIT_CITIES`) splits with a chance of 5%
+   (`PERSON_HOUSE_SPLIT_PERCENT`: one draw `soren_rand_num(100) < 5` per such House a turn, in id
+   order). The parent keeps its capital and the half of its cities nearest it (half rounded up,
+   by plot distance from its capital, ties to the lower city id); the others go to a **cadet
+   House**: a new player born with them as rule 3's founding, of the parent's civilization, its
+   leader drawn as in rule 3, the liege's vassal. Units go with their cities as in a grant; units
+   elsewhere stay the parent's. **The cadet inherits nothing:** no modifiers, no request, no
+   contract, no memory, no ultimatum count; its tribute is its realm's default, in force. When no
+   leader is free, the House does not split that turn. The liege is told: `House Aldric splits:
+   House Bertram, led by Tovin Cinderwright, takes Ventry, Corona and Astrum.` The House card says
+   `Holds 7 cities: 5% a turn to split.`; a grant that brings a House to 6 says `House Aldric will
+   hold 6 cities: 5% a turn to split.`
+5. **Ultimatums replace the countdown.** In its liege's turn processing, a House that is Furious
+   and has no contract running (rule 6) issues an ultimatum: one demand, which its liege answers
+   at once, through its controller (the AI) or as a blocking decision (a human: the decision idiom
+   of an offered deal, `Decision`). Accepting does what the demand says and starts a contract
+   (rule 6). Refusing is breaking away now (the second build's rule 7, its hold contest included).
+   The countdown, its cancellation and its texts go. The demand comes from the House's grievances
+   and is only one its liege can meet this turn: the first of these that applies.
+   - (a) **Its refused request again**, while a `Request refused` modifier runs and the request
+     can be met now: the city granted (a Crown city its liege can grant), war on that civilization
+     (as (d)), that state religion adopted (its liege can adopt it now). Bound: for war, as (d); for
+     a religion, no change of state religion.
+   - (b) **Lower tribute**, when its rate set is 20% or more: the rate set lowered to the highest
+     rate whose loyalty once in force is -4 or more, else 0%. Bound: no rate set above it.
+   - (c) **Peace** with a civilization its liege is at war with that the House remembers taking
+     its cities (its own `MEMORY_TOOK_CITY` toward it above 0), when that civilization would accept
+     peace now (its controller is asked). Bound: no war on it.
+   - (d) **War** on a civilization the House remembers a wrong from (its own `MEMORY_DECLARED_WAR`
+     or `MEMORY_TOOK_CITY` toward it above 0), at peace with its liege, outside its realm, that its
+     liege can declare war on now. Bound: no peace with it.
+   - (e) **A resource** its liege has a spare source of and the House has none of, given for the
+     contract's turns. Bound: the trade is not cancelled.
+   - (f) **Gold per turn**, always possible: per House city, a share of the world unit (rule 9)
+     set so it is about 2 gold a city a turn around turn 150, rising by half of that for each
+     earlier ultimatum of this House; at least 1 a city; never more than half its liege's total
+     commerce a turn. Paid each turn of the contract from the liege's treasury to the House's, as
+     an expense in the liege's budget (an empty treasury has the usual consequences). Bound: it
+     runs its turns.
+
+   No levy demand: a House under contract is at least Annoyed, which takes no levy already, and a
+   levy's grievance runs 20 turns, as a contract does. The decision says what accepting binds
+   (`For 20 turns: no tribute above 10% for House Aldric.`) and what refusing does (the
+   break-away's outcome, the held cities included).
+6. **The contract.** An accepted ultimatum binds both sides for 20 turns
+   (`PERSON_ULTIMATUM_TURNS`): its liege cannot do what would void it (the act is refused with the
+   reason: `Your contract with House Aldric forbids it until turn 160.`), and the House's loyalty
+   counts as at least Annoyed (-5) for every rule (its state, its price, its levy, its next
+   ultimatum). The House card shows `Contract until turn 160: no tribute above 10%.` When it ends
+   the House's loyalty is what its parts make it; Furious again, it issues a new ultimatum.
+7. **Courtship.** A civilization that has met a House (not of its liege's team, not a House
+   itself) courts it with gifts in the trade table: gold (a lump sum) or a resource (a trade it
+   keeps giving), nothing asked back. Its courtship's value: the gold it gave that House in the
+   last 20 turns, plus a third of the requirement for each resource it gives it now. The
+   requirement: 3 turns of the world unit (rule 9). The courtship **opens** the turn its value
+   reaches the requirement and stays open while the value does. A House accepts an offer (Secede,
+   Become your vassal) only from a civilization whose courtship has been open 10 turns or more
+   (`PERSON_COURTSHIP_TURNS`), besides the second build's conditions (Cautious or worse, the price
+   covered). When a courtship opens, its liege is told (`The Bannor court House Aldric: offers
+   possible from turn 140.`) and remembers it (`MEMORY_COURTED_HOUSE`, "courted our House": -200
+   on FfH's scale, the AI's relation -1, fading at 1 in 50; the House, given gifts, is not
+   angered). The House card and the diplomacy list show `Courted by the Bannor (gifts: 120 gold,
+   Wine). Offers possible from turn 140.`; the courter's trade table shows `Courting House
+   Aldric: 140 of 180 given (Wine counts 60).`
+8. **The price scales with the economy.** A House's price is `(loyalty + 6) x P x its cities`
+   gold, P a share of the world unit (rule 9) set so that P is 25 around turn 150 (the second
+   build's flat 25), at least one step (`P x its cities`).
+9. **The world unit:** the mean total commerce a turn (every commerce type) of the living
+   civilizations that are not Houses, barbarians, minor civilizations or crusade Hosts
+   (`Game::world_commerce_unit`, at least 1). It scales what passes in gold between a realm and
+   the world: the courtship, the price, an ultimatum's gold. Total commerce, not gold: the gold
+   slider is a choice, and a civilization at full research shows little gold however rich.
+10. **Knowledge is shared in a realm; tribute is gold.** A tech one team of a realm (a liege's
+    team and its Houses' teams) gains by any means, every other team of the realm gains too (not
+    as its first discoverer); a team that joins a realm and the realm share what they know at
+    once. Tribute takes gold only: the second build's research part goes (once knowledge is shared
+    it counted a House's beakers twice). Techs, like war, are the liege's alone to trade: a House
+    trades none.
+11. **AI.** As liege: it accepts an ultimatum unless every city of the House would be held
+    (refusing then takes nothing) or the demand is war on a civilization stronger than it
+    (power); its grants of the Crown's cities over the limit go to the House whose capital is
+    nearest (the first one founds a House); its tribute rule stays (the second build's rule 12);
+    a House of its that a rival courts and that is Cautious or worse has an idle army within reach
+    march to hold its most valuable city (the second build's march, its trigger moved). As buyer:
+    it courts with gold the House it means to buy (the second build's choice of House), then
+    offers when the courtship allows.
+12. **What stays:** every rule of the second build not named here (a House is a player, every
+    vassal is a House, the tribute's lag and the realm's default, the attitude scale with Furious
+    now the moment of an ultimatum, the levy, breaking away and its hold contest, freeing, side
+    deals with rule 7's courtship, direct rule, the Crown's limit and settlements of rule 14 (a) to
+    (d), the memory of wrongs). The numbers are first guesses.
 
 ## The second build (2026-11-18): Houses as vassal civilizations
 
