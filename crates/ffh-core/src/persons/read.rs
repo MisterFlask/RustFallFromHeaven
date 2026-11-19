@@ -12,7 +12,8 @@
 //! - The Crown's limit (rule 14): [`Game::player_crown_limit`], [`Game::player_crown_cities`],
 //!   [`Game::player_crown_over`], [`Game::player_crown_over_cost_times100`] (`crown.rs`); a House's
 //!   size part [`Game::house_size_part`].
-//! - Tribute: [`Game::house_tribute_at`], [`Game::house_loyalty_at_tribute`] (`vassals.rs`).
+//! - Tribute: [`Game::house_tribute_at`], [`Game::house_loyalty_at_tribute`],
+//!   [`Game::house_tribute_turns`], [`Game::house_tribute_in_force_after`] (`vassals.rs`).
 //! - Levy: [`Game::house_levy_refusal`], [`Game::city_levy_refusal`], [`Game::player_levy_cities`].
 //! - Side deals: [`Game::house_bribe_price`], [`Game::house_bribe_refusal`] (`bribes.rs`).
 //! - Previews: [`Game::grant_candidates`], [`Game::persons_preview`] (`preview.rs`).
@@ -95,8 +96,12 @@ pub struct PersonView {
 /// A House's tribute, for its card and the selector.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TributeView {
-    /// The tribute, percent.
+    /// The rate its liege set, percent.
     pub pct: i32,
+    /// The rate in force, percent (what it pays and its loyalty part).
+    pub now: i32,
+    /// The turns until the rate set is in force (0: it is).
+    pub turns: i32,
     /// What it gave at its last payment (the turn: -1, none yet).
     pub last_gold: i32,
     pub last_research: i32,
@@ -105,20 +110,21 @@ pub struct TributeView {
     pub at: Vec<TributeRate>,
 }
 
-/// One rate of a House's tribute selector ([`TributeView::at`]): what setting it now would do.
+/// One rate of a House's tribute selector ([`TributeView::at`]): what setting it now would do,
+/// once it is in force.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TributeRate {
     /// The rate, percent.
     pub pct: i32,
-    /// The gold and research it would pay this turn.
+    /// The gold and research it pays at the House's commerce now.
     pub gold: i32,
     pub research: i32,
     /// The standing part `Tribute N%` at it ([`tribute_part`]).
     pub part: i32,
-    /// The `Tribute raised` modifier setting it adds ([`super::tribute_raise`]: a raise, else 0;
-    /// for `TRIBUTE_RAISED.1` turns).
-    pub raised: i32,
-    /// The House's loyalty and state after setting it (the raise counted).
+    /// The turns until it would be in force were it set now ([`Game::house_tribute_turns`]; 0: it
+    /// is the rate in force).
+    pub turns: i32,
+    /// The House's loyalty and state once it is in force ([`Game::house_loyalty_at_tribute`]).
     pub loyalty: i32,
     pub state: LoyaltyState,
 }
@@ -232,7 +238,7 @@ pub struct GrantMaintenance {
 
 impl Game {
     /// The parts of a holder's loyalty: the running modifiers, then the standing parts (the
-    /// state religion opposed; a House's tribute).
+    /// state religion opposed; a House's tribute in force).
     pub(crate) fn holder_parts(&self, hd: Holder) -> Vec<LoyaltyPart> {
         let turn = self.game_turn();
         let mut out: Vec<LoyaltyPart> = self
@@ -247,7 +253,7 @@ impl Game {
             out.push(LoyaltyPart { label: "State religion opposed".into(), amount: religion, turns_left: None });
         }
         if let Holder::House(h) = hd {
-            let pct = self.houses[h].tribute;
+            let pct = self.houses[h].tribute_now;
             out.push(LoyaltyPart { label: format!("Tribute {pct}%"), amount: tribute_part(pct), turns_left: None });
             let size = self.house_size_part(h);
             if size != 0 {
@@ -331,11 +337,18 @@ impl Game {
             .map(|pct| {
                 let (gold, research) = self.house_tribute_at(h, pct);
                 let loyalty = self.house_loyalty_at_tribute(h, pct);
-                let raised = super::tribute_raise(house.tribute, pct);
-                TributeRate { pct, gold, research, part: tribute_part(pct), raised, loyalty, state: LoyaltyState::of(loyalty) }
+                TributeRate { pct, gold, research, part: tribute_part(pct), turns: self.house_tribute_turns(h, pct), loyalty, state: LoyaltyState::of(loyalty) }
             })
             .collect();
-        TributeView { pct: house.tribute, last_gold: house.last_gold, last_research: house.last_research, last_turn: house.last_turn, at }
+        TributeView {
+            pct: house.tribute,
+            now: house.tribute_now,
+            turns: self.house_tribute_turns(h, house.tribute),
+            last_gold: house.last_gold,
+            last_research: house.last_research,
+            last_turn: house.last_turn,
+            at,
+        }
     }
 
     /// House `h`'s view (`None` when it does not stand).

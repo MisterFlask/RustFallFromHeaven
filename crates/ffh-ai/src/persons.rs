@@ -4,12 +4,13 @@
 //! offers are the human's.
 //!
 //! Once a turn ([`turn`], after the empire's civics and religion and the turn's diplomacy):
-//! - **Tribute** ([`tribute_for`]): each House at the highest rate that keeps it Pleased or better
-//!   (loyalty 1 or more), the raise's `Tribute raised` modifier counted: raised one step at a time
-//!   while the step keeps it Pleased; cut at once, as far as needed, whenever it is below Pleased
-//!   (a cut is free, and stops a Furious House's countdown when it lifts it above Furious). So the
-//!   AI's Houses are not for sale (a House Cautious or worse takes a price) and never count down
-//!   while the tribute could stop it. Set only when it changes.
+//! - **Tribute** ([`tribute_for`]): each House's rate set to the highest whose loyalty once in
+//!   force is Pleased with a point to spare (2 or more, [`TRIBUTE_KEEP_LOYALTY`]); lowered as soon
+//!   as the projection at the rate set falls below that. The rate in force lags the rate set (rule
+//!   4: a step every 5 turns), so a cut no longer helps at once: the point to spare is what lets
+//!   the House take a grievance while a cut arrives. So the AI's Houses are not for sale (a House
+//!   Cautious or worse takes a price) and their countdowns are stopped where a cut arrives in
+//!   time. Set only when it changes.
 //! - **Grants** ([`choose_grant`]): one a turn while the Crown is over its limit (rule 14: 3 cities,
 //!   the capital alone for the Kuriotates; settlements never count), the least populous first,
 //!   never the capital nor the best production city ([`kept_city`]). The candidate by, in
@@ -31,9 +32,9 @@
 //! Elsewhere: the levy ([`levy_city`]: `armies::requisition_cities` adds the cities of a House
 //! that stays Pleased or better after the levy's `Levied -1`); a direct-rule civic is never
 //! adopted while a House stands ([`civic_barred`], `empire.rs`); an idle army goes to hold the
-//! most valuable city it can hold of a House counting down that no tribute cut can stop
-//! ([`disloyal_house_post`], `military.rs`: a city where the liege's army units outnumber the
-//! House's goes back to the liege when it breaks away); a Furious commander's army goes to the
+//! most valuable city it can hold of a House counting down that no tribute cut can stop in time
+//! ([`house_beyond_tribute`]; [`disloyal_house_post`], `military.rs`: a city where the liege's
+//! army units outnumber the House's goes back to the liege when it breaks away); a Furious commander's army goes to the
 //! city of ours with the largest garrison ([`disloyal_commander_haven`]); a demanded war weighs on the war planning ([`war_demanded`]); a
 //! House's own turn skips what a vassal cannot do ([`is_house`], `lib.rs`). A House answers offers
 //! by the rules' price (`diplomacy::judge_offer`). The AI never frees a House.
@@ -50,6 +51,10 @@ use crate::view::View;
 
 /// The turns before the AI offers the same House again.
 pub const OFFER_PERIOD: i32 = 10;
+
+/// The loyalty the AI liege keeps a House at once its tribute is in force: Pleased with a point
+/// to spare (the rate in force lags a cut, rule 4).
+pub const TRIBUTE_KEEP_LOYALTY: i32 = PLEASED_AT + 1;
 
 /// The persons' turn of AI player `p`: its Houses' tribute, one grant, one offer to an enemy's
 /// House.
@@ -101,24 +106,13 @@ fn houses_of(g: &Game, p: PlayerId) -> Vec<HouseId> {
 // Tribute
 // -------------------------------------------------------------------------------------------
 
-/// The tribute (percent) the AI liege sets for House `h` this turn: the highest rate that keeps it
-/// Pleased or better ([`PLEASED_AT`]), the raise's modifier counted
-/// (`Game::house_loyalty_at_tribute`). Below Pleased now: cut at once to the highest lower rate
-/// at which it is Pleased, else to 0 (a cut adds no modifier). Pleased or better: one step up when
-/// the step keeps it Pleased (a raise of one step costs the step's standing part and
-/// `Tribute raised -1` for 30 turns), else unchanged.
+/// The tribute (percent) the AI liege sets for House `h`: the highest rate whose loyalty once in
+/// force (`Game::house_loyalty_at_tribute`, the steady state) is [`TRIBUTE_KEEP_LOYALTY`] or more,
+/// else 0. The rate in force follows it a step every 5 turns (rule 4): a higher one is collected
+/// step by step, and a lower one is set as soon as the projection at the rate set falls below
+/// the margin, so the cut starts moving at once.
 pub fn tribute_for(g: &Game, h: HouseId) -> i32 {
-    let now = g.houses[h].tribute;
-    let pleased = |pct: i32| g.house_loyalty_at_tribute(h, pct) >= PLEASED_AT;
-    if !pleased(now) {
-        return (0..now).step_by(TRIBUTE_STEP as usize).rev().find(|&pct| pleased(pct)).unwrap_or(0);
-    }
-    let up = now + TRIBUTE_STEP;
-    if up <= TRIBUTE_MAX && pleased(up) {
-        up
-    } else {
-        now
-    }
+    (0..=TRIBUTE_MAX / TRIBUTE_STEP).rev().map(|k| k * TRIBUTE_STEP).find(|&pct| g.house_loyalty_at_tribute(h, pct) >= TRIBUTE_KEEP_LOYALTY).unwrap_or(0)
 }
 
 /// `p` sets each House's tribute to [`tribute_for`], where it changes.
@@ -126,7 +120,7 @@ fn tribute(g: &mut Game, p: PlayerId) {
     for h in houses_of(g, p) {
         let pct = tribute_for(g, h);
         if g.houses[h].tribute != pct && g.player_set_house_tribute(p, h, pct).is_ok() {
-            crate::trace!(g, p, "persons: {} pays {pct}% ({})", g.house_label(h), g.house_state(h).name());
+            crate::trace!(g, p, "persons: {} set to {pct}%, {}% in force ({})", g.house_label(h), g.houses[h].tribute_now, g.house_state(h).name());
         }
     }
 }
@@ -378,8 +372,20 @@ pub(crate) fn civic_barred(g: &Game, p: PlayerId, c: CivicType) -> bool {
 // Armies
 // -------------------------------------------------------------------------------------------
 
+/// Whether House `h` breaks away whatever its tribute does: Furious, and still Furious when its
+/// countdown ends (its full length when it has not started) at the rate in force then were its
+/// rate set to 0% now (rule 4: the rate in force lags a cut, a step every 5 turns).
+pub fn house_beyond_tribute(g: &Game, h: HouseId) -> bool {
+    if g.house_state(h) != LoyaltyState::Furious {
+        return false;
+    }
+    let turns = g.houses[h].standing.countdown.map_or(g.d.defines.person_disloyal_turns, |end| (end - g.game_turn()).max(0));
+    let rate = g.house_tribute_in_force_after(h, 0, turns);
+    g.house_loyalty_at_tribute(h, rate) <= FURIOUS_AT
+}
+
 /// Where an idle army stack (`grp`, led by `u`) of `v.p` goes against a break-away that the
-/// tribute cannot stop: a House of ours Furious even at a tribute of 0% breaks away at its
+/// tribute cannot stop in time ([`house_beyond_tribute`]): such a House breaks away at its
 /// countdown's end, and takes every city where our army units do not outnumber its own land
 /// combat units (`Game::city_hold`, rule 7). The stack holds the House's most valuable city it can
 /// hold (the most populous first, ties: the older): one not held now where its army units, with
@@ -389,7 +395,7 @@ pub(crate) fn disloyal_house_post(g: &Game, v: &mut View, grp: GroupId, u: UnitI
     let p = v.p;
     let mut cities: Vec<CityId> = Vec::new();
     for &h in &g.players[p].houses {
-        if g.houses.contains(h) && g.house_loyalty_at_tribute(h, 0) <= FURIOUS_AT {
+        if g.houses.contains(h) && house_beyond_tribute(g, h) {
             cities.extend(g.house_cities(h));
         }
     }
@@ -547,64 +553,122 @@ mod tests {
 
     // ---- Tribute ----
 
-    /// The tribute keeps a House Pleased or better, the raise counted: it rises one step a turn
-    /// while the step (its standing part and `Tribute raised -1`) keeps the House Pleased, and
-    /// stops there; the raises stack.
-    #[test]
-    fn the_tribute_rises_a_step_at_a_time_while_the_house_stays_pleased() {
-        let (mut g, c) = world(&SPOTS[..2]);
-        let (_, h) = house(&mut g, c[1]);
-        g.houses[h].tribute = 10;
-        set_loyalty(&mut g, h, 5);
-        // 20%: 5, -1 for the part, -1 for the raise: 3.
-        assert_eq!(tribute_for(&g, h), 20);
-        super::tribute(&mut g, P0);
-        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (20, 3));
-        // 30%: 3 - 1 - 1 = 1, still Pleased.
-        super::tribute(&mut g, P0);
-        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (30, 1));
-        assert_eq!(g.houses[h].standing.mods.iter().filter(|m| m.cause == LoyaltyCause::TributeRaised).count(), 2, "two raises, two modifiers");
-        // 40% would be -1: it stays.
-        for _ in 0..3 {
-            super::tribute(&mut g, P0);
-            assert_eq!((g.houses[h].tribute, g.house_state(h)), (30, LoyaltyState::Pleased));
-        }
+    /// House `h`'s rate set and rate in force.
+    fn rates(g: &Game, h: HouseId) -> (i32, i32) {
+        (g.houses[h].tribute, g.houses[h].tribute_now)
     }
 
-    /// Below Pleased the tribute is cut at once, as far as needed (to 0 when no rate keeps the
-    /// House Pleased); a cut adds no modifier. A Furious House's countdown stops when the cut
-    /// lifts it above Furious.
-    #[test]
-    fn the_tribute_is_cut_at_once_below_pleased() {
-        let (mut g, c) = world(&SPOTS[..2]);
-        let (_, h) = house(&mut g, c[1]);
-        // At 30% with loyalty 0: 20% gives 1.
-        g.houses[h].tribute = 30;
-        set_loyalty(&mut g, h, 0);
-        super::tribute(&mut g, P0);
-        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (20, 1));
-        // At 30% with loyalty -2: no rate above 0% is Pleased (0% gives +1).
-        g.houses[h].tribute = 30;
-        set_loyalty(&mut g, h, -2);
-        super::tribute(&mut g, P0);
-        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (0, 1));
-        assert!(g.houses[h].standing.mods.iter().all(|m| m.cause != LoyaltyCause::TributeRaised), "a cut adds nothing");
-        // At 0% and below Pleased: it stays at 0%.
-        set_loyalty(&mut g, h, -1);
-        super::tribute(&mut g, P0);
-        assert_eq!(g.houses[h].tribute, 0);
-        // A Furious House at 20% (-6) counting down: cut to 0% (-4), its countdown stops.
-        g.houses[h].tribute = 20;
-        set_loyalty(&mut g, h, -6);
+    /// House `h`'s rate set and in force, at rest at `pct`.
+    fn set_rate(g: &mut Game, h: HouseId, pct: i32) {
+        g.houses[h].tribute = pct;
+        g.houses[h].tribute_now = pct;
+    }
+
+    /// Person `x` makes no demand for the test's turns.
+    fn quiet(g: &mut Game, x: PersonId) {
+        g.persons[x].demand = None;
+        g.persons[x].demand_rest_until = g.game_turn() + 1000;
+    }
+
+    /// The next game turn: player 0 sets its Houses' tribute, then its persons turn (its Houses
+    /// pay, their rates in force step).
+    fn next_turn(g: &mut Game) {
         let t = g.game_turn();
         g.set_game_turn(t + 1);
+        super::tribute(g, P0);
         g.player_persons_turn(P0);
-        assert!(g.houses[h].standing.countdown.is_some(), "Furious: the countdown runs");
+    }
+
+    /// The rate set is the highest whose loyalty once in force keeps the House Pleased with a point
+    /// to spare (2 or more); the rate in force climbs to it a step every 5 turns, and the House
+    /// ends Pleased with the point to spare.
+    #[test]
+    fn the_tribute_set_keeps_a_point_to_spare() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        let (x, h) = house(&mut g, c[1]);
+        quiet(&mut g, x);
+        set_rate(&mut g, h, 10);
+        set_loyalty(&mut g, h, 5);
+        // Once in force: 40% is 5 - 3 = 2 (a point to spare), 50% is 1 (none).
+        assert_eq!((g.house_loyalty_at_tribute(h, 40), g.house_loyalty_at_tribute(h, 50)), (2, 1));
+        assert_eq!(tribute_for(&g, h), 40);
         super::tribute(&mut g, P0);
-        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (0, -4));
-        g.set_game_turn(t + 2);
-        g.player_persons_turn(P0);
-        assert!(g.houses[h].standing.countdown.is_none(), "the cut stopped the countdown");
+        assert_eq!(rates(&g, h), (40, 10), "set at once, in force step by step");
+        assert_eq!(g.house_loyalty(h), 5, "the loyalty follows the rate in force");
+        assert_eq!(g.house_tribute_turns(h, 40), 15);
+        let mut seen = Vec::new();
+        for _ in 0..15 {
+            next_turn(&mut g);
+            assert_eq!(g.houses[h].tribute, 40, "the rate set stays");
+            seen.push(g.houses[h].tribute_now);
+        }
+        assert_eq!(seen, [10, 10, 10, 20, 20, 20, 20, 20, 30, 30, 30, 30, 30, 40, 40], "a step every 5 turns");
+        assert_eq!((g.house_loyalty(h), g.house_state(h)), (2, LoyaltyState::Pleased));
+    }
+
+    /// The rate set is lowered as soon as the projection at it falls below the margin, as far as
+    /// needed (to 0% when no rate keeps it); the rate in force follows a step every 5 turns. A
+    /// Furious House's countdown stops once a step lifts it above Furious, when that comes in time.
+    #[test]
+    fn the_tribute_set_is_lowered_when_the_projection_falls() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        let (x, h) = house(&mut g, c[1]);
+        quiet(&mut g, x);
+        set_rate(&mut g, h, 40);
+        set_loyalty(&mut g, h, 2);
+        super::tribute(&mut g, P0);
+        assert_eq!(rates(&g, h), (40, 40), "kept: 2 once in force");
+        // A grievance of 3: 40% projects -1, 10% projects 2.
+        set_loyalty(&mut g, h, -1);
+        assert_eq!(tribute_for(&g, h), 10);
+        super::tribute(&mut g, P0);
+        assert_eq!(rates(&g, h), (10, 40), "lowered at once; the rate in force lags");
+        assert_eq!(g.house_tribute_turns(h, 10), 15);
+        // No rate keeps the margin (0% projects 1): 0%.
+        set_loyalty(&mut g, h, -3);
+        assert_eq!(tribute_for(&g, h), 0);
+        super::tribute(&mut g, P0);
+        assert_eq!(rates(&g, h), (0, 40));
+
+        // A Furious House at 20% (-6): its countdown starts, the rate set goes to 0%; the first
+        // step (10%, -5) comes in 5 turns, within the countdown's 10, and stops it.
+        set_rate(&mut g, h, 20);
+        set_loyalty(&mut g, h, -6);
+        assert!(!house_beyond_tribute(&g, h), "a cut arrives in time");
+        next_turn(&mut g);
+        assert!(g.houses[h].standing.countdown.is_some(), "Furious: the countdown runs");
+        assert_eq!(rates(&g, h), (0, 20));
+        for _ in 0..4 {
+            next_turn(&mut g);
+        }
+        assert_eq!((rates(&g, h), g.house_loyalty(h)), ((0, 10), -5));
+        assert!(g.houses[h].standing.countdown.is_some(), "told at the next states");
+        next_turn(&mut g);
+        assert!(g.houses[h].standing.countdown.is_none(), "the step stopped the countdown");
+    }
+
+    /// A House breaks away whatever the tribute does when it is Furious and still Furious at the
+    /// rate in force when its countdown ends, its rate set to 0% now.
+    #[test]
+    fn a_house_beyond_the_tribute_is_one_no_cut_reaches_in_time() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        let (x, h) = house(&mut g, c[1]);
+        quiet(&mut g, x);
+        // At 20% and -8: -6 at 0%, Furious even then.
+        set_rate(&mut g, h, 20);
+        set_loyalty(&mut g, h, -8);
+        assert!(house_beyond_tribute(&g, h));
+        // At 20% and -7, 10 turns left: 0% in force by then (-5).
+        set_loyalty(&mut g, h, -7);
+        let t = g.game_turn();
+        g.houses[h].standing.countdown = Some(t + 10);
+        assert!(!house_beyond_tribute(&g, h));
+        // 3 turns left: no step before it ends (the first is 5 turns away).
+        g.houses[h].standing.countdown = Some(t + 3);
+        assert!(house_beyond_tribute(&g, h));
+        // Not Furious: no.
+        set_loyalty(&mut g, h, -5);
+        assert!(!house_beyond_tribute(&g, h));
     }
 
     // ---- The levy ----

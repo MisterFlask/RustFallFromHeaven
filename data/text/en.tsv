@@ -14976,7 +14976,7 @@ TXT_KEY_KEYWORD_HOUSE_REMINDER	A vassal civilization led by a person of its lieg
 TXT_KEY_KEYWORD_CROWN	Crown
 TXT_KEY_KEYWORD_CROWN_REMINDER	The cities a civilization holds itself; the capital is always the Crown's. A city of the Crown can be granted to a House, or to a person of note or a great person who founds one. Under a governing civic, the Crown's cities beyond its limit (the capital first, settlements not counted) pay triple city-count maintenance.
 TXT_KEY_KEYWORD_TRIBUTE	Tribute
-TXT_KEY_KEYWORD_TRIBUTE_REMINDER	Each turn a House pays its liege a share of its cities' gold and research, from 0 to 50%: the gold from its treasury, the research added to the liege's. A part of the House's loyalty: +1 at 0%, 1 less for each 10% more. A raise also costs -1 for each 10% raised, for 30 turns; a cut costs nothing.
+TXT_KEY_KEYWORD_TRIBUTE_REMINDER	Each turn a House pays its liege a share of its cities' gold and research, from 0 to 50%: the gold from its treasury, the research added to the liege's. A part of the House's loyalty: +1 at 0%, 1 less for each 10% more. The rate in force moves one step of 10% toward the rate set every 5 turns; the payment and the loyalty follow the rate in force.
 TXT_KEY_KEYWORD_LEVY	Levy
 TXT_KEY_KEYWORD_LEVY_REMINDER	An army's requisition in a city of its owner's House: the city trains a unit for the army, the liege's unit. Each levy placed costs the House -1 loyalty for 20 turns. A House Annoyed or Furious takes no levy.
 TXT_KEY_KEYWORD_SWORN	Sworn

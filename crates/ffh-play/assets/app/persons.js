@@ -109,7 +109,7 @@ addHelp({
     h("h4", "Tribute and levies"),
     h(
       "ul",
-      h("li", "Each House pays a tribute of its gold and research, 0 to 50%; the higher it is, the lower its loyalty. A raise also costs -1 for each 10% raised, for 30 turns; a cut costs nothing. Choose it on the House's card: the list shows what each rate pays and does to its loyalty."),
+      h("li", "Each House pays a tribute of its gold and research, 0 to 50%; the higher it is, the lower its loyalty. The rate in force moves one step of 10% toward the rate you set every 5 turns, up or down, and the payment and the loyalty follow the rate in force. Set it on the House's card: the list shows what each rate pays and does to its loyalty once in force, and when."),
       h("li", "Your armies requisition in your Houses' cities too (the Armies screen): each levy costs the House loyalty for a while. An Annoyed or Furious House takes no levy."),
     ),
     h("h4", "Loyalty"),
@@ -266,11 +266,12 @@ function personCard(p, m) {
  *  again after a change. */
 const tributeOpen = new Set();
 
-/** A House's tribute: its line (`Tribute 20%: 12 gold, 8 research last turn.`) and the list of
- *  rates (0 to 50%), each with what the House would pay this turn, its tribute part, the raise's
- *  modifier for a higher rate (`Raised: -2 (30 turns)`) and its loyalty after (rule 4); a tap on
- *  a rate sets it (`house_tribute`) and the Court is read again. The current rate is marked
- *  (`now`); a tap on it does nothing. */
+/** A House's tribute: its line (`Tribute 20%: 12 gold, 8 research last turn.`; while the rate in
+ *  force moves, `Tribute 30%, now 10%: reaches 30% in 10 turns. Paid last turn: ...`) and the list
+ *  of rates (0 to 50%), each once in force (rule 4): what the House would pay, when it would be in
+ *  force were it set now (`In force in 15 turns.`), its tribute part and its loyalty then; a tap on
+ *  a rate sets it (`house_tribute`) and the Court is read again. The rate set is marked (`now`);
+ *  a tap on it does nothing. */
 function tributeBlock(x, reload) {
   const t = x.tribute;
   const set = async (pct) => {
@@ -283,12 +284,12 @@ function tributeBlock(x, reload) {
         type: "button",
         "data-pct": r.pct,
         "aria-pressed": r.current ? "true" : "false",
-        title: r.current ? "The House's tribute now" : `Set the tribute to ${r.pct}%`,
+        title: r.current ? "The rate set now" : `Set the tribute to ${r.pct}%`,
         onclick: () => (r.current ? null : set(r.pct)),
       },
       h("span.trate-pct", `${r.pct}%`, r.current ? h("span.trate-now", "now") : null),
       h("span.trate-est", r.estimate),
-      h("span.trate-part", [r.part_text, r.raised_text, r.loyalty_text].filter(Boolean).join(" · ")),
+      h("span.trate-part", h("span.trate-when", r.when), " ", [r.part_text, r.loyalty_text].join(" · ")),
       h("span.trate-state", stateMark(r.state)),
     ),
   );
@@ -296,7 +297,7 @@ function tributeBlock(x, reload) {
     "details.ptribute",
     { open: tributeOpen.has(x.id), ontoggle: (ev) => (ev.target.open ? tributeOpen.add(x.id) : tributeOpen.delete(x.id)) },
     h("summary", h("span.ptribute-line", t.line), h("span.ptribute-change", "Change")),
-    h("div.trates-head.dim", "At each rate, this turn:"),
+    h("div.trates-head.dim", "At each rate, once in force:"),
     h("div.trates", { role: "group", "aria-label": `${x.label}: tribute` }, rows),
   );
   return box;

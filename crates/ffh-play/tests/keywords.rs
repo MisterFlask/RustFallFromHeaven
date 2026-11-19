@@ -23,7 +23,7 @@ const FRAGMENTS: &[(&str, &[&str])] = &[
     // states are the attitude words, no keywords).
     ("KEYWORD_HOUSE", &["a vassal civilization led by", "its cities its own", "a house that breaks away declares war", "every vassal is a house"]),
     ("KEYWORD_CROWN", &["the cities a civilization holds itself", "always the crown's", "or to a person of note or a great person who founds one", "pay triple city-count maintenance"]),
-    ("KEYWORD_TRIBUTE", &["a share of its cities' gold and research", "the research added to the liege's", "1 less for each 10% more"]),
+    ("KEYWORD_TRIBUTE", &["a share of its cities' gold and research", "the research added to the liege's", "1 less for each 10% more", "toward the rate set every", "follow the rate in force"]),
     ("KEYWORD_LEVY", &["an army's requisition in a city of its owner's house", "costs the house -1 loyalty", "annoyed or furious takes no levy"]),
     ("KEYWORD_SWORN", &["when their furious countdown began", "leave with the commander"]),
     ("KEYWORD_CLAIMANT", &["a house with a city within", "took the city in the last", "becomes their rival"]),

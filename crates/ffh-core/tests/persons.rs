@@ -173,7 +173,14 @@ fn land_head(g: &mut Game, seat: CityId) -> (PersonId, HouseId) {
 fn set_house_loyalty(g: &mut Game, h: HouseId, amount: i32) {
     let t = g.game_turn();
     g.houses[h].tribute = 10;
+    g.houses[h].tribute_now = 10;
     g.houses[h].standing.mods = vec![LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount, until: Some(t + 50) }];
+}
+
+/// House `h`'s tribute set and in force at `pct`, by hand (no lag).
+fn in_force(g: &mut Game, h: HouseId, pct: i32) {
+    g.houses[h].tribute = pct;
+    g.houses[h].tribute_now = pct;
 }
 
 fn set_person_loyalty(g: &mut Game, x: PersonId, amount: i32) {
@@ -530,12 +537,13 @@ fn tribute_takes_gold_and_adds_research() {
     government(&mut g, "CIVIC_ARISTOCRACY");
     let (_, h) = land_head(&mut g, a);
     let hp = g.houses[h].player;
-    // The standing part: 1 - pct/10.
+    // The standing part: 1 - pct/10, of the rate in force.
     let base = g.house_loyalty(h);
-    g.player_set_house_tribute(P0, h, 0).unwrap();
+    assert_eq!(g.houses[h].tribute_now, 20);
+    in_force(&mut g, h, 0);
     assert_eq!(g.house_loyalty(h), base + 2, "20% is -1, 0% is +1");
-    g.player_set_house_tribute(P0, h, 50).unwrap();
-    assert_eq!(g.house_loyalty(h), base - 3 - 5, "50% is -4, and the raise from 0% is -5 for 30 turns");
+    in_force(&mut g, h, 50);
+    assert_eq!(g.house_loyalty(h), base - 3, "50% is -4");
     assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Tribute 50%" && p.amount == -4));
     assert_eq!(g.player_set_house_tribute(P0, h, 25), Err("Tribute: 0 to 50 percent, in steps of 10."));
     assert_eq!(g.player_set_house_tribute(P1, h, 20), Err("Not a House of yours."));
@@ -717,51 +725,120 @@ fn a_city_is_held_only_when_the_lieges_army_outnumbers_the_house() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Tribute raises
+// The tribute's lag (rule 4)
 // ---------------------------------------------------------------------------------------------
 
-fn raises(g: &Game, h: HouseId) -> Vec<i32> {
-    g.houses[h].standing.mods.iter().filter(|m| m.cause == LoyaltyCause::TributeRaised).map(|m| m.amount).collect()
+/// House `h`'s rate set and rate in force.
+fn rates(g: &Game, h: HouseId) -> (i32, i32) {
+    (g.houses[h].tribute, g.houses[h].tribute_now)
 }
 
-/// A raise of the tribute by k steps is remembered (rule 4): `Tribute raised: -k (30 turns)` on
-/// top of the standing part; a cut adds nothing and leaves the raises running; two raises stack;
-/// the realm's default taken by a new House is no raise. The selector counts the raise.
+/// `turns` game turns of player 0's persons turns; after each, House `h`'s rate in force, and
+/// that its payment was at the rate in force of that turn (its treasury and commerce as they are).
+fn turns_paid(g: &mut Game, h: HouseId, turns: usize) -> Vec<i32> {
+    let hp = g.houses[h].player;
+    let mut out = Vec::new();
+    for _ in 0..turns {
+        g.players[hp].gold = 100_000;
+        let (want, _) = g.house_tribute_at(h, g.houses[h].tribute_now);
+        turn(g);
+        assert_eq!(g.houses[h].last_gold, want, "paid at the rate in force");
+        out.push(g.houses[h].tribute_now);
+    }
+    out
+}
+
+/// The rate in force moves one step toward the rate set every 5 turns, up and down; the payment
+/// and the loyalty part follow it; the selector answers for each rate once in force and says how
+/// long until then.
 #[test]
-fn a_tribute_raise_is_remembered_and_a_cut_is_not() {
+fn the_rate_in_force_moves_a_step_every_5_turns_both_ways() {
     let World { mut g, a, .. } = world();
     government(&mut g, "CIVIC_ARISTOCRACY");
-    let (_, h) = land_head(&mut g, a);
-    assert_eq!(g.houses[h].tribute, 20, "the realm's default");
-    assert!(raises(&g, h).is_empty(), "the default is no raise");
+    let (x, h) = land_head(&mut g, a);
+    g.persons[x].demand_rest_until = g.game_turn() + 1000;
+    // (Its founding's modifier would run out within the test's 30 turns.)
+    g.houses[h].standing.mods.clear();
+    assert_eq!(rates(&g, h), (20, 20));
     let base = g.house_loyalty(h);
-    // The selector: 40% is two steps up (the standing part -3, raised -2); 0% a cut.
-    let view = g.house_tribute_view(h);
-    let rate = |pct: i32| view.at.iter().find(|r| r.pct == pct).copied().unwrap();
-    assert_eq!((rate(40).part, rate(40).raised, rate(40).loyalty), (-3, -2, base - 4));
-    assert_eq!((rate(20).part, rate(20).raised, rate(20).loyalty), (-1, 0, base));
-    assert_eq!((rate(0).part, rate(0).raised, rate(0).loyalty), (1, 0, base + 2));
-    assert_eq!(g.house_loyalty_at_tribute(h, 40), base - 4);
-    // Raised two steps.
+    // Set 40%: nothing moves yet.
     g.player_set_house_tribute(P0, h, 40).unwrap();
-    assert_eq!(g.house_loyalty(h), base - 4);
-    assert_eq!(raises(&g, h), vec![-2]);
-    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Tribute raised" && p.amount == -2 && p.turns_left == Some(TRIBUTE_RAISED.1)));
-    // Cut to 10%: the standing part rises at once (+2), the raise keeps running.
+    assert_eq!(rates(&g, h), (40, 20));
+    assert_eq!(g.house_loyalty(h), base, "the loyalty part is the rate in force's");
+    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Tribute 20%" && p.amount == -1));
+    assert_eq!(g.house_tribute_turns(h, 40), 10);
+    // The selector: each rate once in force, and when (the count runs from the setting).
+    let view = g.house_tribute_view(h);
+    assert_eq!((view.pct, view.now, view.turns), (40, 20, 10));
+    let rate = |pct: i32| view.at.iter().find(|r| r.pct == pct).copied().unwrap();
+    assert_eq!((rate(40).part, rate(40).turns, rate(40).loyalty), (-3, 10, base - 2));
+    assert_eq!((rate(30).turns, rate(20).turns, rate(10).turns, rate(0).turns), (5, 0, 5, 10));
+    assert_eq!((rate(0).part, rate(0).loyalty, rate(0).state), (1, base + 2, LoyaltyState::of(base + 2)));
+    assert_eq!(g.house_loyalty_at_tribute(h, 50), base - 3);
+    // Up: a step each 5 turns, in force from the turn after the processing that takes it.
+    assert_eq!(turns_paid(&mut g, h, 10), [20, 20, 20, 30, 30, 30, 30, 30, 40, 40]);
+    assert_eq!(rates(&g, h), (40, 40));
+    assert_eq!(g.house_loyalty(h), base - 2);
+    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Tribute 40%" && p.amount == -3));
+    assert_eq!(g.house_tribute_turns(h, 40), 0);
+    // Down, from rest: four steps, 20 turns.
+    g.player_set_house_tribute(P0, h, 0).unwrap();
+    assert_eq!(g.house_tribute_turns(h, 0), 20);
+    assert_eq!(g.house_tribute_in_force_after(h, 0, 4), 40);
+    assert_eq!(g.house_tribute_in_force_after(h, 0, 5), 30);
+    assert_eq!(g.house_tribute_in_force_after(h, 0, 19), 10);
+    assert_eq!(g.house_tribute_in_force_after(h, 0, 20), 0);
+    let seen = turns_paid(&mut g, h, 20);
+    assert_eq!(seen, [40, 40, 40, 30, 30, 30, 30, 30, 20, 20, 20, 20, 20, 10, 10, 10, 10, 10, 0, 0]);
+    assert_eq!(g.house_loyalty(h), base + 2);
+    assert_eq!(g.house_tribute_view(h).turns, 0);
+}
+
+/// Setting the rate back before it is reached reverses the movement, keeping the count (a change
+/// of mind neither costs nor gains time); setting the rate in force stops it.
+#[test]
+fn setting_the_rate_back_reverses_the_movement() {
+    let World { mut g, a, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (x, h) = land_head(&mut g, a);
+    g.persons[x].demand_rest_until = g.game_turn() + 1000;
+    g.player_set_house_tribute(P0, h, 40).unwrap();
+    assert_eq!(turns_paid(&mut g, h, 4), [20, 20, 20, 30]);
+    // In force at 30% from the next turn: 40% the step after, 6 turns from this turn's end.
+    assert_eq!(g.house_tribute_turns(h, 40), 6);
+    // Back to 0%: the count runs on (three steps, the first 6 turns away).
+    g.player_set_house_tribute(P0, h, 0).unwrap();
+    assert_eq!(g.house_tribute_turns(h, 0), 16);
+    assert_eq!(turns_paid(&mut g, h, 5), [30, 30, 30, 30, 20]);
+    assert_eq!(rates(&g, h), (0, 20));
+    // The rate in force set: it stays.
+    g.player_set_house_tribute(P0, h, 20).unwrap();
+    assert_eq!(g.house_tribute_turns(h, 20), 0);
+    assert_eq!(turns_paid(&mut g, h, 6), [20; 6]);
+    // From rest again, the count starts at the setting.
     g.player_set_house_tribute(P0, h, 10).unwrap();
-    assert_eq!(g.house_loyalty(h), base + 1 - 2);
-    assert_eq!(raises(&g, h), vec![-2], "a cut adds nothing");
-    // A second raise stacks: 10% to 20%.
-    g.player_set_house_tribute(P0, h, 20).unwrap();
-    assert_eq!(raises(&g, h), vec![-2, -1]);
-    assert_eq!(g.house_loyalty(h), base - 3);
-    // The same rate again is no raise.
-    g.player_set_house_tribute(P0, h, 20).unwrap();
-    assert_eq!(raises(&g, h), vec![-2, -1]);
-    // They run 30 turns.
-    let t = g.game_turn();
-    g.set_game_turn(t + TRIBUTE_RAISED.1);
-    assert!(g.house_view(h).unwrap().parts.iter().all(|p| p.label != "Tribute raised"), "ended");
+    assert_eq!(g.house_tribute_turns(h, 10), 5);
+    assert_eq!(turns_paid(&mut g, h, 5), [20, 20, 20, 10, 10]);
+}
+
+/// A new House starts with the realm's default in force, whatever made it (a founding, a
+/// capitulation); setting the default changes no House that stands.
+#[test]
+fn a_new_house_starts_with_its_rate_in_force() {
+    let World { mut g, a, b, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (_, h) = land_head(&mut g, a);
+    assert_eq!(rates(&g, h), (TRIBUTE_DEFAULT, TRIBUTE_DEFAULT));
+    assert_eq!(g.house_tribute_view(h).turns, 0);
+    g.player_set_house_tribute_default(P0, 40).unwrap();
+    assert_eq!(rates(&g, h), (TRIBUTE_DEFAULT, TRIBUTE_DEFAULT), "the default changes no House");
+    let (_, h2) = land_head(&mut g, b);
+    assert_eq!(rates(&g, h2), (40, 40));
+    assert!(g.house_view(h2).unwrap().parts.iter().any(|p| p.label == "Tribute 40%" && p.amount == -3));
+    let (t0, t1) = (g.players[P0].team, g.players[P1].team);
+    g.team_assign_vassal(t0, t1, true);
+    let h3 = g.player_house(P1).expect("a capitulated House");
+    assert_eq!(rates(&g, h3), (40, 40));
 }
 
 #[test]

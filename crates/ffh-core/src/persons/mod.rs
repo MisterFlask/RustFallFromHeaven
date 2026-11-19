@@ -57,7 +57,7 @@ pub use bribes::{house_item, house_offer_value, BribeKind};
 pub use crown::CROWN_OVER_FACTOR;
 pub use entry::{leader_name, leader_title};
 pub use houses::{CityHold, Claimant};
-pub use loyalty::{tribute_part, tribute_raise};
+pub use loyalty::tribute_part;
 pub use preview::{GrantCandidate, PersonsAct, PreviewLine};
 pub use read::{CourtView, DemandView, GrantMaintenance, HouseMark, HouseView, LevyStatus, LoyaltyPart, PersonView, PersonWhere, TributeRate, TributeView};
 
@@ -77,9 +77,6 @@ pub const SNUB_HOUSE: (i32, i32) = (-1, 30);
 pub const SNUB_COMMANDER: (i32, i32) = (-2, 30);
 /// `Levied: -1 (20 turns)`: each levy order placed in a House's city.
 pub const LEVIED: (i32, i32) = (-1, 20);
-/// `Tribute raised: -k (30 turns)`: a raise of a House's tribute by k steps of [`TRIBUTE_STEP`]
-/// (this amount a step), on top of the standing part; a cut adds nothing.
-pub const TRIBUTE_RAISED: (i32, i32) = (-1, 30);
 /// `Capitulated: -4 (100 turns)`: a House that became a vassal by capitulating.
 pub const CAPITULATED: (i32, i32) = (-4, 100);
 /// `Sought protection: +2 (60 turns)`: a House that became a vassal by a deal.
@@ -102,6 +99,9 @@ pub const TRIBUTE_DEFAULT: i32 = 20;
 pub const TRIBUTE_MAX: i32 = 50;
 /// The tribute's step, percent.
 pub const TRIBUTE_STEP: i32 = 10;
+/// A House's rate in force moves one [`TRIBUTE_STEP`] toward the rate its liege set every this
+/// many turns (rule 4: 0% to 50% takes 25 turns, and so does 50% back to 0%).
+pub const TRIBUTE_LAG_TURNS: i32 = 5;
 /// A House's price to secede: `(loyalty + 6) x` this `x` its cities, gold.
 pub const BRIBE_PER_CITY: i32 = 25;
 /// The commander whose army took a city is a claimant to it for this many turns.
@@ -229,8 +229,6 @@ pub enum LoyaltyCause {
     /// An offer to secede (`gold`: its worth, gold only; `by`: the
     /// civilization, `Hippus`).
     Offered { gold: i32, by: String },
-    /// The House's tribute raised (its amount: [`TRIBUTE_RAISED`] a step of the raise).
-    TributeRaised,
 }
 
 impl LoyaltyCause {
@@ -245,7 +243,6 @@ impl LoyaltyCause {
             LoyaltyCause::Capitulated => "Capitulated".into(),
             LoyaltyCause::SoughtProtection => "Sought protection".into(),
             LoyaltyCause::Offered { gold, by } => format!("Offered {gold} gold by the {by}"),
-            LoyaltyCause::TributeRaised => "Tribute raised".into(),
         }
     }
 }
@@ -368,8 +365,16 @@ pub struct House {
     pub founded_turn: i32,
     /// The colour index of its shield (below [`HOUSE_COLORS`]).
     pub color: u8,
-    /// The tribute, percent (0 to [`TRIBUTE_MAX`] by [`TRIBUTE_STEP`]).
+    /// The tribute its liege set, percent (0 to [`TRIBUTE_MAX`] by [`TRIBUTE_STEP`]): the rate
+    /// in force moves toward it.
     pub tribute: i32,
+    /// The tribute in force, percent: what the House pays and its standing loyalty part. One
+    /// [`TRIBUTE_STEP`] toward [`House::tribute`] every [`TRIBUTE_LAG_TURNS`] turns (rule 4).
+    pub tribute_now: i32,
+    /// The game turn the count toward the rate's next step runs from: the turn the rate in force
+    /// took effect, or the turn the liege set a new rate while the rate in force was at rest. The
+    /// next step takes effect [`TRIBUTE_LAG_TURNS`] turns after it.
+    pub tribute_since: i32,
     /// The gold its last tribute gave.
     pub last_gold: i32,
     /// The research its last tribute gave (0 when the liege researched nothing).

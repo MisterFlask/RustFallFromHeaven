@@ -5,8 +5,9 @@
 //! Made with the rules' own calls wherever they reach: the cast enters by the persons turn
 //! (`player_persons_turn`: heroes, then a veteran a turn), Houses are founded and granted cities by
 //! `player_grant_city` (each a vassal civilization of its own), the capitulated civilization is
-//! born (`world::birth`) and capitulates (`team_assign_vassal`), the tributes are set by
-//! `player_set_house_tribute`, the commander's claim comes from a real capture (the army moves
+//! born (`world::birth`) and capitulates (`team_assign_vassal`), the tributes are the realm's
+//! default at each founding (`player_set_house_tribute_default`: in force at once), the
+//! commander's claim comes from a real capture (the army moves
 //! into a barbarian city), states are told by the persons turn. Set by hand only what no call
 //! reaches: a unit's level (the veterans' bar), a demand's term and a person's rest (so a refusal
 //! falls due now, as a lapse would 40 turns later), the countdowns' turns left, the human's
@@ -469,10 +470,16 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         let hc = grant(g, h, c_cities[0], GrantTo::GreatPerson(gp))?;
         let c2 = g.map.plots[lay.c[1]].plot_city.ok_or("House C's second city")?;
         grant(g, h, c2, GrantTo::House(hc))?;
+        // The tributes: House `pleased` 10%, House `friendly` 0% (the others at the realm's 20%),
+        // each the realm's default when it is founded, so in force at once (rule 4).
+        let default = |g: &mut Game, pct: i32| g.player_set_house_tribute_default(h, pct).map_err(|e| format!("tribute: {e}"));
+        default(g, 10)?;
         let gp = g.player_init_unit(h, gm, kx, ky, None, None);
         let hb = grant(g, h, b_city, GrantTo::GreatPerson(gp))?;
+        default(g, 0)?;
         let a1 = g.map.plots[lay.a[0]].plot_city.ok_or("House A's first city")?;
         let ha = grant(g, h, a1, GrantTo::Person(p_vet1))?;
+        default(g, ffh_core::persons::TRIBUTE_DEFAULT)?;
         let a2 = g.map.plots[lay.a[1]].plot_city.ok_or("House A's second city")?;
         grant(g, h, a2, GrantTo::House(ha))?;
         (ha, hb, hc)
@@ -482,13 +489,6 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         let g = &s.g;
         (g.houses[house_b].head.ok_or("House B has no head")?, g.houses[house_c].head.ok_or("House C has no head")?)
     };
-
-    // The tributes: House `friendly` 0%, House `pleased` 10% (the others at the realm's 20%).
-    {
-        let g = &mut s.g;
-        g.player_set_house_tribute(h, house_a, 0).map_err(|e| format!("tribute: {e}"))?;
-        g.player_set_house_tribute(h, house_b, 10).map_err(|e| format!("tribute: {e}"))?;
-    }
 
     // The capitulated civilization: born with a city of its own, then it capitulates to the human.
     let house_v = {

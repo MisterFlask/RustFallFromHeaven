@@ -82,6 +82,7 @@ fn world() -> World {
     // Cautious: its tribute's standing part 0 (10%), one modifier of -1.
     let turn = g.game_turn();
     g.houses[h].tribute = 10;
+    g.houses[h].tribute_now = 10;
     g.houses[h].standing.mods = vec![LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount: -1, until: Some(turn + 50) }];
     assert_eq!(g.house_state(h), LoyaltyState::Cautious);
     World { g, own, a, b, h }

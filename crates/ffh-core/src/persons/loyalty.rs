@@ -5,8 +5,8 @@
 //! (`Person::standing`). The sum is the modifiers still running plus the standing parts: `State
 //! religion opposed: -2` (the state religion's alignment the opposite of the person's; a House's
 //! is its head's) and, for a House, `Tribute N%: 1 - N/10` and `Holds N cities, more than T: -(N - T)` (rule 14).
-//! A raise of a House's tribute is also remembered: `Tribute raised: -k (30 turns)` for a raise
-//! of k steps (rule 4, [`tribute_raise`]); a cut adds nothing.
+//! The tribute part is the rate in force's (`House::tribute_now`), which moves slowly toward the
+//! rate the liege set (rule 4, `vassals.rs`).
 
 use ffh_data::*;
 
@@ -23,17 +23,6 @@ pub(crate) enum Holder {
 /// 50%: -4).
 pub fn tribute_part(pct: i32) -> i32 {
     1 - pct / 10
-}
-
-/// The `Tribute raised` modifier a change of a House's tribute from `from` to `to` percent adds:
-/// [`TRIBUTE_RAISED`] for each step of a raise (`-2` from 20% to 40%), 0 for a cut or no change.
-/// It runs `TRIBUTE_RAISED.1` turns.
-pub fn tribute_raise(from: i32, to: i32) -> i32 {
-    if to > from {
-        (to - from) / TRIBUTE_STEP * TRIBUTE_RAISED.0
-    } else {
-        0
-    }
 }
 
 impl Game {
@@ -101,11 +90,11 @@ impl Game {
         self.person_religion_part(x, religion)
     }
 
-    /// The holder's standing tribute part (a House's: [`tribute_part`] of its tribute; 0 for a
-    /// person).
+    /// The holder's standing tribute part (a House's: [`tribute_part`] of its rate in force; 0
+    /// for a person).
     pub(crate) fn holder_tribute_part(&self, hd: Holder) -> i32 {
         match hd {
-            Holder::House(h) => tribute_part(self.houses[h].tribute),
+            Holder::House(h) => tribute_part(self.houses[h].tribute_now),
             Holder::Person(_) => 0,
         }
     }
@@ -150,12 +139,12 @@ impl Game {
         self.holder_state(Holder::House(h))
     }
 
-    /// House `h`'s loyalty were its tribute set to `pct` percent now (the tribute selector's
-    /// preview): its standing part at `pct`, and a raise's `Tribute raised` modifier
-    /// ([`tribute_raise`]).
+    /// House `h`'s loyalty once a tribute of `pct` percent is in force (the steady state: the
+    /// tribute selector's preview and the AI's): its standing part at `pct` in place of the rate
+    /// in force's, the rest as it is now. How long until then: [`Game::house_tribute_turns`].
     pub fn house_loyalty_at_tribute(&self, h: HouseId, pct: i32) -> i32 {
-        let now = self.houses[h].tribute;
-        self.house_loyalty(h) - tribute_part(now) + tribute_part(pct) + tribute_raise(now, pct)
+        let now = self.houses[h].tribute_now;
+        self.house_loyalty(h) - tribute_part(now) + tribute_part(pct)
     }
 
     /// Person `x`'s loyalty: their House's for a head, else their own.

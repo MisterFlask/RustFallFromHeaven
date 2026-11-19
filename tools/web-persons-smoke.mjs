@@ -5,8 +5,9 @@
 // headless Chromium on the HD-2D map (with `--shots`; else the map the page chooses). It checks the
 // Court button's count; opens the Court with Shift+F9 (the header with the Crown's limit and the
 // realm's default tribute, the lines that need attention, the Crown and the four Houses); opens a
-// House's tribute list, sets another rate and sees the House's tribute part, total and state
-// become what the rate's row said; opens the grant list of the contested Crown city (the claimants
+// House's tribute list, reads each rate once in force and when (a step every 5 turns), sets another
+// rate and sees the card say the rate set and the rate in force while its parts, total and state
+// stay the rate in force's; opens the grant list of the contested Crown city (the claimants
 // first, the card's lines: the city moving to the House's realm, the maintenance, the Crown back
 // within its limit, the tribute), grants it to the claimant House in two steps (the confirmation
 // line names the city and the House and says it cannot be undone), sees the toast and the Court
@@ -292,28 +293,40 @@ async function main() {
       c.querySelector("details.ptribute > summary").click();
     }, card);
     await until(() => page.evaluate((sel) => document.querySelectorAll(`${sel} details.ptribute[open] button.trate`).length === 6, card), "the tribute list (6 rates)", 5000 * SLOW);
-    const rates = await page.evaluate((sel) =>
-      [...document.querySelectorAll(`${sel} button.trate`)].map((b) => ({ pct: Number(b.dataset.pct), current: b.getAttribute("aria-pressed") === "true", part: b.querySelector(".trate-part").textContent, state: b.querySelector(".pstate").dataset.state, est: b.querySelector(".trate-est").textContent })),
-    card);
+    const readRates = () =>
+      page.evaluate((sel) =>
+        [...document.querySelectorAll(`${sel} button.trate`)].map((b) => ({ pct: Number(b.dataset.pct), current: b.getAttribute("aria-pressed") === "true", now: !!b.querySelector(".trate-now"), part: b.querySelector(".trate-part").textContent, when: b.querySelector(".trate-when")?.textContent ?? "", state: b.querySelector(".pstate").dataset.state, est: b.querySelector(".trate-est").textContent })),
+      card);
+    const rates = await readRates();
     const now = rates.find((r) => r.current);
-    check(now?.pct === 0 && rates.filter((r) => r.current).length === 1, `the current rate (House A pays 0%): ${JSON.stringify(rates)}`);
-    // Each row: its part, a higher rate's raise (`Raised: -k (30 turns)`, rule 4), the total after.
-    const ROW = /^Tribute: ([+-]?\d+)(?: · Raised: (-\d+) \(30 turns\))? · Loyalty: ([+-]?\d+)$/;
+    check(now?.pct === 0 && rates.filter((r) => r.current).length === 1 && now.now, `the rate set (House A pays 0%), marked now: ${JSON.stringify(rates)}`);
+    // Each row, once in force (rule 4): when (`In force in 15 turns.`: a step of 10% every 5 turns
+    // from the rate in force), its part and the total then.
+    const ROW = /^(In force\.|In force in (\d+) turns?\.) Tribute: ([+-]?\d+) · Loyalty: ([+-]?\d+)$/;
     check(rates.every((r) => /^Pays \d+ gold, \d+ research\.$/.test(r.est) && ROW.test(r.part)), `the rows' lines: ${JSON.stringify(rates)}`);
-    check(rates.every((r) => (ROW.exec(r.part)?.[2] ?? null) === (r.pct > now.pct ? String(-(r.pct - now.pct) / 10) : null)), `a raise on each higher rate, none on the others: ${JSON.stringify(rates)}`);
+    check(rates.every((r) => Number(ROW.exec(r.part)?.[2] ?? 0) === (Math.abs(r.pct - now.pct) / 10) * 5), `each row's turns until in force: ${JSON.stringify(rates)}`);
     const before = await cardState(page, houseA.id);
+    check(/^Tribute 0%: \d+ gold, \d+ research last turn\.$|^Tribute 0%\. Not paid yet\.$/.test(before.line), `the line of a rate at rest: ${before.line}`);
     await page.evaluate((sel) => document.querySelector(`${sel} details.ptribute`).scrollIntoView({ block: "center" }), card);
     await crop(page, `${card} details.ptribute`, "court-house-tribute.png", { pad: 6 });
     const pick = rates.find((r) => r.pct === 30);
-    const [, partWant, raisedWant, totalWant] = ROW.exec(pick.part);
+    const [, whenWant, turnsWant, partWant, totalWant] = ROW.exec(pick.part);
     await tap(page, `${card} button.trate[data-pct="30"]`);
     await until(async () => (await cardState(page, houseA.id))?.line.startsWith("Tribute 30%"), "the tribute set to 30%", 10000 * SLOW);
+    // Set: the line says both rates and when; the loyalty is still the rate in force's.
     const after = await cardState(page, houseA.id);
-    check(after.parts.includes(`Tribute 30%: ${partWant}`) && !after.parts.includes("Tribute 0%: +1"), `the tribute part changed as the row said (${partWant}): ${JSON.stringify(after)}`);
-    check(after.parts.includes(`Tribute raised: ${raisedWant} (30 turns)`), `the raise remembered as the row said (${raisedWant}): ${JSON.stringify(after)}`);
-    check(after.total === `Loyalty: ${totalWant}.` && after.state === pick.state && after.open, `the total and state the row said (${totalWant}, ${pick.state}), the list kept open: ${JSON.stringify(after)}`);
-    const tributeParts = (parts) => parts.filter((p) => p.startsWith("Tribute ")).join(", ");
-    steps.push(`${houseA.label}'s tribute 0% -> 30%: parts ${tributeParts(before.parts)} -> ${tributeParts(after.parts)}, ${before.total} -> ${after.total}`);
+    check(after.line.startsWith(`Tribute 30%, now 0%: reaches 30% in ${turnsWant} turns. `), `the line of a moving rate (${whenWant}): ${after.line}`);
+    check(after.parts.includes("Tribute 0%: +1") && !after.parts.some((p) => p.startsWith("Tribute 30%")), `the part is the rate in force's: ${JSON.stringify(after)}`);
+    check(after.total === before.total && after.state === before.state && after.open, `the total and state unchanged until the rate is in force, the list kept open: ${JSON.stringify(after)}`);
+    const moved = await readRates();
+    const set30 = moved.find((r) => r.pct === 30);
+    const at0 = moved.find((r) => r.pct === 0);
+    check(set30.current && set30.now && set30.when === whenWant && set30.part === pick.part && moved.filter((r) => r.current).length === 1, `the rate set marked now, its row as before: ${JSON.stringify(moved)}`);
+    check(at0.when === "In force." && !at0.current, `the rate in force's row: ${JSON.stringify(at0)}`);
+    check(!after.parts.some((p) => /raised/i.test(p)), `no raise modifier: ${JSON.stringify(after.parts)}`);
+    steps.push(`${houseA.label}'s tribute set 0% -> 30%: "${after.line}"; the row: "${set30.part}" (${partWant} once in force, total ${totalWant}); parts still ${after.parts.filter((p) => p.startsWith("Tribute ")).join(", ")}, ${after.total}`);
+    await page.evaluate((sel) => document.querySelector(`${sel} details.ptribute`).scrollIntoView({ block: "center" }), card);
+    await crop(page, `${card} details.ptribute`, "court-house-tribute-moving.png", { pad: 6 });
     await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: "start" }), card);
     await crop(page, card, "court-house-card.png", { pad: 4 });
 

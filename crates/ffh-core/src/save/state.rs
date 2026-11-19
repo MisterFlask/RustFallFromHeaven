@@ -69,7 +69,7 @@ persist_enum!(Post { 0 => None, 1 => Commander(army), 2 => Head(house) });
 persist_enum!(LoyaltyState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
 persist_enum!(LoyaltyCause {
     0 => DemandMet, 1 => DemandRefused, 2 => Granted { city }, 3 => GrantedElsewhere { city, house }, 4 => Levied,
-    5 => Capitulated, 6 => SoughtProtection, 7 => Offered { gold, by }, 8 => TributeRaised,
+    5 => Capitulated, 6 => SoughtProtection, 7 => Offered { gold, by },
 });
 persist_struct!(LoyaltyMod { cause, amount, until });
 persist_struct!(Standing { mods, countdown, sworn, state });
@@ -80,7 +80,7 @@ persist_enum!(DemandKind {
 persist_struct!(Demand { kind, issued, deadline });
 persist_struct!(Deed { turn, text });
 persist_struct!(Person { id, owner, origin, leader, unit, name, ambition, post, standing, demand, demand_rest_until, rival, deeds, entered_turn });
-persist_struct!(House { id, owner, player, origin, name, head, standing, founded_turn, color, tribute, last_gold, last_research, last_turn });
+persist_struct!(House { id, owner, player, origin, name, head, standing, founded_turn, color, tribute, tribute_now, tribute_since, last_gold, last_research, last_turn });
 
 
 use crate::culture::CultureChannel;

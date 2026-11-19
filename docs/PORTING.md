@@ -327,9 +327,10 @@ flag.
     player, garrison included (the liege's units in an army or marching stay).
   - *Tribute*: a House pays its liege 0 to 50% (default 20%) of its gold commerce (from its
     treasury) and of its research commerce (to the liege's current research); FFH2's vassals pay
-    nothing. The higher the tribute, the lower its loyalty (`1 - N/10`); a raise of k steps of
-    10% also costs `Tribute raised: -k` for 30 turns (a cut costs nothing; 2026-11-18: the rate
-    was a free, instant loyalty lever).
+    nothing. The higher the tribute, the lower its loyalty (`1 - N/10`). The rate in force lags
+    the rate set, both ways: a step of 10% every 5 turns, and the payment and the loyalty follow
+    the rate in force (2026-11-19: the rate was a free, instant loyalty lever, and the raise's
+    modifier of 2026-11-18 that replaced it made it a ratchet).
   - *The levy*: an army requisitions in its owner's Houses' cities; the unit trained is the
     liege's. Each order is a grievance (`Levied: -1 (20 turns)`); an Annoyed House takes none.
   - *Breaking away is war*: a Furious House's countdown, the civil war of direct rule or an

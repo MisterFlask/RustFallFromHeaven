@@ -431,23 +431,36 @@ fn gold_research(gold: i32, research: i32) -> String {
     format!("{gold} gold, {research} research")
 }
 
-/// A House's tribute (rule 4) and its selector: `pct`; `line` (`Tribute 30%: 12 gold, 8 research
-/// last turn.`, or `Tribute 30%. Not paid yet.`); `rates`: each rate it may be set to (0 to 50 by
-/// 10), from the rules' read (`TributeView::at`): `{pct, current, estimate (what it would pay this
-/// turn), part (its tribute part at that rate), part_text, raised (the `Tribute raised` modifier
-/// a raise to it adds, 0 for a cut), raised_text (`Raised: -2 (30 turns)`, null for none),
-/// loyalty (its total after, the raise counted), loyalty_text, state, changes (its state differs
-/// from now)}`.
+/// A House's tribute (rule 4) and its selector: `pct` (the rate set), `now` (the rate in force),
+/// `turns` (until the rate set is in force, 0 when it is); `line` (`Tribute 30%: 12 gold, 8
+/// research last turn.`, `Tribute 30%. Not paid yet.`; while the rate in force moves: `Tribute
+/// 30%, now 10%: reaches 30% in 10 turns. Paid last turn: 4 gold, 6 research.`); `rates`: each rate
+/// it may be set to (0 to 50 by 10), from the rules' read (`TributeView::at`), once in force:
+/// `{pct, current (the rate set), in_force (the rate in force), turns (until it would be in force
+/// were it set now), when (`In force.`, `In force in 15 turns.`), estimate (what it pays at the
+/// House's commerce now), part (its tribute part), part_text, loyalty (its total once in force),
+/// loyalty_text, state, changes (its state differs from now)}`.
 fn tribute_json(g: &Game, hv: &HouseView) -> Json {
     let t = &hv.tribute;
-    let line = if t.last_turn < 0 {
-        format!("Tribute {}%. Not paid yet.", t.pct)
-    } else if t.last_turn >= g.game_turn() - 1 {
-        format!("Tribute {}%: {} last turn.", t.pct, gold_research(t.last_gold, t.last_research))
+    let paid = gold_research(t.last_gold, t.last_research);
+    let line = if t.pct == t.now {
+        if t.last_turn < 0 {
+            format!("Tribute {}%. Not paid yet.", t.pct)
+        } else if t.last_turn >= g.game_turn() - 1 {
+            format!("Tribute {}%: {paid} last turn.", t.pct)
+        } else {
+            format!("Tribute {}%: {paid} on turn {}.", t.pct, t.last_turn)
+        }
     } else {
-        format!("Tribute {}%: {} on turn {}.", t.pct, gold_research(t.last_gold, t.last_research), t.last_turn)
+        let moving = format!("Tribute {}%, now {}%: reaches {}% in {}.", t.pct, t.now, t.pct, turns(t.turns));
+        if t.last_turn < 0 {
+            format!("{moving} Not paid yet.")
+        } else if t.last_turn >= g.game_turn() - 1 {
+            format!("{moving} Paid last turn: {paid}.")
+        } else {
+            format!("{moving} Paid on turn {}: {paid}.", t.last_turn)
+        }
     };
-    let raise_turns = ffh_core::persons::TRIBUTE_RAISED.1;
     let rates: Vec<Json> = t
         .at
         .iter()
@@ -455,11 +468,12 @@ fn tribute_json(g: &Game, hv: &HouseView) -> Json {
             crate::jobj! {
                 "pct" => r.pct,
                 "current" => r.pct == t.pct,
+                "in_force" => r.pct == t.now,
+                "turns" => r.turns,
+                "when" => if r.turns == 0 { "In force.".to_string() } else { format!("In force in {}.", turns(r.turns)) },
                 "estimate" => format!("Pays {}.", gold_research(r.gold, r.research)),
                 "part" => r.part,
                 "part_text" => format!("Tribute: {}", signed(r.part)),
-                "raised" => r.raised,
-                "raised_text" => (r.raised != 0).then(|| format!("Raised: {} ({})", signed(r.raised), turns(raise_turns))),
                 "loyalty" => r.loyalty,
                 "loyalty_text" => format!("Loyalty: {}", signed(r.loyalty)),
                 "state" => state_name(r.state),
@@ -467,7 +481,7 @@ fn tribute_json(g: &Game, hv: &HouseView) -> Json {
             }
         })
         .collect();
-    crate::jobj! { "pct" => t.pct, "line" => line, "rates" => Json::Arr(rates) }
+    crate::jobj! { "pct" => t.pct, "now" => t.now, "turns" => t.turns, "line" => line, "rates" => Json::Arr(rates) }
 }
 
 /// `Takes levies. Each levy: -1 (20 turns).` (rule 6, the rules' `LEVIED`).
@@ -942,7 +956,7 @@ fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
         lines.push(l);
     }
     let tribute = match cand.to {
-        GrantTo::House(hh) => g.houses[hh].tribute,
+        GrantTo::House(hh) => g.houses[hh].tribute_now,
         _ => g.players[v.h].house_tribute,
     };
     lines.push(format!("Tribute from it at {tribute}%."));

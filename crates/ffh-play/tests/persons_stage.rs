@@ -51,9 +51,9 @@ fn the_staged_persons_scenes_hold_every_state() {
         }
         assert_eq!(g.house_state(house("friendly")), LoyaltyState::Friendly);
         assert_eq!(g.house_cities(house("friendly")).len(), 2);
-        assert_eq!(g.houses[house("friendly")].tribute, 0);
+        assert_eq!((g.houses[house("friendly")].tribute, g.houses[house("friendly")].tribute_now), (0, 0), "in force at once");
         assert!([LoyaltyState::Pleased, LoyaltyState::Cautious].contains(&g.house_state(house("pleased"))));
-        assert_eq!(g.houses[house("pleased")].tribute, 10);
+        assert_eq!((g.houses[house("pleased")].tribute, g.houses[house("pleased")].tribute_now), (10, 10));
         assert_eq!(g.house_state(house("annoyed")), LoyaltyState::Annoyed);
         assert_eq!(g.houses[house("annoyed")].origin, HouseOrigin::Capitulated);
         assert_eq!(g.persons[g.houses[house("annoyed")].head.unwrap()].origin, ffh_core::persons::PersonOrigin::Ruler);
@@ -62,7 +62,7 @@ fn the_staged_persons_scenes_hold_every_state() {
         assert_eq!(g.houses[house("furious")].standing.countdown, Some(g.game_turn() + 8));
         assert_eq!(g.house_cities(house("furious")).len(), 2);
         assert_eq!(g.house_cities_held(house("furious")).1.len(), 1, "one of its cities is held by an army");
-        assert_eq!(g.houses[house("furious")].tribute, 20);
+        assert_eq!((g.houses[house("furious")].tribute, g.houses[house("furious")].tribute_now), (20, 20));
 
         // The commanders, the person without a post.
         assert_eq!(g.persons[person("commander_loyal")].post, Post::Commander(army("loyal")));

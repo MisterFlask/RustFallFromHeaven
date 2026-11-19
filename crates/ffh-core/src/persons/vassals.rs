@@ -15,12 +15,13 @@
 //!   States (the Civ4 rules). A liege under a direct-rule civic holds its vassals as Houses too: it
 //!   grants them no city, and adopting direct rule is civil war (rule 11, `secession.rs`).
 //! - **Tribute** ([`Game::player_persons_tribute`], the liege's turn processing): for each House
-//!   in id order, its tribute percent of its cities' gold commerce, from its treasury (no more
-//!   than it holds) to the liege's, and of their research commerce, added to the liege team's
-//!   current research (lost when it researches nothing). A raise of k steps
-//!   ([`Game::player_set_house_tribute`]) adds `Tribute raised: -k (30 turns)`; a cut adds nothing
-//!   (the standing part rises at once, earlier raises keep running); a new House taking the
-//!   realm's default is no raise.
+//!   in id order, its rate in force (`House::tribute_now`) of its cities' gold commerce, from its
+//!   treasury (no more than it holds) to the liege's, and of their research commerce, added to the
+//!   liege team's current research (lost when it researches nothing). The liege sets a rate
+//!   (`House::tribute`, [`Game::player_set_house_tribute`]); the rate in force moves one step
+//!   toward it every [`TRIBUTE_LAG_TURNS`] turns, both ways, counted from its last step or, when
+//!   it was at rest, from the setting ([`Game::house_tribute_in_force_turn`]). A new House starts
+//!   with its realm's default in force.
 //! - **The levy**: an army's requisition takes the cities of its owner's Houses; a House Annoyed or
 //!   worse takes none ([`Game::house_levy_refusal`]); each order placed is `Levied: -1 (20
 //!   turns)` ([`Game::house_levied`]); the unit trained is the army owner's (`city/turn.rs`).
@@ -187,6 +188,8 @@ impl Game {
             founded_turn: turn,
             color,
             tribute,
+            tribute_now: tribute,
+            tribute_since: turn,
             last_gold: 0,
             last_research: 0,
             last_turn: -1,
@@ -322,18 +325,63 @@ impl Game {
         Self::tribute_check(pct)
     }
 
-    /// Player `p` sets House `h`'s tribute to `pct` percent: its standing loyalty part follows, and
-    /// a raise of k steps adds `Tribute raised: -k (30 turns)` ([`super::tribute_raise`],
-    /// [`TRIBUTE_RAISED`]; each raise its own modifier, so they stack). A cut adds nothing and ends
-    /// no earlier raise's modifier.
+    /// Player `p` sets House `h`'s tribute to `pct` percent: the rate the rate in force moves
+    /// toward, one step every [`TRIBUTE_LAG_TURNS`] turns (the payment and the loyalty part follow
+    /// the rate in force). A rate in force at rest starts its count now; one already moving keeps
+    /// its count (a change of mind neither costs nor gains time).
     pub fn player_set_house_tribute(&mut self, p: PlayerId, h: HouseId, pct: i32) -> Result<(), &'static str> {
         self.player_check_house_tribute(p, h, pct)?;
-        let raise = super::tribute_raise(self.houses[h].tribute, pct);
-        self.houses[h].tribute = pct;
-        if raise != 0 {
-            self.holder_add_mod(Holder::House(h), LoyaltyCause::TributeRaised, (raise, TRIBUTE_RAISED.1));
+        let turn = self.game_turn();
+        let house = &mut self.houses[h];
+        if house.tribute_now == house.tribute && pct != house.tribute {
+            house.tribute_since = turn;
         }
+        house.tribute = pct;
         Ok(())
+    }
+
+    /// The game turn the next step of House `h`'s rate in force would take effect were its rate set
+    /// to `pct` now (`pct` differs from the rate in force): [`TRIBUTE_LAG_TURNS`] after the count's
+    /// start, which a new rate sets to now when the rate in force is at rest; at the earliest
+    /// next turn (a step overdue takes effect at the end of this turn's processing).
+    fn house_tribute_next_step(&self, h: HouseId, pct: i32) -> i32 {
+        let house = &self.houses[h];
+        let turn = self.game_turn();
+        let since = if house.tribute_now == house.tribute && pct != house.tribute { turn } else { house.tribute_since };
+        (since + TRIBUTE_LAG_TURNS).max(turn + 1)
+    }
+
+    /// The game turn from which a tribute of `pct` percent would be in force for House `h` were it
+    /// set now (for the rate set: when it will be reached): this turn when it is the rate in
+    /// force; else the next step's turn and [`TRIBUTE_LAG_TURNS`] more for each further step.
+    pub fn house_tribute_in_force_turn(&self, h: HouseId, pct: i32) -> i32 {
+        let now = self.houses[h].tribute_now;
+        if pct == now {
+            return self.game_turn();
+        }
+        let steps = (pct - now).abs() / TRIBUTE_STEP;
+        self.house_tribute_next_step(h, pct) + (steps - 1) * TRIBUTE_LAG_TURNS
+    }
+
+    /// The turns until a tribute of `pct` percent would be in force for House `h` were it set now
+    /// (0: it is the rate in force). For its own rate: the turns until it is reached.
+    pub fn house_tribute_turns(&self, h: HouseId, pct: i32) -> i32 {
+        self.house_tribute_in_force_turn(h, pct) - self.game_turn()
+    }
+
+    /// The rate in force of House `h` `turns` turns from now, were its rate set to `pct` now.
+    pub fn house_tribute_in_force_after(&self, h: HouseId, pct: i32, turns: i32) -> i32 {
+        let now = self.houses[h].tribute_now;
+        if pct == now {
+            return now;
+        }
+        let at = self.game_turn() + turns;
+        let first = self.house_tribute_next_step(h, pct);
+        if at < first {
+            return now;
+        }
+        let steps = (1 + (at - first) / TRIBUTE_LAG_TURNS).min((pct - now).abs() / TRIBUTE_STEP);
+        now + (pct - now).signum() * steps * TRIBUTE_STEP
     }
 
     /// Player `p` sets its realm's default tribute (`Player::house_tribute`), which a new House
@@ -369,7 +417,9 @@ impl Game {
         (gold, research)
     }
 
-    /// Player `p`'s Houses pay their tribute (its turn processing), in id order.
+    /// Player `p`'s Houses pay their tribute at the rate in force (its turn processing), in id
+    /// order; then each rate in force whose count has run steps toward its set rate, in force from
+    /// the next turn.
     pub(crate) fn player_persons_tribute(&mut self, p: PlayerId) {
         let mut houses: Vec<HouseId> = self.players[p].houses.iter().copied().filter(|&h| self.houses.contains(h)).collect();
         houses.sort();
@@ -380,7 +430,7 @@ impl Game {
             if !self.players[hp].alive {
                 continue;
             }
-            let pct = self.houses[h].tribute;
+            let pct = self.houses[h].tribute_now;
             let (gold, mut research) = self.house_tribute_at(h, pct);
             if gold > 0 {
                 self.players[hp].gold -= gold;
@@ -395,6 +445,19 @@ impl Game {
             house.last_research = research;
             house.last_turn = turn;
             self.tel_tribute(p, gold, research);
+            self.house_tribute_step(h);
+        }
+    }
+
+    /// House `h`'s rate in force steps toward its set rate when its count has run
+    /// ([`TRIBUTE_LAG_TURNS`] turns from `House::tribute_since`): in force from the next turn,
+    /// which starts the count again. At the end of its liege's turn processing.
+    fn house_tribute_step(&mut self, h: HouseId) {
+        let next = self.game_turn() + 1;
+        let house = &mut self.houses[h];
+        if house.tribute_now != house.tribute && next >= house.tribute_since + TRIBUTE_LAG_TURNS {
+            house.tribute_now += (house.tribute - house.tribute_now).signum() * TRIBUTE_STEP;
+            house.tribute_since = next;
         }
     }
 

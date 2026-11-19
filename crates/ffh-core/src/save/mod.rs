@@ -169,7 +169,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `Player::ai_memory_count` row (`MemoryType::NUM` 38).
 /// - 51: a raise of a House's tribute remembered (`LoyaltyCause::TributeRaised`; docs/PERSONS.md,
 ///   rule 4).
-pub const FORMAT_VERSION: u32 = 51;
+/// - 52: a House's tribute lags the rate its liege set (`House::tribute_now`, `tribute_since`;
+///   docs/PERSONS.md, rule 4); `LoyaltyCause::TributeRaised` gone.
+pub const FORMAT_VERSION: u32 = 52;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

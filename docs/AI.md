@@ -1995,15 +1995,17 @@ only (`persons::turn`, once a turn after the turn's diplomacy, before the govern
 orders): a human's grants, tribute and offers are the human's.
 
 - **Tribute** (`tribute_for`; the owner's decision of 2026-11-18, replacing "20% Pleased, 10%
-  Cautious, 0% Annoyed"). Each House at the highest rate that keeps it Pleased or better (loyalty
-  1 or more), the raise's modifier counted (`house_loyalty_at_tribute`: a raise of k steps is
-  `Tribute raised: -k` for 30 turns, rule 4): raised one step a turn while the step keeps it
-  Pleased; cut at once, as far as needed (to 0% when no rate is Pleased), whenever it is below
-  Pleased. A cut adds no modifier and is how a Furious House's countdown is stopped. The aim: the
-  AI's Houses cannot be bought (a House Cautious or worse takes a price to secede) and never sit
-  at a countdown the tribute could stop. The raise's cost keeps it from feeding on itself: a
-  House at 20% and loyalty 2 does not step to 30% (2 - 1 - 1 = 0). Set through the rules'
-  command, only when it changes.
+  Cautious, 0% Annoyed"; revised 2026-11-19 for rule 4's lag: the rate in force moves a step of
+  10% toward the rate set every 5 turns, both ways). Each House's rate set to the highest whose
+  loyalty once in force (`house_loyalty_at_tribute`, the steady state) is Pleased with a point to
+  spare (2 or more, `TRIBUTE_KEEP_LOYALTY`), else 0%; lowered as soon as the projection at the
+  rate set falls below that. A cut no longer helps at once: the point to spare is what lets the
+  House take a grievance (a levy, a refused demand) while the cut arrives. The aim: the AI's
+  Houses cannot be bought (a House Cautious or worse takes a price to secede) and a countdown a
+  cut can stop in time is stopped (one step lifts a House at -6 to -5; the first comes within 5
+  turns, the countdown runs 10). Set through the rules' command, only when it changes. A House
+  that no cut can save before its countdown ends (`house_beyond_tribute`) is the army's to hold
+  (below).
 - **Grants** (`choose_grant`), one a turn: only while the Crown is over its limit (rule 14: 3
   cities under a governing civic, the capital alone for the Kuriotates; settlements never count),
   never the capital nor the best production city (`kept_city`), the least populous first, so the
@@ -2047,8 +2049,9 @@ orders): a human's grants, tribute and offers are the human's.
 - **Civics.** A direct-rule civic (Despotism, God King) is not considered while a House stands
   and the AI does not rule directly already (`civic_barred`): adopting one is the civil war.
 - **Armies.** A stack with nothing else to do (before gathering, `military::army`) goes to hold
-  a city of a House of ours counting down that a tribute of 0% cannot bring back above Furious
-  (`disloyal_house_post`): the House's most valuable city (the most populous first) that the
+  a city of a House of ours counting down that a cut to 0% cannot bring back above Furious before
+  its countdown ends (`house_beyond_tribute`: the rate in force then, rule 4's lag counted;
+  `disloyal_house_post`): the House's most valuable city (the most populous first) that the
   stack can hold, one not held now where its army units, with ours already there, would outnumber
   the House's land combat units (rule 7, `city_hold`), within 8 turns; a stack standing in such a
   city stays when the city is held only with it. A stack that is no army (or whose commander is

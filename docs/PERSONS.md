@@ -64,20 +64,26 @@ post, the Court screen, the previews, claims).
    combat units in it in no army and not marching) goes with it, and the liege's army units in it
    stay the liege's (a vassal's land is friendly to its master). Claims and snubs stay as built.
    **No heirs:** a head is a leader and does not die.
-4. **Tribute.** `House::tribute` is one of 0, 10, 20, 30, 40, 50 (%); a new House takes its
-   liege's realm default (`Player::house_tribute`, 20). In the liege's turn processing, for each
-   of its Houses in id order: gold = tribute% of the House's gold commerce (the sum of its cities'
-   gold commerce), taken from the House's treasury (no more than it holds) and given to the liege;
-   research = tribute% of the House's research commerce, added to the liege team's current
-   research (not taken from the House: knowledge is shared; lost when the liege researches
-   nothing). Recorded per House for display: `Tribute 30%: 12 gold, 8 research last turn.`
-   A standing loyalty part, as `State religion opposed` is: `Tribute N%: 1 - N/10` (0%: +1,
-   10%: 0, 20%: -1, ..., 50%: -4). **A raise is remembered** (the owner's decision of the same
-   day, after an expert used the rate as a free, instant lever: 50% in peace, 0% the turn a
-   countdown starts): raising a House's tribute by k steps of 10% adds a timed modifier `Tribute
-   raised: -k (30 turns)` on top of the standing part. A cut adds nothing: the standing part rises
-   at once, and earlier raises' modifiers keep running. Each raise adds its own modifier, so they
-   stack. A new House taking the realm's default is no raise; nor is setting the default.
+4. **Tribute.** `House::tribute` is the rate the liege sets, one of 0, 10, 20, 30, 40, 50 (%); a
+   new House takes its liege's realm default (`Player::house_tribute`, 20). **The rate in force
+   lags it, both ways** (the owner's decision of 2026-11-19: "reputations and relationships are
+   sticky and slow moving"; it replaces the raise's modifier of 2026-11-18, `Tribute raised: -k
+   (30 turns)` with cuts free, which made the rate a ratchet: start high, cut once, never raise):
+   `House::tribute_now` moves one step of 10% toward `House::tribute` every 5 turns
+   (`TRIBUTE_LAG_TURNS`), only while the two differ, counted from its last step or from the
+   setting of the rate; 0% to 50% takes 25 turns, and so does 50% back to 0%. In the liege's turn
+   processing, for each of its Houses in id order: gold = the rate in force% of the House's gold
+   commerce (the sum of its cities' gold commerce), taken from the House's treasury (no more than
+   it holds) and given to the liege; research = the rate in force% of the House's research
+   commerce, added to the liege team's current research (not taken from the House: knowledge is
+   shared; lost when the liege researches nothing). Recorded per House for display: `Tribute 30%:
+   12 gold, 8 research last turn.`, and while the rate in force moves `Tribute 30%, now 10%:
+   reaches 30% in 10 turns. Paid last turn: 4 gold, 6 research.` A standing loyalty part, as
+   `State religion opposed` is: `Tribute N%: 1 - N/10` with N the rate in force (0%: +1, 10%: 0,
+   20%: -1, ..., 50%: -4). One slowly moving rate drives both: lagging only the loyalty part would
+   let a liege collect a raised rate before its cost arrived. A new House starts with the default
+   in force (a founding, a capitulation, a vassal deal, a card, a bought House: nothing to lag);
+   setting the default changes no House that stands.
 5. **The attitude scale replaces the four states.** Loyalty total: **Friendly** 3 or more,
    **Pleased** 1 to 2, **Cautious** -2 to 0, **Annoyed** -5 to -3, **Furious** -6 or less. A
    House's AI attitude toward its liege is this (`player_ai_get_attitude`). Commanders and persons
@@ -131,13 +137,14 @@ post, the Court screen, the previews, claims).
     breaking away (rule 7), the counter on the map holding.
 12. **AI.** As a liege (the owner's decisions of the same day, replacing "20% by default, 10% for
     a Cautious House, 0% for an Annoyed one", after an expert bought the AI's Cautious Houses at
-    about 150 gold a city): every House at the highest tribute that keeps it Pleased or better
-    (loyalty 1 or more), the raise's modifier counted, raised one step at a time and cut at once
-    whenever it would otherwise be below Pleased (a cut is free, and is how a Furious House's
-    countdown is stopped), so its Houses cannot be bought and never sit at a countdown the
-    tribute could stop; a levy only while the House's loyalty after it (`Levied -1`) stays
-    Pleased or better; a House counting down that a tribute of 0% cannot bring back above Furious
-    has an idle army within reach march to hold its most valuable city, with enough units to
+    about 150 gold a city; revised for rule 4's lag on 2026-11-19): every House's rate set to the
+    highest whose loyalty once in force is Pleased with a point to spare (2 or more), and lowered as
+    soon as the projection at the rate set falls below that (a cut arrives a step every 5 turns, so
+    the point to spare is what covers a grievance while it comes), so its Houses cannot be bought
+    and a countdown a cut can stop in time is stopped; a levy only while the House's loyalty after
+    it (`Levied -1`) stays Pleased or better; a House counting down that no cut to 0% brings back
+    above Furious before its countdown ends has an idle army within reach march to hold its most
+    valuable city, with enough units to
     outnumber the garrison (rule 7); grants of the Crown's cities over its limit (rule 14), the
     least populous first, the capital and the best production city kept, a House enlarged only up
     to its size threshold (rule 14). As a House: its own turn, trimmed for cost (no war planning,
@@ -229,15 +236,28 @@ it left open:
    vassal rules make the record, which the founding names (`House <name>`, origin `Founded`, no
    starting modifier). Grants are also refused to a vassal and under No Vassal States. Refusal for
    a hero: `A hero cannot head a House.`
-4. *As built:* `player_set_house_tribute(p, h, pct)`, `player_set_house_tribute_default(p, pct)`
-   (refusals `Not a House of yours.`, `Tribute: 0 to 50 percent, in steps of 10.`);
-   `house_tribute_at(h, pct)` is what it would pay this turn (`TributeView::at` lists 0 to 50 as
-   `TributeRate`s: what it pays, the standing part, the raise's modifier and the loyalty and state
-   after, the raise counted: `house_loyalty_at_tribute`); `house_commerce(h)` the gold and
-   research commerce it is taken from. Paid in `player_persons_turn` of the liege, after the
-   break-aways. The raise: `LoyaltyCause::TributeRaised` (label `Tribute raised`), added by
-   `player_set_house_tribute`, `TRIBUTE_RAISED` (-1 a step, 30 turns) in `persons/mod.rs`,
-   `tribute_raise(from, to)` in `loyalty.rs`; save format 50.
+4. *As built:* `player_set_house_tribute(p, h, pct)` sets the rate (`House::tribute`),
+   `player_set_house_tribute_default(p, pct)` the realm's default (refusals `Not a House of
+   yours.`, `Tribute: 0 to 50 percent, in steps of 10.`). The rate in force is
+   `House::tribute_now`; `House::tribute_since` is the game turn its count runs from: the turn the
+   rate in force took effect, or the turn a new rate was set while the rate in force was at rest.
+   A rate set while the rate in force moves keeps the count (a call the rule left open: a change of
+   mind neither costs nor gains time, and an AI whose rate changes with its House's loyalty does
+   not stall the movement; it never moves faster than a step every 5 turns). Paid in
+   `player_persons_turn` of the liege, after the break-aways, at the rate in force; right after
+   the payment the rate in force steps when its count has run (`house_tribute_step`), in force
+   from the next turn: so the rate the card shows in a turn is the one paid at its end and the one
+   the states are told from, and `reaches 30% in 10 turns` means the card shows 30% in force ten
+   turns on. The reads: `house_tribute_turns(h, pct)` (the turns until `pct` would be in force were
+   it set now; 0 for the rate in force; for the rate set, until it is reached),
+   `house_tribute_in_force_turn(h, pct)`, `house_tribute_in_force_after(h, pct, turns)` (the rate in
+   force that many turns on, the rate set to `pct` now), `house_loyalty_at_tribute(h, pct)` (the
+   loyalty once `pct` is in force: the steady state), `house_tribute_at(h, pct)` (what it pays at
+   `pct` at its commerce now), `house_commerce(h)` the gold and research commerce it is taken
+   from. `TributeView { pct, now, turns, last_gold, last_research, last_turn, at }`; `at` lists 0 to
+   50 as `TributeRate { pct, gold, research, part, turns, loyalty, state }`, each once in force.
+   `TRIBUTE_LAG_TURNS` (5) in `persons/mod.rs`; save format 52 (the raise's
+   `LoyaltyCause::TributeRaised`, `TRIBUTE_RAISED` and `tribute_raise`, format 51, are gone).
 5. *As built:* `LoyaltyState` keeps its name, with the five variants; `withholds()` is Annoyed or
    worse. The keywords Devoted, Loyal, Restless and Disloyal are gone: the states are the game's
    attitude words, no keywords (the client build; a state mark's tooltip is the attitude's own
@@ -819,9 +839,12 @@ something reasonable with it.
 
 **Built** (the second build's AI, 2026-11-18, `crates/ffh-ai/src/persons.rs`; docs/AI.md,
 "Persons of Note"), for AI players only:
-- *As a liege.* Tribute: every House at the highest rate that keeps it Pleased or better, the
-  raise's modifier counted: one step up a turn while the step keeps it Pleased, cut at once (as far
-  as needed) below Pleased; set only when it changes. The levy: the main army's requisition takes
+- *As a liege.* Tribute (revised 2026-11-19 for rule 4's lag): every House's rate set to the
+  highest whose loyalty once in force is Pleased with a point to spare (2 or more,
+  `TRIBUTE_KEEP_LOYALTY`), lowered as soon as the projection at the rate set falls below that, as
+  far as needed (to 0% when no rate keeps it); set only when it changes. The rate in force follows
+  a step every 5 turns, so a raise is collected step by step and a cut starts moving at once. The
+  levy: the main army's requisition takes
   the cities of its Houses that stay Pleased or better after the levy beside its own. Grants, one a turn, only while
   the Crown is over its limit (rule 14), never the capital nor the best production city, the
   least populous first: a demand met first, then a
@@ -838,7 +861,8 @@ something reasonable with it.
   turns.
 - *Elsewhere.* No direct-rule civic while a House stands (unless it rules directly already); an
   idle army goes to hold the most valuable city it can hold (its units with ours there
-  outnumbering the House's) of a House counting down that a tribute of 0% cannot stop; a Furious
+  outnumbering the House's) of a House counting down that a cut to 0% cannot stop in time
+  (`house_beyond_tribute`: still Furious at the rate in force when its countdown ends); a Furious
   commander's army goes to the most garrisoned city; a demanded war weighs a tenth more in the war
   planning.
 - *Retired with their rules:* heirs, the order quota's skip, the seat's wonder order.
@@ -1113,13 +1137,16 @@ left open, or departs from it:
 - **A Furious person's card** (a commander) shows its loyalty parts on the card, by its countdown,
   as a House's card does; the rest stays under `Record`.
 - **The tribute selector** is a list under the tribute line (`Tribute 20%: 12 gold, 8 research last
-  turn. Change`): a row per rate, 0 to 50%, each stating what the House would pay this turn
-  (`Pays 12 gold, 8 research.`, the rules' `house_tribute_at`), its tribute part, for a higher
-  rate the raise's modifier, and the total after (`Tribute: -2 · Raised: -2 (30 turns) · Loyalty:
-  +1`) and the state mark after; the current rate is marked
-  `now`. One tap sets a rate (no confirmation: it can be set back any turn), and the card is read
-  again with the list kept open, so the part, total and state shown are the row's (a test checks
-  they are). The realm's default is a plain selector in the header.
+  turn. Change`; while the rate in force moves, `Tribute 30%, now 10%: reaches 30% in 10 turns.
+  Paid last turn: 4 gold, 6 research. Change`): a row per rate, 0 to 50%, each stating, once in
+  force (rule 4's lag), what the House would pay (`Pays 12 gold, 8 research.`, the rules'
+  `house_tribute_at`), when it would be in force were it set now, its tribute part and the total
+  then (`In force in 15 turns. Tribute: -2 · Loyalty: 0`; the rate in force's row `In force.`) and
+  the state mark then; the rate set is marked `now`. One tap sets a rate (no confirmation: it can
+  be set back any turn), and the card is read again with the list kept open: the line says both
+  rates, and the parts, total and state stay the rate in force's until the rate set arrives,
+  when they are the row's (a test checks they are). The realm's default is a plain selector in
+  the header.
 - **The grant list** states what a grant does now: `Moves to House Arne's realm: its production
   and commerce are the House's.`, its garrison (rule 3, the rules' own predicate,
   `city_grant_garrison`: `Its garrison goes to House Bertram: 2 Warriors, 1 Archer.` or `No garrison

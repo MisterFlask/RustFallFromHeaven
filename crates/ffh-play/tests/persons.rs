@@ -12,7 +12,7 @@ mod common;
 use std::sync::Arc;
 
 use ffh_core::ids::*;
-use ffh_core::persons::{GrantTo, LoyaltyState, DEMAND_REFUSED, LEVIED};
+use ffh_core::persons::{GrantTo, LoyaltyState, DEMAND_REFUSED, LEVIED, TRIBUTE_LAG_TURNS};
 use ffh_core::structs::TradeData;
 use ffh_data::*;
 use ffh_play::command::{CmdErr, CmdOk, Command, COMMAND_NAMES};
@@ -161,10 +161,11 @@ fn the_court_shows_the_realm() {
     assert_eq!(s(&a, "price_refusal"), "Refuses any offer to secede.");
     let head = a.get("head").unwrap();
     assert_eq!(int(head, "id"), person_id(&st, "head_friendly").0 as i64);
-    // Its tribute: the line, and a rate for each step with the rules' numbers.
+    // Its tribute: the line, and a rate for each step with the rules' numbers, once in force (the
+    // House at rest at 0%: each step 5 turns away).
     let t = a.get("tribute").unwrap();
-    assert_eq!(int(t, "pct"), 0);
-    assert!(s(t, "line").starts_with("Tribute 0%"), "{}", s(t, "line"));
+    assert_eq!((int(t, "pct"), int(t, "now"), int(t, "turns")), (0, 0, 0));
+    assert!(s(t, "line").starts_with("Tribute 0%: "), "{}", s(t, "line"));
     let ah = house_id(&st, "friendly");
     for rate in arr(t, "rates") {
         let pct = int(rate, "pct") as i32;
@@ -172,16 +173,12 @@ fn the_court_shows_the_realm() {
         assert_eq!(int(rate, "loyalty"), loyalty as i64);
         assert_eq!(int(rate, "part"), (1 - pct / 10) as i64, "the tribute part at {pct}%");
         assert_eq!(s(rate, "part_text"), format!("Tribute: {}", signed(1 - pct / 10)));
-        // A higher rate is a raise: `Raised: -k (30 turns)`, counted in its loyalty.
-        let k = pct / 10;
-        assert_eq!(int(rate, "raised"), -k as i64);
-        if k > 0 {
-            assert_eq!(s(rate, "raised_text"), format!("Raised: -{k} (30 turns)"));
-        } else {
-            assert!(rate.get("raised_text").unwrap().is_null());
-        }
+        let turns = pct / 10 * TRIBUTE_LAG_TURNS;
+        assert_eq!(int(rate, "turns"), turns as i64);
+        assert_eq!(s(rate, "when"), if turns == 0 { "In force.".to_string() } else { format!("In force in {turns} turns.") });
         assert_eq!(s(rate, "state"), LoyaltyState::of(loyalty).name());
         assert_eq!(bool_of(rate, "current"), pct == 0);
+        assert_eq!(bool_of(rate, "in_force"), pct == 0);
         let (gold, research) = g.house_tribute_at(ah, pct);
         assert_eq!(s(rate, "estimate"), format!("Pays {gold} gold, {research} research."));
     }
@@ -251,9 +248,12 @@ fn the_court_shows_the_realm() {
     }
 }
 
-/// The tribute command and its preview: the rate's row says what the House's tribute part, total
-/// and state become; after `house_tribute` the card says exactly that. The realm's default is set
-/// by `tribute_default`.
+/// The tribute command and its preview: the rate's row says when it would be in force and what
+/// the House's tribute part, total and state are then; after `house_tribute` the card says the
+/// rate set and the rate in force (`Tribute 30%, now 0%: reaches 30% in 15 turns.`), its parts
+/// still the rate in force's, the row marked; once the rate is in force the card says what the
+/// row said. Setting the rate in force again stops it. The realm's default is set by
+/// `tribute_default`.
 #[test]
 fn the_tribute_list_previews_its_change() {
     let (_dir, st, mut ses) = staged("persons-tribute-preview");
@@ -262,27 +262,40 @@ fn the_tribute_list_previews_its_change() {
         let x = house_id(&st, role);
         let card = house_card(&ses.query(&Query::Court).unwrap(), x);
         let t = card.get("tribute").unwrap();
+        let now = int(t, "now") as i32;
+        let before_parts = strs(&card, "parts");
+        let before_total = s(&card, "total").to_string();
         let rate = arr(t, "rates").iter().find(|r| int(r, "pct") == pct as i64).unwrap().clone();
         assert_eq!(bool_of(&rate, "changes"), s(&rate, "state") != s(&card, "state"));
+        let turns = (pct - now).abs() / 10 * TRIBUTE_LAG_TURNS;
+        assert_eq!(int(&rate, "turns"), turns as i64, "{role}: from rest, a step every 5 turns");
+        assert_eq!(s(&rate, "when"), format!("In force in {turns} turns."));
         ses.execute(&Command::SetHouseTribute { house: x, pct }).unwrap();
-        assert_eq!(ses.g.houses[x].tribute, pct);
+        assert_eq!((ses.g.houses[x].tribute, ses.g.houses[x].tribute_now), (pct, now));
+        // Set: the line says both rates; the parts and total are still the rate in force's.
+        let card = house_card(&ses.query(&Query::Court).unwrap(), x);
+        let t = card.get("tribute").unwrap();
+        assert_eq!((int(t, "pct"), int(t, "now"), int(t, "turns")), (pct as i64, now as i64, turns as i64));
+        assert!(s(t, "line").starts_with(&format!("Tribute {pct}%, now {now}%: reaches {pct}% in {turns} turns. ")), "{role}: {}", s(t, "line"));
+        assert_eq!(strs(&card, "parts"), before_parts, "{role}: the parts follow the rate in force");
+        assert_eq!(s(&card, "total"), before_total);
+        let rows = arr(t, "rates");
+        assert!(rows.iter().all(|r| bool_of(r, "current") == (int(r, "pct") == pct as i64)), "{role}: the rate set marked");
+        assert!(rows.iter().all(|r| bool_of(r, "in_force") == (int(r, "pct") == now as i64)), "{role}: the rate in force");
+        let set_row = rows.iter().find(|r| int(r, "pct") == pct as i64).unwrap();
+        assert_eq!(s(set_row, "when"), format!("In force in {turns} turns."));
+        assert_eq!(int(set_row, "loyalty"), int(&rate, "loyalty"), "{role}: the loyalty once in force is unchanged by the setting");
+        let in_force_row = rows.iter().find(|r| int(r, "pct") == now as i64).unwrap();
+        assert_eq!(s(in_force_row, "when"), "In force.");
+        // Once in force (by hand): the card says what the row said.
+        ses.g.houses[x].tribute_now = pct;
         let card = house_card(&ses.query(&Query::Court).unwrap(), x);
         let parts = strs(&card, "parts");
-        let part = parts.iter().find(|p| p.starts_with(&format!("Tribute {pct}%: "))).unwrap();
+        let part = parts.iter().find(|p| p.starts_with("Tribute ")).unwrap();
         assert_eq!(*part, format!("Tribute {pct}%: {}", signed(int(&rate, "part") as i32)), "{role}: the part the row said");
-        // A raise: its own part, as the row said (`Tribute raised: -3 (30 turns)`); a cut: none.
-        let raised = int(&rate, "raised") as i32;
-        let raised_parts: Vec<&String> = parts.iter().filter(|p| p.starts_with("Tribute raised: ")).collect();
-        if raised < 0 {
-            assert_eq!(raised_parts, [&format!("Tribute raised: {raised} (30 turns)")], "{role}: the raise the row said");
-        } else {
-            assert!(raised_parts.is_empty(), "{role}: a cut adds no raise: {parts:?}");
-        }
         assert_eq!(s(&card, "total"), format!("Loyalty: {}.", signed(int(&rate, "loyalty") as i32)), "{role}: the total the row said");
         assert_eq!(s(&card, "state"), s(&rate, "state"), "{role}: the state the row said");
-        let t = card.get("tribute").unwrap();
-        assert_eq!(int(t, "pct"), pct as i64);
-        assert!(arr(t, "rates").iter().all(|r| bool_of(r, "current") == (int(r, "pct") == pct as i64)));
+        assert!(s(card.get("tribute").unwrap(), "line").starts_with(&format!("Tribute {pct}%: ")), "the line without the rate in force once equal");
     }
     ses.execute(&Command::SetTributeDefault { pct: 40 }).unwrap();
     assert_eq!(ses.g.players[h].house_tribute, 40);
