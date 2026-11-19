@@ -119,7 +119,11 @@ pub const MEMORY_TERM_CAP: i32 = 3;
 /// ([`memory_added`]).
 pub fn memory_part(g: &Game, p: PlayerId, mem: MemoryType, count: i32) -> i32 {
     let percent = g.players[p].personality_type.map_or(0, |l| g.d.leader_heads[l].memory_attitude_percent[mem]);
-    (count * percent / 100 / 2).clamp(-MEMORY_TERM_CAP, MEMORY_TERM_CAP)
+    // FfH's points (count x percent / 100) at half, rounded half away from zero, so that a single
+    // wrong always counts (a city taken, -1.5 FfH points, is -1 here; a declared war -2).
+    let v = count * percent;
+    let half = if v < 0 { -((-v + 100) / 200) } else { (v + 100) / 200 };
+    half.clamp(-MEMORY_TERM_CAP, MEMORY_TERM_CAP)
 }
 
 /// How far one more memory `mem` of `of` moves player `p`'s relation toward `of` now: the term
@@ -1894,30 +1898,31 @@ mod tests {
         assert_eq!(relation(&g, them, us), theirs, "the caster's own attitude is unchanged");
     }
 
-    /// The three remembered wrongs are terms of their own: `count x percent / 100`, halved, capped
-    /// at -3; a declared war is remembered by the side declared on, and fades.
+    /// The three remembered wrongs are terms of their own: `count x percent / 100`, halved (rounded
+    /// half away from zero), capped at -3; a declared war is remembered by the side declared on,
+    /// and fades.
     #[test]
     fn remembered_wrongs_are_terms_capped_at_three() {
         let mut g = one_landmass_game(19);
         let (us, them) = (PlayerId(0), PlayerId(1));
         let term = |g: &Game, label: &str| relation_parts(g, us, them).iter().find(|t| t.0 == label).map(|t| t.1);
         assert_eq!(term(&g, "declared war on us"), None);
-        // MEMORY_DECLARED_WAR -300: -3 on FfH's scale a count, -1 here.
+        // MEMORY_DECLARED_WAR -300: -3 on FfH's scale a count, -2 here (-1.5 rounded away).
         let m = MemoryType::MEMORY_DECLARED_WAR;
-        for (count, want) in [(1, Some(-1)), (2, Some(-3)), (5, Some(-3))] {
+        for (count, want) in [(1, Some(-2)), (2, Some(-3)), (5, Some(-3))] {
             g.players[us].ai_memory_count[them][m] = count;
             assert_eq!(term(&g, "declared war on us"), want, "{count} declarations");
         }
-        // MEMORY_TOOK_CITY -150: a city is -0.75 here (nothing), two -1, four the cap.
+        // MEMORY_TOOK_CITY -150: a city is -0.75 here (-1), two -2, three -2, four the cap.
         let m = MemoryType::MEMORY_TOOK_CITY;
-        for (count, want) in [(1, None), (2, Some(-1)), (3, Some(-2)), (4, Some(-3)), (9, Some(-3))] {
+        for (count, want) in [(1, Some(-1)), (2, Some(-2)), (3, Some(-2)), (4, Some(-3)), (9, Some(-3))] {
             g.players[us].ai_memory_count[them][m] = count;
             assert_eq!(term(&g, "took our cities"), want, "{count} cities");
         }
         // MEMORY_BOUGHT_HOUSE -300, as a declared war.
         g.players[us].ai_memory_count[them][MemoryType::MEMORY_BOUGHT_HOUSE] = 1;
-        assert_eq!(term(&g, "bought our House"), Some(-1));
-        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), -2, "the second: -1 to -3");
+        assert_eq!(term(&g, "bought our House"), Some(-2));
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), -1, "the second: -2 to -3");
         g.players[us].ai_memory_count[them][MemoryType::MEMORY_BOUGHT_HOUSE] = 2;
         assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), 0, "at the cap");
         assert_eq!(memory_part(&g, us, MemoryType::MEMORY_TOOK_CITY, 100), -MEMORY_TERM_CAP);
@@ -1925,9 +1930,9 @@ mod tests {
         let mut g = one_landmass_game(19);
         let (t0, t1) = (g.players[us].team, g.players[them].team);
         g.team_meet(t0, t1, false);
-        assert_eq!(memory_added(&g, them, us, MemoryType::MEMORY_DECLARED_WAR), -1, "the preview");
+        assert_eq!(memory_added(&g, them, us, MemoryType::MEMORY_DECLARED_WAR), -2, "the preview");
         g.team_declare_war(t0, t1, true, Some(WarPlanType::WARPLAN_TOTAL));
-        assert!(relation_parts(&g, them, us).contains(&("declared war on us", -1)));
+        assert!(relation_parts(&g, them, us).contains(&("declared war on us", -2)));
         assert!(!relation_parts(&g, us, them).iter().any(|t| t.0 == "declared war on us"), "not by the declarer");
         for _ in 0..2000 {
             g.player_do_memory_decay(them);

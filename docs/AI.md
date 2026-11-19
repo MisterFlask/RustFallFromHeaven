@@ -1328,8 +1328,8 @@ alignment` +1; `same state religion` +2 or `different state religion` -1; `war b
 (the team's war counter; nothing counts it up now); the remembered wrongs (the owner's decision,
 2026-11-18; docs/PERSONS.md rule 15): `declared war on us`, `took our cities` and `bought our
 House`, each `count x` the leader's `memory_attitude_percent / 100` halved (2 a step here, 4 on
-FfH's scale), capped at -3 (a declared war -1, two -3; a city taken 0, two -1, four -3; a House
-bought -1), fading as the rules decay the memories (1 in 50 a turn); `open borders` +1; `the
+FfH's scale; rounded half away from zero), capped at -3 (a declared war -2, two -3; a city taken
+-1, two -2, four -3; a House bought -2), fading as the rules decay the memories (1 in 50 a turn); `open borders` +1; `the
 Trust spell` +2; `attitude modifier` (the rules' `ai_attitude_extra`, halved); `alignment
 leaning`; `cultural hostility` / `cultural friendship`; `gifts` and `demands paid`; and in the
 attitude, `at war` -2 while the war lasts. FFH2's other memories are recorded by the rules but

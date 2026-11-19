@@ -43,9 +43,9 @@ faded). Now the rules record `MEMORY_DECLARED_WAR`, `MEMORY_TOOK_CITY` and `MEMO
 as a term capped at -3. A rules change is not gated on the AI (CLAUDE.md), so no A/B was run.
 What to look at when someone does: how many wars are followed by another between the same two
 within 50 turns (the memory lowers the attitude, which the cautious leaders' target choice reads),
-whether peace offers after a long war are still accepted (`judge_offer` reads the attitude), and
-how often a single city taken reads 0 (`-150 x 1 / 100 / 2` truncates: two cities make the first
-step; the owner chose the weights, the rounding is the brief's formula).
+and whether peace offers after a long war are still accepted (`judge_offer` reads the attitude).
+The halving rounds half away from zero, so that a single wrong counts: a city taken -1, a declared
+war or a bought House -2 (one step).
 
 ## Amphibious invasion on the forecast (2026-11-11, switch `INVASION`)
 
