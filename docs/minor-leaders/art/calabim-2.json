@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-403aa5c1-a6c6-4a6a-966f-e7e60e8f3bae.png",
+  "source_copy": "art/calabim-2.png",
+  "prompt": "art/calabim-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "vesna_quayward",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/vesna_quayward.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "malrec_rubyhand",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/malrec_rubyhand.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "lysana_bloodgilt",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/lysana_bloodgilt.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "milos_grainsty",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/milos_grainsty.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "dianthe_nightjury",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/dianthe_nightjury.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

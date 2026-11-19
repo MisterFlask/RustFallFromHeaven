@@ -1612,7 +1612,7 @@ mod tests {
         g.players[PlayerId(1)].personality_type = Some(personality);
 
         let leaders = g.player_get_split_empire_leaders(PlayerId(0));
-        assert_eq!(leaders.len(), 3, "five preferred minors minus the former leader and occupied personality");
+        assert_eq!(leaders.len(), 8, "ten preferred minors minus the former leader and occupied personality");
         for (civ, leader) in leaders {
             assert_eq!(civ, bannor, "another faction of our own civilization is allowed");
             assert!(d.leader_heads[leader].preferred_breakaway);
@@ -1621,16 +1621,22 @@ mod tests {
         }
     }
 
+    fn bannor_with_no_free_preferred_leaders() -> Game {
+        let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL")]);
+        let d = g.d;
+        let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
+        for leader in d.leader_heads.keys() {
+            let info = &d.leader_heads[leader];
+            if info.preferred_breakaway && info.minor_leader_of == Some(bannor) {
+                g.add_player(leader, bannor);
+            }
+        }
+        g
+    }
+
     #[test]
     fn colonies_fall_back_after_own_preferred_minors_are_exhausted() {
-        let g = game(&[
-            ("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"),
-            ("CIVILIZATION_BANNOR", "LEADER_MAERETH_ASHLEDGER"),
-            ("CIVILIZATION_BANNOR", "LEADER_ODRAN_IRON_MERCY"),
-            ("CIVILIZATION_BANNOR", "LEADER_SERA_VELL"),
-            ("CIVILIZATION_BANNOR", "LEADER_TOVIN_CINDERWRIGHT"),
-            ("CIVILIZATION_BANNOR", "LEADER_YSABET_LAST_WITNESS"),
-        ]);
+        let g = bannor_with_no_free_preferred_leaders();
         let d = g.d;
         let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
         let leaders = g.player_get_split_empire_leaders(PlayerId(0));
@@ -1644,14 +1650,7 @@ mod tests {
 
     #[test]
     fn lead_any_civ_does_not_offer_another_civilizations_preferred_minors() {
-        let mut g = game(&[
-            ("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"),
-            ("CIVILIZATION_BANNOR", "LEADER_MAERETH_ASHLEDGER"),
-            ("CIVILIZATION_BANNOR", "LEADER_ODRAN_IRON_MERCY"),
-            ("CIVILIZATION_BANNOR", "LEADER_SERA_VELL"),
-            ("CIVILIZATION_BANNOR", "LEADER_TOVIN_CINDERWRIGHT"),
-            ("CIVILIZATION_BANNOR", "LEADER_YSABET_LAST_WITNESS"),
-        ]);
+        let mut g = bannor_with_no_free_preferred_leaders();
         g.setup.options[GameOptionType::GAMEOPTION_LEAD_ANY_CIV] = true;
         let leaders = g.player_get_split_empire_leaders(PlayerId(0));
         assert!(!leaders.is_empty());

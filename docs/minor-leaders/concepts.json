@@ -102,6 +102,106 @@
         "hand_activity": "Writes a witness statement with a long white quill on a slanted public lectern while looking up to listen to an unseen speaker",
         "vibe": "Grave attentive courage",
         "clothing": "Royal-blue open-shouldered scholar mantle with silver edging over a plain dark dress and a single steel shoulder guard"
+      },
+      {
+        "id": "leora_bellfound",
+        "name": "Leora Bellfound",
+        "epithet": "Keeper of the Mist Bells",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_SPIRITUAL"
+        ],
+        "inherited_traits": [
+          "TRAIT_GUARDSMAN"
+        ],
+        "angle": "Signal crews organize ruinously exposed marches into a league of mutual aid.",
+        "backstory": "Leora was recasting a cracked abbey bell when she realized that none of the valley hamlets could hear the fort's warning. She used the abbey's bronze allotment to build a chain of smaller towers, staffed in turn by shepherds and deserters. When an officer came to requisition the new bells, every hamlet rang its refusal.",
+        "portrait": "Weathered tan human woman in her sixties, strong hooked nose, close silver curls, solid build, bell tower at sunrise",
+        "primary_palette": "Saffron yellow wool, copper bells and honey-colored dawn",
+        "hand_activity": "Rings a small suspended bell with a wooden striker",
+        "vibe": "Practical warmth",
+        "clothing": "Short saffron bellfounder's cape over a brown leather apron"
+      },
+      {
+        "id": "beren_halflight",
+        "name": "Beren Halflight",
+        "epithet": "Captain of the Homeward Column",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [
+          "TRAIT_GUARDSMAN"
+        ],
+        "angle": "A veteran insists that surviving crusaders can decide where their service ends.",
+        "backstory": "Beren led a defeated column home through country its own quartermasters had stripped bare. He traded the horses first, then the officers' spurs, keeping a tally of every farmer who fed them. The farmers now come to him when conscription parties arrive, and the old column assembles without a drum.",
+        "portrait": "Broad Black human man in his forties, cropped hair, one gray temple, strong brow, walled farmstead beyond a muddy road",
+        "primary_palette": "Slate blue padded coat, white linen and cold sky",
+        "hand_activity": "Unbuckles a spur over a wooden produce crate",
+        "vibe": "Weary resolve",
+        "clothing": "Slate-blue padded coat with one broken clasp and a travel scarf"
+      },
+      {
+        "id": "hamira_stoneford",
+        "name": "Hamira Stoneford",
+        "epithet": "Reeve of the Third Ford",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [
+          "TRAIT_GUARDSMAN"
+        ],
+        "angle": "A border crossing buys its autonomy by charging both estate lords and the troops they send to collect.",
+        "backstory": "At flood season Hamira commandeered a noble's empty granary to keep the ford open. Her ferry carried every traveler regardless of rank, provided their fee paid for another stone in the approach. Now she can turn back a duke's whole levy by lifting the chain and pocketing the handle.",
+        "portrait": "Middle-aged brown human woman, round jaw, a shaved side and a long black braid, stone ford and river gorge",
+        "primary_palette": "Juniper green cloak, brass winch and gray water",
+        "hand_activity": "Cranks the brass handle of a river-chain winch",
+        "vibe": "Unmoved authority",
+        "clothing": "Heavy green half-cloak and fitted boiled leather vest"
+      },
+      {
+        "id": "cedric_stave",
+        "name": "Cedric Stave",
+        "epithet": "Marshal of the Hallowed Mile",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_AGGRESSIVE",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [
+          "TRAIT_GUARDSMAN"
+        ],
+        "angle": "A road marshal makes a strip of country into a hereditary military jurisdiction.",
+        "backstory": "Cedric's patrol brought back a holy banner from a road where three whole pilgrim companies had disappeared. In return he was given the width of a spear on either side of that road and the power to try anyone who set foot in it. He has spent the years since paying surveyors to discover how wide a spear can be.",
+        "portrait": "Lean fair human man in his fifties, pointed beard and cold pale eyes, rutted stone causeway between forts",
+        "primary_palette": "Oxblood cloth, black steel and chalk highlights",
+        "hand_activity": "Stretches a knotted measuring cord across a boundary post",
+        "vibe": "Meticulous menace",
+        "clothing": "Oxblood cavalry mantle with a dark lamellar shoulder and white sash"
+      },
+      {
+        "id": "dalia_chalkwall",
+        "name": "Dalia Chalkwall",
+        "epithet": "The Barracks Schoolmaster",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [
+          "TRAIT_GUARDSMAN"
+        ],
+        "angle": "A barracks teacher gives common households the means to read the laws that bind them.",
+        "backstory": "Dalia was put in charge of recruits who could recite whole prayers but could never check a pay docket. She chalked the articles of service on the wall, where the recruits began leaving questions under every line. When the wall was plastered over, her pupils walked out with the questions memorized and started schools of their own.",
+        "portrait": "Young adult human woman with golden olive skin, thick eyebrows and a black bob, rain-dark barracks arcade",
+        "primary_palette": "Lavender smock, graphite slate and pale chalk",
+        "hand_activity": "Draws a large tally mark on a black slate",
+        "vibe": "Dry amusement",
+        "clothing": "Lavender linen teaching smock with broad cuffs and a black wool collar"
       }
     ]
   },
@@ -198,6 +298,96 @@
         "hand_activity": "Hauls a taut guest-tent guy rope against a gust, bracing one forearm and reaching forward to set its fastening hook",
         "vibe": "Alert welcoming grit",
         "clothing": "Coral-red loose headscarf and short cream storm-cloak over sleeveless leather guard armor"
+      },
+      {
+        "id": "zahir_whiteflint",
+        "name": "Zahir Whiteflint",
+        "epithet": "The Road Under the Road",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_DEFENDER",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "Desert guides create commons beneath roads controlled by toll stations.",
+        "backstory": "Zahir explored cool tunnels beneath abandoned caravan roads while serving as a water bearer. When a debt caravan camped above one of the entrances, he brought its prisoners out one family at a time. His guides now count a route as sacred if a person can escape along it without paying.",
+        "portrait": "Older deep-brown human man with a bald crown, white goatee and long pronounced cheekbones, sandstone tunnel mouth",
+        "primary_palette": "Cobalt blue headwrap, white flint and deep sandstone",
+        "hand_activity": "Strikes a white flint to light a shallow clay lamp",
+        "vibe": "Alert kindness",
+        "clothing": "Cobalt turban and loose blue travel robe with a white shoulder fold"
+      },
+      {
+        "id": "safiya_of_the_kiln",
+        "name": "Safiya of the Kiln",
+        "epithet": "The Glass Gardener",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_ARCANE"
+        ],
+        "inherited_traits": [],
+        "angle": "Oasis workshops make shade and irrigation portable enough to challenge hereditary gatekeepers.",
+        "backstory": "Safiya grew up among glassblowers who tinted every window in the oasis except those of their own houses. She bought a heap of failed panes and laid them over a bed of roots, which survived the coldest desert night anyone remembered. People travel farther for a share of her kiln than they once traveled to pay court to the well lords.",
+        "portrait": "Dark-skinned middle-aged human woman, gap teeth and a high crown of tightly curled hair, a sand-covered glasshouse",
+        "primary_palette": "Malachite coat, straw gold and translucent aquamarine",
+        "hand_activity": "Lifts a translucent glass cloche from a seedling",
+        "vibe": "Delighted concentration",
+        "clothing": "Malachite sash over a loose teal workshop coat and leather bracer"
+      },
+      {
+        "id": "kamal_red_meridian",
+        "name": "Kamal Red Meridian",
+        "epithet": "Warden of the Midday Gate",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_AGGRESSIVE",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "A commander makes the safe hours at a mountain pass into privileges to be earned.",
+        "backstory": "Kamal once shut his pass a minute late and lost a caravan to the raiders following it. He has fixed the gate hours to a bronze sight ever since, raising the bar for anyone whose shelter gives an enemy cover. The people who ask him to bend the rule usually end up living under the gate and working off their petition.",
+        "portrait": "Austere umber human man, closely shaved head and a narrow gray beard, fortress arch at high sun",
+        "primary_palette": "Scarlet scarf, honey bronze and bone sandstone",
+        "hand_activity": "Tilts a bronze sighting ring toward the sun with both hands",
+        "vibe": "Punitive vigilance",
+        "clothing": "Scarlet wrap pinned over a dark quilted officer's tunic"
+      },
+      {
+        "id": "luma_dunebright",
+        "name": "Luma Dunebright",
+        "epithet": "The Festival of Returning Feet",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Market festivals coax scattered families back to places the dunes took.",
+        "backstory": "For years Luma rehearsed songs that her scattered kin could recognize without agreeing on all the words. She carried the best ones to the empty market at which her grandparents had met, and a few listeners put up tents. When they returned next year they brought roof beams, and Luma learned to sing loud enough to be heard over the work.",
+        "portrait": "Young adult brown-skinned woman with a freckled nose and short curls under an open scarf, canvas market stalls in windy dusk",
+        "primary_palette": "Apricot cloth, plum embroidery and dusk violet",
+        "hand_activity": "Pulls a broad colored ribbon taut between both hands to lash a tent pole",
+        "vibe": "Infectious delight",
+        "clothing": "Apricot dancer's jacket with long embroidered sleeves and a plum head scarf"
+      },
+      {
+        "id": "nedim_saltwind",
+        "name": "Nedim Saltwind",
+        "epithet": "Master of the Buried Salt",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "Prospectors bring wealth to neglected camps and force rich towns to bid for their labor.",
+        "backstory": "Nedim was blinded in one eye after mistaking a salt lake's crust for firm ground. He sent apprentices back with long-handled rakes and paid them first from whatever they managed to bring out. His crews now auction their work from camp to camp, leaving richer towns to wonder why nobody has come to dig.",
+        "portrait": "Older copper-brown human man with a puckered eyelid, graying mustache and loose linen, crystalline salt flats",
+        "primary_palette": "Ivory cloak, dusty rose and ultramarine shadows",
+        "hand_activity": "Tips a scoop of pink salt crystals into a woven sieve",
+        "vibe": "Appraising patience",
+        "clothing": "Off-white hooded saltworker's mantle with a pink woven shoulder stripe"
       }
     ]
   },
@@ -294,6 +484,96 @@
         "hand_activity": "Cuts the seal-cord from a grain sack with a small utility knife while her other hand catches the opened flap for rationing",
         "vibe": "Brisk unsentimental competence",
         "clothing": "Tailored slate-gray civilian warden coat with stiff jade lapels, leather work cuffs and modest monastery badge"
+      },
+      {
+        "id": "farah_quietwater",
+        "name": "Farah Quietwater",
+        "epithet": "Custodian of the Shared Bank",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_EXPANSIVE",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [],
+        "angle": "Former enemies find sanctuary on a floodplain that requires them to build together.",
+        "backstory": "Farah kept a pair of flood markers on opposite banks because neither village would trust the other to read its own. One spring both markers vanished, and paddlers from both villages followed her to recover them. Their shared embankments outlasted the emergency, even after both abbots began arguing about who could claim the work as a miracle.",
+        "portrait": "Sturdy olive-skinned human woman, cropped gray hair and laugh lines, riverside monastery and mooring posts",
+        "primary_palette": "Seafoam green cloak, ochre reeds and pearl morning fog",
+        "hand_activity": "Pulls a heavy rope through a wooden mooring ring",
+        "vibe": "Steadfast fellowship",
+        "clothing": "Seafoam fisher's cowl over a patched monastery tunic"
+      },
+      {
+        "id": "matteo_linden",
+        "name": "Matteo Linden",
+        "epithet": "The Lay Host",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "Pilgrims establish independent hostels on roads where holy orders will only admit their own.",
+        "backstory": "Matteo's sister came home from a pilgrimage barefoot after a steward refused their family offerings. He bought a ruined bakehouse and left the door open to the first stranger who reached it. There are now lay houses in six provinces, each with a table long enough to seat both pilgrims and the people they are fleeing.",
+        "portrait": "Heavyset fair human man in his fifties, black beard graying at chin and smiling cheeks, stone bread oven and simple hostel",
+        "primary_palette": "Ochre wool, brick brown and warm cream",
+        "hand_activity": "Tears a scored loaf into two large pieces",
+        "vibe": "Unshowy hospitality",
+        "clothing": "Ochre wool mantle tied with a cloth belt over baker's sleeves"
+      },
+      {
+        "id": "imena_wakefold",
+        "name": "Imena Wakefold",
+        "epithet": "Warden of the Unmarked Sleep",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_ARCANE",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "One sanctuary keeps a sealed burial hill free of both relic hunters and official custodians.",
+        "backstory": "Imena cleared a ruined chapterhouse and found that the dirt beneath its floor whispered living people's names. Her order marked the site on no maps and used the stones to build an ordinary sheepfold. It now shelters families whose ancestors would be instruments in somebody else's hands if the fold's true boundary became known.",
+        "portrait": "Elderly dark-skinned human woman, angular face and long salt-white locks, lichen-covered hill with ruined cloister",
+        "primary_palette": "Deep indigo layers, gray-green lichen and silver dusk",
+        "hand_activity": "Places a triangular stone upright in a gap between fieldstones",
+        "vibe": "Quiet alertness",
+        "clothing": "Indigo layered robe with a narrow silvery hem and a split hood"
+      },
+      {
+        "id": "levan_pledge",
+        "name": "Levan Pledge",
+        "epithet": "The Collector of Sanctuary",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_SPIRITUAL"
+        ],
+        "inherited_traits": [],
+        "angle": "A keeper of holy hospitality converts guests' gratitude into debts they can never repay.",
+        "backstory": "Levan started collecting vows of thanks while the refugees in his care still had no money. He kept each on a reed slip and redeemed small promises first, for a morning's labor or a winter blanket. The bundle has grown hefty enough that he can decide who marries, who travels, and which children will keep the sanctuary books.",
+        "portrait": "Bald amber-skinned human man with a prominent chin and neat mustache, altar room lined by unlettered reed bundles",
+        "primary_palette": "Wine red vestment, aged ivory and umber",
+        "hand_activity": "Ties a small reed bundle with a narrow red cord",
+        "vibe": "Smiling control",
+        "clothing": "Wine-red sleeveless vestment edged in pale embroidery"
+      },
+      {
+        "id": "enna_bramblehook",
+        "name": "Enna Bramblehook",
+        "epithet": "Gardener of the Siege Acre",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_INGENUITY"
+        ],
+        "inherited_traits": [],
+        "angle": "A city's gardeners gain authority by keeping famine at bay through practical seed craft.",
+        "backstory": "Enna watched the gardens inside a siege ring go to seed as most of the remaining land was requisitioned for troops. She grafted bitter roots onto fruiting plants, then sent the cuttings to households too poor to buy seed. When the walls reopened, local families kept exchanging plants through her long after the old ration masters had run out of work.",
+        "portrait": "Middle-aged fair freckled human woman with russet curls, glass cold frames inside a monastery wall",
+        "primary_palette": "Lime green apron, pale cypress and russet accents",
+        "hand_activity": "Binds a leafy graft with a strip of pale linen",
+        "vibe": "Resourceful focus",
+        "clothing": "Lime green work apron over russet wool and rolled sleeves"
       }
     ]
   },
@@ -390,6 +670,96 @@
         "hand_activity": "Draws a luminous ward circle in the air with two outstretched fingers while the other palm presses shut a crack in the barrier",
         "vibe": "Exacting guarded concentration",
         "clothing": "Ice-cyan geometric mantle with high graphite standing collar over close blue-steel ward armor"
+      },
+      {
+        "id": "aureth_feather_ash",
+        "name": "Aureth Feather-Ash",
+        "epithet": "Herald of the Borrowed Body",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_SPIRITUAL",
+          "TRAIT_CHARISMATIC"
+        ],
+        "inherited_traits": [],
+        "angle": "An angel returns the belongings of the dead and gives their families a voice in the celestial host.",
+        "backstory": "Aureth's first body still carried a wooden badge carved by the soldier's daughter. He tracked down the family and found a line of others asking the host for possessions no officer had thought to collect. His companies now return one keepsake for every body they borrow and ask the survivors to name the next city they defend.",
+        "portrait": "Tall tawny male angel with dark curls streaked white, pale feathered wings, small encampment and cloudy hills",
+        "primary_palette": "Sun yellow tabard, pale feathers and cedar brown",
+        "hand_activity": "Lowers a small carved wooden bird onto a folded cloth",
+        "vibe": "Earnest humility",
+        "clothing": "Sun-yellow tabard with broad white braided trim over brighter gold mail"
+      },
+      {
+        "id": "meriel_bronze_dawn",
+        "name": "Meriel Bronze Dawn",
+        "epithet": "Master of the Landing Steps",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "An angelic works corps claims the right to govern the towns it rebuilds.",
+        "backstory": "Meriel watched the first winged regiment crush a water tower when its soldiers landed in an unfamiliar square. She devised stepped stone platforms that could take the weight and leave the wells accessible. The engineers who build them remain after the troops march, arguing that a garrison is no better than its stairs.",
+        "portrait": "Broad middle-aged female angel, russet face and black undercut, tawny wings, massive unfinished landing terrace",
+        "primary_palette": "Turquoise overcoat, terracotta and warm gray wings",
+        "hand_activity": "Holds a plumb bob over the edge of a stone step",
+        "vibe": "Matter-of-fact command",
+        "clothing": "Turquoise mason's coat with open sides for wings and rust leather cuffs"
+      },
+      {
+        "id": "caradriel_pale_fire",
+        "name": "Caradriel Pale Fire",
+        "epithet": "The Relentless Dawn",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_AGGRESSIVE",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "An angel presses an unyielding war of prevention against any city judged capable of harboring demons.",
+        "backstory": "Caradriel's company took an unguarded gate and lost half its borrowed bodies to a demon sheltering in a grain store. She brought the grain scale back to camp and made it the emblem of a tribunal that could seize supplies on suspicion alone. Her towns now run on confiscated grain and pray each morning to remain above suspicion.",
+        "portrait": "Gaunt brown female angel, bone-white hair and gray wings, empty stone granary with sunrise beyond",
+        "primary_palette": "Coral red officer's cloak, shadow steel and gray feathers",
+        "hand_activity": "Pours grain from a requisitioned bronze scoop into a scale pan",
+        "vibe": "Austere conviction",
+        "clothing": "Bright coral cloak clasped to dark angular armor"
+      },
+      {
+        "id": "sorad_veiled_seal",
+        "name": "Sorad Veiled Seal",
+        "epithet": "The Annalist of Wings",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_PHILOSOPHICAL",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "Host archivists demand proof before assigning the resurrected to an earthly family.",
+        "backstory": "Sorad watched two villages claim the same angel after each lost a son at a disputed crossing. He established a waiting house for such cases and began recording what the angels could recall before they heard anybody's testimony. The house answers to him today because too many officers want its ledgers to endorse a convenient ancestry.",
+        "portrait": "Middle-aged pale male angel, drooping ash-blond mustache and charcoal-spotted blue wings, library arches",
+        "primary_palette": "Prussian blue hood, silver clasps and gray feathers",
+        "hand_activity": "Holds a loose strip of vellum flat while affixing a wax seal",
+        "vibe": "Deliberate skepticism",
+        "clothing": "Deep blue hooded scribe's robe with silver bands at the wrists"
+      },
+      {
+        "id": "avona_of_two_walls",
+        "name": "Avona of Two Walls",
+        "epithet": "Bridge Between Companies",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_DEFENDER",
+          "TRAIT_CREATIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Human and angel soldiers share command in a coalition formerly divided by rank.",
+        "backstory": "Avona carried messages between the city guard and an angelic unit whose commanders refused to share a table. She had two small benches built into the chasm wall so they could confer while both sides watched. By the second siege the benches wore smooth, and the troops called for Avona when their commanders disagreed.",
+        "portrait": "Adult Black female angel with a round face, long braids and cream wings, two battlemented walls across a ravine",
+        "primary_palette": "Lilac traveling mantle, alabaster wings and blue shadows",
+        "hand_activity": "Unrolls a blank map across a narrow stone bench",
+        "vibe": "Open, assured attention",
+        "clothing": "Lilac travel mantle with clean ivory wing openings and a mail neckline"
       }
     ]
   },
@@ -486,6 +856,96 @@
         "hand_activity": "Tightening a heavy gate bolt with a short iron wrench while bracing the latch with his other hand.",
         "vibe": "Stubborn protective resolve",
         "clothing": "A golden-ocher mason's coat over slate-blue quilted armor, reinforced leather elbow guards and thick working gloves."
+      },
+      {
+        "id": "bram_copperbrow",
+        "name": "Bram Copperbrow",
+        "epithet": "The Chain of Little Mills",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Village millwrights take charge of inventions that workshops once rented by the hour.",
+        "backstory": "Bram was sent to retrieve a broken golem that had kept a village's mill turning. He rebuilt its mechanism as a chain of small waterwheels that any farmer could service, then taught the village to cast replacements. Guild owners still send him bills for every grain of flour they think would have passed through that golem's hands.",
+        "portrait": "Stocky older dwarf man, ruddy brown face, wide copper-gray beard in two rings, sunny stepped millrace",
+        "primary_palette": "Citrine yellow jerkin, blue water and copper leather",
+        "hand_activity": "Slides a wooden paddle into a small waterwheel",
+        "vibe": "Enthusiastic ingenuity",
+        "clothing": "Citrine millwright's jerkin, copper fittings and wide rolled sleeves"
+      },
+      {
+        "id": "dessa_quartzbell",
+        "name": "Dessa Quartzbell",
+        "epithet": "First of the Night Shift",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_ORGANIZED",
+          "TRAIT_CREATIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Night workshops form a separate assembly with its own election hours and public works.",
+        "backstory": "Dessa automated a bell so workers below ground would hear the opening of the meeting that set their wages. When the masters moved the meeting to daylight, she moved the bell to the night market and invited everybody still awake. Her assembly votes beneath a quartz dome that used to be sealed after dusk.",
+        "portrait": "Compact umber-skinned dwarf woman, sharp gray eyes and a tall black braid, quartz-roofed market at dusk",
+        "primary_palette": "Fuchsia coat, dusty quartz and midnight plum",
+        "hand_activity": "Suspends a small faceted quartz clapper in a bell",
+        "vibe": "Wry defiance",
+        "clothing": "Fuchsia wool coat with high rounded shoulders and dark plum gloves"
+      },
+      {
+        "id": "nori_bondhammer",
+        "name": "Nori Bondhammer",
+        "epithet": "The Holder of the Keys",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_ARCANE"
+        ],
+        "inherited_traits": [],
+        "angle": "A golem designer turns maintenance contracts into the power to stop a whole city.",
+        "backstory": "Nori sold his first golems cheaply after apprenticing under a master who could never get anyone to buy one. Every joint answered to a key only he could replace, and in time the public pumps all took the same locks. He is building a mint now so the people buying those keys will have somewhere to borrow their fee.",
+        "portrait": "Pale freckled dwarf man with a broad nose, forked brown beard and cold smile, gears and city roofs",
+        "primary_palette": "Midnight blue coat, turquoise sparks and pewter",
+        "hand_activity": "Fits a peculiar square key into a small brass golem wrist",
+        "vibe": "Polite calculation",
+        "clothing": "Midnight blue mechanic's coat with a rigid shoulder mantle and iron cuffs"
+      },
+      {
+        "id": "ulna_shaleprint",
+        "name": "Ulna Shaleprint",
+        "epithet": "Caller of the Second Draft",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_PHILOSOPHICAL",
+          "TRAIT_INGENUITY"
+        ],
+        "inherited_traits": [],
+        "angle": "A mentor preserves discarded craft designs so young builders can challenge their masters.",
+        "backstory": "Ulna hauled rejected molds back to the gallery where trainees were allowed to practice. She put a number on each one and paid a prize for improving the molds their inventors insisted were perfect. The trainees set up their own guild the day she stopped charging visitors to look at what they made.",
+        "portrait": "Older brown-skinned dwarf woman with expressive eyebrows and thick white braids, tool-strewn arch with distant forge",
+        "primary_palette": "Burnt orange jacket, charcoal mold and cream sleeves",
+        "hand_activity": "Raises a clay cast from its open stone mold with both hands",
+        "vibe": "Bristling curiosity",
+        "clothing": "Burnt orange canvas jacket over bright linen and a dark apron"
+      },
+      {
+        "id": "kedran_shieldpeg",
+        "name": "Kedran Shieldpeg",
+        "epithet": "Warden of the Ground Floor",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_DEFENDER",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "A repair captain resists the practice of concentrating magical defenses in guild towers.",
+        "backstory": "Kedran discovered how far a broken protective seal could throw a cobblestone when one broke in his cellar. He mapped the streets that would be flattened if the guild towers failed, and their tenants began taking his inspections seriously. Even the tower masters now knock before stepping into a house that flies his mark.",
+        "portrait": "Heavyset tan dwarf man with a streaked black beard and a nick through his lower lip, city steps below a tower",
+        "primary_palette": "Olive felt, steel blue and mica gray",
+        "hand_activity": "Hammers a steel anchor into a masonry seam",
+        "vibe": "Guarded diligence",
+        "clothing": "Olive felt coat with a hammered bluish steel collar and gloves"
       }
     ]
   },
@@ -592,6 +1052,106 @@
         "hand_activity": "Pulling a censor's ribbon off an open public record with her articulated glass hand while spreading the pages with her living hand.",
         "vibe": "Cool defiant scrutiny",
         "clothing": "An asymmetrical charcoal advocate's coat with mint-green lining, plain linen shirt and an exposed articulated glass left hand."
+      },
+      {
+        "id": "philia_copperroof",
+        "name": "Philia Copperroof",
+        "epithet": "The Canopy Surveyor",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_INGENUITY",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [
+          "TRAIT_SPRAWLING"
+        ],
+        "angle": "Winged laborers claim public air routes through the towers they keep standing.",
+        "backstory": "Philia spent her first wages replacing a scaffold that humans could not reach and her fellow harpies were forbidden to land on. She kept the invoices and drew the first survey of all the roofs a city could not maintain without them. The workers now run the rooftop stations and keep a lane open even to people who cannot afford to fly.",
+        "portrait": "Copper-brown female harpy with dark curls, ochre shoulder feathers and one gold eye, roof bridges and a high windy city",
+        "primary_palette": "Peacock teal vest, copper feathers and blue sky",
+        "hand_activity": "Pulls a bright chalk line between two rooftop pegs",
+        "vibe": "Cheerful assurance",
+        "clothing": "Peacock teal harness vest with copper toggles and open shoulder seams"
+      },
+      {
+        "id": "rython_twelvearches",
+        "name": "Rython Twelvearches",
+        "epithet": "First Speaker of the Covered Market",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [
+          "TRAIT_SPRAWLING"
+        ],
+        "angle": "Stallholders make their market an independent town built to fit every kind of body.",
+        "backstory": "A centaur's hooves once cracked the stairs to the market and Rython was charged for the damage although he was standing outside. He bought a sunken quarry and filled it with gentle ramps, high stalls and aisles wide enough for three bodies like his. He charges to cover the paving and lets even the people who sneered at it come in out of the rain.",
+        "portrait": "Male centaur with a wide tan face, cropped grizzled beard and chestnut horse body partly suggested below frame, vast curved market ramp",
+        "primary_palette": "Persimmon orange waistcoat, gray stone and chestnut leather",
+        "hand_activity": "Slides a stamped weight along a balance beam",
+        "vibe": "Shrewd welcome",
+        "clothing": "Persimmon waistcoat and soft gray shoulder wrap with coin loops"
+      },
+      {
+        "id": "isil_coilbank",
+        "name": "Isil Coilbank",
+        "epithet": "The Holder of the Deeds",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_ORGANIZED",
+          "TRAIT_ARCANE"
+        ],
+        "inherited_traits": [
+          "TRAIT_SPRAWLING"
+        ],
+        "angle": "A deed broker coerces families whose homes stand on land built up by several peoples at once.",
+        "backstory": "Isil amassed deeds to the old riverbed while its lamia houses were still built on floats. When the river shifted inland, she charged the residents for the reclaimed foundations under their homes and took their boats as collateral. Her tenants are free to move, provided they leave their furnishings and a child who knows the ledger.",
+        "portrait": "Female lamia with tawny skin, black waves of hair, silver-green scales and hint of serpent coils, covered canal quay",
+        "primary_palette": "Imperial purple gown, oxidized silver and dark green scales",
+        "hand_activity": "Threads a ring of iron boat keys onto a split silver hoop",
+        "vibe": "Courteous avarice",
+        "clothing": "Purple banker gown with a deep scalloped collar and silver wrist bands"
+      },
+      {
+        "id": "tevin_manywindows",
+        "name": "Tevin Manywindows",
+        "epithet": "Keeper of the Common Rooms",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_CREATIVE"
+        ],
+        "inherited_traits": [
+          "TRAIT_SPRAWLING"
+        ],
+        "angle": "A mixed neighborhood writes civic law from the practical business of sharing buildings.",
+        "backstory": "Tevin inherited a boarding house whose forebears had added a door for each new kind of lodger. He took the doors out of the price of rooms and set up the first tenants' festival with the proceeds from the old hinges. Visitors still take the number of doors for a sign of disorder until they see who carries whom out in a fire.",
+        "portrait": "Young adult dark-skinned human man with a thin goatee, lively eyes and a shock of black hair, round-headed doors in a colorful courtyard",
+        "primary_palette": "Marigold vest, turquoise doors and cedar-brown beams",
+        "hand_activity": "Seats a spare brass hinge onto a little wooden door frame",
+        "vibe": "Social ease",
+        "clothing": "Marigold embroidered host's vest with broad turquoise lapels"
+      },
+      {
+        "id": "asen_curtainfall",
+        "name": "Asen Curtainfall",
+        "epithet": "Surveyor of the Last Street",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_PHILOSOPHICAL",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [
+          "TRAIT_SPRAWLING"
+        ],
+        "angle": "Outer settlements insist their right to exist cannot depend on a city's decision to extend its walls.",
+        "backstory": "Asen grew up in a settlement that vanished each time the capital commissioned a new map. She sewed her street onto the edge of the maps and offered the rest of the bolt to other villages missing from the survey. The patchwork hangs in her court because it takes a succession of people to carry it anywhere else.",
+        "portrait": "Older pale human woman with a black-silver braid and one eyebrow scar, embroidered map above a low settlement wall",
+        "primary_palette": "Raspberry mantle, chalk linen and storm-gray ground",
+        "hand_activity": "Stitches a corner of rough linen onto a large cloth plan",
+        "vibe": "Plain-spoken stubbornness",
+        "clothing": "Raspberry wool mantle over a long chalk-gray tunic and capped sleeves"
       }
     ]
   },
@@ -698,6 +1258,106 @@
         "hand_activity": "Lifting one dangerous crystal shard out of a containment hoop with long tongs while adjusting the hoop's ward clasp with his other hand.",
         "vibe": "Austere vigilant restraint",
         "clothing": "A fitted aubergine counter-enchanter's coat with cool-gray protective gauntlets, close collar and minimal silver ward seams."
+      },
+      {
+        "id": "calen_birdbranch",
+        "name": "Calen Birdbranch",
+        "epithet": "The Messenger of the Lower Boughs",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [
+          "TRAIT_DEXTEROUS"
+        ],
+        "angle": "Young settlements claim a voice through a relay that runs below the old canopy roads.",
+        "backstory": "Calen tended messenger birds that were trained to fly only to the manors in their breeding book. He let a clutch nest in a roadside willow and raised the fledglings to land where woodcutters offered a perch. The lord of the high branches still receives the news, a little later than the bark peelers.",
+        "portrait": "Young adult golden-brown male forest elf with pointed ears and close brown curls, perched in a network of branches",
+        "primary_palette": "Golden yellow tunic, lilac dusk and copper bark",
+        "hand_activity": "Coaxes a small speckled bird onto a gloved wrist",
+        "vibe": "Suppressed excitement",
+        "clothing": "Golden feather-trimmed sleeve and violet travel vest"
+      },
+      {
+        "id": "mevara_rainsuture",
+        "name": "Mevara Rainsuture",
+        "epithet": "Tender of the Root Bridges",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_INGENUITY",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [
+          "TRAIT_DEXTEROUS"
+        ],
+        "angle": "Tree surgeons organize remote groves around the living crossings they maintain.",
+        "backstory": "When a flood took her bridge, Mevara followed its torn limbs downstream and transplanted the living ends. They took root on opposite banks within sight of an old ferry that had charged an armful of firewood to carry a child. Crossing dues in her new groves consist of watering a branch on the way past.",
+        "portrait": "Middle-aged dark-skinned female forest elf, silver-tipped dreads and long ears, living root bridge across a flooded valley",
+        "primary_palette": "Vermilion rain cape, moss and pearl-gray light",
+        "hand_activity": "Knots a strip of cloth around two living branches to train them",
+        "vibe": "Patient pride",
+        "clothing": "Vermilion rain cape with fitted moss-green forearm wraps"
+      },
+      {
+        "id": "thalan_ambervow",
+        "name": "Thalan Ambervow",
+        "epithet": "The Warden of First Growth",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_SPIRITUAL",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [
+          "TRAIT_DEXTEROUS"
+        ],
+        "angle": "A traditionalist appropriates woodland by giving ancient trees rights only his court can hear.",
+        "backstory": "Thalan was a witness when the oldest pine of his province fell across a boundary ditch. In the resin he claimed to read a deed covering both banks, then the houses and fields adjoining them. He invites any dispossessed farmer to attend the hearings, provided they can offer testimony in a language the court accepts from trees.",
+        "portrait": "Gaunt pale male elf with a long chestnut beard and blade-sharp ears, towering ancient pines and a resin altar",
+        "primary_palette": "Wine violet robe, amber resin and forest black",
+        "hand_activity": "Tilts an amber resin shard to the light above a shallow stone dish",
+        "vibe": "Self-righteous calm",
+        "clothing": "Wine-violet priestly coat with split sleeves and a black shoulder collar"
+      },
+      {
+        "id": "finnel_woodmeter",
+        "name": "Finnel Woodmeter",
+        "epithet": "The Tender of Coppices",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_INDUSTRIOUS"
+        ],
+        "inherited_traits": [
+          "TRAIT_DEXTEROUS"
+        ],
+        "angle": "A licensed woodcutter earns protection for trees and wages for the people who harvest them.",
+        "backstory": "Finnel never felled a trunk he could return to in seven years and cut again. He taught the villages to count regrowth alongside their timber before the merchants could lay claim to it. His contracts infuriate the court because coppices are now worth enough that a worker can take a lord to court for stealing one.",
+        "portrait": "Stocky tawny male elf with pointed ears, curly cropped black hair and hawkish eyes, evenly coppiced riverside grove",
+        "primary_palette": "Sky blue work coat, toasted bark and wheat",
+        "hand_activity": "Checks the girth of a sapling with a loop of measuring tape",
+        "vibe": "Exact satisfaction",
+        "clothing": "Sky-blue canvas with a broad pale shoulder pad and dark gloves"
+      },
+      {
+        "id": "lethiel_hollowtone",
+        "name": "Lethiel Hollowtone",
+        "epithet": "The Constant Root",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_ARCANE",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [
+          "TRAIT_DEXTEROUS"
+        ],
+        "angle": "A researcher gives every grove access to warnings once reserved for the oldest families.",
+        "backstory": "Lethiel suspected the humming that preceded a blight came from ordinary roots rather than a family spirit. She sank hollow tubes at each farm and invited the youngest worker to tell her the note before the family elders could interpret it. A ring of groves now reports to her when the note changes, sometimes in time to cut a branch and save a valley.",
+        "portrait": "Copper-skinned female elf in her fifties, angled gray bob, long ears and strong cheekbones, woodland listening well",
+        "primary_palette": "Ivory robe, cypress shadows and pink quartz",
+        "hand_activity": "Lowers a hollow rosewood pipe into a root cavity",
+        "vibe": "Absorbed attention",
+        "clothing": "Ivory listening mantle with a fanned leaf-like collar and rose cuffs"
       }
     ]
   },
@@ -794,6 +1454,96 @@
         "hand_activity": "Rubbing a coin across a black touchstone while pointing to its fresh metal streak with her other hand for an unseen customer.",
         "vibe": "Candid meticulous assurance",
         "clothing": "An emerald-green guild waistcoat over clean white rolled sleeves, narrow leather assay apron and plain brass badge."
+      },
+      {
+        "id": "berga_ironwedge",
+        "name": "Berga Ironwedge",
+        "epithet": "First Hand of the Rescue Crew",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_DEFENDER",
+          "TRAIT_INGENUITY"
+        ],
+        "inherited_traits": [],
+        "angle": "A rescue brotherhood makes unsafe holds answer to the people who shore them up.",
+        "backstory": "Berga's crew came to a collapsed adit with orders to save the ore chests before the men. She wedged the chests under a crack and hauled out enough witnesses to overturn the order in court. The holds that ignored the judgment still keep their pit bosses, but each deep crew carries a copy of her rescue charter.",
+        "portrait": "Deep brown dwarf woman with massive shoulders, gray wire curls and full cheeks, braced mine chamber with gold seams",
+        "primary_palette": "Safety orange coat, basalt and pale oak wedges",
+        "hand_activity": "Taps a pale wooden wedge into a timber prop",
+        "vibe": "Composed urgency",
+        "clothing": "Orange pit jacket with a soot-gray fur yoke and broad leather wrists"
+      },
+      {
+        "id": "orik_cinderhall",
+        "name": "Orik Cinderhall",
+        "epithet": "The Last Voice at the Smelter",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "Smelter crews pool warmth, housing and credit away from the gold vaults.",
+        "backstory": "Orik wanted to know why his apprentices froze upstairs while his slag boiled beneath their feet. He rerouted the waste heat through a row of affordable apartments before the hold's surveyors found out. The families bought the next furnace themselves and sent him to bargain for the mountain's water.",
+        "portrait": "Dark tan stocky male dwarf, long black sideburns and a square goatee, brick smelter with furnace pipes",
+        "primary_palette": "Prussian blue coat, flame orange and smoky gray",
+        "hand_activity": "Twists a heavy stopcock on a copper heating pipe",
+        "vibe": "Determined grit",
+        "clothing": "Prussian blue thermal smelter coat with slate metal shoulder rivets"
+      },
+      {
+        "id": "huldra_sevenvault",
+        "name": "Huldra Sevenvault",
+        "epithet": "The Keeper of Quiet Interest",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "The owners of sealed vaults collect rents even from holds unable to reach their own deposits.",
+        "backstory": "Huldra bought a vault that had been locked since an earthquake and leased the idea of the gold within it to desperate holds. She offered to forgive any hold that opened the vault, so long as it signed over its rights to the gold if it failed. Now that seven tunnels have collapsed in the attempt, her creditors prefer to keep paying and let the door remain a matter of faith.",
+        "portrait": "Pale older dwarf woman with black lacquered braids and fine wrinkles, towering unmarked vault door with dark stonework",
+        "primary_palette": "Mulberry velvet, polished steel and vellum beige",
+        "hand_activity": "Turns a heavy vault combination wheel one notch",
+        "vibe": "Refined malice",
+        "clothing": "Mulberry velvet factor's gown with a lacquer-black square collar"
+      },
+      {
+        "id": "garum_veinwalker",
+        "name": "Garum Veinwalker",
+        "epithet": "Voice of the Surface Consuls",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Surface Khazad establish ports and trading farms with the same rights as underground holds.",
+        "backstory": "Garum returned from shipping season with grain, new words and a wife who had never seen a vault. The keepers assigned them a cellar outside the gates, so he made it a warehouse and invited the coast hands to live nearby. The first surface consul was elected in that cellar with the shutters open.",
+        "portrait": "Burly copper-skinned dwarf man in his forties, short sandy beard and windburned cheeks, terraced coastal warehouses",
+        "primary_palette": "Jade green waistcoat, cream canvas and bronze light",
+        "hand_activity": "Hauls a cloth grain sack onto a wooden counting ledge",
+        "vibe": "Neighborly conviction",
+        "clothing": "Jade merchant's waistcoat with rolled cream sailors' sleeves"
+      },
+      {
+        "id": "ursi_mothsilver",
+        "name": "Ursi Mothsilver",
+        "epithet": "Finder of Lost Silver",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_MAGIC_RESISTANT",
+          "TRAIT_CREATIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "A silverworker discovers why older galleries are empty and makes their lost work available to independent holds.",
+        "backstory": "Ursi followed a tarnished thread into a shaft where all the assay marks had been chiseled away. She strung salvaged silver together by the sequence of tool marks and found a generation of makers the vault families never recorded. Neighboring holds send her strips of their own silver to see whose work she can name.",
+        "portrait": "Elderly dark dwarf woman with shaven temples, thick snow-white braid and clever eyes, narrow galleries with glittering flecks",
+        "primary_palette": "Ice mint wool, white silver and plum shadows",
+        "hand_activity": "Feeds a ribbon of etched silver through a handheld loupe",
+        "vibe": "Bright absorption",
+        "clothing": "Mint wool smock with wide violet silk sleeves and a curved silver clasp"
       }
     ]
   },
@@ -890,6 +1640,96 @@
         "hand_activity": "Pressing a turquoise tessera into a missing mosaic panel while scraping mortar with a narrow trowel",
         "vibe": "Restless unfinished obsession",
         "clothing": "Oxblood travelling cloak thrown back over a battered leather mosaic-worker apron"
+      },
+      {
+        "id": "naresh_lintelmist",
+        "name": "Naresh Lintelmist",
+        "epithet": "The Porter at Noon",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [],
+        "angle": "A border porter negotiates daylight passage for shades and their mortal relations alike.",
+        "backstory": "Naresh kept a toll station where travellers could shelter from the hour the shades were most visible. He repaired the shutters after every raid, leaving one unlatched for people who could no longer grasp the handle. Ordinary travellers now leave their names at the station beside the shades they still recognize.",
+        "portrait": "Male Sidar shade with ashen brown skin, grizzled beard and softly luminous dark eyes, fog rolling under a stone lintel",
+        "primary_palette": "Moss green brocade, smoke and burnished brass",
+        "hand_activity": "Lifts a wooden shutter latch with two fingers",
+        "vibe": "Reassuring courtesy",
+        "clothing": "Moss green porter's coat and a bronze shoulder patch"
+      },
+      {
+        "id": "maelis_frostlinen",
+        "name": "Maelis Frostlinen",
+        "epithet": "The Weaver of the Missing Years",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "Retired shades piece together the years they no longer remember without selling them to collectors.",
+        "backstory": "Maelis began weaving dates into the strips she used to bind her winter clothes. Other shades brought her a loose end here and there, most of them as eager to forget it as to have it recorded. Her workshop keeps the resulting cloth folded so a visitor can ask for just the year she wants to see.",
+        "portrait": "Elderly female Sidar shade, pale gray skin and silver bowl cut, quiet weaving room overlooking misty hills",
+        "primary_palette": "Dusty pink dress, moonlit ivory and fog gray",
+        "hand_activity": "Passes a small shuttle across a loom of pale bands",
+        "vibe": "Attentive reserve",
+        "clothing": "Matte dusty-pink dress with pleated ivory shoulders and broad cuffs"
+      },
+      {
+        "id": "soren_of_the_span",
+        "name": "Soren of the Span",
+        "epithet": "The Toll on Vanished Things",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_ARCANE"
+        ],
+        "inherited_traits": [],
+        "angle": "A crossing broker charges shades memories when service no longer has another cost.",
+        "backstory": "Soren built a bridge broad enough for the dead to cross without brushing the living. He began the toll with a coin and later agreed to accept an image the traveller could bear to lose. People cross more often now because he cannot collect the full fee from anyone who remembers what he first promised.",
+        "portrait": "Male Sidar shade, violet-gray skin and pointed black beard, half-vanished bridge across a gorge",
+        "primary_palette": "Royal purple robes, blue smoke and pewter",
+        "hand_activity": "Tips a small glass phial of luminous blue mist into a weighing bowl",
+        "vibe": "Patient cupidity",
+        "clothing": "Royal purple coat with tall pointed shoulders and a pewter clasp"
+      },
+      {
+        "id": "iram_stonepause",
+        "name": "Iram Stonepause",
+        "epithet": "Mason of the Slow Stair",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "A mason lets shades and mortals build the same road on different schedules.",
+        "backstory": "Iram inherited a stair that was renewed every forty years by workers who did not live to see it finished. He carved a channel to take each course's weight before the next crew arrived, then invited the shades who had laid the lowest courses to check his work. The stair was finished in his lifetime, and the patches keep his apprentices employed in the next one.",
+        "portrait": "Broad adult male Sidar shade with blue-gray skin and white side curls, stepped stone road climbing through fog",
+        "primary_palette": "Sienna orange work smock, dolomite gray and faint lime",
+        "hand_activity": "Lays a small slate shim under a stair tread",
+        "vibe": "Practiced patience",
+        "clothing": "Sienna work smock with a long stone-gray apron and leather wrists"
+      },
+      {
+        "id": "veda_secondwindow",
+        "name": "Veda Secondwindow",
+        "epithet": "The Hush of the Dayroom",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_EXPANSIVE",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "One household teaches families to recognize shade kin by familiar routines.",
+        "backstory": "Veda kept a room with the blinds open for her brother after he began to fade. He stopped recognizing the street, but his hand always found the window catch he had repaired as a boy. Her dayrooms now leave the things their visitors remember in reach and ask living guests to go home without carrying them away.",
+        "portrait": "Age-lined female Sidar shade, slate skin, white twists and soft eyes, sunlight through layered window blinds",
+        "primary_palette": "Muted ultramarine shawl, sky gray and blond wood",
+        "hand_activity": "Opens a familiar worn brass window catch",
+        "vibe": "Tender steadiness",
+        "clothing": "Ultramarine shawl pinned at one shoulder over pale linen"
       }
     ]
   },
@@ -986,6 +1826,96 @@
         "hand_activity": "Slicing a captive sailor wrist-binding with a short boarding knife, carefully pulling the rope clear with her other hand",
         "vibe": "Fierce liberating resolve",
         "clothing": "Cropped vermilion boarding jacket, indigo vest, rolled cream sleeves and a rope belt"
+      },
+      {
+        "id": "dario_reefglass",
+        "name": "Dario Reefglass",
+        "epithet": "Pilot of the Shifting Bar",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "A harbor pilots' league takes charge of the shoals the admirals keep sailing through.",
+        "backstory": "Dario learned to read silt by looking through the neck of a broken bottle a freebooter left behind. He warned three captains away from the bar the week the harbor lord's own ship went down. The pilots who inherit his bottle earn a berth each year by bringing at least one rival's ship safely home.",
+        "portrait": "Olive-skinned human man with broad nose, dark goatee and one gray streak, pale shoals and high sailboats",
+        "primary_palette": "Bright turquoise coat, bottle green glass and gray waves",
+        "hand_activity": "Tilts a thick green lens to examine a sample of cloudy seawater",
+        "vibe": "Lively scrutiny",
+        "clothing": "Turquoise pilot's coat with a broad cream collar and silver buttons"
+      },
+      {
+        "id": "makena_saltstitch",
+        "name": "Makena Saltstitch",
+        "epithet": "Admiral of the Dry Dock",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "The caulkers' guild supports free sailors by holding title to the dock that services their ships.",
+        "backstory": "Makena scraped the governor's crest off a wreck and built the dock's doors out of its stern. The governor's creditors sued for the doors and found every crew in the harbor had bought a share in them. Warships still dock there, though their captains must wait while the smallest fishing boats come in first.",
+        "portrait": "Tall dark-skinned human woman in her fifties, short silver locs, straight nose and big shoulders, busy dry dock",
+        "primary_palette": "Signal yellow oilskin, walnut planks and cobalt water",
+        "hand_activity": "Mallets a strand of oakum into a plank seam",
+        "vibe": "Direct good humor",
+        "clothing": "Signal yellow short oilskin coat with a wide waxed collar"
+      },
+      {
+        "id": "carlon_mirrorsail",
+        "name": "Carlon Mirrorsail",
+        "epithet": "Prince of the False Harbor",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_RAIDERS",
+          "TRAIT_CREATIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "A wreckers' chief turns the stranded into labor for his uncharted piers.",
+        "backstory": "Carlon survived a wreck on a coast where lights were supposed to show safe water. He spent his compensation on brighter lamps and bribed the surveyors to take his stretch of cliff off their charts. The colony that strips the stranded ships has enough timber for houses and too much rope for most of its workers to leave.",
+        "portrait": "Tall pale human man with narrow blue eyes, black swept hair and a waxed mustache, one cliff lantern above rocky surf",
+        "primary_palette": "Carmine red brocade, lamp cream and storm charcoal",
+        "hand_activity": "Rotates the shutter on a square signal lantern",
+        "vibe": "Cold showmanship",
+        "clothing": "Carmine captain's brocade with a tall split collar and dark gloves"
+      },
+      {
+        "id": "hessa_sabletide",
+        "name": "Hessa Sabletide",
+        "epithet": "The Uncrowned Diver",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_EXPANSIVE",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "A salvager bands divers together against vessels that claim everything on the bottom.",
+        "backstory": "Hessa cut loose a divers' bell the admiralty had declared lost while two men were still shut inside it. She entered the salvage award in their names and used her own share to buy communal lines and floats. The crews who train with her are trying to put the same bell to work on a shipwreck the admiralty has refused to admit is there.",
+        "portrait": "Young brown human woman with short side-swept curls, a scar over one eyebrow and heavy shoulder muscles, salvage brig near turquoise breakers",
+        "primary_palette": "Verdigris green diving vest, sea blue and cream rope",
+        "hand_activity": "Clips a brass safety ring onto a coil of wet rope",
+        "vibe": "Quick confidence",
+        "clothing": "Verdigris-green sleeveless leather diving vest and cream rope harness"
+      },
+      {
+        "id": "jeron_foghorn",
+        "name": "Jeron Foghorn",
+        "epithet": "The Morning Between Storms",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_SPIRITUAL",
+          "TRAIT_ARCANE"
+        ],
+        "inherited_traits": [],
+        "angle": "Crews from rival ports grant safe passage to a weather reader whose forecasts their temples usually suppress.",
+        "backstory": "Jeron kept watch for a storm his ship's priest had said would come only if somebody broke a vow. Every ship that followed his forecast instead survived, and the rest of the crews left him their instruments. He moors between hostile ports so that none of them can claim the weather belongs to its god alone.",
+        "portrait": "Older male human with tawny skin, long salt-gray whiskers and a bandanna, seascape over a floating observatory",
+        "primary_palette": "Mauve cowl, brass tubes and silver fog",
+        "hand_activity": "Rotates the sliding drawtube of a brass weather glass",
+        "vibe": "Faraway concentration",
+        "clothing": "Mauve sailcloth cowl over a weather-faded lavender coat"
       }
     ]
   },
@@ -1092,6 +2022,106 @@
         "hand_activity": "Tracing a glowing geometric doorway in the air with his prosthetic index finger while steadying a broken archstone with his live hand",
         "vibe": "Wry calculated daring",
         "clothing": "Turquoise expedition coat with charcoal leather harness, one cut-back sleeve and a bronze prosthetic forearm"
+      },
+      {
+        "id": "tessa_inkclasp",
+        "name": "Tessa Inkclasp",
+        "epithet": "Mistress of the Cheap Press",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_INGENUITY"
+        ],
+        "inherited_traits": [
+          "TRAIT_AGNOSTIC"
+        ],
+        "angle": "Print shops give displaced adventurers and minority sects a way to publish their own accounts.",
+        "backstory": "Tessa set her first type from lead she scavenged in a shrine the congregation had abandoned. She printed the survivors' account of its burning for less than the price of the priest's official version. The presses that learned from hers have turned the market's broadest street into a place where every lie has to compete for paper.",
+        "portrait": "Young adult brown-skinned human woman, short black hair with one side cropped, one ink-smudged cheek, little press and busy market windows",
+        "primary_palette": "Cerise red waistcoat, tan paper and charcoal iron",
+        "hand_activity": "Pulls the lever of a small hand printing press over a blank sheet",
+        "vibe": "Mischievous conviction",
+        "clothing": "Cerise printer's waistcoat with rolled ivory sleeves and a dark apron"
+      },
+      {
+        "id": "dowen_campbridge",
+        "name": "Dowen Campbridge",
+        "epithet": "Speaker for the Returning Companies",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_ORGANIZED",
+          "TRAIT_CHARISMATIC"
+        ],
+        "inherited_traits": [
+          "TRAIT_AGNOSTIC"
+        ],
+        "angle": "Former adventurers use camp courts to settle claims that city judges find inconvenient.",
+        "backstory": "Dowen spent a decade dividing salvage between people who came back from the expedition and the families of those who did not. He made a rule about whose turn it was to talk and kept his camp open whenever a judge refused to hear a case. His court handles less patrol pay these days than quarrels over orchards, alleys and absent children.",
+        "portrait": "Broad olive-skinned human man in late fifties with full sandy-gray beard and heavy eyelids, ordinary tents at a stone bridge",
+        "primary_palette": "Pea green greatcoat, rust leather and river gray",
+        "hand_activity": "Spreads a cloth bundle of old expedition tokens across a plank table",
+        "vibe": "Sociable patience",
+        "clothing": "Pea green greatcoat with a soft rusty leather shoulder cape"
+      },
+      {
+        "id": "irena_dregs",
+        "name": "Irena Dregs",
+        "epithet": "The Price of Plain Water",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [
+          "TRAIT_AGNOSTIC"
+        ],
+        "angle": "A brewers' cartel takes advantage of a popular suspicion of magically treated water.",
+        "backstory": "Irena diluted the town's suspect well water with her own, expecting the council to reimburse her. When it refused, she bought the well rights and stopped telling her customers which water had been treated. Her settlements are prosperous enough to get every child a fresh cup, so long as its parents can keep up with the subscription.",
+        "portrait": "Tall fair human woman with black finger waves and a pointed chin, brewery courtyard with tanks",
+        "primary_palette": "Grape velvet, bottle greens and copper tubing",
+        "hand_activity": "Secures a copper spigot to the side of a stoneware vessel",
+        "vibe": "Proprietary amusement",
+        "clothing": "Grape velvet brewer's jacket with brass forearm bands"
+      },
+      {
+        "id": "gavren_rook",
+        "name": "Gavren Rook",
+        "epithet": "Warden of the Common Stacks",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_PHILOSOPHICAL",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [
+          "TRAIT_AGNOSTIC"
+        ],
+        "angle": "Librarians keep evidence of their neighbors' religions available in a nation formally estranged from the gods.",
+        "backstory": "Gavren inherited six chests of confiscated books and explicit instructions to burn them in public. He burned the chests and moved the contents to any household willing to lend them again. When a magistrate complained that he was running a shrine, he offered to put the complaint in circulation beside the rest of the holdings.",
+        "portrait": "Elderly Black human man with thin gold spectacles and white goatee, packed lending room with shuttered windows",
+        "primary_palette": "Pumpkin orange waistcoat, dark green shelving and parchment",
+        "hand_activity": "Fits a thick book into a framed wall slot",
+        "vibe": "Generous irony",
+        "clothing": "Pumpkin waistcoat over green sleeve garters and a pale shirt"
+      },
+      {
+        "id": "mara_bentnail",
+        "name": "Mara Bentnail",
+        "epithet": "Captain of the Salvage Road",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_RAIDERS",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [
+          "TRAIT_AGNOSTIC"
+        ],
+        "angle": "Independent salvagers insist owners prove they can render dangerous ruins safe before charging for access.",
+        "backstory": "Mara found a set of nail marks beside the spells that had made a collapsed tower impassable. She showed her crew how to recognize the safe route and marked every unclaimed chamber they freed. The city's owner sent a revenue guard and discovered someone had nailed his deed to the door of the one room she still refused to open.",
+        "portrait": "Muscular tan human woman with a broken nose and cropped rust hair, ivy and uneven tower stones",
+        "primary_palette": "Steel blue vest, oxidized tin and copper hair",
+        "hand_activity": "Bends an iron nail against a small portable anvil with pliers",
+        "vibe": "Clear-eyed nerve",
+        "clothing": "Steel-blue salvage vest with broad patchwork pockets and a linen collar"
       }
     ]
   },
@@ -1198,6 +2228,106 @@
         "hand_activity": "Stamping a broad wax debt seal onto a harvest contract while sweeping grain counters into his own bowl with the other hand",
         "vibe": "Polite acquisitive cruelty",
         "clothing": "Ivory silk riding caftan with malachite-green lapels over black lamellar panels, narrow fur collar and gold rings"
+      },
+      {
+        "id": "parna_dawnrein",
+        "name": "Parna Dawnrein",
+        "epithet": "Speaker for the Unridden",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_EXPANSIVE",
+          "TRAIT_CHARISMATIC"
+        ],
+        "inherited_traits": [
+          "TRAIT_HORSELORD"
+        ],
+        "angle": "Herders bargain collectively with commanders who think the herd's labor is free.",
+        "backstory": "Parna kept count of the mares left behind when a chief made each household supply a second mount. She withheld the foals the next year and taught the other herders to quote a price for all the work between one campaign and another. A new company gets pasture from her only after one of its officers spends a season working with the mares.",
+        "portrait": "Dark-skinned human woman with broad cheeks and high braided ponytail, bright grassland and horses far behind",
+        "primary_palette": "Burnished honey wool, sage grass and cream",
+        "hand_activity": "Braids a fresh cord into a working halter",
+        "vibe": "Friendly insistence",
+        "clothing": "Honey-yellow herder's overcoat with capped shoulders and a pale throat wrap"
+      },
+      {
+        "id": "bekar_windstitch",
+        "name": "Bekar Windstitch",
+        "epithet": "The Saddle That Fits",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_INGENUITY"
+        ],
+        "inherited_traits": [
+          "TRAIT_HORSELORD"
+        ],
+        "angle": "Saddlers build a standing trade across camps that rarely stay in the same place.",
+        "backstory": "Bekar rode with thirteen companies trying to learn why each one wore out the same seam. He designed a saddle whose parts any rider could exchange at his wagon, then made the wagons exchange parts with each other. Stocks of Bekar's bolts are now a better measure of a camp's wealth than the splendor of its tents.",
+        "portrait": "Lean fair human man, gray quiff and dark bushy eyebrows, row of saddler wagons on a bluff",
+        "primary_palette": "Dusky orange work coat, wine leather and storm sky",
+        "hand_activity": "Draws a blunt needle through the leather edge of a saddle",
+        "vibe": "Inventive concentration",
+        "clothing": "Dusky orange sleeveless work coat over a thick wine shirt"
+      },
+      {
+        "id": "nessa_redscrip",
+        "name": "Nessa Redscrip",
+        "epithet": "Mistress of the Standing Retainer",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_AGGRESSIVE"
+        ],
+        "inherited_traits": [
+          "TRAIT_HORSELORD"
+        ],
+        "angle": "A paymaster builds a permanent regime out of soldiers' short-term loyalty.",
+        "backstory": "Nessa offered to pay the winter wages of a company whose employer had fled. She paid in leather scrip redeemable at her own corrals and gave the officers twice as much when they seized the nearest crossing. In spring they found the retainer had no end date and the ford no road outside her accounting.",
+        "portrait": "Hawk-nosed dark-eyed human woman with tanned skin and a long black plait, taut red command pavilion",
+        "primary_palette": "Crimson brocade, horsehide beige and dark iron",
+        "hand_activity": "Clips a single hole through a stiff leather pay token",
+        "vibe": "Forceful confidence",
+        "clothing": "Crimson long paymaster's vest with square black shoulders and metal closures"
+      },
+      {
+        "id": "oralun_hailward",
+        "name": "Oralun Hailward",
+        "epithet": "The Truce at Foaling Hill",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_DEFENDER",
+          "TRAIT_SPIRITUAL"
+        ],
+        "inherited_traits": [
+          "TRAIT_HORSELORD"
+        ],
+        "angle": "Riders make foaling country a refuge even when rival clans meet elsewhere in battle.",
+        "backstory": "Oralun lost the mare that had carried him through six engagements when two camps fought over the only sheltered ground. He dug a trough there and swore to turn his bow on the first rider who crossed it armed. The elders still complain about that oath while sending their own mares to graze within its terms.",
+        "portrait": "Older amber-skinned human man, silver forked beard and weathered eyes, wide open hill under hail clouds",
+        "primary_palette": "Petrol blue wool, blue-gray sky and silver bronze",
+        "hand_activity": "Pours fresh water from a skin over the rim of a stone trough",
+        "vibe": "Grave tenderness",
+        "clothing": "Petrol blue hooded riding cloak with a bronze trough-shaped clasp"
+      },
+      {
+        "id": "sedi_horsethistle",
+        "name": "Sedi Horsethistle",
+        "epithet": "Master of the Mare's Mile",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_RAIDERS"
+        ],
+        "inherited_traits": [
+          "TRAIT_HORSELORD"
+        ],
+        "angle": "A race steward develops an alternative route to rank for riders without noble blood.",
+        "backstory": "Sedi's first mare outran her captain's horse on road work and was sold away before she could enter a race. She left the company with the next horse and timed an unsanctioned mile along every ford their riders used. Rich camps send their favorites to win her ribbons and sometimes have to buy the winner a coat to wear at the feast.",
+        "portrait": "Young copper-skinned human woman in a practical short crop with striped locks, racing steppe with cloth markers",
+        "primary_palette": "Bright violet jacket, light turquoise piping and dun ground",
+        "hand_activity": "Drops a striped starter's pennant from an outstretched hand",
+        "vibe": "Brisk delight",
+        "clothing": "Bright violet racing jacket with a high ribbed collar and blue piping"
       }
     ]
   },
@@ -1294,6 +2424,96 @@
         "hand_activity": "Plucking a fast figure on her compact lute while the other hand slides decisively between fretted notes.",
         "vibe": "Conspiratorial musical daring",
         "clothing": "Asymmetric turquoise travelling chanter coat with split tails, magenta sash wrapped diagonally, pearl bell strands woven through long braids."
+      },
+      {
+        "id": "farien_copperspark",
+        "name": "Farien Copperspark",
+        "epithet": "The First Bench at Dusk",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_ARCANE",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "A teacher gives the wards outside the academies access to the basic principles of spellwork.",
+        "backstory": "Farien discovered that the apprentices who swept her laboratory could reproduce the simplest lights without seeing the instructions. She offered to teach them in a public yard and let them decide when a lesson was over. The academies no longer know whom to fine, since on some evenings an entire neighborhood comes out to make its lamps burn.",
+        "portrait": "Tan human woman with salt-gray curly hair and round eyes, open yard ringed by windows and blue dusk",
+        "primary_palette": "Torch orange robe, cold blue sparks and cream cuffs",
+        "hand_activity": "Balances a little blue magical flame above an open copper ring",
+        "vibe": "Unfeigned delight",
+        "clothing": "Torch-orange field robe with cream rolled cuffs and a blue collar"
+      },
+      {
+        "id": "tallis_bluepumice",
+        "name": "Tallis Bluepumice",
+        "epithet": "The Inspector of Wells",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_MAGIC_RESISTANT",
+          "TRAIT_INDUSTRIOUS"
+        ],
+        "inherited_traits": [],
+        "angle": "Water guilds keep cities supplied while containing the waste the academies send downstream.",
+        "backstory": "Tallis stopped taking the academy's word about waste after his tools floated out of a public cistern. He trained a team to test the water on pumice before it entered the drains and to close any gate that made the stone shine. The guild's inspections are unpopular enough that several wizards quietly pay him to repeat them at their own wells.",
+        "portrait": "Broad fair-skinned human man with close tawny hair and a late-forties face, pale stone cistern and alchemical runoff",
+        "primary_palette": "Viridian inspection coat, chalk and lapis",
+        "hand_activity": "Lifts a freshly glowing pumice stone from water with bronze tongs",
+        "vibe": "Dry fastidiousness",
+        "clothing": "Viridian waxed coat with flared tabs and a short lapis mantle"
+      },
+      {
+        "id": "ishara_morrowquill",
+        "name": "Ishara Morrowquill",
+        "epithet": "The Mistress of Closed Instruction",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_SUMMONER"
+        ],
+        "inherited_traits": [],
+        "angle": "A tutor sells summoned aides to apprentices and claims the work they perform through them.",
+        "backstory": "Ishara learned to bind little household spirits to unfinished examinations and sold their help to students in disgrace. She agreed to wait for payment until the students had laboratories of their own. Her former pupils send whatever she requests because the spirit that took an examination can always come back to dispute its mark.",
+        "portrait": "Pale tawny human woman, angular face and straight black hair with white stripe, angular magical study with faint ectoplasm",
+        "primary_palette": "Peony magenta coat, black lacquer and ghost lilac",
+        "hand_activity": "Pins a tiny violet ectoplasmic paper slip beneath a plain glass weight",
+        "vibe": "Tight composure",
+        "clothing": "Peony magenta tutor's coat with upright black lacquer collar and close sleeves"
+      },
+      {
+        "id": "corin_slategate",
+        "name": "Corin Slategate",
+        "epithet": "The Marshal of Locked Doors",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_ORGANIZED",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [],
+        "angle": "A civil watch negotiates an inspection right in laboratories that claim to answer only to themselves.",
+        "backstory": "Corin led the first rescue crew into a laboratory without asking each occupant's academy rank. The order to arrest him came from the surviving masters once they found he had taken the injured servants out first. He spent his sentence drawing a plan of all the locked doors a municipal watch would need to open at the next fire.",
+        "portrait": "Gray-haired Black human man with a thick neck and warm brown eyes, a dark academy stair with a reinforced door",
+        "primary_palette": "Ink blue gambeson, ash wood and steel gray",
+        "hand_activity": "Fits a long iron release bar through two door brackets",
+        "vibe": "Professional firmness",
+        "clothing": "Ink-blue watch gambeson over a dull steel gorget and ash leather cuffs"
+      },
+      {
+        "id": "meri_thunderchalk",
+        "name": "Meri Thunderchalk",
+        "epithet": "The Gallery of Failed Wonders",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "Open exhibitions let inventors dispute the academies' definitions of safe and useful magic.",
+        "backstory": "Meri built a room to exhibit dangerous artifacts that would no longer obey their inventors. She invited each inventor to demonstrate the safest way an ordinary visitor could carry the artifact back out. The gallery is crowded enough that inventors threaten to show her their rivals' successes if she puts their disasters too near the door.",
+        "portrait": "Short young adult human woman with brown skin, a tight undercut and one spiral earring, gallery of cracked magical devices",
+        "primary_palette": "Soft gold waistcoat, mint magic and pale limestone",
+        "hand_activity": "Turns a cracked glowing sphere in a padded display stand",
+        "vibe": "Tender skepticism",
+        "clothing": "Soft gold buttoned vest with elaborate mint sleeve embroidery"
       }
     ]
   },
@@ -1390,6 +2610,96 @@
         "hand_activity": "Wrenching a bent magical collar open between both gloved fists as its final frost-rune cracks.",
         "vibe": "Possessive cold fury",
         "clothing": "Ice-blue frost-dyed wolf-hide vest over gunmetal scavenged mail, oxblood leather cross-belts, short ragged fur collar, hard riding gloves."
+      },
+      {
+        "id": "runa_boldhide",
+        "name": "Runa Boldhide",
+        "epithet": "Keeper of the Unfrozen Camp",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_EXPANSIVE",
+          "TRAIT_INDUSTRIOUS"
+        ],
+        "inherited_traits": [],
+        "angle": "Tanners and hide workers defend a permanent winter camp from raiders within their own people.",
+        "backstory": "Runa remembered which valley would thaw early because she had buried six sled runners there one winter. She spread the first hides over their graves while her crew dug a shelter deep enough to outlast the snow. The next war band that wanted to requisition her winter stores found every family expecting a vote.",
+        "portrait": "Older broad-shouldered brown human woman with steel-gray side braid, hide racks outside a deep winter shelter",
+        "primary_palette": "Golden ochre hides, dark spruce and pale snow",
+        "hand_activity": "Scrapes a stretched hide with a curved bone tool",
+        "vibe": "Practical generosity",
+        "clothing": "Golden ochre hide coat with a raised dark fur collar and deerskin bracers"
+      },
+      {
+        "id": "morgun_iceheel",
+        "name": "Morgun Iceheel",
+        "epithet": "Guide of the Blue Notch",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_DEFENDER",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "Scouts establish a trail court that decides which companies can cross dangerous country.",
+        "backstory": "Morgun turned a scouting party back at a cut in the glacier where he could hear meltwater under solid ice. Half the party laughed and went on while he spent the night making crampons for the rest. He still takes commissions from captains who doubt his stories, so long as they understand which of them he gets to turn back.",
+        "portrait": "Fit pale human man with a squarish face, copper mustache and ice on his eyelashes, pale glacier notch",
+        "primary_palette": "Glacier blue leather, cream shearling and rust",
+        "hand_activity": "Laces an iron crampon onto a winter boot",
+        "vibe": "Earned wariness",
+        "clothing": "Glacier blue harness jacket over cream shearling"
+      },
+      {
+        "id": "bekka_tallfang",
+        "name": "Bekka Tallfang",
+        "epithet": "Voice of the Empty Den",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_AGGRESSIVE",
+          "TRAIT_SPIRITUAL"
+        ],
+        "inherited_traits": [],
+        "angle": "A terror cult binds rival families through the ritual fostering of a supposed spirit beast.",
+        "backstory": "Bekka claimed she could tell which family a wolf had eaten by the shape of its teeth. When one den lay empty after a raid she took its cub and visited an enemy family to collect the milk she said it was owed. The families that refuse to feed it have begun waking to find a tooth beside their oldest child's bed.",
+        "portrait": "Sharp-featured dark human woman, short russet curls and one long fang earring, dark den under an overhang",
+        "primary_palette": "Cranberry red shawl, brown ash and warm topaz",
+        "hand_activity": "Dangles a long fang above a carved wooden cradle",
+        "vibe": "Ceremonial menace",
+        "clothing": "Cranberry felt shawl clasped over shaggy dark shoulder furs"
+      },
+      {
+        "id": "jerek_barkshield",
+        "name": "Jerek Barkshield",
+        "epithet": "Friend of the Winter Strangers",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "A river clan grants winter residence to strangers who teach or practice a craft.",
+        "backstory": "Jerek carried fallen rivals over the ice rather than let their families follow the spring water to look for them. The families taught his camp the ways they cured bark, wove willow and stopped a frostbitten toe going black. His successor has to know a trade somebody else brought across the river, which makes it hard for the old chiefs to agree on one.",
+        "portrait": "Round-faced young adult Black human man with short coils and a cheek scar, frosty birch trees beside a winter village",
+        "primary_palette": "Pine green felt, cream birch and berry trim",
+        "hand_activity": "Weaves a new strip of willow into a curved shield rim",
+        "vibe": "Restless welcome",
+        "clothing": "Pine-green felt jacket layered beneath a thin birch-bark shoulder shield"
+      },
+      {
+        "id": "unna_ashtrail",
+        "name": "Unna Ashtrail",
+        "epithet": "The Last Word at the Fire",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "An elected camp speaker keeps feuds from crossing the boundary between road and winter hearth.",
+        "backstory": "Unna kept a stick for every night two kin groups managed to share a shelter without drawing blades. She made their loudest fighters break one before the whole camp whenever they wanted to resume an argument. The bundle grew so heavy she could send an apprentice to collect their fines and still have enough sticks for the night.",
+        "portrait": "Very old tan human woman, wispy white braids, two missing teeth and sun-crinkled eyes, large timber winter lodge and distant campfire",
+        "primary_palette": "Heather violet wool, birch gold and smoke gray",
+        "hand_activity": "Snaps a dry willow switch in two between both hands",
+        "vibe": "Unsparing humor",
+        "clothing": "Heather violet hooded mantle with an oversized wooden clasp"
       }
     ]
   },
@@ -1486,6 +2796,96 @@
         "hand_activity": "Painting a stolen commander distinctive black moustache onto her half-mask with a thin theatrical brush while angling it to inspect the imitation.",
         "vibe": "Predatory delighted self-invention",
         "clothing": "Coral-pink tragic-queen stage dress with a dramatic high ivory fan collar, fitted pearl-buttoned bodice, slashed mint-lined sleeves, and a short asymmetrical mimic cape."
+      },
+      {
+        "id": "pella_crackmirror",
+        "name": "Pella Crackmirror",
+        "epithet": "Marshal of the Repaired Faces",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_INGENUITY"
+        ],
+        "inherited_traits": [],
+        "angle": "Mask menders build a refuge for performers who need time away from their assigned roles.",
+        "backstory": "Pella repaired a child's mask and realized the child had never seen the inside of it. She made a hook for each mask that came to the shop and set a rule that no visitor could be called by a role until reaching for one. The hooks fill quickest after the court announces an especially heartwarming show.",
+        "portrait": "Stocky middle-aged Black human woman, short dyed white twists and warm cheeks, mask workshop full of unpainted porcelain",
+        "primary_palette": "Peacock turquoise coat, coral and porcelain white",
+        "hand_activity": "Fits a piece of white porcelain into a gently cracked stage mask",
+        "vibe": "Sturdy kindness",
+        "clothing": "Peacock turquoise tailor's jacket with short coral sleeves and broad pockets"
+      },
+      {
+        "id": "marno_redbutton",
+        "name": "Marno Redbutton",
+        "epithet": "Proprietor of the Other Ending",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "Touring players give towns the right to choose when a performance has made its point.",
+        "backstory": "Marno brought down the curtain on a tragedy a full scene early and heard the audience finish it three different ways. He carried that trick to a court whose members had paid him to make an enemy look foolish. They have not hired him since, but their neighbors keep asking how many other endings they could afford.",
+        "portrait": "Lean fair human man with a wide smile, short strawberry-blond pompadour and laugh lines, worn red curtain and rows of oil lamps",
+        "primary_palette": "Ochre gold tailcoat, stage maroon and dusty brown",
+        "hand_activity": "Pulls a thick velvet curtain cord toward a cleat",
+        "vibe": "Wary playfulness",
+        "clothing": "Ochre-gold tailcoat with broad rounded claret cuffs and striped shirt"
+      },
+      {
+        "id": "jessa_of_the_raked_seats",
+        "name": "Jessa of the Raked Seats",
+        "epithet": "Keeper of the Laughing Debt",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "A box-office broker decides which audiences can afford to leave a show.",
+        "backstory": "Jessa ran the theater's debt book from the cheap seats because the back row had the best view of who walked out. She put a small fee on departures and waived it for anyone who could find a stranger to take a seat. Her new hall is always full, a fact the court displays with considerable pride.",
+        "portrait": "Tall olive-skinned human woman with slick black bob and a long crooked grin, dramatically raked theater balconies",
+        "primary_palette": "Plum satin, electric lilac and black lacquer",
+        "hand_activity": "Punches a clean round hole in a long blank paper ticket",
+        "vibe": "Performative generosity",
+        "clothing": "Plum satin box-office coat with split tails and black angular shoulder fans"
+      },
+      {
+        "id": "nivaro_springheel",
+        "name": "Nivaro Springheel",
+        "epithet": "The Parade Below Ground",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_EXPANSIVE",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [],
+        "angle": "A procession under the streets becomes a protected route for people the daytime pageants avoid.",
+        "backstory": "Nivaro put a cart of failed parade floats below the city to keep them out of a rainstorm. When a new arrest order came down, he rolled them away with the wanted performers hidden inside. He still plans the underground procession every year, and its most important spectators wait by the exits with food.",
+        "portrait": "Middle-aged brown human man with starched white mustache, bald crown and one purple eyebrow, broad undercroft with float wheels",
+        "primary_palette": "Bright vermilion jacket, brass and green shadows",
+        "hand_activity": "Works a small concertina bellows attached to a brass float pipe",
+        "vibe": "Impatient joy",
+        "clothing": "Bright vermilion bandleader jacket with thick brass toggles and green collar"
+      },
+      {
+        "id": "sill_needlemoon",
+        "name": "Sill Needlemoon",
+        "epithet": "The Volunteer at Every Rehearsal",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_ARCANE",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "A stage magician gains followers by taking people's unwanted feelings and selling admission to them.",
+        "backstory": "Sill learned to put her fear of heights in a glass bead before walking the rope. She made spare beads for the other performers and charged spectators who wanted to feel what bravery had cost them. The ones she has not sold accumulate in the wings, where a wrong step makes an audience of a single person.",
+        "portrait": "Pale female demon-blooded performer with small curved horns, large dark eyes and blue-black hair, high rafters and suspended lines",
+        "primary_palette": "Moon-white costume, midnight indigo and icy beads",
+        "hand_activity": "Threads a bright glass bead onto a long aerial rope",
+        "vibe": "Serene appetite",
+        "clothing": "Moon-white acrobat's jacket over an indigo high-necked leotard, with thin black piping"
       }
     ]
   },
@@ -1582,6 +2982,96 @@
         "hand_activity": "Beating a strapped chest drum with her open right palm while her left hand mutes its rim, caught in the middle of singing a triumphant verse.",
         "vibe": "History Sung Obedient",
         "clothing": "Leaf-green sleeveless pleated performance tunic, broad black sash and short mantle of painted ancestor plaques and copper bells; bare muscular arms."
+      },
+      {
+        "id": "gromka_potlid",
+        "name": "Gromka Potlid",
+        "epithet": "The Hearth That Feeds Strangers",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_BARBARIAN",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Orc cooks turn scattered war camps into winter settlements with a claim on the common larder.",
+        "backstory": "Gromka cooked three pots at an exhausted camp and discovered the smallest pot fed the most people if everyone ate in turns. She took it along the line of camps and began asking each one what it could bring to the next meal. Their storehouses are tall enough now that the chiefs must come down from their war seats to ask for a share.",
+        "portrait": "Burly older olive-green female orc with tusks, gray curls and a broad smile, giant communal cookhouse",
+        "primary_palette": "Butternut orange tunic, dark iron and pea green",
+        "hand_activity": "Lifts a heavy black pot lid with a wooden hook",
+        "vibe": "Dry generosity",
+        "clothing": "Butternut orange cook's wrap over a dark hide apron and round copper shoulder ring"
+      },
+      {
+        "id": "borruk_orejaw",
+        "name": "Borruk Orejaw",
+        "epithet": "Warden of the Spear Ferry",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_BARBARIAN",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [],
+        "angle": "A river orc claims command of crossings whose maintenance the war chiefs consider beneath them.",
+        "backstory": "Borruk was told to tear down a ferry before a rival band's march and wait on the far bank for orders. He stretched a spare chain across the river instead and carried both sides a wagon at a time, after collecting a broken spear as the fare. He has enough iron for a new ferry now and more armed friends on either bank than the chief who gave the order.",
+        "portrait": "Huge moss-green male orc with short cream tusks, close black beard and a nicked ear, broad river ferry with stone piers",
+        "primary_palette": "Cerulean coat, river gray and iron",
+        "hand_activity": "Slots a snapped spearhead into a ferryman's iron chain guide",
+        "vibe": "Good-natured watchfulness",
+        "clothing": "Cerulean boatman's coat over an iron ring collar and buff glove"
+      },
+      {
+        "id": "uzhka_sourbone",
+        "name": "Uzhka Sourbone",
+        "epithet": "Collector of the Foster Tithe",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_BARBARIAN",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "A war matron prolongs a traditional exchange of hostages long after its peace has failed.",
+        "backstory": "Uzhka raised the child of a visiting chief in good faith until the chief refused to send her son home. She counted the weeks she had fed his child and demanded a second from every family that spoke for him. The terms are carved on notched bones so that even a child can read how long she intends to keep them.",
+        "portrait": "Lean moss-green female orc, sharp yellow eyes and red-brown braids, dark timber moot hall",
+        "primary_palette": "Crimson felt, chalk bone and dark cedar",
+        "hand_activity": "Snaps a piece from a notched rib-bone tally",
+        "vibe": "Severe certainty",
+        "clothing": "Crimson matron's mantle with chiseled bone shoulder toggles"
+      },
+      {
+        "id": "rask_glowcap",
+        "name": "Rask Glowcap",
+        "epithet": "The Keeper of Low Roads",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_BARBARIAN",
+          "TRAIT_CREATIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Goblin delvers use phosphorescent fungi to connect camps that dismiss them as expendable scouts.",
+        "backstory": "Rask grew a shining fungus in the boot he had been issued because its mate had never arrived. His family planted spores along a route the orc patrols could not crawl through, and the route proved faster than the march above. When he began charging to carry messages, the captains wanted to know where he got the advantage and the boot.",
+        "portrait": "Small jade-green male goblin with long ears, bulbous gold eyes and a very short scalp tuft, fungus-lit low cave",
+        "primary_palette": "Violet hood, phosphor green and slate",
+        "hand_activity": "Plants a green-glowing mushroom in a stone niche with two long fingers",
+        "vibe": "Secretive glee",
+        "clothing": "Violet wool hood with scalloped edge and slate gray tunnel vest"
+      },
+      {
+        "id": "mogra_tempreed",
+        "name": "Mogra Tempreed",
+        "epithet": "Speaker of the Reed Shields",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_BARBARIAN",
+          "TRAIT_INGENUITY"
+        ],
+        "inherited_traits": [],
+        "angle": "Marsh families use cheap armor to defend themselves without pledging half their harvest to a chief.",
+        "backstory": "Mogra brought a reed shield to a challenge after no smith would sell iron to her family. She let the first opponent put three holes in it before showing how the reeds closed around a blade. Every marsh camp knows how to weave her shields now, and their young fighters have stopped asking for someone else's colors.",
+        "portrait": "Older dark olive-green female orc with yellow tusks, wide flat nose, white crew cut, amber marsh light",
+        "primary_palette": "Leaf green bodice, flax and warm brass",
+        "hand_activity": "Pulls a dry reed tight in the weave of a small round shield",
+        "vibe": "Amused defiance",
+        "clothing": "Leaf green armored bodice with broad flax-woven wrist guards"
       }
     ]
   },
@@ -1688,6 +3178,106 @@
         "hand_activity": "Cranking a small brass ferry winch with his right hand while his left hand guides the taut mooring rope through its fairlead.",
         "vibe": "Quiet Water Commerce",
         "clothing": "Broad burnt-sienna waxed boatman coat with seafoam-green knitted collar, rolled cuffs, copper buckles and leather rope harness; heavy weatherproof silhouette."
+      },
+      {
+        "id": "mirel_widowfern",
+        "name": "Mirel Widowfern",
+        "epithet": "The Warden of Surrender",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_DEFENDER",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [
+          "TRAIT_SINISTER"
+        ],
+        "angle": "A dark elf establishes safe-conduct for people who abandon disputes before killing completes them.",
+        "backstory": "Mirel carried a ransom to a council that had already voted to kill her brother. She left the payment on the floor and brought home its youngest guard, who had opened the cellar when nobody else would. Her safe houses fly the guard's badge in reverse and offer the same deal to anybody willing to turn a key.",
+        "portrait": "Dark slate-skinned female night elf with pointed ears, cropped white hair and a burnished nose ring, fern garden outside a night gate",
+        "primary_palette": "Rust red velvet, dark ferns and cool silver",
+        "hand_activity": "Turns a small silver badge over in her open hand",
+        "vibe": "Measured trust",
+        "clothing": "Rust-red velvet vest with close brass studs over a dark shirt"
+      },
+      {
+        "id": "sovar_whisperleaf",
+        "name": "Sovar Whisperleaf",
+        "epithet": "The Exchange of Safe Rumors",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_CHARISMATIC"
+        ],
+        "inherited_traits": [
+          "TRAIT_SINISTER"
+        ],
+        "angle": "Rumor brokers create a market that pays less for lies and more for useful warnings.",
+        "backstory": "Sovar was paid for a rumor so good his customer tried to have him killed to stop it being sold twice. He moved into an abandoned theater and fixed a fee for each warning, deducted if the customer could prove it false. The best seats are reserved for the people who correct him in public, which keeps his oldest customers away.",
+        "portrait": "Male dark elf with deep plum skin, close two-tone curls and narrow ears, abandoned amphitheater at night",
+        "primary_palette": "Teal silk, dull gold and moss-black stone",
+        "hand_activity": "Pulls a blue stone marker from one of two shallow bowls",
+        "vibe": "Poised irony",
+        "clothing": "Teal silk coat with a deep fan collar and simple gold sleeve trim"
+      },
+      {
+        "id": "ithra_blackvine",
+        "name": "Ithra Blackvine",
+        "epithet": "Keeper of the Still-Verdict",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_ARCANE",
+          "TRAIT_SPIRITUAL"
+        ],
+        "inherited_traits": [
+          "TRAIT_SINISTER"
+        ],
+        "angle": "A ritualist traps dissent in a court where any contradiction becomes testimony against its speaker.",
+        "backstory": "Ithra bred a vine that remembered the sound of its keeper's last command. She grew it about a deserted judgment seat and announced that it could hear evidence the living had learned to forget. Speakers now agree with the vine while it is still rustling, in the hope of keeping what they meant to say out of reach.",
+        "portrait": "Angular female dark elf with gray-purple skin, long white braids and very pale eyes, black vine wrapped around a court seat",
+        "primary_palette": "Sepulchral purple robes, pearl webbing and inky green",
+        "hand_activity": "Twines a black tendril around a carved silver finger ring",
+        "vibe": "Devout dispassion",
+        "clothing": "High-collared sepulchral purple robe with cuffless black gloves"
+      },
+      {
+        "id": "nessar_foxglove",
+        "name": "Nessar Foxglove",
+        "epithet": "Gardener of the Truce Path",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_EXPANSIVE",
+          "TRAIT_INGENUITY"
+        ],
+        "inherited_traits": [
+          "TRAIT_SINISTER"
+        ],
+        "angle": "A night gardener grows useful passageways through woods that hostile houses still claim to own.",
+        "backstory": "Nessar planted the winter gardens of houses that were fighting about whose road could reach the wells. He put his newest cuttings where nobody expected to walk and pruned them until two kitchens found themselves joined by a path. The servants use it in the dark, and their employers have learned to buy herbs from the same old man.",
+        "portrait": "Older charcoal-skinned male dark elf, brush of white whiskers and leaf-shaped ears, moonlit path through night-flowering shrubs",
+        "primary_palette": "Muted celadon wrap, pale foxgloves and violet night",
+        "hand_activity": "Clips a pale foxglove stem with slim curved shears",
+        "vibe": "Gentle cunning",
+        "clothing": "Celadon work wrap with short tufted sleeves and dark waist ties"
+      },
+      {
+        "id": "valira_thinveil",
+        "name": "Valira Thinveil",
+        "epithet": "The Maker of Second Faces",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [
+          "TRAIT_SINISTER"
+        ],
+        "angle": "A disguise artist gives escaped servants names that survive close inquiry.",
+        "backstory": "Valira dressed a runner in an expensive disguise that came apart at the first dawn gate. She began again with cheap wool, the accent of her sister's village, and a handful of genuine neighbors willing to vouch. The people she helps remember the invented childhoods less clearly than the real neighbor who arrived first to defend them.",
+        "portrait": "Young adult dark elf woman with purple-gray skin and a white undercut, small mountaintop dye house at dawn",
+        "primary_palette": "Golden mustard smock, moon gray and wine trim",
+        "hand_activity": "Presses a little curl of dark wig hair into a wooden stand",
+        "vibe": "Bright discretion",
+        "clothing": "Golden mustard seamstress smock with broad pewter cuffs"
       }
     ]
   },
@@ -1784,6 +3374,96 @@
         "hand_activity": "Pulling the final strap of her left officer gauntlet tight with her right hand, teeth set as she prepares to address her assembled soldiers.",
         "vibe": "Immortality Must Be Earned",
         "clothing": "Vermilion sleeveless military surcoat over gunmetal-grey articulated officer armour, bone toggles and a snapped noble chain worn as a shoulder badge; no sweeping cloak."
+      },
+      {
+        "id": "vesna_quayward",
+        "name": "Vesna Quayward",
+        "epithet": "The Mortal Factor",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "Mortal merchants buy a guarded right of passage for households leaving the feasting estates.",
+        "backstory": "Vesna never owned land, which helped the customs officers overlook her first dozen cargoes of people. She paid a new wharf guard every month until the guard and the dockhands asked her to buy their entire company. The company publishes its tariff in the markets and charges less for a person whose master is likely to come looking.",
+        "portrait": "Middle-aged broad dark-skinned human woman, curly hair flecked white and strong straight nose, wet customs docks in moonlight",
+        "primary_palette": "Jade tailored coat, wet slate and amber lamps",
+        "hand_activity": "Slides a blank brass transit disc into a small leather wallet",
+        "vibe": "Clear commercial nerve",
+        "clothing": "Jade tailored factor's coat with a simple brass collar and dark green sash"
+      },
+      {
+        "id": "malrec_rubyhand",
+        "name": "Malrec Rubyhand",
+        "epithet": "The Lord of the Off Hours",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_ORGANIZED",
+          "TRAIT_CREATIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Craft estates use the hours their vampire lords sleep to select officers of their own.",
+        "backstory": "Malrec inherited a dye works whose masters were still signing orders long after he went below to rest. He began buying their experiments on the condition that the other lords could see their account books. Now the weavers elect their own night foreman, and the worst part of challenging him is finding a color he has not already bought.",
+        "portrait": "Tawny male vampire with smooth white hair, dark red irises and one visible fang, dye-house windows at sunset",
+        "primary_palette": "Ultramarine brocade, red dye and chalk cuffs",
+        "hand_activity": "Raises a dark red strip of cloth from a steaming vat with a wooden rod",
+        "vibe": "Offhand sophistication",
+        "clothing": "Ultramarine court coat with ivory ornamental stitching and folded sleeves"
+      },
+      {
+        "id": "lysana_bloodgilt",
+        "name": "Lysana Bloodgilt",
+        "epithet": "The Inheritor of Feasts",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_PHILOSOPHICAL"
+        ],
+        "inherited_traits": [],
+        "angle": "A vampire jurist enshrines the right to feed as a legacy estate families can sell.",
+        "backstory": "Lysana received only the silverware when her aunt's estates changed hands. She bought back the right to each of the meals once served on it and spent a decade demonstrating that the meals were worth more than the land. The silver now goes round her table at every auction while stewards outside count the villagers each bid will cost.",
+        "portrait": "Pale ash-blond female vampire, clipped curls, pronounced jaw and small fangs, candlelit dining hall with high windows",
+        "primary_palette": "Garnet silk gown, bright silver and gold highlights",
+        "hand_activity": "Polishes a wide silver spoon with a soft cream cloth",
+        "vibe": "Intimate malice",
+        "clothing": "Garnet silk gown with high standing ruff and gold filigree shoulder cups"
+      },
+      {
+        "id": "milos_grainsty",
+        "name": "Milos Grainsty",
+        "epithet": "The Keeper of the Cellar Door",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_EXPANSIVE",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [],
+        "angle": "Farm families keep an underground store reserve that their vampire landlords cannot seize in daylight.",
+        "backstory": "Milos discovered a supply cellar the estate had walled shut during an outbreak of hunger. He reopened it and set one household to watch its door while he asked the others to leave what they could inside. The lord's reeve says the deficit is all due to rats, and nobody in the family has been unkind enough to contradict him.",
+        "portrait": "Older stout copper-skinned human man with a gray beard and gentle expression, limestone cellar and earthen jars",
+        "primary_palette": "Mustard brown smock, oat straw and lamplight",
+        "hand_activity": "Seats a lid onto a large earthen grain jar",
+        "vibe": "Protective good humor",
+        "clothing": "Mustard smock with a straw-colored split neck guard and rolled shirt cuffs"
+      },
+      {
+        "id": "dianthe_nightjury",
+        "name": "Dianthe Nightjury",
+        "epithet": "The Judge of the Open Shutter",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_ARCANE"
+        ],
+        "inherited_traits": [],
+        "angle": "An ambitious vampire hears mortal petitions in a room illuminated by the complainants.",
+        "backstory": "Dianthe could never prove whether a fellow elder had glamoured her bailiff or merely bribed him. She made a courtroom where the bailiff need only open a shutter to halt proceedings and put his account on the record. The bailiff sits a little more comfortably than was once customary, which may have as much to do with his honesty as the shutters.",
+        "portrait": "Dark-skinned female vampire with angular cheeks and a silver crown braid, tall hearing room and blue night outside",
+        "primary_palette": "Pearlescent gray robe, lilac and black velvet",
+        "hand_activity": "Draws up a patterned shutter with its cord",
+        "vibe": "Critical poise",
+        "clothing": "Pearlescent gray judgment robe with pointed lilac shoulders and black wrist trim"
       }
     ]
   },
@@ -1890,6 +3570,106 @@
         "hand_activity": "Tightening a heavy gate latch with a short wrench while bracing its iron housing with the other hand",
         "vibe": "resourceful guarded practicality",
         "clothing": "Rust-red leather mechanic jerkin with teal quilted sleeves and a thick asymmetrical iron gorget"
+      },
+      {
+        "id": "temran_closetower",
+        "name": "Temran Closetower",
+        "epithet": "The Joiner of False Rooms",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_INGENUITY",
+          "TRAIT_ARCANE"
+        ],
+        "inherited_traits": [
+          "TRAIT_SUNDERED"
+        ],
+        "angle": "Gate builders test dimensions in expendable model houses instead of opening trials in inhabited ones.",
+        "backstory": "Temran's first door opened into a room his workshop had never built. He sent a model through before he sent a worker and found the model's little furniture in the workshop two days before he finished it. His apprentices check their models for inhabitants before accepting the next gate commission.",
+        "portrait": "Dark-skinned human man with cropped black curls and close salt beard, dark blue workroom with impossible stairs behind",
+        "primary_palette": "Marigold work vest, midnight blue and copper",
+        "hand_activity": "Slots a thin wooden stair into a small model house",
+        "vibe": "Determined astonishment",
+        "clothing": "Marigold work vest with broad copper cuffs and midnight-blue collar"
+      },
+      {
+        "id": "ivaya_fadebell",
+        "name": "Ivaya Fadebell",
+        "epithet": "The Listener at the Safeline",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_MAGIC_RESISTANT",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [
+          "TRAIT_SUNDERED"
+        ],
+        "angle": "Families at the edge of summoning sites set their own terms for evacuation.",
+        "backstory": "Ivaya tied a bell to a gate beam because at first any change in its note lasted long enough to let her fetch a master. By the time the note broke there was only time to knock on the neighboring doors. The new settlements around her watch towers built their meeting rooms far enough away that a bell can still be heard before it is needed.",
+        "portrait": "Older tan human woman with a white widow's peak and fierce eyes, remote tower under a wavering sky",
+        "primary_palette": "Deep blue-green coat, glinting bronze and cloudy violet",
+        "hand_activity": "Holds a tuning fork beside a little bronze warning bell",
+        "vibe": "Difficult watchfulness",
+        "clothing": "Dark teal mountain coat with high storm collar and narrow bronze shoulder strips"
+      },
+      {
+        "id": "orys_redmargin",
+        "name": "Orys Redmargin",
+        "epithet": "The Patron of Final Revisions",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_PHILOSOPHICAL",
+          "TRAIT_SUMMONER"
+        ],
+        "inherited_traits": [
+          "TRAIT_SUNDERED"
+        ],
+        "angle": "A summoner recruits scholars by letting them revise the consequences written into their own futures.",
+        "backstory": "Orys found he could bring a completed manuscript backward through a gate whose owner had never finished it. He invited writers to read what their work would cost them and submit a revision to the harm, provided they offered the gate a replacement. The margins in his notebook have grown crowded with other people's villages.",
+        "portrait": "Gaunt pale human man in his sixties, russet beard trimmed into a long point, gate with floating pages",
+        "primary_palette": "Oxblood red robe, bone paper and violet gloom",
+        "hand_activity": "Pins a curling blank sheet with the tip of a metal stylus",
+        "vibe": "Rapt calculation",
+        "clothing": "Oxblood robe with tapered ivory cuffs and a thin raised collar"
+      },
+      {
+        "id": "neriss_cerulean_wake",
+        "name": "Neriss Cerulean Wake",
+        "epithet": "The Ferryman of Close Shores",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [
+          "TRAIT_SUNDERED"
+        ],
+        "angle": "Planar travelers finance a string of shelters that sell return passage as carefully as departure.",
+        "backstory": "Neriss charged twice for a first step into the beyond and nothing for the second. He found that his clients were willing to carry anyone they met back through, provided the fares went to the keeper of a permanent landing. The keepers have set their ceilings low so the guests who come out like the sound of a room the same height as the one they left.",
+        "portrait": "Brown-skinned human man, broad face, dark curly hair and one gold eye, ferry on strange blue water",
+        "primary_palette": "Cerulean silk, deep indigo and aged gold",
+        "hand_activity": "Pushes a narrow oar against the edge of a stone landing",
+        "vibe": "Level courtesy",
+        "clothing": "Cerulean silk ferryman's coat with raised gold shoulder bands"
+      },
+      {
+        "id": "hesia_ashcomber",
+        "name": "Hesia Ashcomber",
+        "epithet": "Custodian of the Blue Orchard",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_INDUSTRIOUS"
+        ],
+        "inherited_traits": [
+          "TRAIT_SUNDERED"
+        ],
+        "angle": "Growers turn soil warped by a destroyed ritual into a source of food and a reason to stay.",
+        "backstory": "Hesia returned to her father's orchard and found it yielding ash in the size and shape of apples. She broke one open, recovered a seed and planted all the ones that sprouted blue in a new row. The fruit keeps a hungry village alive, although every grower takes a turn deciding whether the next batch can be trusted.",
+        "portrait": "Young adult brown human woman with dark eyes and a mass of short curls, ashen orchard with luminous blue leaves",
+        "primary_palette": "Lime green apron, cyan leaves and soft gray",
+        "hand_activity": "Picks a seed from a half-open ash apple on a tray",
+        "vibe": "Hopeful caution",
+        "clothing": "Lime-green orchard apron over a muted charcoal blouse with pale buttons"
       }
     ]
   },
@@ -1996,6 +3776,106 @@
         "hand_activity": "Stitching a crack in a small porcelain memory mask with a silver needle while supporting its cheek",
         "vibe": "intimate theatrical melancholy",
         "clothing": "Violet fitted curator coat with long wine cuffs and a fan of tiny moon-silver mask ornaments"
+      },
+      {
+        "id": "kaaras_hingesmoke",
+        "name": "Kaaras Hingesmoke",
+        "epithet": "The Keeper of the Unlatched Pit",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_DEFENDER",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [
+          "TRAIT_FALLOW"
+        ],
+        "angle": "A demon controls an escape route by keeping greater devils from claiming those whose terms have expired.",
+        "backstory": "Kaaras's first guard shift began the day the terms of a dozen prisoners expired. He found no release order and spent his next century opening the lower gate one inmate at a time. The old masters finally noticed his absences when their favorite victims started selling him supplies on the other side.",
+        "portrait": "Male demon with charcoal skin, wide face, one stubbed and one curved horn, basalt passage and distant magma",
+        "primary_palette": "Cobalt armor, charcoal rock and orange embers",
+        "hand_activity": "Lifts an iron hinge pin from a small dungeon door",
+        "vibe": "Guarded resolve",
+        "clothing": "Pitted cobalt guard coat with broad dark plates open at the neck"
+      },
+      {
+        "id": "sivriel_cinnabar",
+        "name": "Sivriel Cinnabar",
+        "epithet": "The Mistress of Ash Assays",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_FINANCIAL",
+          "TRAIT_INDUSTRIOUS"
+        ],
+        "inherited_traits": [
+          "TRAIT_FALLOW"
+        ],
+        "angle": "A demon turns ash from spent bargains into an asset and makes every furnace part of her estate.",
+        "backstory": "Sivriel salvaged the ashes of failed infernal contracts and found that certain signatures gave off enough heat to temper iron. She tested which materials held that heat and bought the furnaces that could burn them. Now her buyers are required to bargain at least once a season whether they need anything or not.",
+        "portrait": "Female demon with dark crimson scales, chipped ivory temples and two high curved horns, large infernal assay furnace",
+        "primary_palette": "Copper orange work coat, bone and vermilion ash",
+        "hand_activity": "Tips a sample of vermilion ash into a heavy black crucible",
+        "vibe": "Feverish precision",
+        "clothing": "Copper-orange furnace coat with plated open collar and bone forearm shields"
+      },
+      {
+        "id": "mordax_silvercord",
+        "name": "Mordax Silvercord",
+        "epithet": "The Chancellor of Lesser Malice",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_CHARISMATIC",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [
+          "TRAIT_FALLOW"
+        ],
+        "angle": "A demon extorts protection money by selling relief from punishments he controls.",
+        "backstory": "Mordax bought a minor siege engine and sent his agents to describe it to every town he could not reach. He collected the first tribute from a city that had never seen it and bought two smaller engines from the proceeds. He encourages his converts to underpay because collecting arrears pays his companies better than keeping a promise.",
+        "portrait": "Dark violet-skinned male demon, swept ridged horns, narrow silver eyes and a genial smirk, tall citadel and banners",
+        "primary_palette": "Deep magenta mantle, silver chain and blue-black stone",
+        "hand_activity": "Draws a knotted silver cord across the model of a small siege tower",
+        "vibe": "Relaxed coercion",
+        "clothing": "Deep magenta military mantle over chain mail with a silver collar"
+      },
+      {
+        "id": "aethi_vaultmoth",
+        "name": "Aethi Vaultmoth",
+        "epithet": "The Host of Unwanted Revenants",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_CREATIVE",
+          "TRAIT_SPIRITUAL"
+        ],
+        "inherited_traits": [
+          "TRAIT_FALLOW"
+        ],
+        "angle": "An infernal host gives unwanted dead a refuge if they bring the first stories of their own.",
+        "backstory": "Aethi had been ordered to frighten a soul that had already forgotten whom it had lost. Instead she told it to describe the last room it had slept in, which it could scarcely do without recalling a name. The chambers she made from such descriptions fill in turn with people who remember enough to ask for a different punishment.",
+        "portrait": "Female demon with cool ash-gray skin, moth-like feathery horns and long black threads for hair, stone rooms opening into smoky depth",
+        "primary_palette": "Pastel mint robe, gray silk and pale amethyst ash",
+        "hand_activity": "Hangs a small moth-shaped lantern on a hook",
+        "vibe": "Unnervingly gentle",
+        "clothing": "Pale mint layered robe with triangular silk shoulders and thread fringe"
+      },
+      {
+        "id": "zurn_emberseal",
+        "name": "Zurn Emberseal",
+        "epithet": "The Right of First Smoke",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_AGGRESSIVE",
+          "TRAIT_SUMMONER"
+        ],
+        "inherited_traits": [
+          "TRAIT_FALLOW"
+        ],
+        "angle": "A demon asserts first ownership of every soul released when a city burns.",
+        "backstory": "Zurn once let a burning manor cool because three rival devils were still debating its claims. The departing souls fled past them in the smoke while he was forbidden to lift a finger. He took the first flare from the next fire into a bronze box, hired a force to carry it and told the rest of the claimants to come take it from him.",
+        "portrait": "Huge scarlet male demon with blunt basalt horns and yellow eyes, fires behind a ridge of columns, no victims depicted",
+        "primary_palette": "Viridian armor, soot black and furnace gold",
+        "hand_activity": "Snaps closed a bronze box leaking one strand of golden smoke",
+        "vibe": "Combative pleasure",
+        "clothing": "Viridian plate armor with massive square pauldrons and black scales"
       }
     ]
   },
@@ -2096,6 +3976,101 @@
         "hand_activity": "Fastening a rescue splint around a padded demonstration arm with both hands pulling opposite straps",
         "vibe": "alert disciplined compassion",
         "clothing": "Golden ochre rescue-watch surcoat over blue-gray leather armor with a short white wool cap"
+      },
+      {
+        "id": "rhuna_snowcellar",
+        "name": "Rhuna Snowcellar",
+        "epithet": "The Keeper of Tomorrow's Bread",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_AGNOSTIC",
+          "TRAIT_INDUSTRIOUS",
+          "TRAIT_DEFENDER"
+        ],
+        "inherited_traits": [],
+        "angle": "Granary crews defend high villages by pooling the work of preserving food through the longest winters.",
+        "backstory": "Rhuna stayed after her village began sending its young people south to find a second harvest. She opened an old ice cellar and packed the crop in shallow baskets that even a single household could lift. The cellar kept more people alive than she expected, and they insist on making decisions in its coldest room so nobody can forget what the bread costs.",
+        "portrait": "Broad elderly copper-skinned human woman, white bob and broad calm brow, ice cellar with wall niches",
+        "primary_palette": "Golden saffron parka, ice blue and spruce",
+        "hand_activity": "Slides a shallow basket into a niche cut from ice",
+        "vibe": "Practical pride",
+        "clothing": "Saffron parka with a broad shaggy collar and ice-blue mitts"
+      },
+      {
+        "id": "marden_sleetfoil",
+        "name": "Marden Sleetfoil",
+        "epithet": "Cartographer of the Open Drift",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_AGNOSTIC",
+          "TRAIT_PHILOSOPHICAL",
+          "TRAIT_EXPANSIVE"
+        ],
+        "inherited_traits": [],
+        "angle": "Travellers rely on a seasonal map whose maker refuses permanent claims to snowbound routes.",
+        "backstory": "Marden painted his first map on a panel the wind took into the next valley. By the time he recovered it the best route had drifted over and the first party had only survived by drawing its own. He prints an empty margin around every pass so that the people who find a better way can leave the next light burning.",
+        "portrait": "Tall dark-skinned human man with neat white sideburns and a flat dark cap, glacial mountain pass",
+        "primary_palette": "Brick red parka, snow white and slate",
+        "hand_activity": "Uses a narrow bone scraper to erase a line from a blank frosted map",
+        "vibe": "Wry concentration",
+        "clothing": "Brick-red parka with a felt visor and broad slate fur shoulder panels"
+      },
+      {
+        "id": "erva_whitecrown",
+        "name": "Erva Whitecrown",
+        "epithet": "The Cold of the Claims Court",
+        "alignment": "Evil",
+        "traits": [
+          "TRAIT_AGNOSTIC",
+          "TRAIT_FINANCIAL",
+          "TRAIT_ORGANIZED"
+        ],
+        "inherited_traits": [],
+        "angle": "A fuel commissioner makes shelter contingent on submitting to a harsh debt court.",
+        "backstory": "Erva counted the households on one slope by the smoke above their roofs and found more fires than taxpayers. She devised a charcoal allowance so that every chimney needing fuel had to file a return. Her deputies can close a case by closing a flue, which makes even the accurate returns quite expensive.",
+        "portrait": "Pale human woman with straight gray hair bound in a crown braid, frost-streaked commissioners' office",
+        "primary_palette": "Arctic lilac fur, black rivets and pewter",
+        "hand_activity": "Snaps a dark charcoal stick into two uneven lengths",
+        "vibe": "Frosty satisfaction",
+        "clothing": "Arctic lilac fur-lined judge's coat with stiff black shoulder fins"
+      },
+      {
+        "id": "sieda_icequill",
+        "name": "Sieda Icequill",
+        "epithet": "The Keeper of the Thaw Tongue",
+        "alignment": "Good",
+        "traits": [
+          "TRAIT_AGNOSTIC",
+          "TRAIT_CREATIVE",
+          "TRAIT_CHARISMATIC"
+        ],
+        "inherited_traits": [],
+        "angle": "A song keeper helps returning families recover the place names buried under official winter markers.",
+        "backstory": "Sieda heard her grandmother give a different name to the same clearing each year as the snow crept down. She recorded each name beside its year and sang the sequence as spring travellers passed her door. Several villages that had been missing from the rolls for forty winters sent her word that they remembered the same places.",
+        "portrait": "Young adult brown human woman with a hooked nose, cropped black curls and red cheek marks from cold, ice-rimmed lakeside cabins",
+        "primary_palette": "Turquoise blue fur mantle, rose buttons and smoky blue",
+        "hand_activity": "Scrapes a note into a small wax tablet with a bone quill",
+        "vibe": "Quietly exuberant",
+        "clothing": "Turquoise fur mantle with rose buttons and a matching ear wrap"
+      },
+      {
+        "id": "halek_rimehook",
+        "name": "Halek Rimehook",
+        "epithet": "The Warden of Returning Fires",
+        "alignment": "Neutral",
+        "traits": [
+          "TRAIT_AGNOSTIC",
+          "TRAIT_RAIDERS",
+          "TRAIT_MAGIC_RESISTANT"
+        ],
+        "inherited_traits": [],
+        "angle": "A salvage captain retrieves abandoned towns' tools and insists former owners prove their claim by coming back.",
+        "backstory": "Halek found a town's tools lined up at the edge of a stretch of ice too thin to cross with them. He kept the ironware bright for three winters expecting their makers to return. After others came to claim it, he promised to give each tool to the first person who could stand at its old hearth and explain what it had been made to fix.",
+        "portrait": "Weathered fair human man with a branching mustache and gray brows, pale ruined ice village, dark footprints",
+        "primary_palette": "Fir green fur-lined coat, rust iron and blue ice",
+        "hand_activity": "Hooks a buried claw hammer up out of crusted snow",
+        "vibe": "Gruff care",
+        "clothing": "Fir-green fur-lined salvage coat with a broad rust-colored chest strap"
       }
     ]
   }

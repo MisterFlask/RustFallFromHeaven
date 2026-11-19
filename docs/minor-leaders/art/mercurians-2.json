@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-5b481d4e-bd28-43a8-abc7-9d1c1b41595f.png",
+  "source_copy": "art/mercurians-2.png",
+  "prompt": "art/mercurians-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "aureth_feather_ash",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/aureth_feather_ash.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "meriel_bronze_dawn",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/meriel_bronze_dawn.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "caradriel_pale_fire",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/caradriel_pale_fire.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "sorad_veiled_seal",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/sorad_veiled_seal.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "avona_of_two_walls",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/avona_of_two_walls.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

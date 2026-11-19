@@ -229,7 +229,7 @@ fn no_split_without_a_free_leader() {
     let (mut g, _) = world();
     let civ = g.player_get_civilization_type(P0).unwrap();
     let pool = g.house_leader_pool(civ, P0).leaders;
-    assert_eq!(pool.len(), 5);
+    assert_eq!(pool.len(), 10);
     let big = house_at(&mut g, &[(6, 3), (9, 3), (12, 3), (15, 3), (18, 3)], Some(pool[0]));
     let sixth = city(&mut g, P0, 21, 3);
     let label = g.house_label(big);
@@ -242,7 +242,7 @@ fn no_split_without_a_free_leader() {
     assert!(g.house_leader_pool(civ, P0).leaders.is_empty());
     assert_eq!(g.house_split(big), None, "no leader is free");
     assert_eq!(g.house_great_cities(big), 6);
-    assert_eq!(g.players[P0].houses.len(), 5);
+    assert_eq!(g.players[P0].houses.len(), 10);
 }
 
 /// The turn rolls for a House at the threshold (5% a turn), never for one below it.

@@ -943,7 +943,7 @@ vassal is played by the game's AI.
   by its wording (`ffh-play` `report.rs`, `is_secession_text`).
 - For the AI, a commander's demand for a House is the demand most often refused: meeting it
   ends the command, and the Crown runs short of cities once the AI grants one a turn.
-- A civilization has five minor leaders, so at most five persons who are not heroes in a game.
+- Each original civilization has ten minor leaders. Persons of Note and breakaway factions draw from the same pool.
 - A commander going over to a rival waits for courting (stage 4): a Disloyal commander joins a
   league formed that turn, seizes a city or resigns.
 - Measured once (8 AI games of 300 turns, 7 civilizations, standard maps, the merged build):

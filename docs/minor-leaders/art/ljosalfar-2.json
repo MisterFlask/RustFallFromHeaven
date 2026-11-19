@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-69f18c74-32b3-43ba-aa37-35fc72706613.png",
+  "source_copy": "art/ljosalfar-2.png",
+  "prompt": "art/ljosalfar-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "calen_birdbranch",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/calen_birdbranch.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "mevara_rainsuture",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/mevara_rainsuture.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "thalan_ambervow",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/thalan_ambervow.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "finnel_woodmeter",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/finnel_woodmeter.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "lethiel_hollowtone",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/lethiel_hollowtone.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

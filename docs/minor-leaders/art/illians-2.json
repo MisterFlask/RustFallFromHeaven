@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-f51e8422-ed61-4abd-b71b-03404ccee245.png",
+  "source_copy": "art/illians-2.png",
+  "prompt": "art/illians-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "rhuna_snowcellar",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/rhuna_snowcellar.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "marden_sleetfoil",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/marden_sleetfoil.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "erva_whitecrown",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/erva_whitecrown.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "sieda_icequill",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/sieda_icequill.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "halek_rimehook",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/halek_rimehook.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

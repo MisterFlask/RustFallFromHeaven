@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-4bc167ae-58fe-4cf5-b75b-56db215a668a.png",
+  "source_copy": "art/clan_of_embers-2.png",
+  "prompt": "art/clan_of_embers-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "gromka_potlid",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/gromka_potlid.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "borruk_orejaw",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/borruk_orejaw.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "uzhka_sourbone",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/uzhka_sourbone.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "rask_glowcap",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/rask_glowcap.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "mogra_tempreed",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/mogra_tempreed.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

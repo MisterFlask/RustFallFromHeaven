@@ -288,7 +288,7 @@ fn the_first_grant_founds_a_house_a_vassal_civilization() {
     let civ = g.player_get_civilization_type(P0).unwrap();
     let pool = g.house_leader_pool(civ, P0);
     assert!(pool.own, "the Bannor's own minor leaders");
-    assert_eq!(pool.leaders.len(), 5, "the Bannor's five preferred minor leaders");
+    assert_eq!(pool.leaders.len(), 10, "the Bannor's ten preferred minor leaders");
     // The grant list offers the founding alone, with the pool it draws from.
     let cands = g.grant_candidates(P0, a);
     assert_eq!(cands.len(), 1);
@@ -357,13 +357,13 @@ fn the_founding_draws_from_the_lieges_alignment_else_is_refused() {
     let d = g.d;
     let civ = g.player_get_civilization_type(P0).unwrap();
     let bannor: Vec<LeaderHeadType> = g.house_leader_pool(civ, P0).leaders;
-    assert_eq!(bannor.len(), 5);
-    // Player 1 founds five Houses, each led by one of the Bannor's minor leaders.
+    assert_eq!(bannor.len(), 10);
+    // Player 1 founds ten Houses, each led by one of the Bannor's minor leaders.
     for (i, &l) in bannor.iter().enumerate() {
         let c = g.player_init_city(P1, 13 + (i as i32 % 3) * 2, 3 + (i as i32 / 3) * 2, true, true);
         g.player_found_house(P1, l, &[c]).expect("player 1's House");
     }
-    assert_eq!(g.players[P1].houses.len(), 5);
+    assert_eq!(g.players[P1].houses.len(), 10);
     let pool = g.house_leader_pool(civ, P0);
     assert!(!pool.own, "the fallback");
     let alignment = g.players[P0].alignment.expect("an alignment");

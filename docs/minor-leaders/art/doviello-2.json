@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-6cc84c81-8797-439f-a9a8-648458d57ce7.png",
+  "source_copy": "art/doviello-2.png",
+  "prompt": "art/doviello-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "runa_boldhide",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/runa_boldhide.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "morgun_iceheel",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/morgun_iceheel.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "bekka_tallfang",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/bekka_tallfang.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "jerek_barkshield",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/jerek_barkshield.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "unna_ashtrail",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/unna_ashtrail.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

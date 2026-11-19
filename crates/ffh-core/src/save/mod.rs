@@ -1009,9 +1009,9 @@ mod tests {
     }
 
     #[test]
-    fn a_save_before_the_minor_leaders_loads_with_its_state_and_leader_indices_intact() {
+    fn a_save_before_the_additional_minor_leaders_loads_with_its_state_and_leader_indices_intact() {
         // Load the real previous data, rather than merely forging an old header on a new game.
-        // The new card file is last, so removing it leaves every original type index unchanged.
+        // Removing the last card file leaves all earlier type indices unchanged.
         struct OldDataDir(PathBuf);
         impl Drop for OldDataDir {
             fn drop(&mut self) {
@@ -1022,7 +1022,7 @@ mod tests {
             std::fs::create_dir_all(to).expect("old-data fixture directory");
             for entry in std::fs::read_dir(from).expect("source data") {
                 let entry = entry.expect("source data entry");
-                if entry.file_name() == "zz_minor_leaders.jsonc" {
+                if entry.file_name() == "zzz_minor_leaders.jsonc" {
                     continue;
                 }
                 let dest = to.join(entry.file_name());
@@ -1033,7 +1033,7 @@ mod tests {
                 }
             }
         }
-        let dir = OldDataDir(std::env::temp_dir().join(format!("ffh-save-before-minor-leaders-{}", std::process::id())));
+        let dir = OldDataDir(std::env::temp_dir().join(format!("ffh-save-before-additional-minor-leaders-{}", std::process::id())));
         copy_old_data(&ffh_data::default_data_dir(), &dir.0);
         let old: &'static GameData = Box::leak(Box::new(GameData::load(&dir.0).expect("previous data loads")));
         let current = ffh_data::global();
@@ -1051,10 +1051,13 @@ mod tests {
         g.autorun = true;
         g.game_init();
         g.players[PlayerId(0)].gold = 137;
+        let previous_minor = old.t::<LeaderHeadType>("LEADER_MAERETH_ASHLEDGER");
+        let previous_faction = g.add_player(previous_minor, old.t::<CivilizationType>("CIVILIZATION_BANNOR"));
         let bytes = g.save();
         let mut h = Game::load(current, &bytes).expect("appended leader types are compatible");
         assert_eq!(h.calculate_sync_checksum(), g.calculate_sync_checksum());
         assert_eq!(h.players[PlayerId(0)].gold, 137);
+        assert_eq!(h.player_get_leader_type(previous_faction), Some(previous_minor));
         assert_eq!(h.player_get_leader_type(PlayerId(0)), g.player_get_leader_type(PlayerId(0)));
         assert_eq!(h.players[PlayerId(1)].personality_type, g.players[PlayerId(1)].personality_type);
         assert_eq!(h.soren_rand.seed(), g.soren_rand.seed());
@@ -1070,7 +1073,7 @@ mod tests {
         assert_eq!(Game::load(current, &upgraded).expect("current save reloads").save(), upgraded);
 
         // A restored game can also initialize one of the newly appended breakaway leaders.
-        let minor = current.t::<LeaderHeadType>("LEADER_MAERETH_ASHLEDGER");
+        let minor = current.t::<LeaderHeadType>("LEADER_LEORA_BELLFOUND");
         assert!(minor.idx() >= old.leader_heads.len());
         let faction = h.add_player(minor, current.t::<CivilizationType>("CIVILIZATION_BANNOR"));
         assert_eq!(h.player_get_leader_type(faction), Some(minor));

@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-2e77a122-6b16-4372-81f8-6fb7536ffe9c.png",
+  "source_copy": "art/amurites-2.png",
+  "prompt": "art/amurites-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "farien_copperspark",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/farien_copperspark.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "tallis_bluepumice",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/tallis_bluepumice.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ishara_morrowquill",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/ishara_morrowquill.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "corin_slategate",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/corin_slategate.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "meri_thunderchalk",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/meri_thunderchalk.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

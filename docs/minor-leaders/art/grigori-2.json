@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-ca02ad38-43f4-4a75-925b-90f3c57d4d9a.png",
+  "source_copy": "art/grigori-2.png",
+  "prompt": "art/grigori-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "tessa_inkclasp",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/tessa_inkclasp.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "dowen_campbridge",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/dowen_campbridge.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "irena_dregs",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/irena_dregs.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "gavren_rook",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/gavren_rook.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "mara_bentnail",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/mara_bentnail.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}
