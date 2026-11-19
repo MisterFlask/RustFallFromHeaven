@@ -245,7 +245,7 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
             add(&mut b, key, &[Arg::N(n)]);
         }
     }
-    // This game's Persons of Note (docs/PERSONS.md, rule 14).
+    // This game's Houses (docs/PERSONS.md, rule 14).
     if *crown_cities_change != 0 {
         b.push_str(&format!("{NEWLINE}[ICON_BULLET]Crown's limit: {crown_cities_change:+} cities (at least 1)"));
     }

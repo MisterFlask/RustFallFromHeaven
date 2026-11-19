@@ -18,10 +18,11 @@
     "reminder": "TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER",
     "implies": ["KEYWORD_RITUAL"]
   },
-  // Persons of Note (docs/PERSONS.md, "The second build", rule 13; "UI", part J): the Court
-  //     screen, the grant list and the screens that show a House, a tribute or a levy carry these.
-  //     The loyalty states are the game's attitude words, not keywords: a state mark's tooltip is
-  //     the attitude's own help (attitudes.jsonc).
+  // Houses (docs/PERSONS.md, "The second build", rule 13; "The third build", rule 2; "UI", part
+  //     J): the Court screen, the grant list and the screens that show a House, a request, a
+  //     tribute or a levy carry these. The loyalty states are the game's attitude words, not
+  //     keywords: a state mark's tooltip is the attitude's own help (attitudes.jsonc). Ultimatum
+  //     is reserved for the third build's part 2.
   {
     "type": "KEYWORD_HOUSE",
     "description": "TXT_KEY_KEYWORD_HOUSE",
@@ -33,6 +34,11 @@
     "reminder": "TXT_KEY_KEYWORD_CROWN_REMINDER"
   },
   {
+    "type": "KEYWORD_REQUEST",
+    "description": "TXT_KEY_KEYWORD_REQUEST",
+    "reminder": "TXT_KEY_KEYWORD_REQUEST_REMINDER"
+  },
+  {
     "type": "KEYWORD_TRIBUTE",
     "description": "TXT_KEY_KEYWORD_TRIBUTE",
     "reminder": "TXT_KEY_KEYWORD_TRIBUTE_REMINDER"
@@ -41,11 +47,6 @@
     "type": "KEYWORD_LEVY",
     "description": "TXT_KEY_KEYWORD_LEVY",
     "reminder": "TXT_KEY_KEYWORD_LEVY_REMINDER"
-  },
-  {
-    "type": "KEYWORD_SWORN",
-    "description": "TXT_KEY_KEYWORD_SWORN",
-    "reminder": "TXT_KEY_KEYWORD_SWORN_REMINDER"
   },
   {
     "type": "KEYWORD_CLAIMANT",

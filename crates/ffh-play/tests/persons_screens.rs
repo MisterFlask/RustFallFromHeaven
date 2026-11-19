@@ -1,10 +1,10 @@
-//! Persons of Note in the existing screens (docs/PERSONS.md, "UI", parts C to I; "The second
-//! build"), on the staged scenes (`ffh-play stage persons|persons-direct`) through the session's
-//! queries: the House marks of the cities on the map (the liege sees the attitude, the others the
-//! shield only), the Crown cities in the Governors screen, the Armies screen's commanders and the
-//! levy's House lines among the requisition's candidates, the unit panel's person and Found a
-//! House, the civics screen's warning of a direct-rule civic, the war and peace previews, and the
-//! log's tags for the alerts.
+//! Houses in the existing screens (docs/PERSONS.md, "UI", parts C to I; "The second build" and
+//! "The third build"), on the staged scenes (`ffh-play stage persons|persons-direct`) through the
+//! session's queries: the House marks of the cities on the map (the liege sees the attitude, the
+//! others the shield only), the Crown cities in the Governors screen, the Armies screen (no
+//! commanders) and the levy's House lines among the requisition's candidates, the unit panel (no
+//! person, no Found a House), the civics screen's warning of a direct-rule civic, the war and peace
+//! previews, and the log's tags for the alerts.
 
 mod common;
 
@@ -42,11 +42,10 @@ fn s_of<'a>(j: &'a Json, key: &str) -> &'a str {
 }
 
 #[test]
-fn the_screens_show_houses_commanders_and_persons() {
+fn the_screens_show_houses() {
     let (_dir, st, s) = load("persons-screens", false);
     let g = &s.g;
     let house = |role: &str| st.houses.iter().find(|x| x.role == role).unwrap();
-    let person = |role: &str| st.persons.iter().find(|x| x.0 == role).unwrap().1;
     let army = |role: &str| st.armies.iter().find(|x| x.0 == role).unwrap().1;
 
     // G. The map's marks: a House's city carries its shield, and its liege sees its attitude.
@@ -63,33 +62,26 @@ fn the_screens_show_houses_commanders_and_persons() {
         let m = x.get("house").expect("another's House city shows its shield");
         assert!(m.get("state").unwrap().is_null(), "only the liege sees the attitude: {m}");
     }
-    // H. The cast in brief, for the alerts' portraits.
-    let cast = arr(&view, "persons");
-    assert!(find(&cast, "id", person("head_friendly").0 as i64).get("leader").is_some());
+    // H. The Houses in brief, for the alerts' portraits.
+    assert!(view.get("persons").is_none(), "no cast");
+    let brief = arr(&view, "houses");
+    let a = house("friendly");
+    let row = find(&brief, "id", a.id.0 as i64);
+    assert_eq!(row.get("leader").and_then(Json::as_i64), g.house_leader(a.id).map(|l| l.idx() as i64));
+    assert_eq!(s_of(&row, "label"), a.label);
 
     // E. The Governors screen's rows: the human's cities are the Crown's.
     let gs = q(&s, r#"{"q":"governors"}"#);
     let rows = arr(&gs, "cities");
     assert!(find(&rows, "city", st.capital.0 as i64).get("house").unwrap().is_null());
 
-    // D. The Armies screen: the commanders' lines and the persons with an army.
+    // D. The Armies screen: no commander, no person with an army.
     let ar = q(&s, r#"{"q":"armies"}"#);
     let armies = arr(&ar, "armies");
-    let loyal = find(&armies, "id", army("loyal").0 as i64);
-    let cmd = loyal.get("commander").unwrap();
-    assert_eq!(cmd.get("person").and_then(Json::as_i64), Some(person("commander_loyal").0 as i64));
-    assert_eq!(cmd.get("withholds_attack").and_then(Json::as_bool), Some(false));
-    assert!(!arr(&loyal, "persons_with").is_empty());
-    let furious = find(&armies, "id", army("furious").0 as i64);
-    let cmd = furious.get("commander").unwrap();
-    assert_eq!(s_of(cmd, "state"), "Furious");
-    assert_eq!(cmd.get("withholds_attack").and_then(Json::as_bool), Some(true));
-    assert!(cmd.get("turns").and_then(Json::as_i64).is_some());
-    let o = s_of(cmd, "outcome");
-    assert!([" will seize ", " will join ", " will resign "].iter().any(|w| o.contains(w)), "{cmd}");
+    let main = find(&armies, "id", army("main").0 as i64);
+    assert!(main.get("commander").is_none() && main.get("persons_with").is_none(), "{main}");
     // The levy: the Houses' cities among the requisition's candidates, with their House line.
-    let cands = arr(loyal.get("requisition").unwrap(), "candidates");
-    let a = house("friendly");
+    let cands = arr(main.get("requisition").unwrap(), "candidates");
     let row = find(&cands, "city", a.cities[0].0 as i64);
     assert_eq!(s_of(row.get("house").unwrap(), "text"), "Takes levies. Each levy: -1 (20 turns).", "{row}");
     let v = house("annoyed");
@@ -98,16 +90,11 @@ fn the_screens_show_houses_commanders_and_persons() {
     assert_eq!(s_of(row.get("house").unwrap(), "reason"), format!("{} is Annoyed. It takes no levy.", v.label));
     assert!(find(&cands, "city", st.capital.0 as i64).get("house").unwrap().is_null());
 
-    // F. The unit panel: a commander's unit and the great person's Found a House.
-    let u = g.person_unit(person("commander_loyal")).unwrap();
+    // F. The unit panel: no person line, no Found a House.
+    let u = g.army_units(army("main"))[0];
     let grp = q(&s, &format!(r#"{{"q":"group","units":[{}]}}"#, u.0));
-    let pu = arr(&grp, "units")[0].get("person").unwrap().clone();
-    assert_eq!(s_of(&pu, "post"), format!("commander of the {}", g.armies[army("loyal")].name));
-    let grp = q(&s, &format!(r#"{{"q":"group","units":[{}]}}"#, st.great_person.0));
-    let fh = arr(&grp, "units")[0].get("found_house").unwrap().clone();
-    let fc = CityId(fh.get("city").and_then(Json::as_i64).expect("a grantable city") as u32);
-    assert!(g.player_check_grant_city(st.human, fc).is_ok());
-    assert!(arr(&grp, "units")[0].get("person").unwrap().is_null());
+    let unit = &arr(&grp, "units")[0];
+    assert!(unit.get("person").is_none() && unit.get("found_house").is_none(), "{unit}");
 
     // I. The war dialog's preview, the peace preview (at peace: none).
     let pl = q(&s, r#"{"q":"players"}"#);
@@ -193,14 +180,11 @@ fn a_house_is_drawn_in_its_lieges_colour_with_its_shield() {
     let row = find(&players, "id", st.neighbour.0 as i64);
     assert_eq!(row.get("color_player").and_then(Json::as_i64), Some(st.neighbour.0 as i64));
     assert!(row.get("house").unwrap().is_null());
-    // The alerts' cast: a head's House, a commander's army.
+    // The alerts' Houses in brief: each of the human's, with its leader.
     let view = q(&s, r#"{"q":"view"}"#);
-    let cast = arr(&view, "persons");
-    let head = st.persons.iter().find(|x| x.0 == "head_furious").unwrap().1;
-    assert_eq!(find(&cast, "id", head.0 as i64).get("house").and_then(Json::as_i64), Some(f.id.0 as i64));
-    let cmd = st.persons.iter().find(|x| x.0 == "commander_loyal").unwrap().1;
-    let army = st.armies.iter().find(|x| x.0 == "loyal").unwrap().1;
-    assert_eq!(find(&cast, "id", cmd.0 as i64).get("army").and_then(Json::as_str), Some(g.armies[army].name.as_str()));
+    let brief = arr(&view, "houses");
+    assert_eq!(brief.len(), g.players[st.human].houses.len());
+    assert_eq!(s_of(&find(&brief, "id", f.id.0 as i64), "label"), f.label);
 }
 
 /// A House on the diplomacy screen (docs/PERSONS.md, "The second build", rules 7, 9 and 13): it
@@ -264,8 +248,7 @@ fn a_houses_trade_table_and_its_answers() {
 }
 
 /// The previews of the acts (docs/PERSONS.md, "UI", part I) come from the rules' `persons_preview`
-/// as lines worded with the attitude scale; a great person's unit can found a House, a hero's
-/// cannot.
+/// as lines worded with the attitude scale.
 #[test]
 fn the_previews_and_the_unit_panel() {
     let (_dir, st, s) = load("persons-previews", false);
@@ -283,13 +266,13 @@ fn the_previews_and_the_unit_panel() {
         }
     }
     assert_eq!(war.as_arr().unwrap().len(), g.persons_preview(st.human, &ffh_core::persons::PersonsAct::DeclareWar(g.players[st.neighbour].team)).len());
-    // F. A hero has no Found a House; the great person has.
-    let hero = g.person_unit(st.persons.iter().find(|x| x.0 == "commander_loyal").unwrap().1).unwrap();
-    assert!(!g.unit_is_great_person(hero));
-    let grp = q(&s, &format!(r#"{{"q":"group","units":[{}]}}"#, hero.0));
-    assert!(arr(&grp, "units")[0].get("found_house").unwrap().is_null(), "a hero founds no House");
-    let grp = q(&s, &format!(r#"{{"q":"group","units":[{}]}}"#, st.great_person.0));
-    assert!(arr(&grp, "units")[0].get("found_house").unwrap().get("city").and_then(Json::as_i64).is_some());
+    // Every subject is a House of the human's.
+    let labels: Vec<String> = g.players[st.human].houses.iter().map(|&h| g.house_label(h)).collect();
+    for list in [&war, &raze] {
+        for l in list.as_arr().unwrap() {
+            assert!(labels.iter().any(|x| x == s_of(l, "subject")), "{l}");
+        }
+    }
 }
 
 #[test]
@@ -334,15 +317,19 @@ fn the_civics_screen_warns_of_a_direct_rule_civic() {
 }
 
 #[test]
-fn the_log_tags_persons_and_break_aways_for_the_alerts() {
-    let mut e = LogEntry::new(3, Some(0), "Hrolf demands: A House. 40 turns.".into());
-    e.mark = LogMark::Person;
-    e.tag = LogTag::Person(PersonId(7));
+fn the_log_tags_houses_and_break_aways_for_the_alerts() {
+    let mut e = LogEntry::new(3, Some(0), "House Arne requests: Torrin granted to House Arne. 40 turns.".into());
+    e.mark = LogMark::House;
+    e.tag = LogTag::House(HouseId(7));
     e.at = Some((4, 5));
     let j = ffh_play::report::entry_fields(Json::Obj(Default::default()), &e);
-    assert_eq!(j.get("kind").and_then(Json::as_str), Some("person"));
-    assert_eq!(j.get("person").and_then(Json::as_i64), Some(7));
-    assert_eq!(j.get("mark").and_then(Json::as_str), Some("person"));
+    assert_eq!(j.get("kind").and_then(Json::as_str), Some("house"));
+    assert_eq!(j.get("house").and_then(Json::as_i64), Some(7));
+    assert_eq!(j.get("mark").and_then(Json::as_str), Some("house"));
+    // Read back (a reloaded log keeps its mark and tag).
+    let mut back = LogEntry::new(3, Some(0), e.text.clone());
+    ffh_play::report::entry_fields_from(&j, &mut back);
+    assert_eq!((back.mark, back.tag), (LogMark::House, LogTag::House(HouseId(7))));
     for text in [
         "House Arne breaks away from the Bannor, taking Prespur and Elam: war.",
         "Hippus breaks away from the Bannor, taking Prespur. Bought by the Elohim: war.",
@@ -350,8 +337,6 @@ fn the_log_tags_persons_and_break_aways_for_the_alerts() {
         "Hippus breaks away from the Bannor, taking Prespur, as a vassal of the Elohim: war.",
         "Hippus breaks away from the Bannor, taking Prespur, as your vassal: war.",
         "Civil war: House Arne breaks away from the Bannor, taking Prespur: war.",
-        "Hrolf, 2nd Army goes over to House Arne with 4 units.",
-        "Hrolf, 2nd Army seizes Vallus and secedes from the Bannor with 4 units.",
         "House Arne is freed by the Bannor.",
     ] {
         let e = LogEntry::new(3, None, text.into());

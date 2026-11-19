@@ -1,14 +1,15 @@
-# Persons of Note
+# Houses (Persons of Note)
 
-This game's own rules, not FFH2's. **"The second build" (Houses as vassal civilizations, rules 1
-to 14) is built: its rules, its AI and its screens. "The first build" is what it replaced where
-they differ; the rest is a design.** A civilization has a small
-cast of named, authored characters (its heroes, and the minor leaders of docs/minor-leaders who
-join it as its best veterans and great people). Its cities are held by Houses, each presided over
-by one of them; its armies are commanded by them; its vassals are ruled by them. Each makes
-demands, gives less when crossed, and can take what they hold. The owner's concept and decisions
-of 2026-11-18; the numbers are first guesses. "Open points" says which rules are the owner's
-decisions and which are proposals still to be confirmed.
+This game's own rules, not FFH2's. The system began as Persons of Note (the first build, 2026-11-18:
+a cast of named characters who held Houses and commanded armies); the second build made every
+House a vassal civilization of its own; **the third build (2026-11-19) removed the persons: Houses
+stand alone.** A civilization's Houses are its vassals, each a player with a leader of its own:
+they make requests, pay tribute, give less when crossed, and can break away with what they hold.
+**Part 1 of the third build is built (rules 1 to 3 and 9: no persons, requests, the first grant
+founds a House, the world unit); the second build's other rules stay in force until part 2
+changes them.** The owner's concept and decisions of 2026-11-18 and 2026-11-19; the numbers are
+first guesses. "Open points" says which rules are the owner's decisions and which are proposals
+still to be confirmed.
 
 | Stage | What | Status |
 |---|---|---|
@@ -19,16 +20,16 @@ decisions and which are proposals still to be confirmed.
 | 4 | foreign persons: side deals with a rival's Houses (Secede, Become your vassal); seeing persons, courting, agents abroad | side deals built (second build, rule 9, `persons/bribes.rs`); the rest not built |
 | 5 | the annals: what each character did in the player's earlier games | not built |
 | second build | Houses as vassal civilizations, rules 1 to 14 below | built (2026-11-18): the rules (ffh-core), the AI (rule 12, `crates/ffh-ai/src/persons.rs`) and the screens (rule 13: the Court, the grant list, the levy, diplomacy, the map's plates) |
-| third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | being built (2026-11-19): part 1 the persons removed (rules 1 to 3, 9); part 2 splits and ultimatums (4 to 6) with courtship, price, knowledge and tribute (7 to 10) |
+| third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | part 1 built (2026-11-19: the persons removed, the first grant founds, requests, the world unit: rules 1 to 3 and 9, and rule 11's grants; "The third build as built, part 1" below); part 2 being built: splits and ultimatums (4 to 6) with courtship, price, knowledge and tribute (7 to 10) |
 
-**"The third build" (2026-11-19, below) is being built: it removes Persons of Note and leaves the
-Houses alone. Where it differs from the second build, it holds; everything below it on persons
-(the cast, commanders, posts, persons' demands) is retired by it.**
+**"The third build" (2026-11-19, below) is the contract in force; its part 1 is built (its "as
+built" note). Where it differs from the second build, it holds; everything below it on persons
+(the cast, commanders, posts, persons' demands, great persons founding) is retired by it.**
 
-"The second build" below is the contract in force, with its "as built" notes; "The first build"
-is what was built before it, in force where the second build does not change it (the cast,
-commanders, demands, the civil war); "UI" is the interface as first built. The sections between
-them ("Rules") are the design the builds came from and describe the stages not built yet.
+"The second build" below is in force where the third does not change it, with its "as built"
+notes; "The first build" is what was built before it (its persons retired by the third build);
+"UI" is the interface as first built, with the builds' "as built" notes. The sections between
+them ("Rules") are the design the builds came from.
 
 ## The third build (2026-11-19): Houses without Persons of Note
 
@@ -155,6 +156,92 @@ for the third build; where it differs from the second build, it holds.**
     now the moment of an ultimatum, the levy, breaking away and its hold contest, freeing, side
     deals with rule 7's courtship, direct rule, the Crown's limit and settlements of rule 14 (a) to
     (d), the memory of wrongs). The numbers are first guesses.
+
+### The third build as built, part 1 (2026-11-19)
+
+Rules 1 to 3 and 9, and rule 11's grants, are built (`crates/ffh-core/src/persons/`, which keeps
+its name: the system began as Persons of Note; tests `crates/ffh-core/tests/persons.rs`). Part 2
+builds rules 4 to 8, 10 and the rest of 11 on it; the countdown, the tribute (gold and research),
+the bribes and their flat price stay the second build's until then. Where the build settles what
+the rules left open:
+
+1. *As built:* gone from the rules: `Person`, `PersonId`, `Game::persons`, `persons_drawn`,
+   `persons_barred`, `Player::persons`, `PersonOrigin`, `Post`, the cast's entry (`entry.rs`:
+   heroes, veterans and the bar, `PERSON_VETERAN_LEVEL`), rivals, persons' deeds and demands of
+   kind `Post` and `House` (and `Wonder`, which only first-build saves held), `Holder` (a holder is a
+   House: the loyalty, previews and requests take a `HouseId`), commanders (`command.rs`:
+   `Army::commander`, `commander_named`, `player_set_commander`, the withheld attack in
+   `unit_can_move_into`, sworn units, `Standing::sworn`, a commander's secession,
+   `CountdownDue::Commander`, the claim of the army that took a city, `City::taken_by`), the
+   `army_aura_pct` stub and `TermSource::Aura` (they only served commanders), founding by a person
+   or a great person (`GrantTo::Person`, `GrantTo::GreatPerson`, `unit_is_great_person`, the unit
+   panel's Found a House: heroes and great people are FFH2's again), a Furious person without a
+   post leaving, the unit hooks (`unit_persons_converted`, `unit_persons_lost`,
+   `unit_persons_regrouped`), the unit names given to veterans, and the size part of loyalty with
+   `PERSON_HOUSE_SIZE_MIN`, `_BASE` and `_PER`. `Claimant` is gone too: a claimant is a House
+   (`city_claimants` gives `HouseId`s; the snub is `SNUB_HOUSE`, -1). The Sundering's
+   `leader_in_play` no longer counts drawn persons. A House carries what its head carried:
+   `House::demand`, `demand_rest_until` and `deeds` (its record: founded, granted, requests met and
+   refused, passed over, a city that withstood an assault); its leader is its player's
+   (`house_leader`), its ambition the one its leader's first trait gives (`house_ambition`,
+   `ambition_of_leader`), its alignment its leader's (the religion part). The log's mark and tag
+   are `LogMark::House` and `LogTag::House(HouseId)` (the client's `kind: "house"`). Telemetry
+   counts `house_*` (docs/TELEMETRY.md). Save format 53.
+2. *As built:* the code keeps the word `Demand` (`DemandKind`: `GrantCity`, `TakeCity`, `War`,
+   `AdoptReligion`, `SpreadReligion`; `DEMAND_MET`, `DEMAND_REFUSED`, `PERSON_DEMAND_TURNS` and
+   `_REST`); every text says request: the modifiers `Request met`, `Request refused`, the messages
+   `House Arne requests: ... 40 turns.`, `House Arne: request met (...)`, the card's `Request: ...`
+   and `No request. Next in 14 turns.`, and the keyword `KEYWORD_REQUEST` with its reminder.
+   `Ultimatum` is reserved for part 2 (no keyword yet). The War list's alignment is the House
+   leader's; its plot the House's seat.
+3. *As built:* `GrantTo::NewHouse`, offered (`grant_candidates`) and accepted
+   (`player_check_found_house`) only while the realm has no House: `A realm with a House grants to
+   its Houses.`; with no leader free, `No leader is free to found a House.`. The pool is
+   `house_leader_pool(civ, liege) -> LeaderPool { leaders, own }` (pure, in leader id order): (a)
+   the minor leaders (`minor_leader_of`, `preferred_breakaway`) of `civ` leading no living player
+   (alive, not ever alive: a dead House's leader is free again), else (b) the minor leaders of the
+   other civilizations whose leader alignment is the liege player's alignment, leading no living
+   player. The draw is `house_leader_draw(civ, liege)` (`soren_rand_num` over the pool, a pool of
+   one without a draw), at the grant only: the previews draw nothing. The founding is
+   `player_found_house(liege, leader, cities)`: `world::birth` with `release: cities` (its capital
+   first), `vassal`, `keep_armies`, the description `House <name>` (the name taken from the
+   civilization's list, `house_new_name`), played by the game's AI; the vassal rules make the record
+   (`house_begin` knows a founding by its player's name: `House ` and the name the liege has just
+   taken), origin `Founded`, no starting modifier, the realm's default tribute in force. Part 2's
+   splits found their cadets with the same two calls (`house_leader_draw(parent's civ, liege)`,
+   `player_found_house(liege, leader, cities)`). The House's civilization is the liege's even with a
+   leader of the fallback. The grant list's line: `A new House: its leader is drawn from the
+   Bannor's minor leaders.`, for the fallback `A new House: its leader is drawn from other
+   civilizations' Good minor leaders.` (`house_founding_line`); the Court says it on the Crown's
+   card while the realm has no House (`No House yet. A grant of a Crown city founds one. ...`).
+9. *As built:* `Game::world_commerce_unit()` (`persons/world_unit.rs`): the mean of
+   `player_total_commerce_rate` (the sum of `player_get_commerce_rate` over every commerce type:
+   gold, research, culture, espionage read as culture) over the players `player_has_houses` names
+   (living, no House, not the barbarians, a minor civilization or a crusade Host), rounded down,
+   at least 1. Measured on three autoplay games (6 civilizations, standard map, seeds 1 to 3,
+   2026-11-19, on part 1's rules):
+
+   | turn | seed 1 | seed 2 | seed 3 | mean |
+   |---|---|---|---|---|
+   | 50 | 13 | 15 | 15 | 14 |
+   | 100 | 24 | 26 | 30 | 27 |
+   | 150 | 40 | 58 | 44 | 47 |
+   | 200 | 72 | 111 | 84 | 89 |
+   | 250 | 105 | 134 | 136 | 125 |
+   | 300 | 143 | 146 | 170 | 153 |
+
+   So P = 25 at turn 150 (rule 8) is about the world unit x 25 / 47 (x 0.53); an ultimatum's 2 gold
+   a city at turn 150 (rule 5 (f)) about the world unit / 24; the courtship's requirement (rule 7,
+   3 turns of the unit) about 140 gold at turn 150.
+11. *As built (the grants):* the AI liege grants the Crown's cities over the limit (least
+    populous first, never the capital nor the best production city, one a turn) to the House whose
+    capital is nearest the city (`nearest_house`, ties: the lower id); with no House, the grant
+    founds one (none while no leader is free); a grant whose preview makes a House Furious is
+    passed over for the next city. The size threshold went with rule 1. A House's requested war
+    weighs on the war planning as a person's demanded war did (`war_demanded`). A Furious
+    commander's army no longer seeks a haven.
+12. *As built (the screens):* see "UI", "The third build's screens as built" below and
+    docs/HUMAN.md.
 
 ## The second build (2026-11-18): Houses as vassal civilizations
 
@@ -459,6 +546,11 @@ it left open:
 
 ## The first build (2026-11-18)
 
+**Retired by the third build** (2026-11-19, rule 1): the cast, persons, posts, commanders and
+their secession, heroes and veterans as persons, great persons founding Houses, persons' demands of
+a post or a House, rivals and persons' records below are gone; what a House's head carried (its
+demands, now requests, and its record) is the House's. Read this section as history.
+
 The owner asked for the system to be built, with the ambiguous cases settled as seems sensible.
 This section is the contract for that build: **where it and the rules further down differ, this
 section holds.** The rules below remain the design; after the build they are rewritten as built.
@@ -694,6 +786,9 @@ nobody's cast.
 
 ### The cast
 
+*Retired by the third build (rule 1): there is no cast; a House's leader is its player's, a new
+House's drawn from the free minor leaders at its founding (rule 3).*
+
 **A person is an authored character** (the owner's decision, 2026-11-18): a hero, or a minor
 leader of the civilization (docs/minor-leaders: a name, a title, a portrait, a backstory, an
 alignment, personal traits). The same person is the same in every game. Which of them a game
@@ -875,6 +970,8 @@ cast. The civics screen states it before the choice:
 
 ### Commanders
 
+*Retired by the third build (rule 1): an army has no commander.*
+
 An army has one commander's post. A veteran in the army, a hero travelling with it or a Great
 Commander may hold it; a House's head may not (one post each).
 
@@ -943,6 +1040,9 @@ Crown, House, vassal is one ladder: each step gives up more of a city and costs 
   person at once, without the capture's disorder.
 
 ### Foreign persons (stage 4)
+
+*Retired by the third build (rule 1): no persons; side deals with Houses stay (the second build,
+rule 9), courtship comes with the third build's rule 7.*
 
 - **Seen by contact**: a rival's person is known only through what they hold that the player
   touches: the commander of an army it has fought, the head of a House with a city it channels
@@ -1026,6 +1126,22 @@ demands met, the turns Houses spend Annoyed or worse (telemetry `person_*`: `ent
 game is an AI the human need not fight: if so, the AI's demands are tuned before the human's are.
 
 ## UI
+
+**The third build's screens as built (part 1, 2026-11-19):** gone are the person cards and the
+"Persons without a House" part of the Court, the head's card inside a House's (the House's card
+carries its leader's portrait, name and title, its request line, its ambition and record), the
+size line and the realm's threshold, the Armies screen's commander lines and `Change…` (and the
+command `set_commander`), the attack refusal of a withheld attack (`attack_refusal`), the unit
+panel's person line and Found a House, the grant list's persons and great people, the cast in
+brief (the view's `persons`, now `houses`: `{id, label, leader, leader_name}`), the persons'
+alerts (`kind: "house"` now, `.house-alert`), the keyword Sworn. The grant list offers the Houses,
+or with none the founding (`A new House`, its line, `Found House Gunthar`, the confirmation `Grant
+Vallus to found House Gunthar? Its leader is drawn now. This cannot be undone.`); the Court's
+Crown card says the founding while the realm has no House. Every text says request; the keyword
+Request is in the Court's chips. The stage (part K) has no person: its Houses, armies (`main`,
+`holds_furious`, `contests_furious`), the taken city's claimant House and the neighbour's House.
+The parts below describe the first and second builds' screens; what they say of persons, commanders
+and great people founding is retired.
 
 The interface of the first build (the owner asked for particular attention to it). The rules it
 shows are "The first build"; the client's conventions are docs/HUMAN.md and docs/PLAY_DESIGN.md
@@ -1332,6 +1448,12 @@ left open, or departs from it:
   keywords.
 
 #### K. A staged scene: `ffh-play stage persons DIR`
+*As built by the third build:* the player under Aristocracy with a capital and three Crown cities
+(`taken` claimed by House `pleased`), House `friendly` (Friendly, two cities, 0%, founded by the
+first grant), House `pleased` (Pleased or Cautious, 10%), House `annoyed` (a capitulated
+civilization), House `furious` (countdown at 8, two cities, one held by an army of two, its seat
+contested and lost by an army of one against two of the House's units), an army `main` for the
+levy, the neighbour's House; no person. The first build's scene, retired:
 One save that shows every state, for the tests and the screenshots: the player under Aristocracy with a capital, three Crown cities (one with two claimant Houses and a commander who took it), House A (Devoted, three cities, a wonder demand in production), House B (Restless after a refused demand, two cities), House C (Disloyal, countdown at 8, two cities, one held by an army of two, its seat contested and lost by an army of one against two of the House's units), an empty seat with two candidates, a person without a post, a great person unit, a commander (Loyal) and a commander (Disloyal, countdown), a hero. A second, `stage persons-direct DIR`: the same empire one click from adopting God King.
 
 ## Open points for the owner

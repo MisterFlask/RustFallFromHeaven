@@ -212,7 +212,7 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
         }
         "KeywordType" => {
             // A keyword's reminder text (keywords.jsonc), for a mark drawn on many screens (the
-            // loyalty states of Persons of Note: persons.js `stateMark`).
+            // loyalty states of the Houses: persons.js `stateMark`).
             let k = KeywordType::from_usize(i);
             j.set("reminder", crate::view::keywords::reminder(d, k));
             // The keywords whose reminders show with it (itself first, then what it implies).

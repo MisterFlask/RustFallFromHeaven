@@ -21,9 +21,6 @@ import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
 import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
-import { personLine, commanderLine } from "./persons_lines.js";
-import { openGrant } from "./persons.js";
-import { keywordChips } from "./keywords.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -467,16 +464,6 @@ export async function moveTo(x, y, { direct = false } = {}) {
   if (!S.sel) return;
   if (waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)) clearWaypoints();
   if (S.sel.x === x && S.sel.y === y) return;
-  // Persons of Note (docs/PERSONS.md, "UI", part D): an attack the army's commander withholds
-  // (Restless, Disloyal) is refused with the rules' reason.
-  if (unitsAt(x, y).some((u) => u.owner !== me()?.player)) {
-    const units = S.sel.units;
-    const p = hover && hover.x === x && hover.y === y && preview.path ? preview.path : await api.query("path", { units, x, y }).catch(() => null);
-    if (p?.attack_refusal) {
-      toast(p.attack_refusal, "error");
-      return;
-    }
-  }
   if (!direct && (await planAttack(x, y))) return;
   if (!S.sel) return;
   await run({ c: "move", units: S.sel.units, x, y, append: false });
@@ -1037,8 +1024,6 @@ function showTip() {
     }
     // Supply lines (docs/SUPPLY.md): an army selected, whether it would be supplied there.
     for (const siege of path.ends_sieges ?? []) lines.push(h(`div.tip-siege${siege.starving ? ".bad" : ".warn"}`, siege.text));
-    // Persons of Note: the army's commander withholds the attack.
-    if (path.attack_refusal) lines.push(h("div.tip-refusal.warn", path.attack_refusal));
     if (path.supply) {
       const s = path.supply;
       // At sea (docs/NAVAL.md 3.3): in range of a port.
@@ -1487,8 +1472,6 @@ function armyLine() {
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
     // Supply (docs/SUPPLY.md, section 5): its state in bare words.
     a.supply?.text ? h(`div.army-supply${a.supply.state === "supplied" && a.supply.line ? ".dim" : ".warn"}`, a.supply.text) : null,
-    // Persons of Note (docs/PERSONS.md, "UI", part D): its commander (the Armies screen changes it).
-    commanderLine(a, { unitName: (t) => dname("UnitType", t), compact: true }),
   );
 }
 
@@ -1776,30 +1759,6 @@ export function renderPanel() {
       ),
     );
   }
-  // Persons of Note (docs/PERSONS.md, "UI", part F): the person the lead unit is; a Disloyal
-  // head's unit takes no orders (the rules' reason); a great person's Found a House.
-  const leadFull = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
-  // (The isometric and HD-2D card shows them under the unit's numbers, in view on a phone.)
-  const personBits = [];
-  const person = personLine(leadFull);
-  if (person) personBits.push(person);
-  const fh = leadFull?.found_house;
-  if (fh && S.sel.units.length === 1) {
-    const can = fh.city !== null && fh.city !== undefined;
-    // The host's words: the button `Found a House` (the keyword marked), then where and what it
-    // costs (` in Vallus. The great person is consumed; ...`); the House's reminder is its chip.
-    const label = fh.label ?? "Found a House";
-    const plain = `${label.replace(/\[\\?KW[^\]]*\]/g, "")}${fh.text ?? ""}`;
-    personBits.push(
-      h(
-        "div.found-house-line",
-        h("button.small.found-house", { disabled: !can, title: can ? plain : fh.why, onclick: () => openGrant(fh.city, { unit: lead.id }) }, markup(label)),
-        h("span.dim", can ? fh.text : ` ${fh.why}`),
-        can ? [" ", keywordChips(fh.reminders)] : null,
-      ),
-    );
-  }
-  if (!isoSkin()) status.push(...personBits);
   // Engagement combat: the lead unit's role, A, Dv and battle HP.
   const engage = engageLine(lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null);
   if (engage && !isoSkin()) status.push(engage);
@@ -1837,7 +1796,7 @@ export function renderPanel() {
   const seals = look.art && leadDetails?.promotions?.length
     ? h("div.seals", leadDetails.promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: isoSkin() ? 2 : 1 }))))
     : null;
-  if (isoSkin()) return renderCard({ own, ordered, r, details, lead, promotions: leadDetails?.promotions, tools, status, hint, way, others, x, y, personBits });
+  if (isoSkin()) return renderCard({ own, ordered, r, details, lead, promotions: leadDetails?.promotions, tools, status, hint, way, others, x, y });
   fill(panel, head, hint, way, list, seals, tools, status, actions, others);
 }
 
@@ -1847,7 +1806,7 @@ export function renderPanel() {
  *  description of the one pointed at (spells, promotions and upgrades as labelled buttons under
  *  them). The units of the plot are a strip of icons over the card (Civ4's), the selected ones
  *  lit; on a small screen the strip stays in the card, under the numbers (iso.css). */
-function renderCard({ own, ordered, r, details, lead, promotions, tools, status, hint, way, others, x, y, personBits = [] }) {
+function renderCard({ own, ordered, r, details, lead, promotions, tools, status, hint, way, others, x, y }) {
   const city = cityAt(x, y);
   if (city && city.owner === me()?.player) focusOn(city.id);
   const d = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
@@ -1913,7 +1872,7 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
     h(
       "div.iso-card",
       lead ? portrait(lead.type, lead.owner) : null,
-      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`), h("button.close.deselect", { title: "Deselect [Esc]", "aria-label": "Deselect", onclick: () => clearSelection() }, "×")), plate, personBits.length ? h("div.iso-person", personBits) : null, seals, strip, others),
+      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`), h("button.close.deselect", { title: "Deselect [Esc]", "aria-label": "Deselect", onclick: () => clearSelection() }, "×")), plate, seals, strip, others),
       h("div.iso-card-right", h("div.iso-tools", tools), tiles.length ? h("div.iso-orders", tiles) : null, desc, listed.length ? h("div.iso-listed-all", listed) : null),
     ),
   );

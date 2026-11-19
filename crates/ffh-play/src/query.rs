@@ -63,7 +63,7 @@ pub enum Query {
     /// An empire order's second step: the governed cities able to build `order` `data`, with a
     /// suggestion (with `army`: the nearest).
     EmpireCities { order: ffh_data::OrderType, data: i32, army: Option<ArmyId> },
-    /// Persons of Note (docs/PERSONS.md, "UI", part A): the Court screen.
+    /// Houses (docs/PERSONS.md, "UI", part A): the Court screen.
     Court,
     /// Part B: the grant list of one of the human's cities.
     Grant { city: CityId },

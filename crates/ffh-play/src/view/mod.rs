@@ -310,7 +310,7 @@ pub fn players_brief(v: &Viewer) -> Json {
             "our_master" => g.teams[v.team].vassal[t],
             "score" => g.player_score[p],
             "contact" => g.player_can_contact(v.h, p),
-            // Persons of Note (docs/PERSONS.md, "The second build", rules 1 and 13): the player whose
+            // Houses (docs/PERSONS.md, "The second build", rules 1 and 13): the player whose
             // colour it is drawn in (a House: its liege's), and a House's record (null: no House).
             "color_player" => g.player_color_player(p),
             "house" => house_marks::player_house_brief(v, p),
@@ -393,7 +393,7 @@ pub fn cities(v: &Viewer) -> Json {
                 });
             }
         }
-        // Persons of Note (docs/PERSONS.md, "UI", parts E and G; rules 1 and 13): a House's city
+        // Houses (docs/PERSONS.md, "UI", parts E and G; rules 1 and 13): a House's city
         // carries its House (`{id, label, colour, liege, state, turns}`, the state and turns for its
         // liege only), for its plate and its colour (the liege's); the human's own cities are the
         // Crown's (null), for the lists. Left out for the other cities and for a human without
@@ -551,11 +551,11 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // World rituals (docs/CARDS.md, "World rituals"): every civilization's ritual as the human
         // may know it (the HUD's rituals element and its full list).
         "rituals" => rituals::rituals(v),
-        // Persons of Note (docs/PERSONS.md, "UI"): how many things need attention on the Court
-        // screen (the menu button's badge; 0: none).
+        // Houses (docs/PERSONS.md, "UI"): how many things need attention on the Court screen
+        // (the menu button's badge; 0: none).
         "court_attention" => persons::attention_count(v),
-        // Persons of Note (docs/PERSONS.md, "UI", part H): the human's cast in brief (`{id, name,
-        // leader}`), for the alerts' portraits.
+        // Houses (docs/PERSONS.md, "UI", part H): the human's Houses in brief (`{id, label,
+        // leader, leader_name}`), for the alerts' portraits.
         "houses" => house_marks::houses_brief(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue

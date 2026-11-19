@@ -548,8 +548,8 @@ impl Game {
             self.log.msg_to(turn, to, || format!("Team {} made peace with team {}", t, other));
 
             self.ev_change_war(false, t, other);
-            // This game's persons of note (docs/PERSONS.md): demands to take a city of the other
-            // side are refused.
+            // This game's Houses (docs/PERSONS.md): requests to take a city of the other side are
+            // refused.
             self.persons_peace_made(t, other);
 
             for o in self.team_ids() {

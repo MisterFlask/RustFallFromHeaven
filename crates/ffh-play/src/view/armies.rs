@@ -97,7 +97,7 @@ fn requisition_json(v: &Viewer, a: ArmyId, candidates: bool) -> Json {
                 "production_turns" => preview.map(|p| p.2),
                 "march_turns" => preview.and_then(|p| p.3),
                 "order" => orders.iter().find(|(oc, _)| *oc == c).map(|(_, o)| o.clone()),
-                // Persons of Note (docs/PERSONS.md, rule 6, the levy): a House's city, whether
+                // Houses (docs/PERSONS.md, rule 6, the levy): a House's city, whether
                 // it takes levies (`text`: `Takes levies. Each levy: -1 (20 turns).` or the rules'
                 // reason it takes none).
                 "house" => crate::view::persons::levy_house(g, c),

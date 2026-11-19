@@ -33,12 +33,11 @@ test("the plate's mark: every state for the liege, the turns for Furious only", 
   assert.equal(plateMark("Furious", 8).glyph, "✖");
 });
 
-test("an alert opens the Court at its House or person", () => {
+test("an alert opens the Court at its House", () => {
   const houses = [{ id: 2, label: "House Arne" }, { id: 4, label: "Arne" }];
-  assert.deepEqual(alertFocus({ person: 7 }, { id: 7, house: 2 }, houses), { house: 2 }, "a head's news: its House");
-  assert.deepEqual(alertFocus({ person: 7 }, { id: 7, house: null }, houses), { person: 7 });
-  assert.deepEqual(alertFocus({ text: "Torrin granted to House Arne." }, null, houses), { house: 2 }, "the longest label named");
-  assert.equal(alertFocus({ text: "Nothing of ours." }, null, houses), null);
+  assert.deepEqual(alertFocus({ house: 4, text: "House Arne requests: ..." }, houses), { house: 4 }, "the House the entry tags");
+  assert.deepEqual(alertFocus({ text: "Torrin granted to House Arne." }, houses), { house: 2 }, "the longest label named");
+  assert.equal(alertFocus({ text: "Nothing of ours." }, houses), null);
 });
 
 test("the diplomacy list: your Houses first, each House under its liege", () => {

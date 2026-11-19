@@ -115,7 +115,7 @@ h3 { font-size: 16px; letter-spacing: 0.03em; }
 h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin: 10px 0 4px; }
 .dim { color: var(--dim); }
 .warn { color: var(--warn); }
-/* Persons of Note: the colour of Annoyed (docs/PERSONS.md, "UI", principle 2): a limit that is
+/* Houses: the colour of Annoyed (docs/PERSONS.md, "UI", principle 2): a limit that is
    not yet Furious. Scarlet (`.warn`) is Furious's alone. */
 .caution { color: var(--caution); }
 .good { color: var(--good); }
@@ -1344,7 +1344,7 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 }
 .kw-chip:hover, .kw-chip:focus-visible { border-color: var(--kw); outline: none; }
 
-/* Persons of Note (docs/PERSONS.md, "UI", principle 2): one mark for a loyalty state on every screen,
+/* Houses (docs/PERSONS.md, "UI", principle 2): one mark for a loyalty state on every screen,
    drawn by persons.js stateMark: a shape and a word in the state's colour (never colour alone), the
    turns of a countdown after them. Screens place it; they do not restyle it. A House's shield is an
    inline SVG in its colour (persons.js houseShield). */
@@ -1376,7 +1376,6 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .phead { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .phead .pname { flex: 1 1 auto; min-width: 0; line-height: 1.2; }
 .phead .ptitle { font-size: 12px; font-style: italic; }
-.phouse-head { margin: 4px 0; padding: 4px 0 2px; border-top: 1px solid rgba(132, 139, 152, 0.35); }
 .pportrait { flex: none; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--c-ochre); background: var(--c-soot); overflow: hidden; }
 .pportrait img, .pportrait canvas { display: block; max-width: 40px; max-height: 40px; }
 .pportrait.none { font-weight: 700; color: var(--dim); font-size: 13px; }
@@ -1384,7 +1383,6 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .pline.warn { color: var(--warn); }
 .pline.caution { color: var(--caution); }
 .court-keywords { margin-top: 12px; }
-.ptrait { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
 .pchips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
 .city-chip.seat { font-weight: 700; }
 .pdemand { margin: 4px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
@@ -1417,7 +1415,7 @@ li.crown-city > .link { margin-right: auto; text-align: left; justify-content: f
 /* The second build (docs/PERSONS.md, rule 13): the Crown's limit and the realm's default
    tribute in the Court's header; a House card's leader line, its tribute list (one row a rate,
    two lines on a phone: the rate, what it pays this turn, its tribute part and loyalty, the state
-   mark), its levy and size lines; the Crown's cities over the limit. */
+   mark), its levy line; the Crown's cities over the limit and, with no House, the founding line. */
 .court-header .caution, .grant-head .caution { color: var(--caution); }
 .pattn[data-kind="levy"] > span:first-child, .pattn[data-kind="crown_over"] > span:first-child { color: var(--caution); }
 .ptribute-default { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 4px; }
@@ -1445,13 +1443,13 @@ button.trate.current { background: rgba(242, 199, 75, 0.1); border-color: var(--
 html.iso.hd2d button.trate.current { border-image: var(--iso-tile-hover); background: var(--hd-band), var(--hd-fill); background-clip: padding-box; color: #fff; box-shadow: inset 3px 0 0 var(--hd-ink); }
 button.trate .trate-now { display: block; color: var(--accent); font-size: 11px; font-weight: 700; }
 .plevy { margin-top: 4px; }
+.pfounding { margin: 2px 0 4px; }
 li.crown-city .crown-note { font-size: 12px; }
 .city-chip.held { border-style: dashed; }
 .peffect.self { border-left-color: var(--accent); }
-/* Persons of Note in the existing screens (docs/PERSONS.md, "UI", parts C to I; persons_lines.js):
-   the House tag of the lists, the holder line of the city screen, the commander's line, the
-   preview lines under an act, the civics screen's warning, the alerts. The state is always the
-   one mark above. */
+/* Houses in the existing screens (docs/PERSONS.md, "UI", parts C to I; persons_lines.js): the
+   House tag of the lists, the holder line of the city screen, the preview lines under an act, the
+   civics screen's warning, the alerts. The state is always the one mark above. */
 .house-tag { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .house-tag.crown { color: var(--dim); }
 button.link.house-tag { padding: 0; }
@@ -1459,16 +1457,8 @@ button.link.house-tag { padding: 0; }
 .holder-line .holder-house-name { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; padding: 0; }
 .holder-outcome { margin-top: 2px; }
 .build-refusal { margin: 4px 0; }
-.commander-line { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0; }
-.commander-line .leader-portrait { flex: none; border-radius: 4px; }
-.commander-line .commander-text { min-width: 0; }
-.commander-line select.commander-change { max-width: 100%; }
-.army-line .commander-line { margin: 2px 0 0; }
 .requisition-house { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 0 0 2px 22px; font-size: 0.92em; }
 .requisition-house .levy-text { min-width: 0; }
-.person-line, .held-line, .found-house-line { margin: 3px 0; }
-.iso-person { margin: 4px 0; }
-.commander-figure { flex: none; display: inline-flex; }
 .persons-preview { margin: 6px 0; padding: 4px 8px; border-left: 3px solid var(--caution); background: rgba(255, 182, 59, 0.07); }
 .persons-preview-title { font-weight: 700; }
 .persons-preview-line { line-height: 1.45; }
@@ -1476,7 +1466,7 @@ button.link.house-tag { padding: 0; }
 .persons-warning-houses { margin: 4px 0 0; padding-left: 18px; font-weight: 400; }
 .persons-warning-houses li { margin: 1px 0; }
 tr.empire-city.refused { opacity: 0.75; cursor: not-allowed; }
-.toast.person-alert { display: flex; align-items: center; gap: 8px; border-left: 3px solid var(--accent); cursor: pointer; }
-.toast.person-alert.secession { border-left-color: var(--warn); }
-.toast.person-alert .leader-portrait { flex: none; border-radius: 4px; }
-.toast.person-alert .person-alert-mark { color: var(--accent); }
+.toast.house-alert { display: flex; align-items: center; gap: 8px; border-left: 3px solid var(--accent); cursor: pointer; }
+.toast.house-alert.secession { border-left-color: var(--warn); }
+.toast.house-alert .leader-portrait { flex: none; border-radius: 4px; }
+.toast.house-alert .house-alert-mark { color: var(--accent); }

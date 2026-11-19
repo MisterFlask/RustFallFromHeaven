@@ -1987,12 +1987,14 @@ step fires on a near second as well as on the ladder's first choice). Average po
 300: 52.4 base, 53.1 rules only, 52.6 with empire orders; research 203 / 233 / 183 (wide spread
 between seeds).
 
-## Persons of Note (`persons.rs`)
+## Houses (`persons.rs`)
 
 This game's own system (docs/PERSONS.md; the second build: Houses as vassal civilizations, rule
-12). A rules change, so not gated on the AI (CLAUDE.md): reasonable choices, unmeasured. AI players
-only (`persons::turn`, once a turn after the turn's diplomacy, before the governors' empire
-orders): a human's grants, tribute and offers are the human's.
+12; the third build, rule 11: no persons, the first grant founds a House). A rules change, so not
+gated on the AI (CLAUDE.md): reasonable choices, unmeasured. AI players only (`persons::turn`,
+once a turn after the turn's diplomacy, before the governors' empire orders): a human's grants,
+tribute and offers are the human's. (The module keeps the name of the system it began as,
+Persons of Note.)
 
 - **Tribute** (`tribute_for`; the owner's decision of 2026-11-18, replacing "20% Pleased, 10%
   Cautious, 0% Annoyed"; revised 2026-11-19 for rule 4's lag: the rate in force moves a step of
@@ -2000,7 +2002,7 @@ orders): a human's grants, tribute and offers are the human's.
   loyalty once in force (`house_loyalty_at_tribute`, the steady state) is Pleased with a point to
   spare (2 or more, `TRIBUTE_KEEP_LOYALTY`), else 0%; lowered as soon as the projection at the
   rate set falls below that. A cut no longer helps at once: the point to spare is what lets the
-  House take a grievance (a levy, a refused demand) while the cut arrives. The aim: the AI's
+  House take a grievance (a levy, a refused request) while the cut arrives. The aim: the AI's
   Houses cannot be bought (a House Cautious or worse takes a price to secede) and a countdown a
   cut can stop in time is stopped (one step lifts a House at -6 to -5; the first comes within 5
   turns, the countdown runs 10). Set through the rules' command, only when it changes. A House
@@ -2011,15 +2013,12 @@ orders): a human's grants, tribute and offers are the human's.
   never the capital nor the best production city (`kept_city`), the least populous first, so the
   Crown comes down to its limit (an earlier version also kept the Crown's six most populous
   cities, which kept AI realms at 2-6 Houses a game across all civilizations; removed 2026-11-18
-  so the AI plays the owner's limit of 3). The candidate of `grant_candidates` ranked by, in order: no holder made Furious by the
-  preview; a standing demand met (an Annoyed or Furious grantee's first); the least populous city;
-  a claimant, the one in the best state; a person without a post founding a House; a great person
-  founding one (only when no such person is at hand and no House has room, and not a great person
-  whose card the card logic keeps waiting); a House enlarged, the one with the fewest cities, only
-  up to its realm's size threshold (rule 14, `house_size_threshold`; `house_has_room`); the fewest holders made Annoyed. A commander founds a House (and loses
-  the command) only for their claim or demand; a hero cannot found one (the rules refuse it). A
-  grant that would make a holder Furious waits. With nobody able to take a city, no previews are
-  computed.
+  so the AI plays the owner's limit of 3). Since the third build (rule 11, 2026-11-19): each to
+  the House whose capital is nearest the city (`nearest_house`, ties: the lower id); with no
+  House, the grant founds one (`GrantTo::NewHouse`, its leader drawn by the rules; none while no
+  leader is free); a grant whose preview makes a House Furious is passed over for the next city.
+  (The second build's ranking, the persons and great people founding Houses and the size
+  threshold went with the third build.)
 - **The levy** (`levy_city`): the main army's requisition (`armies::requisition_cities`) takes
   the cities of its Houses that stay Pleased or better after the levy (`Levied -1`: loyalty 2 or
   more) as candidates beside its own (the House's garrison judges whether the city can spare its
@@ -2054,14 +2053,12 @@ orders): a human's grants, tribute and offers are the human's.
   `disloyal_house_post`): the House's most valuable city (the most populous first) that the
   stack can hold, one not held now where its army units, with ours already there, would outnumber
   the House's land combat units (rule 7, `city_hold`), within 8 turns; a stack standing in such a
-  city stays when the city is held only with it. A stack that is no army (or whose commander is
-  Furious) counts for nothing and does not go. A Furious commander's army goes
-  first of all to our city with the largest garrison of other land units, within 10 turns (its
-  sworn units there stay).
-- A demanded war adds a tenth to that civilization's score in the war planning
-  (`diplomacy::manage`), never a war of its own. It never frees a House.
+  city stays when the city is held only with it. A stack that is no army counts for nothing and
+  does not go. (A Furious commander's haven went with the commanders, the third build.)
+- A war a House of ours requests adds a tenth to that civilization's score in the war planning
+  (`diplomacy::manage`, `war_demanded`), never a war of its own. It never frees a House.
 
-Soak (8 AI games, seeds 1-8, 300 turns, 7 civilizations, standard size; against the rules' build
+Soak of the second build (before the third build removed the persons; 8 AI games, seeds 1-8, 300 turns, 7 civilizations, standard size; against the rules' build
 whose AI granted any Crown city one a turn and took 20% from every House): no panic, no failed
 check. Per game: Houses founded 2-8 (base 5-12), vassal civilizations made Houses 0 (0-2), cities
 granted to Houses 3-15 (15-31), Houses at the end 2-6 (5-7), player slots at the end 11-20 (15-25),

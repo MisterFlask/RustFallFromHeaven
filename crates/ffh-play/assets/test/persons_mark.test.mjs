@@ -1,4 +1,4 @@
-// node --test: the marks of Persons of Note, from app/persons_mark.js (the state's word, glyph,
+// node --test: the marks of the Houses, from app/persons_mark.js (the state's word, glyph,
 // class and text; the Houses' colours and labels; the shield's outline and its mark on the map).
 import test from "node:test";
 import assert from "node:assert/strict";

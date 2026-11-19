@@ -1,4 +1,4 @@
-//! Persons of Note on the diplomacy screen (docs/PERSONS.md, "The second build", rules 7, 9 and
+//! Houses on the diplomacy screen (docs/PERSONS.md, "The second build", rules 7, 9 and
 //! 13; "UI"): the war a declaration brings in for certain by the vassal rules (the war dialog's
 //! `war_against` and `war_join`, checked against the war the rules then make), the same for
 //! Become your vassal in a House's trade table, what a declaration (`war_memory`) and an accepted

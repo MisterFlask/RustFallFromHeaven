@@ -226,7 +226,7 @@ impl Game {
 
             game_ai_make_assign_work_dirty(self);
 
-            // Persons of Note (docs/PERSONS.md, rule 11): adopting direct rule is civil war (every
+            // Houses (docs/PERSONS.md, rule 11): adopting direct rule is civil war (every
             // House breaks away).
             if !was_direct && self.player_rules_directly(p) {
                 self.player_persons_civil_war(p);

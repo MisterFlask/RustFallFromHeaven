@@ -72,7 +72,7 @@ function modeLine(government, direct) {
   return `Government: ${dname("CivicType", government)}. Every city is ${direct ? "ruled directly" : "governed"}.`;
 }
 
-/** Persons of Note (docs/PERSONS.md, rule 13; "UI", part C): who holds one of your cities. Every
+/** Houses (docs/PERSONS.md, rule 13; "UI", part C): who holds one of your cities. Every
  *  city of yours is the Crown's (a House's city is its own player's: your city screen does not
  *  open on it): `Held by the Crown. [Grant]`, where it cannot be granted the reason in place of the
  *  button, and `Over the Crown's limit of 3.` for a city beyond the limit. Null for a civilization
@@ -167,7 +167,7 @@ function roleCard(c, r, act, go) {
       "div.role-card-head",
       h("button.link", { onclick: () => go(c.city), title: "Open the city" }, h("b", c.name)),
       c.capital ? h("span.dim", " (capital)") : null,
-      // Persons of Note (part E): the House holding the city, or the Crown.
+      // Houses (part E): the House holding the city, or the Crown.
       "house" in c ? [" · ", houseTag(c.house, { open: true })] : null,
     ),
     h("div.role-line", h("span", "Role: "), h("b", dname("CityRoleType", c.role)), h("span.dim", ` (${c.role_overridden ? "overruled" : "proposed"}), suitability ${c.suitability}%`)),
@@ -330,7 +330,7 @@ export async function orderEmpire({ order, data, army = null, beforeMap = null }
     toast(errorText(e), "error");
     return false;
   }
-  // Persons of Note (part C): a House's city that takes no order now, with the rules' reason.
+  // Houses (part C): a House's city that takes no order now, with the rules' reason.
   const refused = r.refused ?? [];
   if (!r.cities.length) {
     toast(refused.length ? refused.map((x) => `${x.name}: ${x.why}`).join(" ") : "No governed city can build it.", "error");

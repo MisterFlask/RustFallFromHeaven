@@ -187,7 +187,7 @@ function drawHudParts(r3d, cam) {
     }
     // Sieges (docs/SIEGES.md): a besieged city's plate is ringed in red, and its walls' Sentinels
     // stand as small towers under it (filled by their HP left; hollow when breached).
-    // Persons of Note (docs/PERSONS.md, "UI", part G): an own city's House shield at the plate's
+    // Houses (docs/PERSONS.md, "UI", part G): an own city's House shield at the plate's
     // left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
     const shieldW = city.house ? drawPlateShield(g, city.house, x - h * 0.42, p.y, h * 1.05) : 0;
     if (shieldW) plateHits.push(...shieldHits(city, x - h * 0.42, p.y, h * 1.05, shieldW));

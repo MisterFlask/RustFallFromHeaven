@@ -1491,7 +1491,7 @@ export class MapView {
           // Revolt pressure (docs/CULTURE.md): a mark at the label's right end by its level.
           g.font = `bold ${ts >= 32 ? 11 : 9}px ${FONT}`;
           drawRevoltMark(g, c, sx + ts / 2 + tw / 2 + 4, sy - 2, 6, 1, sy - 1.5);
-          // Persons of Note (docs/PERSONS.md, "UI", part G): an own city's House shield at the
+          // Houses (docs/PERSONS.md, "UI", part G): an own city's House shield at the
           // label's left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
           const shieldW = c.house ? drawPlateShield(g, c.house, sx + ts / 2 - tw / 2 - 8, sy - 2, 17) : 0;
           if (shieldW) this.plateHits.push(...shieldHits(c, sx + ts / 2 - tw / 2 - 8, sy - 2, 17, shieldW));

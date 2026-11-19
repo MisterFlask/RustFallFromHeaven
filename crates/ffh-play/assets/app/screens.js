@@ -667,7 +667,7 @@ function keysTable() {
     ["F5", "armies: your armies, their supply and the units on their way"],
     ["F6 / F7 / F8", "the tech tree / religion / cultural pressure"],
     ["F9", "governors: who runs your cities, their roles, priorities and empire orders"],
-    ["Shift+F9", "the court: your Houses, persons of note, their demands, and grants of cities"],
+    ["Shift+F9", "the court: your Houses, their requests, and grants of cities"],
     ["Ctrl+S / Ctrl+L", "save / load"],
     ["Ctrl+1 / 2 / 3 / 4", "map layer: terrain / political / yields / sea"],
     ["?", "this help"],

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// The browser smoke test of Persons of Note (docs/PERSONS.md, "The second build", rule 13; "UI",
-// parts A, B, D and J; docs/HUMAN.md, "Testing the browser client"), in the style of
+// The browser smoke test of the Houses (docs/PERSONS.md, "The third build" on "The second build",
+// rule 13; "UI", parts A, B, D and J; docs/HUMAN.md, "Testing the browser client"), in the style of
 // tools/web-smoke.mjs: `ffh-play stage persons` served with `ffh-play serve --load`, the page in
 // headless Chromium on the HD-2D map (with `--shots`; else the map the page chooses). It checks the
 // Court button's count; opens the Court with Shift+F9 (the header with the Crown's limit and the
-// realm's default tribute, the lines that need attention, the Crown and the four Houses); opens a
+// realm's default tribute, the lines that need attention, the Crown and the four Houses, each with
+// its leader and its request; no person anywhere); opens a
 // House's tribute list, reads each rate once in force and when (a step every 5 turns), sets another
 // rate and sees the card say the rate set and the rate in force while its parts, total and state
 // stay the rate in force's; opens the grant list of the contested Crown city (the claimants
@@ -13,8 +14,11 @@
 // line names the city and the House and says it cannot be undone), sees the toast and the Court
 // refreshed (the city is the House's); opens a House's Free confirmation and backs out; opens the
 // Armies screen's Requisition from list (a House city that takes levies, one that refuses, in the
-// rules' words); and on a phone (390 x 844) opens the Court, a House's tribute list and a grant
-// list without a sideways scroll. Any console error, page error or failed request fails it.
+// rules' words; the army has no commander line); on a phone (390 x 844) opens the Court, a House's
+// tribute list and a grant list without a sideways scroll; and last, with the human's Houses freed,
+// the Court's founding line and the grant list's founding card (`A new House: its leader is drawn
+// from the Bannor's minor leaders.`), founded in two steps. Any console error, page error or failed
+// request fails it.
 //
 //   node tools/web-persons-smoke.mjs --bin <built>/ffh-play [--assets crates/ffh-play/assets]
 //                                    [--shots DIR] [--gpu]
@@ -185,9 +189,9 @@ async function main() {
     const houseV = st.houses.annoyed;
     const taken = st.taken;
 
-    // The Court button's count: a Furious House, a Furious commander.
+    // The Court button's count: a Furious House.
     const badge = await until(() => page.evaluate(() => document.querySelector("#btn-court .court-badge")?.textContent ?? null), "the Court button's count", 20000 * SLOW);
-    check(Number(badge) >= 2, `the Court's count is at least 2 (got ${badge})`);
+    check(Number(badge) >= 1, `the Court's count is at least 1 (got ${badge})`);
     steps.push(`the Court button's count: ${badge}`);
     await crop(page, "#btn-court", "court-button.png", { pad: 10 });
 
@@ -205,7 +209,9 @@ async function main() {
         houses: m.querySelectorAll(".house-card").length,
         crownCities: m.querySelectorAll(".crown-card .crown-city").length,
         over: [...m.querySelectorAll(".crown-card .crown-city.over")].map((c) => c.textContent),
-        persons: m.querySelectorAll(".person-card").length,
+        persons: m.querySelectorAll(".person-card, .commander-line, .person-line").length,
+        leaders: [...m.querySelectorAll(".house-card .pleader")].map((e) => e.textContent),
+        requests: [...m.querySelectorAll(".house-card .pdemand")].map((e) => e.textContent),
         chips: [...m.querySelectorAll(".court-keywords .kw-chip")].map((c) => c.textContent),
         marks: [...m.querySelectorAll(".house-card .phead > .pstate")].map((s) => s.textContent),
       };
@@ -218,37 +224,35 @@ async function main() {
     check(court.attention.some((a) => /Furious\. Will break away in 8 turns, taking .*: war\./.test(a.text)), `the Furious House's line: ${court.attention.map((a) => a.text).join(" | ")}`);
     check(court.attention.some((a) => a.text.startsWith(`${houseV.label} is Annoyed. It takes no levy.`)), `the House that takes no levy: ${court.attention.map((a) => a.text).join(" | ")}`);
     check(court.attention.some((a) => a.kind === "crown_over" && a.text.includes(`${taken.name} is over the Crown's limit of 3: maintenance +`)), `the city over the Crown's limit, its cost signed: ${court.attention.map((a) => a.text).join(" | ")}`);
-    check(court.houses === 4 && court.crownCities === 4 && court.over.length === 1 && court.persons >= 2, `the cards: ${JSON.stringify(court)}`);
+    check(court.houses === 4 && court.crownCities === 4 && court.over.length === 1 && court.persons === 0, `the cards (no person): ${JSON.stringify(court)}`);
+    check(court.leaders.length === 4 && court.leaders.every((t) => t.length > 0), `every House card names its leader: ${JSON.stringify(court.leaders)}`);
+    check(court.requests.length === 4 && court.requests.every((t) => t.startsWith("Request: ") || t.startsWith("No request.")) && court.requests.some((t) => t.startsWith("Request: ")), `the requests: ${JSON.stringify(court.requests)}`);
     check(court.marks.some((t) => t.includes("Furious") && t.includes("✖") && t.includes("8 turns")), `the Furious mark with its turns: ${court.marks}`);
-    check(["House", "Crown", "Tribute", "Levy", "Claimant"].every((k) => court.chips.includes(k)) && !court.chips.includes("Furious"), `the keyword chips: ${court.chips}`);
-    steps.push(`the Court: ${court.header.join(" ")} ${court.attention.length} lines need attention (${kinds.join(", ")}); the Crown (${court.crownCities} cities), ${court.houses} Houses, ${court.persons} persons without a House`);
+    check(["House", "Crown", "Request", "Tribute", "Levy", "Claimant"].every((k) => court.chips.includes(k)) && !court.chips.includes("Furious") && !court.chips.includes("Sworn"), `the keyword chips: ${court.chips}`);
+    steps.push(`the Court: ${court.header.join(" ")} ${court.attention.length} lines need attention (${kinds.join(", ")}); the Crown (${court.crownCities} cities), ${court.houses} Houses led by ${court.leaders.join("; ")}`);
     await crop(page, ".modal[data-tag=court] .court-header, .modal[data-tag=court] .court-attention", "court-attention.png");
     await crop(page, ".modal[data-tag=court]", "court.png", { pad: 2 });
-    // The rest of the Court, a screen at a time: the realm's cards, then the persons.
+    // The rest of the Court, a screen at a time: the realm's cards.
     if (SHOTS) {
       const scrollTo = (sel) => page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
       await scrollTo(".modal[data-tag=court] .pcards");
       await crop(page, ".modal[data-tag=court]", "court-realm.png", { pad: 2 });
       await scrollTo(".modal[data-tag=court] .house-card:nth-child(4)");
       await crop(page, ".modal[data-tag=court]", "court-realm-2.png", { pad: 2 });
-      await scrollTo(".modal[data-tag=court] .person-card");
-      await crop(page, ".modal[data-tag=court]", "court-persons.png", { pad: 2 });
       await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
     }
 
-    // A demand's term says what its lapse does; a House that would accept an offer shows its price
-    // on the card; a Furious person's card shows its loyalty parts by its countdown.
+    // A request's term says what its lapse does; a House that would accept an offer shows its
+    // price on the card.
     const cards = await page.evaluate((v) => {
       const m = document.querySelector(".modal[data-tag=court]");
       const lapse = [...m.querySelectorAll(".pdemand-lapse")].map((e) => e.textContent);
       const price = (id) => m.querySelector(`.house-card[data-house="${id}"] > .pprice`)?.textContent ?? null;
-      const fur = m.querySelector(".person-card.alarm");
-      return { lapse, priceV: price(v.annoyed), priceA: price(v.friendly), furiousParts: fur ? [...fur.querySelectorAll(":scope > .pparts-block ul.pparts li")].map((l) => l.textContent) : null };
+      return { lapse, priceV: price(v.annoyed), priceA: price(v.friendly) };
     }, { annoyed: houseV.id, friendly: houseA.id });
-    check(cards.lapse.length > 0 && cards.lapse.every((t) => /^ At its term: -3 \(60 turns\)(, becomes .+)?\.$/.test(t)), `the demands' lapse: ${JSON.stringify(cards.lapse)}`);
+    check(cards.lapse.length > 0 && cards.lapse.every((t) => /^ At its term: -3 \(60 turns\)(, becomes .+)?\.$/.test(t)), `the requests' lapse: ${JSON.stringify(cards.lapse)}`);
     check(/^Price to secede: \d+ gold\.$/.test(cards.priceV ?? "") && cards.priceA === null, `the price in the card (Annoyed: ${cards.priceV}; Friendly: ${cards.priceA})`);
-    check(cards.furiousParts?.length > 0, `a Furious person's parts on the card: ${JSON.stringify(cards.furiousParts)}`);
-    steps.push(`demand terms: "${cards.lapse[0].trim()}"; ${houseV.label}: "${cards.priceV}"; a Furious person's parts: ${cards.furiousParts.join(", ")}`);
+    steps.push(`request terms: "${cards.lapse[0].trim()}"; ${houseV.label}: "${cards.priceV}"`);
     // The Furious House's outcome: the contest for each city where an army of yours stands (rule
     // 7: held when your army's units outnumber the House's; its seat contested and lost).
     const houseC = st.houses.furious;
@@ -263,12 +267,11 @@ async function main() {
       };
       await shoot(houseSel(houseV.id), "court-house-price.png");
       await shoot(houseSel(houseC.id), "court-house-furious.png");
-      const demandCard = await page.evaluate(() => {
+      const requestCard = await page.evaluate(() => {
         const c = document.querySelector(".modal[data-tag=court] .house-card .pdemand-lapse")?.closest(".house-card");
         return c ? `.modal[data-tag=court] .house-card[data-house="${c.dataset.house}"]` : null;
       });
-      if (demandCard) await shoot(demandCard, "court-house-demand.png");
-      await shoot(".modal[data-tag=court] .person-card.alarm", "court-person-furious.png");
+      if (requestCard) await shoot(requestCard, "court-house-request.png");
       await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
     }
 
@@ -350,7 +353,7 @@ async function main() {
     const l = grant.first.lines;
     check(/^Moves to .*'s realm: its production and commerce are the House's\.$/.test(l[0]) && /^(Its garrison goes to .+: .+|No garrison goes with it)\.$/.test(l[1]) && l.some((x) => /^Your maintenance: -[\d.]+ gold a turn \([\d.]+ of it the Crown's limit\)\.$/.test(x)) && l.includes("The Crown after the grant: 3 cities, within its limit of 3.") && l.some((x) => /^Tribute from it at \d+%\.$/.test(x)), `the first card's lines: ${JSON.stringify(l)}`);
     check(grant.first.effects.some((e) => /granted to .*: -\d \(30 turns\)\./.test(e)), `the first card's snubs: ${JSON.stringify(grant.first.effects)}`);
-    check(grant.kinds.includes("great_person") && grant.kinds.filter((x) => x === "person").length >= 1, `the founders (a veteran, a great person; no hero): ${grant.kinds}`);
+    check(grant.kinds.length === 4 && grant.kinds.every((x) => x === "house"), `the realm's four Houses, no founding while one stands: ${grant.kinds}`);
     steps.push(`the grant list of ${taken.name}: ${grant.claimants.filter(Boolean).length} claimants first; ${grant.first.title}: ${l.join(" ")} ${grant.first.effects.length} other subjects in its preview`);
     await crop(page, ".modal[data-tag=grant]", "grant-list.png", { pad: 2 });
     await crop(page, ".modal[data-tag=grant] .grant-head, .modal[data-tag=grant] .grant-card:first-child", "grant-first-card.png", { pad: 4 });
@@ -400,8 +403,10 @@ async function main() {
     // The Armies screen: Requisition from lists the Houses' cities with their levy status.
     await until(async () => (await topTag(page)) === null, "the Court closed", 5000 * SLOW);
     await page.evaluate(() => void window.ffh.openScreen("armies"));
-    const armySel = `#modals .army-card[data-army="${st.armies.loyal.id}"]`;
+    const armySel = `#modals .army-card[data-army="${st.armies.main.id}"]`;
     await until(() => page.evaluate((sel) => !!document.querySelector(`${sel} details.requisition-pick`), armySel), "the Armies screen", 20000 * SLOW);
+    check(await page.evaluate(() => !document.querySelector("#modals .commander-line, #modals .army-card select.commander-change")), "no commander on the Armies screen");
+    await crop(page, armySel, "armies.png", { pad: 4 });
     await page.evaluate((sel) => {
       const d = document.querySelector(`${sel} details.requisition-pick`);
       d.open = true;
@@ -462,6 +467,41 @@ async function main() {
     await crop(phone, ".modal[data-tag=grant]", "phone-grant.png", { pad: 0 });
     steps.push(`on a phone (${PHONE.width} x ${PHONE.height}): the Court, ${houseV.label}'s tribute list and the grant list of ${crownCity.name} without a sideways scroll`);
     await phone.close();
+
+    // A realm without a House (the human's four freed): the Court's founding line, the grant
+    // list's founding card, founded in two steps (rule 3).
+    const fpage = await open(browser, server.url, VIEW);
+    const ids = [houseA.id, houseV.id, st.houses.furious.id, houseP.id];
+    await fpage.evaluate(async (ids) => {
+      for (const id of ids) await window.ffh.api.cmd("free_house", { house: id });
+    }, ids);
+    await fpage.evaluate(() => void window.ffh.openScreen("court"));
+    const founding = await until(() => fpage.evaluate(() => document.querySelector(".modal[data-tag=court] .crown-card .pfounding")?.textContent ?? null), "the Court's founding line", 20000 * SLOW);
+    check(founding === "No House yet. A grant of a Crown city founds one. A new House: its leader is drawn from the Bannor's minor leaders.", `the founding line: ${founding}`);
+    check(await fpage.evaluate(() => document.querySelectorAll(".modal[data-tag=court] .house-card").length === 0), "no House card");
+    await crop(fpage, ".modal[data-tag=court] .crown-card", "court-founding.png", { pad: 4 });
+    await fpage.keyboard.press("Escape");
+    await fpage.evaluate((id) => void window.ffh.persons.openGrant(id), crownCity.id);
+    await until(() => fpage.evaluate(() => !!document.querySelector(".modal[data-tag=grant] .grant-card")), "the founding grant list", 20000 * SLOW);
+    const fcard = await fpage.evaluate(() => {
+      const cards = [...document.querySelectorAll(".modal[data-tag=grant] .grant-card")];
+      const c = cards[0];
+      return { n: cards.length, kind: c.dataset.kind, title: c.querySelector(".pname").textContent, lines: [...c.querySelectorAll("ul.plines li")].map((l) => l.textContent), button: c.querySelector("button.pgrant-to")?.textContent ?? "" };
+    });
+    check(fcard.n === 1 && fcard.kind === "found" && fcard.title === "A new House", `the founding card: ${JSON.stringify(fcard)}`);
+    check(fcard.lines[0] === "A new House: its leader is drawn from the Bannor's minor leaders." && /^Found House .+$/.test(fcard.button), `the founding card's lines: ${JSON.stringify(fcard)}`);
+    await crop(fpage, ".modal[data-tag=grant]", "grant-founding.png", { pad: 2 });
+    await tap(fpage, ".modal[data-tag=grant] .grant-card button.pgrant-to");
+    const fconfirm = await until(() => fpage.evaluate(() => document.querySelector(".modal[data-tag=grant] .pconfirm p")?.textContent ?? null), "the founding's confirmation", 5000 * SLOW);
+    check(/^Grant .+ to found House .+\? Its leader is drawn now\. This cannot be undone\.$/.test(fconfirm), `the founding's confirmation: ${fconfirm}`);
+    await crop(fpage, ".modal[data-tag=grant] .grant-card", "grant-founding-confirm.png", { pad: 4 });
+    await tap(fpage, ".modal[data-tag=grant] button.pgrant-yes");
+    await until(async () => (await topTag(fpage)) === null, "the grant list closed", 20000 * SLOW);
+    await fpage.evaluate(() => void window.ffh.openScreen("court"));
+    const founded = await until(() => fpage.evaluate(() => document.querySelector(".modal[data-tag=court] .house-card .pleader")?.textContent ?? null), "the founded House's card", 20000 * SLOW);
+    check(await fpage.evaluate(() => !document.querySelector(".modal[data-tag=court] .pfounding")), "no founding line with a House");
+    steps.push(`the founding: "${founding}"; the card "${fcard.button}"; "${fconfirm}"; led by ${founded}`);
+    await fpage.close();
   } finally {
     await browser.close();
     await server.stop();

@@ -1,4 +1,4 @@
-// Persons of Note: the one mark of a loyalty state and the Houses' heraldry (docs/PERSONS.md,
+// Houses: the one mark of a loyalty state and the Houses' heraldry (docs/PERSONS.md,
 // "UI": principle 2, parts A and G). Pure: no DOM and no state, so persons.js, the map's name
 // plates (canvas) and the node tests draw from the same numbers.
 

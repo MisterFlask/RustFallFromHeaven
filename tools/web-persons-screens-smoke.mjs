@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// The browser smoke test of Persons of Note in the existing screens (docs/PERSONS.md, "UI", parts
-// C to I; docs/HUMAN.md): stages `ffh-play stage persons` and `persons-direct`, serves each, loads
-// the page on the HD-2D map (`?force3d=1`: SwiftShader here, slow) and reads, as a player sees
-// them: the House marks on the Houses' cities and the Houses drawn in their lieges' colours, a
-// Crown city's Governance line on the city screen, the Armies screen's commander lines, the unit
-// panel's person line and a great person's Found a House, a person's alert, the plates' marks'
+// The browser smoke test of the Houses in the existing screens (docs/PERSONS.md, "UI", parts C to
+// I; "The third build"; docs/HUMAN.md): stages `ffh-play stage persons` and `persons-direct`,
+// serves each, loads the page on the HD-2D map (`?force3d=1`: SwiftShader here, slow) and reads,
+// as a player sees them: the House marks on the Houses' cities and the Houses drawn in their
+// lieges' colours, a Crown city's Governance line on the city screen, the Armies screen (no
+// commander) and the unit panel (no person, no Found a House), a House's alert, the plates' marks'
 // tooltips (the Furious countdown's pill, a House capital's star), the war declaration's dialog
 // (the Houses it brings in, its preview), the diplomacy list's Houses (yours first with their
 // state, the neighbour's under its liege with its state and price) and the neighbour's House's
@@ -18,8 +18,8 @@
 //
 // With `--shots DIR` it also saves the screenshots the owner reviews (CLAUDE.md, "Show UI changes
 // in a screenshot": crops at deviceScaleFactor 2, the screens at a 390 px wide page): the map's
-// plates and two of their marks' tooltips, the Governance sections, the commander lines, the unit
-// panels, the alerts, the diplomacy list (on a desktop page and a phone's) and its Houses, the
+// plates and two of their marks' tooltips, the Governance sections, the Armies screen, the alerts,
+// the diplomacy list (on a desktop page and a phone's) and its Houses, the
 // House's trade screen refused, with Become your vassal and accepted, the liege's attitude tooltip
 // that then names the House bought, the civics warning and the war declaration's dialog (with its
 // cost line).
@@ -205,12 +205,12 @@ async function diplomacyHouses(page, url, st) {
   const after = await query(url, { q: "players" });
   const np = after.players.find((p) => p.id === nh.player);
   check(np && np.house === null && np.color_player === nh.player, `the House broke away: ${JSON.stringify({ house: np?.house, color_player: np?.color_player })}`);
-  await until(() => page.evaluate(() => [...document.querySelectorAll("#toasts .person-alert.secession")].some((e) => / breaks away from the .+: war\.$/.test(e.textContent))), "the break-away's alert", 60000, 200);
+  await until(() => page.evaluate(() => [...document.querySelectorAll("#toasts .house-alert.secession")].some((e) => / breaks away from the .+: war\.$/.test(e.textContent))), "the break-away's alert", 60000, 200);
   check(true, "the break-away's alert");
   if (SHOTS) {
     // (Held for the screenshot, as the state's alert.)
     await page.evaluate(() => {
-      const t = [...document.querySelectorAll("#toasts .person-alert.secession")].find((e) => / breaks away from the /.test(e.textContent));
+      const t = [...document.querySelectorAll("#toasts .house-alert.secession")].find((e) => / breaks away from the /.test(e.textContent));
       if (t) t.parentElement.replaceChild(Object.assign(t.cloneNode(true), { id: "shot-alert" }), t);
     });
     await crop(page, ["#shot-alert"], "alert-break-away.png");
@@ -368,9 +368,9 @@ async function main() {
     try {
       await research(server.url);
       const page = await open(browser, server.url, DESK);
-      // H. The persons' alerts of the loaded turn are up (the newest few and a count).
-      const alerts = await page.evaluate(() => document.querySelectorAll("#toasts .person-alert").length);
-      check(alerts > 0, `persons' alerts on the load (${alerts})`);
+      // H. The Houses' alerts of the loaded turn are up (the newest few and a count).
+      const alerts = await page.evaluate(() => document.querySelectorAll("#toasts .house-alert").length);
+      check(alerts > 0, `Houses' alerts on the load (${alerts})`);
       // G. The map: the plates of the Houses' cities, centred between the Houses' seats.
       const seat = (role) => st.houses[role].seat;
       const at = await page.evaluate((ids) => ids.map((id) => window.ffh.S.cities.get(id)).filter(Boolean).map((c) => [c.x, c.y]), [seat("friendly").id, seat("pleased").id, seat("furious").id, st.crown[0].id]);
@@ -418,16 +418,16 @@ async function main() {
       await clear(page);
       const shownAlert = await page.evaluate(async () => {
         const m = await import("./app/persons_lines.js");
-        const e = (window.ffh.S.messages ?? []).filter((x) => x.kind === "person" && / is Furious\./.test(x.text)).pop();
+        const e = (window.ffh.S.messages ?? []).filter((x) => x.kind === "house" && / is Furious\./.test(x.text)).pop();
         if (!e) return null;
-        m.personAlerts([e]);
+        m.houseAlerts([e]);
         return e.text;
       });
       check(!!shownAlert, `a state change's alert: ${shownAlert}`);
       await sleep(500);
       // (Held for the screenshot: a toast leaves after 12 s, a SwiftShader frame can take longer.)
       await page.evaluate(() => {
-        const t = document.querySelector("#toasts .person-alert");
+        const t = document.querySelector("#toasts .house-alert");
         if (t) t.parentElement.replaceChild(Object.assign(t.cloneNode(true), { id: "shot-alert" }), t);
       });
       await crop(page, ["#shot-alert"], "alert-state.png");
@@ -445,29 +445,27 @@ async function main() {
       const overflow = await phone.evaluate(() => document.documentElement.scrollWidth - innerWidth);
       check(overflow <= 0, `no horizontal overflow at 390 px (${overflow})`);
       await clear(phone);
-      // D. The Armies screen's commander lines.
+      // D. The Armies screen: the armies, no commander line.
       await phone.evaluate(() => void window.ffh.openScreen("armies"));
-      await until(() => phone.evaluate(() => document.querySelectorAll("#modals .army-card .commander-line").length > 0), "the commander lines", 60000, 200);
+      const mainId = st.armies.main.id;
+      await until(() => phone.evaluate((id) => !!document.querySelector(`#modals .army-card[data-army="${id}"]`), mainId), "the Armies screen", 60000, 200);
       await sleep(500);
-      const lines = await phone.evaluate(() => [...document.querySelectorAll("#modals .army-card .commander-line")].map((e) => e.textContent));
-      check(lines.some((t) => t.startsWith("Commander: ")) && lines.some((t) => /Furious/.test(t) && /attack/.test(t)), `commander lines: ${lines.join(" | ")}`);
-      for (const [role, name] of [["loyal", "armies-commander-loyal.png"], ["furious", "armies-commander-furious.png"]]) {
-        const id = st.armies[role].id;
-        await phone.evaluate((id) => document.querySelector(`#modals .army-card[data-army="${id}"]`)?.scrollIntoView({ block: "start" }), id);
-        await sleep(400);
-        await crop(phone, [`#modals .army-card[data-army="${id}"] .army-title`, `#modals .army-card[data-army="${id}"] .commander-line`], name);
-      }
+      check(await phone.evaluate(() => !document.querySelector("#modals .commander-line")), "no commander line");
+      await phone.evaluate((id) => document.querySelector(`#modals .army-card[data-army="${id}"]`)?.scrollIntoView({ block: "start" }), mainId);
+      await sleep(400);
+      await crop(phone, [`#modals .army-card[data-army="${mainId}"]`], "armies-phone.png");
       await clear(phone);
-      // F. The unit panel: a commander's unit, the great person's Found a House.
-      const pl = await selectUnit(phone, st.persons.commander_loyal.unit, ".person-line");
-      check(/^Person of note: .+, commander of the /.test(pl), `person line: ${pl}`);
-      await crop(phone, ["#unit-panel"], "unit-person.png", { maxH: 700 });
-      const fh = await selectUnit(phone, st.great_person, ".found-house-line");
-      check(/^Found a House in .+\. The great person is consumed; a person of note leads the House\./.test(fh), `Found a House: ${fh}`);
-      await crop(phone, ["#unit-panel"], "unit-great-person.png", { maxH: 700 });
+      // F. The unit panel: no person line, no Found a House.
+      const uid = await phone.evaluate(() => {
+        const me = window.ffh.S.view.me.player;
+        return [...window.ffh.S.units.values()].find((u) => u.owner === me)?.id ?? null;
+      });
+      check(uid !== null, "a unit of yours");
+      await selectUnit(phone, uid, "#unit-panel");
+      check(await phone.evaluate(() => !document.querySelector("#unit-panel .person-line, #unit-panel .found-house-line, .iso-person")), "the unit panel: no person, no Found a House");
       await phone.evaluate(() => window.ffh.units.clearSelection());
       await clear(phone);
-      // I. The war declaration's preview (the Svartalfar: a commander demands this war).
+      // I. The war declaration's preview.
       await phone.evaluate(() => void window.ffh.openScreen("diplomacy"));
       await until(() => phone.evaluate(() => !!document.querySelector("#modals button[data-war]")), "the Declare war button", 60000, 200);
       await phone.evaluate(() => document.querySelector("#modals button[data-war]").click());
@@ -485,7 +483,7 @@ async function main() {
       const memory = await phone.evaluate(() => document.querySelector("#modals .modal:last-child .war-memory")?.textContent ?? "");
       check(/^They remember it: attitude toward you -\d+ \(fades\)\. So do .+\.$/.test(memory) && memory.includes(st.houses.neighbour.label), `war dialog's cost: ${memory}`);
       await crop(phone, ["#modals .modal:last-child .war-parties", "#modals .modal:last-child .war-memory"], "war-dialog-memory.png");
-      // (The second build: the stage's persons need not demand this war; a preview shown has lines.)
+      // (The stage's Houses need not request this war; a preview shown has lines.)
       await sleep(3000);
       const war = await phone.evaluate(() => document.querySelector("#modals .modal .persons-preview")?.textContent ?? null);
       check(war === null || war.trim().length > 0, `war preview: ${war}`);

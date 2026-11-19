@@ -1735,16 +1735,16 @@ TXT_KEY_ATG_UNIT_PELTAST	Peltast
 TXT_KEY_ATG_UNIT_PELTISTS_STRATEGY	[COLOR_UNIT_TEXT]Peltasts[COLOR_REVERT] are cheap units, useful for reinforcing tactical locations such as hills and forests.
 TXT_KEY_ATG_UNIT_PRODROMOI_STRATEGY	[COLOR_UNIT_TEXT]Prodromoi[COLOR_REVERT] are good scouting units. They are lightly armored and extremely fast. 
 TXT_KEY_ATTITUDE_ANNOYED	Annoyed
-TXT_KEY_ATTITUDE_ANNOYED_HELP	Loyalty from -5 to -3. A House takes no levy and secedes for an offer that meets its price. A commander's army takes no order to attack.
+TXT_KEY_ATTITUDE_ANNOYED_HELP	Loyalty from -5 to -3. A House takes no levy and secedes for an offer that meets its price.
 TXT_KEY_ATTITUDE_CAUTIOUS	Cautious
-TXT_KEY_ATTITUDE_CAUTIOUS_HELP	Loyalty from -2 to 0. A House takes levies and secedes for an offer that meets its price. A commander's army takes every order.
+TXT_KEY_ATTITUDE_CAUTIOUS_HELP	Loyalty from -2 to 0. A House takes levies and secedes for an offer that meets its price.
 TXT_KEY_ATTITUDE_FRIENDLY	Friendly
-TXT_KEY_ATTITUDE_FRIENDLY_HELP	Loyalty +3 or more. A House takes levies and refuses any offer to secede. A commander's army takes every order.
+TXT_KEY_ATTITUDE_FRIENDLY_HELP	Loyalty +3 or more. A House takes levies and refuses any offer to secede.
 TXT_KEY_ATTITUDE_FURIOUS	Furious
-TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy, secedes for an offer that meets its price (at least 25 gold a city), and at the end of a 10-turn countdown breaks away at war with its liege; each of its cities where the liege's army units outnumber the House's land combat units goes back to the liege. A commander's army takes no order to attack; at the end of the countdown its sworn units seize a city and secede, or the commander resigns. A person without a post leaves the court. Loyalty above -6 stops the countdown.
+TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy, secedes for an offer that meets its price (at least 25 gold a city), and at the end of a 10-turn countdown breaks away at war with its liege; each of its cities where the liege's army units outnumber the House's land combat units goes back to the liege. Loyalty above -6 stops the countdown.
 TXT_KEY_ATTITUDE_MASTER_OF	Master of %s1_player
 TXT_KEY_ATTITUDE_PLEASED	Pleased
-TXT_KEY_ATTITUDE_PLEASED_HELP	Loyalty +1 or +2. A House takes levies and refuses any offer to secede. A commander's army takes every order.
+TXT_KEY_ATTITUDE_PLEASED_HELP	Loyalty +1 or +2. A House takes levies and refuses any offer to secede.
 TXT_KEY_ATTITUDE_TOWARDS	%s1_attitude towards %s2_leader
 TXT_KEY_ATTITUDE_VASSAL_OF	Vassal of %s1_CivDesc
 TXT_KEY_AT_WAR_WITH	[ICON_BULLET][COLOR_WARNING_TEXT]War with %s1_player[COLOR_REVERT]
@@ -14972,14 +14972,14 @@ TXT_KEY_KEYWORD_RITUAL_REMINDER	Progress is lost if the city switches to buildin
 TXT_KEY_KEYWORD_WORLD_RITUAL	World Ritual
 TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER	One in progress per player. Each completion doubles its next cost. Every player is told when it begins, is abandoned or completes. At completion its world spell takes effect; a spell with a target must be cast before the turn ends.
 TXT_KEY_KEYWORD_HOUSE	House
-TXT_KEY_KEYWORD_HOUSE_REMINDER	A vassal civilization led by a person of its liege's court, its cities its own. It pays its liege a tribute and its cities take the liege's levies. A House that breaks away declares war on its liege. Every vassal is a House.
+TXT_KEY_KEYWORD_HOUSE_REMINDER	A vassal civilization with a leader of its own, its cities its own. It pays its liege a tribute and its cities take the liege's levies. A House that breaks away declares war on its liege. Every vassal is a House.
 TXT_KEY_KEYWORD_CROWN	Crown
-TXT_KEY_KEYWORD_CROWN_REMINDER	The cities a civilization holds itself; the capital is always the Crown's. A city of the Crown can be granted to a House, or to a person of note or a great person who founds one. Under a governing civic, the Crown's cities beyond its limit (the capital first, settlements not counted) pay triple city-count maintenance.
+TXT_KEY_KEYWORD_CROWN_REMINDER	The cities a civilization holds itself; the capital is always the Crown's. A city of the Crown can be granted to a House; a realm's first grant founds one. Under a governing civic, the Crown's cities beyond its limit (the capital first, settlements not counted) pay triple city-count maintenance.
+TXT_KEY_KEYWORD_REQUEST	Request
+TXT_KEY_KEYWORD_REQUEST_REMINDER	A House's wish, one at a time, with a term of 40 turns. Met: +3 loyalty for 60 turns. Lapsed at its term, or made impossible by its liege's act: -3 loyalty for 60 turns. The next one comes 20 turns later.
 TXT_KEY_KEYWORD_TRIBUTE	Tribute
 TXT_KEY_KEYWORD_TRIBUTE_REMINDER	Each turn a House pays its liege a share of its cities' gold and research, from 0 to 50%: the gold from its treasury, the research added to the liege's. A part of the House's loyalty: +1 at 0%, 1 less for each 10% more. The rate in force moves one step of 10% toward the rate set every 5 turns; the payment and the loyalty follow the rate in force.
 TXT_KEY_KEYWORD_LEVY	Levy
 TXT_KEY_KEYWORD_LEVY_REMINDER	An army's requisition in a city of its owner's House: the city trains a unit for the army, the liege's unit. Each levy placed costs the House -1 loyalty for 20 turns. A House Annoyed or Furious takes no levy.
-TXT_KEY_KEYWORD_SWORN	Sworn
-TXT_KEY_KEYWORD_SWORN_REMINDER	The units of a commander's army when their Furious countdown began. At its end they leave with the commander, except those in a city where more of the owner's other units stand.
 TXT_KEY_KEYWORD_CLAIMANT	Claimant
-TXT_KEY_KEYWORD_CLAIMANT_REMINDER	A House with a city within 6 plots, or the commander whose army took the city in the last 20 turns. Granting the city to another costs a claimant House -1 and that commander -2 (30 turns), and its head becomes their rival.
+TXT_KEY_KEYWORD_CLAIMANT_REMINDER	A House with a city within 6 plots. Granting the city to another House costs a claimant House -1 (30 turns).

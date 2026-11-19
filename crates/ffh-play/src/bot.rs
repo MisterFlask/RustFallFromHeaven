@@ -829,7 +829,7 @@ pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> us
         None => (OrderType::ORDER_TRAIN, 0),
     };
     ask(Query::EmpireCities { order, data, army: None }, May::BeInvalid);
-    // Persons of Note: the Court and the grant list of each city (a city that cannot be granted
+    // Houses: the Court and the grant list of each city (a city that cannot be granted
     // answers with its reason).
     ask(Query::Court, May::Answer);
     for c in &mine {

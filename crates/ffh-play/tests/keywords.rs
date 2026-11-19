@@ -19,14 +19,14 @@ use ffh_play::{Json, Session, SessionOptions};
 const FRAGMENTS: &[(&str, &[&str])] = &[
     ("KEYWORD_RITUAL", &["progress is lost if the city switches", "switches to building something else", "hurried with gold", "cannot be hurried", "production is lost", "first build", "off the head of the queue", "visible to every player"]),
     ("KEYWORD_WORLD_RITUAL", &["one in progress per player", "doubles the next cost", "doubles its next cost", "every player is told"]),
-    // Persons of Note (docs/PERSONS.md, "UI", part J; "The second build", rule 13: the loyalty
-    // states are the attitude words, no keywords).
-    ("KEYWORD_HOUSE", &["a vassal civilization led by", "its cities its own", "a house that breaks away declares war", "every vassal is a house"]),
-    ("KEYWORD_CROWN", &["the cities a civilization holds itself", "always the crown's", "or to a person of note or a great person who founds one", "pay triple city-count maintenance"]),
+    // Houses (docs/PERSONS.md, "UI", part J; "The second build", rule 13: the loyalty states are
+    // the attitude words, no keywords; "The third build", rule 2: Request).
+    ("KEYWORD_HOUSE", &["a vassal civilization with a leader of its own", "its cities its own", "a house that breaks away declares war", "every vassal is a house"]),
+    ("KEYWORD_CROWN", &["the cities a civilization holds itself", "always the crown's", "a realm's first grant founds one", "pay triple city-count maintenance"]),
+    ("KEYWORD_REQUEST", &["a house's wish, one at a time", "with a term of 40 turns", "made impossible by its liege's act", "the next one comes 20 turns later"]),
     ("KEYWORD_TRIBUTE", &["a share of its cities' gold and research", "the research added to the liege's", "1 less for each 10% more", "toward the rate set every", "follow the rate in force"]),
     ("KEYWORD_LEVY", &["an army's requisition in a city of its owner's house", "costs the house -1 loyalty", "annoyed or furious takes no levy"]),
-    ("KEYWORD_SWORN", &["when their furious countdown began", "leave with the commander"]),
-    ("KEYWORD_CLAIMANT", &["a house with a city within", "took the city in the last", "becomes their rival"]),
+    ("KEYWORD_CLAIMANT", &["a house with a city within", "granting the city to another house costs"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.
@@ -105,7 +105,7 @@ fn every_keyword_mark_names_a_keyword() {
     assert!(marks >= 2, "the World Spells concept marks its keywords: {marks}");
 }
 
-/// Every string of an object (but its `reminders` and a person's `backstory`, flavour), deep.
+/// Every string of an object (but its `reminders` and a House leader's `backstory`, flavour), deep.
 fn strings_of(j: &Json, out: &mut Vec<String>) {
     match j {
         Json::Str(s) => out.push(s.clone()),
@@ -115,8 +115,8 @@ fn strings_of(j: &Json, out: &mut Vec<String>) {
     }
 }
 
-/// Persons of Note (docs/PERSONS.md, "UI", part J): the Court's and every grant list's lines, on
-/// the staged scene, do not restate a keyword's reminder.
+/// Houses (docs/PERSONS.md, "UI", part J): the Court's and every grant list's lines, on the staged
+/// scene (and the founding's, the human's Houses freed), do not restate a keyword's reminder.
 #[test]
 fn the_court_does_not_restate_reminder_text() {
     let bad = forbidden(ffh_data::global());
@@ -124,17 +124,18 @@ fn the_court_does_not_restate_reminder_text() {
     let st = ffh_play::stage::persons(&dir.0, false).expect("staged");
     let (bytes, sidecar) = ffh_play::save::read_bundle(&st.save).unwrap();
     let opts = SessionOptions { journal: false, ..SessionOptions::default() };
-    let s = Session::load(&bytes, sidecar.as_ref(), Arc::new(AdvisorAnswerer), opts).unwrap();
+    let mut s = Session::load(&bytes, sidecar.as_ref(), Arc::new(AdvisorAnswerer), opts).unwrap();
     let mut texts = Vec::new();
     strings_of(&s.query(&ffh_play::query::Query::Court).unwrap(), &mut texts);
     for c in s.g.players[s.human].cities.clone() {
         strings_of(&s.query(&ffh_play::query::Query::Grant { city: c }).unwrap(), &mut texts);
     }
-    // The great person's Found a House line (the unit panel): it marks the House keyword.
-    let grp = s.query(&ffh_play::query::Query::Group { units: vec![st.great_person] }).unwrap();
-    let fh = grp.get("units").and_then(Json::as_arr).and_then(|u| u.first()).and_then(|u| u.get("found_house")).cloned().unwrap_or(Json::Null);
-    assert!(fh.get("label").and_then(Json::as_str).is_some_and(|l| l.contains("[KW=KEYWORD_HOUSE]")), "{fh}");
-    strings_of(&fh, &mut texts);
+    // The founding (a realm without a House): the Court's line and the grant list's card.
+    for hs in st.houses.iter().filter(|x| x.role != "neighbour") {
+        s.g.player_free_house(st.human, hs.id).unwrap();
+    }
+    strings_of(&s.query(&ffh_play::query::Query::Court).unwrap(), &mut texts);
+    strings_of(&s.query(&ffh_play::query::Query::Grant { city: st.crown[1] }).unwrap(), &mut texts);
     assert!(texts.len() > 100, "{}", texts.len());
     for t in &texts {
         check("persons payload", t, &bad);

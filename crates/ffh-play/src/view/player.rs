@@ -195,8 +195,8 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
             // ruled directly; null: no change of who runs them.
             "rule_change" => rule_change,
         };
-        // Persons of Note (docs/PERSONS.md, "UI", part I): what the set does to the cast
-        // (`persons`), and the warning of a direct-rule civic while Houses stand.
+        // Houses (docs/PERSONS.md, "UI", part I): what the set does to the Houses (`persons`),
+        // and the warning of a direct-rule civic while Houses stand.
         if changed {
             let civics: Vec<Option<CivicType>> = set.iter().copied().collect();
             crate::view::house_marks::civics_preview(v, &civics, &mut proposed);
@@ -297,7 +297,7 @@ pub fn religions(v: &Viewer) -> Json {
             "our_holy_city" => g.player_has_holy_city(h, r),
             "our_cities" => pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count(),
             "can_convert" => g.player_can_convert(h, Some(r)),
-            // Persons of Note (docs/PERSONS.md, "UI", part I): what converting does to the cast.
+            // Houses (docs/PERSONS.md, "UI", part I): what converting does to the Houses.
             "persons" => if g.player_can_convert(h, Some(r)) { crate::view::house_marks::act_preview(v, &PersonsAct::Convert(Some(r))) } else { Json::Arr(Vec::new()) },
         }
     });
@@ -347,8 +347,8 @@ pub fn players(v: &Viewer) -> Json {
         j.set("deals", Json::Arr(deals));
         let can_war = t != v.team && g.team_can_declare_war(v.team, t);
         j.set("can_declare_war", can_war);
-        // Persons of Note (docs/PERSONS.md, "UI", part I): what declaring war on it does to the
-        // cast (the war dialog's lines; empty when nothing).
+        // Houses (docs/PERSONS.md, "UI", part I): what declaring war on it does to the Houses
+        // (the war dialog's lines; empty when nothing).
         j.set("war_preview", if can_war { crate::view::house_marks::act_preview(v, &PersonsAct::DeclareWar(t)) } else { Json::Arr(Vec::new()) });
         // Who the war brings in for certain, by the vassal rules (docs/PERSONS.md, "The second
         // build", rule 7; the war dialog's `At war with you as well: ..` and `Your Houses join:

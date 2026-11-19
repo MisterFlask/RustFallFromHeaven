@@ -31,7 +31,6 @@ import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
 import { pickEmpireItem, orderEmpire } from "./governors.js";
-import { commanderLine } from "./persons_lines.js";
 import { houseShield, stateMark } from "./persons.js";
 
 // ---- the rules, in the help display (help.js; the Armies screen's (i) opens it) ---------------
@@ -216,7 +215,7 @@ function requisitionView(a, act) {
       h("span", ` ${c.name}`),
       c.governed ? h("span.dim", " (governed)") : null,
       candidateLine(c, a.domain === "sea"),
-      // Persons of Note (docs/PERSONS.md, rule 6, the levy): a House's city, its House and
+      // Houses (docs/PERSONS.md, rule 6, the levy): a House's city, its House and
       // whether it takes levies, or the rules' reason it takes none (the requisition then passes
       // it over).
       c.house ? levyLine(c.house) : null,
@@ -341,9 +340,6 @@ export async function openArmies({ select, centerOn } = {}) {
           a.disband_to ? h("span.dim", ` · disbanded: marching to ${a.disband_to}`) : null,
         ),
         h("div.dim", composition(a.units) || "—"),
-        // Persons of Note (docs/PERSONS.md, "UI", part D): its commander, [Change] among the
-        // persons with it.
-        commanderLine(a, { unitName: (t) => dname("UnitType", t), change: (person) => act({ c: "set_commander", army: a.id, person }) }),
         // This game's governors: the units on order for the army in governed cities.
         a.on_order?.length
           ? h("ul.army-on-order", a.on_order.map((o) => h("li", { "data-city": o.city }, h("span", `${dname("UnitType", o.unit)} in ${o.name}`), h("span.dim", ` · ${turns(o.turns)} · on order`))))

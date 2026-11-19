@@ -19,24 +19,20 @@ wants done next into this file.
 - Other: "Next steps" in docs/PORTING.md, "Not in this change" in docs/SUPPLY.md, the "Not built"
   notes in docs/NAVAL.md
 
-## Persons of Note: the stages not built
+## Houses: what is not built
 
-The cast, commanders, demands, loyalty and Houses as vassal civilizations (tribute, the levy,
-breaking away, side deals with a rival's Houses) are built (docs/PERSONS.md, "The second build"
-and "The first build"). Still to build, each described there:
+Houses as vassal civilizations (tribute, the levy, breaking away, side deals with a rival's
+Houses) are built (docs/PERSONS.md, "The second build"); the third build's part 1 (2026-11-19)
+removed Persons of Note (the cast, commanders, veterans and great persons as founders) and made a
+realm's first grant found a House. Still to build, each described there:
 
+- The third build's part 2: splits (rule 4), ultimatums and contracts (5, 6), courtship (7), the
+  price on the world unit (8), shared knowledge and gold tribute (10), the AI's rest (11).
 - Claims abroad (stage 3).
-- Foreign persons (stage 4): seeing a rival's persons, courting them, agents abroad. Courting
-  is kept only if the AI can answer it.
-- How many Houses a realm has: in a soak of 8 AI games (400 turns) a realm of 9 or more cities
-  had a median of 1 House late in the game, against the 2 to 5 wanted; the founders (veterans
-  of level 5 or more, great persons) are the bottleneck, so the Crown stays over its limit.
-  Levers: the AI founds with a great person while over the limit; a lower veteran bar.
-- The annals (stage 5): what each character did in the player's earlier games.
-- The cast itself: a civilization has five minor leaders, so at most five persons who are not
-  heroes. How many it needs, and which enter as soldiers and which as great people, is the
-  owner's.
-- To be judged in play (docs/PERSONS.md, "Open points for the owner"): the proposals the first
-  build made that the second kept (demands with a term, an Annoyed holder's withheld service,
-  claims), the Crown's limit of 3, the tribute's loyalty cost, the size grievance, a
-  commander's effect in battle.
+- The annals (stage 5): what each House did in the player's earlier games.
+- How many Houses a realm has: the soak of 8 AI games (400 turns) that found a median of 1 House
+  late in a realm of 9 or more cities, against the 2 to 5 wanted, blamed the founders (veterans,
+  great persons); the founders are gone (the first grant founds, then the Houses grow and, with
+  part 2, split), so the count is to be measured again after part 2.
+- To be judged in play (docs/PERSONS.md, "Open points for the owner"): requests with a term, an
+  Annoyed House's withheld levy, claims, the Crown's limit of 3, the tribute's loyalty cost.

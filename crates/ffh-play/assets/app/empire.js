@@ -746,8 +746,8 @@ export async function openCivics() {
           p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : (p.changed ? h("span.warn", { title: "The revolution timer, a civic you cannot leave, or anarchy" }, "This change is not possible now.") : h("span.warn", "No change.")),
           // This game's governors: the government decides who runs the cities.
           p.rule_change ? h("div.civic-rule-change", p.rule_change === "governed" ? "Every city will be handed to governors." : "Every city will be ruled directly.") : null,
-          // Persons of Note (docs/PERSONS.md, "UI", part I): a direct-rule civic while Houses
-          // stand (the warning), then what the set does to the cast.
+          // Houses (docs/PERSONS.md, "UI", part I): a direct-rule civic while Houses
+          // stand (the warning), then what the set does to the Houses.
           // One line per House: how many enemies, and which cities each takes.
           p.persons_warning ? h("div.persons-warning", { role: "alert" }, h("div", p.persons_warning), p.persons_houses?.length ? h("ul.persons-warning-houses", p.persons_houses.map((l) => h("li", l))) : null) : null,
           p.persons_warning ? null : previewList(p.persons),
@@ -760,7 +760,7 @@ export async function openCivics() {
         primary: true,
         disabled: !p?.valid,
         onClick: async () => {
-          // Persons of Note (principle 4): adopting a direct-rule civic while Houses stand is
+          // Houses (principle 4): adopting a direct-rule civic while Houses stand is
           // confirmed on its warning (Cancel has the focus).
           if (p?.persons_warning && !(await ask(`${p.persons_button}?`, [p.persons_warning, ...(p.persons_houses?.length ? [h("ul.persons-warning-houses", p.persons_houses.map((l) => h("li", l)))] : []), `${p.anarchy ? `${turns(p.anarchy)} of anarchy. ` : ""}This cannot be undone.`], [
             { label: p.persons_button ?? "Adopt", value: true, primary: true, danger: true },
@@ -841,7 +841,7 @@ export async function openReligion() {
         h("td", x.can_convert ? h("button.small", { onclick: () => convert(x.religion) }, "Convert") : null),
       ),
     );
-    // Persons of Note (docs/PERSONS.md, "UI", part I): what converting does to the cast, under the
+    // Houses (docs/PERSONS.md, "UI", part I): what converting does to the Houses, under the
     // religion's row (nothing when nothing).
     const rowsWithPreview = rows.flatMap((row, i) => {
       const x = r.religions[i];

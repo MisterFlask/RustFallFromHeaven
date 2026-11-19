@@ -333,8 +333,8 @@ async function declareWar(p) {
   // Who the war brings in for certain (the vassal rules: their Houses and yours), then what is not
   // certain (defensive pacts, which you do not see); what it costs with them (the memory of a
   // declared war, which fades: `They remember it: attitude toward you -1 (fades).`, and the
-  // Houses that remember it too); Persons of Note (docs/PERSONS.md, "UI", part I): what the war
-  // does to the cast, under the question (nothing when nothing).
+  // Houses that remember it too); Houses (docs/PERSONS.md, "UI", part I): what the war
+  // does to the Houses, under the question (nothing when nothing).
   const pv = previewList(p.war_preview);
   const parties = warPartyLines(p.war_against, p.war_join).map((t) => h("p.war-parties", t));
   const memory = p.war_memory ? h("p.caution.war-memory", p.war_memory) : null;
@@ -641,7 +641,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     m.setBody(
       leader.el,
       t.war ? atWar : null,
-      // Persons of Note (docs/PERSONS.md, "UI", part I): what making peace does to the cast.
+      // Houses (docs/PERSONS.md, "UI", part I): what making peace does to the Houses.
       t.war ? previewList(t.peace_preview, { title: "If peace is made:" }) : null,
       h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
       tradesThrough(),

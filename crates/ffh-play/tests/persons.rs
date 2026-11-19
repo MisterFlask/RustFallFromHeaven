@@ -1,11 +1,11 @@
-//! Persons of Note through the human's session (docs/PERSONS.md, "The second build", rule 13;
-//! "UI", parts A, B and J; the protocol in docs/HUMAN.md), on the staged scene (`ffh-play stage
-//! persons`): the `court` payload (the realm: the Crown and its limit, the lines that need
-//! attention, a card per House with its tribute selector, levy, size and Free) and the view's count
-//! of what needs attention; the tribute command and its preview; a grant whose preview is what then
-//! happens, and a founding's lines; the levy list's statuses on the Armies screen; a Crown city's
-//! Governance line; each refusal with the rules' reason; freeing; an offer to a House; the command
-//! set; and the purity of the queries.
+//! Houses through the human's session (docs/PERSONS.md, "The third build", on "The second build",
+//! rule 13; "UI", parts A, B and J; the protocol in docs/HUMAN.md), on the staged scene (`ffh-play
+//! stage persons`): the `court` payload (the realm: the Crown and its limit, the lines that need
+//! attention, a card per House with its leader, request, tribute selector, levy and Free) and the
+//! view's count of what needs attention; the tribute command and its preview; a grant whose preview
+//! is what then happens, and the founding of a realm's first House; the levy list's statuses on the
+//! Armies screen; a Crown city's Governance line; each refusal with the rules' reason; freeing; an
+//! offer to a House; the command set; and the purity of the queries.
 
 mod common;
 
@@ -54,10 +54,6 @@ fn house_id(st: &StagedPersons, role: &str) -> HouseId {
     st.houses.iter().find(|x| x.role == role).unwrap().id
 }
 
-fn person_id(st: &StagedPersons, role: &str) -> PersonId {
-    st.persons.iter().find(|x| x.0 == role).unwrap().1
-}
-
 fn army_id(st: &StagedPersons, role: &str) -> ArmyId {
     st.armies.iter().find(|x| x.0 == role).unwrap().1
 }
@@ -90,9 +86,9 @@ fn house_card(court: &Json, h: HouseId) -> Json {
     arr(court, "houses").iter().find(|x| int(x, "id") == h.0 as i64).unwrap_or_else(|| panic!("no card of House {}", h.0)).clone()
 }
 
-/// The `court` payload: the header (the government, the Crown's limit, the realm's threshold, the
-/// default tribute), the lines that need attention in their order with their buttons, the Crown,
-/// the Houses' cards, the persons without a House, the keywords; the view's count matches.
+/// The `court` payload: the header (the government, the Crown's limit, the default tribute), the
+/// lines that need attention in their order with their buttons, the Crown, the Houses' cards (the
+/// leader, the request), the keywords; the view's count matches.
 #[test]
 fn the_court_shows_the_realm() {
     let (_dir, st, ses) = staged("persons-court");
@@ -104,19 +100,20 @@ fn the_court_shows_the_realm() {
     let text = s(crown_line, "text");
     assert_eq!(text, "The Crown holds 4 cities, 1 over its limit of 3.", "the Crown's limit (rule 14): its cost is the attention line's");
     assert!(bool_of(crown_line, "over"));
-    assert!(s(&r, "realm").starts_with("Realm: ") && s(&r, "realm").ends_with(" cities. A House holds 3 without a grievance."), "{}", s(&r, "realm"));
+    assert!(r.get("realm").is_none(), "no size threshold (the third build, rule 1)");
+    assert!(r.get("founding").unwrap().is_null(), "a realm with Houses founds none");
     assert!(arr(&r, "empty").is_empty());
     assert_eq!(r.get("grants"), Some(&Json::Null));
     assert_eq!(int(&r, "tribute_default"), 20);
     let steps: Vec<i64> = arr(&r, "tribute_steps").iter().filter_map(Json::as_i64).collect();
     assert_eq!(steps, [0, 10, 20, 30, 40, 50]);
 
-    // Needs attention, in the contract's order: the Furious House and commander, the House that
-    // takes no levy, the Crown's city over its limit, the grantable cities.
+    // Needs attention, in the contract's order: the Furious House, the House that takes no levy,
+    // the Crown's city over its limit, the grantable cities.
     let att = arr(&r, "attention");
     let kinds: Vec<&str> = att.iter().map(|a| s(a, "kind")).collect();
     let at = |k: &str| kinds.iter().position(|&x| x == k).unwrap_or_else(|| panic!("no `{k}` line: {kinds:?}"));
-    assert_eq!(kinds.iter().filter(|&&k| k == "furious").count(), 2, "the House and the commander: {kinds:?}");
+    assert_eq!(kinds.iter().filter(|&&k| k == "furious").count(), 1, "the House: {kinds:?}");
     assert!(at("furious") < at("levy") && at("levy") < at("crown_over") && at("crown_over") < at("grantable"), "{kinds:?}");
     let f_label = &st.houses.iter().find(|x| x.role == "furious").unwrap().label;
     assert!(att.iter().any(|a| s(a, "text").starts_with(&format!("{f_label}: Furious. Will break away in 8 turns, taking ")) && s(a, "text").contains(": war.")), "{att:?}");
@@ -131,7 +128,7 @@ fn the_court_shows_the_realm() {
     assert_eq!(int(button.get("act").unwrap(), "city"), over_city.0 as i64);
     assert_eq!(s(&att[at("grantable")], "text"), "3 cities of the Crown can be granted.");
     let view = ses.query(&Query::View).unwrap();
-    assert!(int(&r, "badge") >= 2);
+    assert!(int(&r, "badge") >= 1);
     assert_eq!(int(&view, "court_attention"), int(&r, "badge"), "the menu's count is the Court's");
 
     // The Crown: the capital with its reason, the three grantable cities, the one over its limit.
@@ -153,20 +150,25 @@ fn the_court_shows_the_realm() {
     assert_eq!(s(a.get("levy").unwrap(), "text"), format!("Takes levies. Each levy: -1 (20 turns). {}", levies_until(a_loyalty)));
     assert!(bool_of(a.get("levy").unwrap(), "takes"));
     assert_eq!(arr(&a, "cities").len(), 2);
-    assert_eq!(s(a.get("size").unwrap(), "text"), "Size: 2 of 3 cities without a grievance.");
+    assert!(a.get("size").is_none(), "no size part (the third build, rule 1)");
     assert!(strs(&a, "parts").iter().any(|p| p == "Tribute 0%: +1"), "{:?}", strs(&a, "parts"));
     assert!(s(&a, "total").starts_with("Loyalty: +"));
     // A Friendly House refuses any offer: said under Record; no price in the card's body.
     assert!(a.get("price").unwrap().is_null());
     assert_eq!(s(&a, "price_refusal"), "Refuses any offer to secede.");
-    let head = a.get("head").unwrap();
-    assert_eq!(int(head, "id"), person_id(&st, "head_friendly").0 as i64);
+    // Its leader: its player's (portrait, name, title), and the ambition its first trait gives.
+    assert!(a.get("head").is_none(), "no head: the House carries what its head carried");
+    let ah = house_id(&st, "friendly");
+    let leader = g.house_leader(ah).expect("a leader");
+    assert_eq!(int(&a, "leader"), leader.idx() as i64);
+    assert_eq!(s(&a, "leader_name"), ffh_core::persons::leader_name(g.d, leader));
+    assert_eq!(s(&a, "ambition"), format!("Ambition: {}.", g.house_ambition(ah).name()));
+    assert!(strs(&a, "record").iter().any(|l| l.contains("Founded at ")), "{:?}", strs(&a, "record"));
     // Its tribute: the line, and a rate for each step with the rules' numbers, once in force (the
     // House at rest at 0%: each step 5 turns away).
     let t = a.get("tribute").unwrap();
     assert_eq!((int(t, "pct"), int(t, "now"), int(t, "turns")), (0, 0, 0));
     assert!(s(t, "line").starts_with("Tribute 0%: "), "{}", s(t, "line"));
-    let ah = house_id(&st, "friendly");
     for rate in arr(t, "rates") {
         let pct = int(rate, "pct") as i32;
         let loyalty = g.house_loyalty_at_tribute(ah, pct);
@@ -203,46 +205,33 @@ fn the_court_shows_the_realm() {
     assert_eq!(c.get("free").and_then(|f| f.get("ok")).and_then(Json::as_bool), Some(true));
     assert_eq!(s(c.get("free").unwrap(), "confirm"), format!("Free {f_label}? It is no longer your vassal, at peace with you. This cannot be undone."));
 
-    // Every demand with a term says what its lapse does: the rules' refusal, and the state the
-    // holder would be in (the rules' state of its loyalty less the refusal) when that changes.
-    let mut demands = 0;
-    let heads = arr(&r, "houses").iter().filter_map(|x| x.get("head").filter(|h| !h.is_null()));
-    for p in heads.chain(arr(&r, "persons").iter()) {
-        let dm = p.get("demand").unwrap();
+    // Every request with a term is a request (`Request: ...`) and says what its lapse does: the
+    // rules' refusal, and the state the House would be in (the rules' state of its loyalty less the
+    // refusal) when that changes; between requests, `No request.`
+    let mut requests = 0;
+    for card in arr(&r, "houses") {
+        assert!(card.get("persons").is_none() && card.get("head").is_none());
+        let dm = card.get("request").unwrap();
         if dm.get("kind").unwrap().is_null() {
+            assert!(s(dm, "text").starts_with("No request."), "{dm}");
             continue;
         }
-        demands += 1;
-        let x = PersonId(int(p, "id") as u32);
-        let loyalty = g.person_loyalty(x);
+        requests += 1;
+        assert!(s(dm, "text").starts_with("Request: "), "{dm}");
+        let x = HouseId(int(card, "id") as u32);
+        let loyalty = g.house_loyalty(x);
         assert_eq!(s(dm, "lapse"), format!("At its term: {} ({} turns)", DEMAND_REFUSED.0, DEMAND_REFUSED.1), "{dm}");
         let after = LoyaltyState::of(loyalty + DEMAND_REFUSED.0);
-        let want = (after != g.person_state(x)).then(|| after.name());
+        let want = (after != g.house_state(x)).then(|| after.name());
         assert_eq!(dm.get("lapse_state").and_then(Json::as_str), want, "{dm}");
     }
-    assert!(demands > 0, "the stage has demands with a term");
-
-    // The persons without a House: the commanders and the person with no post.
-    let persons = arr(&r, "persons");
-    let p = |role: &str| persons.iter().find(|x| int(x, "id") == person_id(&st, role).0 as i64).unwrap_or_else(|| panic!("{role}"));
-    let loyal = p("commander_loyal");
-    assert_eq!(s(loyal, "post"), format!("Commander of the {}.", g.armies[army_id(&st, "loyal")].name));
-    assert!(s(loyal, "where").starts_with("Hero: level "), "{}", s(loyal, "where"));
-    let fur = p("commander_furious");
-    assert_eq!(s(fur, "state"), "Furious");
-    let o = s(fur, "outcome");
-    assert!([" will seize ", " will join ", " will resign "].iter().any(|w| o.contains(w)), "{o}");
-    let rantine = p("no_post");
-    assert_eq!(s(rantine, "post"), "No post.");
-    // A hero cannot head a House: its demand for a post goes to the Armies screen (a command).
-    let dm = rantine.get("demand").unwrap();
-    if s(dm, "kind") == "post" {
-        assert_eq!(s(dm.get("button").unwrap(), "label"), "Armies", "{dm}");
-    }
+    assert!(requests > 0, "the stage has requests with a term");
+    assert!(r.get("persons").is_none(), "no persons");
 
     // Part J: the keywords (the loyalty states are the attitude words: none of their own).
     let keys: Vec<&str> = arr(&r, "reminders").iter().map(|x| s(x, "key")).collect();
-    assert_eq!(keys, ["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_SWORN", "KEYWORD_CLAIMANT"]);
+    assert_eq!(keys, ["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_REQUEST", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_CLAIMANT"]);
+    assert!(ffh_data::global().ty::<KeywordType>("KEYWORD_ULTIMATUM").is_none(), "reserved for part 2");
     for st in LoyaltyState::ALL {
         assert!(ffh_data::global().ty::<KeywordType>(&format!("KEYWORD_{}", st.name().to_uppercase())).is_none(), "{} is no keyword", st.name());
     }
@@ -310,8 +299,8 @@ fn amount(line: &str) -> i32 {
     n.trim_start_matches('+').parse().unwrap_or(0)
 }
 
-/// The grant list of the contested city: the claimants first, no hero among the candidates; each
-/// card says what the grant does (the city moves to the House's realm, the maintenance, the
+/// The grant list of the contested city: the claimants first, the Houses only (a realm with a
+/// House founds none); each card says what the grant does (the city moves to the House's realm, the maintenance, the
 /// Crown back within its limit, the tribute); granting it to the claimant House moves the city to
 /// the House's player and does what its preview said, to the grantee and to each snubbed claimant.
 #[test]
@@ -330,13 +319,10 @@ fn a_grant_does_what_its_preview_says() {
     let cands = arr(&r, "candidates");
     let claims: Vec<bool> = cands.iter().map(|x| bool_of(x, "claimant")).collect();
     let n = claims.iter().filter(|&&x| x).count();
-    assert!(n >= 2, "House `pleased` and the commander who took it: {claims:?}");
+    assert!(n >= 1, "House `pleased` claims it: {claims:?}");
     assert!(claims[..n].iter().all(|&x| x) && claims[n..].iter().all(|&x| !x), "claimants first: {claims:?}");
-    assert!(cands.iter().any(|x| s(x, "kind") == "great_person"), "the great person can found a House");
-    for hero in ["commander_loyal", "no_post"] {
-        let x = person_id(&st, hero).0 as i64;
-        assert!(!cands.iter().any(|k| k.get("to").and_then(|t| t.get("person")).and_then(Json::as_i64) == Some(x)), "a hero is no candidate: {hero}");
-    }
+    assert!(cands.iter().all(|x| s(x, "kind") == "house"), "Houses only");
+    assert_eq!(cands.len(), 4, "the realm's four Houses");
 
     let grantee = house_id(&st, "pleased");
     let cand = cands.iter().find(|x| x.get("to").and_then(|t| t.get("house")).and_then(Json::as_i64) == Some(grantee.0 as i64)).unwrap();
@@ -345,7 +331,7 @@ fn a_grant_does_what_its_preview_says() {
     let lines = strs(cand, "lines");
     assert_eq!(lines[0], format!("Moves to {label}'s realm: its production and commerce are the House's."));
     // Its garrison, as the rules move it (the army that took the city stays the liege's).
-    let (going, staying) = ses.g.city_grant_garrison(c, None);
+    let (going, staying) = ses.g.city_grant_garrison(c);
     let garrison = strs(cand, "garrison");
     if going.is_empty() {
         assert_eq!(garrison[0], "No garrison goes with it.");
@@ -367,11 +353,14 @@ fn a_grant_does_what_its_preview_says() {
             let subject = s(e, "subject").to_string();
             let delta: i32 = strs(e, "lines").iter().map(|l| amount(l)).sum();
             let after = e.get("state_after").and_then(Json::as_str).map(str::to_string);
-            let before = g.players[h].houses.iter().find(|&&x| g.house_label(x) == subject).map(|&x| g.house_loyalty(x)).or_else(|| g.players[h].persons.iter().find(|&&x| g.person_house(x).is_none() && g.person_subject(x) == subject).map(|&x| g.person_loyalty(x))).expect("a known subject");
+            let before = g.players[h].houses.iter().find(|&&x| g.house_label(x) == subject).map(|&x| g.house_loyalty(x)).expect("a known subject");
             (subject, before, after, delta)
         })
         .collect();
-    assert!(subjects.iter().any(|x| x.0 == label && x.3 == 1), "the grantee: +1: {subjects:?}");
+    // The grantee: +1, and +3 more when its request is this city (met by the grant).
+    let requested = g.houses[grantee].demand.is_some_and(|dm| dm.kind == ffh_core::persons::DemandKind::GrantCity(plot));
+    let gain = 1 + if requested { ffh_core::persons::DEMAND_MET.0 } else { 0 };
+    assert!(subjects.iter().any(|x| x.0 == label && x.3 == gain), "the grantee: +{gain}: {subjects:?}");
     assert!(subjects.iter().filter(|x| x.0 != label).all(|x| x.3 < 0), "every snubbed claimant loses: {subjects:?}");
     // Grant.
     let out = ses.execute(&Command::GrantCity { city: c, to: GrantTo::House(grantee) }).unwrap();
@@ -384,13 +373,8 @@ fn a_grant_does_what_its_preview_says() {
     assert!(staying.iter().all(|&u| g.units.contains(u) && g.units[u].owner == h), "the army's units stayed");
     assert_eq!(g.city_house(now), Some(grantee));
     for (subject, before, after, delta) in &subjects {
-        let (now, state) = match g.players[h].houses.iter().find(|&&x| g.house_label(x) == *subject) {
-            Some(&x) => (g.house_loyalty(x), g.house_state(x)),
-            None => {
-                let &x = g.players[h].persons.iter().find(|&&x| g.person_subject(x) == *subject).unwrap();
-                (g.person_loyalty(x), g.person_state(x))
-            }
-        };
+        let &x = g.players[h].houses.iter().find(|&&x| g.house_label(x) == *subject).unwrap();
+        let (now, state) = (g.house_loyalty(x), g.house_state(x));
         assert_eq!(now - before, *delta, "{subject}: the preview's change");
         if let Some(a) = after {
             assert_eq!(state.name(), a, "{subject}: the preview's state");
@@ -407,29 +391,58 @@ fn a_grant_does_what_its_preview_says() {
     common::check::check(&ses.g);
 }
 
-/// A founding's card says who leaves the map and leads the new House: a veteran who commands (the
-/// command ends), a great person (consumed; a person of note is drawn).
+/// A realm without a House (the human's four freed): the Court says its next grant founds one and
+/// where the leader is drawn from; the grant list offers the founding alone, with the rules' line;
+/// granting founds a House led by a drawn minor leader of the Bannor; then the founding is no longer
+/// offered.
 #[test]
-fn a_founding_says_who_leaves_the_map() {
-    let (_dir, st, ses) = staged("persons-founding");
-    let c = st.crown.iter().copied().find(|&c| c != st.taken && ses.g.player_check_grant_city(ses.human, c).is_ok()).unwrap();
+fn the_first_grant_founds_a_house() {
+    let (_dir, st, mut ses) = staged("persons-founding");
+    let h = ses.human;
+    for hs in st.houses.iter().filter(|x| x.role != "neighbour") {
+        ses.execute(&Command::FreeHouse { house: hs.id }).unwrap();
+    }
+    assert!(ses.g.players[h].houses.is_empty());
+    let r = ses.query(&Query::Court).unwrap();
+    let founding = r.get("founding").unwrap();
+    assert!(bool_of(founding, "ok"));
+    assert_eq!(s(founding, "text"), "No House yet. A grant of a Crown city founds one. A new House: its leader is drawn from the Bannor's minor leaders.");
+    assert!(arr(&r, "houses").is_empty() && arr(&r, "empty").is_empty(), "the Crown's card stays");
+    let c = st.crown.iter().copied().find(|&c| ses.g.player_check_grant_city(h, c).is_ok()).unwrap();
     let r = ses.query(&Query::Grant { city: c }).unwrap();
     let cands = arr(&r, "candidates");
-    let vet = person_id(&st, "commander_furious");
-    let card = cands.iter().find(|x| x.get("to").and_then(|t| t.get("person")).and_then(Json::as_i64) == Some(vet.0 as i64)).expect("the veteran can found a House");
-    let house = s(card, "house");
-    let name = &ses.g.persons[vet].name;
+    assert_eq!(cands.len(), 1, "the founding alone");
+    let card = &cands[0];
+    assert_eq!(s(card, "kind"), "found");
+    assert_eq!(card.get("to"), Some(&Json::parse(r#"{"found":true}"#).unwrap()));
+    assert_eq!(s(card, "title"), "A new House");
+    let house = s(card, "house").to_string();
+    assert!(house.starts_with("House "), "{house}");
     let lines = strs(card, "lines");
-    assert!(lines.contains(&format!("Command of the {} ends.", ses.g.armies[army_id(&st, "furious")].name)), "{lines:?}");
-    assert!(lines.contains(&format!("{name} leaves the map and leads {house}.")), "{lines:?}");
+    assert_eq!(lines[0], "A new House: its leader is drawn from the Bannor's minor leaders.");
+    assert_eq!(lines[1], format!("Moves to {house}'s realm: its production and commerce are the House's."));
     assert!(lines.contains(&"Tribute from it at 20%.".to_string()), "{lines:?}");
     assert_eq!(s(card, "button"), format!("Found {house}"));
+    let name = ffh_play::view::city_name(&ses.g, c);
+    assert_eq!(s(card, "confirm"), format!("Grant {name} to found {house}? Its leader is drawn now. This cannot be undone."));
+    assert!(card.get("refusal").unwrap().is_null());
     // The founder's own block keeps only the lines that move loyalty.
     let own = arr(card, "effects").iter().find(|e| bool_of(e, "self")).unwrap();
     assert!(strs(own, "lines").iter().all(|l| amount(l) != 0), "{own:?}");
-    let gp = cands.iter().find(|x| s(x, "kind") == "great_person").unwrap();
-    let house = s(gp, "house");
-    assert!(strs(gp, "lines").iter().any(|l| l.starts_with("The ") && l.ends_with(&format!(" is consumed. A person of note is drawn and leads {house}."))), "{:?}", strs(gp, "lines"));
+    // Granted: a House led by a minor leader of the Bannor drawn now.
+    let civ = ses.g.player_get_civilization_type(h).unwrap();
+    let pool = ses.g.house_leader_pool(civ, h).leaders;
+    let j = Json::parse(&format!(r#"{{"c":"grant_city","city":{},"found":true}}"#, c.0)).unwrap();
+    let cmd = Command::from_json(ses.g.d, &j).unwrap();
+    ses.execute(&cmd).unwrap();
+    let g = &ses.g;
+    assert_eq!(g.players[h].houses.len(), 1);
+    let hh = g.players[h].houses[0];
+    assert_eq!(g.house_label(hh), house);
+    assert!(pool.contains(&g.house_leader(hh).unwrap()), "drawn from the pool");
+    let r = ses.query(&Query::Court).unwrap();
+    assert!(r.get("founding").unwrap().is_null());
+    common::check::check(&ses.g);
 }
 
 /// The Armies screen's *Requisition from* list (the levy, rule 6): the Houses' cities after the
@@ -439,7 +452,7 @@ fn a_founding_says_who_leaves_the_map() {
 fn the_levy_list_and_the_governance_line() {
     let (_dir, st, mut ses) = staged("persons-levy");
     let r = ses.query(&Query::Armies).unwrap();
-    let army = arr(&r, "armies").iter().find(|x| int(x, "id") == army_id(&st, "loyal").0 as i64).unwrap().clone();
+    let army = arr(&r, "armies").iter().find(|x| int(x, "id") == army_id(&st, "main").0 as i64).unwrap().clone();
     let cands = arr(army.get("requisition").unwrap(), "candidates");
     let row = |c: CityId| cands.iter().find(|x| int(x, "city") == c.0 as i64).unwrap_or_else(|| panic!("city {} not listed", c.0)).clone();
     let a = st.houses.iter().find(|x| x.role == "friendly").unwrap();
@@ -467,7 +480,7 @@ fn the_levy_list_and_the_governance_line() {
     assert!(cands[first_house..].iter().all(|x| !x.get("house").unwrap().is_null()));
 
     // A House's city can be picked (the requisition passes it over while its House refuses).
-    let loyal = army_id(&st, "loyal");
+    let loyal = army_id(&st, "main");
     let v = st.houses.iter().find(|x| x.role == "annoyed").unwrap();
     ses.execute(&Command::ArmyRequisition { army: loyal, city: v.cities[0], on: true }).expect("a House's city is picked");
     assert!(ses.g.armies[loyal].requisition.contains(&v.cities[0]));
@@ -500,15 +513,11 @@ fn refusals_carry_the_rules_reasons() {
     let house_a = house_id(&st, "friendly");
     // Grants.
     assert_eq!(cannot(ses.execute(&Command::GrantCity { city: st.capital, to: GrantTo::House(house_a) })), "The capital is the Crown's.");
-    assert_eq!(cannot(ses.execute(&Command::GrantCity { city: st.crown[1], to: GrantTo::Person(person_id(&st, "head_friendly")) })), "A head is granted cities through their House.");
-    assert_eq!(cannot(ses.execute(&Command::GrantCity { city: st.crown[1], to: GrantTo::Person(person_id(&st, "no_post")) })), "A hero cannot head a House.");
-    assert_eq!(cannot(ses.execute(&Command::GrantCity { city: st.crown[1], to: GrantTo::GreatPerson(ses.g.players[ses.human].units[0]) })), "Not a great person of yours.");
+    assert_eq!(cannot(ses.execute(&Command::GrantCity { city: st.crown[1], to: GrantTo::NewHouse })), "A realm with a House grants to its Houses.");
+    assert_eq!(cannot(ses.execute(&Command::GrantCity { city: st.crown[1], to: GrantTo::House(house_id(&st, "neighbour")) })), "Not a House of yours.");
     let r = ses.query(&Query::Grant { city: st.capital }).unwrap();
     assert_eq!(s(&r, "refusal"), "The capital is the Crown's.");
     assert!(arr(&r, "candidates").is_empty());
-    // Commanders.
-    assert_eq!(cannot(ses.execute(&Command::SetCommander { army: army_id(&st, "loyal"), person: person_id(&st, "no_post") })), "Not with this army.");
-    assert_eq!(cannot(ses.execute(&Command::SetCommander { army: army_id(&st, "loyal"), person: person_id(&st, "head_friendly") })), "A House's head does not command.");
     // Tribute and freeing.
     assert_eq!(cannot(ses.execute(&Command::SetHouseTribute { house: house_a, pct: 15 })), "Tribute: 0 to 50 percent, in steps of 10.");
     assert_eq!(cannot(ses.execute(&Command::SetHouseTribute { house: house_a, pct: 60 })), "Tribute: 0 to 50 percent, in steps of 10.");
@@ -571,14 +580,19 @@ fn an_offer_to_a_house() {
 /// The commands are in the protocol, decode from their JSON and refuse an ambiguous grantee.
 #[test]
 fn the_command_set() {
-    for n in ["grant_city", "house_tribute", "set_commander", "free_house", "tribute_default"] {
+    for n in ["grant_city", "house_tribute", "free_house", "tribute_default"] {
         assert!(COMMAND_NAMES.contains(&n), "{n}");
     }
+    assert!(!COMMAND_NAMES.contains(&"set_commander"), "no commanders");
     let d = ffh_data::global();
-    let j = Json::parse(r#"{"c":"grant_city","city":3,"unit":7}"#).unwrap();
-    assert_eq!(Command::from_json(d, &j).unwrap(), Command::GrantCity { city: CityId(3), to: GrantTo::GreatPerson(UnitId(7)) });
-    let j = Json::parse(r#"{"c":"grant_city","city":3,"house":1,"person":2}"#).unwrap();
+    let j = Json::parse(r#"{"c":"grant_city","city":3,"found":true}"#).unwrap();
+    assert_eq!(Command::from_json(d, &j).unwrap(), Command::GrantCity { city: CityId(3), to: GrantTo::NewHouse });
+    let j = Json::parse(r#"{"c":"grant_city","city":3,"house":1}"#).unwrap();
+    assert_eq!(Command::from_json(d, &j).unwrap(), Command::GrantCity { city: CityId(3), to: GrantTo::House(HouseId(1)) });
+    let j = Json::parse(r#"{"c":"grant_city","city":3,"house":1,"found":true}"#).unwrap();
     assert!(matches!(Command::from_json(d, &j), Err(CmdErr::Invalid(_))));
+    let j = Json::parse(r#"{"c":"grant_city","city":3,"person":2}"#).unwrap();
+    assert!(matches!(Command::from_json(d, &j), Err(CmdErr::Invalid(_))), "no person grantee");
     let j = Json::parse(r#"{"c":"house_tribute","house":1,"pct":30}"#).unwrap();
     assert_eq!(Command::from_json(d, &j).unwrap(), Command::SetHouseTribute { house: HouseId(1), pct: 30 });
     let j = Json::parse(r#"{"c":"tribute_default","pct":40}"#).unwrap();

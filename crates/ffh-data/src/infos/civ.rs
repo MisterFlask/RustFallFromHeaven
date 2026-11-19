@@ -46,7 +46,7 @@ pub struct TraitInfo {
     pub starting_gold: i32,
     pub summon_duration: i32,
     pub upgrade_cost_modifier: i32,
-    /// Persons of Note (docs/PERSONS.md, "The second build", rule 14): added to the Crown's limit
+    /// Houses (docs/PERSONS.md, "The second build", rule 14): added to the Crown's limit
     /// of a player with this trait (`PERSON_CROWN_CITIES`; the limit is never below 1).
     pub crown_cities_change: i32,
     // ---- arrays ----
@@ -410,7 +410,7 @@ pub struct LeaderHeadInfo {
     /// C++ `hasTrait(i)`.
     pub has_trait: IdxVec<TraitType, bool>,
     /// The leader's own traits in their authored order (the `traits` object's keys set to true, in
-    /// file order; a civilization's traits are not listed). Persons of Note read the first one
+    /// file order; a civilization's traits are not listed). A House's ambition reads the first one
     /// (docs/PERSONS.md: ambition, a head's trait).
     pub traits: Vec<TraitType>,
     pub flavor_value: IdxVec<FlavorType, i32>,

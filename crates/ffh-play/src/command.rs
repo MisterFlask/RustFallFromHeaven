@@ -1782,7 +1782,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(Command::EmpireOrderRemove { city: *city, index: *index }))
         }
 
-        // Persons of Note (docs/PERSONS.md): the rules' own checks and reasons.
+        // Houses (docs/PERSONS.md): the rules' own checks and reasons.
         Command::GrantCity { city, to } => {
             city_of(g, h, *city)?;
             g.player_check_grant(h, *city, *to).map_err(cannot)?;

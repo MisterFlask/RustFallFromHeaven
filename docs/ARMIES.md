@@ -101,8 +101,8 @@ picks for it (`Army::requisition`, in the order they were added): any of the own
 directly ruled or governed, the capital included, and the cities of its Houses (the levy,
 docs/PERSONS.md, "The second build", rule 6). A city lost, traded, razed or flipped leaves every
 list, and a House's cities leave its liege's lists when the House ends. Requisition needs a
-target size: an army with none (0) requisitions nothing. An army whose commander is Annoyed or
-Furious takes no order to attack (`unit_attack_refusal`).
+target size: an army with none (0) requisitions nothing. (An army has no commander: the persons
+who commanded armies went with docs/PERSONS.md's third build.)
 
 *The levy.* A House's city takes a requisition order as the owner's own cities do: at the front of
 its queue, built with its production (the House's player keeps the order while the army lists the

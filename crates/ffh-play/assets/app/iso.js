@@ -1611,7 +1611,7 @@ export class IsoMap {
       }
       // Revolt pressure (docs/CULTURE.md): a mark at the plaque's right end by its level.
       drawRevoltMark(g, city, x0 + w + Math.max(4, 5 * u) - u, y0 + h / 2, Math.max(4, 5 * u), u, base);
-      // Persons of Note (docs/PERSONS.md, "UI", part G): an own city's House shield at the
+      // Houses (docs/PERSONS.md, "UI", part G): an own city's House shield at the
       // plaque's left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
       const shieldH = h + 2 * u;
       const shieldW = city.house ? drawPlateShield(g, city.house, x0 - (shieldH * 16) / 36 - 2 * u, y0 + h / 2, shieldH) : 0;

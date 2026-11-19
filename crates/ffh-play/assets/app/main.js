@@ -36,9 +36,9 @@ import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { ritualAlerts } from "./rituals.js";
-import { personAlerts, houseTag } from "./persons_lines.js";
-// Persons of Note (docs/PERSONS.md, "UI"): the Court (Shift+F9, the menu's Court, its count of what
-// needs attention) and the grant list; also reached from window.ffh.persons.
+import { houseAlerts, houseTag } from "./persons_lines.js";
+// Houses (docs/PERSONS.md, "UI"): the Court (Shift+F9, the menu's Court, its count of what needs
+// attention) and the grant list; also reached from window.ffh.persons.
 import * as persons from "./persons.js";
 import { endTurn, sending } from "./commands.js";
 import { h, $, toast, compactScreen, setErrorHook, errorText } from "./dom.js";
@@ -284,8 +284,8 @@ async function refreshLog() {
     // World rituals (docs/CARDS.md): their news as alerts (a game's log read the first time: this
     // turn's only).
     ritualAlerts(r.entries, { fresh });
-    // Persons of Note (docs/PERSONS.md, "UI", part H): their news as alerts.
-    personAlerts(r.entries, { fresh });
+    // Houses (docs/PERSONS.md, "UI", part H): their news as alerts.
+    houseAlerts(r.entries, { fresh });
   } catch {
     /* busy inside a decision */
   }
@@ -404,7 +404,7 @@ function citiesList() {
                 "tr.clickable",
                 { onclick: () => (closeTag("cities"), mapView.centerOn(c.x, c.y), openCity(c.id)) },
                 h("td", `${c.capital ? "★ " : ""}${c.name}`, c.outpost ? h("span.dim", " outpost") : null),
-                // Persons of Note (docs/PERSONS.md, "UI", part E): the House or the Crown.
+                // Houses (docs/PERSONS.md, "UI", part E): the House or the Crown.
                 houses ? h("td.city-house", houseTag(c.house)) : null,
                 h("td", c.perk ? perkView(c.perk) : (c.specialty ?? "—")),
                 h("td", String(c.size)),
@@ -564,7 +564,7 @@ function onKey(ev) {
     const layer = { 1: "terrain", 2: "political", 3: "yield", 4: "sea" }[k];
     if (layer) return handled(), setLayer(layer);
   }
-  // Shift+F9: the Court (Persons of Note), beside F9's Governors.
+  // Shift+F9: the Court (the Houses), beside F9's Governors.
   if (k === "F9" && ev.shiftKey && !ctrl && !ev.altKey) {
     handled();
     return openScreen("court");

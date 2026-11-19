@@ -61,16 +61,14 @@ described in docs/AUTOPSY.md.
 | `culture_revolt` | `unrest`, `revolt`, `near_flip`, `calm`, `flip` (a city's revolt level changed by the caster's pressure; counted for the caster) | – |
 | `march` | `sent`, `arrived`, `diverted`, `stopped`, `killed` (marching recruits: docs/ARMIES.md; `stopped`: no city it could reach, an ordinary unit again; `killed`: died on the way) | `sent`: the estimated march in turns; the others: turns since it set out |
 | `requisition` | `placed`, `withdrawn` (an army's requisition orders: docs/ARMIES.md) | – |
-| `person_entered` | `hero`, `veteran`, `great_person`, `ruler` (a person of note entered the cast: docs/PERSONS.md; `ruler`: a vassal civilization's leader, its House's head) | – |
-| `person_posted` | `commander` (a post taken) | – |
-| `person_granted` | `house` (a city granted to a House), `founded` (to a person or a great person, who founds one) | – |
-| `person_demand` | `issued`, `met`, `refused` | – |
-| `person_state` | `Friendly`, `Pleased`, `Cautious`, `Annoyed`, `Furious` (a holder's change of state), `left` (a person without a post left the cast, Furious) | – |
-| `person_house` | `vassal`, `capitulated` (a vassal became a House: a vassal deal, a card's birth, a colony or a founding; a capitulation), `ended` (a House record ended: its vassalage or its player ended), `freed` (its liege freed it); counted for the liege | – |
-| `person_seceded` | `countdown`, `civil_war`, `bribe`, `bribe_vassal` (a House broke away: a Furious countdown, direct rule, an offer to Secede or to Become your vassal), `held` (every city of it held: it ended), `commander_house`, `commander_city`, `commander_resigned` (a commander's secession) | – |
-| `person_levy` | `placed` (a levy order in a House's city, counted for the liege) | – |
-| `person_bribe` | `offered` (an offer to one of the player's Houses, accepted or not, counted for the liege) | – |
-| `person_tribute` | `gold`, `research` (a House's tribute, counted for the liege) | the gold and the research paid |
+| `house_granted` | `house` (a city granted to a House), `founded` (a realm's first grant, which founds one) | – |
+| `house_request` | `issued`, `met`, `refused` (a House's request; docs/PERSONS.md) | – |
+| `house_state` | `Friendly`, `Pleased`, `Cautious`, `Annoyed`, `Furious` (a House's change of state) | – |
+| `house_record` | `vassal`, `capitulated` (a vassal became a House: a vassal deal, a card's birth, a colony or a founding; a capitulation), `ended` (a House record ended: its vassalage or its player ended), `freed` (its liege freed it); counted for the liege | – |
+| `house_seceded` | `countdown`, `civil_war`, `bribe`, `bribe_vassal` (a House broke away: a Furious countdown, direct rule, an offer to Secede or to Become your vassal), `held` (every city of it held: it ended) | – |
+| `house_levy` | `placed` (a levy order in a House's city, counted for the liege) | – |
+| `house_bribe` | `offered` (an accepted offer to one of the player's Houses, counted for the liege) | – |
+| `house_tribute` | `gold`, `research` (a House's tribute, counted for the liege) | the gold and the research paid |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -167,9 +165,9 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
   city, its owner; the event's player is the caster);
 - `march` (a marching recruit: `how` sent / arrived / diverted / stopped / killed, `to_army`,
   `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
-- `person` (Persons of Note, docs/PERSONS.md: `how` entered / posted / granted / demand / state /
-  house / seceded / levy / bribe and `what`, as the counts above) and `tribute` (a House's tribute
-  paid: `gold`, `research`; the event's player is the liege);
+- `house` (the Houses, docs/PERSONS.md: `how` granted / request / state / record / seceded / levy /
+  bribe and `what`, as the counts above; `person` before the third build) and `tribute` (a House's
+  tribute paid: `gold`, `research`; the event's player is the liege);
 - `intent` and `decision`;
 - `prediction`: an AI estimate resolved by the rules (the prediction ledger, docs/CALIBRATION.md).
 

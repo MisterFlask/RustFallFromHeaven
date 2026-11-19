@@ -59,7 +59,7 @@ persist_newtype!(
 
 // ---- this game's own rules (docs/CULTURE.md) ----
 
-// ---- Persons of Note (docs/PERSONS.md) ----
+// ---- Houses (docs/PERSONS.md) ----
 
 use crate::persons::{Deed, Demand, DemandKind, House, HouseOrigin, LoyaltyCause, LoyaltyMod, LoyaltyState, Standing};
 persist_enum!(HouseOrigin { 0 => Founded, 1 => Capitulated, 2 => Vassal });

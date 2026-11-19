@@ -3,7 +3,7 @@
 // Copyright Firaxis Games 2005
 //
 // Basic Infos
-// help: what the attitude does as a loyalty state of Persons of Note (docs/PERSONS.md, rule 5): the
+// help: what the attitude does as a loyalty state of a House (docs/PERSONS.md, rule 5): the
 //     state mark's tooltip (persons.js stateMark).
 [
   {"type": "ATTITUDE_FURIOUS", "description": "TXT_KEY_ATTITUDE_FURIOUS", "help": "TXT_KEY_ATTITUDE_FURIOUS_HELP"},

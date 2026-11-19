@@ -348,7 +348,7 @@ flag.
     accepts when Cautious or worse and the offer covers `(loyalty + 6) x 25 x its cities` gold.
     The liege remembers the buyer (`MEMORY_BOUGHT_HOUSE`, below). Only an accepted offer is noted
     (2026-11-18): a refused one leaves no trace (no memory, no `Offered` entry, no alert).
-  - *The attitude scale*: a person's or a House's loyalty reads Friendly, Pleased, Cautious,
+  - *The attitude scale*: a House's loyalty (a person's, until the third build) reads Friendly, Pleased, Cautious,
     Annoyed or Furious; a House's AI attitude toward its liege is its loyalty's.
   - *The Crown's limit* (rule 14): under a governing civic the Crown holds 3 great cities at the
     normal city-count maintenance (the capital first; settlements not counted; the Kuriotates 1,
@@ -359,6 +359,18 @@ flag.
     together; a city moving between a liege and its House keeps its settlement status.
   Why: a large empire is shared with holders who have a view of how it is ruled, in the game's
   own idioms (vassalage, attitude, the diplomacy screen, requisition, war). Save format 49.
+- **Houses without Persons of Note** (docs/PERSONS.md, "The third build", part 1, the owner's
+  decisions of 2026-11-19; replaces the persons of the two entries above): the cast is gone, and
+  with it the commanders (an army has no commander, no withheld attack, no secession of sworn
+  units), the veterans' names and the persons' records; **heroes and great people are FFH2's
+  again** (no person, no House founded by a great person). A House's leader is its player's; its
+  requests (the second build's demands, renamed) and its record are its own. A realm without a
+  House founds one with its first grant of a Crown city, its leader drawn with the game RNG from
+  its civilization's free minor leaders, else those of other civilizations of its alignment (none
+  free: no founding); a realm with Houses grants to them. The size grievance (`Holds N cities,
+  more than T`) is gone. The world unit (the mean commerce of the world's civilizations) is
+  computed for part 2's prices. Why: the persons did no work the Houses did not (the owner). Save
+  format 53.
 - **The memory of wrongs** (the owner's decisions of 2026-11-18; docs/PERSONS.md, "The second
   build"; docs/AI.md, "Relations"):
   - *A declared war fades*: every leader forgets a `MEMORY_DECLARED_WAR` at 1 in 50 a turn
