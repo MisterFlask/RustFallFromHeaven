@@ -6,6 +6,7 @@ import { openHelp, helpTitle } from "./help.js";
 import { render as markup } from "./markup.js";
 import { emit } from "./state.js";
 import { playerPortrait, PORTRAIT } from "./portraits.js";
+import { keywordChips } from "./keywords.js";
 
 const stack = [];
 
@@ -207,9 +208,11 @@ export function showDecision(d, answer) {
   const other = d.context?.other_player;
   const face = other !== null && other !== undefined ? playerPortrait(other, { size: PORTRAIT.medium }) : null;
   const text = h("p.page-text", illuminate(markup(d.text)));
+  // The keywords the decision names (an ultimatum's), their reminders as chips.
+  const chips = d.reminders?.length ? h("div.decision-keywords", keywordChips(d.reminders)) : null;
   m = openModal({
     title: d.title,
-    body: [face ? h("div.decision-head", face, text) : text, options, errorLine],
+    body: [face ? h("div.decision-head", face, text) : text, chips, options, errorLine],
     buttons: [{ label: "AI default", title: "The advisor's pick", onClick: () => send(null) }],
     dismissible: false,
     tag: "decision",

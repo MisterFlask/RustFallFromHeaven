@@ -1,9 +1,9 @@
 //! Breaking away and the civil war of direct rule (docs/PERSONS.md, "The second build", rules 7
 //! and 11).
 //!
-//! - **A House breaks away** ([`Game::house_break_away`]) at the end of its Furious countdown, in
-//!   its liege's turn processing, when its liege comes under a direct-rule civic (every House at
-//!   once: the civil war), or when it accepts an offer to secede (`bribes.rs`): first every city of
+//! - **A House breaks away** ([`Game::house_break_away`]) when its liege refuses its ultimatum (the
+//!   third build, rule 5: `ultimatums.rs`), when its liege comes under a direct-rule civic (every
+//!   House at once: the civil war), or when it accepts an offer to secede (`bribes.rs`): first every city of
 //!   the House in which the liege's army units outnumber the House's own land combat units goes
 //!   back to the liege ([`Game::city_hold`]; as a trade: its buildings and garrison; `Censura
 //!   returns to you: your army's 4 units outnumber its 2.`; a city contested and lost is told too:
@@ -27,8 +27,8 @@ pub const GRUDGE: i32 = -4;
 /// Why a House breaks away (its telemetry and its message).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Why {
-    /// A Furious countdown's end.
-    Countdown,
+    /// Its ultimatum refused (the third build, rule 5).
+    Ultimatum,
     /// A direct-rule civic adopted.
     CivilWar,
     /// An offer accepted: Secede (`None`) or Become your vassal (the buyer).
@@ -97,7 +97,7 @@ impl Game {
         let news = |buyer: Option<&str>| match (why, alive) {
             (_, false) => format!("{label} ends: every city of it stands held by an army of the {civ_name}."),
             (Why::CivilWar, _) => format!("Civil war: {label} breaks away from the {civ_name}, taking {names}: war."),
-            (Why::Countdown, _) => format!("{label} breaks away from the {civ_name}, taking {names}: war."),
+            (Why::Ultimatum, _) => format!("{label} breaks away from the {civ_name}, taking {names}: war."),
             (Why::Bribe { vassal: false, .. }, _) => format!("{label} breaks away from the {civ_name}, taking {names}. Bought by {}: war.", buyer.unwrap_or("you")),
             (Why::Bribe { vassal: true, .. }, _) => match buyer {
                 Some(b) => format!("{label} breaks away from the {civ_name}, taking {names}, as a vassal of {b}: war."),
@@ -132,7 +132,7 @@ impl Game {
         }
         let tel = match why {
             Why::CivilWar => "civil_war",
-            Why::Countdown => "countdown",
+            Why::Ultimatum => "ultimatum",
             Why::Bribe { vassal: false, .. } => "bribe",
             Why::Bribe { vassal: true, .. } => "bribe_vassal",
         };
@@ -143,15 +143,6 @@ impl Game {
     // -----------------------------------------------------------------------------------------
     // The turn, the civil war
     // -----------------------------------------------------------------------------------------
-
-    /// Player `p`'s Houses whose countdown ran out break away (its turn processing).
-    pub(crate) fn player_persons_secessions(&mut self, p: PlayerId) {
-        for h in self.persons_countdowns_due(p) {
-            if self.houses.get(h).is_some_and(|house| house.standing.countdown.is_some()) {
-                self.house_break_away(h, Why::Countdown);
-            }
-        }
-    }
 
     /// Player `p` adopting direct rule with Houses: every House breaks away at once
     /// (docs/PERSONS.md, rule 11). Called when its civics change into direct rule

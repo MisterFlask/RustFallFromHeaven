@@ -24,7 +24,9 @@ pub fn preview_sentence(l: &PreviewLine) -> String {
         s.push('.');
     }
     if let Some(st) = l.state_after {
-        s.push_str(&format!(" Becomes {}.", st.name()));
+        // Furious is an ultimatum (the third build, rule 5).
+        let then = if st == LoyaltyState::Furious { ": an ultimatum" } else { "" };
+        s.push_str(&format!(" Becomes {}{then}.", st.name()));
     }
     s
 }
@@ -48,18 +50,15 @@ pub fn preview_json(lines: &[PreviewLine]) -> Json {
     )
 }
 
-/// A House in a list (part E) and on a plate (part G): `{id, label, colour, state, turns}`
-/// (`colour`: `House::color`, the client's `houseColour` index; `turns`: the countdown's turns
-/// left, null without one).
+/// A House in a list (part E) and on a plate (part G): `{id, label, colour, state}` (`colour`:
+/// `House::color`, the client's `houseColour` index).
 pub fn house_chip(g: &Game, h: HouseId) -> Json {
     let state = g.house_state(h);
-    let turns = g.houses[h].standing.countdown.map(|end| (end - g.game_turn()).max(0));
     crate::jobj! {
         "id" => h,
         "label" => g.house_label(h),
         "colour" => g.houses[h].color as i32,
         "state" => state.name(),
-        "turns" => turns,
     }
 }
 
@@ -75,9 +74,9 @@ pub fn city_house_field(v: &Viewer, c: CityId) -> Option<Json> {
 
 /// The map's mark of a House's city (part G; docs/PERSONS.md, rules 1 and 13): its shield for
 /// everyone (`{id, label, colour, liege}`: `liege` is the player whose colour the House is drawn
-/// in, `Game::player_color_player`), and for its liege its attitude mark (`state`, `turns`; null
-/// for the others), from `Game::city_house_mark` (cheap); `None` for a city of a civilization that
-/// is no House.
+/// in, `Game::player_color_player`), and for its liege its attitude mark (`state`; null for the
+/// others), from `Game::city_house_mark` (cheap); `None` for a city of a civilization that is no
+/// House.
 pub fn city_map_mark(v: &Viewer, c: CityId) -> Option<Json> {
     let g = v.g;
     let m = g.city_house_mark(c)?;
@@ -88,7 +87,6 @@ pub fn city_map_mark(v: &Viewer, c: CityId) -> Option<Json> {
         "colour" => m.color as i32,
         "liege" => m.owner,
         "state" => liege.then(|| m.state.name()),
-        "turns" => if liege { m.countdown_turns } else { None },
     })
 }
 
@@ -101,8 +99,12 @@ fn signed(n: i32) -> String {
     }
 }
 
-/// A loyalty part as a line: `Tribute 20%: -1`, `Levied: -1 (12 turns)`.
+/// A loyalty part as a line: `Tribute 20%: -1`, `Levied: -1 (12 turns)`; a contract's floor:
+/// `Contract until turn 160: at least Annoyed (+3).`
 fn part_line(p: &ffh_core::persons::LoyaltyPart) -> String {
+    if p.label.contains(": ") {
+        return if p.amount == 0 { format!("{}.", p.label) } else { format!("{} ({}).", p.label, signed(p.amount)) };
+    }
     match p.turns_left {
         Some(t) => format!("{}: {} ({t} {})", p.label, signed(p.amount), if t == 1 { "turn" } else { "turns" }),
         None => format!("{}: {}", p.label, signed(p.amount)),
@@ -111,8 +113,8 @@ fn part_line(p: &ffh_core::persons::LoyaltyPart) -> String {
 
 /// A House among the players (the view's `players[].house`; docs/PERSONS.md, rules 1 and 13: the
 /// diplomacy screen lists a House under its liege): `{id, label, liege, liege_name, colour}` and,
-/// for its liege, its attitude toward it as the rules give it: `state`, `turns` (the Furious
-/// countdown's turns left, else null), `outcome` (the countdown's stated outcome, else null),
+/// for its liege, its attitude toward it as the rules give it: `state`, `outcome` (Furious: its
+/// ultimatum's stated outcome, else null), `contract` (its contract's line, else null),
 /// `parts` (`["Tribute 20%: -1", ..]`) and `loyalty` (`Loyalty: -2.`); null for a player that is
 /// no House. `liege_name` is the liege's civilization (`Bannor`), as the rules' lines name it.
 pub fn player_house_brief(v: &Viewer, p: PlayerId) -> Json {
@@ -130,8 +132,8 @@ pub fn player_house_brief(v: &Viewer, p: PlayerId) -> Json {
     if liege == v.h {
         if let Some(hv) = g.house_view(h) {
             j.set("state", hv.state.name());
-            j.set("turns", hv.countdown_turns);
             j.set("outcome", hv.outcome);
+            j.set("contract", hv.contract.map(|c| c.line));
             j.set("parts", Json::Arr(hv.parts.iter().map(|x| Json::from(part_line(x))).collect()));
             j.set("loyalty", format!("Loyalty: {}.", signed(hv.loyalty)));
         }
@@ -166,7 +168,7 @@ pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json
             let (going, _) = g.house_cities_held(h);
             going_n += going.len();
             // A vassal civilization's name is not a House's: it is told as one.
-            let who = if g.houses[h].origin == ffh_core::persons::HouseOrigin::Founded { g.house_label(h) } else { format!("{} (a vassal)", g.house_label(h)) };
+            let who = if g.houses[h].origin.founded() { g.house_label(h) } else { format!("{} (a vassal)", g.house_label(h)) };
             // The contest for each city where an army of yours stands (` Corona returns to you:
             // your army's 4 units outnumber its 2.`).
             let contests = g.house_hold_text(h);

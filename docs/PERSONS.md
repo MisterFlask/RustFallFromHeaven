@@ -6,8 +6,9 @@ House a vassal civilization of its own; **the third build (2026-11-19) removed t
 stand alone.** A civilization's Houses are its vassals, each a player with a leader of its own:
 they make requests, pay tribute, give less when crossed, and can break away with what they hold.
 **Part 1 of the third build is built (rules 1 to 3 and 9: no persons, requests, the first grant
-founds a House, the world unit); the second build's other rules stay in force until part 2
-changes them.** The owner's concept and decisions of 2026-11-18 and 2026-11-19; the numbers are
+founds a House, the world unit), and part 2A (rules 4 to 6: splits, ultimatums and contracts,
+with rule 11's answer to an ultimatum and the hold-march's trigger); the second build's other rules
+stay in force until part 2 changes them.** The owner's concept and decisions of 2026-11-18 and 2026-11-19; the numbers are
 first guesses. "Open points" says which rules are the owner's decisions and which are proposals
 still to be confirmed.
 
@@ -20,7 +21,7 @@ still to be confirmed.
 | 4 | foreign persons: side deals with a rival's Houses (Secede, Become your vassal); seeing persons, courting, agents abroad | side deals built (second build, rule 9, `persons/bribes.rs`); the rest not built |
 | 5 | the annals: what each character did in the player's earlier games | not built |
 | second build | Houses as vassal civilizations, rules 1 to 14 below | built (2026-11-18): the rules (ffh-core), the AI (rule 12, `crates/ffh-ai/src/persons.rs`) and the screens (rule 13: the Court, the grant list, the levy, diplomacy, the map's plates) |
-| third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | part 1 built (2026-11-19: the persons removed, the first grant founds, requests, the world unit: rules 1 to 3 and 9, and rule 11's grants; "The third build as built, part 1" below); part 2 being built: splits and ultimatums (4 to 6) with courtship, price, knowledge and tribute (7 to 10) |
+| third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | part 1 built (2026-11-19: the persons removed, the first grant founds, requests, the world unit: rules 1 to 3 and 9, and rule 11's grants; "The third build as built, part 1" below); part 2A built (2026-11-19: splits, ultimatums and contracts, rules 4 to 6, and rule 11's answer and hold-march; "The third build as built, part 2A" below); part 2B being built: courtship, price, knowledge and tribute (7 to 10) |
 
 **"The third build" (2026-11-19, below) is the contract in force; its part 1 is built (its "as
 built" note). Where it differs from the second build, it holds; everything below it on persons
@@ -242,6 +243,128 @@ the rules left open:
     commander's army no longer seeks a haven.
 12. *As built (the screens):* see "UI", "The third build's screens as built" below and
     docs/HUMAN.md.
+
+### The third build as built, part 2A (2026-11-19)
+
+Rules 4 to 6, and rule 11's answer to an ultimatum and the hold-march's trigger, are built
+(`crates/ffh-core/src/persons/splits.rs`, `ultimatums.rs`; tests `crates/ffh-core/tests/ultimatums.rs`
+and `persons.rs`; the AI `crates/ffh-ai/src/persons.rs`; the decision `crates/ffh-play/src/decision.rs`
+`ultimatum`). The second build's Furious countdown is gone: `Standing::countdown`,
+`persons_countdowns_due`, the break-away at its end (`player_persons_secessions`, `Why::Countdown`),
+`house_countdown_turns`, `HouseView::countdown_turns`, `HouseMark::countdown_turns`, the define
+`PERSON_DISLOYAL_TURNS`, the plates' countdown pill and the screens' `turns` fields, and the AI's
+`house_beyond_tribute`. Save format 54. Where the build settles what the rules left open:
+
+4. *As built (splits):* `player_persons_splits`, in the liege's turn processing after the tribute:
+   each House (id order) with `house_great_cities` (its cities but settlements and outposts) at
+   `PERSON_HOUSE_SPLIT_CITIES` (6) or more draws `soren_rand_num(100, "House split")` once, below
+   `PERSON_HOUSE_SPLIT_PERCENT` (5) it splits (`house_split`): the draw of the leader comes after
+   the roll (none free: no split, the roll spent; `tel_house(split, no_leader)`). The division
+   (`house_split_division`, pure) sorts all its cities, settlements included, by plot distance from
+   its seat (ties: the lower id); the parent keeps the first half rounded up; the cadet's capital is
+   its most populous city (ties: the lower id). The cadet is founded by
+   `player_found_house_as(liege, parent's civilization, leader, cities, HouseOrigin::Split)` (part
+   1's founding with the civilization and the origin as arguments; `player_found_house` is it with
+   the liege's civilization and `Founded`): `world::birth` releases cities of any owner, so the
+   parent House's cities go as a grant's do (its garrison with them; its units in an army or
+   marching stay). Its name is the liege's next House name, its techs the liege's, its tribute the
+   realm's default in force; no modifiers, request, contract, refused request, memory or ultimatum
+   count. `HouseOrigin::Split` is labelled `House <name>` like a founding (`HouseOrigin::founded`)
+   and its card says `Split off on turn 40.`; its record `Split from House Aldric, led by Tovin
+   Cinderwright, with Ventry, Corona and Astrum.`, the parent's `Split: House Bertram took ...`.
+   The liege's message (an alert): `House Aldric splits: House Bertram, led by Tovin Cinderwright,
+   takes Ventry, Corona and Astrum.` The card's line `Holds 7 cities: 5% a turn to split.`
+   (`house_split_line`, from 6 great cities); the grant card's `House Aldric will hold 6 cities: 5%
+   a turn to split.` (`house_split_line_after_grant`) for any grant of a great city that leaves the
+   House at 6 or more.
+5. *As built (ultimatums):* `player_persons_states` tells a change of state (`House Aldric is
+   Furious.`), then a House Furious with no contract running issues its ultimatum
+   (`house_issue_ultimatum`): `house_ultimatum(h)` chooses it (pure but for (c)), the count
+   `House::ultimatums` rises, the liege is told (`House Aldric issues an ultimatum: Its tribute set
+   to 10%.`) and its controller answers (`Controller::consider_ultimatum`, default accept). Refused:
+   `You refuse House Aldric's ultimatum.` and `house_break_away(h, Why::Ultimatum)` (the news and
+   the hold contest as built; telemetry `house_seceded ultimatum`). The demand, as
+   `Ultimatum { house, kind: UltimatumKind, request, until }`:
+   - (a) `House::refused` keeps the kind of its last refused request (set by
+     `house_demand_refused`, cleared when (a) is accepted); asked while a `Request refused`
+     modifier runs: `GrantCity` (a city of the liege's that `player_check_grant` lets it grant to
+     the House), `War` (as (d)), `AdoptReligion` with a religion chosen by the rules (one in the
+     liege's cities it can adopt now, not opposed to the House leader's alignment, in the most of
+     its cities, ties to the lower id); a refused `TakeCity` or `SpreadReligion` is not asked again.
+   - (b) `Tribute(pct)`: the House's loyalty as its parts make it at `pct` in force
+     (`ULTIMATUM_TRIBUTE_LOYALTY`, -4), when below the rate set (`ULTIMATUM_TRIBUTE_FROM`, 20%).
+   - (c) `Peace(q)`: the first civilization by id that is no House, minor civilization, crusade Host
+     or vassal, at war with the liege, `MEMORY_TOOK_CITY` of the House toward it above 0, the peace
+     treaty tradeable both ways, whose controller's `consider_offer` accepts a peace treaty for a
+     peace treaty. A human is not asked inside another's turn: no peace with a human is demanded.
+     Carried out by `implement_deal` of the treaty (the rules' peace path).
+   - (d) `War(q)`: the first by id with the House's `MEMORY_DECLARED_WAR` or `MEMORY_TOOK_CITY`
+     toward it above 0, alive, not barbarian, minor or a Host, of another team not vassal-bound to
+     the liege's, at peace, `team_can_declare_war`. Carried out by `team_declare_war`.
+   - (e) `Resource(b)`: the first bonus by id of which the liege has more than one tradeable
+     (`player_get_num_tradeable_bonuses > 1`) and the House none available, their networks joined
+     (`player_can_trade_network_with`), not obsolete for either team. Carried out by a deal of the
+     liege's giving `TRADE_RESOURCES` for nothing (made directly: a House trades nothing itself, so
+     the trade table's check would refuse it); the contract keeps its id.
+   - (f) `Gold(n)` (`ultimatum_gold`): per city `max(1, (world unit + 12) / 24)` (2 at turn 150's
+     unit of 47, 6 at turn 300's 153), times `(2 + earlier ultimatums) / 2`, times its cities, at
+     most half its liege's total commerce, at least 1 in all. Paid as the deals' gold a turn is
+     (`gold_per_turn_by_player` both ways): in the liege's budget and gold rate, so an empty
+     treasury strikes as a deal's would; the screens list it apart (`gold_parts.contracts`:
+     `contract with House Aldric until turn 160`, the finance screen's row `−6`).
+   A demand that cannot be carried out after all (`house_ultimatum_accept`) falls back to (f).
+   The decision (`decision::ultimatum`, `DecisionKind::Ultimatum`, protocol kind `ultimatum`): title
+   `Ultimatum: House Aldric`, text `House Aldric demands: Its tribute set to 10%.[NEWLINE]Accepted:
+   For 20 turns: no tribute above 10% for House Aldric. House Aldric stays at least Annoyed until
+   turn 160.[NEWLINE]Refused: House Aldric breaks away, taking Ventry and Corona: war. Corona
+   returns to you: ...` (`house_refusal_outcome`; `Its refused request again.` after the demand for
+   (a)); options `accept` (its help the bound and the floor) and `refuse` (its help the outcome);
+   the House's leader beside it; the advisor's (ffh-ai's) answer marked; the keyword `Ultimatum`
+   as a chip (the decision's new `reminders`). A Furious House's card, its plate's tooltip and the
+   attention line state what comes: `House Aldric issues an ultimatum at your next turn. Refused, it
+   breaks away, taking Ventry and Corona: war.` (`house_breakaway_outcome`, `HouseView::outcome`
+   while Furious with no contract). Previews: a state after that is Furious reads `Becomes Furious:
+   an ultimatum.` and a request's lapse `At its term: -3 (60 turns), becomes ✖ Furious: an
+   ultimatum.` (`lapse_then`). Keyword `KEYWORD_ULTIMATUM` (`Ultimatum`): `A Furious House's one
+   demand, made in its liege's turn and answered at once. Accepted: it is done, and a contract binds
+   its liege for 20 turns; the House stays at least Annoyed while it runs. Refused: the House
+   breaks away, at war with its liege.`
+6. *As built (contracts):* `House::contract: Option<Contract { kind, until, deal }>`, running while
+   `until` is after the turn (`house_contract`); `player_persons_contracts` ends it at its turn,
+   before the requests and the states (`house_contract_end`: the gold a turn reversed, the resource
+   deal killed; `House Aldric: the contract ends.`), so a House Furious then issues a new ultimatum
+   the same turn. A record that ends (a break-away, freeing, death) ends its contract first. The
+   floor: `house_loyalty` is `house_loyalty_floored(house_loyalty_raw)`, at least `CONTRACT_FLOOR`
+   (-5) while a contract runs; `house_state`, `house_loyalty_at_tribute`, the price, the levy, the
+   previews (`pending_lines` floors the total after) and the next ultimatum read it; the parts list
+   adds `Contract until turn 160: at least Annoyed` with what it lifts (0 when nothing), so the
+   parts add up to the loyalty (shown `Contract until turn 160: at least Annoyed (+3).`). The bound,
+   one rules function (`player_contract_refusal(p, ContractAct)`, `team_contract_refusal`,
+   `deal_contract_refusal`; `Your contract with House Aldric forbids it until turn 160.`) read at
+   each act's single check: `player_check_house_tribute` (now `Result<(), String>`; the tribute
+   list's rates above the bound are `barred` with the reason), `team_can_declare_war` (the war
+   button disabled with `war_refusal` in the players list), the trade item `TRADE_PEACE_TREATY` in
+   `player_can_trade_item` (either side; the peace preview of the trade screen says
+   `Contract until turn 160: no peace with the Sheaim`), `deal_is_cancelable` (the deal row's
+   `cancel_refusal`), `player_can_convert` (the religion screen's `convert_refusal`). A war
+   reaches the bound civilization through a vassal or master too (`contract_reaches`). The card:
+   `Contract until turn 160: no tribute above 10%.` (`house_contract_view`; a city granted: `Contract
+   until turn 160: Ventry granted to House Aldric.`).
+11. *As built (the AI, part 2A):* `consider_ultimatum` accepts unless `house_cities_held` leaves
+    no city going (refusing takes nothing) or the demand is war on a team whose `team_get_power`
+    (vassals included) is above its own. The hold-march's trigger is `house_to_hold(g, h)`: the
+    House Annoyed or worse as the rules count it (a contract's floor included); the march itself is
+    `hold_post(g, v, grp, u, cities)` (public, for part 2B's courted Houses), called by
+    `disloyal_house_post` with the cities of the Houses to hold. The tribute rule skips a rate a
+    contract's bound refuses (`player_check_house_tribute`).
+12. *As built (the stage):* `ffh-play stage persons` adds (`stage_ultimatums`, at the end of the
+    builder): House `annoyed` under a contract (the rules' `house_ultimatum_accept` of a tribute
+    ultimatum to 10%, its demand set by hand, one ultimatum counted); House `furious` Annoyed by
+    the rules' refusals, then one more `Request refused` by hand: Furious with its ultimatum due at
+    the human's next turn; a new House `large` of five cities (founded by `player_found_house_as`
+    with five cities the human founds beyond claim range of `taken`, at a default of 10%), one grant
+    from the split's threshold, made Furious by two refusals set by hand (its ultimatum due too: a
+    resource or gold a turn). The hand-set lines are in the stage's `hand_set`.
 
 ## The second build (2026-11-18): Houses as vassal civilizations
 
@@ -476,15 +599,19 @@ it left open:
    50 as `TributeRate { pct, gold, research, part, turns, loyalty, state }`, each once in force.
    `TRIBUTE_LAG_TURNS` (5) in `persons/mod.rs`; save format 52 (the raise's
    `LoyaltyCause::TributeRaised`, `TRIBUTE_RAISED` and `tribute_raise`, format 51, are gone).
-5. *As built:* `LoyaltyState` keeps its name, with the five variants; `withholds()` is Annoyed or
+5. *Replaced (the third build, rule 5, 2026-11-19):* the Furious countdown is gone; a Furious
+   House issues an ultimatum ("The third build as built, part 2A").
+   *As built:* `LoyaltyState` keeps its name, with the five variants; `withholds()` is Annoyed or
    worse. The keywords Devoted, Loyal, Restless and Disloyal are gone: the states are the game's
    attitude words, no keywords (the client build; a state mark's tooltip is the attitude's own
    help in the data, `attitudes.jsonc`; "UI", part J). The define
-   `PERSON_DISLOYAL_TURNS` keeps its name: the Furious countdown.
+   `PERSON_DISLOYAL_TURNS` (the countdown) went with the third build's part 2A.
 6. *As built:* an order already placed stays when its House turns Annoyed; only new ones are
    passed over. The AI levies only from a House that stays Pleased or better after the levy
    ("AI" below).
-7. *As built:* `house_break_away`; the break-away and the liege take `GRUDGE` (-4) toward each
+7. *Replaced in part (the third build, rule 5, 2026-11-19):* no countdown; a refused ultimatum is
+   the break-away (`Why::Ultimatum`), the hold contest as built.
+   *As built:* `house_break_away`; the break-away and the liege take `GRUDGE` (-4) toward each
    other; the news is marked for the alerts (`LogMark::Person`, untagged: the client knows it by
    its wording, `breaks away from the ... : war.`). The vassal rules bring the liege's other Houses
    into the war (the House declares war on them too). A House whose every city is held ends

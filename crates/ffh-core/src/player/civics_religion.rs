@@ -868,6 +868,12 @@ impl Game {
             return false;
         }
 
+        // Not in C++: a House's contract binds its liege to no change of state religion
+        // (docs/PERSONS.md, "The third build", rule 6).
+        if self.player_contract_refusal(p, crate::persons::ContractAct::ChangeReligion).is_some() {
+            return false;
+        }
+
         if !self.player_is_state_religion(p) {
             return false;
         }

@@ -530,6 +530,8 @@ export function goldBreakdown(gp) {
   if (gp.maintenance) costs.push(["city maintenance", gp.maintenance]);
   if (gp.civics) costs.push(["civic upkeep", gp.civics]);
   if (gp.deals < 0) costs.push(["deals", -gp.deals]);
+  // A House's contract's gold a turn (docs/PERSONS.md, "The third build", rule 5 (f)).
+  for (const [what, gold] of gp.contracts ?? []) costs.push([what, gold]);
   if (gp.inflation) costs.push([`inflation (+${gp.inflation_rate}% on the costs)`, gp.inflation]);
   const sum = (l) => l.reduce((n, [, g]) => n + g, 0);
   return { income, costs, net: sum(income) - sum(costs) };

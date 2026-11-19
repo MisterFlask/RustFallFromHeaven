@@ -206,6 +206,13 @@ pub trait Controller: Send + Sync {
         crate::crusade::loan::LoanAnswer::Refuse
     }
 
+    /// Not in C++ (docs/PERSONS.md, "The third build", rule 5): liege `p` answers its House's
+    /// ultimatum `u`: true accepts (the demand is carried out, a contract binds for its turns),
+    /// false refuses (the House breaks away now). Default: accept.
+    fn consider_ultimatum(&self, _g: &Game, _p: PlayerId, _u: &crate::persons::Ultimatum) -> bool {
+        true
+    }
+
     /// Not in C++: lender `p` picks the units of an agreed loan (at least `terms.strength`;
     /// short of it the rules pick strongest-first). Default: strongest first.
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &crate::crusade::loan::LoanTerms) -> Vec<UnitId> {

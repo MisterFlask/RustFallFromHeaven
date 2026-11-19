@@ -1559,7 +1559,7 @@ export class IsoMap {
     g.font = `700 ${fs}px ${HERALD}`;
     g.textAlign = "left";
     g.textBaseline = "alphabetic";
-    // The boxes of the plaques' marks (a House's shield and countdown, a capital's star), for
+    // The boxes of the plaques' marks (a House's shield, a capital's star), for
     // their tooltips (plates.js; MapView.plateAt).
     this.plateHits = [];
     for (const { city, c } of cities) {

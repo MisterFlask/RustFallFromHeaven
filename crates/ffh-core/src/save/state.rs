@@ -62,21 +62,30 @@ persist_newtype!(
 // ---- Houses (docs/PERSONS.md) ----
 
 use crate::persons::{Deed, Demand, DemandKind, House, HouseOrigin, LoyaltyCause, LoyaltyMod, LoyaltyState, Standing};
-persist_enum!(HouseOrigin { 0 => Founded, 1 => Capitulated, 2 => Vassal });
+persist_enum!(HouseOrigin { 0 => Founded, 1 => Capitulated, 2 => Vassal, 3 => Split });
 persist_enum!(LoyaltyState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
 persist_enum!(LoyaltyCause {
     0 => DemandMet, 1 => DemandRefused, 2 => Granted { city }, 3 => GrantedElsewhere { city, house }, 4 => Levied,
     5 => Capitulated, 6 => SoughtProtection, 7 => Offered { gold, by },
 });
 persist_struct!(LoyaltyMod { cause, amount, until });
-persist_struct!(Standing { mods, countdown, state });
+persist_struct!(Standing { mods, state });
 persist_enum!(DemandKind { 0 => GrantCity(plot), 1 => TakeCity(plot), 2 => War(player), 3 => AdoptReligion, 4 => SpreadReligion(plot) });
 persist_struct!(Demand { kind, issued, deadline });
 persist_struct!(Deed { turn, text });
 persist_struct!(House {
     id, owner, player, origin, name, standing, demand, demand_rest_until, deeds, founded_turn, color, tribute, tribute_now,
     tribute_since, last_gold, last_research, last_turn,
+    // the third build, part 2A
+    refused, contract, ultimatums,
 });
+// ---- the third build, part 2A: ultimatums and contracts (docs/PERSONS.md, rules 5 and 6) ----
+use crate::persons::{Contract, UltimatumKind};
+persist_enum!(UltimatumKind {
+    0 => GrantCity(plot), 1 => War(player), 2 => AdoptReligion(religion), 3 => Tribute(pct), 4 => Peace(player),
+    5 => Resource(bonus), 6 => Gold(gold),
+});
+persist_struct!(Contract { kind, until, deal });
 
 
 use crate::culture::CultureChannel;

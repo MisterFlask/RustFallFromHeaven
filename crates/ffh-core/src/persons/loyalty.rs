@@ -1,5 +1,6 @@
 //! A House's loyalty: the modifiers, the sum, the five states (the attitude scale) and the Furious
-//! countdown (docs/PERSONS.md, "The second build", rule 5).
+//! House's ultimatum (docs/PERSONS.md, "The second build", rule 5; "The third build", rules 5 and 6:
+//! the ultimatum replaced the countdown, and a contract running floors the loyalty at Annoyed).
 //!
 //! The sum is the modifiers still running plus the standing parts: `State religion opposed: -2`
 //! (the state religion's alignment the opposite of the House's leader's) and `Tribute N%: 1 -
@@ -41,10 +42,26 @@ impl Game {
         self.houses[h].standing.mods.iter().filter(|m| m.until.map_or(true, |u| u > turn)).map(|m| m.amount).sum()
     }
 
-    /// House `h`'s loyalty: its running modifiers plus the standing parts (its state religion part
-    /// and its tribute part).
-    pub fn house_loyalty(&self, h: HouseId) -> i32 {
+    /// House `h`'s loyalty as its parts make it: its running modifiers plus the standing parts (its
+    /// state religion part and its tribute part), without a contract's floor.
+    pub fn house_loyalty_raw(&self, h: HouseId) -> i32 {
         self.house_mods_sum(h) + self.house_religion_part(h) + tribute_part(self.houses[h].tribute_now)
+    }
+
+    /// Loyalty `total` of House `h` as every rule counts it: at least [`CONTRACT_FLOOR`] (Annoyed)
+    /// while its contract runs (the third build, rule 6).
+    pub fn house_loyalty_floored(&self, h: HouseId, total: i32) -> i32 {
+        if self.house_contract_runs(h) {
+            total.max(CONTRACT_FLOOR)
+        } else {
+            total
+        }
+    }
+
+    /// House `h`'s loyalty: its running modifiers plus the standing parts (its state religion part
+    /// and its tribute part), at least Annoyed while a contract runs.
+    pub fn house_loyalty(&self, h: HouseId) -> i32 {
+        self.house_loyalty_floored(h, self.house_loyalty_raw(h))
     }
 
     /// House `h`'s state: its attitude toward its liege.
@@ -57,7 +74,7 @@ impl Game {
     /// in force's, the rest as it is now. How long until then: [`Game::house_tribute_turns`].
     pub fn house_loyalty_at_tribute(&self, h: HouseId, pct: i32) -> i32 {
         let now = self.houses[h].tribute_now;
-        self.house_loyalty(h) - tribute_part(now) + tribute_part(pct)
+        self.house_loyalty_floored(h, self.house_loyalty_raw(h) - tribute_part(now) + tribute_part(pct))
     }
 
     /// Adds a modifier `(amount, turns)` with `cause` to House `h`.
@@ -79,36 +96,26 @@ impl Game {
         }
     }
 
-    /// The states of player `p`'s Houses: a change is told; Furious starts the countdown, above it
-    /// the countdown stops.
+    /// The states of player `p`'s Houses: a change is told; a House Furious with no contract
+    /// running issues an ultimatum, which its liege answers at once (the third build, rule 5:
+    /// `ultimatums.rs`; a refusal is its break-away).
     pub(crate) fn player_persons_states(&mut self, p: PlayerId) {
-        let turn = self.game_turn();
         for h in self.player_houses(p) {
+            if !self.houses.contains(h) || !self.players[p].alive {
+                continue;
+            }
             let state = self.house_state(h);
             let old = self.houses[h].standing.state;
-            if state == LoyaltyState::Furious {
-                if self.houses[h].standing.countdown.is_none() {
-                    let turns = self.d.defines.person_disloyal_turns;
-                    self.houses[h].standing.countdown = Some(turn + turns);
-                }
-            } else {
-                self.houses[h].standing.countdown = None;
-            }
             if state != old {
                 self.houses[h].standing.state = state;
                 self.tel_house(p, "state", state.name());
                 let label = self.house_label(h);
-                let outcome = if state == LoyaltyState::Furious { format!(" {}", self.house_breakaway_outcome(h)) } else { String::new() };
-                let text = format!("{label} is {}.{outcome}", state.name());
+                let text = format!("{label} is {}.", state.name());
                 self.house_msg(h, || text);
             }
+            if state == LoyaltyState::Furious && !self.house_contract_runs(h) {
+                self.house_issue_ultimatum(h);
+            }
         }
-    }
-
-    /// The Houses of player `p` whose countdown has run out (pure). The persons turn's
-    /// break-aways act on them (`secession.rs`).
-    pub fn persons_countdowns_due(&self, p: PlayerId) -> Vec<HouseId> {
-        let turn = self.game_turn();
-        self.players[p].houses.iter().copied().filter(|&h| self.houses.get(h).is_some_and(|house| house.standing.countdown.is_some_and(|c| c <= turn))).collect()
     }
 }

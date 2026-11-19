@@ -108,15 +108,15 @@ fn the_court_shows_the_realm() {
     let steps: Vec<i64> = arr(&r, "tribute_steps").iter().filter_map(Json::as_i64).collect();
     assert_eq!(steps, [0, 10, 20, 30, 40, 50]);
 
-    // Needs attention, in the contract's order: the Furious House, the House that takes no levy,
-    // the Crown's city over its limit, the grantable cities.
+    // Needs attention, in the contract's order: the Furious Houses (their ultimatums due), the House
+    // that takes no levy, the Crown's city over its limit, the grantable cities.
     let att = arr(&r, "attention");
     let kinds: Vec<&str> = att.iter().map(|a| s(a, "kind")).collect();
     let at = |k: &str| kinds.iter().position(|&x| x == k).unwrap_or_else(|| panic!("no `{k}` line: {kinds:?}"));
-    assert_eq!(kinds.iter().filter(|&&k| k == "furious").count(), 1, "the House: {kinds:?}");
+    assert_eq!(kinds.iter().filter(|&&k| k == "furious").count(), 2, "Houses furious and large: {kinds:?}");
     assert!(at("furious") < at("levy") && at("levy") < at("crown_over") && at("crown_over") < at("grantable"), "{kinds:?}");
     let f_label = &st.houses.iter().find(|x| x.role == "furious").unwrap().label;
-    assert!(att.iter().any(|a| s(a, "text").starts_with(&format!("{f_label}: Furious. Will break away in 8 turns, taking ")) && s(a, "text").contains(": war.")), "{att:?}");
+    assert!(att.iter().any(|a| s(a, "text").starts_with(&format!("{f_label}: Furious. Issues an ultimatum at your next turn. Refused, it breaks away, taking ")) && s(a, "text").contains(": war.")), "{att:?}");
     let v_label = &st.houses.iter().find(|x| x.role == "annoyed").unwrap().label;
     assert_eq!(s(&att[at("levy")], "text"), format!("{v_label} is Annoyed. It takes no levy."));
     let over = &att[at("crown_over")];
@@ -142,7 +142,7 @@ fn the_court_shows_the_realm() {
     assert_eq!(s(overs[0], "note"), "Over the Crown's limit.");
 
     // The Houses' cards.
-    assert_eq!(arr(&r, "houses").len(), 4);
+    assert_eq!(arr(&r, "houses").len(), 5);
     let a = house_card(&r, house_id(&st, "friendly"));
     assert_eq!(s(&a, "state"), "Friendly");
     assert!(s(&a, "since").starts_with("Founded on turn "), "{}", s(&a, "since"));
@@ -191,10 +191,25 @@ fn the_court_shows_the_realm() {
     assert!(strs(&v, "parts").iter().any(|p| p.starts_with("Capitulated: -4 (")), "{:?}", strs(&v, "parts"));
     assert_eq!(s(&v, "price"), format!("Price to secede: {} gold.", g.house_bribe_price(house_id(&st, "annoyed")).unwrap()));
     assert!(v.get("price_refusal").unwrap().is_null());
+    // The contract (the third build, rule 6): its line, its floor among the parts, the rates its
+    // bound refuses barred in the tribute list.
+    let until = g.houses[house_id(&st, "annoyed")].contract.expect("a contract").until;
+    assert_eq!(s(&v, "contract"), format!("Contract until turn {until}: no tribute above 10%."));
+    assert!(strs(&v, "parts").iter().any(|p| p.starts_with(&format!("Contract until turn {until}: at least Annoyed"))), "{:?}", strs(&v, "parts"));
+    let why = format!("Your contract with {} forbids it until turn {until}.", s(&v, "label"));
+    for rate in arr(v.get("tribute").unwrap(), "rates") {
+        let barred = rate.get("barred").and_then(Json::as_str);
+        assert_eq!(barred, (int(rate, "pct") > 10).then_some(why.as_str()), "{rate}");
+    }
+    // The split line (the third build, rule 4): none below 6 cities.
+    let l = house_card(&r, house_id(&st, "large"));
+    assert!(l.get("split").unwrap().is_null(), "5 cities: no split line");
+    assert_eq!(s(&l, "state"), "Furious");
     let c = house_card(&r, house_id(&st, "furious"));
     assert_eq!(s(&c, "state"), "Furious");
-    assert_eq!(int(&c, "countdown_turns"), 8);
-    assert!(s(&c, "outcome").contains(" will break away in 8 turns, taking ") && s(&c, "outcome").contains(": war."), "{c:?}");
+    assert!(c.get("countdown_turns").is_none(), "no countdown");
+    assert!(c.get("contract").unwrap().is_null());
+    assert!(s(&c, "outcome").contains(" issues an ultimatum at your next turn. Refused, it breaks away, taking ") && s(&c, "outcome").contains(": war."), "{c:?}");
     // The contest for each city where an army of yours stands: the held one, the seat lost.
     assert!(s(&c, "outcome").contains(" returns to you: your army's 2 units outnumber its "), "the held city: {c:?}");
     assert!(s(&c, "outcome").contains(" goes with it: its 2 units against your army's 1."), "the seat contested: {c:?}");
@@ -221,17 +236,19 @@ fn the_court_shows_the_realm() {
         let x = HouseId(int(card, "id") as u32);
         let loyalty = g.house_loyalty(x);
         assert_eq!(s(dm, "lapse"), format!("At its term: {} ({} turns)", DEMAND_REFUSED.0, DEMAND_REFUSED.1), "{dm}");
-        let after = LoyaltyState::of(loyalty + DEMAND_REFUSED.0);
+        let after = LoyaltyState::of(g.house_loyalty_floored(x, g.house_loyalty_raw(x) + DEMAND_REFUSED.0));
         let want = (after != g.house_state(x)).then(|| after.name());
         assert_eq!(dm.get("lapse_state").and_then(Json::as_str), want, "{dm}");
+        // Furious is an ultimatum (the third build, rule 5).
+        assert_eq!(dm.get("lapse_then").and_then(Json::as_str), (want == Some("Furious")).then_some("an ultimatum"), "{dm}");
+        let _ = loyalty;
     }
     assert!(requests > 0, "the stage has requests with a term");
     assert!(r.get("persons").is_none(), "no persons");
 
     // Part J: the keywords (the loyalty states are the attitude words: none of their own).
     let keys: Vec<&str> = arr(&r, "reminders").iter().map(|x| s(x, "key")).collect();
-    assert_eq!(keys, ["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_REQUEST", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_CLAIMANT"]);
-    assert!(ffh_data::global().ty::<KeywordType>("KEYWORD_ULTIMATUM").is_none(), "reserved for part 2");
+    assert_eq!(keys, ["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_REQUEST", "KEYWORD_ULTIMATUM", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_CLAIMANT"]);
     for st in LoyaltyState::ALL {
         assert!(ffh_data::global().ty::<KeywordType>(&format!("KEYWORD_{}", st.name().to_uppercase())).is_none(), "{} is no keyword", st.name());
     }
@@ -322,7 +339,7 @@ fn a_grant_does_what_its_preview_says() {
     assert!(n >= 1, "House `pleased` claims it: {claims:?}");
     assert!(claims[..n].iter().all(|&x| x) && claims[n..].iter().all(|&x| !x), "claimants first: {claims:?}");
     assert!(cands.iter().all(|x| s(x, "kind") == "house"), "Houses only");
-    assert_eq!(cands.len(), 4, "the realm's four Houses");
+    assert_eq!(cands.len(), 5, "the realm's five Houses");
 
     let grantee = house_id(&st, "pleased");
     let cand = cands.iter().find(|x| x.get("to").and_then(|t| t.get("house")).and_then(Json::as_i64) == Some(grantee.0 as i64)).unwrap();
@@ -345,7 +362,8 @@ fn a_grant_does_what_its_preview_says() {
     assert!(m.starts_with("Your maintenance: -") && m.ends_with(" of it the Crown's limit)."), "{m}");
     assert!(lines.contains(&"The Crown after the grant: 3 cities, within its limit of 3.".to_string()), "{lines:?}");
     assert!(lines.contains(&"Tribute from it at 10%.".to_string()), "{lines:?}");
-    // Each subject's loyalty and state before, and what the preview says changes.
+    // Each subject's loyalty and state before, and what the preview says changes (the parts' amounts:
+    // the loyalty as its parts make it; a contract's floor holds the total, the state after says it).
     let g = &ses.g;
     let subjects: Vec<(String, i32, Option<String>, i32)> = arr(cand, "effects")
         .iter()
@@ -353,7 +371,7 @@ fn a_grant_does_what_its_preview_says() {
             let subject = s(e, "subject").to_string();
             let delta: i32 = strs(e, "lines").iter().map(|l| amount(l)).sum();
             let after = e.get("state_after").and_then(Json::as_str).map(str::to_string);
-            let before = g.players[h].houses.iter().find(|&&x| g.house_label(x) == subject).map(|&x| g.house_loyalty(x)).expect("a known subject");
+            let before = g.players[h].houses.iter().find(|&&x| g.house_label(x) == subject).map(|&x| g.house_loyalty_raw(x)).expect("a known subject");
             (subject, before, after, delta)
         })
         .collect();
@@ -374,7 +392,7 @@ fn a_grant_does_what_its_preview_says() {
     assert_eq!(g.city_house(now), Some(grantee));
     for (subject, before, after, delta) in &subjects {
         let &x = g.players[h].houses.iter().find(|&&x| g.house_label(x) == *subject).unwrap();
-        let (now, state) = (g.house_loyalty(x), g.house_state(x));
+        let (now, state) = (g.house_loyalty_raw(x), g.house_state(x));
         assert_eq!(now - before, *delta, "{subject}: the preview's change");
         if let Some(a) = after {
             assert_eq!(state.name(), a, "{subject}: the preview's state");
@@ -525,6 +543,10 @@ fn refusals_carry_the_rules_reasons() {
     assert_eq!(cannot(ses.execute(&Command::SetTributeDefault { pct: 60 })), "Tribute: 0 to 50 percent, in steps of 10.");
     assert_eq!(cannot(ses.execute(&Command::SetTributeDefault { pct: -10 })), "Tribute: 0 to 50 percent, in steps of 10.");
     assert_eq!(cannot(ses.execute(&Command::FreeHouse { house: house_id(&st, "neighbour") })), "Not a House of yours.");
+    // A contract's bound (the third build, rule 6): House `annoyed` takes no tribute above 10%.
+    let v = house_id(&st, "annoyed");
+    let until = ses.g.houses[v].contract.expect("a contract").until;
+    assert_eq!(cannot(ses.execute(&Command::SetHouseTribute { house: v, pct: 30 })), format!("Your contract with {} forbids it until turn {until}.", ses.g.house_label(v)));
     assert!(before == ses.g.save(), "a refusal changed the game");
 }
 

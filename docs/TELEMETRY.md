@@ -65,7 +65,9 @@ described in docs/AUTOPSY.md.
 | `house_request` | `issued`, `met`, `refused` (a House's request; docs/PERSONS.md) | – |
 | `house_state` | `Friendly`, `Pleased`, `Cautious`, `Annoyed`, `Furious` (a House's change of state) | – |
 | `house_record` | `vassal`, `capitulated` (a vassal became a House: a vassal deal, a card's birth, a colony or a founding; a capitulation), `ended` (a House record ended: its vassalage or its player ended), `freed` (its liege freed it); counted for the liege | – |
-| `house_seceded` | `countdown`, `civil_war`, `bribe`, `bribe_vassal` (a House broke away: a Furious countdown, direct rule, an offer to Secede or to Become your vassal), `held` (every city of it held: it ended) | – |
+| `house_seceded` | `ultimatum`, `civil_war`, `bribe`, `bribe_vassal` (a House broke away: its ultimatum refused, direct rule, an offer to Secede or to Become your vassal), `held` (every city of it held: it ended) | – |
+| `house_ultimatum` | `accepted`, `refused` (a Furious House's ultimatum answered by its liege; docs/PERSONS.md, "The third build", rule 5) | – |
+| `house_split` | `split`, `no_leader` (a House at the split's threshold rolled a split: done, or no leader free) | – |
 | `house_levy` | `placed` (a levy order in a House's city, counted for the liege) | – |
 | `house_bribe` | `offered` (an accepted offer to one of the player's Houses, counted for the liege) | – |
 | `house_tribute` | `gold`, `research` (a House's tribute, counted for the liege) | the gold and the research paid |

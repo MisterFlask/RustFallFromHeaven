@@ -317,6 +317,8 @@ impl Game {
     /// `Request refused: -3 (60 turns)`.
     pub(crate) fn house_demand_refused(&mut self, h: HouseId) {
         let Some(dm) = self.houses[h].demand.take() else { return };
+        // Asked again by an ultimatum while its `Request refused` runs (the third build, rule 5 (a)).
+        self.houses[h].refused = Some(dm.kind);
         let turn = self.game_turn();
         self.houses[h].demand_rest_until = turn + self.d.defines.person_demand_rest;
         let short = self.demand_kind_short(h, dm.kind);

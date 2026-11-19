@@ -1291,7 +1291,8 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::EmpireOrder { city, order, data, dest } => g.city_push_empire_order(h, *city, *order, *data, -1, *dest),
         Command::EmpireOrderRemove { city, index } => g.city_remove_empire_order(h, *city, *index as usize),
         Command::GrantCity { city, to } => g.player_grant_city(h, *city, *to).map(|_| ()),
-        Command::SetHouseTribute { house, pct } => g.player_set_house_tribute(h, *house, *pct),
+        // (`check` ran the rules' check first, with its reason: a contract's bound included.)
+        Command::SetHouseTribute { house, pct } => g.player_set_house_tribute(h, *house, *pct).map_err(|_| "The tribute cannot be set."),
         Command::FreeHouse { house } => g.player_free_house(h, *house),
         Command::SetTributeDefault { pct } => g.player_set_house_tribute_default(h, *pct),
         Command::RecruitDest { city, index, dest } => {
@@ -2011,7 +2012,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::Convert { religion } => {
             if !g.player_can_convert(h, *religion) {
-                return Err(cannot("cannot convert"));
+                // A House's contract's reason first (docs/PERSONS.md, "The third build", rule 6).
+                return Err(cannot(g.player_contract_refusal(h, ffh_core::persons::ContractAct::ChangeReligion).unwrap_or_else(|| "cannot convert".to_string())));
             }
             Plan::Apply(Action::Convert { religion: *religion })
         }
@@ -2019,7 +2021,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::DeclareWar { team: t } => {
             in_range("team", t.0 as i32, g.num_teams())?;
             if !g.team_can_declare_war(team, *t) {
-                return Err(cannot(format!("cannot declare war on {}", team_name(g, *t))));
+                let why = g.team_contract_refusal(team, ffh_core::persons::ContractAct::DeclareWar(*t));
+                return Err(cannot(why.unwrap_or_else(|| format!("cannot declare war on {}", team_name(g, *t)))));
             }
             Plan::Apply(Action::DeclareWar { team: *t })
         }
@@ -2051,6 +2054,10 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             }
             if !g.deal_is_cancelable(*deal, Some(h)) {
                 let turns = g.deal_turns_to_cancel(*deal, Some(h));
+                // A House's contract holds it (docs/PERSONS.md, "The third build", rule 6).
+                if let Some(why) = g.deal_contract_refusal(*deal) {
+                    return Err(cannot(why));
+                }
                 return Err(cannot(if turns > 0 { format!("the deal may be cancelled in {turns} turns") } else { "the deal may not be cancelled".to_string() }));
             }
             Plan::Apply(Action::CancelDeal { deal: *deal })

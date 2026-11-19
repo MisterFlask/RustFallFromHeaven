@@ -234,8 +234,10 @@ pub fn me(v: &Viewer) -> Json {
 /// Where the gold rate comes from (the financial advisor): the gold of the cities' commerce and of
 /// deals, and the costs C++ `calculateInflatedCosts` takes: units (with the free ones), units
 /// outside the borders, city maintenance, civic upkeep and the inflation on those. `income +
-/// deals - units - supply - maintenance - civics - inflation` is `calculateBaseNetGold`, the gold
-/// rate while research is flexible (else `research_fixed`: the rules take the shortfall of both).
+/// deals - contracts - units - supply - maintenance - civics - inflation` is `calculateBaseNetGold`,
+/// the gold rate while research is flexible (else `research_fixed`: the rules take the shortfall of
+/// both). `contracts`: `[[what, gold]]`, the gold a turn of each House's contract (docs/PERSONS.md,
+/// "The third build", rule 5 (f): `contract with House Aldric until turn 160`), out of `deals`.
 pub fn gold_parts(g: &Game, h: PlayerId) -> Json {
     let pl = &g.players[h];
     let units = g.player_calculate_unit_cost(h);
@@ -244,9 +246,22 @@ pub fn gold_parts(g: &Game, h: PlayerId) -> Json {
     let civics = g.player_get_civic_upkeep(h, None, false);
     let inflated = g.player_calculate_inflated_costs(h);
     let ub = g.player_calculate_unit_cost_breakdown(h);
+    // A House's contract's gold a turn (docs/PERSONS.md, "The third build", rule 5 (f)): an
+    // expense of its own, out of the deals' gold.
+    let contracts: Vec<(String, i32)> = g.players[h]
+        .houses
+        .iter()
+        .filter_map(|&hh| {
+            let c = g.house_contract(hh)?;
+            let ffh_core::persons::UltimatumKind::Gold(gold) = c.kind else { return None };
+            Some((format!("contract with {} until turn {}", g.house_label(hh), c.until), gold))
+        })
+        .collect();
+    let contracts_gold: i32 = contracts.iter().map(|c| c.1).sum();
     crate::jobj! {
         "income" => g.player_get_commerce_rate(h, CommerceType::COMMERCE_GOLD),
-        "deals" => pl.gold_per_turn,
+        "deals" => pl.gold_per_turn + contracts_gold,
+        "contracts" => Json::Arr(contracts.iter().map(|(what, gold)| crate::jarr![what.as_str(), *gold]).collect()),
         "units" => units,
         "units_count" => pl.num_units(),
         "units_free" => ub.free_units,

@@ -5,13 +5,15 @@
 // as a player sees them: the House marks on the Houses' cities and the Houses drawn in their
 // lieges' colours, a Crown city's Governance line on the city screen, the Armies screen (no
 // commander) and the unit panel (no person, no Found a House), a House's alert, the plates' marks'
-// tooltips (the Furious countdown's pill, a House capital's star), the war declaration's dialog
+// tooltips (a Furious House's shield, a House capital's star), the war declaration's dialog
 // (the Houses it brings in, its preview), the diplomacy list's Houses (yours first with their
 // state, the neighbour's under its liege with its state and price) and the neighbour's House's
 // trade screen (gold only; a Secede offer refused, Become your vassal's war, then a Secede offer
 // accepted with its cost with the liege, a memory that fades: the House breaks away and its alert
-// shows), the war dialog's cost with the target (`They remember it: ...`), and in
-// `persons-direct` the civics screen's warning for God King. Any
+// shows), the war dialog's cost with the target (`They remember it: ...`), the ultimatums of the
+// staged Furious Houses at the human's next turn (the third build, rule 5: blocking decisions,
+// shot on a desktop page and a phone's, accepted: contracts), and in `persons-direct` the civics
+// screen's warning for God King. Any
 // console error or page error fails it. (The second build, docs/PERSONS.md: a House's city is its
 // own player's, so it has no Governance section on the liege's city screen; the stage's Houses
 // and armies are named by role; the states are the attitude scale.)
@@ -124,7 +126,8 @@ async function diplomacyHouses(page, url, st) {
   await until(() => page.evaluate(() => document.querySelectorAll("#modals table.diplo tr.house-row").length > 0), "the Houses in the diplomacy list", 60000, 200);
   await sleep(500);
   const rows = await page.evaluate(() => [...document.querySelectorAll("#modals table.diplo tr[data-player]")].map((r) => ({ id: Number(r.dataset.player), house: r.classList.contains("house-row"), who: r.querySelector(".leader-cell .dim")?.textContent ?? "" })));
-  const own = ["friendly", "pleased", "annoyed", "furious"].map((r) => st.houses[r].player);
+  const roles = ["friendly", "pleased", "annoyed", "furious", "large"];
+  const own = roles.map((r) => st.houses[r].player);
   const iL = rows.findIndex((r) => r.id === liege);
   const iN = rows.findIndex((r) => r.id === nh.player);
   check(iL >= 0 && iN === iL + 1 && rows[iN].house && rows[iN].who.trim().startsWith(`${nh.label}, vassal of the `), `the neighbour's House under its liege: ${rows[iN]?.who}`);
@@ -132,10 +135,10 @@ async function diplomacyHouses(page, url, st) {
   const marks = await page.evaluate(() => [...document.querySelectorAll("#modals table.diplo tr.house-row td:nth-child(3) .pstate")].map((e) => e.dataset.state));
   check(marks.length === own.length, `your Houses' attitude marks (${marks.join(", ")})`);
   // Each House's line states its state where a phone sees it (the Attitude column is cut there):
-  // yours toward you, with the Furious countdown; the neighbour's toward its liege, with its price.
+  // yours toward you; the neighbour's toward its liege, with its price.
   const lines = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#modals table.diplo tr.house-row")].map((r) => [r.dataset.player, { text: r.querySelector(".house-who")?.textContent ?? "", state: r.querySelector(".house-who .pstate")?.dataset.state ?? null, price: r.querySelector(".house-who .house-price")?.dataset.price ?? null }])));
-  check(own.every((p) => lines[p]?.state === st.houses[["friendly", "pleased", "annoyed", "furious"][own.indexOf(p)]].state.toLowerCase()), `your Houses' lines carry their state: ${own.map((p) => lines[p]?.text).join(" | ")}`);
-  check(/ · ✖ ?Furious ?8 turns$/.test(lines[st.houses.furious.player]?.text.replace(/\s+/g, " ").trim() ?? ""), `the Furious House's line: ${lines[st.houses.furious.player]?.text}`);
+  check(own.every((p) => lines[p]?.state === st.houses[roles[own.indexOf(p)]].state.toLowerCase()), `your Houses' lines carry their state: ${own.map((p) => lines[p]?.text).join(" | ")}`);
+  check(/ · ✖ ?Furious$/.test(lines[st.houses.furious.player]?.text.replace(/\s+/g, " ").trim() ?? ""), `the Furious House's line (no countdown): ${lines[st.houses.furious.player]?.text}`);
   const pl = await query(url, { q: "players" });
   const offer = pl.players.find((p) => p.id === nh.player)?.house_offer;
   const nline = lines[nh.player];
@@ -236,9 +239,10 @@ async function diplomacyHouses(page, url, st) {
 }
 
 /** The plates' marks explain themselves (docs/PERSONS.md, "UI", part G): the pointer on the Furious
- *  House's countdown pill gives `House X: Furious.` and the rules' outcome; on a House capital's
- *  star, `Capital of House X (your vassal).`; with the House's reminder. The boxes are the ones the
- *  map recorded as it drew (plates.js). With --shots, a crop of each. */
+ *  House's shield gives `House X (your vassal)`, its state and the rules' outcome (its ultimatum at
+ *  the next turn); on a House capital's star, `Capital of House X (your vassal).`; with the House's
+ *  reminder. The boxes are the ones the map recorded as it drew (plates.js). With --shots, a crop of
+ *  each. */
 async function plateTips(page, st) {
   const f = st.houses.furious;
   const ids = f.cities.map((c) => c.id);
@@ -259,8 +263,9 @@ async function plateTips(page, st) {
   }, ids);
   const hits = await until(async () => {
     const h = await hitsOf();
-    return h.some((x) => x.kind === "pill") ? h : null;
-  }, "the Furious House's plate drawn with its countdown", 240000, 500);
+    return h.some((x) => x.kind === "shield") ? h : null;
+  }, "the Furious House's plate drawn with its shield", 240000, 500);
+  check(!hits.some((x) => x.kind === "pill"), "no countdown pill");
   const tipText = () => page.evaluate(() => {
     const t = document.querySelector("#mapwrap .tooltip");
     return t && !t.hidden ? t.innerText.replace(/\s+/g, " ").trim() : "";
@@ -285,15 +290,80 @@ async function plateTips(page, st) {
       console.log(`shot ${name}`);
     }
   };
-  const pill = hits.find((x) => x.kind === "pill");
+  const shield = hits.find((x) => x.kind === "shield");
   const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  await point(pill, new RegExp(`^${esc(f.label)}: Furious\\. ${esc(f.label)} will (break away|end) .*8 turns`), "plate-tip-countdown.png");
+  await point(shield, new RegExp(`^${esc(f.label)} \\(your vassal\\) ✖ Furious ${esc(f.label)} issues an ultimatum at your next turn\\.`), "plate-tip-furious.png");
   const house = await page.evaluate(() => (window.ffh.S.data.tables.KeywordType ?? []).find((k) => k.type === "KEYWORD_HOUSE")?.name ?? "House");
-  check((await tipText()).includes(house.toUpperCase()) || (await page.evaluate(() => !!document.querySelector('#mapwrap .tooltip .reminder[data-keyword="KEYWORD_HOUSE"]'))), "the countdown's tooltip carries the House's reminder");
+  check((await tipText()).includes(house.toUpperCase()) || (await page.evaluate(() => !!document.querySelector('#mapwrap .tooltip .reminder[data-keyword="KEYWORD_HOUSE"]'))), "the shield's tooltip carries the House's reminder");
   const star = (await hitsOf()).find((x) => x.kind === "star");
   if (star) await point(star, new RegExp(`^Capital of ${esc(f.label)} \\(your vassal\\)\\.`), "plate-tip-capital.png");
   else check(true, "no House capital among the Furious House's cities in view");
   await page.mouse.move(5, 5);
+}
+
+/** The third build, part 2A (docs/PERSONS.md, rules 5 and 6): Houses `furious` and `large` are
+ *  Furious with no contract, so the human's next turn brings their ultimatums, each a blocking
+ *  decision: what it demands, what accepting binds (a contract for 20 turns, the House at least
+ *  Annoyed), what refusing does (the break-away, the hold contest included), the Ultimatum
+ *  keyword's chip. Each shot on a desktop page (and the first on a phone's: it fits the width),
+ *  then accepted; the Court then shows their contracts. Another decision on the way is answered by
+ *  the advisor. */
+async function ultimatums(browser, url, st) {
+  const page = await open(browser, url, DESK);
+  await clear(page);
+  const turn0 = await page.evaluate(() => window.ffh.S.status.turn);
+  page.evaluate(() => window.ffh.api.cmd("end_turn", { force: true })).catch(() => {});
+  const seen = [];
+  const kinds = [];
+  while (seen.length < 2) {
+    const d = await until(
+      () =>
+        page.evaluate((seen) => {
+          const d = window.ffh.S.status?.decision;
+          return d && !seen.includes(d.id) && document.querySelector("#modals .modal.decision") ? d : null;
+        }, seen),
+      `ultimatum ${seen.length + 1}`,
+      300000,
+      250,
+    );
+    if (d.kind !== "ultimatum") {
+      // (Another decision on the way: the advisor's pick.)
+      await page.evaluate(() => [...document.querySelectorAll("#modals .modal.decision .modal-buttons button")].pop()?.click());
+      await sleep(500);
+      continue;
+    }
+    seen.push(d.id);
+    const label = [st.houses.furious.label, st.houses.large.label].find((l) => d.title === `Ultimatum: ${l}`);
+    check(!!label, `the ultimatum's title: ${d.title}`);
+    check(new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} demands: .+\\[NEWLINE\\]Accepted: For 20 turns: .+ stays at least Annoyed until turn \\d+\\.\\[NEWLINE\\]Refused: .+ (breaks away, taking .+: war|ends: every city is held)\\.`).test(d.text), `the ultimatum's text: ${d.text}`);
+    check(d.options.map((o) => o.key).join(",") === "accept,refuse" && d.advisor === 0, `accept or refuse, the advisor accepting: ${JSON.stringify(d.options.map((o) => o.key))} ${d.advisor}`);
+    const chips = await page.evaluate(() => [...document.querySelectorAll("#modals .modal.decision .kw-chip")].map((c) => c.textContent));
+    check(chips.includes("Ultimatum"), `the Ultimatum keyword's chip: ${chips}`);
+    kinds.push(d.text.split("[NEWLINE]")[0]);
+    await sleep(SHOTS ? 3000 : 300);
+    await crop(page, ["#modals .modal.decision"], `ultimatum-${seen.length}.png`);
+    if (seen.length === 1) {
+      // On a phone: the same decision fits the width.
+      const phone = await browser.newPage({ viewport: PHONE, deviceScaleFactor: SHOTS ? 2 : 1, reducedMotion: "reduce" });
+      phone.on("pageerror", (e) => errors.push(`page error: ${e.message}`));
+      phone.on("console", (m) => m.type() === "error" && errors.push(`console error: ${m.text()}`));
+      await phone.goto(`${url}/?force3d=1`);
+      await until(() => phone.evaluate(() => !!(window.ffh?.ready && document.querySelector("#modals .modal.decision"))), "the decision on a phone", 240000, 250);
+      await sleep(SHOTS ? 3000 : 300);
+      const over = await phone.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      check(over <= 0, `the decision fits a phone (${over})`);
+      await crop(phone, ["#modals .modal.decision"], "ultimatum-phone.png");
+      await phone.close();
+    }
+    await page.evaluate(() => document.querySelector('#modals .modal.decision button.option[data-option="0"]').click());
+    await sleep(500);
+  }
+  check(kinds[0] !== kinds[1], `two ultimatums: ${kinds.join(" | ")}`);
+  await until(() => page.evaluate((t) => window.ffh.S.status?.phase === "human" && window.ffh.S.status.turn > t, turn0), "the next turn", 300000, 250);
+  const court = await query(url, { q: "court" });
+  const under = court.houses.filter((x) => x.contract).map((x) => `${x.label}: ${x.contract}`);
+  check(under.length >= 3, `the contracts in the Court: ${under.join(" | ")}`);
+  await page.close();
 }
 
 /** A page on the served game at the player's turn; console and page errors are collected. */
@@ -428,7 +498,7 @@ async function main() {
       await clear(page);
       const shownAlert = await page.evaluate(async () => {
         const m = await import("./app/persons_lines.js");
-        const e = (window.ffh.S.messages ?? []).filter((x) => x.kind === "house" && / is Furious\./.test(x.text)).pop();
+        const e = (window.ffh.S.messages ?? []).filter((x) => x.kind === "house" && / is (Annoyed|Furious)\./.test(x.text)).pop();
         if (!e) return null;
         m.houseAlerts([e]);
         return e.text;
@@ -502,6 +572,15 @@ async function main() {
       await diplomacyHouses(phone, server.url, st);
       await clear(phone);
       await phone.close();
+    } finally {
+      await server.stop();
+    }
+
+    // ---- persons: the ultimatums at the human's next turn (the third build, part 2A) --------
+    server = await startServer({ bin, saves, extra: ["--load", st.save, ...ASSETS] });
+    try {
+      await research(server.url);
+      await ultimatums(browser, server.url, st);
     } finally {
       await server.stop();
     }

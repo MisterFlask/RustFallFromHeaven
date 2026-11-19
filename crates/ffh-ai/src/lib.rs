@@ -332,6 +332,10 @@ impl Controller for Ai {
         crusade::consider_loan(g, p, proposal)
     }
 
+    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
+        persons::consider_ultimatum(g, p, u)
+    }
+
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         crusade::pick_units(g, p, terms.strength as i64)
     }

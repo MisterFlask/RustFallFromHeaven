@@ -45,7 +45,7 @@ export function turnsText(turns) {
   return `${turns} ${turns === 1 ? "turn" : "turns"}`;
 }
 
-/** The mark as text: `Cautious ●`, and with the turns left of a countdown `Furious ✖ 8 turns`
+/** The mark as text: `Cautious ●`, and with a count of turns `Furious ✖ 8 turns`
  *  (`turns` null or undefined: none shown). */
 export function stateText(state, turns) {
   const base = `${stateWord(state)} ${stateGlyph(state)}`;

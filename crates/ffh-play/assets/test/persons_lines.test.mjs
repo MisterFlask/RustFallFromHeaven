@@ -24,13 +24,11 @@ test("a House is drawn in its liege's colour", () => {
   setColourPlayers([]);
 });
 
-test("the plate's mark: every state for the liege, the turns for Furious only", () => {
-  assert.equal(plateMark(null, null), null, "another's House: its shield only");
-  assert.deepEqual(Object.keys(plateMark("Cautious", null)).sort(), ["colour", "count", "glyph"]);
-  assert.equal(plateMark("Friendly", null).glyph, "▲");
-  assert.equal(plateMark("Annoyed", 3).count, null);
-  assert.equal(plateMark("Furious", 8).count, 8);
-  assert.equal(plateMark("Furious", 8).glyph, "✖");
+test("the plate's mark: every state for the liege (no countdown: the third build)", () => {
+  assert.equal(plateMark(null), null, "another's House: its shield only");
+  assert.deepEqual(Object.keys(plateMark("Cautious")).sort(), ["colour", "glyph"]);
+  assert.equal(plateMark("Friendly").glyph, "▲");
+  assert.equal(plateMark("Furious").glyph, "✖");
 });
 
 test("an alert opens the Court at its House", () => {

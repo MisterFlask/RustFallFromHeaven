@@ -59,7 +59,9 @@ export async function openDiplomacy() {
           const peace = [...d.we_give, ...d.they_give].some((it) => tname("TradeableItem", it.item) === "TRADE_PEACE_TREATY");
           const action = d.cancelable
             ? h("button.link.small", { "data-cancel-deal": d.deal, onclick: () => cancelDeal(text, d.deal).then(load) }, "Cancel")
-            : d.cancel_in > 0
+            : d.cancel_refusal
+              ? h("span.dim", ` ${d.cancel_refusal}`)
+              : d.cancel_in > 0
               ? h("span", peace ? ` (ends in ${d.cancel_in} turns)` : ` (cancel in ${d.cancel_in} turns)`)
               : null;
           return h("div", { "data-deal": d.deal }, text, " ", action);
@@ -81,6 +83,7 @@ export async function openDiplomacy() {
                 : h("span.dim", !p.alive ? "dead" : "no contact"),
             ownHouse ? h("button.small", { "data-court": house.id, title: "Open the Court at this House", onclick: () => openCourt({ house: house.id }).then(load) }, "Court") : null,
             p.can_declare_war && !p.war ? h("button.small.danger", { "data-war": p.team, onclick: () => declareWar(p).then(load) }, "Declare war") : null,
+            !p.war && p.war_refusal ? h("button.small.danger", { disabled: true, title: p.war_refusal, "data-war-refusal": p.team }, "Declare war") : null,
           ),
           deals.length ? h("td.dim", deals) : h("td"),
         );

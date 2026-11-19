@@ -304,6 +304,9 @@ pub fn religions(v: &Viewer) -> Json {
     crate::jobj! {
         "state_religion" => Json::opt_idx(g.player_get_state_religion(h)),
         "can_convert_none" => g.player_can_convert(h, None),
+        // A House's contract that forbids a change of state religion (docs/PERSONS.md, "The third
+        // build", rule 6).
+        "convert_refusal" => g.player_contract_refusal(h, ffh_core::persons::ContractAct::ChangeReligion),
         "persons_none" => if g.player_can_convert(h, None) { crate::view::house_marks::act_preview(v, &PersonsAct::Convert(None)) } else { Json::Arr(Vec::new()) },
         "conversion_timer" => pl.conversion_timer,
         "anarchy" => g.player_get_religion_anarchy_length(h),
@@ -341,12 +344,17 @@ pub fn players(v: &Viewer) -> Json {
                 // 9; a capitulation), so no count runs for it.
                 let cancelable = g.deal_is_cancelable(id, Some(v.h));
                 let cancel_in = if cancelable || g.deal_is_uncancelable_vassal_deal(id, Some(v.h)) { 0 } else { g.deal_turns_to_cancel(id, Some(v.h)).max(0) };
-                Some(crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn, "cancelable" => cancelable, "cancel_in" => cancel_in })
+                // A House's contract holds a resource given (docs/PERSONS.md, "The third build",
+                // rule 6): why it cannot be cancelled.
+                let cancel_refusal = g.deal_contract_refusal(id);
+                Some(crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn, "cancelable" => cancelable, "cancel_in" => cancel_in, "cancel_refusal" => cancel_refusal })
             })
             .collect();
         j.set("deals", Json::Arr(deals));
         let can_war = t != v.team && g.team_can_declare_war(v.team, t);
         j.set("can_declare_war", can_war);
+        // A House's contract that forbids the war (docs/PERSONS.md, "The third build", rule 6).
+        j.set("war_refusal", if can_war || t == v.team { None } else { g.team_contract_refusal(v.team, ffh_core::persons::ContractAct::DeclareWar(t)) });
         // Houses (docs/PERSONS.md, "UI", part I): what declaring war on it does to the Houses
         // (the war dialog's lines; empty when nothing).
         j.set("war_preview", if can_war { crate::view::house_marks::act_preview(v, &PersonsAct::DeclareWar(t)) } else { Json::Arr(Vec::new()) });
@@ -459,10 +467,9 @@ fn and_list(items: &[String]) -> String {
 }
 
 /// House `hh` (not the human's) as the diplomacy list's second line states it (docs/PERSONS.md,
-/// "The second build", rules 5 and 9): `{state, turns, price, refusal}`, its state toward its own
-/// liege (`turns`: the Furious countdown's turns left, else null), its price to secede when it
-/// would take the human's offer (else null), and the rules' reason it would not when that reason
-/// is not its state (null otherwise: the state's mark says it).
+/// "The second build", rules 5 and 9): `{state, price, refusal}`, its state toward its own liege,
+/// its price to secede when it would take the human's offer (else null), and the rules' reason it
+/// would not when that reason is not its state (null otherwise: the state's mark says it).
 fn house_offer(v: &Viewer, hh: HouseId) -> Json {
     use ffh_core::persons::{BribeKind, LoyaltyState};
     let g = v.g;
@@ -470,7 +477,6 @@ fn house_offer(v: &Viewer, hh: HouseId) -> Json {
     let refusal = g.house_bribe_refusal(hh, v.h, BribeKind::Secede);
     crate::jobj! {
         "state" => state.name(),
-        "turns" => g.house_view(hh).and_then(|x| x.countdown_turns),
         "price" => if refusal.is_none() { g.house_bribe_price(hh) } else { None },
         "refusal" => refusal.filter(|_| state >= LoyaltyState::Cautious),
     }

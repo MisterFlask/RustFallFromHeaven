@@ -54,7 +54,7 @@ fn the_screens_show_houses() {
     let f = house("furious");
     let mark = find(&cities, "id", f.cities[0].0 as i64).get("house").unwrap().clone();
     assert_eq!(s_of(&mark, "state"), "Furious");
-    assert_eq!(mark.get("turns").and_then(Json::as_i64), Some(8));
+    assert!(mark.get("turns").is_none(), "no countdown");
     assert_eq!(mark.get("colour").and_then(Json::as_i64), Some(g.houses[f.id].color as i64));
     assert!(find(&cities, "id", st.crown[0].0 as i64).get("house").unwrap().is_null(), "a Crown city");
     let n = house("neighbour");
@@ -132,7 +132,7 @@ fn a_house_is_drawn_in_its_lieges_colour_with_its_shield() {
     assert_eq!(fm.get("liege").and_then(Json::as_i64), Some(st.human.0 as i64));
     assert_eq!(s_of(&fm, "label"), f.label);
     assert_eq!(s_of(&fm, "state"), "Furious");
-    assert_eq!(fm.get("turns").and_then(Json::as_i64), Some(8));
+    assert!(fm.get("turns").is_none(), "no countdown");
     let nc = n.cities[0];
     assert!(g.cities[nc].owner == n.player);
     // (Seen with debug reveal: the scene's human need not have revealed it.)
@@ -140,7 +140,7 @@ fn a_house_is_drawn_in_its_lieges_colour_with_its_shield() {
     let nm = find(revealed.as_arr().unwrap(), "id", nc.0 as i64).get("house").expect("the neighbour's House's city shows its shield").clone();
     assert_eq!(nm.get("liege").and_then(Json::as_i64), Some(st.neighbour.0 as i64));
     assert_eq!(nm.get("colour").and_then(Json::as_i64), Some(g.houses[n.id].color as i64));
-    assert!(nm.get("state").unwrap().is_null() && nm.get("turns").unwrap().is_null(), "{nm}");
+    assert!(nm.get("state").unwrap().is_null() && nm.get("turns").is_none(), "{nm}");
     // The neighbour's view: its own House's city with the attitude, the human's Houses' (where it
     // knows them) without.
     let theirs = ffh_play::view::cities(&ffh_play::view::Viewer::new(g, st.neighbour, true));
@@ -162,8 +162,8 @@ fn a_house_is_drawn_in_its_lieges_colour_with_its_shield() {
     let hb = row.get("house").unwrap();
     assert_eq!(s_of(hb, "label"), f.label);
     assert_eq!(s_of(hb, "state"), "Furious");
-    assert_eq!(hb.get("turns").and_then(Json::as_i64), Some(8));
-    assert!(s_of(hb, "outcome").contains(" will break away "), "{hb}");
+    assert!(hb.get("turns").is_none(), "no countdown");
+    assert!(s_of(hb, "outcome").contains(" issues an ultimatum at your next turn. Refused, it breaks away"), "{hb}");
     assert!(s_of(hb, "loyalty").starts_with("Loyalty: "));
     assert!(arr(hb, "parts").iter().any(|x| x.as_str().is_some_and(|t| t.starts_with("Tribute "))), "{hb}");
     // Its vassal deal cannot be cancelled (the rules): no count runs for it.

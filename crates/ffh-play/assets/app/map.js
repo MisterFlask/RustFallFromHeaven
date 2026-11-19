@@ -265,7 +265,7 @@ export class MapView {
       // A sea's name or badge on the Sea layer opens the sea's panel (docs/NAVAL.md 10).
       const sea = this.seaAt(ev);
       if (sea !== null && this.h.seaClick) return this.h.seaClick(sea);
-      // A tap on a plate's mark (a House's shield or countdown, a capital's star) shows its
+      // A tap on a plate's mark (a House's shield, a capital's star) shows its
       // tooltip, as a mouse's hover does, and nothing else.
       if (ev.pointerType === "touch" && this.plateAt(ev)) return this.hoverAt(ev);
       if (ev.pointerType === "touch") this.hoverAt(ev);
@@ -364,7 +364,7 @@ export class MapView {
       else this.hideTip();
       return;
     }
-    // A mark on a city's plate (a House's shield or countdown, a capital's star): its tooltip.
+    // A mark on a city's plate (a House's shield, a capital's star): its tooltip.
     if (this.plateHoverAt(this.plateAt(ev))) return;
     // A sea's name or buoy on the HD-2D map's Sea layer: its tooltip and its outline.
     if (this.seaHoverAt(this.r3d ? this.seaAt(ev) : null)) return;
@@ -1159,7 +1159,7 @@ export class MapView {
   }
 
   /** The mark of a city's plate under pointer event `ev` (`{kind, city}`, plates.js: a House's
-   *  shield or countdown, a capital's star; any renderer, each records the boxes it drew), or null.
+   *  shield, a capital's star; any renderer, each records the boxes it drew), or null.
    *  A finger gets a few pixels of slack. */
   plateAt(ev) {
     if (this.overlay.city || this.backdropDrawn()) return null;
@@ -1450,7 +1450,7 @@ export class MapView {
   drawCities(g) {
     const ts = this.cam.ts;
     const mine = me()?.player;
-    // The boxes of the labels' marks (a House's shield and countdown, a capital's star), for their
+    // The boxes of the labels' marks (a House's shield, a capital's star), for their
     // tooltips (plates.js; `plateAt`).
     this.plateHits = [];
     for (const c of S.cities.values()) {
@@ -1947,7 +1947,7 @@ function plateTipNodes(hit) {
   const city = S.cities.get(hit.city);
   if (!city) return null;
   const mine = me()?.player ?? null;
-  // The House's player's record in the view (its liege's name; for its liege, the countdown's
+  // The House's player's record in the view (its liege's name; for its liege, a Furious House's
   // stated outcome); a capital's owner's civilization.
   const owner = city.owner === mine ? me() : S.players.get(city.owner);
   const house = owner?.house ?? null;

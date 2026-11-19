@@ -50,6 +50,9 @@ pub enum DecisionKind {
     FreeBonus { city: CityId },
     /// Two random results from the exploration's rolled tier.
     LairOutcome { unit: UnitId },
+    /// Not in C++ (docs/PERSONS.md, "The third build", rule 5): a House's ultimatum to the human,
+    /// its liege: option 0 accepts (a contract), 1 refuses (the House breaks away now).
+    Ultimatum { house: HouseId },
 }
 
 impl DecisionKind {
@@ -67,6 +70,7 @@ impl DecisionKind {
             DecisionKind::FreePromotion { .. } => "free_promotion",
             DecisionKind::FreeBonus { .. } => "free_bonus",
             DecisionKind::LairOutcome { .. } => "lair_outcome",
+            DecisionKind::Ultimatum { .. } => "ultimatum",
         }
     }
 }
@@ -114,6 +118,9 @@ pub struct Decision {
     /// The advisor's pick (index into `options`), if it has one.
     pub advisor: Option<usize>,
     pub context: DecisionContext,
+    /// The keywords the decision names, whose reminder text the client shows as chips beside it
+    /// (docs/PLAY_DESIGN.md, "Keywords and reminder text"; empty for most).
+    pub keywords: Vec<KeywordType>,
 }
 
 impl Decision {
@@ -158,6 +165,7 @@ impl Decision {
                 "key" => o.key.as_str(), "label" => o.label.as_str(), "help" => o.help.as_str(), "tip" => o.tip.as_str(), "enabled" => o.enabled,
             }).collect()),
             "advisor" => self.advisor,
+            "reminders" => crate::view::keywords::reminders(ffh_data::global(), self.keywords.clone()),
             "context" => crate::jobj! {
                 "plot" => c.plot.map(|(x, y)| crate::jarr![x, y]),
                 "city" => c.city,
@@ -195,6 +203,7 @@ pub fn free_tech(g: &Game, p: PlayerId, techs: &[TechType], advisor: Option<Tech
             .collect(),
         advisor: advisor.and_then(|a| techs.iter().position(|&t| t == a)),
         context: DecisionContext::default(),
+        keywords: Vec::new(),
     }
 }
 
@@ -247,6 +256,7 @@ pub fn keep_city(g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Opti
         advisor: options.iter().position(|o| o.key == key),
         options,
         context: city_context(g, c, city.previous_owner),
+        keywords: Vec::new(),
     }
 }
 
@@ -311,6 +321,7 @@ pub fn disband_city(g: &Game, p: PlayerId, c: CityId, advisor_disbands: bool) ->
         options: vec![DecisionOption::new("keep", "Keep"), disband],
         advisor: Some(advisor_disbands as usize),
         context: city_context(g, c, city.previous_owner),
+        keywords: Vec::new(),
     }
 }
 
@@ -331,6 +342,7 @@ pub fn settlement(g: &Game, p: PlayerId, c: CityId, advisor_settlement: bool) ->
         options: vec![as_city, as_settlement],
         advisor: Some(advisor_settlement as usize),
         context: city_context(g, c, None),
+        keywords: Vec::new(),
     }
 }
 
@@ -356,6 +368,7 @@ pub fn take_control(g: &Game, p: PlayerId, new: PlayerId, advisor_takes: bool) -
         options: vec![yes, DecisionOption::new("no", "No")],
         advisor: Some(if advisor_takes { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(new), ..Default::default() },
+        keywords: Vec::new(),
     }
 }
 
@@ -371,6 +384,7 @@ pub fn offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_
         options: vec![DecisionOption::new("accept", "Accept"), DecisionOption::new("refuse", "Refuse")],
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(from), ..Default::default() },
+        keywords: Vec::new(),
     }
 }
 
@@ -399,6 +413,7 @@ pub fn draft(g: &Game, p: PlayerId, crusade: u32, budget: i32, offered: &[(CityI
         advisor: Some(advisor.and_then(|a| offered.iter().position(|&(c, _)| c == a)).unwrap_or(offered.len())),
         options,
         context: DecisionContext::default(),
+        keywords: Vec::new(),
     }
 }
 
@@ -432,6 +447,41 @@ pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanPropo
         options: vec![accept, DecisionOption::new("refuse", "Refuse")],
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(proposal.from), ..Default::default() },
+        keywords: Vec::new(),
+    }
+}
+
+/// A House's ultimatum to its liege `p` (docs/PERSONS.md, "The third build", rules 5 and 6): what
+/// it demands, what accepting binds (a contract of `PERSON_ULTIMATUM_TURNS` turns, the House at
+/// least Annoyed) and what refusing does (the break-away now, the hold contest included). Option 0
+/// accepts, 1 refuses; the rules' lines, from the rules' read API.
+pub fn ultimatum(g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum, advisor_accepts: bool) -> Decision {
+    let h = u.house;
+    let label = g.house_label(h);
+    let turns = g.d.defines.person_ultimatum_turns;
+    let demand = g.ultimatum_demand_text(h, u.kind);
+    let again = if u.request { " Its refused request again." } else { "" };
+    let bound = match g.contract_bound_text(h, u.kind, true) {
+        Some(b) => format!("For {turns} turns: {b}."),
+        None => format!("For {turns} turns: a contract, with no other bound."),
+    };
+    let floor = format!("{label} stays at least Annoyed until turn {}.", u.until);
+    let refusal = g.house_refusal_outcome(h);
+    let mut accept = DecisionOption::new("accept", "Accept");
+    accept.help = format!("{bound} {floor}");
+    let mut refuse = DecisionOption::new("refuse", "Refuse");
+    refuse.help = refusal.clone();
+    let seat = g.house_seat(h);
+    Decision {
+        id: 0,
+        player: p,
+        kind: DecisionKind::Ultimatum { house: h },
+        title: format!("Ultimatum: {label}"),
+        text: format!("{label} demands: {demand}{again}[NEWLINE]Accepted: {bound} {floor}[NEWLINE]Refused: {refusal}"),
+        options: vec![accept, refuse],
+        advisor: Some(if advisor_accepts { 0 } else { 1 }),
+        context: DecisionContext { plot: seat.map(|c| (g.cities[c].x, g.cities[c].y)), city: seat, unit: None, other_player: Some(g.houses[h].player) },
+        keywords: g.d.ty::<KeywordType>("KEYWORD_ULTIMATUM").into_iter().collect(),
     }
 }
 
@@ -456,6 +506,7 @@ pub fn free_promotion(g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType
             .collect(),
         advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
         context: DecisionContext { plot: Some((unit.x, unit.y)), city: None, unit: Some(u), other_player: None },
+        keywords: Vec::new(),
     }
 }
 
@@ -479,6 +530,7 @@ pub fn free_bonus(g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[
             .collect(),
         advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
         context: city_context(g, c, None),
+        keywords: Vec::new(),
     }
 }
 
@@ -522,6 +574,7 @@ pub fn lair_outcome(g: &Game, p: PlayerId, u: UnitId, tier: ffh_core::ffh::lairs
         }).collect(),
         advisor: Some(advisor).filter(|&i| i < options.len()),
         context: DecisionContext { plot: Some((unit.x, unit.y)), city: None, unit: Some(u), other_player: None },
+        keywords: Vec::new(),
     }
 }
 

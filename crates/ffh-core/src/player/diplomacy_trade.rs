@@ -531,6 +531,12 @@ impl Game {
                 if !self.crusades.is_empty() && (self.crusade_serving_against(p, to_team) || self.crusade_serving_against(who_to, team)) {
                     return false;
                 }
+                // Not in C++: a House's contract binds its liege to no peace with the civilization
+                // war was declared on (docs/PERSONS.md, "The third build", rule 6).
+                use crate::persons::ContractAct;
+                if self.player_contract_refusal(p, ContractAct::MakePeace(to_team)).is_some() || self.player_contract_refusal(who_to, ContractAct::MakePeace(team)).is_some() {
+                    return false;
+                }
                 return true;
             }
 

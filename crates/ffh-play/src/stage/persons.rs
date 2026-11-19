@@ -11,9 +11,12 @@
 //! capitulates (`team_assign_vassal`), the tributes are the realm's default at each founding
 //! (`player_set_house_tribute_default`: in force at once), states are told by the Houses' turn.
 //! Set by hand only what no call reaches: a request's term and a House's rest (so a refusal falls
-//! due now, as a lapse would 40 turns later), the countdown's turns left, and the human's treasury
-//! (at least [`STAGE_GOLD`] and twice the neighbour's House's price: the trade screen's offer can
-//! be accepted).
+//! due now, as a lapse would 40 turns later), and the human's treasury (at least [`STAGE_GOLD`] and
+//! twice the neighbour's House's price: the trade screen's offer can be accepted). The third
+//! build's part 2A ([`stage_ultimatums`]) sets by hand what it lists in `hand_set`: the last
+//! refusals that leave two Houses Furious with their ultimatums due at the human's next turn (the
+//! rules issue one at once), and the demand of the ultimatum the capitulated House's contract came
+//! from (the rules' own acceptance carries it out).
 
 use std::path::{Path, PathBuf};
 
@@ -32,9 +35,11 @@ const STAGE_GOLD: i32 = 400;
 pub struct StagedHouse {
     /// The human's: `friendly` (two cities, tribute 0%), `pleased` (Pleased or Cautious, tribute
     /// 10%, a claimant of the `taken` Crown city), `annoyed` (a civilization that capitulated, with
-    /// its own leader), `furious` (countdown 8, two cities: one held by an army of the human, its
-    /// seat contested by a smaller one and lost); the neighbour's: `neighbour` (Cautious or worse:
-    /// a bribe can be offered).
+    /// its own leader; under a contract: no tribute above 10%), `furious` (Furious, its ultimatum
+    /// due at the human's next turn; two cities: one held by an army of the human, its seat
+    /// contested by a smaller one and lost), `large` (five cities, one grant from the split's
+    /// threshold; tribute 10%, Furious: its ultimatum due at the human's next turn too); the
+    /// neighbour's: `neighbour` (Cautious or worse: a bribe can be offered).
     pub role: &'static str,
     pub id: HouseId,
     /// Its label (`House Arne`, `Hippus`).
@@ -257,6 +262,89 @@ fn layout(g: &Game, h: PlayerId) -> Result<Layout, String> {
     Err("no site for the taken city near two Houses' cities".into())
 }
 
+/// The third build, part 2A (docs/PERSONS.md, rules 4 to 6), added at the end of the stage builder:
+/// - House `furious` (Annoyed by the rules' refusals) takes one more `Request refused: -3 (60
+///   turns)` by hand: Furious, with no contract, its ultimatum (its refused request again when it
+///   can be met, else the rules' next demand) comes at the human's next turn, a blocking decision;
+/// - House `annoyed` (the capitulated civilization) is under a contract, by the rules' acceptance
+///   of an ultimatum whose demand is set by hand (`Tribute(10)`: no tribute above 10% for 20
+///   turns; one ultimatum counted);
+/// - a new House `large`: five cities the human founds, beyond claim range of the taken city, and
+///   the rules' founding with all five (a split's call, `player_found_house_as`), at a realm's
+///   default of 10%; one grant from the split's threshold of 6; two refusals by hand make it
+///   Furious, so its ultimatum (not a refused request, no lower tribute below 20%, no memory: a
+///   resource or gold a turn) is due at the human's next turn too.
+fn stage_ultimatums(g: &mut Game, h: PlayerId, house_c: HouseId, house_v: HouseId, taken: CityId, hand_set: &mut Vec<String>) -> Result<HouseId, String> {
+    use ffh_core::persons::{LoyaltyCause, LoyaltyMod, Ultimatum, UltimatumKind, DEMAND_REFUSED};
+    let turn = g.game_turn();
+    let refusal = |g: &mut Game, hh: HouseId| g.houses[hh].standing.mods.push(LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount: DEMAND_REFUSED.0, until: Some(turn + DEMAND_REFUSED.1) });
+
+    // `annoyed`: a contract, the rules' acceptance of a tribute ultimatum.
+    let u = Ultimatum { house: house_v, kind: UltimatumKind::Tribute(10), request: false, until: turn + g.d.defines.person_ultimatum_turns };
+    if g.house_ultimatum_accept(&u) != u.kind {
+        return Err("House annoyed's contract is not the tribute's".into());
+    }
+    g.houses[house_v].ultimatums = 1;
+    hand_set.push("House annoyed: the demand of the ultimatum its contract came from (its tribute to 10%), accepted by the rules".into());
+
+    // `large`: five cities of the human's, then the founding with them.
+    let range = g.d.defines.person_claim_range;
+    let capital = g.player_get_capital_city(h).ok_or("no capital")?;
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    let (tx, ty) = (g.cities[taken].x, g.cities[taken].y);
+    let mut sites: Vec<(i32, PlotIdx)> = Vec::new();
+    for q in g.map.plot_ids() {
+        let (x, y) = g.map.xy(q);
+        if g.plot_is_water(q) || g.plot_is_impassable(q) || g.plot_distance(x, y, tx, ty) <= range || !g.player_can_found(h, x, y, false) {
+            continue;
+        }
+        sites.push((g.plot_distance(x, y, cx, cy), q));
+    }
+    sites.sort();
+    // Founded one by one, each where the rules let the human found it with the others standing.
+    let mut cities: Vec<CityId> = Vec::new();
+    for (_, q) in sites {
+        let (x, y) = g.map.xy(q);
+        if cities.len() == 5 || !g.player_can_found(h, x, y, false) {
+            continue;
+        }
+        cities.push(g.player_init_city(h, x, y, true, true));
+    }
+    if cities.len() < 5 {
+        return Err(format!("only {} sites for House large", cities.len()));
+    }
+    let civ = g.player_get_civilization_type(h).ok_or("no civilization")?;
+    let leader = g.house_leader_draw(civ, h).ok_or("no leader is free for House large")?;
+    let default = g.players[h].house_tribute;
+    g.player_set_house_tribute_default(h, 10).map_err(|e| format!("tribute: {e}"))?;
+    let (house_l, _) = g.player_found_house_as(h, civ, leader, &cities, ffh_core::persons::HouseOrigin::Founded).ok_or("House large cannot be founded")?;
+    g.player_set_house_tribute_default(h, default).map_err(|e| format!("tribute: {e}"))?;
+    let all: Vec<CityId> = g.house_cities(house_l);
+    for c in all {
+        if g.city_is_governed(c) && g.cities[c].order_queue.is_empty() && !g.cities[c].settlement {
+            g.city_choose_production(c, None, None, None, false, false);
+        }
+    }
+    // Told as it is now (no change to tell at the next turn but the one set below).
+    let state = g.house_state(house_l);
+    g.houses[house_l].standing.state = state;
+
+    // The last refusals: Furious, the ultimatums due at the human's next turn.
+    refusal(g, house_c);
+    hand_set.push("House furious: its last `Request refused` (Furious: its ultimatum at the next turn)".into());
+    while g.house_state(house_l) != LoyaltyState::Furious {
+        refusal(g, house_l);
+    }
+    hand_set.push("House large: two `Request refused` (Furious: its ultimatum at the next turn)".into());
+    if g.house_great_cities(house_l) != 5 {
+        return Err(format!("House large holds {} great cities", g.house_great_cities(house_l)));
+    }
+    if g.house_contract(house_v).is_none() || g.house_state(house_v) != LoyaltyState::Annoyed {
+        return Err("House annoyed is not under a contract, Annoyed".into());
+    }
+    Ok(house_l)
+}
+
 /// A civilization in no one's hands and its first leader: the capitulated civilization's.
 fn free_civ(g: &Game) -> Option<(CivilizationType, LeaderHeadType)> {
     let d = g.d;
@@ -272,7 +360,7 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
     let mut s = super::duel_with(dir, seed, 3, Some("CIVILIZATION_BANNOR"), &[])?;
     let h = s.human;
     let team = s.g.players[h].team;
-    let hand_set: Vec<String> = Vec::new();
+    let mut hand_set: Vec<String> = Vec::new();
     let ai = s.g.civ_player_ids().find(|&p| p != h && s.g.players[p].alive && !s.g.player_is_barbarian(p)).ok_or("no neighbour")?;
     let ai_civ = s.g.player_get_civilization_type(ai).ok_or("the neighbour has no civilization")?;
     if s.g.house_leader_pool(ai_civ, ai).leaders.is_empty() {
@@ -415,11 +503,12 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         g.player_grant_city(ai, c, GrantTo::NewHouse).map_err(|e| format!("the neighbour's grant: {e}"))?
     };
 
-    // States: House `furious` Furious, by refused requests.
+    // States: House `furious` Annoyed, by refused requests (the last refusal, which makes it
+    // Furious, is set by `stage_ultimatums`: a Furious House issues its ultimatum at once).
     {
         let g = &mut s.g;
         g.player_persons_turn(h);
-        refuse_until(g, h, house_c, LoyaltyState::Furious, "House C")?;
+        refuse_until(g, h, house_c, LoyaltyState::Annoyed, "House C")?;
     }
 
     // The last Houses' turn (states told).
@@ -436,9 +525,6 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         g.player_army_sync(h);
         g.player_persons_turn(h);
         g.player_persons_turn(ai);
-        // The countdown's turns left (set by the rules at Furious to 10).
-        let turn = g.game_turn();
-        g.houses[house_c].standing.countdown = Some(turn + 8);
     }
 
     // An army of the human in House C's second city (formed last: it holds the city).
@@ -480,6 +566,9 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         }
     }
 
+    // The third build, part 2A: the ultimatums due, a contract, a House one grant from a split.
+    let house_l = stage_ultimatums(&mut s.g, h, house_c, house_v, taken, &mut hand_set)?;
+
     // Checks: what the scene promises.
     {
         let g = &s.g;
@@ -488,6 +577,7 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         want("House pleased", g.house_state(house_b), &[LoyaltyState::Pleased, LoyaltyState::Cautious])?;
         want("House annoyed", g.house_state(house_v), &[LoyaltyState::Annoyed])?;
         want("House furious", g.house_state(house_c), &[LoyaltyState::Furious])?;
+        want("House large", g.house_state(house_l), &[LoyaltyState::Furious])?;
         want("the neighbour's House", g.house_state(house_n), &[LoyaltyState::Cautious, LoyaltyState::Annoyed, LoyaltyState::Furious])?;
         if !g.city_claimants(taken).contains(&house_b) {
             return Err(format!("the taken city's claimants are {:?}", g.city_claimants(taken)));
@@ -527,7 +617,8 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         state: g.house_state(id),
         tribute: g.houses[id].tribute,
     };
-    let houses = vec![staged("friendly", house_a), staged("pleased", house_b), staged("annoyed", house_v), staged("furious", house_c), staged("neighbour", house_n)];
+    let mut houses = vec![staged("friendly", house_a), staged("pleased", house_b), staged("annoyed", house_v), staged("furious", house_c), staged("neighbour", house_n)];
+    houses.push(staged("large", house_l));
     let armies: Vec<(&'static str, ArmyId)> = vec![("main", army_main), ("holds_furious", army_c), ("contests_furious", army_seat)];
     let mut named: Vec<CityId> = g.players[h].cities.iter().chain(&g.players[ai].cities).copied().collect();
     for hs in &houses {

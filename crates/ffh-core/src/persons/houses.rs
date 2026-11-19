@@ -150,11 +150,19 @@ impl Game {
 
     /// Player `p` founds a House with city `c`, led by `leader`: a new player born of `p` (its
     /// civilization, `p`'s techs), `p`'s vassal, played by the game's AI, named `House <name>`
-    /// (docs/PERSONS.md, "The third build", rule 3; part 2's splits found their cadets the same
-    /// way). `cities`: the cities it is born with, its capital first. Returns the House and the
-    /// cities as they are now (a city changing hands has a new id).
+    /// (docs/PERSONS.md, "The third build", rule 3). `cities`: the cities it is born with, its
+    /// capital first. Returns the House and the cities as they are now (a city changing hands has a
+    /// new id).
     pub fn player_found_house(&mut self, p: PlayerId, leader: LeaderHeadType, cities: &[CityId]) -> Option<(HouseId, Vec<CityId>)> {
         let civ = self.player_get_civilization_type(p)?;
+        self.player_found_house_as(p, civ, leader, cities, HouseOrigin::Founded)
+    }
+
+    /// [`Game::player_found_house`] of civilization `civ` with origin `origin`: a founding
+    /// (`Founded`, the liege's civilization) or a split's cadet (`Split`, its parent's civilization;
+    /// rule 4: its cities may be a House's, released from it as from the liege). The record is the
+    /// vassal rules' (`house_begin`), its origin set here, its starting modifier none.
+    pub fn player_found_house_as(&mut self, p: PlayerId, civ: CivilizationType, leader: LeaderHeadType, cities: &[CityId], origin: HouseOrigin) -> Option<(HouseId, Vec<CityId>)> {
         let plots: Vec<(PlotIdx, bool)> = cities.iter().map(|&c| (self.city_plot(c), self.cities[c].settlement)).collect();
         let name = self.house_new_name(p);
         self.players[p].house_names.push(name.clone());
@@ -170,10 +178,10 @@ impl Game {
         // The vassal rules made the record (`team_set_vassal`).
         let h = match self.player_house(np) {
             Some(h) => h,
-            None => self.house_begin(np, p, HouseOrigin::Founded)?,
+            None => self.house_begin(np, p, origin)?,
         };
         let house = &mut self.houses[h];
-        house.origin = HouseOrigin::Founded;
+        house.origin = origin;
         house.name = name;
         house.standing.mods.retain(|m| m.cause != LoyaltyCause::SoughtProtection);
         let state = self.house_state(h);

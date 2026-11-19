@@ -3,7 +3,8 @@
 //! it.
 //!
 //! - [`Game::house_view`]: one House: its player, leader, civilization, cities, attitude and its
-//!   parts, request, record, tribute, levy, countdown and outcome, freeing, its price to secede.
+//!   parts, request, record, tribute, levy, the outcome of its ultimatum when Furious, its contract,
+//!   its split line, freeing, its price to secede.
 //! - [`Game::court_view`]: a player's Houses, grantable cities, the founding of a first House and
 //!   the default tribute.
 //! - [`Game::city_house_mark`]: a city's House colour and state for the map and the lists (cheap).
@@ -75,6 +76,9 @@ pub struct TributeRate {
     /// The House's loyalty and state once it is in force ([`Game::house_loyalty_at_tribute`]).
     pub loyalty: i32,
     pub state: LoyaltyState,
+    /// A contract's bound refuses it (the third build, rule 6; the reason:
+    /// [`Game::player_check_house_tribute`]).
+    pub barred: bool,
 }
 
 /// Whether a House takes levies, and why not.
@@ -116,9 +120,16 @@ pub struct HouseView {
     pub parts: Vec<LoyaltyPart>,
     /// Its attitude toward its liege.
     pub state: LoyaltyState,
-    pub countdown_turns: Option<i32>,
-    /// The countdown's stated outcome (only while one runs).
+    /// What its being Furious means (no contract running): its ultimatum at its liege's next turn,
+    /// and the break-away a refusal is ([`Game::house_breakaway_outcome`]).
     pub outcome: Option<String>,
+    // ---- the third build, part 2A ----
+    /// Its contract, while one runs (rule 6).
+    pub contract: Option<ContractView>,
+    /// `Holds 7 cities: 5% a turn to split.` when it may split (rule 4).
+    pub split_line: Option<String>,
+    /// The ultimatums it has issued.
+    pub ultimatums: i32,
     /// Its request (rule 2), and between requests the turns before the next one may be made.
     pub demand: Option<DemandView>,
     pub demand_rest_turns: i32,
@@ -164,7 +175,6 @@ pub struct HouseMark {
     pub owner: PlayerId,
     pub color: u8,
     pub state: LoyaltyState,
-    pub countdown_turns: Option<i32>,
 }
 
 /// What a grant of a city does to its owner's maintenance ([`Game::grant_maintenance`]), in
@@ -202,12 +212,14 @@ impl Game {
         }
         let pct = self.houses[h].tribute_now;
         out.push(LoyaltyPart { label: format!("Tribute {pct}%"), amount: tribute_part(pct), turns_left: None });
+        // A contract's floor (the third build, rule 6): what it lifts the sum by, so the parts add
+        // up to the loyalty every rule counts.
+        if let Some(cv) = self.house_contract_view(h) {
+            let raw = self.house_loyalty_raw(h);
+            let label = cv.floor.trim_end_matches('.').to_string();
+            out.push(LoyaltyPart { label, amount: (CONTRACT_FLOOR - raw).max(0), turns_left: None });
+        }
         out
-    }
-
-    /// The turns left of House `h`'s Furious countdown.
-    pub fn house_countdown_turns(&self, h: HouseId) -> Option<i32> {
-        self.houses[h].standing.countdown.map(|end| (end - self.game_turn()).max(0))
     }
 
     /// House `h`'s tribute view.
@@ -218,7 +230,8 @@ impl Game {
             .map(|pct| {
                 let (gold, research) = self.house_tribute_at(h, pct);
                 let loyalty = self.house_loyalty_at_tribute(h, pct);
-                TributeRate { pct, gold, research, part: tribute_part(pct), turns: self.house_tribute_turns(h, pct), loyalty, state: LoyaltyState::of(loyalty) }
+                let barred = pct != house.tribute && self.player_check_house_tribute(house.owner, h, pct).is_err();
+                TributeRate { pct, gold, research, part: tribute_part(pct), turns: self.house_tribute_turns(h, pct), loyalty, state: LoyaltyState::of(loyalty), barred }
             })
             .collect();
         TributeView {
@@ -235,7 +248,6 @@ impl Game {
     /// House `h`'s view (`None` when it does not stand).
     pub fn house_view(&self, h: HouseId) -> Option<HouseView> {
         let house = self.houses.get(h)?;
-        let countdown_turns = self.house_countdown_turns(h);
         let refusal = self.house_levy_refusal(h);
         let leader = self.house_leader(h);
         let demand = house.demand.map(|dm| DemandView { kind: dm.kind, text: self.demand_kind_text(h, dm.kind), turns_left: (dm.deadline - self.game_turn()).max(0) });
@@ -259,8 +271,10 @@ impl Game {
             loyalty: self.house_loyalty(h),
             parts: self.house_parts(h),
             state: self.house_state(h),
-            countdown_turns,
-            outcome: countdown_turns.map(|_| self.house_breakaway_outcome(h)),
+            outcome: (self.house_state(h) == LoyaltyState::Furious && !self.house_contract_runs(h)).then(|| self.house_breakaway_outcome(h)),
+            contract: self.house_contract_view(h),
+            split_line: self.house_split_line(h),
+            ultimatums: house.ultimatums,
             demand_rest_turns: if demand.is_none() { (house.demand_rest_until - self.game_turn()).max(0) } else { 0 },
             demand,
             deeds: house.deeds.clone(),
@@ -291,11 +305,11 @@ impl Game {
         }
     }
 
-    /// City `c`'s House for the map and the lists: its colour, state and countdown; `None` for a
-    /// city of a civilization that is no House. Cheap (no scan).
+    /// City `c`'s House for the map and the lists: its colour and state; `None` for a city of a
+    /// civilization that is no House. Cheap (no scan).
     pub fn city_house_mark(&self, c: CityId) -> Option<HouseMark> {
         let h = self.city_house(c)?;
-        Some(HouseMark { house: h, owner: self.houses[h].owner, color: self.houses[h].color, state: self.house_state(h), countdown_turns: self.house_countdown_turns(h) })
+        Some(HouseMark { house: h, owner: self.houses[h].owner, color: self.houses[h].color, state: self.house_state(h) })
     }
 
     /// What granting city `c` does to its owner's maintenance (pure; the rules' maintenance

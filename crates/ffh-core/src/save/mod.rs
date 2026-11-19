@@ -177,7 +177,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   and record (`House::demand`, `demand_rest_until`, `deeds`); `DemandKind` without `Post`,
 ///   `House` and `Wonder`; `LogMark::House` and `LogTag::House` in place of the person's;
 ///   `TermSource::Aura` gone.
-pub const FORMAT_VERSION: u32 = 53;
+/// - 54: Houses split, ultimatums and contracts replace the countdown (docs/PERSONS.md, "The third
+///   build", rules 4 to 6): `HouseOrigin::Split`, `House::refused`, `contract`, `ultimatums`;
+///   `Standing::countdown` gone.
+pub const FORMAT_VERSION: u32 = 54;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

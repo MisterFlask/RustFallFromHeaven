@@ -1,10 +1,10 @@
 //! `ffh-play stage persons|persons-direct` (docs/PERSONS.md, "UI", part K; "The third build" on
 //! "The second build"): the staged scenes load, the rules' invariants hold on them
 //! (`ffh_harness::check`), and each shows what the stage promises: the Houses as vassal
-//! civilizations in each state (Friendly, Pleased or Cautious, the capitulated one Annoyed, Furious
-//! with its countdown and a city held by an army), two tributes, each House led by its player's
-//! leader, the taken city's claimant House, and the neighbour's own House that takes an offer;
-//! `persons-direct` can adopt God King at once.
+//! civilizations in each state (Friendly, Pleased or Cautious, the capitulated one Annoyed under a
+//! contract, Furious with its ultimatum due and a city held by an army, a House of five Furious
+//! too), two tributes, each House led by its player's leader, the taken city's claimant House, and
+//! the neighbour's own House that takes an offer; `persons-direct` can adopt God King at once.
 
 mod common;
 
@@ -66,7 +66,12 @@ fn the_staged_persons_scenes_hold_every_state() {
         assert_eq!(g.houses[house("annoyed")].origin, HouseOrigin::Capitulated);
         assert!(g.house_levy_refusal(house("annoyed")).is_some(), "an Annoyed House takes no levy");
         assert_eq!(g.house_state(house("furious")), LoyaltyState::Furious);
-        assert_eq!(g.houses[house("furious")].standing.countdown, Some(g.game_turn() + 8));
+        assert!(g.houses[house("furious")].contract.is_none(), "its ultimatum due at the next turn");
+        assert!(g.houses[house("annoyed")].contract.is_some_and(|c| c.kind == ffh_core::persons::UltimatumKind::Tribute(10)), "under a contract");
+        assert_eq!(g.houses[house("annoyed")].ultimatums, 1);
+        assert_eq!(g.house_state(house("large")), LoyaltyState::Furious);
+        assert_eq!(g.house_great_cities(house("large")), 5, "one grant from the split's threshold");
+        assert!(g.houses[house("large")].contract.is_none());
         assert_eq!(g.house_cities(house("furious")).len(), 2);
         assert_eq!(g.house_cities_held(house("furious")).1.len(), 1, "one of its cities is held by an army");
         assert_eq!((g.houses[house("furious")].tribute, g.houses[house("furious")].tribute_now), (20, 20));
@@ -90,7 +95,7 @@ fn the_staged_persons_scenes_hold_every_state() {
         assert_eq!(g.house_bribe_refusal(n, h, BribeKind::Secede), None);
         let court = g.court_view(h);
         assert_eq!(court.grants, Ok(()));
-        assert_eq!(court.houses.len(), 4);
+        assert_eq!(court.houses.len(), 5);
         assert!(court.founding.is_err(), "a realm with Houses founds none");
 
         let god_king = d.t::<CivicType>("CIVIC_GOD_KING");

@@ -148,7 +148,7 @@ impl Game {
         let start = match origin {
             HouseOrigin::Capitulated => Some((LoyaltyCause::Capitulated, CAPITULATED)),
             HouseOrigin::Vassal => Some((LoyaltyCause::SoughtProtection, SOUGHT_PROTECTION)),
-            HouseOrigin::Founded => None,
+            HouseOrigin::Founded | HouseOrigin::Split => None,
         };
         if let Some((cause, (amount, turns))) = start {
             standing.mods.push(LoyaltyMod { cause, amount, until: Some(turn + turns) });
@@ -171,13 +171,16 @@ impl Game {
             last_gold: 0,
             last_research: 0,
             last_turn: -1,
+            refused: None,
+            contract: None,
+            ultimatums: 0,
         });
         self.players[owner].houses.push(h);
         self.players[hp].house = Some(h);
         let label = self.house_label(h);
         let civ = self.player_get_civilization_short_description(owner);
         let deed = match origin {
-            HouseOrigin::Founded => format!("A House of the {civ}."),
+            HouseOrigin::Founded | HouseOrigin::Split => format!("A House of the {civ}."),
             HouseOrigin::Capitulated => format!("Capitulated to the {civ}."),
             HouseOrigin::Vassal => format!("Became a vassal of the {civ}."),
         };
@@ -187,9 +190,9 @@ impl Game {
         self.houses[h].standing.state = state;
         let what = match origin {
             HouseOrigin::Capitulated => "capitulated",
-            HouseOrigin::Vassal | HouseOrigin::Founded => "vassal",
+            HouseOrigin::Vassal | HouseOrigin::Founded | HouseOrigin::Split => "vassal",
         };
-        if origin != HouseOrigin::Founded {
+        if !origin.founded() {
             self.house_msg(h, || format!("{label} is your House: {}.", if origin == HouseOrigin::Capitulated { "it capitulated" } else { "it became your vassal" }));
         }
         self.tel_house(owner, "record", what);
@@ -208,6 +211,11 @@ impl Game {
     /// House `h`'s record ends (its vassalage ended, or its player died): its liege's armies no
     /// longer levy its cities.
     pub(crate) fn house_record_end(&mut self, h: HouseId) {
+        if !self.houses.contains(h) {
+            return;
+        }
+        // A contract ends with the record (rule 6: its gold a turn and its resource trade stop).
+        self.house_contract_end(h, false);
         let Some(house) = self.houses.get(h) else { return };
         let (owner, hp) = (house.owner, house.player);
         self.players[owner].houses.retain(|&o| o != h);
@@ -287,19 +295,25 @@ impl Game {
         Ok(())
     }
 
-    /// Whether player `p` may set House `h`'s tribute to `pct` percent (else why not).
-    pub fn player_check_house_tribute(&self, p: PlayerId, h: HouseId, pct: i32) -> Result<(), &'static str> {
+    /// Whether player `p` may set House `h`'s tribute to `pct` percent (else why not): a contract's
+    /// bound refuses a rate above it (rule 6: `Your contract with House Arne forbids it until turn
+    /// 160.`).
+    pub fn player_check_house_tribute(&self, p: PlayerId, h: HouseId, pct: i32) -> Result<(), String> {
         if !self.houses.contains(h) || self.houses[h].owner != p {
-            return Err("Not a House of yours.");
+            return Err("Not a House of yours.".into());
         }
-        Self::tribute_check(pct)
+        Self::tribute_check(pct)?;
+        if let Some(why) = self.player_contract_refusal(p, ContractAct::Tribute { house: h, pct }) {
+            return Err(why);
+        }
+        Ok(())
     }
 
     /// Player `p` sets House `h`'s tribute to `pct` percent: the rate the rate in force moves
     /// toward, one step every [`TRIBUTE_LAG_TURNS`] turns (the payment and the loyalty part follow
     /// the rate in force). A rate in force at rest starts its count now; one already moving keeps
     /// its count (a change of mind neither costs nor gains time).
-    pub fn player_set_house_tribute(&mut self, p: PlayerId, h: HouseId, pct: i32) -> Result<(), &'static str> {
+    pub fn player_set_house_tribute(&mut self, p: PlayerId, h: HouseId, pct: i32) -> Result<(), String> {
         self.player_check_house_tribute(p, h, pct)?;
         let turn = self.game_turn();
         let house = &mut self.houses[h];

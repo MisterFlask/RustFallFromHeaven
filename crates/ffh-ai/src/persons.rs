@@ -9,8 +9,8 @@
 //!   as the projection at the rate set falls below that. The rate in force lags the rate set (rule
 //!   4: a step every 5 turns), so a cut no longer helps at once: the point to spare is what lets
 //!   the House take a grievance while a cut arrives. So the AI's Houses are not for sale (a House
-//!   Cautious or worse takes a price) and their countdowns are stopped where a cut arrives in
-//!   time. Set only when it changes.
+//!   Cautious or worse takes a price) and rarely reach an ultimatum. Never above a contract's
+//!   bound (the third build, rule 6). Set only when it changes.
 //! - **Grants** ([`choose_grant`]): one a turn while the Crown is over its limit (rule 14: 3 cities,
 //!   the capital alone for the Kuriotates; settlements never count), the least populous first,
 //!   never the capital nor the best production city ([`kept_city`]), to the House whose capital is
@@ -27,9 +27,12 @@
 //! Elsewhere: the levy ([`levy_city`]: `armies::requisition_cities` adds the cities of a House
 //! that stays Pleased or better after the levy's `Levied -1`); a direct-rule civic is never
 //! adopted while a House stands ([`civic_barred`], `empire.rs`); an idle army goes to hold the
-//! most valuable city it can hold of a House counting down that no tribute cut can stop in time
-//! ([`house_beyond_tribute`]; [`disloyal_house_post`], `military.rs`: a city where the liege's
-//! army units outnumber the House's goes back to the liege when it breaks away); a requested war
+//! most valuable city it can hold of a House Annoyed or worse, one step from an ultimatum or under
+//! a contract ([`house_to_hold`]; [`disloyal_house_post`], `military.rs`, the march [`hold_post`]:
+//! a city where the liege's army units outnumber the House's goes back to the liege when it breaks
+//! away, and holding every city lets the AI refuse an ultimatum); its answer to an ultimatum
+//! ([`consider_ultimatum`]: accept, unless every city of the House would be held or the demand is
+//! war on a civilization of more power than its own: the third build, rule 11); a requested war
 //! weighs on the war planning ([`war_demanded`]); a House's own turn skips what a vassal cannot do
 //! ([`is_house`], `lib.rs`). A House answers offers by the rules' price
 //! (`diplomacy::judge_offer`). The AI never frees a House.
@@ -38,7 +41,7 @@ use std::cmp::Reverse;
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::persons::{BribeKind, DemandKind, GrantTo, LoyaltyCause, LoyaltyState, FURIOUS_AT, LEVIED, OFFER_NOTED_TURNS, PLEASED_AT, TRIBUTE_MAX, TRIBUTE_STEP};
+use ffh_core::persons::{BribeKind, DemandKind, GrantTo, LoyaltyCause, LoyaltyState, Ultimatum, UltimatumKind, LEVIED, OFFER_NOTED_TURNS, PLEASED_AT, TRIBUTE_MAX, TRIBUTE_STEP};
 use ffh_core::structs::TradeData;
 use ffh_data::*;
 
@@ -93,9 +96,15 @@ fn houses_of(g: &Game, p: PlayerId) -> Vec<HouseId> {
 /// force (`Game::house_loyalty_at_tribute`, the steady state) is [`TRIBUTE_KEEP_LOYALTY`] or more,
 /// else 0. The rate in force follows it a step every 5 turns (rule 4): a higher one is collected
 /// step by step, and a lower one is set as soon as the projection at the rate set falls below
-/// the margin, so the cut starts moving at once.
+/// the margin, so the cut starts moving at once. Never a rate a contract's bound refuses (the third
+/// build, rule 6: the rules' `player_check_house_tribute`).
 pub fn tribute_for(g: &Game, h: HouseId) -> i32 {
-    (0..=TRIBUTE_MAX / TRIBUTE_STEP).rev().map(|k| k * TRIBUTE_STEP).find(|&pct| g.house_loyalty_at_tribute(h, pct) >= TRIBUTE_KEEP_LOYALTY).unwrap_or(0)
+    let p = g.houses[h].owner;
+    (0..=TRIBUTE_MAX / TRIBUTE_STEP)
+        .rev()
+        .map(|k| k * TRIBUTE_STEP)
+        .find(|&pct| g.house_loyalty_at_tribute(h, pct) >= TRIBUTE_KEEP_LOYALTY && g.player_check_house_tribute(p, h, pct).is_ok())
+        .unwrap_or(0)
 }
 
 /// `p` sets each House's tribute to [`tribute_for`], where it changes.
@@ -272,33 +281,62 @@ pub(crate) fn civic_barred(g: &Game, p: PlayerId, c: CivicType) -> bool {
 // Armies
 // -------------------------------------------------------------------------------------------
 
-/// Whether House `h` breaks away whatever its tribute does: Furious, and still Furious when its
-/// countdown ends (its full length when it has not started) at the rate in force then were its
-/// rate set to 0% now (rule 4: the rate in force lags a cut, a step every 5 turns).
-pub fn house_beyond_tribute(g: &Game, h: HouseId) -> bool {
-    if g.house_state(h) != LoyaltyState::Furious {
+// -------------------------------------------------------------------------------------------
+// Ultimatums (the third build, rules 5 and 11)
+// -------------------------------------------------------------------------------------------
+
+/// `Controller::consider_ultimatum` for AI liege `p`: accept, unless every city of the House would
+/// be held when it broke away (`Game::house_cities_held`: refusing then takes nothing) or the
+/// demand is war on a civilization of more power than `p`'s team (`Game::team_get_power`, vassals
+/// included).
+pub fn consider_ultimatum(g: &Game, p: PlayerId, u: &Ultimatum) -> bool {
+    if !g.houses.contains(u.house) {
+        return true;
+    }
+    let (going, _) = g.house_cities_held(u.house);
+    if going.is_empty() {
+        crate::trace!(g, p, "houses: {}'s ultimatum refused: every city is held", g.house_label(u.house));
         return false;
     }
-    let turns = g.houses[h].standing.countdown.map_or(g.d.defines.person_disloyal_turns, |end| (end - g.game_turn()).max(0));
-    let rate = g.house_tribute_in_force_after(h, 0, turns);
-    g.house_loyalty_at_tribute(h, rate) <= FURIOUS_AT
+    if let UltimatumKind::War(q) = u.kind {
+        let (pt, qt) = (g.players[p].team, g.players[q].team);
+        if g.team_get_power(qt, true) > g.team_get_power(pt, true) {
+            crate::trace!(g, p, "houses: {}'s ultimatum refused: war on a stronger civilization", g.house_label(u.house));
+            return false;
+        }
+    }
+    true
 }
 
-/// Where an idle army stack (`grp`, led by `u`) of `v.p` goes against a break-away that the
-/// tribute cannot stop in time ([`house_beyond_tribute`]): such a House breaks away at its
-/// countdown's end, and takes every city where our army units do not outnumber its own land
-/// combat units (`Game::city_hold`, rule 7). The stack holds the House's most valuable city it can
-/// hold (the most populous first, ties: the older): one not held now where its army units, with
-/// ours already there, would outnumber the House's, within 8 turns; or it stays in the city it
-/// stands in when that city is held only with it (its plot).
+/// Whether the AI liege holds House `h`'s cities with its idle armies (the third build, rule 11:
+/// the second build's march, its trigger moved): the House is Annoyed or worse as the rules count
+/// it (a contract's floor included), one step from an ultimatum or under one. Holding every city of
+/// it is what lets the liege refuse an ultimatum ([`consider_ultimatum`]).
+pub fn house_to_hold(g: &Game, h: HouseId) -> bool {
+    g.houses.contains(h) && g.house_state(h).withholds()
+}
+
+/// Where an idle army stack (`grp`, led by `u`) of `v.p` goes to hold the cities of its Houses to
+/// hold ([`house_to_hold`]): see [`hold_post`].
 pub(crate) fn disloyal_house_post(g: &Game, v: &mut View, grp: GroupId, u: UnitId) -> Option<PlotIdx> {
     let p = v.p;
     let mut cities: Vec<CityId> = Vec::new();
     for &h in &g.players[p].houses {
-        if g.houses.contains(h) && house_beyond_tribute(g, h) {
+        if house_to_hold(g, h) {
             cities.extend(g.house_cities(h));
         }
     }
+    hold_post(g, v, grp, u, cities)
+}
+
+/// The march to hold Houses' cities (`cities`, of `v.p`'s Houses): a House that breaks away takes
+/// every city where our army units do not outnumber its own land combat units (`Game::city_hold`,
+/// rule 7). The stack holds the most valuable of `cities` it can hold (the most populous first,
+/// ties: the older): one not held now where its army units, with ours already there, would
+/// outnumber the House's, within 8 turns; or it stays in the city it stands in when that city is
+/// held only with it (its plot). Public: the Houses a rival courts are held the same way.
+pub fn hold_post(g: &Game, v: &mut View, grp: GroupId, u: UnitId, mut cities: Vec<CityId>) -> Option<PlotIdx> {
+    let p = v.p;
     if cities.is_empty() {
         return None;
     }
@@ -445,8 +483,7 @@ mod tests {
     }
 
     /// The rate set is lowered as soon as the projection at it falls below the margin, as far as
-    /// needed (to 0% when no rate keeps it); the rate in force follows a step every 5 turns. A
-    /// Furious House's countdown stops once a step lifts it above Furious, when that comes in time.
+    /// needed (to 0% when no rate keeps it); the rate in force follows a step every 5 turns.
     #[test]
     fn the_tribute_set_is_lowered_when_the_projection_falls() {
         let (mut g, c) = world(&SPOTS[..2]);
@@ -466,45 +503,72 @@ mod tests {
         assert_eq!(tribute_for(&g, h), 0);
         super::tribute(&mut g, P0);
         assert_eq!(rates(&g, h), (0, 40));
-
-        // A Furious House at 20% (-6): its countdown starts, the rate set goes to 0%; the first
-        // step (10%, -5) comes in 5 turns, within the countdown's 10, and stops it.
-        set_rate(&mut g, h, 20);
-        set_loyalty(&mut g, h, -6);
-        assert!(!house_beyond_tribute(&g, h), "a cut arrives in time");
-        next_turn(&mut g);
-        assert!(g.houses[h].standing.countdown.is_some(), "Furious: the countdown runs");
-        assert_eq!(rates(&g, h), (0, 20));
-        for _ in 0..4 {
-            next_turn(&mut g);
-        }
-        assert_eq!((rates(&g, h), g.house_loyalty(h)), ((0, 10), -5));
-        assert!(g.houses[h].standing.countdown.is_some(), "told at the next states");
-        next_turn(&mut g);
-        assert!(g.houses[h].standing.countdown.is_none(), "the step stopped the countdown");
     }
 
-    /// A House breaks away whatever the tribute does when it is Furious and still Furious at the
-    /// rate in force when its countdown ends, its rate set to 0% now.
+    /// The tribute rule never sets a rate above a contract's bound (the third build, rule 6).
     #[test]
-    fn a_house_beyond_the_tribute_is_one_no_cut_reaches_in_time() {
+    fn the_tribute_set_keeps_to_a_contract() {
         let (mut g, c) = world(&SPOTS[..2]);
         let h = house(&mut g, c[1]);
-        // At 20% and -8: -6 at 0%, Furious even then.
+        set_rate(&mut g, h, 10);
+        set_loyalty(&mut g, h, 6);
+        assert_eq!(tribute_for(&g, h), 50, "no contract: the highest rate with a point to spare");
+        let until = g.game_turn() + 20;
+        g.houses[h].contract = Some(ffh_core::persons::Contract { kind: UltimatumKind::Tribute(10), until, deal: None });
+        assert_eq!(tribute_for(&g, h), 10, "the bound");
+        super::tribute(&mut g, P0);
+        assert_eq!(rates(&g, h), (10, 10));
+    }
+
+    /// The House's cities are held from Annoyed, one step from an ultimatum, and under a contract
+    /// (its floor counts as Annoyed); not from Cautious.
+    #[test]
+    fn a_house_to_hold_is_annoyed_or_worse() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        let h = house(&mut g, c[1]);
         set_rate(&mut g, h, 20);
-        set_loyalty(&mut g, h, -8);
-        assert!(house_beyond_tribute(&g, h));
-        // At 20% and -7, 10 turns left: 0% in force by then (-5).
-        set_loyalty(&mut g, h, -7);
-        let t = g.game_turn();
-        g.houses[h].standing.countdown = Some(t + 10);
-        assert!(!house_beyond_tribute(&g, h));
-        // 3 turns left: no step before it ends (the first is 5 turns away).
-        g.houses[h].standing.countdown = Some(t + 3);
-        assert!(house_beyond_tribute(&g, h));
-        // Not Furious: no.
-        set_loyalty(&mut g, h, -5);
-        assert!(!house_beyond_tribute(&g, h));
+        for (total, hold) in [(0, false), (-2, false), (-3, true), (-5, true)] {
+            set_loyalty(&mut g, h, total);
+            assert_eq!(house_to_hold(&g, h), hold, "{total}");
+        }
+        // Under a contract: at least Annoyed whatever its parts make it.
+        set_loyalty(&mut g, h, -9);
+        let until = g.game_turn() + 20;
+        g.houses[h].contract = Some(ffh_core::persons::Contract { kind: UltimatumKind::Gold(3), until, deal: None });
+        assert_eq!(g.house_state(h), LoyaltyState::Annoyed);
+        assert!(house_to_hold(&g, h));
+    }
+
+    /// The AI accepts an ultimatum, but refuses it when every city of the House would be held (its
+    /// break-away takes nothing) or when it demands war on a civilization of more power.
+    #[test]
+    fn the_ai_accepts_an_ultimatum_unless_it_holds_everything_or_faces_a_stronger_war() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        g.player_init_city(P1, 15, 7, true, true);
+        let h = house(&mut g, c[1]);
+        let until = g.game_turn() + 20;
+        let gold = Ultimatum { house: h, kind: UltimatumKind::Gold(4), request: false, until };
+        assert!(consider_ultimatum(&g, P0, &gold), "a House that takes its city: accept");
+        // War on player 1: refused while player 1 has more power.
+        let war = Ultimatum { house: h, kind: UltimatumKind::War(P1), request: false, until };
+        let w = g.d.t::<UnitType>("UNIT_WARRIOR");
+        let (pt, qt) = (g.players[P0].team, g.players[P1].team);
+        while g.team_get_power(qt, true) <= g.team_get_power(pt, true) {
+            g.player_init_unit(P1, w, 15, 7, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+        }
+        assert!(!consider_ultimatum(&g, P0, &war), "a stronger civilization");
+        while g.team_get_power(pt, true) <= g.team_get_power(qt, true) {
+            g.player_init_unit(P0, w, 3, 4, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+        }
+        assert!(consider_ultimatum(&g, P0, &war), "a weaker civilization");
+        // Every city held: an army of ours outnumbers the House's units in its only city.
+        let hc = g.house_cities(h)[0];
+        let (x, y) = (g.cities[hc].x, g.cities[hc].y);
+        let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(P0, w, x, y, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
+        g.army_form(P0, &units).unwrap();
+        g.player_army_sync(P0);
+        assert!(g.house_cities_held(h).0.is_empty(), "held: {:?}", g.city_hold(hc));
+        assert!(!consider_ultimatum(&g, P0, &gold), "every city held: refuse");
     }
 
     // ---- The levy ----

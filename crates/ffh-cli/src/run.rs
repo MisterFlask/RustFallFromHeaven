@@ -90,6 +90,9 @@ impl Controller for Timed {
     fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
         self.time(|| self.inner.consider_loan(g, p, proposal))
     }
+    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
+        self.time(|| self.inner.consider_ultimatum(g, p, u))
+    }
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.time(|| self.inner.choose_loan_units(g, p, terms))
     }
@@ -312,6 +315,9 @@ impl Controller for CppCitizens {
     }
     fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
         self.inner.consider_loan(g, p, proposal)
+    }
+    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
+        self.inner.consider_ultimatum(g, p, u)
     }
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.inner.choose_loan_units(g, p, terms)
@@ -1117,6 +1123,9 @@ impl Controller for FreeRider {
     }
     fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
         self.inner.consider_loan(g, p, proposal)
+    }
+    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
+        self.inner.consider_ultimatum(g, p, u)
     }
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.inner.choose_loan_units(g, p, terms)

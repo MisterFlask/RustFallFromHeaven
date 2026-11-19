@@ -407,9 +407,9 @@ impl Game {
 
     /// Houses (docs/PERSONS.md): `kind` `granted` (house / founded), `request` (issued / met /
     /// refused), `state` (Friendly / Pleased / Cautious / Annoyed / Furious), `record` (vassal /
-    /// capitulated: a vassal became a House; ended; freed), `seceded` (countdown / civil_war /
-    /// bribe / bribe_vassal / held), `levy` (placed), `bribe` (offered); counted as
-    /// `house_<kind>` by what, for the liege.
+    /// capitulated: a vassal became a House; ended; freed), `seceded` (ultimatum / civil_war /
+    /// bribe / bribe_vassal / held), `levy` (placed), `bribe` (offered), `ultimatum` (accepted /
+    /// refused), `split` (split / no_leader); counted as `house_<kind>` by what, for the liege.
     pub(crate) fn tel_house(&self, p: PlayerId, kind: &'static str, what: &'static str) {
         if !self.telemetry.on() {
             return;
@@ -423,6 +423,9 @@ impl Game {
                 "seceded" => "house_seceded",
                 "levy" => "house_levy",
                 "bribe" => "house_bribe",
+                // the third build, part 2A
+                "ultimatum" => "house_ultimatum",
+                "split" => "house_split",
                 _ => "house_record",
             };
             t.count(p, key, what, 1);

@@ -64,8 +64,14 @@ fn turns(n: i32) -> String {
     format!("{n} {}", if n == 1 { "turn" } else { "turns" })
 }
 
-/// `Request refused: -3 (41 turns)`; a standing part without turns: `State religion opposed: -2`.
+/// `Request refused: -3 (41 turns)`; a standing part without turns: `State religion opposed: -2`;
+/// a part whose label is a sentence (a contract's floor, the third build, rule 6): `Contract until
+/// turn 160: at least Annoyed (+3).`, or with nothing to add `Contract until turn 160: at least
+/// Annoyed.`
 fn part_text(p: &LoyaltyPart) -> String {
+    if p.label.contains(": ") {
+        return if p.amount == 0 { format!("{}.", p.label) } else { format!("{} ({}).", p.label, signed(p.amount)) };
+    }
     match p.turns_left {
         Some(t) => format!("{}: {} ({})", p.label, signed(p.amount), turns(t)),
         None => format!("{}: {}", p.label, signed(p.amount)),
@@ -141,7 +147,7 @@ fn request_json(v: &Viewer, hv: &HouseView) -> Json {
         DemandKind::AdoptReligion => ("adopt_religion", None, crate::jobj! { "label" => "Religion", "act" => crate::jobj! { "kind" => "religion" } }),
         DemandKind::SpreadReligion(plot) => ("spread_religion", None, show(plot)),
     };
-    let (lapse, lapse_state) = request_lapse(hv);
+    let (lapse, lapse_state) = request_lapse(g, hv);
     crate::jobj! {
         "kind" => kind,
         "text" => format!("Request: {what}"),
@@ -149,6 +155,9 @@ fn request_json(v: &Viewer, hv: &HouseView) -> Json {
         "turns" => format!("{}.", turns(dm.turns_left)),
         "lapse" => lapse,
         "lapse_state" => lapse_state,
+        // (the third build, rule 5: Furious is an ultimatum; the client writes `, becomes ✖
+        // Furious: an ultimatum.`)
+        "lapse_then" => (lapse_state == Some("Furious")).then_some("an ultimatum"),
         "urgent" => urgent,
         "note" => note,
         "button" => button,
@@ -157,10 +166,11 @@ fn request_json(v: &Viewer, hv: &HouseView) -> Json {
 
 /// What a request's term lapsing does (the rules' refusal, `DEMAND_REFUSED`): `At its term: -3
 /// (60 turns)`, and the state it leaves the House in when that changes (the rules' state of its
-/// loyalty less the refusal's amount; the client writes `, becomes ✖ Furious.`), else null (`.`).
-fn request_lapse(hv: &HouseView) -> (String, Option<&'static str>) {
+/// loyalty less the refusal's amount, a contract's floor included; the client writes `, becomes ✖
+/// Furious: an ultimatum.`), else null (`.`).
+fn request_lapse(g: &Game, hv: &HouseView) -> (String, Option<&'static str>) {
     let (amount, t) = DEMAND_REFUSED;
-    let after = LoyaltyState::of(hv.loyalty + amount);
+    let after = LoyaltyState::of(g.house_loyalty_floored(hv.id, g.house_loyalty_raw(hv.id) + amount));
     (format!("At its term: {} ({})", signed(amount), turns(t)), (after != hv.state).then(|| state_name(after)))
 }
 
@@ -268,6 +278,7 @@ fn since_text(hv: &HouseView) -> String {
         HouseOrigin::Founded => format!("Founded on turn {}.", hv.founded_turn),
         HouseOrigin::Capitulated => format!("Capitulated on turn {}.", hv.founded_turn),
         HouseOrigin::Vassal => format!("Vassal since turn {}.", hv.founded_turn),
+        HouseOrigin::Split => format!("Split off on turn {}.", hv.founded_turn),
     }
 }
 
@@ -323,6 +334,8 @@ fn tribute_json(g: &Game, hv: &HouseView) -> Json {
                 "loyalty_text" => format!("Loyalty: {}", signed(r.loyalty)),
                 "state" => state_name(r.state),
                 "changes" => r.state != hv.state,
+                // A rate a contract's bound refuses (the third build, rule 6), with the reason.
+                "barred" => if r.barred { g.player_check_house_tribute(hv.owner, hv.id, r.pct).err() } else { None },
             }
         })
         .collect();
@@ -366,9 +379,11 @@ fn levy_status(reason: Option<&str>, loyalty: i32) -> Json {
 }
 
 /// A House's card (rule 13; "The third build", rule 1: a House carries what its head carried):
-/// its leader (portrait, name, title), its attitude, countdown and outcome, its request, its
-/// loyalty parts, its tribute and the selector, its levy, its cities, its price to secede, Free;
-/// and opened, its record, its leader's ambition and backstory.
+/// its leader (portrait, name, title), its attitude and, Furious, the outcome of its ultimatum
+/// (rule 5), its contract (rule 6: `Contract until turn 160: no tribute above 10%.`), its split
+/// line (rule 4: `Holds 7 cities: 5% a turn to split.`), its request, its loyalty parts, its
+/// tribute and the selector, its levy, its cities, its price to secede, Free; and opened, its
+/// record, its leader's ambition and backstory.
 fn house_json(v: &Viewer, hv: &HouseView) -> Json {
     let g = v.g;
     let (parts, total) = parts_json(&hv.parts, hv.loyalty);
@@ -396,9 +411,11 @@ fn house_json(v: &Viewer, hv: &HouseView) -> Json {
         "title" => hv.leader_title.clone(),
         "color" => hv.color as i64,
         "state" => state_name(hv.state),
-        "countdown_turns" => hv.countdown_turns,
         "outcome" => hv.outcome.as_deref().map(|s| core(g, s)),
-        "held" => (hv.countdown_turns.is_some() && !contests.is_empty()).then(|| core(g, contests.trim_start())),
+        "held" => (hv.outcome.is_some() && !contests.is_empty()).then(|| core(g, contests.trim_start())),
+        // the third build, part 2A
+        "contract" => hv.contract.as_ref().map(|c| core(g, &c.line)),
+        "split" => hv.split_line.clone(),
         "since" => since_text(hv),
         "request" => request_json(v, hv),
         "cities" => Json::Arr(cities),
@@ -446,8 +463,8 @@ fn founding_json(cv: &CourtView) -> Json {
     }
 }
 
-/// An outcome (`House Ashledger will break away ...`) as a line after `House Ashledger:
-/// Furious.`: without its subject, capitalized (`Will break away ...`).
+/// An outcome (`House Ashledger issues an ultimatum ...`) as a line after `House Ashledger:
+/// Furious.`: without its subject, capitalized (`Issues an ultimatum ...`).
 fn outcome_rest(subject: &str, outcome: &str) -> String {
     match outcome.strip_prefix(&format!("{subject} ")) {
         Some(r) => {
@@ -552,7 +569,7 @@ pub fn attention_count(v: &Viewer) -> usize {
 
 /// The keywords of this system (rule 13; part J). The loyalty states are the game's attitude
 /// words, no keywords: a state mark's tooltip is the attitude's own help (attitudes.jsonc).
-const KEYWORDS: &[&str] = &["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_REQUEST", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_CLAIMANT"];
+const KEYWORDS: &[&str] = &["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_REQUEST", "KEYWORD_ULTIMATUM", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_CLAIMANT"];
 
 fn keywords(d: &GameData, names: &[&str]) -> Vec<KeywordType> {
     names.iter().filter_map(|n| d.ty::<KeywordType>(n)).collect()
@@ -767,6 +784,10 @@ fn candidate_json(v: &Viewer, c: CityId, cand: &GrantCandidate) -> Json {
     lines.push(format!("Moves to {house_label}'s realm: its production and commerce are the House's."));
     let garrison = garrison_lines(g, c, &house_label);
     lines.extend(garrison.iter().cloned());
+    // The third build, rule 4: a grant that brings the House to the split's threshold.
+    if let GrantTo::House(hh) = cand.to {
+        lines.extend(g.house_split_line_after_grant(hh, c));
+    }
     lines.push(maintenance_line(g, c));
     if let Some(l) = crown_after_line(g, v.h, c) {
         lines.push(l);
@@ -853,7 +874,7 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
 // ---------------------------------------------------------------------------------------------
 
 /// A requisition candidate's House (the levy, rule 6; the Armies screen's *Requisition from*):
-/// `{id, label, colour, state, turns, takes_levy, text, reason, until, passed}`. The row shows the
+/// `{id, label, colour, state, takes_levy, text, reason, until, passed}`. The row shows the
 /// House's shield, name and state mark, then `text`: `Takes levies. Each levy: -1 (20 turns).` or
 /// `Takes no levy.` (the mark beside it says why); the mark's tooltip carries `until` (`Annoyed
 /// after 2 levies.`, from the rules' numbers) or `reason`, the rules' reason it takes none (`House
@@ -871,7 +892,6 @@ pub fn levy_house(g: &Game, c: CityId) -> Json {
         "label" => label.as_str(),
         "colour" => g.houses[h].color as i32,
         "state" => g.house_state(h).name(),
-        "turns" => g.houses[h].standing.countdown.map(|end| (end - g.game_turn()).max(0)),
         "takes_levy" => refusal.is_none(),
         "text" => text,
         "reason" => refusal.as_deref(),

@@ -4,22 +4,23 @@ use super::*;
 
 impl Game {
     /// Player `p`'s Houses in its turn processing (`player_do_turn`, after the army sync): the
-    /// House records checked, modifiers expired, requests (met, impossible, lapsed, new), states
-    /// and countdowns; then the countdowns that ran out (Houses break away), and the Houses'
-    /// tribute.
+    /// House records checked, modifiers expired, contracts whose turns ran out ended, requests (met,
+    /// impossible, lapsed, new), states and the ultimatums of the Furious (answered at once: a
+    /// refusal breaks the House away); then the Houses' tribute, and their splits.
     pub fn player_persons_turn(&mut self, p: PlayerId) {
         if !self.player_has_houses(p) {
             return;
         }
         self.player_persons_houses(p);
         self.player_persons_expire(p);
+        self.player_persons_contracts(p);
         self.player_persons_demands(p);
         self.player_persons_states(p);
-        self.player_persons_secessions(p);
         if !self.players[p].alive {
             return;
         }
         self.player_persons_tribute(p);
+        self.player_persons_splits(p);
     }
 
     /// Player `p`'s House records in its turn processing: a record whose player is dead or no

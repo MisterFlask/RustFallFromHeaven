@@ -10,12 +10,12 @@ import { stateMark, houseShield, openCourt } from "./persons.js";
 import { SHIELD, SHIELD_EDGE, houseColour, stateColour, stateGlyph, stateKey } from "./persons_mark.js";
 
 /** A House in a list or a line: its shield and `House Arne`, and the state mark when it is
- *  Annoyed or Furious (with the countdown's turns). `house` as the host sends it (`{id, label,
- *  colour, state, turns}`); null: `Crown`. `open`: a click opens the Court at the House. */
+ *  Annoyed or Furious. `house` as the host sends it (`{id, label, colour, state}`); null: `Crown`.
+ *  `open`: a click opens the Court at the House. */
 export function houseTag(house, { open = false, mark = true } = {}) {
   if (!house) return h("span.house-tag.crown", "Crown");
   const k = stateKey(house.state);
-  const body = [houseShield(house.colour, 14), h("span.house-name", house.label), mark && house.state && (k === "annoyed" || k === "furious") ? [" ", stateMark(house.state, house.turns)] : null];
+  const body = [houseShield(house.colour, 14), h("span.house-name", house.label), mark && house.state && (k === "annoyed" || k === "furious") ? [" ", stateMark(house.state)] : null];
   if (!open) return h("span.house-tag", { "data-house": house.id }, body);
   return h("button.link.house-tag", { "data-house": house.id, title: "Open the Court at this House", onclick: (ev) => (ev.stopPropagation(), openCourt({ house: house.id })) }, body);
 }
@@ -30,7 +30,9 @@ export function previewList(lines, { title = null } = {}) {
     title ? h("div.persons-preview-title", title) : null,
     lines.map((l) => {
       const text = `${l.subject}: ${l.text}${/\.$/.test(l.text) ? "" : "."}`;
-      return h("div.persons-preview-line", h("span", text), l.state_after ? [" Becomes ", stateMark(l.state_after), "."] : null);
+      // Furious is an ultimatum (docs/PERSONS.md, "The third build", rule 5).
+      const then = l.state_after && stateKey(l.state_after) === "furious" ? ": an ultimatum." : ".";
+      return h("div.persons-preview-line", h("span", text), l.state_after ? [" Becomes ", stateMark(l.state_after), then] : null);
     }),
   );
 }
@@ -45,21 +47,18 @@ export function previewText(lines) {
 let shieldPath = null;
 
 /** What a plate's shield carries for the House's liege (docs/PERSONS.md, rule 13: "its attitude
- *  mark for the liege"): the one mark of its state, `{glyph, colour, count}` (▲ △ ● ◆ ✖ in the
- *  states' colours; `count`: the Furious countdown's turns left, else null); null when the state
- *  is not sent (a House not ours: its shield only). */
-export function plateMark(state, turns) {
+ *  mark for the liege"): the one mark of its state, `{glyph, colour}` (▲ △ ● ◆ ✖ in the states'
+ *  colours); null when the state is not sent (a House not ours: its shield only). */
+export function plateMark(state) {
   if (state === null || state === undefined) return null;
   const k = stateKey(state);
-  return { glyph: stateGlyph(k), colour: stateColour(k), count: k === "furious" ? (turns ?? null) : null };
+  return { glyph: stateGlyph(k), colour: stateColour(k) };
 }
 
-/** The plate's House shield (the view's `city.house`: `{colour, state, turns}`) drawn on canvas
- *  `g`, `ht` px high, its centre at (`cx`, `cy`): the House's colour with a dark edge; for its
- *  liege, the state's mark on a dark disc on it ({@link plateMark}), and Furious's turns left in a
- *  pill at its left (not at its right, where the plate's size disc is; not under its point, where
- *  a garrison's badge stands). Returns the width it takes, the pill's included (0 without a
- *  House). */
+/** The plate's House shield (the view's `city.house`: `{colour, state}`) drawn on canvas `g`,
+ *  `ht` px high, its centre at (`cx`, `cy`): the House's colour with a dark edge; for its liege,
+ *  the state's mark on a dark disc on it ({@link plateMark}). Returns the width it takes (0
+ *  without a House). */
 export function drawPlateShield(g, house, cx, cy, ht) {
   if (!house) return 0;
   const s = ht / SHIELD.h;
@@ -77,8 +76,7 @@ export function drawPlateShield(g, house, cx, cy, ht) {
     g.stroke(shieldPath);
   }
   g.restore();
-  const mk = plateMark(house.state, house.turns);
-  let pillW = 0;
+  const mk = plateMark(house.state);
   if (mk) {
     const r = ht * 0.3;
     const my = cy - ht * 0.06;
@@ -92,41 +90,10 @@ export function drawPlateShield(g, house, cx, cy, ht) {
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(mk.glyph, cx, my + 0.5);
-    if (mk.count !== null && mk.count !== undefined) {
-      // At the shield's left, on the plate's line: under its point a garrison's stack badge
-      // (drawn over the plates) covered it.
-      const txt = String(mk.count);
-      const fs = Math.max(8, Math.round(ht * 0.55));
-      g.font = `700 ${fs}px system-ui, 'DejaVu Sans', sans-serif`;
-      const tw = g.measureText(txt).width;
-      const pw = tw + fs * 0.6;
-      const ph = fs + 2;
-      const px = cx - w / 2 - PILL_GAP - pw;
-      const py = cy - ph / 2;
-      pillW = pw + PILL_GAP;
-      g.beginPath();
-      const rr = ph / 2;
-      g.moveTo(px + rr, py);
-      g.arcTo(px + pw, py, px + pw, py + ph, rr);
-      g.arcTo(px + pw, py + ph, px, py + ph, rr);
-      g.arcTo(px, py + ph, px, py, rr);
-      g.arcTo(px, py, px + pw, py, rr);
-      g.closePath();
-      g.fillStyle = "#5a1010";
-      g.fill();
-      g.lineWidth = 1;
-      g.strokeStyle = mk.colour;
-      g.stroke();
-      g.fillStyle = "#fff0e8";
-      g.fillText(txt, px + pw / 2, py + ph / 2 + 0.5);
-    }
     g.restore();
   }
-  return w + pillW;
+  return w;
 }
-
-/** The gap between the countdown's pill and the shield, px. */
-const PILL_GAP = 2;
 
 // ---- alerts (part H) ---------------------------------------------------------------------------
 
@@ -187,8 +154,8 @@ export function alertFocus(e, houses = []) {
   return named ? { house: named.id } : null;
 }
 
-/** An alert's text (part H). A change of state (`House Arne is Annoyed.`, `House Arne is Furious.
- *  House Arne will break away ...`): the one mark of the new state over the rest of the text, the
+/** An alert's text (part H). A change of state (`House Arne is Annoyed.`, `House Arne is
+ *  Furious.`): the one mark of the new state over the rest of the text, the
  *  first sentence dropped (the mark says it), or with nothing after it the subject and the mark
  *  (`House Arne ◆ Annoyed`); a House turned Annoyed or Furious adds that it takes no levy (`House
  *  Arne takes no levy.`): the rules' withholding (rule 5). Any other text as it is. `house`: the

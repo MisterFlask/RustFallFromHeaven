@@ -39,6 +39,11 @@
     "reminder": "TXT_KEY_KEYWORD_REQUEST_REMINDER"
   },
   {
+    "type": "KEYWORD_ULTIMATUM",
+    "description": "TXT_KEY_KEYWORD_ULTIMATUM",
+    "reminder": "TXT_KEY_KEYWORD_ULTIMATUM_REMINDER"
+  },
+  {
     "type": "KEYWORD_TRIBUTE",
     "description": "TXT_KEY_KEYWORD_TRIBUTE",
     "reminder": "TXT_KEY_KEYWORD_TRIBUTE_REMINDER"

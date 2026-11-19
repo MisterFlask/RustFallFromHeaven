@@ -1,5 +1,7 @@
 //! Previews (pure): what a choice does to each House before it is made, for the client and the AI
-//! (docs/PERSONS.md, UI: "Previews at the decision"), and a countdown's stated outcome.
+//! (docs/PERSONS.md, UI: "Previews at the decision"), and a Furious House's stated outcome (its
+//! ultimatum; the third build, rule 5). A contract's floor counts (rule 6): a House under one is
+//! at least Annoyed after any act.
 
 use ffh_data::*;
 
@@ -48,7 +50,8 @@ pub enum PersonsAct<'a> {
 struct Pending {
     subject: String,
     house: Option<HouseId>,
-    /// Its loyalty now (for a House that does not exist yet: 0).
+    /// Its loyalty now as its parts make it, without a contract's floor (for a House that does not
+    /// exist yet: 0).
     total: i32,
     state: LoyaltyState,
     lines: Vec<(String, i32)>,
@@ -61,15 +64,17 @@ fn amount_text(label: &str, (amount, turns): (i32, i32)) -> String {
 
 impl Game {
     fn pending_for(&self, h: HouseId) -> Pending {
-        let total = self.house_loyalty(h);
-        Pending { subject: self.house_label(h), house: Some(h), total, state: LoyaltyState::of(total), lines: Vec::new() }
+        Pending { subject: self.house_label(h), house: Some(h), total: self.house_loyalty_raw(h), state: self.house_state(h), lines: Vec::new() }
     }
 
     fn pending_lines(&self, list: Vec<Pending>) -> Vec<PreviewLine> {
         let mut out = Vec::new();
         for pd in list {
             let delta: i32 = pd.lines.iter().map(|l| l.1).sum();
-            let after = LoyaltyState::of(pd.total + delta);
+            let after = LoyaltyState::of(match pd.house {
+                Some(h) => self.house_loyalty_floored(h, pd.total + delta),
+                None => pd.total + delta,
+            });
             let n = pd.lines.len();
             for (i, (text, _)) in pd.lines.into_iter().enumerate() {
                 let state_after = (i + 1 == n && after != pd.state).then_some(after);
@@ -167,6 +172,25 @@ impl Game {
         let mut list: Vec<Pending> = Vec::new();
         let houses = self.player_houses(p);
         let demands: Vec<(HouseId, DemandKind)> = houses.iter().filter_map(|&h| self.houses[h].demand.map(|dm| (h, dm.kind))).collect();
+        // A contract that forbids the act (the third build, rule 6): its House's line says so.
+        let bound = match *act {
+            PersonsAct::DeclareWar(t) => Some(super::ContractAct::DeclareWar(t)),
+            PersonsAct::MakePeace(t) => Some(super::ContractAct::MakePeace(t)),
+            PersonsAct::Convert(_) => Some(super::ContractAct::ChangeReligion),
+            _ => None,
+        };
+        if let Some(bound) = bound {
+            let mut out = Vec::new();
+            for &h in &houses {
+                let forbids = self.house_contract(h).is_some_and(|c| self.contract_forbids(h, &c, bound));
+                if let (true, Some(cv)) = (forbids, self.house_contract_view(h)) {
+                    out.push(PreviewLine { subject: self.house_label(h), text: cv.line.trim_end_matches('.').to_string(), state_after: None });
+                }
+            }
+            if !out.is_empty() {
+                return out;
+            }
+        }
         match *act {
             PersonsAct::DeclareWar(t) => {
                 for &(h, kind) in &demands {
@@ -239,33 +263,21 @@ impl Game {
         and_list(&cities.iter().map(|&c| self.persons_city_name(c)).collect::<Vec<_>>())
     }
 
-    /// The stated outcome of House `h`'s countdown, for its liege: `House Ashledger will break
-    /// away in 8 turns, taking Prespur and Elam: war. Elam goes with it: its 3 units against your
-    /// army's 2. Torrin returns to you: your army's 4 units outnumber its 2.` (the contest for
-    /// each city where an army of the liege stands, [`Game::house_hold_text`]; without a countdown:
-    /// what would happen now, `would break away, taking ...`).
+    /// The stated outcome of a Furious House `h`, for its liege (the third build, rule 5): its
+    /// ultimatum at the liege's next turn, and what refusing it does now: `House Ashledger issues
+    /// an ultimatum at your next turn. Refused, it breaks away, taking Prespur and Elam: war. Elam
+    /// goes with it: its 3 units against your army's 2. Torrin returns to you: your army's 4 units
+    /// outnumber its 2.` (the contest for each city where an army of the liege stands,
+    /// [`Game::house_hold_text`]); `Refused, it ends: every city is held.` when none would go.
     pub fn house_breakaway_outcome(&self, h: HouseId) -> String {
         let label = self.house_label(h);
         let (going, _) = self.house_cities_held(h);
         let cities = self.city_names_of(&going);
         let contests = self.house_hold_text(h);
-        match self.houses[h].standing.countdown {
-            Some(end) => {
-                let t = (end - self.game_turn()).max(0);
-                let turns = format!("{t} {}", if t == 1 { "turn" } else { "turns" });
-                if going.is_empty() {
-                    format!("{label} will end in {turns}: every city is held.{contests}")
-                } else {
-                    format!("{label} will break away in {turns}, taking {cities}: war.{contests}")
-                }
-            }
-            None => {
-                if going.is_empty() {
-                    format!("{label} would end: every city is held.{contests}")
-                } else {
-                    format!("{label} would break away, taking {cities}: war.{contests}")
-                }
-            }
+        if going.is_empty() {
+            format!("{label} issues an ultimatum at your next turn. Refused, it ends: every city is held.{contests}")
+        } else {
+            format!("{label} issues an ultimatum at your next turn. Refused, it breaks away, taking {cities}: war.{contests}")
         }
     }
 }

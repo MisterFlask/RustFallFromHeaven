@@ -225,35 +225,42 @@ fn the_attitude_scale() {
     }
 }
 
+/// A liege that refuses every ultimatum (the third build, rule 5).
+struct Refuses;
+
+impl ffh_core::controller::Controller for Refuses {
+    fn consider_ultimatum(&self, _g: &Game, _p: PlayerId, _u: &Ultimatum) -> bool {
+        false
+    }
+}
+
 #[test]
-fn loyalty_expires_and_a_furious_house_counts_down() {
+fn loyalty_expires_and_a_furious_house_issues_an_ultimatum() {
     let World { mut g, a, .. } = world();
     government(&mut g, "CIVIC_ARISTOCRACY");
-    let a_plot = plot(&g, a);
     let h = land_house(&mut g, a);
     set_house_loyalty(&mut g, h, 0);
     let t = g.game_turn();
     g.houses[h].standing.mods = vec![LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount: -3, until: Some(t + 1) }, LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount: -3, until: Some(t + 3) }];
     assert_eq!(g.house_loyalty(h), -6);
     assert_eq!(g.house_state(h), LoyaltyState::Furious);
+    let outcome = g.house_breakaway_outcome(h);
+    assert!(outcome.contains(" issues an ultimatum at your next turn. Refused, it breaks away, taking ") && outcome.ends_with(": war."), "{outcome}");
+    assert!(g.house_view(h).unwrap().outcome.is_some(), "Furious: the card states it");
     turn(&mut g);
     assert_eq!(g.house_loyalty(h), -3, "the first ended on its turn");
-    assert_eq!(g.houses[h].standing.countdown, None);
+    assert!(g.houses[h].contract.is_none(), "Annoyed: no ultimatum");
     let t = g.game_turn();
     g.houses[h].standing.mods.push(LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount: -3, until: Some(t + 30) });
     turn(&mut g);
-    assert_eq!(g.house_state(h), LoyaltyState::Furious);
-    let end = g.houses[h].standing.countdown.expect("the countdown");
-    assert_eq!(end, g.game_turn() + 10);
-    let outcome = g.house_breakaway_outcome(h);
-    assert!(outcome.contains(" will break away in 10 turns, taking ") && outcome.ends_with(": war."), "{outcome}");
-    assert!(logged(&g, &format!("{} is Furious. {outcome}", g.house_label(h))));
-    let city = city_at(&g, a_plot);
-    assert_eq!(g.city_house_mark(city).map(|m| (m.state, m.countdown_turns)), Some((LoyaltyState::Furious, Some(10))));
-    // Back above: the countdown stops.
-    g.houses[h].standing.mods.push(LoyaltyMod { cause: LoyaltyCause::DemandMet, amount: 6, until: Some(end + 60) });
-    turn(&mut g);
-    assert_eq!(g.houses[h].standing.countdown, None);
+    // Furious: an ultimatum, accepted by the liege's controller (the rules' default accepts).
+    let label = g.house_label(h);
+    assert!(logged(&g, &format!("{label} is Furious.")));
+    assert!(logged(&g, &format!("{label} issues an ultimatum: ")));
+    assert!(g.houses[h].contract.is_some(), "accepted: a contract");
+    assert_eq!(g.houses[h].ultimatums, 1);
+    assert_eq!(g.house_state(h), LoyaltyState::Annoyed, "at least Annoyed while it runs");
+    assert!(g.house_view(h).unwrap().outcome.is_none());
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -527,8 +534,8 @@ fn tribute_takes_gold_and_adds_research() {
     in_force(&mut g, h, 50);
     assert_eq!(g.house_loyalty(h), base - 3, "50% is -4");
     assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Tribute 50%" && p.amount == -4));
-    assert_eq!(g.player_set_house_tribute(P0, h, 25), Err("Tribute: 0 to 50 percent, in steps of 10."));
-    assert_eq!(g.player_set_house_tribute(P1, h, 20), Err("Not a House of yours."));
+    assert_eq!(g.player_set_house_tribute(P0, h, 25), Err("Tribute: 0 to 50 percent, in steps of 10.".to_string()));
+    assert_eq!(g.player_set_house_tribute(P1, h, 20), Err("Not a House of yours.".to_string()));
     g.player_set_house_tribute_default(P0, 30).unwrap();
     assert_eq!(g.players[P0].house_tribute, 30);
     // The transfer.
@@ -604,18 +611,11 @@ fn the_levy_trains_the_lieges_unit_and_is_a_grievance() {
 // Breaking away
 // ---------------------------------------------------------------------------------------------
 
-/// Player 0's House `h` to the end of its countdown.
-fn countdown_ends(g: &mut Game, h: HouseId) {
+/// Player 0's House `h` Furious, its ultimatum refused by its liege (the third build, rule 5).
+fn ultimatum_refused(g: &mut Game, h: HouseId) {
+    g.controllers[P0] = std::sync::Arc::new(Refuses);
     set_house_loyalty(g, h, -6);
     turn(g);
-    assert!(g.houses[h].standing.countdown.is_some());
-    for _ in 0..g.d.defines.person_disloyal_turns {
-        if !g.houses.contains(h) {
-            return;
-        }
-        set_house_loyalty(g, h, -6);
-        turn(g);
-    }
 }
 
 #[test]
@@ -639,7 +639,7 @@ fn a_furious_house_breaks_away_and_its_held_cities_return() {
     assert_eq!((going, held), (vec![city_at(&g, a_plot)], vec![hb]));
     let (a_name, b_name) = (g.d.text.name(&g.cities[city_at(&g, a_plot)].name).to_string(), g.d.text.name(&g.cities[hb].name).to_string());
     let label = g.house_label(h);
-    countdown_ends(&mut g, h);
+    ultimatum_refused(&mut g, h);
     assert!(!g.houses.contains(h), "the record ended");
     assert_eq!(g.players[hp].house, None);
     let (t0, ht) = (g.players[P0].team, g.players[hp].team);

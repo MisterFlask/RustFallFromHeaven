@@ -853,6 +853,8 @@ export async function openReligion() {
       h("table.scores", h("tr", h("th", "Religion"), h("th", "Founded"), h("th", "Holy city"), h("th", "Your cities"), h("th", "")), rowsWithPreview),
       r.can_convert_none ? h("button", { onclick: () => convert(null) }, "No state religion") : null,
       r.can_convert_none ? previewList(r.persons_none) : null,
+      // A House's contract that forbids a change (docs/PERSONS.md, "The third build", rule 6).
+      r.convert_refusal ? h("p.caution.convert-refusal", r.convert_refusal) : null,
     );
   };
   load();

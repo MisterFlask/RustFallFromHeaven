@@ -37,8 +37,9 @@ function stateTip(key) {
   return remindersNode([{ key: entry.type, name: entry.name ?? stateWord(key), text: entry.help }]);
 }
 
-/** The mark of a state: `span.pstate.ps-<state>` with the glyph and the word, and for a running
- *  countdown the turns left (`Furious ✖ 8 turns`). `state` as the host sends it (`Annoyed`) or
+/** The mark of a state: `span.pstate.ps-<state>` with the glyph and the word, and a
+ *  count of turns after it when one is given (`Furious ✖ 8 turns`; no host sends one since the
+ *  third build removed the countdown). `state` as the host sends it (`Annoyed`) or
  *  a key of persons_mark.js STATES; `turns` null or undefined: none. Its tooltip says what the
  *  state does (the attitude's help in the data); `note`: a line of the row's own about the state
  *  (`Annoyed after 2 levies.`) at the tooltip's head, where a crowded row puts it rather than in
@@ -101,7 +102,8 @@ addHelp({
       h("li", "A House's loyalty is a sum of parts; its state is the attitude scale: Friendly, Pleased, Cautious, Annoyed, Furious. A state's mark says what it does."),
       h("li", "Each House makes one request at a time, with a term. Met: +3 for 60 turns. Refused at its term, or made impossible by your act: -3 for 60 turns. The request line's button goes where it is met."),
       h("li", "Every act that moves loyalty shows the change before it is done: the grant list, the tribute list, civics, religion, war and peace, razing a city."),
-      h("li", "A Furious House breaks away at the end of a 10-turn countdown, at war with you; a city of it where your army's units outnumber the House's land combat units stays yours (a tie goes to the House)."),
+      h("li", "A Furious House issues an ultimatum at your next turn: one demand you can meet at once. Accepted, a contract binds you for 20 turns and the House stays at least Annoyed. Refused, the House breaks away, at war with you; a city of it where your army's units outnumber the House's land combat units stays yours (a tie goes to the House)."),
+      h("li", "A House holding 6 cities or more splits with a chance of 5% a turn: a new House, its cadet, takes the half of its cities farthest from its capital."),
     ),
     h("h4", "Breaking away, freeing, side deals"),
     h(
@@ -160,7 +162,7 @@ function actButton(b, m, cls = "") {
  *  host's `lapse` and the state after in the one mark, when it changes. */
 function lapseText(d) {
   if (!d?.lapse) return null;
-  return h("span.pdemand-lapse", " ", d.lapse, d.lapse_state ? [", becomes ", stateMark(d.lapse_state), "."] : ".");
+  return h("span.pdemand-lapse", " ", d.lapse, d.lapse_state ? [", becomes ", stateMark(d.lapse_state), d.lapse_then ? `: ${d.lapse_then}.` : "."] : ".");
 }
 
 /** The request line (`Request: Torrin granted to House Ashledger. 34 turns. At its term: -3 (60
@@ -205,7 +207,8 @@ const tributeOpen = new Set();
  *  of rates (0 to 50%), each once in force (rule 4): what the House would pay, when it would be in
  *  force were it set now (`In force in 15 turns.`), its tribute part and its loyalty then; a tap on
  *  a rate sets it (`house_tribute`) and the Court is read again. The rate set is marked (`set`);
- *  a tap on it does nothing. */
+ *  a tap on it does nothing. A rate a contract's bound refuses is barred, its reason as its title
+ *  (docs/PERSONS.md, "The third build", rule 6). */
 function tributeBlock(x, reload) {
   const t = x.tribute;
   const set = async (pct) => {
@@ -213,18 +216,20 @@ function tributeBlock(x, reload) {
   };
   const rows = t.rates.map((r) =>
     h(
-      `button.trate${r.current ? ".current" : ""}${r.changes ? ".changes" : ""}`,
+      `button.trate${r.current ? ".current" : ""}${r.changes ? ".changes" : ""}${r.barred ? ".barred" : ""}`,
       {
         type: "button",
         "data-pct": r.pct,
         "aria-pressed": r.current ? "true" : "false",
-        title: r.current ? "The rate set" : `Set the tribute to ${r.pct}%`,
-        onclick: () => (r.current ? null : set(r.pct)),
+        "aria-disabled": r.barred ? "true" : null,
+        title: r.current ? "The rate set" : r.barred ?? `Set the tribute to ${r.pct}%`,
+        onclick: () => (r.current || r.barred ? null : set(r.pct)),
       },
       h("span.trate-pct", `${r.pct}%`, r.current ? h("span.trate-now", "set") : null),
       h("span.trate-est", r.estimate),
       h("span.trate-part", h("span.trate-when", r.when), " ", [r.part_text, r.loyalty_text].join(" · ")),
       h("span.trate-state", stateMark(r.state)),
+      r.barred ? h("span.trate-barred", r.barred) : null,
     ),
   );
   const box = h(
@@ -237,9 +242,10 @@ function tributeBlock(x, reload) {
   return box;
 }
 
-/** A House's card: who leads it (portrait, House, leader and title, since when), its attitude and
- *  countdown, the request, its loyalty parts, its tribute, its levy, its cities, Free; opened: the
- *  record, the refusal of any offer, the leader's ambition and backstory. */
+/** A House's card: who leads it (portrait, House, leader and title, since when), its attitude and,
+ *  Furious, its ultimatum's outcome; its contract and its split line (docs/PERSONS.md, "The third
+ *  build", rules 4 to 6), the request, its loyalty parts, its tribute, its levy, its cities, Free;
+ *  opened: the record, the refusal of any offer, the leader's ambition and backstory. */
 function houseCard(x, m, reload) {
   const chips = x.cities.map((c) =>
     h(
@@ -278,9 +284,11 @@ function houseCard(x, m, reload) {
         x.leader_name ? h("div.pleader", x.leader_name, x.title ? h("span.ptitle.dim", `, ${x.title}`) : null) : null,
         h("div.psince.dim", x.since),
       ),
-      stateMark(x.state, x.countdown_turns),
+      stateMark(x.state),
     ),
     x.outcome ? h("div.pline.warn", x.outcome) : null,
+    x.contract ? h("div.pline.pcontract", x.contract) : null,
+    x.split ? h("div.pline.psplit", x.split) : null,
     // The request is the line the player acts on: right under who leads the House.
     requestLine(x.request, m),
     h("div.pparts-block", partsBlock(x)),

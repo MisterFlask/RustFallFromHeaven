@@ -371,6 +371,22 @@ flag.
   more than T`) is gone. The world unit (the mean commerce of the world's civilizations) is
   computed for part 2's prices. Why: the persons did no work the Houses did not (the owner). Save
   format 53.
+- **Houses split; ultimatums and contracts replace the countdown** (docs/PERSONS.md, "The third
+  build", rules 4 to 6, part 2A, the owner's decisions of 2026-11-19): a House of 6 great cities
+  or more splits with a chance of 5% a turn, the half of its cities farthest from its capital going
+  to a new cadet House of its civilization (a free minor leader; none free, no split) that
+  inherits nothing. A Furious House no longer counts down 10 turns to breaking away: in its
+  liege's turn it issues an ultimatum, one demand its liege can meet at once (its refused request
+  again, a lower tribute, peace with a civilization that took its cities, war on one that wronged
+  it, a spare resource, else gold a turn scaled to the world's commerce), answered at once by the
+  liege (the AI accepts unless it holds every city of the House or the war is on a stronger
+  civilization). Refused, the House breaks away (the hold contest as before). Accepted, the demand
+  is done and a contract binds for 20 turns: the act that would void it is refused (a tribute
+  above the bound, war on the civilization peace was made with, peace with the one war was declared
+  on, cancelling the resource trade, a change of state religion), the House counts as at least
+  Annoyed for every rule, and gold a turn is an expense in the liege's budget. Why: "a player
+  decision to appease a House vs have a civil war" (the owner), and Houses that grow large divide
+  rather than grow without end. Save format 54.
 - **The memory of wrongs** (the owner's decisions of 2026-11-18; docs/PERSONS.md, "The second
   build"; docs/AI.md, "Relations"):
   - *A declared war fades*: every leader forgets a `MEMORY_DECLARED_WAR` at 1 in 50 a turn

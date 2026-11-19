@@ -312,7 +312,7 @@ impl Game {
 
     /// C++ `CvDeal::isUncancelableVassalDeal` (`by_player = None` is NO_PLAYER). Not in C++: a
     /// House's vassal deal is cancelled by no one (docs/PERSONS.md, rule 7: the House leaves by
-    /// its countdown or an offer, its liege frees it with `player_free_house`).
+    /// its ultimatum refused or an offer, its liege frees it with `player_free_house`).
     pub fn deal_is_uncancelable_vassal_deal(&self, d: DealId, by_player: Option<PlayerId>) -> bool {
         let deal = &self.deals[d];
         let (first, second) = (deal.first_player, deal.second_player);
@@ -354,6 +354,12 @@ impl Game {
     /// read-only).
     pub fn deal_is_cancelable(&self, d: DealId, by_player: Option<PlayerId>) -> bool {
         if self.deal_is_uncancelable_vassal_deal(d, by_player) {
+            return false;
+        }
+
+        // Not in C++: a House's contract holds the resource its liege gives it (docs/PERSONS.md,
+        // "The third build", rule 6).
+        if self.deal_contract_refusal(d).is_some() {
             return false;
         }
 

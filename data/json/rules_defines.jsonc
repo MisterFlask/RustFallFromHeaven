@@ -114,14 +114,19 @@
   "PERSON_DEMAND_TURNS": 40,
   // the turns after a request was met or refused before the next one is made
   "PERSON_DEMAND_REST": 20,
-  // the turns of a Furious House's countdown (docs/PERSONS.md, "The second build")
-  "PERSON_DISLOYAL_TURNS": 10,
   // a House with a city within this many plots of a city is a claimant to it
   "PERSON_CLAIM_RANGE": 6,
   // the Crown's limit under a governing civic (docs/PERSONS.md, "The second build", rule 14): the
   //      cities the Crown holds at the normal city-count maintenance, the capital first; each
   //      further one pays triple (a trait's crown_cities_change adds to it; never below 1)
   "PERSON_CROWN_CITIES": 3,
+  // ---- the third build, part 2A (docs/PERSONS.md, "The third build", rules 4 to 6) ----
+  // a House holding this many great cities or more (settlements left out) may split
+  "PERSON_HOUSE_SPLIT_CITIES": 6,
+  // the chance, percent, that such a House splits in its liege's turn processing
+  "PERSON_HOUSE_SPLIT_PERCENT": 5,
+  // the turns an accepted ultimatum's contract binds the liege and floors the House at Annoyed
+  "PERSON_ULTIMATUM_TURNS": 20,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
   //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
   //      engage_row_order in units.jsonc; plot

@@ -2003,11 +2003,15 @@ Persons of Note.)
   spare (2 or more, `TRIBUTE_KEEP_LOYALTY`), else 0%; lowered as soon as the projection at the
   rate set falls below that. A cut no longer helps at once: the point to spare is what lets the
   House take a grievance (a levy, a refused request) while the cut arrives. The aim: the AI's
-  Houses cannot be bought (a House Cautious or worse takes a price to secede) and a countdown a
-  cut can stop in time is stopped (one step lifts a House at -6 to -5; the first comes within 5
-  turns, the countdown runs 10). Set through the rules' command, only when it changes. A House
-  that no cut can save before its countdown ends (`house_beyond_tribute`) is the army's to hold
-  (below).
+  Houses cannot be bought (a House Cautious or worse takes a price to secede) and rarely reach an
+  ultimatum. Never a rate a contract's bound refuses (the third build, rule 6:
+  `player_check_house_tribute`). Set through the rules' command, only when it changes.
+- **Ultimatums** (the third build, rules 5 and 11; `consider_ultimatum`, ffh-ai's
+  `Controller::consider_ultimatum`): a Furious House's ultimatum is accepted (its demand done, a
+  contract for 20 turns) unless every city of the House would be held when it broke away
+  (`house_cities_held`: refusing then takes nothing; the House ends) or the demand is war on a
+  civilization whose team has more power than ours (`team_get_power`, vassals included). A
+  reasonable first rule, not a measured one (CLAUDE.md: a rules change is not gated on the AI).
 - **Grants** (`choose_grant`), one a turn: only while the Crown is over its limit (rule 14: 3
   cities under a governing civic, the capital alone for the Kuriotates; settlements never count),
   never the capital nor the best production city (`kept_city`), the least populous first, so the
@@ -2048,10 +2052,11 @@ Persons of Note.)
 - **Civics.** A direct-rule civic (Despotism, God King) is not considered while a House stands
   and the AI does not rule directly already (`civic_barred`): adopting one is the civil war.
 - **Armies.** A stack with nothing else to do (before gathering, `military::army`) goes to hold
-  a city of a House of ours counting down that a cut to 0% cannot bring back above Furious before
-  its countdown ends (`house_beyond_tribute`: the rate in force then, rule 4's lag counted;
-  `disloyal_house_post`): the House's most valuable city (the most populous first) that the
-  stack can hold, one not held now where its army units, with ours already there, would outnumber
+  a city of a House of ours that is Annoyed or worse as the rules count it, a contract's floor
+  included: one step from an ultimatum, or under one (`house_to_hold`; the third build, rule 11:
+  the trigger moved from the countdown; holding every city of it lets us refuse its ultimatum;
+  `disloyal_house_post`, the march `hold_post`, public for a courted House): the House's most
+  valuable city (the most populous first) that the stack can hold, one not held now where its army units, with ours already there, would outnumber
   the House's land combat units (rule 7, `city_hold`), within 8 turns; a stack standing in such a
   city stays when the city is held only with it. A stack that is no army counts for nothing and
   does not go. (A Furious commander's haven went with the commanders, the third build.)

@@ -16,8 +16,12 @@
 //! (`House::demand`; the code keeps the word "demand", every text the player reads says
 //! "request"), an act on the board with a term; met or refused, it leaves a timed modifier on the
 //! House's loyalty. The sum gives one of five states, the attitude scale (Friendly to Furious); a
-//! Furious House starts a countdown, at whose end it breaks away (war; `secession.rs`; a
-//! direct-rule civic is every House breaking away at once). Annoyed or worse takes no levy.
+//! Furious House issues an ultimatum, which its liege accepts (a contract: `ultimatums.rs`) or
+//! refuses (it breaks away: war; `secession.rs`; a direct-rule civic is every House breaking away
+//! at once). Annoyed or worse takes no levy.
+//!
+//! **Splits** (`splits.rs`): a House holding 6 great cities or more may split, its farther half
+//! going to a cadet House.
 //!
 //! **Side deals** (`bribes.rs`): a House gives Secede or Become your vassal (trade items) for gold.
 //!
@@ -43,7 +47,9 @@ mod loyalty;
 mod preview;
 mod read;
 mod secession;
+mod splits;
 mod turn;
+mod ultimatums;
 mod vassals;
 mod world_unit;
 
@@ -54,6 +60,7 @@ pub use leaders::{leader_name, leader_title, LeaderPool};
 pub use loyalty::tribute_part;
 pub use preview::{GrantCandidate, PersonsAct, PreviewLine};
 pub use read::{CourtView, DemandView, GrantMaintenance, HouseMark, HouseView, LevyStatus, LoyaltyPart, TributeRate, TributeView};
+pub use ultimatums::{ContractAct, ContractView};
 
 // ---------------------------------------------------------------------------------------------
 // Numbers of the build that are not defines (docs/PERSONS.md, "The second build")
@@ -104,6 +111,20 @@ pub const DEEDS_KEPT: usize = 40;
 pub const DEMAND_WARNING_TURNS: i32 = 10;
 /// The colours a House's shield is drawn with (`House::color` is an index below this).
 pub const HOUSE_COLORS: u8 = 8;
+
+// ---- The third build, part 2A: splits, ultimatums and contracts (rules 4 to 6) ----
+
+/// While a contract runs, a House's loyalty counts as at least this (Annoyed: rule 6).
+pub const CONTRACT_FLOOR: i32 = FURIOUS_AT + 1;
+/// Rule 5 (b): an ultimatum asks a lower tribute when the rate set is this or more, percent.
+pub const ULTIMATUM_TRIBUTE_FROM: i32 = 20;
+/// Rule 5 (b): the rate asked is the highest whose loyalty once in force is this or more.
+pub const ULTIMATUM_TRIBUTE_LOYALTY: i32 = -4;
+/// Rule 5 (f): the gold a turn per House city is the world unit plus this, divided by
+/// [`ULTIMATUM_GOLD_DIVISOR`] (2 a city at turn 150's unit of 47, 6 at turn 300's 153).
+pub const ULTIMATUM_GOLD_ROUND: i32 = 12;
+/// Rule 5 (f): see [`ULTIMATUM_GOLD_ROUND`].
+pub const ULTIMATUM_GOLD_DIVISOR: i32 = 24;
 
 // ---------------------------------------------------------------------------------------------
 // Types
@@ -234,13 +255,10 @@ pub struct LoyaltyMod {
     pub until: Option<i32>,
 }
 
-/// The loyalty of a House: its modifiers, a running Furious countdown, and the state last told to
-/// its liege.
+/// The loyalty of a House: its modifiers and the state last told to its liege.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Standing {
     pub mods: Vec<LoyaltyMod>,
-    /// The game turn the countdown ends (`None`: none runs).
-    pub countdown: Option<i32>,
     /// The state last told to the liege (a change is told once, in the liege's turn processing).
     pub state: LoyaltyState,
 }
@@ -287,6 +305,17 @@ pub enum HouseOrigin {
     /// A civilization that became a vassal otherwise: a vassal deal, a card's birth, a colony (it
     /// keeps its name).
     Vassal,
+    /// A cadet House, born of a House's split (`House <name>`, its parent's civilization; the third
+    /// build, rule 4).
+    Split,
+}
+
+impl HouseOrigin {
+    /// A House the realm made (a founding, a split): named `House <name>`; the others are vassal
+    /// civilizations that keep their names.
+    pub fn founded(self) -> bool {
+        matches!(self, HouseOrigin::Founded | HouseOrigin::Split)
+    }
 }
 
 /// A House (`Game::houses`): a vassal civilization (`player`) of its liege (`owner`). Its leader is
@@ -328,6 +357,59 @@ pub struct House {
     pub last_research: i32,
     /// The game turn its last tribute was paid (-1: none yet).
     pub last_turn: i32,
+    // ---- The third build, part 2A (rules 5 and 6) ----
+    /// Its last refused request (rule 5 (a): an ultimatum asks it again while its `Request
+    /// refused` runs).
+    pub refused: Option<DemandKind>,
+    /// Its contract with its liege, while one runs (rule 6).
+    pub contract: Option<Contract>,
+    /// The ultimatums it has issued (rule 5 (f): each raises the gold of the next).
+    pub ultimatums: i32,
+}
+
+// ---- The third build, part 2A: ultimatums and contracts (rules 5 and 6) ----
+
+/// What an ultimatum demands (rule 5), and its contract's bound (rule 6). A city is named by its
+/// plot (a city changes id with its owner).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UltimatumKind {
+    /// (a) The city at this plot (a Crown city) granted to the House. No bound.
+    GrantCity(PlotIdx),
+    /// (a), (d) War on this civilization. Bound: no peace with it.
+    War(PlayerId),
+    /// (a) This state religion adopted. Bound: no change of state religion.
+    AdoptReligion(ReligionType),
+    /// (b) The House's tribute set to this rate, percent. Bound: no rate set above it.
+    Tribute(i32),
+    /// (c) Peace with this civilization. Bound: no war on it.
+    Peace(PlayerId),
+    /// (e) This resource given to the House by a trade of its liege's. Bound: the trade is not
+    /// cancelled.
+    Resource(BonusType),
+    /// (f) This much gold a turn from the liege's treasury to the House's. Bound: it runs its
+    /// turns.
+    Gold(i32),
+}
+
+/// An ultimatum (rule 5): House `house`'s demand, answered by its liege at once.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Ultimatum {
+    pub house: HouseId,
+    pub kind: UltimatumKind,
+    /// It is the House's refused request again (rule 5 (a)).
+    pub request: bool,
+    /// The game turn its contract would end, accepted (`PERSON_ULTIMATUM_TURNS` from now).
+    pub until: i32,
+}
+
+/// A House's contract (rule 6): an accepted ultimatum's demand, binding until `until`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Contract {
+    pub kind: UltimatumKind,
+    /// The game turn it ends.
+    pub until: i32,
+    /// The deal of a resource given (rule 5 (e)).
+    pub deal: Option<DealId>,
 }
 
 /// Whom a city is granted to ([`Game::player_grant_city`]).
@@ -401,9 +483,10 @@ impl Game {
     /// A House's label: `House Arne` (a founded House), `Hippus` (a vassal civilization).
     pub fn house_label(&self, h: HouseId) -> String {
         let house = &self.houses[h];
-        match house.origin {
-            HouseOrigin::Founded => format!("House {}", house.name),
-            _ => house.name.clone(),
+        if house.origin.founded() {
+            format!("House {}", house.name)
+        } else {
+            house.name.clone()
         }
     }
 

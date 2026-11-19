@@ -167,6 +167,12 @@ impl Game {
             return false;
         }
 
+        // Not in C++: a House's contract binds its liege to no war on the civilization peace was
+        // made with (docs/PERSONS.md, "The third build", rule 6).
+        if self.team_contract_refusal(t, crate::persons::ContractAct::DeclareWar(other)).is_some() {
+            return false;
+        }
+
         if self.is_option(GameOptionType::GAMEOPTION_ALWAYS_PEACE) {
             return false;
         }
@@ -979,7 +985,7 @@ impl Game {
     }
 
     /// C++ `CvTeam::canVassalRevolt`. Not in C++: a House is never freed by it (docs/PERSONS.md,
-    /// rule 7: its countdown and offers to secede are the only ways out by its own will).
+    /// rule 7: its ultimatum refused and offers to secede are the only ways out by its own will).
     pub fn team_can_vassal_revolt(&self, t: TeamId, master: TeamId) -> bool {
         let defs = &self.d.defines;
 
