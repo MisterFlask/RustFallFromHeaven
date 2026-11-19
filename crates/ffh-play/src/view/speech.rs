@@ -411,7 +411,7 @@ mod tests {
         let (other, ai) = (PlayerId(0), PlayerId(1));
         g.team_meet(g.players[other].team, g.players[ai].team, false);
         let preferred: Vec<LeaderHeadType> = d.leader_heads.keys().filter(|&l| d.leader_heads[l].preferred_breakaway).collect();
-        assert_eq!(preferred.len(), 105);
+        assert_eq!(preferred.len(), 210);
         let moments: Vec<(&str, bool)> = MOMENTS.iter().map(|m| (m.1, m.2)).chain([
             ("AI_DIPLOCOMMENT_WORST_ENEMY", false),
             ("AI_DIPLOCOMMENT_WORST_ENEMY_TRADING", false),

@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-a5019959-9d1d-426e-8d14-cd96dbdb14d3.png",
+  "source_copy": "art/malakim-2.png",
+  "prompt": "art/malakim-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "zahir_whiteflint",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/zahir_whiteflint.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "safiya_of_the_kiln",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/safiya_of_the_kiln.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "kamal_red_meridian",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/kamal_red_meridian.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "luma_dunebright",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/luma_dunebright.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "nedim_saltwind",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/nedim_saltwind.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

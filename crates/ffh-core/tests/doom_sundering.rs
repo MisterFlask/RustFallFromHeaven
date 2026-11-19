@@ -177,12 +177,12 @@ fn preferred_minor_leaders_are_used_before_free_major_or_legacy_leaders() {
     cities(&mut g, p1, 2);
     let kuriotates = d.t::<CivilizationType>("CIVILIZATION_KURIOTATES");
     let candidates = preferred(&g, kuriotates);
-    assert_eq!(candidates.len(), 5);
+    assert_eq!(candidates.len(), 10);
     assert_eq!(sd::sundering_plan(&g), vec![(p0, candidates[0])]);
 
     let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
     let minors = preferred(&g, bannor);
-    assert_eq!(minors.len(), 5);
+    assert_eq!(minors.len(), 10);
     assert_eq!(sd::faction_leader(&g, bannor, &[]), Some(minors[0]), "a preferred minor beats free major leaders");
     assert_eq!(sd::faction_leader(&g, bannor, &minors[..2]), Some(minors[2]), "leaders reserved by this firing are excluded");
     let capria = leader(&g, "LEADER_CAPRIA");

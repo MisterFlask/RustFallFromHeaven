@@ -1,8 +1,8 @@
 # Minor leaders
 
-105 minor leaders for the original 21 Fall from Heaven civilizations, with five per civilization. Each has a portrait, three or four sentences of backstory, an alignment, and traits from the game. Three Balseraph leaders are rival facets of the same living Perpentach; another is a demon who escaped a summoned performance.
+210 minor leaders for the original 21 Fall from Heaven civilizations, with ten per civilization. Each has a portrait, three or four sentences of backstory, an alignment, and traits from the game. Three Balseraph leaders are rival facets of the same living Perpentach; another is a demon who escaped a summoned performance.
 
-These leaders are registered for breakaway factions and take priority over existing major and legacy minor leaders while one is available. They are absent from the selectable starting leaders. The game chooses between available preferred leaders with its seeded RNG when a faction forms.
+These leaders can enter play as Persons of Note or lead a breakaway faction. They take priority over major and legacy minor leaders when a faction forms. The game uses its seeded RNG to choose from the available preferred leaders.
 
 [Open the searchable illustrated catalog](catalog.html).
 
@@ -96,6 +96,66 @@ Ysabet was trained to recite the names of the ancestors who escaped Hell, until 
 
 **Portrait direction:** Grave attentive courage. Palette: Royal blue dominant, bright silver secondary, white memorial cords. Activity: Writes a witness statement with a long white quill on a slanted public lectern while looking up to listen to an unseen speaker
 
+### Leora Bellfound — Keeper of the Mist Bells
+
+![Leora Bellfound leaderhead portrait](portraits/leora_bellfound.png)
+
+**Good · Personal traits:** Industrious, Spiritual. **Inherited:** Guardsman.
+
+*Signal crews organize ruinously exposed marches into a league of mutual aid.*
+
+Leora was recasting a cracked abbey bell when she realized that none of the valley hamlets could hear the fort's warning. She used the abbey's bronze allotment to build a chain of smaller towers, staffed in turn by shepherds and deserters. When an officer came to requisition the new bells, every hamlet rang its refusal.
+
+**Portrait direction:** Practical warmth. Palette: Saffron yellow wool, copper bells and honey-colored dawn. Activity: Rings a small suspended bell with a wooden striker
+
+### Beren Halflight — Captain of the Homeward Column
+
+![Beren Halflight leaderhead portrait](portraits/beren_halflight.png)
+
+**Good · Personal traits:** Charismatic, Magic Resistant. **Inherited:** Guardsman.
+
+*A veteran insists that surviving crusaders can decide where their service ends.*
+
+Beren led a defeated column home through country its own quartermasters had stripped bare. He traded the horses first, then the officers' spurs, keeping a tally of every farmer who fed them. The farmers now come to him when conscription parties arrive, and the old column assembles without a drum.
+
+**Portrait direction:** Weary resolve. Palette: Slate blue padded coat, white linen and cold sky. Activity: Unbuckles a spur over a wooden produce crate
+
+### Hamira Stoneford — Reeve of the Third Ford
+
+![Hamira Stoneford leaderhead portrait](portraits/hamira_stoneford.png)
+
+**Neutral · Personal traits:** Financial, Defender. **Inherited:** Guardsman.
+
+*A border crossing buys its autonomy by charging both estate lords and the troops they send to collect.*
+
+At flood season Hamira commandeered a noble's empty granary to keep the ford open. Her ferry carried every traveler regardless of rank, provided their fee paid for another stone in the approach. Now she can turn back a duke's whole levy by lifting the chain and pocketing the handle.
+
+**Portrait direction:** Unmoved authority. Palette: Juniper green cloak, brass winch and gray water. Activity: Cranks the brass handle of a river-chain winch
+
+### Cedric Stave — Marshal of the Hallowed Mile
+
+![Cedric Stave leaderhead portrait](portraits/cedric_stave.png)
+
+**Evil · Personal traits:** Aggressive, Organized. **Inherited:** Guardsman.
+
+*A road marshal makes a strip of country into a hereditary military jurisdiction.*
+
+Cedric's patrol brought back a holy banner from a road where three whole pilgrim companies had disappeared. In return he was given the width of a spear on either side of that road and the power to try anyone who set foot in it. He has spent the years since paying surveyors to discover how wide a spear can be.
+
+**Portrait direction:** Meticulous menace. Palette: Oxblood cloth, black steel and chalk highlights. Activity: Stretches a knotted measuring cord across a boundary post
+
+### Dalia Chalkwall — The Barracks Schoolmaster
+
+![Dalia Chalkwall leaderhead portrait](portraits/dalia_chalkwall.png)
+
+**Neutral · Personal traits:** Creative, Philosophical. **Inherited:** Guardsman.
+
+*A barracks teacher gives common households the means to read the laws that bind them.*
+
+Dalia was put in charge of recruits who could recite whole prayers but could never check a pay docket. She chalked the articles of service on the wall, where the recruits began leaving questions under every line. When the wall was plastered over, her pupils walked out with the questions memorized and started schools of their own.
+
+**Portrait direction:** Dry amusement. Palette: Lavender smock, graphite slate and pale chalk. Activity: Draws a large tally mark on a black slate
+
 
 <a id="malakim"></a>
 
@@ -160,6 +220,66 @@ Samet lost a caravan when a confident sun-priest dismissed his warning that its 
 Tareq guarded the guest-tents of an oasis whose elders agreed to surrender a foreign fugitive to a richer neighboring clan. Remembering the strangers who once sheltered Varn, he stood across the tent ropes and persuaded the watch to refuse the order. Refugees and disgraced hosts have since joined his moving camp, which offers sanctuary for one season and demands that every guest help defend the next arrival.
 
 **Portrait direction:** Alert welcoming grit. Palette: Coral red dominant, weathered cream secondary, muted bronze accents. Activity: Hauls a taut guest-tent guy rope against a gust, bracing one forearm and reaching forward to set its fastening hook
+
+### Zahir Whiteflint — The Road Under the Road
+
+![Zahir Whiteflint leaderhead portrait](portraits/zahir_whiteflint.png)
+
+**Good · Personal traits:** Defender, Philosophical.
+
+*Desert guides create commons beneath roads controlled by toll stations.*
+
+Zahir explored cool tunnels beneath abandoned caravan roads while serving as a water bearer. When a debt caravan camped above one of the entrances, he brought its prisoners out one family at a time. His guides now count a route as sacred if a person can escape along it without paying.
+
+**Portrait direction:** Alert kindness. Palette: Cobalt blue headwrap, white flint and deep sandstone. Activity: Strikes a white flint to light a shallow clay lamp
+
+### Safiya of the Kiln — The Glass Gardener
+
+![Safiya of the Kiln leaderhead portrait](portraits/safiya_of_the_kiln.png)
+
+**Neutral · Personal traits:** Industrious, Arcane.
+
+*Oasis workshops make shade and irrigation portable enough to challenge hereditary gatekeepers.*
+
+Safiya grew up among glassblowers who tinted every window in the oasis except those of their own houses. She bought a heap of failed panes and laid them over a bed of roots, which survived the coldest desert night anyone remembered. People travel farther for a share of her kiln than they once traveled to pay court to the well lords.
+
+**Portrait direction:** Delighted concentration. Palette: Malachite coat, straw gold and translucent aquamarine. Activity: Lifts a translucent glass cloche from a seedling
+
+### Kamal Red Meridian — Warden of the Midday Gate
+
+![Kamal Red Meridian leaderhead portrait](portraits/kamal_red_meridian.png)
+
+**Evil · Personal traits:** Aggressive, Organized.
+
+*A commander makes the safe hours at a mountain pass into privileges to be earned.*
+
+Kamal once shut his pass a minute late and lost a caravan to the raiders following it. He has fixed the gate hours to a bronze sight ever since, raising the bar for anyone whose shelter gives an enemy cover. The people who ask him to bend the rule usually end up living under the gate and working off their petition.
+
+**Portrait direction:** Punitive vigilance. Palette: Scarlet scarf, honey bronze and bone sandstone. Activity: Tilts a bronze sighting ring toward the sun with both hands
+
+### Luma Dunebright — The Festival of Returning Feet
+
+![Luma Dunebright leaderhead portrait](portraits/luma_dunebright.png)
+
+**Good · Personal traits:** Creative, Expansive.
+
+*Market festivals coax scattered families back to places the dunes took.*
+
+For years Luma rehearsed songs that her scattered kin could recognize without agreeing on all the words. She carried the best ones to the empty market at which her grandparents had met, and a few listeners put up tents. When they returned next year they brought roof beams, and Luma learned to sing loud enough to be heard over the work.
+
+**Portrait direction:** Infectious delight. Palette: Apricot cloth, plum embroidery and dusk violet. Activity: Pulls a broad colored ribbon taut between both hands to lash a tent pole
+
+### Nedim Saltwind — Master of the Buried Salt
+
+![Nedim Saltwind leaderhead portrait](portraits/nedim_saltwind.png)
+
+**Neutral · Personal traits:** Financial, Magic Resistant.
+
+*Prospectors bring wealth to neglected camps and force rich towns to bid for their labor.*
+
+Nedim was blinded in one eye after mistaking a salt lake's crust for firm ground. He sent apprentices back with long-handled rakes and paid them first from whatever they managed to bring out. His crews now auction their work from camp to camp, leaving richer towns to wonder why nobody has come to dig.
+
+**Portrait direction:** Appraising patience. Palette: Ivory cloak, dusty rose and ultramarine shadows. Activity: Tips a scoop of pink salt crystals into a woven sieve
 
 
 <a id="elohim"></a>
@@ -226,6 +346,66 @@ Thesra supplied a monastery whose guardians kept promising refuge without counti
 
 **Portrait direction:** Brisk unsentimental competence. Palette: Slate gray dominant, jade green secondary, iron-black trim. Activity: Cuts the seal-cord from a grain sack with a small utility knife while her other hand catches the opened flap for rationing
 
+### Farah Quietwater — Custodian of the Shared Bank
+
+![Farah Quietwater leaderhead portrait](portraits/farah_quietwater.png)
+
+**Good · Personal traits:** Expansive, Defender.
+
+*Former enemies find sanctuary on a floodplain that requires them to build together.*
+
+Farah kept a pair of flood markers on opposite banks because neither village would trust the other to read its own. One spring both markers vanished, and paddlers from both villages followed her to recover them. Their shared embankments outlasted the emergency, even after both abbots began arguing about who could claim the work as a miracle.
+
+**Portrait direction:** Steadfast fellowship. Palette: Seafoam green cloak, ochre reeds and pearl morning fog. Activity: Pulls a heavy rope through a wooden mooring ring
+
+### Matteo Linden — The Lay Host
+
+![Matteo Linden leaderhead portrait](portraits/matteo_linden.png)
+
+**Good · Personal traits:** Charismatic, Philosophical.
+
+*Pilgrims establish independent hostels on roads where holy orders will only admit their own.*
+
+Matteo's sister came home from a pilgrimage barefoot after a steward refused their family offerings. He bought a ruined bakehouse and left the door open to the first stranger who reached it. There are now lay houses in six provinces, each with a table long enough to seat both pilgrims and the people they are fleeing.
+
+**Portrait direction:** Unshowy hospitality. Palette: Ochre wool, brick brown and warm cream. Activity: Tears a scored loaf into two large pieces
+
+### Imena Wakefold — Warden of the Unmarked Sleep
+
+![Imena Wakefold leaderhead portrait](portraits/imena_wakefold.png)
+
+**Neutral · Personal traits:** Arcane, Magic Resistant.
+
+*One sanctuary keeps a sealed burial hill free of both relic hunters and official custodians.*
+
+Imena cleared a ruined chapterhouse and found that the dirt beneath its floor whispered living people's names. Her order marked the site on no maps and used the stones to build an ordinary sheepfold. It now shelters families whose ancestors would be instruments in somebody else's hands if the fold's true boundary became known.
+
+**Portrait direction:** Quiet alertness. Palette: Deep indigo layers, gray-green lichen and silver dusk. Activity: Places a triangular stone upright in a gap between fieldstones
+
+### Levan Pledge — The Collector of Sanctuary
+
+![Levan Pledge leaderhead portrait](portraits/levan_pledge.png)
+
+**Evil · Personal traits:** Financial, Spiritual.
+
+*A keeper of holy hospitality converts guests' gratitude into debts they can never repay.*
+
+Levan started collecting vows of thanks while the refugees in his care still had no money. He kept each on a reed slip and redeemed small promises first, for a morning's labor or a winter blanket. The bundle has grown hefty enough that he can decide who marries, who travels, and which children will keep the sanctuary books.
+
+**Portrait direction:** Smiling control. Palette: Wine red vestment, aged ivory and umber. Activity: Ties a small reed bundle with a narrow red cord
+
+### Enna Bramblehook — Gardener of the Siege Acre
+
+![Enna Bramblehook leaderhead portrait](portraits/enna_bramblehook.png)
+
+**Neutral · Personal traits:** Industrious, Ingenuity.
+
+*A city's gardeners gain authority by keeping famine at bay through practical seed craft.*
+
+Enna watched the gardens inside a siege ring go to seed as most of the remaining land was requisitioned for troops. She grafted bitter roots onto fruiting plants, then sent the cuttings to households too poor to buy seed. When the walls reopened, local families kept exchanging plants through her long after the old ration masters had run out of work.
+
+**Portrait direction:** Resourceful focus. Palette: Lime green apron, pale cypress and russet accents. Activity: Binds a leafy graft with a strip of pale linen
+
 
 <a id="mercurians"></a>
 
@@ -290,6 +470,66 @@ Naeviel welcomed newly arrived angels to the host and heard them struggle to rec
 Istran survived a battle in which allied spells collapsed the shelter he had been ordered to defend. He began building layered wards that smothered hostile magic and insisted that friendly summoners leave their workings outside the same boundary. The mortal enclaves beneath his pale barriers pay for his protection and live under his severe restrictions, while Mercurian captains argue over whether the sanctuaries preserve their cause or obstruct it.
 
 **Portrait direction:** Exacting guarded concentration. Palette: Ice cyan dominant, dark graphite secondary, pale platinum lines. Activity: Draws a luminous ward circle in the air with two outstretched fingers while the other palm presses shut a crack in the barrier
+
+### Aureth Feather-Ash — Herald of the Borrowed Body
+
+![Aureth Feather-Ash leaderhead portrait](portraits/aureth_feather_ash.png)
+
+**Good · Personal traits:** Spiritual, Charismatic.
+
+*An angel returns the belongings of the dead and gives their families a voice in the celestial host.*
+
+Aureth's first body still carried a wooden badge carved by the soldier's daughter. He tracked down the family and found a line of others asking the host for possessions no officer had thought to collect. His companies now return one keepsake for every body they borrow and ask the survivors to name the next city they defend.
+
+**Portrait direction:** Earnest humility. Palette: Sun yellow tabard, pale feathers and cedar brown. Activity: Lowers a small carved wooden bird onto a folded cloth
+
+### Meriel Bronze Dawn — Master of the Landing Steps
+
+![Meriel Bronze Dawn leaderhead portrait](portraits/meriel_bronze_dawn.png)
+
+**Neutral · Personal traits:** Industrious, Expansive.
+
+*An angelic works corps claims the right to govern the towns it rebuilds.*
+
+Meriel watched the first winged regiment crush a water tower when its soldiers landed in an unfamiliar square. She devised stepped stone platforms that could take the weight and leave the wells accessible. The engineers who build them remain after the troops march, arguing that a garrison is no better than its stairs.
+
+**Portrait direction:** Matter-of-fact command. Palette: Turquoise overcoat, terracotta and warm gray wings. Activity: Holds a plumb bob over the edge of a stone step
+
+### Caradriel Pale Fire — The Relentless Dawn
+
+![Caradriel Pale Fire leaderhead portrait](portraits/caradriel_pale_fire.png)
+
+**Evil · Personal traits:** Aggressive, Magic Resistant.
+
+*An angel presses an unyielding war of prevention against any city judged capable of harboring demons.*
+
+Caradriel's company took an unguarded gate and lost half its borrowed bodies to a demon sheltering in a grain store. She brought the grain scale back to camp and made it the emblem of a tribunal that could seize supplies on suspicion alone. Her towns now run on confiscated grain and pray each morning to remain above suspicion.
+
+**Portrait direction:** Austere conviction. Palette: Coral red officer's cloak, shadow steel and gray feathers. Activity: Pours grain from a requisitioned bronze scoop into a scale pan
+
+### Sorad Veiled Seal — The Annalist of Wings
+
+![Sorad Veiled Seal leaderhead portrait](portraits/sorad_veiled_seal.png)
+
+**Neutral · Personal traits:** Philosophical, Organized.
+
+*Host archivists demand proof before assigning the resurrected to an earthly family.*
+
+Sorad watched two villages claim the same angel after each lost a son at a disputed crossing. He established a waiting house for such cases and began recording what the angels could recall before they heard anybody's testimony. The house answers to him today because too many officers want its ledgers to endorse a convenient ancestry.
+
+**Portrait direction:** Deliberate skepticism. Palette: Prussian blue hood, silver clasps and gray feathers. Activity: Holds a loose strip of vellum flat while affixing a wax seal
+
+### Avona of Two Walls — Bridge Between Companies
+
+![Avona of Two Walls leaderhead portrait](portraits/avona_of_two_walls.png)
+
+**Good · Personal traits:** Defender, Creative.
+
+*Human and angel soldiers share command in a coalition formerly divided by rank.*
+
+Avona carried messages between the city guard and an angelic unit whose commanders refused to share a table. She had two small benches built into the chasm wall so they could confer while both sides watched. By the second siege the benches wore smooth, and the troops called for Avona when their commanders disagreed.
+
+**Portrait direction:** Open, assured attention. Palette: Lilac traveling mantle, alabaster wings and blue shadows. Activity: Unrolls a blank map across a narrow stone bench
 
 
 <a id="luchuirp"></a>
@@ -356,6 +596,66 @@ Durn was a shelter mason when a hostile dispelling left his settlement's enchant
 
 **Portrait direction:** Stubborn protective resolve. Palette: Golden ocher with slate blue accents. Activity: Tightening a heavy gate bolt with a short iron wrench while bracing the latch with his other hand.
 
+### Bram Copperbrow — The Chain of Little Mills
+
+![Bram Copperbrow leaderhead portrait](portraits/bram_copperbrow.png)
+
+**Good · Personal traits:** Industrious, Expansive.
+
+*Village millwrights take charge of inventions that workshops once rented by the hour.*
+
+Bram was sent to retrieve a broken golem that had kept a village's mill turning. He rebuilt its mechanism as a chain of small waterwheels that any farmer could service, then taught the village to cast replacements. Guild owners still send him bills for every grain of flour they think would have passed through that golem's hands.
+
+**Portrait direction:** Enthusiastic ingenuity. Palette: Citrine yellow jerkin, blue water and copper leather. Activity: Slides a wooden paddle into a small waterwheel
+
+### Dessa Quartzbell — First of the Night Shift
+
+![Dessa Quartzbell leaderhead portrait](portraits/dessa_quartzbell.png)
+
+**Neutral · Personal traits:** Organized, Creative.
+
+*Night workshops form a separate assembly with its own election hours and public works.*
+
+Dessa automated a bell so workers below ground would hear the opening of the meeting that set their wages. When the masters moved the meeting to daylight, she moved the bell to the night market and invited everybody still awake. Her assembly votes beneath a quartz dome that used to be sealed after dusk.
+
+**Portrait direction:** Wry defiance. Palette: Fuchsia coat, dusty quartz and midnight plum. Activity: Suspends a small faceted quartz clapper in a bell
+
+### Nori Bondhammer — The Holder of the Keys
+
+![Nori Bondhammer leaderhead portrait](portraits/nori_bondhammer.png)
+
+**Evil · Personal traits:** Financial, Arcane.
+
+*A golem designer turns maintenance contracts into the power to stop a whole city.*
+
+Nori sold his first golems cheaply after apprenticing under a master who could never get anyone to buy one. Every joint answered to a key only he could replace, and in time the public pumps all took the same locks. He is building a mint now so the people buying those keys will have somewhere to borrow their fee.
+
+**Portrait direction:** Polite calculation. Palette: Midnight blue coat, turquoise sparks and pewter. Activity: Fits a peculiar square key into a small brass golem wrist
+
+### Ulna Shaleprint — Caller of the Second Draft
+
+![Ulna Shaleprint leaderhead portrait](portraits/ulna_shaleprint.png)
+
+**Good · Personal traits:** Philosophical, Ingenuity.
+
+*A mentor preserves discarded craft designs so young builders can challenge their masters.*
+
+Ulna hauled rejected molds back to the gallery where trainees were allowed to practice. She put a number on each one and paid a prize for improving the molds their inventors insisted were perfect. The trainees set up their own guild the day she stopped charging visitors to look at what they made.
+
+**Portrait direction:** Bristling curiosity. Palette: Burnt orange jacket, charcoal mold and cream sleeves. Activity: Raises a clay cast from its open stone mold with both hands
+
+### Kedran Shieldpeg — Warden of the Ground Floor
+
+![Kedran Shieldpeg leaderhead portrait](portraits/kedran_shieldpeg.png)
+
+**Neutral · Personal traits:** Defender, Magic Resistant.
+
+*A repair captain resists the practice of concentrating magical defenses in guild towers.*
+
+Kedran discovered how far a broken protective seal could throw a cobblestone when one broke in his cellar. He mapped the streets that would be flattened if the guild towers failed, and their tenants began taking his inspections seriously. Even the tower masters now knock before stepping into a house that flies his mark.
+
+**Portrait direction:** Guarded diligence. Palette: Olive felt, steel blue and mica gray. Activity: Hammers a steel anchor into a masonry seam
+
 
 <a id="kuriotates"></a>
 
@@ -420,6 +720,66 @@ Avar rose by supplying food and housing to newcomers whom the royal administrati
 Meren investigated a neighborhood magistrate who had used a charm to turn public consultations into unanimous acclaim. Exposure earned her a shattered hand and a new following among citizens uneasy about the court's almost religious reverence for its boy-king. Her assemblies require testimony outside magical influence and publish dissent beside the winning decision. She asks whether a people held together by one extraordinary ruler can learn to trust its ordinary disagreements.
 
 **Portrait direction:** Cool defiant scrutiny. Palette: Charcoal gray with mint green accents. Activity: Pulling a censor's ribbon off an open public record with her articulated glass hand while spreading the pages with her living hand.
+
+### Philia Copperroof — The Canopy Surveyor
+
+![Philia Copperroof leaderhead portrait](portraits/philia_copperroof.png)
+
+**Good · Personal traits:** Ingenuity, Defender. **Inherited:** Sprawling.
+
+*Winged laborers claim public air routes through the towers they keep standing.*
+
+Philia spent her first wages replacing a scaffold that humans could not reach and her fellow harpies were forbidden to land on. She kept the invoices and drew the first survey of all the roofs a city could not maintain without them. The workers now run the rooftop stations and keep a lane open even to people who cannot afford to fly.
+
+**Portrait direction:** Cheerful assurance. Palette: Peacock teal vest, copper feathers and blue sky. Activity: Pulls a bright chalk line between two rooftop pegs
+
+### Rython Twelvearches — First Speaker of the Covered Market
+
+![Rython Twelvearches leaderhead portrait](portraits/rython_twelvearches.png)
+
+**Neutral · Personal traits:** Financial, Expansive. **Inherited:** Sprawling.
+
+*Stallholders make their market an independent town built to fit every kind of body.*
+
+A centaur's hooves once cracked the stairs to the market and Rython was charged for the damage although he was standing outside. He bought a sunken quarry and filled it with gentle ramps, high stalls and aisles wide enough for three bodies like his. He charges to cover the paving and lets even the people who sneered at it come in out of the rain.
+
+**Portrait direction:** Shrewd welcome. Palette: Persimmon orange waistcoat, gray stone and chestnut leather. Activity: Slides a stamped weight along a balance beam
+
+### Isil Coilbank — The Holder of the Deeds
+
+![Isil Coilbank leaderhead portrait](portraits/isil_coilbank.png)
+
+**Evil · Personal traits:** Organized, Arcane. **Inherited:** Sprawling.
+
+*A deed broker coerces families whose homes stand on land built up by several peoples at once.*
+
+Isil amassed deeds to the old riverbed while its lamia houses were still built on floats. When the river shifted inland, she charged the residents for the reclaimed foundations under their homes and took their boats as collateral. Her tenants are free to move, provided they leave their furnishings and a child who knows the ledger.
+
+**Portrait direction:** Courteous avarice. Palette: Imperial purple gown, oxidized silver and dark green scales. Activity: Threads a ring of iron boat keys onto a split silver hoop
+
+### Tevin Manywindows — Keeper of the Common Rooms
+
+![Tevin Manywindows leaderhead portrait](portraits/tevin_manywindows.png)
+
+**Good · Personal traits:** Charismatic, Creative. **Inherited:** Sprawling.
+
+*A mixed neighborhood writes civic law from the practical business of sharing buildings.*
+
+Tevin inherited a boarding house whose forebears had added a door for each new kind of lodger. He took the doors out of the price of rooms and set up the first tenants' festival with the proceeds from the old hinges. Visitors still take the number of doors for a sign of disorder until they see who carries whom out in a fire.
+
+**Portrait direction:** Social ease. Palette: Marigold vest, turquoise doors and cedar-brown beams. Activity: Seats a spare brass hinge onto a little wooden door frame
+
+### Asen Curtainfall — Surveyor of the Last Street
+
+![Asen Curtainfall leaderhead portrait](portraits/asen_curtainfall.png)
+
+**Neutral · Personal traits:** Philosophical, Magic Resistant. **Inherited:** Sprawling.
+
+*Outer settlements insist their right to exist cannot depend on a city's decision to extend its walls.*
+
+Asen grew up in a settlement that vanished each time the capital commissioned a new map. She sewed her street onto the edge of the maps and offered the rest of the bolt to other villages missing from the survey. The patchwork hangs in her court because it takes a succession of people to carry it anywhere else.
+
+**Portrait direction:** Plain-spoken stubbornness. Palette: Raspberry mantle, chalk linen and storm-gray ground. Activity: Stitches a corner of rough linen onto a large cloth plan
 
 
 <a id="ljosalfar"></a>
@@ -486,6 +846,66 @@ Namar once strengthened the spells that encouraged a frontier grove to grow, unt
 
 **Portrait direction:** Austere vigilant restraint. Palette: Aubergine purple with cool gray accents. Activity: Lifting one dangerous crystal shard out of a containment hoop with long tongs while adjusting the hoop's ward clasp with his other hand.
 
+### Calen Birdbranch — The Messenger of the Lower Boughs
+
+![Calen Birdbranch leaderhead portrait](portraits/calen_birdbranch.png)
+
+**Good · Personal traits:** Creative, Expansive. **Inherited:** Dexterous.
+
+*Young settlements claim a voice through a relay that runs below the old canopy roads.*
+
+Calen tended messenger birds that were trained to fly only to the manors in their breeding book. He let a clutch nest in a roadside willow and raised the fledglings to land where woodcutters offered a perch. The lord of the high branches still receives the news, a little later than the bark peelers.
+
+**Portrait direction:** Suppressed excitement. Palette: Golden yellow tunic, lilac dusk and copper bark. Activity: Coaxes a small speckled bird onto a gloved wrist
+
+### Mevara Rainsuture — Tender of the Root Bridges
+
+![Mevara Rainsuture leaderhead portrait](portraits/mevara_rainsuture.png)
+
+**Good · Personal traits:** Ingenuity, Defender. **Inherited:** Dexterous.
+
+*Tree surgeons organize remote groves around the living crossings they maintain.*
+
+When a flood took her bridge, Mevara followed its torn limbs downstream and transplanted the living ends. They took root on opposite banks within sight of an old ferry that had charged an armful of firewood to carry a child. Crossing dues in her new groves consist of watering a branch on the way past.
+
+**Portrait direction:** Patient pride. Palette: Vermilion rain cape, moss and pearl-gray light. Activity: Knots a strip of cloth around two living branches to train them
+
+### Thalan Ambervow — The Warden of First Growth
+
+![Thalan Ambervow leaderhead portrait](portraits/thalan_ambervow.png)
+
+**Evil · Personal traits:** Spiritual, Organized. **Inherited:** Dexterous.
+
+*A traditionalist appropriates woodland by giving ancient trees rights only his court can hear.*
+
+Thalan was a witness when the oldest pine of his province fell across a boundary ditch. In the resin he claimed to read a deed covering both banks, then the houses and fields adjoining them. He invites any dispossessed farmer to attend the hearings, provided they can offer testimony in a language the court accepts from trees.
+
+**Portrait direction:** Self-righteous calm. Palette: Wine violet robe, amber resin and forest black. Activity: Tilts an amber resin shard to the light above a shallow stone dish
+
+### Finnel Woodmeter — The Tender of Coppices
+
+![Finnel Woodmeter leaderhead portrait](portraits/finnel_woodmeter.png)
+
+**Neutral · Personal traits:** Financial, Industrious. **Inherited:** Dexterous.
+
+*A licensed woodcutter earns protection for trees and wages for the people who harvest them.*
+
+Finnel never felled a trunk he could return to in seven years and cut again. He taught the villages to count regrowth alongside their timber before the merchants could lay claim to it. His contracts infuriate the court because coppices are now worth enough that a worker can take a lord to court for stealing one.
+
+**Portrait direction:** Exact satisfaction. Palette: Sky blue work coat, toasted bark and wheat. Activity: Checks the girth of a sapling with a loop of measuring tape
+
+### Lethiel Hollowtone — The Constant Root
+
+![Lethiel Hollowtone leaderhead portrait](portraits/lethiel_hollowtone.png)
+
+**Neutral · Personal traits:** Arcane, Philosophical. **Inherited:** Dexterous.
+
+*A researcher gives every grove access to warnings once reserved for the oldest families.*
+
+Lethiel suspected the humming that preceded a blight came from ordinary roots rather than a family spirit. She sank hollow tubes at each farm and invited the youngest worker to tell her the note before the family elders could interpret it. A ring of groves now reports to her when the note changes, sometimes in time to cut a branch and save a valley.
+
+**Portrait direction:** Absorbed attention. Palette: Ivory robe, cypress shadows and pink quartz. Activity: Lowers a hollow rosewood pipe into a root cavity
+
 
 <a id="khazad"></a>
 
@@ -550,6 +970,66 @@ Ordan's family returned from prospecting to discover that their clan had sold it
 Sovna trained as an assayer in a hold where an illusory shipment had ruined three generations of one family. Instead of forbidding foreign trade, she built testing rooms where dwarf and stranger could watch the same metal weighed, scratched, and checked against enchantment. Her publicly recorded standards attracted merchants excluded by clan monopolies and gave honest small traders a way to challenge richer rivals. The market towns have chosen her to lead them because she treats distrust as a problem to solve before a bargain, rather than a debt to collect afterward.
 
 **Portrait direction:** Candid meticulous assurance. Palette: Emerald green with clean white accents. Activity: Rubbing a coin across a black touchstone while pointing to its fresh metal streak with her other hand for an unseen customer.
+
+### Berga Ironwedge — First Hand of the Rescue Crew
+
+![Berga Ironwedge leaderhead portrait](portraits/berga_ironwedge.png)
+
+**Good · Personal traits:** Defender, Ingenuity.
+
+*A rescue brotherhood makes unsafe holds answer to the people who shore them up.*
+
+Berga's crew came to a collapsed adit with orders to save the ore chests before the men. She wedged the chests under a crack and hauled out enough witnesses to overturn the order in court. The holds that ignored the judgment still keep their pit bosses, but each deep crew carries a copy of her rescue charter.
+
+**Portrait direction:** Composed urgency. Palette: Safety orange coat, basalt and pale oak wedges. Activity: Taps a pale wooden wedge into a timber prop
+
+### Orik Cinderhall — The Last Voice at the Smelter
+
+![Orik Cinderhall leaderhead portrait](portraits/orik_cinderhall.png)
+
+**Neutral · Personal traits:** Industrious, Organized.
+
+*Smelter crews pool warmth, housing and credit away from the gold vaults.*
+
+Orik wanted to know why his apprentices froze upstairs while his slag boiled beneath their feet. He rerouted the waste heat through a row of affordable apartments before the hold's surveyors found out. The families bought the next furnace themselves and sent him to bargain for the mountain's water.
+
+**Portrait direction:** Determined grit. Palette: Prussian blue coat, flame orange and smoky gray. Activity: Twists a heavy stopcock on a copper heating pipe
+
+### Huldra Sevenvault — The Keeper of Quiet Interest
+
+![Huldra Sevenvault leaderhead portrait](portraits/huldra_sevenvault.png)
+
+**Evil · Personal traits:** Financial, Philosophical.
+
+*The owners of sealed vaults collect rents even from holds unable to reach their own deposits.*
+
+Huldra bought a vault that had been locked since an earthquake and leased the idea of the gold within it to desperate holds. She offered to forgive any hold that opened the vault, so long as it signed over its rights to the gold if it failed. Now that seven tunnels have collapsed in the attempt, her creditors prefer to keep paying and let the door remain a matter of faith.
+
+**Portrait direction:** Refined malice. Palette: Mulberry velvet, polished steel and vellum beige. Activity: Turns a heavy vault combination wheel one notch
+
+### Garum Veinwalker — Voice of the Surface Consuls
+
+![Garum Veinwalker leaderhead portrait](portraits/garum_veinwalker.png)
+
+**Good · Personal traits:** Charismatic, Expansive.
+
+*Surface Khazad establish ports and trading farms with the same rights as underground holds.*
+
+Garum returned from shipping season with grain, new words and a wife who had never seen a vault. The keepers assigned them a cellar outside the gates, so he made it a warehouse and invited the coast hands to live nearby. The first surface consul was elected in that cellar with the shutters open.
+
+**Portrait direction:** Neighborly conviction. Palette: Jade green waistcoat, cream canvas and bronze light. Activity: Hauls a cloth grain sack onto a wooden counting ledge
+
+### Ursi Mothsilver — Finder of Lost Silver
+
+![Ursi Mothsilver leaderhead portrait](portraits/ursi_mothsilver.png)
+
+**Neutral · Personal traits:** Magic Resistant, Creative.
+
+*A silverworker discovers why older galleries are empty and makes their lost work available to independent holds.*
+
+Ursi followed a tarnished thread into a shaft where all the assay marks had been chiseled away. She strung salvaged silver together by the sequence of tool marks and found a generation of makers the vault families never recorded. Neighboring holds send her strips of their own silver to see whose work she can name.
+
+**Portrait direction:** Bright absorption. Palette: Ice mint wool, white silver and plum shadows. Activity: Feeds a ribbon of etched silver through a handheld loupe
 
 
 <a id="sidar"></a>
@@ -616,6 +1096,66 @@ Terev chose fading so that death could never interrupt the mosaic he had spent h
 
 **Portrait direction:** Restless unfinished obsession. Palette: Oxblood red and turquoise. Activity: Pressing a turquoise tessera into a missing mosaic panel while scraping mortar with a narrow trowel
 
+### Naresh Lintelmist — The Porter at Noon
+
+![Naresh Lintelmist leaderhead portrait](portraits/naresh_lintelmist.png)
+
+**Good · Personal traits:** Charismatic, Defender.
+
+*A border porter negotiates daylight passage for shades and their mortal relations alike.*
+
+Naresh kept a toll station where travellers could shelter from the hour the shades were most visible. He repaired the shutters after every raid, leaving one unlatched for people who could no longer grasp the handle. Ordinary travellers now leave their names at the station beside the shades they still recognize.
+
+**Portrait direction:** Reassuring courtesy. Palette: Moss green brocade, smoke and burnished brass. Activity: Lifts a wooden shutter latch with two fingers
+
+### Maelis Frostlinen — The Weaver of the Missing Years
+
+![Maelis Frostlinen leaderhead portrait](portraits/maelis_frostlinen.png)
+
+**Neutral · Personal traits:** Creative, Philosophical.
+
+*Retired shades piece together the years they no longer remember without selling them to collectors.*
+
+Maelis began weaving dates into the strips she used to bind her winter clothes. Other shades brought her a loose end here and there, most of them as eager to forget it as to have it recorded. Her workshop keeps the resulting cloth folded so a visitor can ask for just the year she wants to see.
+
+**Portrait direction:** Attentive reserve. Palette: Dusty pink dress, moonlit ivory and fog gray. Activity: Passes a small shuttle across a loom of pale bands
+
+### Soren of the Span — The Toll on Vanished Things
+
+![Soren of the Span leaderhead portrait](portraits/soren_of_the_span.png)
+
+**Evil · Personal traits:** Financial, Arcane.
+
+*A crossing broker charges shades memories when service no longer has another cost.*
+
+Soren built a bridge broad enough for the dead to cross without brushing the living. He began the toll with a coin and later agreed to accept an image the traveller could bear to lose. People cross more often now because he cannot collect the full fee from anyone who remembers what he first promised.
+
+**Portrait direction:** Patient cupidity. Palette: Royal purple robes, blue smoke and pewter. Activity: Tips a small glass phial of luminous blue mist into a weighing bowl
+
+### Iram Stonepause — Mason of the Slow Stair
+
+![Iram Stonepause leaderhead portrait](portraits/iram_stonepause.png)
+
+**Neutral · Personal traits:** Industrious, Organized.
+
+*A mason lets shades and mortals build the same road on different schedules.*
+
+Iram inherited a stair that was renewed every forty years by workers who did not live to see it finished. He carved a channel to take each course's weight before the next crew arrived, then invited the shades who had laid the lowest courses to check his work. The stair was finished in his lifetime, and the patches keep his apprentices employed in the next one.
+
+**Portrait direction:** Practiced patience. Palette: Sienna orange work smock, dolomite gray and faint lime. Activity: Lays a small slate shim under a stair tread
+
+### Veda Secondwindow — The Hush of the Dayroom
+
+![Veda Secondwindow leaderhead portrait](portraits/veda_secondwindow.png)
+
+**Good · Personal traits:** Expansive, Magic Resistant.
+
+*One household teaches families to recognize shade kin by familiar routines.*
+
+Veda kept a room with the blinds open for her brother after he began to fade. He stopped recognizing the street, but his hand always found the window catch he had repaired as a boy. Her dayrooms now leave the things their visitors remember in reach and ask living guests to go home without carrying them away.
+
+**Portrait direction:** Tender steadiness. Palette: Muted ultramarine shawl, sky gray and blond wood. Activity: Opens a familiar worn brass window catch
+
 
 <a id="lanun"></a>
 
@@ -680,6 +1220,66 @@ Brannoc prayed over a becalmed fleet until something beneath it answered in the 
 Ilyra learned rigging while chained aboard a prize ship and escaped by dropping its entire mainsail onto the boarding party that had come to sell her again. The freed rowers chose her to command their stolen vessel, and other escaped crews soon joined it. She finances their war on slave galleys by taking the cargo of any captain who trades in people, a rule that has cost her lucrative allies and earned her fiercely loyal harbor towns.
 
 **Portrait direction:** Fierce liberating resolve. Palette: Vermilion red and indigo. Activity: Slicing a captive sailor wrist-binding with a short boarding knife, carefully pulling the rope clear with her other hand
+
+### Dario Reefglass — Pilot of the Shifting Bar
+
+![Dario Reefglass leaderhead portrait](portraits/dario_reefglass.png)
+
+**Neutral · Personal traits:** Financial, Philosophical.
+
+*A harbor pilots' league takes charge of the shoals the admirals keep sailing through.*
+
+Dario learned to read silt by looking through the neck of a broken bottle a freebooter left behind. He warned three captains away from the bar the week the harbor lord's own ship went down. The pilots who inherit his bottle earn a berth each year by bringing at least one rival's ship safely home.
+
+**Portrait direction:** Lively scrutiny. Palette: Bright turquoise coat, bottle green glass and gray waves. Activity: Tilts a thick green lens to examine a sample of cloudy seawater
+
+### Makena Saltstitch — Admiral of the Dry Dock
+
+![Makena Saltstitch leaderhead portrait](portraits/makena_saltstitch.png)
+
+**Good · Personal traits:** Industrious, Organized.
+
+*The caulkers' guild supports free sailors by holding title to the dock that services their ships.*
+
+Makena scraped the governor's crest off a wreck and built the dock's doors out of its stern. The governor's creditors sued for the doors and found every crew in the harbor had bought a share in them. Warships still dock there, though their captains must wait while the smallest fishing boats come in first.
+
+**Portrait direction:** Direct good humor. Palette: Signal yellow oilskin, walnut planks and cobalt water. Activity: Mallets a strand of oakum into a plank seam
+
+### Carlon Mirrorsail — Prince of the False Harbor
+
+![Carlon Mirrorsail leaderhead portrait](portraits/carlon_mirrorsail.png)
+
+**Evil · Personal traits:** Raiders, Creative.
+
+*A wreckers' chief turns the stranded into labor for his uncharted piers.*
+
+Carlon survived a wreck on a coast where lights were supposed to show safe water. He spent his compensation on brighter lamps and bribed the surveyors to take his stretch of cliff off their charts. The colony that strips the stranded ships has enough timber for houses and too much rope for most of its workers to leave.
+
+**Portrait direction:** Cold showmanship. Palette: Carmine red brocade, lamp cream and storm charcoal. Activity: Rotates the shutter on a square signal lantern
+
+### Hessa Sabletide — The Uncrowned Diver
+
+![Hessa Sabletide leaderhead portrait](portraits/hessa_sabletide.png)
+
+**Good · Personal traits:** Expansive, Magic Resistant.
+
+*A salvager bands divers together against vessels that claim everything on the bottom.*
+
+Hessa cut loose a divers' bell the admiralty had declared lost while two men were still shut inside it. She entered the salvage award in their names and used her own share to buy communal lines and floats. The crews who train with her are trying to put the same bell to work on a shipwreck the admiralty has refused to admit is there.
+
+**Portrait direction:** Quick confidence. Palette: Verdigris green diving vest, sea blue and cream rope. Activity: Clips a brass safety ring onto a coil of wet rope
+
+### Jeron Foghorn — The Morning Between Storms
+
+![Jeron Foghorn leaderhead portrait](portraits/jeron_foghorn.png)
+
+**Neutral · Personal traits:** Spiritual, Arcane.
+
+*Crews from rival ports grant safe passage to a weather reader whose forecasts their temples usually suppress.*
+
+Jeron kept watch for a storm his ship's priest had said would come only if somebody broke a vow. Every ship that followed his forecast instead survived, and the rest of the crews left him their instruments. He moors between hostile ports so that none of them can claim the weather belongs to its god alone.
+
+**Portrait direction:** Faraway concentration. Palette: Mauve cowl, brass tubes and silver fog. Activity: Rotates the sliding drawtube of a brass weather glass
 
 
 <a id="grigori"></a>
@@ -746,6 +1346,66 @@ Edren survived two collapsed tombs by sending conjured creatures where a living 
 
 **Portrait direction:** Wry calculated daring. Palette: Bright turquoise and charcoal. Activity: Tracing a glowing geometric doorway in the air with his prosthetic index finger while steadying a broken archstone with his live hand
 
+### Tessa Inkclasp — Mistress of the Cheap Press
+
+![Tessa Inkclasp leaderhead portrait](portraits/tessa_inkclasp.png)
+
+**Good · Personal traits:** Creative, Ingenuity. **Inherited:** Agnostic.
+
+*Print shops give displaced adventurers and minority sects a way to publish their own accounts.*
+
+Tessa set her first type from lead she scavenged in a shrine the congregation had abandoned. She printed the survivors' account of its burning for less than the price of the priest's official version. The presses that learned from hers have turned the market's broadest street into a place where every lie has to compete for paper.
+
+**Portrait direction:** Mischievous conviction. Palette: Cerise red waistcoat, tan paper and charcoal iron. Activity: Pulls the lever of a small hand printing press over a blank sheet
+
+### Dowen Campbridge — Speaker for the Returning Companies
+
+![Dowen Campbridge leaderhead portrait](portraits/dowen_campbridge.png)
+
+**Neutral · Personal traits:** Organized, Charismatic. **Inherited:** Agnostic.
+
+*Former adventurers use camp courts to settle claims that city judges find inconvenient.*
+
+Dowen spent a decade dividing salvage between people who came back from the expedition and the families of those who did not. He made a rule about whose turn it was to talk and kept his camp open whenever a judge refused to hear a case. His court handles less patrol pay these days than quarrels over orchards, alleys and absent children.
+
+**Portrait direction:** Sociable patience. Palette: Pea green greatcoat, rust leather and river gray. Activity: Spreads a cloth bundle of old expedition tokens across a plank table
+
+### Irena Dregs — The Price of Plain Water
+
+![Irena Dregs leaderhead portrait](portraits/irena_dregs.png)
+
+**Evil · Personal traits:** Financial, Expansive. **Inherited:** Agnostic.
+
+*A brewers' cartel takes advantage of a popular suspicion of magically treated water.*
+
+Irena diluted the town's suspect well water with her own, expecting the council to reimburse her. When it refused, she bought the well rights and stopped telling her customers which water had been treated. Her settlements are prosperous enough to get every child a fresh cup, so long as its parents can keep up with the subscription.
+
+**Portrait direction:** Proprietary amusement. Palette: Grape velvet, bottle greens and copper tubing. Activity: Secures a copper spigot to the side of a stoneware vessel
+
+### Gavren Rook — Warden of the Common Stacks
+
+![Gavren Rook leaderhead portrait](portraits/gavren_rook.png)
+
+**Good · Personal traits:** Philosophical, Defender. **Inherited:** Agnostic.
+
+*Librarians keep evidence of their neighbors' religions available in a nation formally estranged from the gods.*
+
+Gavren inherited six chests of confiscated books and explicit instructions to burn them in public. He burned the chests and moved the contents to any household willing to lend them again. When a magistrate complained that he was running a shrine, he offered to put the complaint in circulation beside the rest of the holdings.
+
+**Portrait direction:** Generous irony. Palette: Pumpkin orange waistcoat, dark green shelving and parchment. Activity: Fits a thick book into a framed wall slot
+
+### Mara Bentnail — Captain of the Salvage Road
+
+![Mara Bentnail leaderhead portrait](portraits/mara_bentnail.png)
+
+**Neutral · Personal traits:** Raiders, Magic Resistant. **Inherited:** Agnostic.
+
+*Independent salvagers insist owners prove they can render dangerous ruins safe before charging for access.*
+
+Mara found a set of nail marks beside the spells that had made a collapsed tower impassable. She showed her crew how to recognize the safe route and marked every unclaimed chamber they freed. The city's owner sent a revenue guard and discovered someone had nailed his deed to the door of the one room she still refused to open.
+
+**Portrait direction:** Clear-eyed nerve. Palette: Steel blue vest, oxidized tin and copper hair. Activity: Bends an iron nail against a small portable anvil with pliers
+
 
 <a id="hippus"></a>
 
@@ -810,6 +1470,66 @@ Ereska built stone windbreaks around a winter camp after losing half its foals t
 Marruk discovered that bankrupt cities could still pay a company in pasture rights, hostages and the next season's harvest. He bought the unpaid contracts of other captains and sent their riders to collect, turning one failed campaign into a chain of dependent towns. His creditors' league now offers protection at prices designed never to be repaid, and its riders call every punitive raid the enforcement of an honest bargain.
 
 **Portrait direction:** Polite acquisitive cruelty. Palette: Ivory silk and malachite green. Activity: Stamping a broad wax debt seal onto a harvest contract while sweeping grain counters into his own bowl with the other hand
+
+### Parna Dawnrein — Speaker for the Unridden
+
+![Parna Dawnrein leaderhead portrait](portraits/parna_dawnrein.png)
+
+**Good · Personal traits:** Expansive, Charismatic. **Inherited:** Horselord.
+
+*Herders bargain collectively with commanders who think the herd's labor is free.*
+
+Parna kept count of the mares left behind when a chief made each household supply a second mount. She withheld the foals the next year and taught the other herders to quote a price for all the work between one campaign and another. A new company gets pasture from her only after one of its officers spends a season working with the mares.
+
+**Portrait direction:** Friendly insistence. Palette: Burnished honey wool, sage grass and cream. Activity: Braids a fresh cord into a working halter
+
+### Bekar Windstitch — The Saddle That Fits
+
+![Bekar Windstitch leaderhead portrait](portraits/bekar_windstitch.png)
+
+**Neutral · Personal traits:** Industrious, Ingenuity. **Inherited:** Horselord.
+
+*Saddlers build a standing trade across camps that rarely stay in the same place.*
+
+Bekar rode with thirteen companies trying to learn why each one wore out the same seam. He designed a saddle whose parts any rider could exchange at his wagon, then made the wagons exchange parts with each other. Stocks of Bekar's bolts are now a better measure of a camp's wealth than the splendor of its tents.
+
+**Portrait direction:** Inventive concentration. Palette: Dusky orange work coat, wine leather and storm sky. Activity: Draws a blunt needle through the leather edge of a saddle
+
+### Nessa Redscrip — Mistress of the Standing Retainer
+
+![Nessa Redscrip leaderhead portrait](portraits/nessa_redscrip.png)
+
+**Evil · Personal traits:** Financial, Aggressive. **Inherited:** Horselord.
+
+*A paymaster builds a permanent regime out of soldiers' short-term loyalty.*
+
+Nessa offered to pay the winter wages of a company whose employer had fled. She paid in leather scrip redeemable at her own corrals and gave the officers twice as much when they seized the nearest crossing. In spring they found the retainer had no end date and the ford no road outside her accounting.
+
+**Portrait direction:** Forceful confidence. Palette: Crimson brocade, horsehide beige and dark iron. Activity: Clips a single hole through a stiff leather pay token
+
+### Oralun Hailward — The Truce at Foaling Hill
+
+![Oralun Hailward leaderhead portrait](portraits/oralun_hailward.png)
+
+**Good · Personal traits:** Defender, Spiritual. **Inherited:** Horselord.
+
+*Riders make foaling country a refuge even when rival clans meet elsewhere in battle.*
+
+Oralun lost the mare that had carried him through six engagements when two camps fought over the only sheltered ground. He dug a trough there and swore to turn his bow on the first rider who crossed it armed. The elders still complain about that oath while sending their own mares to graze within its terms.
+
+**Portrait direction:** Grave tenderness. Palette: Petrol blue wool, blue-gray sky and silver bronze. Activity: Pours fresh water from a skin over the rim of a stone trough
+
+### Sedi Horsethistle — Master of the Mare's Mile
+
+![Sedi Horsethistle leaderhead portrait](portraits/sedi_horsethistle.png)
+
+**Neutral · Personal traits:** Creative, Raiders. **Inherited:** Horselord.
+
+*A race steward develops an alternative route to rank for riders without noble blood.*
+
+Sedi's first mare outran her captain's horse on road work and was sold away before she could enter a race. She left the company with the next horse and timed an unsanctioned mile along every ford their riders used. Rich camps send their favorites to win her ribbons and sometimes have to buy the winner a coat to wear at the feast.
+
+**Portrait direction:** Brisk delight. Palette: Bright violet jacket, light turquoise piping and dun ground. Activity: Drops a striped starter's pennant from an outstretched hand
 
 
 <a id="amurites"></a>
@@ -876,6 +1596,66 @@ Ilvara spent years as a military chanter, hiding instructions inside marching so
 
 **Portrait direction:** Conspiratorial musical daring. Palette: Turquoise with magenta and pearl accents. Activity: Plucking a fast figure on her compact lute while the other hand slides decisively between fretted notes.
 
+### Farien Copperspark — The First Bench at Dusk
+
+![Farien Copperspark leaderhead portrait](portraits/farien_copperspark.png)
+
+**Good · Personal traits:** Arcane, Expansive.
+
+*A teacher gives the wards outside the academies access to the basic principles of spellwork.*
+
+Farien discovered that the apprentices who swept her laboratory could reproduce the simplest lights without seeing the instructions. She offered to teach them in a public yard and let them decide when a lesson was over. The academies no longer know whom to fine, since on some evenings an entire neighborhood comes out to make its lamps burn.
+
+**Portrait direction:** Unfeigned delight. Palette: Torch orange robe, cold blue sparks and cream cuffs. Activity: Balances a little blue magical flame above an open copper ring
+
+### Tallis Bluepumice — The Inspector of Wells
+
+![Tallis Bluepumice leaderhead portrait](portraits/tallis_bluepumice.png)
+
+**Neutral · Personal traits:** Magic Resistant, Industrious.
+
+*Water guilds keep cities supplied while containing the waste the academies send downstream.*
+
+Tallis stopped taking the academy's word about waste after his tools floated out of a public cistern. He trained a team to test the water on pumice before it entered the drains and to close any gate that made the stone shine. The guild's inspections are unpopular enough that several wizards quietly pay him to repeat them at their own wells.
+
+**Portrait direction:** Dry fastidiousness. Palette: Viridian inspection coat, chalk and lapis. Activity: Lifts a freshly glowing pumice stone from water with bronze tongs
+
+### Ishara Morrowquill — The Mistress of Closed Instruction
+
+![Ishara Morrowquill leaderhead portrait](portraits/ishara_morrowquill.png)
+
+**Evil · Personal traits:** Financial, Summoner.
+
+*A tutor sells summoned aides to apprentices and claims the work they perform through them.*
+
+Ishara learned to bind little household spirits to unfinished examinations and sold their help to students in disgrace. She agreed to wait for payment until the students had laboratories of their own. Her former pupils send whatever she requests because the spirit that took an examination can always come back to dispute its mark.
+
+**Portrait direction:** Tight composure. Palette: Peony magenta coat, black lacquer and ghost lilac. Activity: Pins a tiny violet ectoplasmic paper slip beneath a plain glass weight
+
+### Corin Slategate — The Marshal of Locked Doors
+
+![Corin Slategate leaderhead portrait](portraits/corin_slategate.png)
+
+**Neutral · Personal traits:** Organized, Defender.
+
+*A civil watch negotiates an inspection right in laboratories that claim to answer only to themselves.*
+
+Corin led the first rescue crew into a laboratory without asking each occupant's academy rank. The order to arrest him came from the surviving masters once they found he had taken the injured servants out first. He spent his sentence drawing a plan of all the locked doors a municipal watch would need to open at the next fire.
+
+**Portrait direction:** Professional firmness. Palette: Ink blue gambeson, ash wood and steel gray. Activity: Fits a long iron release bar through two door brackets
+
+### Meri Thunderchalk — The Gallery of Failed Wonders
+
+![Meri Thunderchalk leaderhead portrait](portraits/meri_thunderchalk.png)
+
+**Good · Personal traits:** Creative, Philosophical.
+
+*Open exhibitions let inventors dispute the academies' definitions of safe and useful magic.*
+
+Meri built a room to exhibit dangerous artifacts that would no longer obey their inventors. She invited each inventor to demonstrate the safest way an ordinary visitor could carry the artifact back out. The gallery is crowded enough that inventors threaten to show her their rivals' successes if she puts their disasters too near the door.
+
+**Portrait direction:** Tender skepticism. Palette: Soft gold waistcoat, mint magic and pale limestone. Activity: Turns a cracked glowing sphere in a padded display stand
+
 
 <a id="doviello"></a>
 
@@ -940,6 +1720,66 @@ Torvek survived three disastrous migrations by persuading rival packs to take di
 Nask escaped an Illian labour column after an overseer's binding spell failed on him, dragging three other captives through a mountain pass. He returned with hunters to break the remaining collars, then kept the freed prisoners under his own command until they had repaid him in service. His raiders now pursue priests and wizards across borders, taking their dependants as guarantees against retaliation. To Nask, Doviello freedom means that no sorcerer may hold his pack by the throat, and the safest way to ensure it is to put every sorcerer's household in his own fist first.
 
 **Portrait direction:** Possessive cold fury. Palette: Ice blue with oxblood and gunmetal accents. Activity: Wrenching a bent magical collar open between both gloved fists as its final frost-rune cracks.
+
+### Runa Boldhide — Keeper of the Unfrozen Camp
+
+![Runa Boldhide leaderhead portrait](portraits/runa_boldhide.png)
+
+**Good · Personal traits:** Expansive, Industrious.
+
+*Tanners and hide workers defend a permanent winter camp from raiders within their own people.*
+
+Runa remembered which valley would thaw early because she had buried six sled runners there one winter. She spread the first hides over their graves while her crew dug a shelter deep enough to outlast the snow. The next war band that wanted to requisition her winter stores found every family expecting a vote.
+
+**Portrait direction:** Practical generosity. Palette: Golden ochre hides, dark spruce and pale snow. Activity: Scrapes a stretched hide with a curved bone tool
+
+### Morgun Iceheel — Guide of the Blue Notch
+
+![Morgun Iceheel leaderhead portrait](portraits/morgun_iceheel.png)
+
+**Neutral · Personal traits:** Defender, Philosophical.
+
+*Scouts establish a trail court that decides which companies can cross dangerous country.*
+
+Morgun turned a scouting party back at a cut in the glacier where he could hear meltwater under solid ice. Half the party laughed and went on while he spent the night making crampons for the rest. He still takes commissions from captains who doubt his stories, so long as they understand which of them he gets to turn back.
+
+**Portrait direction:** Earned wariness. Palette: Glacier blue leather, cream shearling and rust. Activity: Laces an iron crampon onto a winter boot
+
+### Bekka Tallfang — Voice of the Empty Den
+
+![Bekka Tallfang leaderhead portrait](portraits/bekka_tallfang.png)
+
+**Evil · Personal traits:** Aggressive, Spiritual.
+
+*A terror cult binds rival families through the ritual fostering of a supposed spirit beast.*
+
+Bekka claimed she could tell which family a wolf had eaten by the shape of its teeth. When one den lay empty after a raid she took its cub and visited an enemy family to collect the milk she said it was owed. The families that refuse to feed it have begun waking to find a tooth beside their oldest child's bed.
+
+**Portrait direction:** Ceremonial menace. Palette: Cranberry red shawl, brown ash and warm topaz. Activity: Dangles a long fang above a carved wooden cradle
+
+### Jerek Barkshield — Friend of the Winter Strangers
+
+![Jerek Barkshield leaderhead portrait](portraits/jerek_barkshield.png)
+
+**Good · Personal traits:** Charismatic, Magic Resistant.
+
+*A river clan grants winter residence to strangers who teach or practice a craft.*
+
+Jerek carried fallen rivals over the ice rather than let their families follow the spring water to look for them. The families taught his camp the ways they cured bark, wove willow and stopped a frostbitten toe going black. His successor has to know a trade somebody else brought across the river, which makes it hard for the old chiefs to agree on one.
+
+**Portrait direction:** Restless welcome. Palette: Pine green felt, cream birch and berry trim. Activity: Weaves a new strip of willow into a curved shield rim
+
+### Unna Ashtrail — The Last Word at the Fire
+
+![Unna Ashtrail leaderhead portrait](portraits/unna_ashtrail.png)
+
+**Neutral · Personal traits:** Creative, Organized.
+
+*An elected camp speaker keeps feuds from crossing the boundary between road and winter hearth.*
+
+Unna kept a stick for every night two kin groups managed to share a shelter without drawing blades. She made their loudest fighters break one before the whole camp whenever they wanted to resume an argument. The bundle grew so heavy she could send an apprentice to collect their fines and still have enough sticks for the night.
+
+**Portrait direction:** Unsparing humor. Palette: Heather violet wool, birch gold and smoke gray. Activity: Snaps a dry willow switch in two between both hands
 
 
 <a id="balseraphs"></a>
@@ -1006,6 +1846,66 @@ Velisse was a minor demon repeatedly summoned to impersonate absent stars in a r
 
 **Portrait direction:** Predatory delighted self-invention. Palette: Coral pink with pearly ivory and mint-green accents. Activity: Painting a stolen commander distinctive black moustache onto her half-mask with a thin theatrical brush while angling it to inspect the imitation.
 
+### Pella Crackmirror — Marshal of the Repaired Faces
+
+![Pella Crackmirror leaderhead portrait](portraits/pella_crackmirror.png)
+
+**Good · Personal traits:** Charismatic, Ingenuity.
+
+*Mask menders build a refuge for performers who need time away from their assigned roles.*
+
+Pella repaired a child's mask and realized the child had never seen the inside of it. She made a hook for each mask that came to the shop and set a rule that no visitor could be called by a role until reaching for one. The hooks fill quickest after the court announces an especially heartwarming show.
+
+**Portrait direction:** Sturdy kindness. Palette: Peacock turquoise coat, coral and porcelain white. Activity: Fits a piece of white porcelain into a gently cracked stage mask
+
+### Marno Redbutton — Proprietor of the Other Ending
+
+![Marno Redbutton leaderhead portrait](portraits/marno_redbutton.png)
+
+**Neutral · Personal traits:** Creative, Philosophical.
+
+*Touring players give towns the right to choose when a performance has made its point.*
+
+Marno brought down the curtain on a tragedy a full scene early and heard the audience finish it three different ways. He carried that trick to a court whose members had paid him to make an enemy look foolish. They have not hired him since, but their neighbors keep asking how many other endings they could afford.
+
+**Portrait direction:** Wary playfulness. Palette: Ochre gold tailcoat, stage maroon and dusty brown. Activity: Pulls a thick velvet curtain cord toward a cleat
+
+### Jessa of the Raked Seats — Keeper of the Laughing Debt
+
+![Jessa of the Raked Seats leaderhead portrait](portraits/jessa_of_the_raked_seats.png)
+
+**Evil · Personal traits:** Financial, Organized.
+
+*A box-office broker decides which audiences can afford to leave a show.*
+
+Jessa ran the theater's debt book from the cheap seats because the back row had the best view of who walked out. She put a small fee on departures and waived it for anyone who could find a stranger to take a seat. Her new hall is always full, a fact the court displays with considerable pride.
+
+**Portrait direction:** Performative generosity. Palette: Plum satin, electric lilac and black lacquer. Activity: Punches a clean round hole in a long blank paper ticket
+
+### Nivaro Springheel — The Parade Below Ground
+
+![Nivaro Springheel leaderhead portrait](portraits/nivaro_springheel.png)
+
+**Neutral · Personal traits:** Expansive, Defender.
+
+*A procession under the streets becomes a protected route for people the daytime pageants avoid.*
+
+Nivaro put a cart of failed parade floats below the city to keep them out of a rainstorm. When a new arrest order came down, he rolled them away with the wanted performers hidden inside. He still plans the underground procession every year, and its most important spectators wait by the exits with food.
+
+**Portrait direction:** Impatient joy. Palette: Bright vermilion jacket, brass and green shadows. Activity: Works a small concertina bellows attached to a brass float pipe
+
+### Sill Needlemoon — The Volunteer at Every Rehearsal
+
+![Sill Needlemoon leaderhead portrait](portraits/sill_needlemoon.png)
+
+**Evil · Personal traits:** Arcane, Magic Resistant.
+
+*A stage magician gains followers by taking people's unwanted feelings and selling admission to them.*
+
+Sill learned to put her fear of heights in a glass bead before walking the rope. She made spare beads for the other performers and charged spectators who wanted to feel what bravery had cost them. The ones she has not sold accumulate in the wings, where a wrong step makes an audience of a single person.
+
+**Portrait direction:** Serene appetite. Palette: Moon-white costume, midnight indigo and icy beads. Activity: Threads a bright glass bead onto a long aerial rope
+
 
 <a id="clan_of_embers"></a>
 
@@ -1070,6 +1970,66 @@ Sarruk was a scout assigned to find villages worth burning, but his maps recorde
 Ishka learned that a chieftain could lose an argument to a song his warriors had known since childhood. She began composing ancient victories for new patrons, then sending her pupils to teach the songs in every drinking hall before anyone could dispute them. Clans admitted to her heroic lineage gain allies and marriage partners, while those she names oathbreakers find their burial poles cut down and their witnesses missing. She wants the Ember Clans to share one magnificent history, with every inconvenient ancestor burned out of it.
 
 **Portrait direction:** History Sung Obedient. Palette: Leaf green with burnished copper and black accents. Activity: Beating a strapped chest drum with her open right palm while her left hand mutes its rim, caught in the middle of singing a triumphant verse.
+
+### Gromka Potlid — The Hearth That Feeds Strangers
+
+![Gromka Potlid leaderhead portrait](portraits/gromka_potlid.png)
+
+**Good · Personal traits:** Barbarian, Expansive.
+
+*Orc cooks turn scattered war camps into winter settlements with a claim on the common larder.*
+
+Gromka cooked three pots at an exhausted camp and discovered the smallest pot fed the most people if everyone ate in turns. She took it along the line of camps and began asking each one what it could bring to the next meal. Their storehouses are tall enough now that the chiefs must come down from their war seats to ask for a share.
+
+**Portrait direction:** Dry generosity. Palette: Butternut orange tunic, dark iron and pea green. Activity: Lifts a heavy black pot lid with a wooden hook
+
+### Borruk Orejaw — Warden of the Spear Ferry
+
+![Borruk Orejaw leaderhead portrait](portraits/borruk_orejaw.png)
+
+**Neutral · Personal traits:** Barbarian, Defender.
+
+*A river orc claims command of crossings whose maintenance the war chiefs consider beneath them.*
+
+Borruk was told to tear down a ferry before a rival band's march and wait on the far bank for orders. He stretched a spare chain across the river instead and carried both sides a wagon at a time, after collecting a broken spear as the fare. He has enough iron for a new ferry now and more armed friends on either bank than the chief who gave the order.
+
+**Portrait direction:** Good-natured watchfulness. Palette: Cerulean coat, river gray and iron. Activity: Slots a snapped spearhead into a ferryman's iron chain guide
+
+### Uzhka Sourbone — Collector of the Foster Tithe
+
+![Uzhka Sourbone leaderhead portrait](portraits/uzhka_sourbone.png)
+
+**Evil · Personal traits:** Barbarian, Organized.
+
+*A war matron prolongs a traditional exchange of hostages long after its peace has failed.*
+
+Uzhka raised the child of a visiting chief in good faith until the chief refused to send her son home. She counted the weeks she had fed his child and demanded a second from every family that spoke for him. The terms are carved on notched bones so that even a child can read how long she intends to keep them.
+
+**Portrait direction:** Severe certainty. Palette: Crimson felt, chalk bone and dark cedar. Activity: Snaps a piece from a notched rib-bone tally
+
+### Rask Glowcap — The Keeper of Low Roads
+
+![Rask Glowcap leaderhead portrait](portraits/rask_glowcap.png)
+
+**Neutral · Personal traits:** Barbarian, Creative.
+
+*Goblin delvers use phosphorescent fungi to connect camps that dismiss them as expendable scouts.*
+
+Rask grew a shining fungus in the boot he had been issued because its mate had never arrived. His family planted spores along a route the orc patrols could not crawl through, and the route proved faster than the march above. When he began charging to carry messages, the captains wanted to know where he got the advantage and the boot.
+
+**Portrait direction:** Secretive glee. Palette: Violet hood, phosphor green and slate. Activity: Plants a green-glowing mushroom in a stone niche with two long fingers
+
+### Mogra Tempreed — Speaker of the Reed Shields
+
+![Mogra Tempreed leaderhead portrait](portraits/mogra_tempreed.png)
+
+**Good · Personal traits:** Barbarian, Ingenuity.
+
+*Marsh families use cheap armor to defend themselves without pledging half their harvest to a chief.*
+
+Mogra brought a reed shield to a challenge after no smith would sell iron to her family. She let the first opponent put three holes in it before showing how the reeds closed around a blade. Every marsh camp knows how to weave her shields now, and their young fighters have stopped asking for someone else's colors.
+
+**Portrait direction:** Amused defiance. Palette: Leaf green bodice, flax and warm brass. Activity: Pulls a dry reed tight in the weave of a small round shield
 
 
 <a id="svartalfar"></a>
@@ -1136,6 +2096,66 @@ Ossren inherited a ferry whose passengers were forbidden to admit where they had
 
 **Portrait direction:** Quiet Water Commerce. Palette: Burnt sienna with seafoam-green and copper accents. Activity: Cranking a small brass ferry winch with his right hand while his left hand guides the taut mooring rope through its fairlead.
 
+### Mirel Widowfern — The Warden of Surrender
+
+![Mirel Widowfern leaderhead portrait](portraits/mirel_widowfern.png)
+
+**Good · Personal traits:** Defender, Organized. **Inherited:** Sinister.
+
+*A dark elf establishes safe-conduct for people who abandon disputes before killing completes them.*
+
+Mirel carried a ransom to a council that had already voted to kill her brother. She left the payment on the floor and brought home its youngest guard, who had opened the cellar when nobody else would. Her safe houses fly the guard's badge in reverse and offer the same deal to anybody willing to turn a key.
+
+**Portrait direction:** Measured trust. Palette: Rust red velvet, dark ferns and cool silver. Activity: Turns a small silver badge over in her open hand
+
+### Sovar Whisperleaf — The Exchange of Safe Rumors
+
+![Sovar Whisperleaf leaderhead portrait](portraits/sovar_whisperleaf.png)
+
+**Neutral · Personal traits:** Financial, Charismatic. **Inherited:** Sinister.
+
+*Rumor brokers create a market that pays less for lies and more for useful warnings.*
+
+Sovar was paid for a rumor so good his customer tried to have him killed to stop it being sold twice. He moved into an abandoned theater and fixed a fee for each warning, deducted if the customer could prove it false. The best seats are reserved for the people who correct him in public, which keeps his oldest customers away.
+
+**Portrait direction:** Poised irony. Palette: Teal silk, dull gold and moss-black stone. Activity: Pulls a blue stone marker from one of two shallow bowls
+
+### Ithra Blackvine — Keeper of the Still-Verdict
+
+![Ithra Blackvine leaderhead portrait](portraits/ithra_blackvine.png)
+
+**Evil · Personal traits:** Arcane, Spiritual. **Inherited:** Sinister.
+
+*A ritualist traps dissent in a court where any contradiction becomes testimony against its speaker.*
+
+Ithra bred a vine that remembered the sound of its keeper's last command. She grew it about a deserted judgment seat and announced that it could hear evidence the living had learned to forget. Speakers now agree with the vine while it is still rustling, in the hope of keeping what they meant to say out of reach.
+
+**Portrait direction:** Devout dispassion. Palette: Sepulchral purple robes, pearl webbing and inky green. Activity: Twines a black tendril around a carved silver finger ring
+
+### Nessar Foxglove — Gardener of the Truce Path
+
+![Nessar Foxglove leaderhead portrait](portraits/nessar_foxglove.png)
+
+**Neutral · Personal traits:** Expansive, Ingenuity. **Inherited:** Sinister.
+
+*A night gardener grows useful passageways through woods that hostile houses still claim to own.*
+
+Nessar planted the winter gardens of houses that were fighting about whose road could reach the wells. He put his newest cuttings where nobody expected to walk and pruned them until two kitchens found themselves joined by a path. The servants use it in the dark, and their employers have learned to buy herbs from the same old man.
+
+**Portrait direction:** Gentle cunning. Palette: Muted celadon wrap, pale foxgloves and violet night. Activity: Clips a pale foxglove stem with slim curved shears
+
+### Valira Thinveil — The Maker of Second Faces
+
+![Valira Thinveil leaderhead portrait](portraits/valira_thinveil.png)
+
+**Good · Personal traits:** Creative, Magic Resistant. **Inherited:** Sinister.
+
+*A disguise artist gives escaped servants names that survive close inquiry.*
+
+Valira dressed a runner in an expensive disguise that came apart at the first dawn gate. She began again with cheap wool, the accent of her sister's village, and a handful of genuine neighbors willing to vouch. The people she helps remember the invented childhoods less clearly than the real neighbor who arrived first to defend them.
+
+**Portrait direction:** Bright discretion. Palette: Golden mustard smock, moon gray and wine trim. Activity: Presses a little curl of dark wig hair into a wooden stand
+
 
 <a id="calabim"></a>
 
@@ -1200,6 +2220,66 @@ Istren discovered that a foreign merchant would recoil from a slave auction yet 
 Raska was a bloodpet captain denied the Dark Gift after three decades of keeping her master's villages obedient. She stole a brood register and used its concealed family scandals to persuade a junior vampire to sponsor her rebellion. Her followers demand an end to hereditary privilege, promising that any soldier may earn immortality by delivering enough conquered subjects to the new fraternity. Raska has not yet received the Gift herself, but each victory makes it harder for her patron to deny her without also threatening the hungry army she has built.
 
 **Portrait direction:** Immortality Must Be Earned. Palette: Vermilion with gunmetal grey and bone accents. Activity: Pulling the final strap of her left officer gauntlet tight with her right hand, teeth set as she prepares to address her assembled soldiers.
+
+### Vesna Quayward — The Mortal Factor
+
+![Vesna Quayward leaderhead portrait](portraits/vesna_quayward.png)
+
+**Good · Personal traits:** Financial, Magic Resistant.
+
+*Mortal merchants buy a guarded right of passage for households leaving the feasting estates.*
+
+Vesna never owned land, which helped the customs officers overlook her first dozen cargoes of people. She paid a new wharf guard every month until the guard and the dockhands asked her to buy their entire company. The company publishes its tariff in the markets and charges less for a person whose master is likely to come looking.
+
+**Portrait direction:** Clear commercial nerve. Palette: Jade tailored coat, wet slate and amber lamps. Activity: Slides a blank brass transit disc into a small leather wallet
+
+### Malrec Rubyhand — The Lord of the Off Hours
+
+![Malrec Rubyhand leaderhead portrait](portraits/malrec_rubyhand.png)
+
+**Neutral · Personal traits:** Organized, Creative.
+
+*Craft estates use the hours their vampire lords sleep to select officers of their own.*
+
+Malrec inherited a dye works whose masters were still signing orders long after he went below to rest. He began buying their experiments on the condition that the other lords could see their account books. Now the weavers elect their own night foreman, and the worst part of challenging him is finding a color he has not already bought.
+
+**Portrait direction:** Offhand sophistication. Palette: Ultramarine brocade, red dye and chalk cuffs. Activity: Raises a dark red strip of cloth from a steaming vat with a wooden rod
+
+### Lysana Bloodgilt — The Inheritor of Feasts
+
+![Lysana Bloodgilt leaderhead portrait](portraits/lysana_bloodgilt.png)
+
+**Evil · Personal traits:** Industrious, Philosophical.
+
+*A vampire jurist enshrines the right to feed as a legacy estate families can sell.*
+
+Lysana received only the silverware when her aunt's estates changed hands. She bought back the right to each of the meals once served on it and spent a decade demonstrating that the meals were worth more than the land. The silver now goes round her table at every auction while stewards outside count the villagers each bid will cost.
+
+**Portrait direction:** Intimate malice. Palette: Garnet silk gown, bright silver and gold highlights. Activity: Polishes a wide silver spoon with a soft cream cloth
+
+### Milos Grainsty — The Keeper of the Cellar Door
+
+![Milos Grainsty leaderhead portrait](portraits/milos_grainsty.png)
+
+**Good · Personal traits:** Expansive, Defender.
+
+*Farm families keep an underground store reserve that their vampire landlords cannot seize in daylight.*
+
+Milos discovered a supply cellar the estate had walled shut during an outbreak of hunger. He reopened it and set one household to watch its door while he asked the others to leave what they could inside. The lord's reeve says the deficit is all due to rats, and nobody in the family has been unkind enough to contradict him.
+
+**Portrait direction:** Protective good humor. Palette: Mustard brown smock, oat straw and lamplight. Activity: Seats a lid onto a large earthen grain jar
+
+### Dianthe Nightjury — The Judge of the Open Shutter
+
+![Dianthe Nightjury leaderhead portrait](portraits/dianthe_nightjury.png)
+
+**Neutral · Personal traits:** Charismatic, Arcane.
+
+*An ambitious vampire hears mortal petitions in a room illuminated by the complainants.*
+
+Dianthe could never prove whether a fellow elder had glamoured her bailiff or merely bribed him. She made a courtroom where the bailiff need only open a shutter to halt proceedings and put his account on the record. The bailiff sits a little more comfortably than was once customary, which may have as much to do with his honesty as the shutters.
+
+**Portrait direction:** Critical poise. Palette: Pearlescent gray robe, lilac and black velvet. Activity: Draws up a patterned shutter with its cord
 
 
 <a id="sheaim"></a>
@@ -1266,6 +2346,66 @@ Nesk survived a gatehouse disaster by dismantling the summoning frame from insid
 
 **Portrait direction:** resourceful guarded practicality. Palette: burnt rust with desaturated teal and iron accents. Activity: Tightening a heavy gate latch with a short wrench while bracing its iron housing with the other hand
 
+### Temran Closetower — The Joiner of False Rooms
+
+![Temran Closetower leaderhead portrait](portraits/temran_closetower.png)
+
+**Neutral · Personal traits:** Ingenuity, Arcane. **Inherited:** Sundered.
+
+*Gate builders test dimensions in expendable model houses instead of opening trials in inhabited ones.*
+
+Temran's first door opened into a room his workshop had never built. He sent a model through before he sent a worker and found the model's little furniture in the workshop two days before he finished it. His apprentices check their models for inhabitants before accepting the next gate commission.
+
+**Portrait direction:** Determined astonishment. Palette: Marigold work vest, midnight blue and copper. Activity: Slots a thin wooden stair into a small model house
+
+### Ivaya Fadebell — The Listener at the Safeline
+
+![Ivaya Fadebell leaderhead portrait](portraits/ivaya_fadebell.png)
+
+**Good · Personal traits:** Magic Resistant, Defender. **Inherited:** Sundered.
+
+*Families at the edge of summoning sites set their own terms for evacuation.*
+
+Ivaya tied a bell to a gate beam because at first any change in its note lasted long enough to let her fetch a master. By the time the note broke there was only time to knock on the neighboring doors. The new settlements around her watch towers built their meeting rooms far enough away that a bell can still be heard before it is needed.
+
+**Portrait direction:** Difficult watchfulness. Palette: Deep blue-green coat, glinting bronze and cloudy violet. Activity: Holds a tuning fork beside a little bronze warning bell
+
+### Orys Redmargin — The Patron of Final Revisions
+
+![Orys Redmargin leaderhead portrait](portraits/orys_redmargin.png)
+
+**Evil · Personal traits:** Philosophical, Summoner. **Inherited:** Sundered.
+
+*A summoner recruits scholars by letting them revise the consequences written into their own futures.*
+
+Orys found he could bring a completed manuscript backward through a gate whose owner had never finished it. He invited writers to read what their work would cost them and submit a revision to the harm, provided they offered the gate a replacement. The margins in his notebook have grown crowded with other people's villages.
+
+**Portrait direction:** Rapt calculation. Palette: Oxblood red robe, bone paper and violet gloom. Activity: Pins a curling blank sheet with the tip of a metal stylus
+
+### Neriss Cerulean Wake — The Ferryman of Close Shores
+
+![Neriss Cerulean Wake leaderhead portrait](portraits/neriss_cerulean_wake.png)
+
+**Neutral · Personal traits:** Financial, Expansive. **Inherited:** Sundered.
+
+*Planar travelers finance a string of shelters that sell return passage as carefully as departure.*
+
+Neriss charged twice for a first step into the beyond and nothing for the second. He found that his clients were willing to carry anyone they met back through, provided the fares went to the keeper of a permanent landing. The keepers have set their ceilings low so the guests who come out like the sound of a room the same height as the one they left.
+
+**Portrait direction:** Level courtesy. Palette: Cerulean silk, deep indigo and aged gold. Activity: Pushes a narrow oar against the edge of a stone landing
+
+### Hesia Ashcomber — Custodian of the Blue Orchard
+
+![Hesia Ashcomber leaderhead portrait](portraits/hesia_ashcomber.png)
+
+**Good · Personal traits:** Creative, Industrious. **Inherited:** Sundered.
+
+*Growers turn soil warped by a destroyed ritual into a source of food and a reason to stay.*
+
+Hesia returned to her father's orchard and found it yielding ash in the size and shape of apples. She broke one open, recovered a seed and planted all the ones that sprouted blue in a new row. The fruit keeps a hungry village alive, although every grower takes a turn deciding whether the next batch can be trusted.
+
+**Portrait direction:** Hopeful caution. Palette: Lime green apron, cyan leaves and soft gray. Activity: Picks a seed from a half-open ash apple on a tray
+
 
 <a id="infernal"></a>
 
@@ -1330,6 +2470,66 @@ Kethril crossed into Erebus as a nameless warrior summoned to die in a magician'
 Omel noticed that a newly arrived mane sometimes remembered a lullaby or a face before torment wore the memory away. He founded a court of reenactors who preserve these fragments in masks, miniature houses, and performances of stolen lives. Descendants invited to his exhibitions often recognize enough to bargain for the rest, surrendering secrets and loyalties to hear one more familiar voice. His city treasures mortal individuality because a particular person can be used in ways that an anonymous soul cannot.
 
 **Portrait direction:** intimate theatrical melancholy. Palette: smoky violet with moon-silver and wine accents. Activity: Stitching a crack in a small porcelain memory mask with a silver needle while supporting its cheek
+
+### Kaaras Hingesmoke — The Keeper of the Unlatched Pit
+
+![Kaaras Hingesmoke leaderhead portrait](portraits/kaaras_hingesmoke.png)
+
+**Neutral · Personal traits:** Defender, Magic Resistant. **Inherited:** Fallow.
+
+*A demon controls an escape route by keeping greater devils from claiming those whose terms have expired.*
+
+Kaaras's first guard shift began the day the terms of a dozen prisoners expired. He found no release order and spent his next century opening the lower gate one inmate at a time. The old masters finally noticed his absences when their favorite victims started selling him supplies on the other side.
+
+**Portrait direction:** Guarded resolve. Palette: Cobalt armor, charcoal rock and orange embers. Activity: Lifts an iron hinge pin from a small dungeon door
+
+### Sivriel Cinnabar — The Mistress of Ash Assays
+
+![Sivriel Cinnabar leaderhead portrait](portraits/sivriel_cinnabar.png)
+
+**Evil · Personal traits:** Financial, Industrious. **Inherited:** Fallow.
+
+*A demon turns ash from spent bargains into an asset and makes every furnace part of her estate.*
+
+Sivriel salvaged the ashes of failed infernal contracts and found that certain signatures gave off enough heat to temper iron. She tested which materials held that heat and bought the furnaces that could burn them. Now her buyers are required to bargain at least once a season whether they need anything or not.
+
+**Portrait direction:** Feverish precision. Palette: Copper orange work coat, bone and vermilion ash. Activity: Tips a sample of vermilion ash into a heavy black crucible
+
+### Mordax Silvercord — The Chancellor of Lesser Malice
+
+![Mordax Silvercord leaderhead portrait](portraits/mordax_silvercord.png)
+
+**Evil · Personal traits:** Charismatic, Organized. **Inherited:** Fallow.
+
+*A demon extorts protection money by selling relief from punishments he controls.*
+
+Mordax bought a minor siege engine and sent his agents to describe it to every town he could not reach. He collected the first tribute from a city that had never seen it and bought two smaller engines from the proceeds. He encourages his converts to underpay because collecting arrears pays his companies better than keeping a promise.
+
+**Portrait direction:** Relaxed coercion. Palette: Deep magenta mantle, silver chain and blue-black stone. Activity: Draws a knotted silver cord across the model of a small siege tower
+
+### Aethi Vaultmoth — The Host of Unwanted Revenants
+
+![Aethi Vaultmoth leaderhead portrait](portraits/aethi_vaultmoth.png)
+
+**Neutral · Personal traits:** Creative, Spiritual. **Inherited:** Fallow.
+
+*An infernal host gives unwanted dead a refuge if they bring the first stories of their own.*
+
+Aethi had been ordered to frighten a soul that had already forgotten whom it had lost. Instead she told it to describe the last room it had slept in, which it could scarcely do without recalling a name. The chambers she made from such descriptions fill in turn with people who remember enough to ask for a different punishment.
+
+**Portrait direction:** Unnervingly gentle. Palette: Pastel mint robe, gray silk and pale amethyst ash. Activity: Hangs a small moth-shaped lantern on a hook
+
+### Zurn Emberseal — The Right of First Smoke
+
+![Zurn Emberseal leaderhead portrait](portraits/zurn_emberseal.png)
+
+**Evil · Personal traits:** Aggressive, Summoner. **Inherited:** Fallow.
+
+*A demon asserts first ownership of every soul released when a city burns.*
+
+Zurn once let a burning manor cool because three rival devils were still debating its claims. The departing souls fled past them in the smoke while he was forbidden to lift a finger. He took the first flare from the next fire into a bronze box, hired a force to carry it and told the rest of the claimants to come take it from him.
+
+**Portrait direction:** Combative pleasure. Palette: Viridian armor, soot black and furnace gold. Activity: Snaps closed a bronze box leaking one strand of golden smoke
 
 
 <a id="illians"></a>
@@ -1396,9 +2596,69 @@ Naevra was guarding a mountain shrine when an avalanche buried an invading compa
 
 **Portrait direction:** alert disciplined compassion. Palette: golden ochre with blue-gray and snow-white accents. Activity: Fastening a rescue splint around a padded demonstration arm with both hands pulling opposite straps
 
+### Rhuna Snowcellar — The Keeper of Tomorrow's Bread
+
+![Rhuna Snowcellar leaderhead portrait](portraits/rhuna_snowcellar.png)
+
+**Good · Personal traits:** Agnostic, Industrious, Defender.
+
+*Granary crews defend high villages by pooling the work of preserving food through the longest winters.*
+
+Rhuna stayed after her village began sending its young people south to find a second harvest. She opened an old ice cellar and packed the crop in shallow baskets that even a single household could lift. The cellar kept more people alive than she expected, and they insist on making decisions in its coldest room so nobody can forget what the bread costs.
+
+**Portrait direction:** Practical pride. Palette: Golden saffron parka, ice blue and spruce. Activity: Slides a shallow basket into a niche cut from ice
+
+### Marden Sleetfoil — Cartographer of the Open Drift
+
+![Marden Sleetfoil leaderhead portrait](portraits/marden_sleetfoil.png)
+
+**Neutral · Personal traits:** Agnostic, Philosophical, Expansive.
+
+*Travellers rely on a seasonal map whose maker refuses permanent claims to snowbound routes.*
+
+Marden painted his first map on a panel the wind took into the next valley. By the time he recovered it the best route had drifted over and the first party had only survived by drawing its own. He prints an empty margin around every pass so that the people who find a better way can leave the next light burning.
+
+**Portrait direction:** Wry concentration. Palette: Brick red parka, snow white and slate. Activity: Uses a narrow bone scraper to erase a line from a blank frosted map
+
+### Erva Whitecrown — The Cold of the Claims Court
+
+![Erva Whitecrown leaderhead portrait](portraits/erva_whitecrown.png)
+
+**Evil · Personal traits:** Agnostic, Financial, Organized.
+
+*A fuel commissioner makes shelter contingent on submitting to a harsh debt court.*
+
+Erva counted the households on one slope by the smoke above their roofs and found more fires than taxpayers. She devised a charcoal allowance so that every chimney needing fuel had to file a return. Her deputies can close a case by closing a flue, which makes even the accurate returns quite expensive.
+
+**Portrait direction:** Frosty satisfaction. Palette: Arctic lilac fur, black rivets and pewter. Activity: Snaps a dark charcoal stick into two uneven lengths
+
+### Sieda Icequill — The Keeper of the Thaw Tongue
+
+![Sieda Icequill leaderhead portrait](portraits/sieda_icequill.png)
+
+**Good · Personal traits:** Agnostic, Creative, Charismatic.
+
+*A song keeper helps returning families recover the place names buried under official winter markers.*
+
+Sieda heard her grandmother give a different name to the same clearing each year as the snow crept down. She recorded each name beside its year and sang the sequence as spring travellers passed her door. Several villages that had been missing from the rolls for forty winters sent her word that they remembered the same places.
+
+**Portrait direction:** Quietly exuberant. Palette: Turquoise blue fur mantle, rose buttons and smoky blue. Activity: Scrapes a note into a small wax tablet with a bone quill
+
+### Halek Rimehook — The Warden of Returning Fires
+
+![Halek Rimehook leaderhead portrait](portraits/halek_rimehook.png)
+
+**Neutral · Personal traits:** Agnostic, Raiders, Magic Resistant.
+
+*A salvage captain retrieves abandoned towns' tools and insists former owners prove their claim by coming back.*
+
+Halek found a town's tools lined up at the edge of a stretch of ice too thin to cross with them. He kept the ironware bright for three winters expecting their makers to return. After others came to claim it, he promised to give each tool to the first person who could stand at its old hearth and explain what it had been made to fix.
+
+**Portrait direction:** Gruff care. Palette: Fir green fur-lined coat, rust iron and blue ice. Activity: Hooks a buried claw hammer up out of crusted snow
+
 ## Sources and assets
 
-Civilization identities and inherited traits: `data/json/civilizations.jsonc`. Existing leaders and personal traits: `data/json/leader_heads.jsonc` and `data/json/cards/doom_sundering.jsonc`. The new leaders' runtime definitions and stories: `data/json/cards/zz_minor_leaders.jsonc`, generated from this catalog by `tools/sync-minor-leaders.py`. Trait definitions: `data/json/traits.jsonc`. Setting reference: `data/text/en.tsv`. Portrait style: `docs/ISO.md` and `tools/m7/prompts/assets/leader_*.txt`.
+Civilization identities and inherited traits: `data/json/civilizations.jsonc`. Existing leaders and personal traits: `data/json/leader_heads.jsonc` and `data/json/cards/doom_sundering.jsonc`. The runtime definitions and stories are in `data/json/cards/zz_minor_leaders.jsonc` and `data/json/cards/zzz_minor_leaders.jsonc`. Both come from `tools/sync-minor-leaders.py`. Trait definitions: `data/json/traits.jsonc`. Setting reference: `data/text/en.tsv`. Portrait style: `docs/ISO.md` and `tools/m7/prompts/assets/leader_*.txt`.
 
 Concept data and exact art briefs are in [concepts.json](concepts.json). Generated source sheets, prompts, and extraction metadata are in [art](art/). Each portrait is a separate PNG in [portraits](portraits/). The original generated sheets are preserved; export only splits their square cells and resizes them to the game's 384 pixel leaderhead size. The game exports also include 160 pixel face crops for diplomacy and other small portrait slots.
 

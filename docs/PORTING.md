@@ -967,13 +967,13 @@ flag.
       garrisons; heroes stay), the most populous its capital, named "<civilization> of <capital>".
       Its leader is drawn from the available preferred minor leaders of its civilization
       (`preferred_breakaway`, the owner's decision, 2026-11-15), before unused major or legacy
-      minor leaders. There are 105 new leaders, five for each original civilization, with their
-      own traits, alignment, backstory and portrait; none is selectable at game start.
+      minor leaders. Each of the 21 original civilizations has ten preferred minor leaders.
+      Each has personal traits, an alignment, a backstory and a portrait.
       Availability checks do not draw RNG, and a leader ever in play is not reused.
       Generic city revolts, Sovereign City and colonial releases use the same preference;
       their new faction takes its chosen leader's alignment. The Usurper's Crown keeps its
-      dedicated civilization and hero. The new definitions are appended after existing info
-      entries (`cards/zz_minor_leaders.jsonc`), preserving their numeric indices.
+      dedicated civilization and hero. The definitions in `cards/zz_minor_leaders.jsonc` and
+      `cards/zzz_minor_leaders.jsonc` append the minor leaders in order and preserve earlier indices.
       Saves from before this addition can load when their leader list is an exact prefix of
       the current list and every other data fingerprint matches; no state-layout change.
       A civilization with no free

@@ -20,7 +20,7 @@ fn all_approved_leaders_load_with_exact_traits_alignment_and_backstory_but_are_n
     for civ in civs {
         let ct = d.t::<CivilizationType>(string(civ, "civilization"));
         let leaders = civ.get("leaders").unwrap().as_arr().unwrap();
-        assert_eq!(leaders.len(), 5, "{}", d.type_name(ct));
+        assert_eq!(leaders.len(), 10, "{}", d.type_name(ct));
         for concept in leaders {
             let name = format!("LEADER_{}", string(concept, "id").to_ascii_uppercase());
             let lt = d.t::<LeaderHeadType>(&name);
@@ -41,8 +41,8 @@ fn all_approved_leaders_load_with_exact_traits_alignment_and_backstory_but_are_n
             count += 1;
         }
     }
-    assert_eq!(count, 105);
-    assert_eq!(d.leader_heads.iter().filter(|l| l.preferred_breakaway).count(), 105);
+    assert_eq!(count, 210);
+    assert_eq!(d.leader_heads.iter().filter(|l| l.preferred_breakaway).count(), 210);
 }
 
 #[test]

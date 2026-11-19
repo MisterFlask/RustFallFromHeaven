@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-a1bc4ed8-ac69-446d-b385-bb59a5a1a48b.png",
+  "source_copy": "art/elohim-2.png",
+  "prompt": "art/elohim-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "farah_quietwater",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/farah_quietwater.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "matteo_linden",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/matteo_linden.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "imena_wakefold",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/imena_wakefold.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "levan_pledge",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/levan_pledge.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "enna_bramblehook",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/enna_bramblehook.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

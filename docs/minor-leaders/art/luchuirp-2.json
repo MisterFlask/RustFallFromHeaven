@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-161dbc0b-b23c-42ac-b01c-1bd3f4e0b78e.png",
+  "source_copy": "art/luchuirp-2.png",
+  "prompt": "art/luchuirp-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "bram_copperbrow",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/bram_copperbrow.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "dessa_quartzbell",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/dessa_quartzbell.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "nori_bondhammer",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/nori_bondhammer.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ulna_shaleprint",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ulna_shaleprint.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "kedran_shieldpeg",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/kedran_shieldpeg.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

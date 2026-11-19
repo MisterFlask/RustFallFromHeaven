@@ -32481,5 +32481,3260 @@
    0,
    224
   ]
+ },
+ "leader_leora_bellfound": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/leora_bellfound.png",
+  "prompt": "prompts/assets/leader_leora_bellfound.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_leora_bellfound.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_leora_bellfound_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/leora_bellfound.png",
+  "prompt": "prompts/assets/leader_leora_bellfound.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_leora_bellfound_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   36,
+   0,
+   224
+  ]
+ },
+ "leader_beren_halflight": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/beren_halflight.png",
+  "prompt": "prompts/assets/leader_beren_halflight.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_beren_halflight.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_beren_halflight_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/beren_halflight.png",
+  "prompt": "prompts/assets/leader_beren_halflight.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_beren_halflight_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_hamira_stoneford": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/hamira_stoneford.png",
+  "prompt": "prompts/assets/leader_hamira_stoneford.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_hamira_stoneford.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_hamira_stoneford_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/hamira_stoneford.png",
+  "prompt": "prompts/assets/leader_hamira_stoneford.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_hamira_stoneford_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   56,
+   0,
+   224
+  ]
+ },
+ "leader_cedric_stave": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/cedric_stave.png",
+  "prompt": "prompts/assets/leader_cedric_stave.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_cedric_stave.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_cedric_stave_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/cedric_stave.png",
+  "prompt": "prompts/assets/leader_cedric_stave.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_cedric_stave_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_dalia_chalkwall": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dalia_chalkwall.png",
+  "prompt": "prompts/assets/leader_dalia_chalkwall.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dalia_chalkwall.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_dalia_chalkwall_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dalia_chalkwall.png",
+  "prompt": "prompts/assets/leader_dalia_chalkwall.txt",
+  "source_atlas": "../../docs/minor-leaders/art/bannor-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dalia_chalkwall_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_zahir_whiteflint": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/zahir_whiteflint.png",
+  "prompt": "prompts/assets/leader_zahir_whiteflint.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_zahir_whiteflint.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_zahir_whiteflint_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/zahir_whiteflint.png",
+  "prompt": "prompts/assets/leader_zahir_whiteflint.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_zahir_whiteflint_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_safiya_of_the_kiln": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/safiya_of_the_kiln.png",
+  "prompt": "prompts/assets/leader_safiya_of_the_kiln.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_safiya_of_the_kiln.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_safiya_of_the_kiln_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/safiya_of_the_kiln.png",
+  "prompt": "prompts/assets/leader_safiya_of_the_kiln.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_safiya_of_the_kiln_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_kamal_red_meridian": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/kamal_red_meridian.png",
+  "prompt": "prompts/assets/leader_kamal_red_meridian.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_kamal_red_meridian.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_kamal_red_meridian_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/kamal_red_meridian.png",
+  "prompt": "prompts/assets/leader_kamal_red_meridian.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_kamal_red_meridian_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   32,
+   52,
+   224
+  ]
+ },
+ "leader_luma_dunebright": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/luma_dunebright.png",
+  "prompt": "prompts/assets/leader_luma_dunebright.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_luma_dunebright.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_luma_dunebright_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/luma_dunebright.png",
+  "prompt": "prompts/assets/leader_luma_dunebright.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_luma_dunebright_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_nedim_saltwind": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nedim_saltwind.png",
+  "prompt": "prompts/assets/leader_nedim_saltwind.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nedim_saltwind.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_nedim_saltwind_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nedim_saltwind.png",
+  "prompt": "prompts/assets/leader_nedim_saltwind.txt",
+  "source_atlas": "../../docs/minor-leaders/art/malakim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nedim_saltwind_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_farah_quietwater": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/farah_quietwater.png",
+  "prompt": "prompts/assets/leader_farah_quietwater.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_farah_quietwater.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_farah_quietwater_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/farah_quietwater.png",
+  "prompt": "prompts/assets/leader_farah_quietwater.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_farah_quietwater_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   56,
+   0,
+   224
+  ]
+ },
+ "leader_matteo_linden": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/matteo_linden.png",
+  "prompt": "prompts/assets/leader_matteo_linden.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_matteo_linden.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_matteo_linden_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/matteo_linden.png",
+  "prompt": "prompts/assets/leader_matteo_linden.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_matteo_linden_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_imena_wakefold": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/imena_wakefold.png",
+  "prompt": "prompts/assets/leader_imena_wakefold.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_imena_wakefold.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_imena_wakefold_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/imena_wakefold.png",
+  "prompt": "prompts/assets/leader_imena_wakefold.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_imena_wakefold_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_levan_pledge": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/levan_pledge.png",
+  "prompt": "prompts/assets/leader_levan_pledge.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_levan_pledge.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_levan_pledge_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/levan_pledge.png",
+  "prompt": "prompts/assets/leader_levan_pledge.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_levan_pledge_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   36,
+   0,
+   224
+  ]
+ },
+ "leader_enna_bramblehook": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/enna_bramblehook.png",
+  "prompt": "prompts/assets/leader_enna_bramblehook.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_enna_bramblehook.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_enna_bramblehook_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/enna_bramblehook.png",
+  "prompt": "prompts/assets/leader_enna_bramblehook.txt",
+  "source_atlas": "../../docs/minor-leaders/art/elohim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_enna_bramblehook_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_aureth_feather_ash": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/aureth_feather_ash.png",
+  "prompt": "prompts/assets/leader_aureth_feather_ash.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_aureth_feather_ash.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_aureth_feather_ash_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/aureth_feather_ash.png",
+  "prompt": "prompts/assets/leader_aureth_feather_ash.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_aureth_feather_ash_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_meriel_bronze_dawn": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/meriel_bronze_dawn.png",
+  "prompt": "prompts/assets/leader_meriel_bronze_dawn.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_meriel_bronze_dawn.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_meriel_bronze_dawn_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/meriel_bronze_dawn.png",
+  "prompt": "prompts/assets/leader_meriel_bronze_dawn.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_meriel_bronze_dawn_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   128,
+   0,
+   224
+  ]
+ },
+ "leader_caradriel_pale_fire": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/caradriel_pale_fire.png",
+  "prompt": "prompts/assets/leader_caradriel_pale_fire.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_caradriel_pale_fire.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_caradriel_pale_fire_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/caradriel_pale_fire.png",
+  "prompt": "prompts/assets/leader_caradriel_pale_fire.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_caradriel_pale_fire_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_sorad_veiled_seal": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sorad_veiled_seal.png",
+  "prompt": "prompts/assets/leader_sorad_veiled_seal.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sorad_veiled_seal.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_sorad_veiled_seal_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sorad_veiled_seal.png",
+  "prompt": "prompts/assets/leader_sorad_veiled_seal.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sorad_veiled_seal_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_avona_of_two_walls": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/avona_of_two_walls.png",
+  "prompt": "prompts/assets/leader_avona_of_two_walls.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_avona_of_two_walls.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_avona_of_two_walls_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/avona_of_two_walls.png",
+  "prompt": "prompts/assets/leader_avona_of_two_walls.txt",
+  "source_atlas": "../../docs/minor-leaders/art/mercurians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_avona_of_two_walls_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_bram_copperbrow": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/bram_copperbrow.png",
+  "prompt": "prompts/assets/leader_bram_copperbrow.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_bram_copperbrow.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_bram_copperbrow_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/bram_copperbrow.png",
+  "prompt": "prompts/assets/leader_bram_copperbrow.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_bram_copperbrow_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_dessa_quartzbell": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dessa_quartzbell.png",
+  "prompt": "prompts/assets/leader_dessa_quartzbell.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dessa_quartzbell.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_dessa_quartzbell_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dessa_quartzbell.png",
+  "prompt": "prompts/assets/leader_dessa_quartzbell.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dessa_quartzbell_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   56,
+   0,
+   224
+  ]
+ },
+ "leader_nori_bondhammer": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nori_bondhammer.png",
+  "prompt": "prompts/assets/leader_nori_bondhammer.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nori_bondhammer.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_nori_bondhammer_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nori_bondhammer.png",
+  "prompt": "prompts/assets/leader_nori_bondhammer.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nori_bondhammer_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_ulna_shaleprint": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ulna_shaleprint.png",
+  "prompt": "prompts/assets/leader_ulna_shaleprint.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ulna_shaleprint.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_ulna_shaleprint_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ulna_shaleprint.png",
+  "prompt": "prompts/assets/leader_ulna_shaleprint.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ulna_shaleprint_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   44,
+   0,
+   224
+  ]
+ },
+ "leader_kedran_shieldpeg": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/kedran_shieldpeg.png",
+  "prompt": "prompts/assets/leader_kedran_shieldpeg.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_kedran_shieldpeg.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_kedran_shieldpeg_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/kedran_shieldpeg.png",
+  "prompt": "prompts/assets/leader_kedran_shieldpeg.txt",
+  "source_atlas": "../../docs/minor-leaders/art/luchuirp-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_kedran_shieldpeg_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_philia_copperroof": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/philia_copperroof.png",
+  "prompt": "prompts/assets/leader_philia_copperroof.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_philia_copperroof.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_philia_copperroof_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/philia_copperroof.png",
+  "prompt": "prompts/assets/leader_philia_copperroof.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_philia_copperroof_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_rython_twelvearches": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/rython_twelvearches.png",
+  "prompt": "prompts/assets/leader_rython_twelvearches.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_rython_twelvearches.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_rython_twelvearches_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/rython_twelvearches.png",
+  "prompt": "prompts/assets/leader_rython_twelvearches.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_rython_twelvearches_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_isil_coilbank": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/isil_coilbank.png",
+  "prompt": "prompts/assets/leader_isil_coilbank.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_isil_coilbank.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_isil_coilbank_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/isil_coilbank.png",
+  "prompt": "prompts/assets/leader_isil_coilbank.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_isil_coilbank_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_tevin_manywindows": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/tevin_manywindows.png",
+  "prompt": "prompts/assets/leader_tevin_manywindows.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_tevin_manywindows.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_tevin_manywindows_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/tevin_manywindows.png",
+  "prompt": "prompts/assets/leader_tevin_manywindows.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_tevin_manywindows_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_asen_curtainfall": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/asen_curtainfall.png",
+  "prompt": "prompts/assets/leader_asen_curtainfall.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_asen_curtainfall.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_asen_curtainfall_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/asen_curtainfall.png",
+  "prompt": "prompts/assets/leader_asen_curtainfall.txt",
+  "source_atlas": "../../docs/minor-leaders/art/kuriotates-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_asen_curtainfall_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_calen_birdbranch": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/calen_birdbranch.png",
+  "prompt": "prompts/assets/leader_calen_birdbranch.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_calen_birdbranch.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_calen_birdbranch_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/calen_birdbranch.png",
+  "prompt": "prompts/assets/leader_calen_birdbranch.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_calen_birdbranch_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_mevara_rainsuture": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mevara_rainsuture.png",
+  "prompt": "prompts/assets/leader_mevara_rainsuture.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mevara_rainsuture.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_mevara_rainsuture_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mevara_rainsuture.png",
+  "prompt": "prompts/assets/leader_mevara_rainsuture.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mevara_rainsuture_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   40,
+   0,
+   224
+  ]
+ },
+ "leader_thalan_ambervow": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/thalan_ambervow.png",
+  "prompt": "prompts/assets/leader_thalan_ambervow.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_thalan_ambervow.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_thalan_ambervow_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/thalan_ambervow.png",
+  "prompt": "prompts/assets/leader_thalan_ambervow.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_thalan_ambervow_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   40,
+   0,
+   224
+  ]
+ },
+ "leader_finnel_woodmeter": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/finnel_woodmeter.png",
+  "prompt": "prompts/assets/leader_finnel_woodmeter.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_finnel_woodmeter.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_finnel_woodmeter_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/finnel_woodmeter.png",
+  "prompt": "prompts/assets/leader_finnel_woodmeter.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_finnel_woodmeter_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_lethiel_hollowtone": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/lethiel_hollowtone.png",
+  "prompt": "prompts/assets/leader_lethiel_hollowtone.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_lethiel_hollowtone.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_lethiel_hollowtone_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/lethiel_hollowtone.png",
+  "prompt": "prompts/assets/leader_lethiel_hollowtone.txt",
+  "source_atlas": "../../docs/minor-leaders/art/ljosalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_lethiel_hollowtone_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   104,
+   0,
+   224
+  ]
+ },
+ "leader_berga_ironwedge": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/berga_ironwedge.png",
+  "prompt": "prompts/assets/leader_berga_ironwedge.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_berga_ironwedge.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_berga_ironwedge_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/berga_ironwedge.png",
+  "prompt": "prompts/assets/leader_berga_ironwedge.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_berga_ironwedge_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   106,
+   0,
+   224
+  ]
+ },
+ "leader_orik_cinderhall": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/orik_cinderhall.png",
+  "prompt": "prompts/assets/leader_orik_cinderhall.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_orik_cinderhall.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_orik_cinderhall_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/orik_cinderhall.png",
+  "prompt": "prompts/assets/leader_orik_cinderhall.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_orik_cinderhall_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_huldra_sevenvault": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/huldra_sevenvault.png",
+  "prompt": "prompts/assets/leader_huldra_sevenvault.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_huldra_sevenvault.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_huldra_sevenvault_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/huldra_sevenvault.png",
+  "prompt": "prompts/assets/leader_huldra_sevenvault.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_huldra_sevenvault_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   44,
+   0,
+   224
+  ]
+ },
+ "leader_garum_veinwalker": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/garum_veinwalker.png",
+  "prompt": "prompts/assets/leader_garum_veinwalker.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_garum_veinwalker.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_garum_veinwalker_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/garum_veinwalker.png",
+  "prompt": "prompts/assets/leader_garum_veinwalker.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_garum_veinwalker_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_ursi_mothsilver": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ursi_mothsilver.png",
+  "prompt": "prompts/assets/leader_ursi_mothsilver.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ursi_mothsilver.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_ursi_mothsilver_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ursi_mothsilver.png",
+  "prompt": "prompts/assets/leader_ursi_mothsilver.txt",
+  "source_atlas": "../../docs/minor-leaders/art/khazad-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ursi_mothsilver_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   110,
+   0,
+   224
+  ]
+ },
+ "leader_naresh_lintelmist": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/naresh_lintelmist.png",
+  "prompt": "prompts/assets/leader_naresh_lintelmist.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_naresh_lintelmist.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_naresh_lintelmist_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/naresh_lintelmist.png",
+  "prompt": "prompts/assets/leader_naresh_lintelmist.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_naresh_lintelmist_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   52,
+   0,
+   224
+  ]
+ },
+ "leader_maelis_frostlinen": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/maelis_frostlinen.png",
+  "prompt": "prompts/assets/leader_maelis_frostlinen.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_maelis_frostlinen.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_maelis_frostlinen_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/maelis_frostlinen.png",
+  "prompt": "prompts/assets/leader_maelis_frostlinen.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_maelis_frostlinen_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_soren_of_the_span": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/soren_of_the_span.png",
+  "prompt": "prompts/assets/leader_soren_of_the_span.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_soren_of_the_span.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_soren_of_the_span_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/soren_of_the_span.png",
+  "prompt": "prompts/assets/leader_soren_of_the_span.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_soren_of_the_span_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_iram_stonepause": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/iram_stonepause.png",
+  "prompt": "prompts/assets/leader_iram_stonepause.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_iram_stonepause.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_iram_stonepause_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/iram_stonepause.png",
+  "prompt": "prompts/assets/leader_iram_stonepause.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_iram_stonepause_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_veda_secondwindow": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/veda_secondwindow.png",
+  "prompt": "prompts/assets/leader_veda_secondwindow.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_veda_secondwindow.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_veda_secondwindow_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/veda_secondwindow.png",
+  "prompt": "prompts/assets/leader_veda_secondwindow.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sidar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_veda_secondwindow_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   48,
+   0,
+   224
+  ]
+ },
+ "leader_dario_reefglass": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dario_reefglass.png",
+  "prompt": "prompts/assets/leader_dario_reefglass.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dario_reefglass.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_dario_reefglass_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dario_reefglass.png",
+  "prompt": "prompts/assets/leader_dario_reefglass.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dario_reefglass_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   36,
+   0,
+   224
+  ]
+ },
+ "leader_makena_saltstitch": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/makena_saltstitch.png",
+  "prompt": "prompts/assets/leader_makena_saltstitch.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_makena_saltstitch.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_makena_saltstitch_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/makena_saltstitch.png",
+  "prompt": "prompts/assets/leader_makena_saltstitch.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_makena_saltstitch_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_carlon_mirrorsail": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/carlon_mirrorsail.png",
+  "prompt": "prompts/assets/leader_carlon_mirrorsail.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_carlon_mirrorsail.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_carlon_mirrorsail_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/carlon_mirrorsail.png",
+  "prompt": "prompts/assets/leader_carlon_mirrorsail.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_carlon_mirrorsail_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   32,
+   0,
+   224
+  ]
+ },
+ "leader_hessa_sabletide": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/hessa_sabletide.png",
+  "prompt": "prompts/assets/leader_hessa_sabletide.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_hessa_sabletide.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_hessa_sabletide_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/hessa_sabletide.png",
+  "prompt": "prompts/assets/leader_hessa_sabletide.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_hessa_sabletide_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_jeron_foghorn": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/jeron_foghorn.png",
+  "prompt": "prompts/assets/leader_jeron_foghorn.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_jeron_foghorn.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_jeron_foghorn_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/jeron_foghorn.png",
+  "prompt": "prompts/assets/leader_jeron_foghorn.txt",
+  "source_atlas": "../../docs/minor-leaders/art/lanun-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_jeron_foghorn_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   44,
+   0,
+   224
+  ]
+ },
+ "leader_tessa_inkclasp": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/tessa_inkclasp.png",
+  "prompt": "prompts/assets/leader_tessa_inkclasp.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_tessa_inkclasp.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_tessa_inkclasp_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/tessa_inkclasp.png",
+  "prompt": "prompts/assets/leader_tessa_inkclasp.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_tessa_inkclasp_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   106,
+   0,
+   224
+  ]
+ },
+ "leader_dowen_campbridge": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dowen_campbridge.png",
+  "prompt": "prompts/assets/leader_dowen_campbridge.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dowen_campbridge.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_dowen_campbridge_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dowen_campbridge.png",
+  "prompt": "prompts/assets/leader_dowen_campbridge.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dowen_campbridge_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_irena_dregs": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/irena_dregs.png",
+  "prompt": "prompts/assets/leader_irena_dregs.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_irena_dregs.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_irena_dregs_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/irena_dregs.png",
+  "prompt": "prompts/assets/leader_irena_dregs.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_irena_dregs_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   50,
+   0,
+   224
+  ]
+ },
+ "leader_gavren_rook": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/gavren_rook.png",
+  "prompt": "prompts/assets/leader_gavren_rook.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_gavren_rook.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_gavren_rook_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/gavren_rook.png",
+  "prompt": "prompts/assets/leader_gavren_rook.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_gavren_rook_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   104,
+   0,
+   224
+  ]
+ },
+ "leader_mara_bentnail": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mara_bentnail.png",
+  "prompt": "prompts/assets/leader_mara_bentnail.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mara_bentnail.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_mara_bentnail_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mara_bentnail.png",
+  "prompt": "prompts/assets/leader_mara_bentnail.txt",
+  "source_atlas": "../../docs/minor-leaders/art/grigori-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mara_bentnail_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_parna_dawnrein": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/parna_dawnrein.png",
+  "prompt": "prompts/assets/leader_parna_dawnrein.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_parna_dawnrein.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_parna_dawnrein_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/parna_dawnrein.png",
+  "prompt": "prompts/assets/leader_parna_dawnrein.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_parna_dawnrein_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_bekar_windstitch": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/bekar_windstitch.png",
+  "prompt": "prompts/assets/leader_bekar_windstitch.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_bekar_windstitch.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_bekar_windstitch_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/bekar_windstitch.png",
+  "prompt": "prompts/assets/leader_bekar_windstitch.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_bekar_windstitch_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_nessa_redscrip": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nessa_redscrip.png",
+  "prompt": "prompts/assets/leader_nessa_redscrip.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nessa_redscrip.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_nessa_redscrip_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nessa_redscrip.png",
+  "prompt": "prompts/assets/leader_nessa_redscrip.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nessa_redscrip_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_oralun_hailward": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/oralun_hailward.png",
+  "prompt": "prompts/assets/leader_oralun_hailward.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_oralun_hailward.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_oralun_hailward_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/oralun_hailward.png",
+  "prompt": "prompts/assets/leader_oralun_hailward.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_oralun_hailward_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_sedi_horsethistle": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sedi_horsethistle.png",
+  "prompt": "prompts/assets/leader_sedi_horsethistle.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sedi_horsethistle.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_sedi_horsethistle_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sedi_horsethistle.png",
+  "prompt": "prompts/assets/leader_sedi_horsethistle.txt",
+  "source_atlas": "../../docs/minor-leaders/art/hippus-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sedi_horsethistle_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   128,
+   0,
+   224
+  ]
+ },
+ "leader_farien_copperspark": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/farien_copperspark.png",
+  "prompt": "prompts/assets/leader_farien_copperspark.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_farien_copperspark.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_farien_copperspark_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/farien_copperspark.png",
+  "prompt": "prompts/assets/leader_farien_copperspark.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_farien_copperspark_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_tallis_bluepumice": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/tallis_bluepumice.png",
+  "prompt": "prompts/assets/leader_tallis_bluepumice.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_tallis_bluepumice.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_tallis_bluepumice_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/tallis_bluepumice.png",
+  "prompt": "prompts/assets/leader_tallis_bluepumice.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_tallis_bluepumice_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_ishara_morrowquill": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ishara_morrowquill.png",
+  "prompt": "prompts/assets/leader_ishara_morrowquill.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ishara_morrowquill.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_ishara_morrowquill_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ishara_morrowquill.png",
+  "prompt": "prompts/assets/leader_ishara_morrowquill.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ishara_morrowquill_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_corin_slategate": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/corin_slategate.png",
+  "prompt": "prompts/assets/leader_corin_slategate.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_corin_slategate.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_corin_slategate_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/corin_slategate.png",
+  "prompt": "prompts/assets/leader_corin_slategate.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_corin_slategate_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_meri_thunderchalk": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/meri_thunderchalk.png",
+  "prompt": "prompts/assets/leader_meri_thunderchalk.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_meri_thunderchalk.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_meri_thunderchalk_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/meri_thunderchalk.png",
+  "prompt": "prompts/assets/leader_meri_thunderchalk.txt",
+  "source_atlas": "../../docs/minor-leaders/art/amurites-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_meri_thunderchalk_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   48,
+   0,
+   224
+  ]
+ },
+ "leader_runa_boldhide": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/runa_boldhide.png",
+  "prompt": "prompts/assets/leader_runa_boldhide.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_runa_boldhide.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_runa_boldhide_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/runa_boldhide.png",
+  "prompt": "prompts/assets/leader_runa_boldhide.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_runa_boldhide_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_morgun_iceheel": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/morgun_iceheel.png",
+  "prompt": "prompts/assets/leader_morgun_iceheel.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_morgun_iceheel.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_morgun_iceheel_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/morgun_iceheel.png",
+  "prompt": "prompts/assets/leader_morgun_iceheel.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_morgun_iceheel_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_bekka_tallfang": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/bekka_tallfang.png",
+  "prompt": "prompts/assets/leader_bekka_tallfang.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_bekka_tallfang.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_bekka_tallfang_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/bekka_tallfang.png",
+  "prompt": "prompts/assets/leader_bekka_tallfang.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_bekka_tallfang_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   106,
+   0,
+   224
+  ]
+ },
+ "leader_jerek_barkshield": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/jerek_barkshield.png",
+  "prompt": "prompts/assets/leader_jerek_barkshield.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_jerek_barkshield.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_jerek_barkshield_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/jerek_barkshield.png",
+  "prompt": "prompts/assets/leader_jerek_barkshield.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_jerek_barkshield_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_unna_ashtrail": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/unna_ashtrail.png",
+  "prompt": "prompts/assets/leader_unna_ashtrail.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_unna_ashtrail.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_unna_ashtrail_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/unna_ashtrail.png",
+  "prompt": "prompts/assets/leader_unna_ashtrail.txt",
+  "source_atlas": "../../docs/minor-leaders/art/doviello-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_unna_ashtrail_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_pella_crackmirror": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/pella_crackmirror.png",
+  "prompt": "prompts/assets/leader_pella_crackmirror.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_pella_crackmirror.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_pella_crackmirror_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/pella_crackmirror.png",
+  "prompt": "prompts/assets/leader_pella_crackmirror.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_pella_crackmirror_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_marno_redbutton": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/marno_redbutton.png",
+  "prompt": "prompts/assets/leader_marno_redbutton.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_marno_redbutton.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_marno_redbutton_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/marno_redbutton.png",
+  "prompt": "prompts/assets/leader_marno_redbutton.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_marno_redbutton_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_jessa_of_the_raked_seats": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/jessa_of_the_raked_seats.png",
+  "prompt": "prompts/assets/leader_jessa_of_the_raked_seats.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_jessa_of_the_raked_seats.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_jessa_of_the_raked_seats_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/jessa_of_the_raked_seats.png",
+  "prompt": "prompts/assets/leader_jessa_of_the_raked_seats.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_jessa_of_the_raked_seats_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_nivaro_springheel": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nivaro_springheel.png",
+  "prompt": "prompts/assets/leader_nivaro_springheel.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nivaro_springheel.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_nivaro_springheel_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nivaro_springheel.png",
+  "prompt": "prompts/assets/leader_nivaro_springheel.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nivaro_springheel_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_sill_needlemoon": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sill_needlemoon.png",
+  "prompt": "prompts/assets/leader_sill_needlemoon.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sill_needlemoon.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_sill_needlemoon_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sill_needlemoon.png",
+  "prompt": "prompts/assets/leader_sill_needlemoon.txt",
+  "source_atlas": "../../docs/minor-leaders/art/balseraphs-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sill_needlemoon_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_gromka_potlid": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/gromka_potlid.png",
+  "prompt": "prompts/assets/leader_gromka_potlid.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_gromka_potlid.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_gromka_potlid_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/gromka_potlid.png",
+  "prompt": "prompts/assets/leader_gromka_potlid.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_gromka_potlid_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_borruk_orejaw": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/borruk_orejaw.png",
+  "prompt": "prompts/assets/leader_borruk_orejaw.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_borruk_orejaw.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_borruk_orejaw_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/borruk_orejaw.png",
+  "prompt": "prompts/assets/leader_borruk_orejaw.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_borruk_orejaw_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_uzhka_sourbone": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/uzhka_sourbone.png",
+  "prompt": "prompts/assets/leader_uzhka_sourbone.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_uzhka_sourbone.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_uzhka_sourbone_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/uzhka_sourbone.png",
+  "prompt": "prompts/assets/leader_uzhka_sourbone.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_uzhka_sourbone_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_rask_glowcap": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/rask_glowcap.png",
+  "prompt": "prompts/assets/leader_rask_glowcap.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_rask_glowcap.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_rask_glowcap_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/rask_glowcap.png",
+  "prompt": "prompts/assets/leader_rask_glowcap.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_rask_glowcap_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_mogra_tempreed": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mogra_tempreed.png",
+  "prompt": "prompts/assets/leader_mogra_tempreed.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mogra_tempreed.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_mogra_tempreed_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mogra_tempreed.png",
+  "prompt": "prompts/assets/leader_mogra_tempreed.txt",
+  "source_atlas": "../../docs/minor-leaders/art/clan_of_embers-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mogra_tempreed_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_mirel_widowfern": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mirel_widowfern.png",
+  "prompt": "prompts/assets/leader_mirel_widowfern.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mirel_widowfern.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_mirel_widowfern_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mirel_widowfern.png",
+  "prompt": "prompts/assets/leader_mirel_widowfern.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mirel_widowfern_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_sovar_whisperleaf": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sovar_whisperleaf.png",
+  "prompt": "prompts/assets/leader_sovar_whisperleaf.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sovar_whisperleaf.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_sovar_whisperleaf_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sovar_whisperleaf.png",
+  "prompt": "prompts/assets/leader_sovar_whisperleaf.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sovar_whisperleaf_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_ithra_blackvine": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ithra_blackvine.png",
+  "prompt": "prompts/assets/leader_ithra_blackvine.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ithra_blackvine.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_ithra_blackvine_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ithra_blackvine.png",
+  "prompt": "prompts/assets/leader_ithra_blackvine.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ithra_blackvine_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_nessar_foxglove": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nessar_foxglove.png",
+  "prompt": "prompts/assets/leader_nessar_foxglove.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nessar_foxglove.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_nessar_foxglove_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/nessar_foxglove.png",
+  "prompt": "prompts/assets/leader_nessar_foxglove.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_nessar_foxglove_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_valira_thinveil": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/valira_thinveil.png",
+  "prompt": "prompts/assets/leader_valira_thinveil.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_valira_thinveil.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_valira_thinveil_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/valira_thinveil.png",
+  "prompt": "prompts/assets/leader_valira_thinveil.txt",
+  "source_atlas": "../../docs/minor-leaders/art/svartalfar-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_valira_thinveil_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   40,
+   0,
+   224
+  ]
+ },
+ "leader_vesna_quayward": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/vesna_quayward.png",
+  "prompt": "prompts/assets/leader_vesna_quayward.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_vesna_quayward.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_vesna_quayward_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/vesna_quayward.png",
+  "prompt": "prompts/assets/leader_vesna_quayward.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_vesna_quayward_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_malrec_rubyhand": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/malrec_rubyhand.png",
+  "prompt": "prompts/assets/leader_malrec_rubyhand.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_malrec_rubyhand.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_malrec_rubyhand_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/malrec_rubyhand.png",
+  "prompt": "prompts/assets/leader_malrec_rubyhand.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_malrec_rubyhand_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   132,
+   0,
+   224
+  ]
+ },
+ "leader_lysana_bloodgilt": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/lysana_bloodgilt.png",
+  "prompt": "prompts/assets/leader_lysana_bloodgilt.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_lysana_bloodgilt.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_lysana_bloodgilt_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/lysana_bloodgilt.png",
+  "prompt": "prompts/assets/leader_lysana_bloodgilt.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_lysana_bloodgilt_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_milos_grainsty": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/milos_grainsty.png",
+  "prompt": "prompts/assets/leader_milos_grainsty.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_milos_grainsty.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_milos_grainsty_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/milos_grainsty.png",
+  "prompt": "prompts/assets/leader_milos_grainsty.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_milos_grainsty_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_dianthe_nightjury": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dianthe_nightjury.png",
+  "prompt": "prompts/assets/leader_dianthe_nightjury.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dianthe_nightjury.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_dianthe_nightjury_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/dianthe_nightjury.png",
+  "prompt": "prompts/assets/leader_dianthe_nightjury.txt",
+  "source_atlas": "../../docs/minor-leaders/art/calabim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_dianthe_nightjury_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   56,
+   0,
+   224
+  ]
+ },
+ "leader_temran_closetower": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/temran_closetower.png",
+  "prompt": "prompts/assets/leader_temran_closetower.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_temran_closetower.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_temran_closetower_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/temran_closetower.png",
+  "prompt": "prompts/assets/leader_temran_closetower.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_temran_closetower_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_ivaya_fadebell": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ivaya_fadebell.png",
+  "prompt": "prompts/assets/leader_ivaya_fadebell.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ivaya_fadebell.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_ivaya_fadebell_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/ivaya_fadebell.png",
+  "prompt": "prompts/assets/leader_ivaya_fadebell.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_ivaya_fadebell_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_orys_redmargin": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/orys_redmargin.png",
+  "prompt": "prompts/assets/leader_orys_redmargin.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_orys_redmargin.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_orys_redmargin_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/orys_redmargin.png",
+  "prompt": "prompts/assets/leader_orys_redmargin.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_orys_redmargin_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_neriss_cerulean_wake": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/neriss_cerulean_wake.png",
+  "prompt": "prompts/assets/leader_neriss_cerulean_wake.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_neriss_cerulean_wake.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_neriss_cerulean_wake_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/neriss_cerulean_wake.png",
+  "prompt": "prompts/assets/leader_neriss_cerulean_wake.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_neriss_cerulean_wake_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_hesia_ashcomber": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/hesia_ashcomber.png",
+  "prompt": "prompts/assets/leader_hesia_ashcomber.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_hesia_ashcomber.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_hesia_ashcomber_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/hesia_ashcomber.png",
+  "prompt": "prompts/assets/leader_hesia_ashcomber.txt",
+  "source_atlas": "../../docs/minor-leaders/art/sheaim-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_hesia_ashcomber_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_kaaras_hingesmoke": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/kaaras_hingesmoke.png",
+  "prompt": "prompts/assets/leader_kaaras_hingesmoke.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_kaaras_hingesmoke.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_kaaras_hingesmoke_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/kaaras_hingesmoke.png",
+  "prompt": "prompts/assets/leader_kaaras_hingesmoke.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_kaaras_hingesmoke_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_sivriel_cinnabar": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sivriel_cinnabar.png",
+  "prompt": "prompts/assets/leader_sivriel_cinnabar.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sivriel_cinnabar.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_sivriel_cinnabar_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sivriel_cinnabar.png",
+  "prompt": "prompts/assets/leader_sivriel_cinnabar.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sivriel_cinnabar_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   126,
+   0,
+   224
+  ]
+ },
+ "leader_mordax_silvercord": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mordax_silvercord.png",
+  "prompt": "prompts/assets/leader_mordax_silvercord.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mordax_silvercord.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_mordax_silvercord_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/mordax_silvercord.png",
+  "prompt": "prompts/assets/leader_mordax_silvercord.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_mordax_silvercord_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_aethi_vaultmoth": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/aethi_vaultmoth.png",
+  "prompt": "prompts/assets/leader_aethi_vaultmoth.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_aethi_vaultmoth.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_aethi_vaultmoth_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/aethi_vaultmoth.png",
+  "prompt": "prompts/assets/leader_aethi_vaultmoth.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_aethi_vaultmoth_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   60,
+   0,
+   224
+  ]
+ },
+ "leader_zurn_emberseal": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/zurn_emberseal.png",
+  "prompt": "prompts/assets/leader_zurn_emberseal.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_zurn_emberseal.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_zurn_emberseal_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/zurn_emberseal.png",
+  "prompt": "prompts/assets/leader_zurn_emberseal.txt",
+  "source_atlas": "../../docs/minor-leaders/art/infernal-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_zurn_emberseal_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_rhuna_snowcellar": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/rhuna_snowcellar.png",
+  "prompt": "prompts/assets/leader_rhuna_snowcellar.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_rhuna_snowcellar.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_rhuna_snowcellar_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/rhuna_snowcellar.png",
+  "prompt": "prompts/assets/leader_rhuna_snowcellar.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_rhuna_snowcellar_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_marden_sleetfoil": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/marden_sleetfoil.png",
+  "prompt": "prompts/assets/leader_marden_sleetfoil.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_marden_sleetfoil.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_marden_sleetfoil_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/marden_sleetfoil.png",
+  "prompt": "prompts/assets/leader_marden_sleetfoil.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_marden_sleetfoil_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_erva_whitecrown": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/erva_whitecrown.png",
+  "prompt": "prompts/assets/leader_erva_whitecrown.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_erva_whitecrown.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_erva_whitecrown_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/erva_whitecrown.png",
+  "prompt": "prompts/assets/leader_erva_whitecrown.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_erva_whitecrown_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_sieda_icequill": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sieda_icequill.png",
+  "prompt": "prompts/assets/leader_sieda_icequill.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sieda_icequill.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_sieda_icequill_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/sieda_icequill.png",
+  "prompt": "prompts/assets/leader_sieda_icequill.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_sieda_icequill_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
+ },
+ "leader_halek_rimehook": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/halek_rimehook.png",
+  "prompt": "prompts/assets/leader_halek_rimehook.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_halek_rimehook.png",
+  "size": [
+   384,
+   384
+  ]
+ },
+ "leader_halek_rimehook_face": {
+  "kind": "leader_portrait",
+  "style": "hd",
+  "source": "../../docs/minor-leaders/portraits/halek_rimehook.png",
+  "prompt": "prompts/assets/leader_halek_rimehook.txt",
+  "source_atlas": "../../docs/minor-leaders/art/illians-2.png",
+  "gen_size": "1536x1024",
+  "file": "leaders/leader_halek_rimehook_face.png",
+  "size": [
+   160,
+   160
+  ],
+  "crop": [
+   80,
+   0,
+   224
+  ]
  }
 }

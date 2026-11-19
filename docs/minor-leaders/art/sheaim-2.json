@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-2df69768-e909-4bf3-9b2e-e816134d96d7.png",
+  "source_copy": "art/sheaim-2.png",
+  "prompt": "art/sheaim-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "temran_closetower",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/temran_closetower.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ivaya_fadebell",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/ivaya_fadebell.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "orys_redmargin",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/orys_redmargin.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "neriss_cerulean_wake",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/neriss_cerulean_wake.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "hesia_ashcomber",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/hesia_ashcomber.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

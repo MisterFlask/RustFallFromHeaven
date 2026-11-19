@@ -291,7 +291,7 @@ fills the page and the interface floats over it.
   every renderer: the whole painting at 192 px at the top of the trade screen and on the new-game
   screen; the face at 80 px by each player in Diplomacy, on a deal offered to you and on the
   take-control question, at 40 px by each candidate of a vote; in this skin in the boxes' inset frame.
-  The 105 preferred breakaway leaders have individual portraits in the same slots: pixel-art
+  The 210 preferred breakaway leaders have individual portraits in the same slots: pixel-art
   characters doing distinct tasks, different palettes and clothes, and smooth high-definition
   painterly realistic backgrounds. `tools/m7/import_minor_leaders.py` imports the approved
   [minor leader portraits](minor-leaders/README.md) into the roster and exports their full and

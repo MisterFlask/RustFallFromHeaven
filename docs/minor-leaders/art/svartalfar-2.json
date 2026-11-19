@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-bd8ac590-0019-4f15-bb1b-b91db6988166.png",
+  "source_copy": "art/svartalfar-2.png",
+  "prompt": "art/svartalfar-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "mirel_widowfern",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/mirel_widowfern.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "sovar_whisperleaf",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/sovar_whisperleaf.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ithra_blackvine",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/ithra_blackvine.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "nessar_foxglove",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/nessar_foxglove.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "valira_thinveil",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/valira_thinveil.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

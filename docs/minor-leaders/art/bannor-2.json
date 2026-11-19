@@ -1,0 +1,89 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-b5102d29-41c6-4d1a-aeba-edc964a1cc64.png",
+  "source_copy": "art/bannor-2.png",
+  "prompt": "art/bannor-2.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "leora_bellfound",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/leora_bellfound.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "beren_halflight",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/beren_halflight.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "hamira_stoneford",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/hamira_stoneford.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "cedric_stave",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/cedric_stave.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "dalia_chalkwall",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/dalia_chalkwall.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ]
+}

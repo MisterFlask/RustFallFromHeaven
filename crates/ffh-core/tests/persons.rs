@@ -255,7 +255,7 @@ fn the_pool_runs_dry() {
     let World { mut g, a, .. } = world();
     government(&mut g, "CIVIC_ARISTOCRACY");
     let pool = g.persons_pool(P0);
-    assert_eq!(pool.len(), 5, "the Bannor's five preferred minor leaders");
+    assert_eq!(pool.len(), 10, "the Bannor's ten preferred minor leaders");
     g.persons_drawn = pool;
     assert!(g.persons_pool(P0).is_empty());
     let v = veteran(&mut g, 5, 6, 9);

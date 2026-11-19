@@ -11,7 +11,7 @@ fn preferred_breakaway_leaders_are_absent_from_every_selectable_list() {
     let civilizations = lists.req_arr("civilizations").unwrap();
     let metadata = lists.req_arr("leaders").unwrap();
     let preferred: Vec<_> = d.leader_heads.keys().filter(|&l| d.leader_heads[l].preferred_breakaway).collect();
-    assert_eq!(preferred.len(), 105);
+    assert_eq!(preferred.len(), 210);
     for leader in preferred {
         let name = d.type_name(leader);
         assert_eq!(metadata[leader.idx()].req_str("type").unwrap(), name, "{name}: metadata stays indexed for in-game portraits");
