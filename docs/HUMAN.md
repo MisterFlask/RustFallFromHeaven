@@ -1600,10 +1600,10 @@ Civ4 answers some rules questions with popups for a human. `ffh-play` keeps the 
   offered to you, founding a religion, a House's ultimatum (`ultimatum`, docs/PERSONS.md, "The
   third build", rule 5: in your turn processing, a House of yours that is Furious with no contract
   running demands one thing: `Ultimatum: House Aldric`, `House Aldric demands: Its tribute set to
-  10%.`, then what accepting binds, `Accepted: For 20 turns: no tribute above 10% for House
-  Aldric. House Aldric stays at least Annoyed until turn 160.`, and what refusing does, `Refused:
-  House Aldric breaks away, taking Ventry and Corona: war.` with the contest for each city where
-  an army of yours stands; `Accept` / `Refuse`, the House's leader beside it, the keyword
+  10%.`; the buttons say the rest: `Accept` with what it binds (`For 20 turns: no tribute above
+  10% for House Aldric. House Aldric stays at least Annoyed until turn 160.`), `Refuse` with what
+  it does (`House Aldric breaks away, taking Ventry and Corona: war.`, with the contest for each
+  city where an army of yours stands); the House's leader beside it, the keyword
   `Ultimatum` as a chip with its reminder). Each offers the C++ popup's options and the advisor's
   pick. A decision's `reminders` (`[{key, name, text, with}]`) are the keywords it names, shown as
   chips under its text.

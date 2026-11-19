@@ -470,14 +470,14 @@ pub fn ultimatum(g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum, adviso
     let mut accept = DecisionOption::new("accept", "Accept");
     accept.help = format!("{bound} {floor}");
     let mut refuse = DecisionOption::new("refuse", "Refuse");
-    refuse.help = refusal.clone();
+    refuse.help = refusal;
     let seat = g.house_seat(h);
     Decision {
         id: 0,
         player: p,
         kind: DecisionKind::Ultimatum { house: h },
         title: format!("Ultimatum: {label}"),
-        text: format!("{label} demands: {demand}{again}[NEWLINE]Accepted: {bound} {floor}[NEWLINE]Refused: {refusal}"),
+        text: format!("{label} demands: {demand}{again}"),
         options: vec![accept, refuse],
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { plot: seat.map(|c| (g.cities[c].x, g.cities[c].y)), city: seat, unit: None, other_player: Some(g.houses[h].player) },

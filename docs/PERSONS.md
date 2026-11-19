@@ -314,11 +314,11 @@ and `persons.rs`; the AI `crates/ffh-ai/src/persons.rs`; the decision `crates/ff
      `contract with House Aldric until turn 160`, the finance screen's row `−6`).
    A demand that cannot be carried out after all (`house_ultimatum_accept`) falls back to (f).
    The decision (`decision::ultimatum`, `DecisionKind::Ultimatum`, protocol kind `ultimatum`): title
-   `Ultimatum: House Aldric`, text `House Aldric demands: Its tribute set to 10%.[NEWLINE]Accepted:
-   For 20 turns: no tribute above 10% for House Aldric. House Aldric stays at least Annoyed until
-   turn 160.[NEWLINE]Refused: House Aldric breaks away, taking Ventry and Corona: war. Corona
-   returns to you: ...` (`house_refusal_outcome`; `Its refused request again.` after the demand for
-   (a)); options `accept` (its help the bound and the floor) and `refuse` (its help the outcome);
+   `Ultimatum: House Aldric`, text the demand only, `House Aldric demands: Its tribute set to 10%.`
+   (`Its refused request again.` after it for (a)); options `accept` (its help the bound and the
+   floor: `For 20 turns: no tribute above 10% for House Aldric. House Aldric stays at least Annoyed
+   until turn 160.`) and `refuse` (its help the outcome, `house_refusal_outcome`: `House Aldric
+   breaks away, taking Ventry and Corona: war. Corona returns to you: ...`);
    the House's leader beside it; the advisor's (ffh-ai's) answer marked; the keyword `Ultimatum`
    as a chip (the decision's new `reminders`). A Furious House's card, its plate's tooltip and the
    attention line state what comes: `House Aldric issues an ultimatum at your next turn. Refused, it

@@ -335,7 +335,9 @@ async function ultimatums(browser, url, st) {
     seen.push(d.id);
     const label = [st.houses.furious.label, st.houses.large.label].find((l) => d.title === `Ultimatum: ${l}`);
     check(!!label, `the ultimatum's title: ${d.title}`);
-    check(new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} demands: .+\\[NEWLINE\\]Accepted: For 20 turns: .+ stays at least Annoyed until turn \\d+\\.\\[NEWLINE\\]Refused: .+ (breaks away, taking .+: war|ends: every city is held)\\.`).test(d.text), `the ultimatum's text: ${d.text}`);
+    check(new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} demands: [^\\[]+$`).test(d.text), `the ultimatum's text (the demand only): ${d.text}`);
+    check(/^For 20 turns: .+ stays at least Annoyed until turn \d+\.$/.test(d.options[0]?.help ?? ""), `accepting's line: ${d.options[0]?.help}`);
+    check(/ (breaks away, taking .+: war|ends: every city is held)\./.test(d.options[1]?.help ?? ""), `refusing's line: ${d.options[1]?.help}`);
     check(d.options.map((o) => o.key).join(",") === "accept,refuse" && d.advisor === 0, `accept or refuse, the advisor accepting: ${JSON.stringify(d.options.map((o) => o.key))} ${d.advisor}`);
     const chips = await page.evaluate(() => [...document.querySelectorAll("#modals .modal.decision .kw-chip")].map((c) => c.textContent));
     check(chips.includes("Ultimatum"), `the Ultimatum keyword's chip: ${chips}`);
