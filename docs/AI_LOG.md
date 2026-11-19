@@ -32,6 +32,29 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Houses without Persons of Note (2026-11-19, the third build; a rules change, not measured)
+
+**Built, in every game** (docs/PERSONS.md, "The third build"). A rules change is not gated on the
+AI (CLAUDE.md); the guardrail, 12 seeds x 300 turns against b4779d45, base -> new. Read with care:
+a House is a player and a team of its own, so the per-player means fall with the player count
+(alive at turn 300: 76 -> 195 players, 66 -> 69 of the 72 original civilizations) and two of the
+event counters count Houses:
+- `captured civ<-civ` (196 -> 762) is `stats.rs`'s change of a city's owner, so it counts every
+  grant, founding and split. The true captures, `city_fell` by a civilization over seeds 1-4: 65 ->
+  52. Barbarians: civ<-barb 28 -> 30, barb<-civ 4 -> 4.
+- `wars` (112 -> 776) and `peace` (95 -> 613) count each team pair: a House joins its liege's wars
+  (`WARPLAN_DOGPILE`) and is a team of its own to every enemy.
+World totals: military at turn 100 11.6 -> 12.5 a player (the same player count then); at turn 300
+the world's 3829 -> 4152, the world's research 17564 -> 22594 (+29%: knowledge shared in a realm).
+Eliminated 9 -> 22, of which original civilizations 6 -> 3 (the rest Houses). Realms of 9 cities
+or more hold a median of 2 Houses (1 to 4) at turns 200 and 300, against none before: the count
+the House-count soak wanted (TODO.md). The Crown keeps its limit of 3 and grants the rest. Over
+seeds 1-4 with telemetry: 17 foundings, 54 grants to a House, 6 splits, 66 requests (8 met, 39
+refused), and no ultimatum, courtship or break-away: the AI liege keeps its Houses Pleased by
+their tribute (rule 11), and the AI buyer courts only a Cautious or worse House of an enemy, so
+among AIs those rules do not fire; they are a human liege's. Time a turn 34.9 -> 45.1 ms (+29%,
+the players). Nothing broad broke.
+
 ## The memory of wrongs (2026-11-18, the owner's decision; a rules change, not measured)
 
 **Built, in every game** (docs/PERSONS.md rule 15, docs/PORTING.md "Changes from FFH2"). Before

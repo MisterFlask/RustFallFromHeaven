@@ -24,15 +24,15 @@ wants done next into this file.
 Houses as vassal civilizations (tribute, the levy, breaking away, side deals with a rival's
 Houses) are built (docs/PERSONS.md, "The second build"); the third build's part 1 (2026-11-19)
 removed Persons of Note (the cast, commanders, veterans and great persons as founders) and made a
-realm's first grant found a House. Still to build, each described there:
+realm's first grant found a House; its part 2 built splits, ultimatums and contracts, courtship,
+the price on the world unit, shared knowledge and gold tribute. Still to build, each described
+there:
 
-- The third build's part 2: splits (rule 4), ultimatums and contracts (5, 6), courtship (7), the
-  price on the world unit (8), shared knowledge and gold tribute (10), the AI's rest (11).
 - Claims abroad (stage 3).
 - The annals (stage 5): what each House did in the player's earlier games.
-- How many Houses a realm has: the soak of 8 AI games (400 turns) that found a median of 1 House
-  late in a realm of 9 or more cities, against the 2 to 5 wanted, blamed the founders (veterans,
-  great persons); the founders are gone (the first grant founds, then the Houses grow and, with
-  part 2, split), so the count is to be measured again after part 2.
+- Ultimatums and courtships among AIs: in AI games neither fires (docs/AI_LOG.md, "Houses without
+  Persons of Note": the AI keeps its Houses Pleased, and courts only an enemy's Cautious House),
+  so the AI's answer to an ultimatum and its courting are exercised only against a human. A probe
+  that squeezes its Houses (tribute at the most, requests refused) would show both.
 - To be judged in play (docs/PERSONS.md, "Open points for the owner"): requests with a term, an
   Annoyed House's withheld levy, claims, the Crown's limit of 3, the tribute's loyalty cost.
