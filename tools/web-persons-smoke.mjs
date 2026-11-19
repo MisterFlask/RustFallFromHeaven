@@ -416,7 +416,9 @@ async function main() {
     const takes = levy.find((x) => x.levy === "yes");
     const refuses = levy.find((x) => x.levy === "no" && x.house === String(houseV.id));
     check(takes?.text === "Takes levies. Each levy: -1 (20 turns)." && /^Annoyed after \d+ lev(y|ies)\.$/.test(takes?.note ?? "") && takes?.mark, `the levy line that takes, its mark's note: ${JSON.stringify(takes)}`);
-    check(refuses?.text === "Takes no levy." && refuses?.mark === "annoyed" && refuses?.note === `${houseV.label} is Annoyed. It takes no levy.`, `the levy line that refuses: ${JSON.stringify(refuses)}`);
+    // (Annoyed, or Furious when the grant above refused its request for that city.)
+    const word = { annoyed: "Annoyed", furious: "Furious" }[refuses?.mark];
+    check(refuses?.text === "Takes no levy." && word && refuses?.note === `${houseV.label} is ${word}. It takes no levy.`, `the levy line that refuses: ${JSON.stringify(refuses)}`);
     check(levy.findIndex((x) => x.house) > levy.findIndex((x) => !x.house), `the Crown's cities first: ${JSON.stringify(levy)}`);
     steps.push(`Requisition from: ${levy.filter((x) => !x.house).length} Crown cities, ${levy.filter((x) => x.house).length} Houses' cities ("${takes.text}", the mark's tip "${takes.note}" / "${refuses.text}")`);
     await crop(page, `${armySel} .requisition-cities`, "armies-levy.png", { pad: 4 });

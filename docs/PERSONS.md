@@ -206,8 +206,8 @@ the rules left open:
    `player_found_house(liege, leader, cities)`: `world::birth` with `release: cities` (its capital
    first), `vassal`, `keep_armies`, the description `House <name>` (the name taken from the
    civilization's list, `house_new_name`), played by the game's AI; the vassal rules make the record
-   (`house_begin` knows a founding by its player's name: `House ` and the name the liege has just
-   taken), origin `Founded`, no starting modifier, the realm's default tribute in force. Part 2's
+   (`house_begin` knows a founding by its player's name, `House ` and the name the liege has just
+   taken, and by its cities, all acquired this turn), origin `Founded`, no starting modifier, the realm's default tribute in force. Part 2's
    splits found their cadets with the same two calls (`house_leader_draw(parent's civ, liege)`,
    `player_found_house(liege, leader, cities)`). The House's civilization is the liege's even with a
    leader of the fallback. The grant list's line: `A new House: its leader is drawn from the
@@ -1449,7 +1449,7 @@ left open, or departs from it:
 
 #### K. A staged scene: `ffh-play stage persons DIR`
 *As built by the third build:* the player under Aristocracy with a capital and three Crown cities
-(`taken` claimed by House `pleased`), House `friendly` (Friendly, two cities, 0%, founded by the
+(`taken` claimed by House `pleased`, the one over the Crown's limit), House `friendly` (Friendly, two cities, 0%, founded by the
 first grant), House `pleased` (Pleased or Cautious, 10%), House `annoyed` (a capitulated
 civilization), House `furious` (countdown at 8, two cities, one held by an army of two, its seat
 contested and lost by an army of one against two of the House's units), an army `main` for the

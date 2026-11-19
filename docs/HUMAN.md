@@ -1035,7 +1035,7 @@ instead of the charge the ritual stands 1 production short in the capital, compl
 of the turn (Wellspring's placement then opens by itself). `ffh-play stage persons DIR` writes
 the Houses (docs/PERSONS.md, "UI", part K; "The third build"): you play the Bannor under
 Aristocracy with a capital and three Crown cities, one of them (`taken`) claimed by House
-`pleased`; House `friendly` Friendly with two cities at a tribute of 0% (founded by the realm's
+`pleased` and over the Crown's limit; House `friendly` Friendly with two cities at a tribute of 0% (founded by the realm's
 first grant); House `pleased` Pleased or Cautious at 10%; House `annoyed`, a civilization that
 capitulated, Annoyed; House `furious` Furious after refused requests, its countdown at 8 turns, two
 cities, an army of yours holding one and another outnumbered in its seat; an army of yours for

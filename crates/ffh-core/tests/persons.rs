@@ -835,6 +835,14 @@ fn freeing_a_house_ends_the_vassalage_at_peace() {
     assert!(!g.teams[ht].vassal[t0] && !g.at_war(t0, ht));
     // A realm without a House again: its next grant founds one.
     assert_eq!(g.player_check_found_house(P0), Ok(()));
+    // The freed House a vassal again by a deal, a turn later: a vassal (it sought protection), no
+    // founding, though it is named `House <the liege's last name>`.
+    let t = g.game_turn();
+    g.set_game_turn(t + 1);
+    g.team_set_vassal(ht, t0, true, false);
+    let h2 = g.player_house(hp).expect("a House again");
+    assert_eq!(g.houses[h2].origin, HouseOrigin::Vassal);
+    assert!(mods(&g, h2).contains(&("Sought protection".into(), 2)));
 }
 
 // ---------------------------------------------------------------------------------------------

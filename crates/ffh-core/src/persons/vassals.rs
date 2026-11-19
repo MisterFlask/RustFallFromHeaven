@@ -126,11 +126,15 @@ impl Game {
     }
 
     /// Player `hp` becomes a House of `owner` (`origin`): the record and its starting modifier. A
-    /// founding ([`Game::player_found_house`]) is known by the name its player was born with:
-    /// `House <name>`, the name its liege has just taken for it.
+    /// founding ([`Game::player_found_house`]) is known by the name its player was born with,
+    /// `House <name>` with the name its liege has just taken for it, and by its cities, all
+    /// acquired this turn (a House that broke away and becomes a vassal again is no founding).
     pub(crate) fn house_begin(&mut self, hp: PlayerId, owner: PlayerId, origin: HouseOrigin) -> Option<HouseId> {
         let name = self.player_house_name(hp);
-        let founded = origin != HouseOrigin::Capitulated && name.strip_prefix("House ").is_some_and(|n| self.players[owner].house_names.last().is_some_and(|l| l == n));
+        let turn = self.game_turn();
+        let cities = &self.players[hp].cities;
+        let born_now = !cities.is_empty() && cities.iter().all(|&c| self.cities.get(c).is_some_and(|city| city.game_turn_acquired == turn));
+        let founded = origin != HouseOrigin::Capitulated && born_now && name.strip_prefix("House ").is_some_and(|n| self.players[owner].house_names.last().is_some_and(|l| l == n));
         let origin = if founded { HouseOrigin::Founded } else { origin };
         // A founding's civilization is described `House <name>`; the record keeps the name, and
         // its label adds `House` again.
@@ -138,7 +142,6 @@ impl Game {
             HouseOrigin::Founded => name.strip_prefix("House ").map_or(name.clone(), str::to_string),
             _ => name,
         };
-        let turn = self.game_turn();
         let color = self.house_new_color(owner);
         let tribute = self.players[owner].house_tribute;
         let mut standing = Standing::default();

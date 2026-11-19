@@ -48,8 +48,8 @@ pub struct StagedHouse {
 }
 
 /// A saved game at a human control point (the human the Bannor under Aristocracy): the capital,
-/// three Crown cities (`taken`, claimed by Houses `pleased` and `friendly`; `crown` holds all
-/// three), the Houses of [`StagedHouse`], the armies by role (`armies`: `main`, an army of the human
+/// three Crown cities (`taken`, claimed by House `pleased`, the one over the Crown's limit; `crown`
+/// holds all three), the Houses of [`StagedHouse`], the armies by role (`armies`: `main`, an army of the human
 /// for the levy; `holds_furious` in House `furious`'s second city; `contests_furious` in its seat,
 /// outnumbered), and the neighbour civilization (`neighbour`, met, at peace) with two cities, one
 /// (`neighbour_near`) within 12 plots of a House's city, the other its House's. `persons-direct` is
@@ -297,7 +297,8 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         g.team_meet(team, their, false);
     }
 
-    // The cities: the human's (Crown for now).
+    // The cities: the human's (Crown for now; `taken` last of the Crown's, so it is the one over
+    // the limit).
     let lay = layout(&s.g, h)?;
     let capital = s.g.player_get_capital_city(h).ok_or("no capital")?;
     let found = |g: &mut Game, p: PlayerId, q: PlotIdx| {
@@ -306,9 +307,9 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
     };
     let (taken, crown_y, crown_z, a_cities, b_city, c_cities) = {
         let g = &mut s.g;
-        let taken = found(g, h, lay.taken);
         let y = found(g, h, lay.crown[0]);
         let z = found(g, h, lay.crown[1]);
+        let taken = found(g, h, lay.taken);
         let a: Vec<CityId> = lay.a.iter().map(|&q| found(g, h, q)).collect();
         let b = found(g, h, lay.b);
         let c: Vec<CityId> = lay.c.iter().map(|&q| found(g, h, q)).collect();
@@ -490,6 +491,9 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         want("the neighbour's House", g.house_state(house_n), &[LoyaltyState::Cautious, LoyaltyState::Annoyed, LoyaltyState::Furious])?;
         if !g.city_claimants(taken).contains(&house_b) {
             return Err(format!("the taken city's claimants are {:?}", g.city_claimants(taken)));
+        }
+        if g.player_crown_over(h) != vec![taken] {
+            return Err(format!("the Crown's city over its limit is not the taken one: {:?}", g.player_crown_over(h)));
         }
         if g.house_cities_held(house_c).1.len() != 1 {
             return Err("House C's city is not held by an army".into());

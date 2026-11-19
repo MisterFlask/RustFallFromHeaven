@@ -242,6 +242,15 @@ async function diplomacyHouses(page, url, st) {
 async function plateTips(page, st) {
   const f = st.houses.furious;
   const ids = f.cities.map((c) => c.id);
+  // Its seat in the middle of the map (the marks pointed at are then clear of the panels), and the
+  // boxes of the frame drawn there.
+  await page.evaluate((id) => {
+    const c = window.ffh.S.cities.get(id);
+    const mv = window.ffh.mapView;
+    mv.centerOn(c.x, c.y, { animate: false });
+    for (const r of [mv.r3d, mv.iso, mv]) if (r?.plateHits) r.plateHits = [];
+    mv.request?.();
+  }, f.seat.id);
   const hitsOf = () => page.evaluate((ids) => {
     const mv = window.ffh.mapView;
     const hits = mv.r3d?.plateHits ?? mv.iso?.plateHits ?? mv.plateHits ?? [];
@@ -390,6 +399,7 @@ async function main() {
         const cy = Math.round(at.reduce((s, p) => s + p[1], 0) / at.length);
         await page.evaluate(([x, y]) => window.ffh.mapView.centerOn(x, y, { animate: false }), [cx, cy]);
         await plateTips(page, st);
+        await page.evaluate(([x, y]) => window.ffh.mapView.centerOn(x, y, { animate: false }), [cx, cy]);
       }
       if (SHOTS && !args["no-map"]) {
         await clear(page);
