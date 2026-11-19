@@ -244,10 +244,11 @@ pub fn unit_found_house(v: &Viewer, u: UnitId) -> Json {
 /// The civics screen's preview of a proposed set (part I), set on `proposed`: `persons` (the
 /// rules' lines) and, when the set brings direct rule while Houses stand, `persons_warning`
 /// (`Adopting God King: 3 Houses break away, taking 9 cities, each at war with you.`),
-/// `persons_houses` (a line per House, from the cities its break-away takes and those an army of
-/// yours holds, `Game::house_cities_held`, as the rules' preview reads them: `House Aldric:
-/// Ventry. Corona returns to you (an army of yours stands in it).`, `Malakim (a vassal): Astrum
-/// and Golden Leane.`) and `persons_button` (`Adopt God King: 3 Houses break away`).
+/// `persons_houses` (a line per House, from the cities its break-away takes and the contest for
+/// each city where an army of yours stands, `Game::house_cities_held` and `Game::city_hold_line`,
+/// as the rules' preview reads them: `House Aldric: Ventry. Corona returns to you: your army's 4
+/// units outnumber its 2.`, `Malakim (a vassal): Astrum and Golden Leane. Astrum goes with it: its
+/// 3 units against your army's 2.`) and `persons_button` (`Adopt God King: 3 Houses break away`).
 pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json) {
     let g = v.g;
     let d = g.d;
@@ -264,26 +265,20 @@ pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json
         let mut going_n = 0;
         let mut lines = Vec::new();
         for &h in &houses {
-            let (going, held) = g.house_cities_held(h);
+            let (going, _) = g.house_cities_held(h);
             going_n += going.len();
             // A vassal civilization's name is not a House's: it is told as one.
             let who = if g.houses[h].origin == ffh_core::persons::HouseOrigin::Founded { g.house_label(h) } else { format!("{} (a vassal)", g.house_label(h)) };
-            let held_text = match held.len() {
-                0 => String::new(),
-                1 => format!("{} returns to you (an army of yours stands in it).", names(&held)),
-                _ => format!("{} return to you (an army of yours stands in each).", names(&held)),
-            };
-            lines.push(match (going.is_empty(), held.is_empty()) {
-                (true, _) => format!("{who} ends: {held_text}"),
-                (false, true) => format!("{who}: {}.", names(&going)),
-                (false, false) => format!("{who}: {}. {held_text}", names(&going)),
-            });
+            // The contest for each city where an army of yours stands (` Corona returns to you:
+            // your army's 4 units outnumber its 2.`).
+            let contests = g.house_hold_text(h);
+            lines.push(if going.is_empty() { format!("{who} ends.{contests}") } else { format!("{who}: {}.{contests}", names(&going)) });
         }
         let n = houses.len();
         let houses_n = if n == 1 { "1 House".to_string() } else { format!("{n} Houses") };
         let civic_name = crate::names::display(d, civic);
         let text = if going_n == 0 {
-            format!("Adopting {civic_name}: {houses_n} end{}: an army of yours stands in every city.", if n == 1 { "s" } else { "" })
+            format!("Adopting {civic_name}: {houses_n} end{}: your armies hold every city.", if n == 1 { "s" } else { "" })
         } else {
             format!(
                 "Adopting {civic_name}: {houses_n} break{} away, taking {going_n} cit{}, each at war with you.",
@@ -294,18 +289,6 @@ pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json
         proposed.set("persons_warning", text);
         proposed.set("persons_houses", lines);
         proposed.set("persons_button", format!("Adopt {civic_name}: {houses_n} break{} away", if n == 1 { "s" } else { "" }));
-    }
-}
-
-/// The cities a break-away gives back to the liege, because an army of the liege stands in them:
-/// `Censura returns to you: an army of yours stands in it.`, `Censura and Torrin return to you: an
-/// army of yours stands in each.`
-pub(crate) fn stays_line(g: &Game, held: &[CityId]) -> String {
-    let names = and_list(&held.iter().map(|&c| city_name(g, c)).collect::<Vec<_>>());
-    if held.len() == 1 {
-        format!("{names} returns to you: an army of yours stands in it.")
-    } else {
-        format!("{names} return to you: an army of yours stands in each.")
     }
 }
 

@@ -4,9 +4,11 @@
 //! - **A House breaks away** ([`Game::house_break_away`]) at the end of its Furious countdown, in
 //!   its liege's turn processing (Houses before commanders), when its liege comes under a
 //!   direct-rule civic (every House at once: the civil war), or when it accepts an offer to secede
-//!   (`bribes.rs`): first every city of the House in which an army of the liege stands goes back
-//!   to the liege (as a trade: its buildings and garrison; `Censura returns to you: an army of
-//!   yours stands in it.`), then the vassalage ends (the record ends, its head leaves the cast: they lead the
+//!   (`bribes.rs`): first every city of the House in which the liege's army units outnumber the
+//!   House's own land combat units goes back to the liege ([`Game::city_hold`]; as a trade: its
+//!   buildings and garrison; `Censura returns to you: your army's 4 units outnumber its 2.`; a
+//!   city contested and lost is told too: `Corona goes with House Arne: its 3 units against your
+//!   army's 2.`), then the vassalage ends (the record ends, its head leaves the cast: they lead the
 //!   civilization), and the House's team declares war on the liege's team, [`GRUDGE`] both ways.
 //!   Everyone who has met the liege is told. Houses breaking away the same turn are not merged.
 //! - **A commander's secession** ([`Game::commander_secede`]): their sworn units, but those
@@ -49,7 +51,7 @@ impl Game {
 
     /// Whether unit `u` of player `p` on a released city's plot goes with the city
     /// (`world::birth`'s release: the owner's land units that can fight, not heroes).
-    fn unit_goes_with_city(&self, u: UnitId, p: PlayerId) -> bool {
+    pub(crate) fn unit_goes_with_city(&self, u: UnitId, p: PlayerId) -> bool {
         self.units.contains(u)
             && self.units[u].owner == p
             && self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
@@ -120,9 +122,9 @@ impl Game {
     // A House breaking away
     // -----------------------------------------------------------------------------------------
 
-    /// House `h` breaks away (`why`): its cities an army of its liege holds go back to the liege,
-    /// the vassalage ends, and it declares war on its liege (with `Bribe { vassal: true }`, it
-    /// then becomes the buyer's vassal). Returns its player, alive.
+    /// House `h` breaks away (`why`): its cities where its liege's army units outnumber its own go
+    /// back to the liege, the vassalage ends, and it declares war on its liege (with `Bribe {
+    /// vassal: true }`, it then becomes the buyer's vassal). Returns its player, alive.
     pub(crate) fn house_break_away(&mut self, h: HouseId, why: Why) -> Option<PlayerId> {
         let p = self.houses[h].owner;
         let hp = self.houses[h].player;
@@ -131,10 +133,13 @@ impl Game {
         let civ_name = self.player_get_civilization_short_description(p);
         let (going, held) = self.house_cities_held(h);
         let turn = self.game_turn();
+        // The contests the liege lost, told before the cities change hands.
+        let lost: Vec<((i32, i32), String)> = going.iter().filter_map(|&c| self.city_hold_line(c, &label).map(|l| ((self.cities[c].x, self.cities[c].y), l))).collect();
         // The counter on the map: the held cities go back to the liege, as a trade.
         for &c in &held {
             let plot = self.city_plot(c);
             let city = self.persons_city_name(c);
+            let line = self.city_hold_line(c, &label).unwrap_or_else(|| format!("{city} returns to you."));
             for a in self.players[p].armies.clone() {
                 if let Some(x) = self.armies.get(a).filter(|_| self.army_plot(a) == Some(plot)).and_then(|army| army.commander).filter(|&x| self.persons.contains(x)) {
                     self.person_add_deed(x, format!("Held {city} when {label} broke away."));
@@ -142,7 +147,10 @@ impl Game {
             }
             self.persons_move_city(c, p);
             let at = self.map.xy(plot);
-            self.log.msg_marked(turn, Some(p), at, LogMark::Person, LogTag::None, || format!("{city} returns to you: an army of yours stands in it."));
+            self.log.msg_marked(turn, Some(p), at, LogMark::Person, LogTag::None, || line);
+        }
+        for (at, line) in lost {
+            self.log.msg_marked(turn, Some(p), at, LogMark::Person, LogTag::None, || line);
         }
         if let Some(x) = head {
             self.person_add_deed(x, format!("Broke away from the {civ_name} with {label}."));

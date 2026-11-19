@@ -286,9 +286,9 @@ impl Game {
                         if !self.houses.contains(h) {
                             continue;
                         }
-                        let (going, held) = self.house_cities_held(h);
+                        let (going, _) = self.house_cities_held(h);
                         let mut text = if going.is_empty() { "Every city is held by an army: the House ends.".to_string() } else { format!("Breaks away, taking {}: war.", self.city_names_of(&going)) };
-                        text.push_str(&self.held_cities_text(&held));
+                        text.push_str(&self.house_hold_text(h));
                         out.push(PreviewLine { subject: self.house_label(h), text, state_after: None });
                     }
                     return out;
@@ -311,37 +311,31 @@ impl Game {
         and_list(&cities.iter().map(|&c| self.persons_city_name(c)).collect::<Vec<_>>())
     }
 
-    /// What a break-away does with the cities an army of the liege holds (`held`), for the liege
-    /// to read, each after a space: ` Torrin returns to you: an army of yours stands in it.`
-    /// (empty without one).
-    pub(crate) fn held_cities_text(&self, held: &[CityId]) -> String {
-        held.iter().map(|&c| format!(" {} returns to you: an army of yours stands in it.", self.persons_city_name(c))).collect()
-    }
-
     /// The stated outcome of House `h`'s countdown, for its liege: `House Ashledger will break
-    /// away in 8 turns, taking Prespur and Elam: war. Torrin returns to you: an army of yours
-    /// stands in it.` (without a countdown: what would happen now, `would break away, taking
-    /// ...`).
+    /// away in 8 turns, taking Prespur and Elam: war. Elam goes with it: its 3 units against your
+    /// army's 2. Torrin returns to you: your army's 4 units outnumber its 2.` (the contest for
+    /// each city where an army of the liege stands, [`Game::house_hold_text`]; without a countdown:
+    /// what would happen now, `would break away, taking ...`).
     pub fn house_breakaway_outcome(&self, h: HouseId) -> String {
         let label = self.house_label(h);
-        let (going, held) = self.house_cities_held(h);
+        let (going, _) = self.house_cities_held(h);
         let cities = self.city_names_of(&going);
-        let stays = self.held_cities_text(&held);
+        let contests = self.house_hold_text(h);
         match self.houses[h].standing.countdown {
             Some(end) => {
                 let t = (end - self.game_turn()).max(0);
                 let turns = format!("{t} {}", if t == 1 { "turn" } else { "turns" });
                 if going.is_empty() {
-                    format!("{label} will end in {turns}: every city is held.")
+                    format!("{label} will end in {turns}: every city is held.{contests}")
                 } else {
-                    format!("{label} will break away in {turns}, taking {cities}: war.{stays}")
+                    format!("{label} will break away in {turns}, taking {cities}: war.{contests}")
                 }
             }
             None => {
                 if going.is_empty() {
-                    format!("{label} would end: every city is held.")
+                    format!("{label} would end: every city is held.{contests}")
                 } else {
-                    format!("{label} would break away, taking {cities}: war.{stays}")
+                    format!("{label} would break away, taking {cities}: war.{contests}")
                 }
             }
         }

@@ -318,27 +318,53 @@ impl Game {
     }
 
     // -----------------------------------------------------------------------------------------
-    // The counter on the map
+    // The counter on the map: a contest of numbers (rule 7)
     // -----------------------------------------------------------------------------------------
 
-    /// Whether an army of the liege of city `c`'s owner (a House) stands in it, whose commander
-    /// is not Furious: the city goes back to the liege when its House breaks away.
-    pub fn city_held_by_army(&self, c: CityId) -> bool {
-        let Some(h) = self.city_house(c) else { return false };
-        let p = self.houses[h].owner;
-        let plot = self.city_plot(c);
-        self.players[p].armies.iter().any(|&a| {
-            self.armies.get(a).is_some_and(|army| {
-                army.domain == crate::army::ArmyDomain::Land
-                    && self.army_plot(a) == Some(plot)
-                    && army.commander.filter(|&x| self.persons.contains(x)).map_or(true, |x| self.person_state(x) != LoyaltyState::Furious)
-            })
+    /// Whether unit `u` counts for `liege` in the contest for a House's city: a land unit of
+    /// `liege` in one of its land armies whose commander is not Furious.
+    pub fn unit_holds_for_liege(&self, u: UnitId, liege: PlayerId) -> bool {
+        let Some(unit) = self.units.get(u) else { return false };
+        if unit.owner != liege || self.unit_get_domain_type(u) != DomainType::DOMAIN_LAND {
+            return false;
+        }
+        unit.army.and_then(|a| self.armies.get(a)).is_some_and(|army| {
+            army.domain == crate::army::ArmyDomain::Land && army.commander.filter(|&x| self.persons.contains(x)).map_or(true, |x| self.person_state(x) != LoyaltyState::Furious)
         })
     }
 
+    /// The contest for city `c` of a House when the House breaks away (rule 7): the liege's army
+    /// units standing in it ([`Game::unit_holds_for_liege`]) against the House's own land combat
+    /// units in it (those that go with a released city, the predicate of a commander's seizure).
+    /// `None` for a city of no House.
+    pub fn city_hold(&self, c: CityId) -> Option<CityHold> {
+        let h = self.city_house(c)?;
+        let (liege, hp) = (self.houses[h].owner, self.houses[h].player);
+        let plot = self.city_plot(c);
+        let (mut units, mut armies, mut house) = (0, Vec::new(), 0);
+        for &u in &self.map.plots[plot].units {
+            if self.unit_holds_for_liege(u, liege) {
+                units += 1;
+                let a = self.units[u].army;
+                if !armies.contains(&a) {
+                    armies.push(a);
+                }
+            } else if self.unit_goes_with_city(u, hp) {
+                house += 1;
+            }
+        }
+        Some(CityHold { liege: units, armies: armies.len() as i32, house })
+    }
+
+    /// Whether city `c` of a House goes back to its liege when the House breaks away: the liege's
+    /// army units in it outnumber the House's own (a tie goes to the House).
+    pub fn city_held_by_army(&self, c: CityId) -> bool {
+        self.city_hold(c).is_some_and(|hold| hold.held())
+    }
+
     /// House `h`'s cities that would go with it if it broke away now (`going`) and those that
-    /// would go back to its liege (`held`: an army of the liege stands in it whose commander is
-    /// not Furious), each in its player's order. The break-away and the previews share it.
+    /// would go back to its liege (`held`: [`Game::city_held_by_army`]), each in its player's
+    /// order. The break-away and the previews share it.
     pub fn house_cities_held(&self, h: HouseId) -> (Vec<CityId>, Vec<CityId>) {
         let (mut going, mut held) = (Vec::new(), Vec::new());
         for c in self.house_cities(h) {
@@ -349,5 +375,51 @@ impl Game {
             }
         }
         (going, held)
+    }
+
+    /// The contest for city `c` as its liege reads it, when a unit of an army of the liege counts
+    /// in it (`None` otherwise): `Corona returns to you: your army's 4 units outnumber its 2.`, or,
+    /// not held, `Corona goes with it: its 3 units against your army's 2.` (`house`: how the House
+    /// is named; `it` after a line that names it).
+    pub fn city_hold_line(&self, c: CityId, house: &str) -> Option<String> {
+        let hold = self.city_hold(c)?;
+        if hold.liege == 0 {
+            return None;
+        }
+        let city = self.persons_city_name(c);
+        let units = |n: i32| format!("{n} {}", if n == 1 { "unit" } else { "units" });
+        let yours = if hold.armies > 1 { "your armies'" } else { "your army's" };
+        Some(if hold.held() {
+            let verb = if hold.liege == 1 { "outnumbers" } else { "outnumber" };
+            format!("{city} returns to you: {yours} {} {verb} its {}.", units(hold.liege), hold.house)
+        } else {
+            format!("{city} goes with {house}: its {} against {yours} {}.", units(hold.house), hold.liege)
+        })
+    }
+
+    /// House `h`'s contest lines ([`Game::city_hold_line`], the House named `it`), each after a
+    /// space, in its player's city order; empty when no army of its liege stands in its cities.
+    pub fn house_hold_text(&self, h: HouseId) -> String {
+        self.house_cities(h).into_iter().filter_map(|c| self.city_hold_line(c, "it")).map(|l| format!(" {l}")).collect()
+    }
+}
+
+/// The contest for a House's city when the House breaks away ([`Game::city_hold`]; docs/PERSONS.md,
+/// rule 7).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CityHold {
+    /// The liege's army units standing in it (land units of its land armies whose commander is
+    /// not Furious).
+    pub liege: i32,
+    /// The liege's armies those units are in.
+    pub armies: i32,
+    /// The House's own land combat units in it.
+    pub house: i32,
+}
+
+impl CityHold {
+    /// The liege's army units outnumber the House's: the city goes back to the liege.
+    pub fn held(&self) -> bool {
+        self.liege > self.house
     }
 }

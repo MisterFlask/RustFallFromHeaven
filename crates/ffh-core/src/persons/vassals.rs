@@ -17,7 +17,10 @@
 //! - **Tribute** ([`Game::player_persons_tribute`], the liege's turn processing): for each House
 //!   in id order, its tribute percent of its cities' gold commerce, from its treasury (no more
 //!   than it holds) to the liege's, and of their research commerce, added to the liege team's
-//!   current research (lost when it researches nothing).
+//!   current research (lost when it researches nothing). A raise of k steps
+//!   ([`Game::player_set_house_tribute`]) adds `Tribute raised: -k (30 turns)`; a cut adds nothing
+//!   (the standing part rises at once, earlier raises keep running); a new House taking the
+//!   realm's default is no raise.
 //! - **The levy**: an army's requisition takes the cities of its owner's Houses; a House Annoyed or
 //!   worse takes none ([`Game::house_levy_refusal`]); each order placed is `Levied: -1 (20
 //!   turns)` ([`Game::house_levied`]); the unit trained is the army owner's (`city/turn.rs`).
@@ -319,10 +322,17 @@ impl Game {
         Self::tribute_check(pct)
     }
 
-    /// Player `p` sets House `h`'s tribute to `pct` percent (its standing loyalty part follows).
+    /// Player `p` sets House `h`'s tribute to `pct` percent: its standing loyalty part follows, and
+    /// a raise of k steps adds `Tribute raised: -k (30 turns)` ([`super::tribute_raise`],
+    /// [`TRIBUTE_RAISED`]; each raise its own modifier, so they stack). A cut adds nothing and ends
+    /// no earlier raise's modifier.
     pub fn player_set_house_tribute(&mut self, p: PlayerId, h: HouseId, pct: i32) -> Result<(), &'static str> {
         self.player_check_house_tribute(p, h, pct)?;
+        let raise = super::tribute_raise(self.houses[h].tribute, pct);
         self.houses[h].tribute = pct;
+        if raise != 0 {
+            self.holder_add_mod(Holder::House(h), LoyaltyCause::TributeRaised, (raise, TRIBUTE_RAISED.1));
+        }
         Ok(())
     }
 

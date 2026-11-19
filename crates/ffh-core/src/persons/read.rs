@@ -101,9 +101,26 @@ pub struct TributeView {
     pub last_gold: i32,
     pub last_research: i32,
     pub last_turn: i32,
-    /// For each tribute it may be set to (0 to 50 by 10): (percent, gold, research it would pay
-    /// this turn, the House's loyalty and state at it).
-    pub at: Vec<(i32, i32, i32, i32, LoyaltyState)>,
+    /// Each tribute it may be set to (0 to 50 by 10).
+    pub at: Vec<TributeRate>,
+}
+
+/// One rate of a House's tribute selector ([`TributeView::at`]): what setting it now would do.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TributeRate {
+    /// The rate, percent.
+    pub pct: i32,
+    /// The gold and research it would pay this turn.
+    pub gold: i32,
+    pub research: i32,
+    /// The standing part `Tribute N%` at it ([`tribute_part`]).
+    pub part: i32,
+    /// The `Tribute raised` modifier setting it adds ([`super::tribute_raise`]: a raise, else 0;
+    /// for `TRIBUTE_RAISED.1` turns).
+    pub raised: i32,
+    /// The House's loyalty and state after setting it (the raise counted).
+    pub loyalty: i32,
+    pub state: LoyaltyState,
 }
 
 /// Whether a House takes levies, and why not.
@@ -314,7 +331,8 @@ impl Game {
             .map(|pct| {
                 let (gold, research) = self.house_tribute_at(h, pct);
                 let loyalty = self.house_loyalty_at_tribute(h, pct);
-                (pct, gold, research, loyalty, LoyaltyState::of(loyalty))
+                let raised = super::tribute_raise(house.tribute, pct);
+                TributeRate { pct, gold, research, part: tribute_part(pct), raised, loyalty, state: LoyaltyState::of(loyalty) }
             })
             .collect();
         TributeView { pct: house.tribute, last_gold: house.last_gold, last_research: house.last_research, last_turn: house.last_turn, at }

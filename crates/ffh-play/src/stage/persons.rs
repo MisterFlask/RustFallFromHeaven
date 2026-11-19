@@ -32,7 +32,8 @@ const STAGE_GOLD: i32 = 400;
 pub struct StagedHouse {
     /// The human's: `friendly` (two cities, tribute 0%), `pleased` (Pleased or Cautious, tribute
     /// 10%, a claimant of the taken city), `annoyed` (a civilization that capitulated, with its own
-    /// leader), `furious` (countdown 8, two cities, one held by an army of the human); the
+    /// leader), `furious` (countdown 8, two cities: one held by an army of the human, its seat
+    /// contested by a smaller one and lost); the
     /// neighbour's: `neighbour` (Cautious or worse: a bribe can be offered).
     pub role: &'static str,
     pub id: HouseId,
@@ -567,6 +568,22 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         a
     };
 
+    // House C's seat contested and lost (rule 7: a tie or fewer goes to the House): two warriors
+    // of the House against an army of one of the human's.
+    let army_seat = {
+        let g = &mut s.g;
+        let c1 = g.house_cities(house_c).into_iter().find(|&c| g.city_plot(c) == lay.c[0]).ok_or("House C's seat")?;
+        let (cx, cy) = (g.cities[c1].x, g.cities[c1].y);
+        let hp = g.houses[house_c].player;
+        for _ in 0..2 {
+            g.player_init_unit(hp, ty("UNIT_WARRIOR"), cx, cy, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+        }
+        let u = g.player_init_unit(h, ty("UNIT_WARRIOR"), cx, cy, None, None);
+        let a = g.army_form(h, &[u])?;
+        g.player_army_sync(h);
+        a
+    };
+
     // The human's treasury: enough for the neighbour's House's price (the trade screen's accepted
     // offer, docs/PERSONS.md rule 9), set by hand.
     if let Some(price) = s.g.house_bribe_price(house_n) {
@@ -598,6 +615,10 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         }
         if g.house_cities_held(house_c).1.len() != 1 {
             return Err("House C's city is not held by an army".into());
+        }
+        let seat_hold = g.house_cities(house_c).into_iter().find(|&c| g.city_plot(c) == lay.c[0]).and_then(|c| g.city_hold(c));
+        if seat_hold.is_none_or(|hold| hold.held() || hold.liege == 0) {
+            return Err(format!("House C's seat is not contested and lost: {seat_hold:?}"));
         }
         if g.house_bribe_price(house_n).is_none() || g.house_bribe_refusal(house_n, h, ffh_core::persons::BribeKind::Secede).is_some() {
             return Err(format!("the neighbour's House takes no offer: {:?}", g.house_bribe_refusal(house_n, h, ffh_core::persons::BribeKind::Secede)));
@@ -640,7 +661,7 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         Post::Commander(a) => a,
         _ => unreachable!("checked"),
     };
-    let armies: Vec<(&'static str, ArmyId)> = vec![("loyal", army3), ("furious", cmd_army), ("holds_furious", army_c)];
+    let armies: Vec<(&'static str, ArmyId)> = vec![("loyal", army3), ("furious", cmd_army), ("holds_furious", army_c), ("contests_furious", army_seat)];
     let mut named: Vec<CityId> = g.players[h].cities.iter().chain(&g.players[ai].cities).copied().collect();
     for hs in &houses {
         named.extend(hs.cities.iter().copied());

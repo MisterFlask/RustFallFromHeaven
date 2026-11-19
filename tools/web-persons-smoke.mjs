@@ -248,6 +248,12 @@ async function main() {
     check(/^Price to secede: \d+ gold\.$/.test(cards.priceV ?? "") && cards.priceA === null, `the price in the card (Annoyed: ${cards.priceV}; Friendly: ${cards.priceA})`);
     check(cards.furiousParts?.length > 0, `a Furious person's parts on the card: ${JSON.stringify(cards.furiousParts)}`);
     steps.push(`demand terms: "${cards.lapse[0].trim()}"; ${houseV.label}: "${cards.priceV}"; a Furious person's parts: ${cards.furiousParts.join(", ")}`);
+    // The Furious House's outcome: the contest for each city where an army of yours stands (rule
+    // 7: held when your army's units outnumber the House's; its seat contested and lost).
+    const houseC = st.houses.furious;
+    const outcome = await page.evaluate((sel) => document.querySelector(`${sel} > .pline.warn`)?.textContent ?? null, houseSel(houseC.id));
+    check(/ returns to you: your army's \d+ units? outnumbers? its \d+\./.test(outcome ?? "") && / goes with it: its \d+ units? against your army's \d+\./.test(outcome ?? ""), `the Furious House's outcome, held and contested: ${outcome}`);
+    steps.push(`${houseC.label}'s outcome: "${outcome}"`);
     if (SHOTS) {
       const shoot = async (sel, name) => {
         await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
@@ -255,6 +261,7 @@ async function main() {
         await crop(page, sel, name, { pad: 4 });
       };
       await shoot(houseSel(houseV.id), "court-house-price.png");
+      await shoot(houseSel(houseC.id), "court-house-furious.png");
       const demandCard = await page.evaluate(() => {
         const c = document.querySelector(".modal[data-tag=court] .house-card .pdemand-lapse")?.closest(".house-card");
         return c ? `.modal[data-tag=court] .house-card[data-house="${c.dataset.house}"]` : null;
@@ -290,18 +297,23 @@ async function main() {
     card);
     const now = rates.find((r) => r.current);
     check(now?.pct === 0 && rates.filter((r) => r.current).length === 1, `the current rate (House A pays 0%): ${JSON.stringify(rates)}`);
-    check(rates.every((r) => /^Pays \d+ gold, \d+ research\.$/.test(r.est) && /^Tribute: [+-]?\d+ · Loyalty: [+-]?\d+$/.test(r.part)), `the rows' lines: ${JSON.stringify(rates)}`);
+    // Each row: its part, a higher rate's raise (`Raised: -k (30 turns)`, rule 4), the total after.
+    const ROW = /^Tribute: ([+-]?\d+)(?: · Raised: (-\d+) \(30 turns\))? · Loyalty: ([+-]?\d+)$/;
+    check(rates.every((r) => /^Pays \d+ gold, \d+ research\.$/.test(r.est) && ROW.test(r.part)), `the rows' lines: ${JSON.stringify(rates)}`);
+    check(rates.every((r) => (ROW.exec(r.part)?.[2] ?? null) === (r.pct > now.pct ? String(-(r.pct - now.pct) / 10) : null)), `a raise on each higher rate, none on the others: ${JSON.stringify(rates)}`);
     const before = await cardState(page, houseA.id);
     await page.evaluate((sel) => document.querySelector(`${sel} details.ptribute`).scrollIntoView({ block: "center" }), card);
     await crop(page, `${card} details.ptribute`, "court-house-tribute.png", { pad: 6 });
     const pick = rates.find((r) => r.pct === 30);
-    const [, partWant, totalWant] = /^Tribute: ([+-]?\d+) · Loyalty: ([+-]?\d+)$/.exec(pick.part);
+    const [, partWant, raisedWant, totalWant] = ROW.exec(pick.part);
     await tap(page, `${card} button.trate[data-pct="30"]`);
     await until(async () => (await cardState(page, houseA.id))?.line.startsWith("Tribute 30%"), "the tribute set to 30%", 10000 * SLOW);
     const after = await cardState(page, houseA.id);
     check(after.parts.includes(`Tribute 30%: ${partWant}`) && !after.parts.includes("Tribute 0%: +1"), `the tribute part changed as the row said (${partWant}): ${JSON.stringify(after)}`);
+    check(after.parts.includes(`Tribute raised: ${raisedWant} (30 turns)`), `the raise remembered as the row said (${raisedWant}): ${JSON.stringify(after)}`);
     check(after.total === `Loyalty: ${totalWant}.` && after.state === pick.state && after.open, `the total and state the row said (${totalWant}, ${pick.state}), the list kept open: ${JSON.stringify(after)}`);
-    steps.push(`${houseA.label}'s tribute 0% -> 30%: parts ${before.parts.find((p) => p.startsWith("Tribute"))} -> ${after.parts.find((p) => p.startsWith("Tribute"))}, ${before.total} -> ${after.total}`);
+    const tributeParts = (parts) => parts.filter((p) => p.startsWith("Tribute ")).join(", ");
+    steps.push(`${houseA.label}'s tribute 0% -> 30%: parts ${tributeParts(before.parts)} -> ${tributeParts(after.parts)}, ${before.total} -> ${after.total}`);
     await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: "start" }), card);
     await crop(page, card, "court-house-card.png", { pad: 4 });
 

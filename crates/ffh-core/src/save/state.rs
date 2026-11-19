@@ -69,7 +69,7 @@ persist_enum!(Post { 0 => None, 1 => Commander(army), 2 => Head(house) });
 persist_enum!(LoyaltyState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
 persist_enum!(LoyaltyCause {
     0 => DemandMet, 1 => DemandRefused, 2 => Granted { city }, 3 => GrantedElsewhere { city, house }, 4 => Levied,
-    5 => Capitulated, 6 => SoughtProtection, 7 => Offered { gold, by },
+    5 => Capitulated, 6 => SoughtProtection, 7 => Offered { gold, by }, 8 => TributeRaised,
 });
 persist_struct!(LoyaltyMod { cause, amount, until });
 persist_struct!(Standing { mods, countdown, sworn, state });

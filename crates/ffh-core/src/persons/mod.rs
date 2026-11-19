@@ -56,9 +56,10 @@ mod vassals;
 pub use bribes::{house_item, house_offer_value, BribeKind};
 pub use crown::CROWN_OVER_FACTOR;
 pub use entry::{leader_name, leader_title};
-pub use houses::Claimant;
+pub use houses::{CityHold, Claimant};
+pub use loyalty::{tribute_part, tribute_raise};
 pub use preview::{GrantCandidate, PersonsAct, PreviewLine};
-pub use read::{CourtView, DemandView, GrantMaintenance, HouseMark, HouseView, LevyStatus, LoyaltyPart, PersonView, PersonWhere};
+pub use read::{CourtView, DemandView, GrantMaintenance, HouseMark, HouseView, LevyStatus, LoyaltyPart, PersonView, PersonWhere, TributeRate, TributeView};
 
 // ---------------------------------------------------------------------------------------------
 // Numbers of the build that are not defines (docs/PERSONS.md, "The second build")
@@ -76,6 +77,9 @@ pub const SNUB_HOUSE: (i32, i32) = (-1, 30);
 pub const SNUB_COMMANDER: (i32, i32) = (-2, 30);
 /// `Levied: -1 (20 turns)`: each levy order placed in a House's city.
 pub const LEVIED: (i32, i32) = (-1, 20);
+/// `Tribute raised: -k (30 turns)`: a raise of a House's tribute by k steps of [`TRIBUTE_STEP`]
+/// (this amount a step), on top of the standing part; a cut adds nothing.
+pub const TRIBUTE_RAISED: (i32, i32) = (-1, 30);
 /// `Capitulated: -4 (100 turns)`: a House that became a vassal by capitulating.
 pub const CAPITULATED: (i32, i32) = (-4, 100);
 /// `Sought protection: +2 (60 turns)`: a House that became a vassal by a deal.
@@ -230,6 +234,8 @@ pub enum LoyaltyCause {
     /// An offer to secede (`gold`: its worth, gold per turn counted ten times; `by`: the
     /// civilization, `Hippus`).
     Offered { gold: i32, by: String },
+    /// The House's tribute raised (its amount: [`TRIBUTE_RAISED`] a step of the raise).
+    TributeRaised,
 }
 
 impl LoyaltyCause {
@@ -244,6 +250,7 @@ impl LoyaltyCause {
             LoyaltyCause::Capitulated => "Capitulated".into(),
             LoyaltyCause::SoughtProtection => "Sought protection".into(),
             LoyaltyCause::Offered { gold, by } => format!("Offered {gold} gold by the {by}"),
+            LoyaltyCause::TributeRaised => "Tribute raised".into(),
         }
     }
 }
