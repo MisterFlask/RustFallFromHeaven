@@ -6,7 +6,9 @@ impl Game {
     /// Player `p`'s Houses in its turn processing (`player_do_turn`, after the army sync): the
     /// House records checked, modifiers expired, contracts whose turns ran out ended, requests (met,
     /// impossible, lapsed, new), states and the ultimatums of the Furious (answered at once: a
-    /// refusal breaks the House away); then the Houses' tribute, and their splits.
+    /// refusal breaks the House away); then the Houses' tribute and their splits; last, the
+    /// courtships of its Houses (the third build, rule 7: gifts age, the requirement follows the
+    /// world unit).
     pub fn player_persons_turn(&mut self, p: PlayerId) {
         if !self.player_has_houses(p) {
             return;
@@ -21,6 +23,8 @@ impl Game {
         }
         self.player_persons_tribute(p);
         self.player_persons_splits(p);
+        // The third build, rule 7 (courtship.rs).
+        self.player_persons_courtships(p);
     }
 
     /// Player `p`'s House records in its turn processing: a record whose player is dead or no

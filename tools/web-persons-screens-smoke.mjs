@@ -7,13 +7,16 @@
 // commander) and the unit panel (no person, no Found a House), a House's alert, the plates' marks'
 // tooltips (a Furious House's shield, a House capital's star), the war declaration's dialog
 // (the Houses it brings in, its preview), the diplomacy list's Houses (yours first with their
-// state, the neighbour's under its liege with its state and price) and the neighbour's House's
-// trade screen (gold only; a Secede offer refused, Become your vassal's war, then a Secede offer
-// accepted with its cost with the liege, a memory that fades: the House breaks away and its alert
-// shows), the war dialog's cost with the target (`They remember it: ...`), the ultimatums of the
-// staged Furious Houses at the human's next turn (the third build, rule 5: blocking decisions,
-// shot on a desktop page and a phone's, accepted: contracts), and in `persons-direct` the civics
-// screen's warning for God King. Any
+// state, the neighbour's under its liege with its state and the reason an offer waits, the
+// courtships under the Houses' lines) and the neighbour's House's trade screen (gold and resources;
+// the human's courtship of it, its offers refused for the courtship, a gift that opens it: the
+// third build, rule 7), the war dialog's cost with the target (`They remember it: ...`), the
+// ultimatums of the staged Furious Houses at the human's next turn (the third build, rule 5:
+// blocking decisions, shot on a desktop page and a phone's, accepted: contracts), and in
+// `persons-direct` (the human's courtship open 10 turns) the House's trade screen again (a Secede
+// offer refused below its price, Become your vassal's war, then a Secede offer accepted with its
+// cost with the liege, a memory that fades: the House breaks away and its alert shows) and the
+// civics screen's warning for God King. Any
 // console error or page error fails it. (The second build, docs/PERSONS.md: a House's city is its
 // own player's, so it has no Governance section on the liege's city screen; the stage's Houses
 // and armies are named by role; the states are the attitude scale.)
@@ -21,10 +24,11 @@
 // With `--shots DIR` it also saves the screenshots the owner reviews (CLAUDE.md, "Show UI changes
 // in a screenshot": crops at deviceScaleFactor 2, the screens at a 390 px wide page): the map's
 // plates and two of their marks' tooltips, the Governance sections, the Armies screen, the alerts,
-// the diplomacy list (on a desktop page and a phone's) and its Houses, the
-// House's trade screen refused, with Become your vassal and accepted, the liege's attitude tooltip
-// that then names the House bought, the civics warning and the war declaration's dialog (with its
-// cost line).
+// the diplomacy list (on a desktop page and a phone's) and its Houses and courtships, the
+// House's trade screen with the courtship (refused for it, a gift, its offers' turn), the trade
+// screen refused, with Become your vassal and accepted, the liege's attitude tooltip that then
+// names the House bought, the civics warning and the war declaration's dialog (with its cost
+// line).
 //
 //   node tools/web-persons-screens-smoke.mjs [--bin PATH] [--assets DIR] [--shots DIR] [--gpu]
 //
@@ -105,12 +109,29 @@ async function setGold(page, n) {
   }, n);
 }
 
-/** A crop of the trade screen's tables, its `Trades through` line and the answer, scrolled into
- *  view (the leader's head above them takes most of a phone's height). */
+/** A crop of the trade screen's tables, the courtship's line, its `Trades through` line and the
+ *  answer, scrolled into view (the leader's head above them takes most of a phone's height). */
 async function tradeCrop(page, name) {
-  await page.evaluate(() => document.querySelector("#modals .modal:last-child .trade-summary")?.scrollIntoView({ block: "end" }));
+  await page.evaluate(() => (document.querySelector("#modals .modal:last-child .trade-summary:not([hidden])") ?? document.querySelector("#modals .modal:last-child .trades-through"))?.scrollIntoView({ block: "end" }));
   await sleep(300);
-  await crop(page, ["#modals .modal:last-child .trade", "#modals .modal:last-child .trades-through", "#modals .modal:last-child .trade-summary"], name);
+  await crop(page, ["#modals .modal:last-child .trade", "#modals .modal:last-child .house-courting", "#modals .modal:last-child .trades-through", "#modals .modal:last-child .trade-summary:not([hidden])"], name);
+}
+
+/** The neighbour's House's trade screen opened from the diplomacy list (open on `page`). */
+async function openHouseTrade(page, nh) {
+  await page.evaluate((id) => document.querySelector(`#modals button[data-trade="${id}"]`).click(), nh.player);
+  await until(() => page.evaluate(() => !!document.querySelector('#modals .trade-item[data-item="TRADE_SECEDE"]')), "the House's trade table", 60000, 200);
+  await sleep(500);
+}
+
+/** The refusal shown beside a House's item in its trade table (`TRADE_SECEDE`), without the
+ *  brackets. */
+async function itemRefusal(page, item) {
+  return page.evaluate((item) => {
+    const row = document.querySelector(`#modals .modal:last-child .trade-item[data-item="${item}"]`);
+    const dim = [...(row?.querySelectorAll(":scope > span.dim") ?? [])].map((e) => e.textContent).find((t) => t.startsWith(" ("));
+    return { disabled: !!row?.querySelector("button")?.disabled, why: dim ? dim.trim().replace(/^\(|\)$/g, "") : null };
+  }, item);
 }
 
 /** The diplomacy screen's Houses (docs/PERSONS.md, "The second build", rules 7, 9 and 13): the
@@ -152,18 +173,77 @@ async function diplomacyHouses(page, url, st) {
   await sleep(300);
   await crop(page, own.map((p) => `#modals tr[data-player="${p}"]`), "diplomacy-your-houses.png");
 
-  // The House's trade screen.
+  // ---- The third build, part 2B (rule 7): the courtships under the Houses' lines (in the open):
+  // the neighbour courts your House `pleased` (open), you court the neighbour's (not open).
+  const courted = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#modals table.diplo tr.house-row")].map((r) => [r.dataset.player, [...r.querySelectorAll(".house-courted")].map((e) => e.textContent)])));
+  const pl2 = st.houses.pleased;
+  check(courted[pl2.player]?.length === 1 && /^Courted by the \S.* \(gifts: \d+ gold, [^)]+\)\. Offers possible from turn \d+\.$/.test(courted[pl2.player][0]), `your courted House's line: ${JSON.stringify(courted[pl2.player])}`);
+  check(courted[nh.player]?.length === 1 && /^Courted by the \S.* \(gifts: \d+ gold\)\. Not open: \d+ of \d+\.$/.test(courted[nh.player][0]), `the neighbour's House's line, your courtship: ${JSON.stringify(courted[nh.player])}`);
+  check(/Court .+ first: gifts worth \d+ \(you have given \d+\)/.test(nline?.text ?? ""), `the neighbour's House's line says why an offer waits: ${nline?.text}`);
+  await page.evaluate((id) => document.querySelector(`#modals tr[data-player="${id}"]`)?.scrollIntoView({ block: "start" }), pl2.player);
+  await sleep(300);
+  await crop(page, [`#modals tr[data-player="${pl2.player}"]`], "diplomacy-courted.png");
+  await page.evaluate((id) => document.querySelector(`#modals tr[data-player="${id}"]`)?.scrollIntoView({ block: "start" }), nh.player);
+  await sleep(300);
+  await crop(page, [`#modals tr[data-player="${nh.player}"]`], "diplomacy-courting.png");
+
+  // The House's trade screen: its offers refused for the courtship, your courtship's line.
+  const t = await query(url, { q: "trade", with: nh.player });
+  const c0 = t.house?.courting;
+  check(c0 && c0.opened === null && c0.value > 0 && c0.value < c0.requirement, `your courtship of it: ${JSON.stringify(c0)}`);
+  await openHouseTrade(page, nh);
+  const items = await page.evaluate(() => [...document.querySelectorAll("#modals .trade-side")].map((s) => [...s.querySelectorAll(".trade-item")].map((e) => e.dataset.item)));
+  // A House takes gold and resources (no gold per turn: the owner's decision, 2026-11-18).
+  check(items[1]?.join(",") === "TRADE_SECEDE,TRADE_HOUSE_VASSAL" && items[0]?.includes("TRADE_GOLD") && items[0].every((x) => x === "TRADE_GOLD" || x === "TRADE_RESOURCES"), `the House's trade table: ${JSON.stringify(items)}`);
+  const through = await page.evaluate(() => document.querySelector("#modals .trades-through")?.textContent ?? "");
+  check(/^Trades through the \S.*\./.test(through), `what is its liege's: ${through}`);
+  const courting = await page.evaluate(() => document.querySelector("#modals .modal:last-child .house-courting")?.textContent ?? "");
+  check(courting === `Courting ${nh.label}: ${c0.value} of ${c0.requirement} given.`, `your courtship's line: ${courting}`);
+  const r0 = await itemRefusal(page, "TRADE_SECEDE");
+  check(r0.disabled && r0.why === `Court ${nh.label} first: gifts worth ${c0.requirement} (you have given ${c0.value}).`, `Secede refused for the courtship: ${JSON.stringify(r0)}`);
+  await tradeCrop(page, "trade-house-courtship-refused.png");
+  // A gift of the gold it lacks: accepted, and it opens the courtship (offers 10 turns on).
+  const need = c0.requirement - c0.value;
+  await page.evaluate(() => document.querySelector('#modals .trade-item[data-item="TRADE_GOLD"] button').click());
+  await setGold(page, need);
+  const gift = await tradeAnswer(page, "accepted");
+  check(gift.includes(`Gifts now: ${c0.value} of ${c0.requirement}.`) && gift.includes(`Value of this gift: ${need}.`) && new RegExp(`Effect: the courtship opens\\. Offers possible from turn ${c0.turn + c0.turns}\\.`).test(gift), `the gift: ${gift}`);
+  await tradeCrop(page, "trade-house-gift.png");
+  await page.evaluate(() => [...document.querySelectorAll("#modals .modal:last-child .modal-buttons button")].find((b) => b.textContent === "Propose").click());
+  await until(() => page.evaluate(() => !!document.querySelector('#modals .modal:last-child [data-answer="accepted"]')), "the gift accepted", 30000, 100);
+  await until(() => page.evaluate((v) => (document.querySelector("#modals .modal:last-child .house-courting")?.textContent ?? "").includes(`: ${v} of `), c0.requirement), "the courtship's line after the gift", 30000, 100);
+  const r1 = await itemRefusal(page, "TRADE_SECEDE");
+  check(r1.disabled && r1.why === `Offers possible from turn ${c0.turn + c0.turns}.`, `Secede after the gift: ${JSON.stringify(r1)}`);
+  const t1 = await query(url, { q: "trade", with: nh.player });
+  check(t1.house?.courting?.opened === c0.turn && t1.house.courting.offers_from === c0.turn + c0.turns, `the courtship opened: ${JSON.stringify(t1.house?.courting)}`);
+  await tradeCrop(page, "trade-house-offers-from.png");
+  // The whole trade screen on a phone.
+  if (SHOTS) {
+    await page.evaluate(() => document.querySelector("#modals .modal:last-child .trade")?.scrollIntoView({ block: "start" }));
+    await sleep(300);
+    await crop(page, ["#modals .modal:last-child .modal-body"], "phone-trade-house.png", { maxH: 1600 });
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  check(overflow <= 0, `the House's trade screen: no horizontal overflow (${overflow})`);
+}
+
+/** In `persons-direct` (the human's courtship of the neighbour's House open 10 turns): the House's
+ *  trade screen offers Secede and Become your vassal at its price, a Secede offer below its price
+ *  refused (the rules' reason, proposed and refused) and one at its price accepted (the preview,
+ *  the war it means, then proposed: the House breaks away and the human is told), and its liege
+ *  remembers the House bought. */
+async function acceptedOffer(page, url, st) {
+  const nh = st.houses.neighbour;
+  const liege = st.neighbour.player;
+  await page.evaluate(() => void window.ffh.openScreen("diplomacy"));
+  await until(() => page.evaluate(() => document.querySelectorAll("#modals table.diplo tr.house-row").length > 0), "the Houses in the diplomacy list", 60000, 200);
+  await sleep(500);
+  // The House's trade screen: the courtship allows an offer.
   const t = await query(url, { q: "trade", with: nh.player });
   const price = t.house?.price;
   check(Number.isInteger(price) && price > 1, `the House's price: ${price}`);
-  await page.evaluate((id) => document.querySelector(`#modals button[data-trade="${id}"]`).click(), nh.player);
-  await until(() => page.evaluate(() => !!document.querySelector('#modals .trade-item[data-item="TRADE_SECEDE"]')), "the House's trade table", 60000, 200);
-  await sleep(500);
-  const items = await page.evaluate(() => [...document.querySelectorAll("#modals .trade-side")].map((s) => [...s.querySelectorAll(".trade-item")].map((e) => e.dataset.item)));
-  // A House takes gold only (the owner's decision, 2026-11-18): no gold per turn on offer.
-  check(items[1]?.join(",") === "TRADE_SECEDE,TRADE_HOUSE_VASSAL" && items[0]?.length > 0 && items[0].every((x) => x === "TRADE_GOLD"), `the House's trade table: ${JSON.stringify(items)}`);
-  const through = await page.evaluate(() => document.querySelector("#modals .trades-through")?.textContent ?? "");
-  check(/^Trades through the \S.*\./.test(through), `what is its liege's: ${through}`);
+  check(t.house?.courting?.opened !== null && t.they_give?.[0]?.refusal === null, `the courtship allows an offer: ${JSON.stringify(t.house?.courting)}`);
+  await openHouseTrade(page, nh);
   // Secede for 1 gold: refused, the rules' reason (its price).
   await page.evaluate(() => {
     document.querySelector('#modals .trade-item[data-item="TRADE_SECEDE"] button').click();
@@ -592,6 +672,9 @@ async function main() {
     try {
       await research(server.url);
       const phone = await open(browser, server.url, PHONE);
+      await clear(phone);
+      // The third build, part 2B: an offer the courtship allows (rule 7), accepted.
+      await acceptedOffer(phone, server.url, sd);
       await clear(phone);
       await phone.evaluate(() => void window.ffh.openScreen("civics"));
       await until(() => phone.evaluate(() => !!document.querySelector("#modals button.civic")), "the civics screen", 60000, 200);

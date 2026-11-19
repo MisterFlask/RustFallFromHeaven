@@ -27,6 +27,23 @@ fn load(name: &str) -> (common::TempDir, StagedPersons, ffh_play::Session) {
     (dir, st, s)
 }
 
+/// The human `h`'s courtship of House `hh` opened (a gift of the gold it lacks, the rules' way) and
+/// 10 turns old (its opening turn set back by hand: no call makes turns pass): its offers are
+/// possible (docs/PERSONS.md, "The third build", rule 7).
+fn court(s: &mut ffh_play::Session, h: ffh_core::ids::PlayerId, hh: ffh_core::ids::HouseId) {
+    let need = s.g.courtship_requirement() - s.g.house_courtship_value(hh, h);
+    if need > 0 {
+        s.g.players[h].gold += need;
+        let hp = s.g.houses[hh].player;
+        assert!(s.g.player_offer_house(h, hp, &[ffh_core::utils::set_trade_item(TradeableItem::TRADE_GOLD, need)], &[]), "a gift");
+    }
+    let turns = s.g.d.defines.person_courtship_turns;
+    for c in s.g.houses[hh].courtships.iter_mut().filter(|c| c.giver == h) {
+        c.opened -= turns;
+    }
+    assert_eq!(s.g.house_courtship_refusal(hh, h), None);
+}
+
 fn q(s: &ffh_play::Session, text: &str) -> Json {
     s.query_json(&Json::parse(text).unwrap()).unwrap_or_else(|e| panic!("{text}: {e:?}"))
 }
@@ -147,9 +164,11 @@ fn become_your_vassal_names_the_war_and_an_offer_its_cost() {
     assert!(grudge < amount("grudge"), "{grudge}");
     let memories = ["bought our House", "declared war on us"];
     let modifier = |s: &ffh_play::Session| ffh_ai::diplomacy::attitude_parts(&s.g, st.neighbour, st.human).iter().filter(|x| memories.contains(&x.0)).map(|x| x.1).sum::<i32>();
-    let before = modifier(&s);
 
-    // Proposed at its price, accepted: the war is the one the table named.
+    // Proposed at its price, accepted: the war is the one the table named. (The human's courtship
+    // of it opened by a gift and its 10 turns set by hand: the third build, rule 7.)
+    court(&mut s, st.human, nh.id);
+    let before = modifier(&s);
     let price = s.g.house_bribe_price(nh.id).expect("it takes offers");
     assert!(s.g.players[st.human].gold >= price, "the stage pays its price");
     let (before_h, before_n) = (at_war(&s.g, ht), at_war(&s.g, nt));
@@ -170,7 +189,8 @@ fn become_your_vassal_names_the_war_and_an_offer_its_cost() {
 }
 
 /// The diplomacy list's line of a House not the human's: its state toward its liege, its price to
-/// secede when it would take the human's offer, else nothing more (its state says why).
+/// secede when it would take the human's offer, else the reason it would not when that is not its
+/// state (the courtship's: the third build, rule 7), and every courtship of it (in the open).
 #[test]
 fn a_rival_houses_line_states_its_state_and_price() {
     let (_dir, st, mut s) = load("persons-diplo-line");
@@ -179,8 +199,22 @@ fn a_rival_houses_line_states_its_state_and_price() {
     let r = row(&s);
     let o = r.get("house_offer").expect("a rival's House states its offer");
     assert_eq!(o.get("state").and_then(Json::as_str), Some(s.g.house_state(nh.id).name()));
+    // The stage's gifts do not open the human's courtship: the reason, no price yet.
+    let why = s.g.house_courtship_refusal(nh.id, st.human).expect("not open");
+    assert!(why.starts_with(&format!("Court {} first: gifts worth ", nh.label)), "{why}");
+    assert_eq!(o.get("refusal").and_then(Json::as_str), Some(why.as_str()));
+    assert!(o.get("price").unwrap().is_null(), "{o}");
+    let courted = strs(r.get("house").unwrap(), "courted");
+    let civ = s.g.player_get_civilization_short_description(st.human);
+    assert_eq!(courted.len(), 1, "{courted:?}");
+    assert!(courted.iter().all(|l| l.starts_with(&format!("Courted by the {civ} (gifts: ")) && l.contains(". Not open: ")), "{courted:?}");
+    // Courted 10 turns: its price, no reason.
+    court(&mut s, st.human, nh.id);
+    let r = row(&s);
+    let o = r.get("house_offer").unwrap();
     assert_eq!(o.get("price").and_then(Json::as_i64), s.g.house_bribe_price(nh.id).map(i64::from));
     assert!(o.get("refusal").unwrap().is_null(), "{o}");
+    assert!(strs(r.get("house").unwrap(), "courted").iter().all(|l| l.contains(". Offers possible from turn ")));
     // Pleased with its liege: no price, and no other reason than its state.
     s.g.houses[nh.id].standing.mods.push(ffh_core::persons::LoyaltyMod { cause: ffh_core::persons::LoyaltyCause::DemandMet, amount: 8, until: None });
     let r = row(&s);

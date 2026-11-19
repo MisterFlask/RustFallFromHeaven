@@ -1327,9 +1327,11 @@ screen shows each as a reason of the attitude): `different alignment` (-2 a step
 alignment` +1; `same state religion` +2 or `different state religion` -1; `war between us` -1
 (the team's war counter; nothing counts it up now); the remembered wrongs (the owner's decision,
 2026-11-18; docs/PERSONS.md rule 15): `declared war on us`, `took our cities` and `bought our
-House`, each `count x` the leader's `memory_attitude_percent / 100` halved (2 a step here, 4 on
-FfH's scale; rounded half away from zero), capped at -3 (a declared war -2, two -3; a city taken
--1, two -2, four -3; a House bought -2), fading as the rules decay the memories (1 in 50 a turn); `open borders` +1; `the
+House`, and `courted our House` (the third build, rule 7, 2026-11-19: a rival's courtship of one
+of our Houses opened), each `count x` the leader's `memory_attitude_percent / 100` halved (2 a
+step here, 4 on FfH's scale; rounded half away from zero), capped at -3 (a declared war -2, two
+-3; a city taken -1, two -2, four -3; a House bought -2; a House courted -1, two -2, three -3),
+fading as the rules decay the memories (1 in 50 a turn); `open borders` +1; `the
 Trust spell` +2; `attitude modifier` (the rules' `ai_attitude_extra`, halved); `alignment
 leaning`; `cultural hostility` / `cultural friendship`; `gifts` and `demands paid`; and in the
 attitude, `at war` -2 while the war lasts. FFH2's other memories are recorded by the rules but
@@ -2036,7 +2038,16 @@ Persons of Note.)
   on -- else **Secede** when it is at most a third; the cheapest House first, one offer a turn,
   the same House again only ten turns after our last offer to it (the House's noted offers,
   `Offered N gold by the X`). Through `player_offer_house`, the deal path the human uses. Asked,
-  an AI House answers by the price alone (`diplomacy::judge_offer`).
+  an AI House answers by the price alone (`diplomacy::judge_offer`), and accepts any gift.
+- **Courtship** (`choose_courtship`; the third build, rule 7 and 11, 2026-11-19): an offer waits
+  for a courtship open 10 turns, so the AI courts first, with gold, the House it means to buy:
+  the Houses `choose_offer` takes (at war with their liege, Cautious or worse, not offered
+  lately), where the gold the courtship lacks and the price together fit the offer's budget (half
+  the treasury for Become your vassal, a third for Secede); one courtship at a time (a House our
+  gifts already count toward is kept while it is still one of these, else the cheapest by gift and
+  price together); the gift is what the courtship lacks (it opens at once), nothing while it
+  waits its 10 turns, a top-up if it closes (gold ages 20 turns, the requirement follows the world
+  unit); then `choose_offer` as above. Unmeasured: a rules change.
 - **A House's own turn** (`persons::is_house`). A House cannot declare war or make peace (its
   liege does), so its turn skips the diplomacy (`diplomacy::manage`: peace, vassalage, trades,
   war planning), the offers to humans, the loans asked of others, the field army targets and the
@@ -2059,7 +2070,10 @@ Persons of Note.)
   valuable city (the most populous first) that the stack can hold, one not held now where its army units, with ours already there, would outnumber
   the House's land combat units (rule 7, `city_hold`), within 8 turns; a stack standing in such a
   city stays when the city is held only with it. A stack that is no army counts for nothing and
-  does not go. (A Furious commander's haven went with the commanders, the third build.)
+  does not go. (A Furious commander's haven went with the commanders, the third build.) Since the
+  third build (rule 11, 2026-11-19), the same march holds a House of ours that a rival courts (a
+  courtship open, or gifts that count toward one) while it is Cautious or worse
+  (`courted_to_hold`): it would take the rival's offer once the courtship allows.
 - A war a House of ours requests adds a tenth to that civilization's score in the war planning
   (`diplomacy::manage`, `war_demanded`), never a war of its own. It never frees a House.
 

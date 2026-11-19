@@ -282,15 +282,10 @@ fn since_text(hv: &HouseView) -> String {
     }
 }
 
-/// `12 gold, 8 research`.
-fn gold_research(gold: i32, research: i32) -> String {
-    format!("{gold} gold, {research} research")
-}
-
-/// A House's tribute (rule 4) and its selector: `pct` (the rate set), `now` (the rate in force),
-/// `turns` (until the rate set is in force, 0 when it is); `line` (`Tribute 30%: 12 gold, 8
-/// research last turn.`, `Tribute 30%. Not paid yet.`; while the rate in force moves: `Tribute
-/// 30%, now 10%: reaches 30% in 10 turns. Paid last turn: 4 gold, 6 research.`); `rates`: each rate
+/// A House's tribute (rule 4; gold only, the third build's rule 10) and its selector: `pct` (the
+/// rate set), `now` (the rate in force), `turns` (until the rate set is in force, 0 when it is);
+/// `line` (`Tribute 30%: 12 gold last turn.`, `Tribute 30%. Not paid yet.`; while the rate in force
+/// moves: `Tribute 30%, now 10%: reaches 30% in 10 turns. Paid last turn: 4 gold.`); `rates`: each rate
 /// it may be set to (0 to 50 by 10), from the rules' read (`TributeView::at`), once in force:
 /// `{pct, current (the rate set), in_force (the rate in force), turns (until it would be in force
 /// were it set now), when (`In force.`, `In force in 15 turns.`), estimate (what it pays at the
@@ -298,7 +293,7 @@ fn gold_research(gold: i32, research: i32) -> String {
 /// loyalty_text, state, changes (its state differs from now)}`.
 fn tribute_json(g: &Game, hv: &HouseView) -> Json {
     let t = &hv.tribute;
-    let paid = gold_research(t.last_gold, t.last_research);
+    let paid = format!("{} gold", t.last_gold);
     let line = if t.pct == t.now {
         if t.last_turn < 0 {
             format!("Tribute {}%. Not paid yet.", t.pct)
@@ -327,7 +322,7 @@ fn tribute_json(g: &Game, hv: &HouseView) -> Json {
                 "in_force" => r.pct == t.now,
                 "turns" => r.turns,
                 "when" => if r.turns == 0 { "In force.".to_string() } else { format!("In force in {}.", turns(r.turns)) },
-                "estimate" => format!("Pays {}.", gold_research(r.gold, r.research)),
+                "estimate" => format!("Pays {} gold.", r.gold),
                 "part" => r.part,
                 "part_text" => format!("Tribute: {}", signed(r.part)),
                 "loyalty" => r.loyalty,
@@ -382,8 +377,10 @@ fn levy_status(reason: Option<&str>, loyalty: i32) -> Json {
 /// its leader (portrait, name, title), its attitude and, Furious, the outcome of its ultimatum
 /// (rule 5), its contract (rule 6: `Contract until turn 160: no tribute above 10%.`), its split
 /// line (rule 4: `Holds 7 cities: 5% a turn to split.`), its request, its loyalty parts, its
-/// tribute and the selector, its levy, its cities, its price to secede, Free; and opened, its
-/// record, its leader's ambition and backstory.
+/// tribute and the selector, its levy, its cities, its price to secede, the rivals' courtships of
+/// it (the third build, rule 7: `courtships`, a line each: `Courted by the Bannor (gifts: 120 gold,
+/// Wine). Offers possible from turn 140.`), Free; and opened, its record, its leader's ambition and
+/// backstory.
 fn house_json(v: &Viewer, hv: &HouseView) -> Json {
     let g = v.g;
     let (parts, total) = parts_json(&hv.parts, hv.loyalty);
@@ -423,6 +420,7 @@ fn house_json(v: &Viewer, hv: &HouseView) -> Json {
         "levy" => levy_status(hv.levy.reason.as_deref(), hv.loyalty),
         "price" => price,
         "price_refusal" => price_refusal,
+        "courtships" => Json::Arr(hv.courtships.iter().map(|c| Json::from(core(g, &c.line))).collect()),
         "free" => crate::jobj! { "ok" => hv.free.is_ok(), "refusal" => hv.free.err(), "confirm" => format!("Free {}? It is no longer your vassal, at peace with you. This cannot be undone.", hv.label) },
         "parts" => parts,
         "total" => total,

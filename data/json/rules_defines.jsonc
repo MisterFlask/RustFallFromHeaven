@@ -127,6 +127,10 @@
   "PERSON_HOUSE_SPLIT_PERCENT": 5,
   // the turns an accepted ultimatum's contract binds the liege and floors the House at Annoyed
   "PERSON_ULTIMATUM_TURNS": 20,
+  // ---- Courtship (docs/PERSONS.md, "The third build", rule 7) ----
+  // the turns a civilization's courtship of a House is open before the House takes its offer
+  //      (Secede, Become your vassal)
+  "PERSON_COURTSHIP_TURNS": 10,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
   //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
   //      engage_row_order in units.jsonc; plot

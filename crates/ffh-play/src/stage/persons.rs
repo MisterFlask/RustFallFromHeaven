@@ -16,7 +16,11 @@
 //! build's part 2A ([`stage_ultimatums`]) sets by hand what it lists in `hand_set`: the last
 //! refusals that leave two Houses Furious with their ultimatums due at the human's next turn (the
 //! rules issue one at once), and the demand of the ultimatum the capitulated House's contract came
-//! from (the rules' own acceptance carries it out).
+//! from (the rules' own acceptance carries it out). The courtships (the third build, rule 7:
+//! [`stage_courtships`]) are the rules' gifts; set by hand there: the gold given (added to the
+//! giver's treasury first), a resource's trade made by force when no trade network joins the two,
+//! and in `persons-direct` the human's courtship opened 10 turns earlier (each listed in
+//! `hand_set`).
 
 use std::path::{Path, PathBuf};
 
@@ -354,6 +358,70 @@ fn free_civ(g: &Game) -> Option<(CivilizationType, LeaderHeadType)> {
     })
 }
 
+/// The third build's part 2B (docs/PERSONS.md, rule 7): the courtships of the scene. The neighbour
+/// `ai` courts the human's House `pleased` with a resource and gold, an open courtship (the human
+/// is told; it remembers nothing, a human); the human has given the neighbour's House `neighbour`
+/// two thirds of a courtship's requirement in gold: not open, so the trade screen says why an
+/// offer waits. In `persons-direct` the human's courtship of it is open, and opened
+/// `PERSON_COURTSHIP_TURNS` turns ago (set by hand: no call makes the turns pass), so an offer is
+/// accepted. Each gift goes the rules' way (`player_offer_house`: the House's AI accepts it); the
+/// resource's trade by force when no trade network joins the two (set by hand, listed).
+fn stage_courtships(g: &mut Game, h: PlayerId, ai: PlayerId, pleased: HouseId, neighbour: HouseId, direct: bool, hand_set: &mut Vec<String>) -> Result<(), String> {
+    use ffh_core::structs::TradeData;
+    let d = g.d;
+    let trade = |item_type: TradeableItem, data: i32| TradeData { item_type, data, offering: false, hidden: false };
+    let gift = |g: &mut Game, from: PlayerId, hp: PlayerId, gold: i32, hand_set: &mut Vec<String>| -> Result<(), String> {
+        if gold <= 0 {
+            return Ok(());
+        }
+        g.players[from].gold += gold;
+        hand_set.push(format!("{gold} gold added to player {}'s treasury for a gift", from.0));
+        if g.player_offer_house(from, hp, &[trade(TradeableItem::TRADE_GOLD, gold)], &[]) {
+            Ok(())
+        } else {
+            Err(format!("a gift of {gold} gold from player {} refused", from.0))
+        }
+    };
+    // The neighbour courts House `pleased`: a resource, then the gold the courtship lacks.
+    let hp = g.houses[pleased].player;
+    let rules = d.bonuses.keys().find(|&b| g.player_can_trade_item(ai, hp, &trade(TradeableItem::TRADE_RESOURCES, b.idx() as i32), false));
+    match rules {
+        Some(b) => {
+            if !g.player_offer_house(ai, hp, &[trade(TradeableItem::TRADE_RESOURCES, b.idx() as i32)], &[]) {
+                return Err("the neighbour's resource refused".into());
+            }
+        }
+        None => {
+            let b = d.bonuses.keys().find(|&b| g.player_get_num_available_bonuses(ai, b) > 0).unwrap_or_else(|| d.t::<BonusType>("BONUS_WINE"));
+            g.implement_deal(ai, hp, &[trade(TradeableItem::TRADE_RESOURCES, b.idx() as i32)], &[], true);
+            hand_set.push(format!("the neighbour's {} given to House pleased by force (no trade network)", d.text.name(&d.bonuses[b].base.description)));
+        }
+    }
+    let need = g.courtship_requirement() - g.house_courtship_value(pleased, ai);
+    gift(g, ai, hp, need, hand_set)?;
+    if g.house_courtship_opened(pleased, ai).is_none() {
+        return Err("the neighbour's courtship did not open".into());
+    }
+    // The human's gifts to the neighbour's House: two thirds of the requirement.
+    let nhp = g.houses[neighbour].player;
+    let part = (g.courtship_requirement() * 2 / 3).max(1);
+    gift(g, h, nhp, part, hand_set)?;
+    if direct {
+        let rest = g.courtship_requirement() - g.house_courtship_value(neighbour, h);
+        gift(g, h, nhp, rest, hand_set)?;
+        let turns = d.defines.person_courtship_turns;
+        let house = &mut g.houses[neighbour];
+        for c in house.courtships.iter_mut().filter(|c| c.giver == h) {
+            c.opened -= turns;
+        }
+        for x in house.gifts.iter_mut().filter(|x| x.giver == h) {
+            x.turn -= turns;
+        }
+        hand_set.push(format!("the human's courtship of the neighbour's House opened {turns} turns earlier"));
+    }
+    Ok(())
+}
+
 fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, String> {
     let d = ffh_data::global();
     let stage: &'static str = if direct { "persons-direct" } else { "persons" };
@@ -568,6 +636,8 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
 
     // The third build, part 2A: the ultimatums due, a contract, a House one grant from a split.
     let house_l = stage_ultimatums(&mut s.g, h, house_c, house_v, taken, &mut hand_set)?;
+    // The third build's part 2B: the courtships (rule 7).
+    stage_courtships(&mut s.g, h, ai, house_b, house_n, direct, &mut hand_set)?;
 
     // Checks: what the scene promises.
     {
@@ -592,8 +662,18 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         if seat_hold.is_none_or(|hold| hold.held() || hold.liege == 0) {
             return Err(format!("House C's seat is not contested and lost: {seat_hold:?}"));
         }
-        if g.house_bribe_price(house_n).is_none() || g.house_bribe_refusal(house_n, h, ffh_core::persons::BribeKind::Secede).is_some() {
-            return Err(format!("the neighbour's House takes no offer: {:?}", g.house_bribe_refusal(house_n, h, ffh_core::persons::BribeKind::Secede)));
+        // Its terms met; the human's courtship of it not open (`persons`: the trade screen says why
+        // an offer waits), or open 10 turns (`persons-direct`: an offer is accepted).
+        let secede = ffh_core::persons::BribeKind::Secede;
+        if g.house_bribe_price(house_n).is_none() || g.house_bribe_terms_refusal(house_n, h, secede).is_some() {
+            return Err(format!("the neighbour's House takes no offer: {:?}", g.house_bribe_terms_refusal(house_n, h, secede)));
+        }
+        let courtship = g.house_courtship_refusal(house_n, h);
+        if direct != courtship.is_none() || g.house_courtship_value(house_n, h) <= 0 {
+            return Err(format!("the human's courtship of the neighbour's House: {courtship:?}"));
+        }
+        if g.house_courtship_opened(house_b, ai).is_none() || g.house_gift_resources(house_b, ai).is_empty() {
+            return Err("the neighbour's courtship of House pleased is not open with a resource".into());
         }
         if g.house_bribe_price(house_n).is_some_and(|p| g.players[h].gold < p) {
             return Err("the human cannot pay the neighbour's House's price".into());

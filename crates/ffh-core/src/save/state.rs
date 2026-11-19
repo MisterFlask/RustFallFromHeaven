@@ -61,7 +61,7 @@ persist_newtype!(
 
 // ---- Houses (docs/PERSONS.md) ----
 
-use crate::persons::{Deed, Demand, DemandKind, House, HouseOrigin, LoyaltyCause, LoyaltyMod, LoyaltyState, Standing};
+use crate::persons::{Courtship, Deed, Demand, DemandKind, Gift, House, HouseOrigin, LoyaltyCause, LoyaltyMod, LoyaltyState, Standing};
 persist_enum!(HouseOrigin { 0 => Founded, 1 => Capitulated, 2 => Vassal, 3 => Split });
 persist_enum!(LoyaltyState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
 persist_enum!(LoyaltyCause {
@@ -73,11 +73,15 @@ persist_struct!(Standing { mods, state });
 persist_enum!(DemandKind { 0 => GrantCity(plot), 1 => TakeCity(plot), 2 => War(player), 3 => AdoptReligion, 4 => SpreadReligion(plot) });
 persist_struct!(Demand { kind, issued, deadline });
 persist_struct!(Deed { turn, text });
+persist_struct!(Gift { giver, gold, turn });
+persist_struct!(Courtship { giver, opened });
 persist_struct!(House {
     id, owner, player, origin, name, standing, demand, demand_rest_until, deeds, founded_turn, color, tribute, tribute_now,
-    tribute_since, last_gold, last_research, last_turn,
+    tribute_since, last_gold, last_turn,
     // the third build, part 2A
     refused, contract, ultimatums,
+    // the third build, rule 7
+    gifts, courtships,
 });
 // ---- the third build, part 2A: ultimatums and contracts (docs/PERSONS.md, rules 5 and 6) ----
 use crate::persons::{Contract, UltimatumKind};

@@ -15,7 +15,9 @@
 //! - Tribute: [`Game::house_tribute_at`], [`Game::house_loyalty_at_tribute`],
 //!   [`Game::house_tribute_turns`], [`Game::house_tribute_in_force_after`] (`vassals.rs`).
 //! - Levy: [`Game::house_levy_refusal`], [`Game::city_levy_refusal`], [`Game::player_levy_cities`].
-//! - Side deals: [`Game::house_bribe_price`], [`Game::house_bribe_refusal`] (`bribes.rs`).
+//! - Side deals: [`Game::house_bribe_price`], [`Game::house_bribe_refusal`] (`bribes.rs`);
+//!   courtship: [`Game::house_courtships`], [`Game::house_courting_line`],
+//!   [`Game::house_courtship_refusal`] (`courtship.rs`).
 //! - Previews: [`Game::grant_candidates`], [`Game::persons_preview`] (`preview.rs`).
 
 use ffh_data::*;
@@ -51,9 +53,8 @@ pub struct TributeView {
     pub now: i32,
     /// The turns until the rate set is in force (0: it is).
     pub turns: i32,
-    /// What it gave at its last payment (the turn: -1, none yet).
+    /// What it gave at its last payment (gold only; the turn: -1, none yet).
     pub last_gold: i32,
-    pub last_research: i32,
     pub last_turn: i32,
     /// Each tribute it may be set to (0 to 50 by 10).
     pub at: Vec<TributeRate>,
@@ -65,9 +66,8 @@ pub struct TributeView {
 pub struct TributeRate {
     /// The rate, percent.
     pub pct: i32,
-    /// The gold and research it pays at the House's commerce now.
+    /// The gold it pays at the House's commerce now.
     pub gold: i32,
-    pub research: i32,
     /// The standing part `Tribute N%` at it ([`tribute_part`]).
     pub part: i32,
     /// The turns until it would be in force were it set now ([`Game::house_tribute_turns`]; 0: it
@@ -141,6 +141,8 @@ pub struct HouseView {
     pub free: Result<(), &'static str>,
     /// Its price to secede (`None`: it refuses any offer: Pleased or Friendly).
     pub bribe_price: Option<i32>,
+    /// Every courtship of it, open or not yet (the third build, rule 7), in player order.
+    pub courtships: Vec<CourtshipView>,
 }
 
 /// A player's court.
@@ -228,10 +230,10 @@ impl Game {
         let at = (0..=TRIBUTE_MAX)
             .step_by(TRIBUTE_STEP as usize)
             .map(|pct| {
-                let (gold, research) = self.house_tribute_at(h, pct);
+                let gold = self.house_tribute_at(h, pct);
                 let loyalty = self.house_loyalty_at_tribute(h, pct);
                 let barred = pct != house.tribute && self.player_check_house_tribute(house.owner, h, pct).is_err();
-                TributeRate { pct, gold, research, part: tribute_part(pct), turns: self.house_tribute_turns(h, pct), loyalty, state: LoyaltyState::of(loyalty), barred }
+                TributeRate { pct, gold, part: tribute_part(pct), turns: self.house_tribute_turns(h, pct), loyalty, state: LoyaltyState::of(loyalty), barred }
             })
             .collect();
         TributeView {
@@ -239,7 +241,6 @@ impl Game {
             now: house.tribute_now,
             turns: self.house_tribute_turns(h, house.tribute),
             last_gold: house.last_gold,
-            last_research: house.last_research,
             last_turn: house.last_turn,
             at,
         }
@@ -282,6 +283,7 @@ impl Game {
             levy: LevyStatus { takes: refusal.is_none(), reason: refusal },
             free: self.player_check_free_house(house.owner, h),
             bribe_price: self.house_bribe_price(h),
+            courtships: self.house_courtships(h),
         })
     }
 

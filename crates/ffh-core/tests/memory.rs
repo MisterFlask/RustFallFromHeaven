@@ -128,6 +128,15 @@ fn a_declared_war_is_remembered_once_by_each_player_declared_on() {
 fn a_bought_house_is_remembered_by_its_liege_only() {
     let World { mut g, h, .. } = world();
     let hp = g.houses[h].player;
+    // Courted first (docs/PERSONS.md, "The third build", rule 7): a gift that opens the courtship,
+    // then its 10 turns; the liege remembers the courtship too.
+    let need = g.courtship_requirement();
+    g.players[P2].gold = need;
+    g.implement_deal(P2, hp, &[trade(TradeableItem::TRADE_GOLD, need)], &[], false);
+    assert_eq!(memory(&g, P0, P2, MemoryType::MEMORY_COURTED_HOUSE), 1, "the liege remembers the courtship");
+    assert_eq!(memory(&g, hp, P2, MemoryType::MEMORY_COURTED_HOUSE), 0, "the House, given gifts, does not");
+    let t = g.game_turn();
+    g.set_game_turn(t + g.d.defines.person_courtship_turns);
     let price = g.house_bribe_price(h).expect("Cautious: it takes offers");
     g.players[P2].gold = price;
     g.implement_deal(P2, hp, &[trade(TradeableItem::TRADE_GOLD, price)], &[trade(TradeableItem::TRADE_SECEDE, 0)], false);

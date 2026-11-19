@@ -180,7 +180,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 54: Houses split, ultimatums and contracts replace the countdown (docs/PERSONS.md, "The third
 ///   build", rules 4 to 6): `HouseOrigin::Split`, `House::refused`, `contract`, `ultimatums`;
 ///   `Standing::countdown` gone.
-pub const FORMAT_VERSION: u32 = 54;
+/// - 55: courtship and gold tribute (docs/PERSONS.md, "The third build", rules 7 and 10):
+///   `House::gifts`, `courtships`; no `House::last_research`; `MEMORY_COURTED_HOUSE` lengthens each
+///   `Player::ai_memory_count` row (`MemoryType::NUM` 39).
+pub const FORMAT_VERSION: u32 = 55;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

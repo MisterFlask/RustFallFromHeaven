@@ -12,7 +12,7 @@ mod common;
 use std::sync::Arc;
 
 use ffh_core::ids::*;
-use ffh_core::persons::{GrantTo, LoyaltyState, DEMAND_REFUSED, LEVIED, TRIBUTE_LAG_TURNS};
+use ffh_core::persons::{BribeKind, GrantTo, LoyaltyState, DEMAND_REFUSED, LEVIED, TRIBUTE_LAG_TURNS};
 use ffh_core::structs::TradeData;
 use ffh_data::*;
 use ffh_play::command::{CmdErr, CmdOk, Command, COMMAND_NAMES};
@@ -181,8 +181,8 @@ fn the_court_shows_the_realm() {
         assert_eq!(s(rate, "state"), LoyaltyState::of(loyalty).name());
         assert_eq!(bool_of(rate, "current"), pct == 0);
         assert_eq!(bool_of(rate, "in_force"), pct == 0);
-        let (gold, research) = g.house_tribute_at(ah, pct);
-        assert_eq!(s(rate, "estimate"), format!("Pays {gold} gold, {research} research."));
+        let gold = g.house_tribute_at(ah, pct);
+        assert_eq!(s(rate, "estimate"), format!("Pays {gold} gold."), "gold only (the third build, rule 10)");
     }
     let v = house_card(&r, house_id(&st, "annoyed"));
     assert_eq!(s(&v, "state"), "Annoyed");
@@ -569,7 +569,9 @@ fn freeing_a_house() {
     common::check::check(&ses.g);
 }
 
-/// An offer to the neighbour's House: below its price refused (and not noted: a refused offer
+/// An offer to the neighbour's House: refused before the human's courtship of it has been open 10
+/// turns (the third build, rule 7: the stage's gifts do not open it; a gift that does is accepted,
+/// and its 10 turns are set by hand); then below its price refused (and not noted: a refused offer
 /// leaves no trace), at its price it secedes, at war with its old liege.
 #[test]
 fn an_offer_to_a_house() {
@@ -577,10 +579,23 @@ fn an_offer_to_a_house() {
     let h = ses.human;
     let n = house_id(&st, "neighbour");
     let hp = ses.g.houses[n].player;
-    let price = ses.g.house_bribe_price(n).expect("a price");
-    ses.g.players[h].gold = price + 100;
     let gold = |data: i32| TradeData { item_type: TradeableItem::TRADE_GOLD, data, offering: false, hidden: false };
     let secede = TradeData { item_type: TradeableItem::TRADE_SECEDE, data: 0, offering: false, hidden: false };
+    // Not open yet: the offer is not even in the House's table.
+    assert!(ses.g.house_bribe_refusal(n, h, BribeKind::Secede).is_some_and(|r| r.starts_with("Court ")));
+    let need = ses.g.courtship_requirement() - ses.g.house_courtship_value(n, h);
+    assert!(need > 0);
+    ses.g.players[h].gold += need;
+    let out = ses.execute(&Command::ProposeDeal { to: hp, give: vec![gold(need)], get: vec![] }).unwrap();
+    assert!(matches!(out, CmdOk::Applied { accepted: Some(true), .. }), "a gift: {out:?}");
+    let opened = ses.g.house_courtship_opened(n, h).expect("the gift opens the courtship");
+    assert_eq!(ses.g.house_bribe_refusal(n, h, BribeKind::Secede), Some(format!("Offers possible from turn {}.", opened + ses.g.d.defines.person_courtship_turns)));
+    for c in ses.g.houses[n].courtships.iter_mut() {
+        c.opened -= ses.g.d.defines.person_courtship_turns;
+    }
+    assert_eq!(ses.g.house_bribe_refusal(n, h, BribeKind::Secede), None);
+    let price = ses.g.house_bribe_price(n).expect("a price");
+    ses.g.players[h].gold = price + 100;
     if price > 1 {
         let mods_before = ses.g.houses[n].standing.mods.len();
         let out = ses.execute(&Command::ProposeDeal { to: hp, give: vec![gold(price - 1)], get: vec![secede.clone()] }).unwrap();

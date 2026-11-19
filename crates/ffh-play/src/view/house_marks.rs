@@ -117,6 +117,9 @@ fn part_line(p: &ffh_core::persons::LoyaltyPart) -> String {
 /// ultimatum's stated outcome, else null), `contract` (its contract's line, else null),
 /// `parts` (`["Tribute 20%: -1", ..]`) and `loyalty` (`Loyalty: -2.`); null for a player that is
 /// no House. `liege_name` is the liege's civilization (`Bannor`), as the rules' lines name it.
+/// For every viewer, `courted`: its courtships, open or not yet, a line each (the third build, rule
+/// 7: courtship is in the open: `Courted by the Bannor (gifts: 120 gold, Wine). Offers possible
+/// from turn 140.`).
 pub fn player_house_brief(v: &Viewer, p: PlayerId) -> Json {
     let g = v.g;
     let Some(h) = g.player_house(p) else { return Json::Null };
@@ -129,6 +132,8 @@ pub fn player_house_brief(v: &Viewer, p: PlayerId) -> Json {
         "liege_name" => g.player_get_civilization_short_description(liege),
         "colour" => house.color as i32,
     };
+    // The third build, rule 7.
+    j.set("courted", Json::Arr(g.house_courtships(h).into_iter().map(|c| Json::from(crate::names::resolve_keys(g.d, &c.line).into_owned())).collect()));
     if liege == v.h {
         if let Some(hv) = g.house_view(h) {
             j.set("state", hv.state.name());
