@@ -101,7 +101,7 @@ impl Game {
             if let Some(why) = self.team_vassal_refusal(bt) {
                 return Some(why.to_string());
             }
-            if !self.player_has_persons(buyer) {
+            if !self.player_has_houses(buyer) {
                 return Some("This civilization has no Houses.".into());
             }
         }
@@ -151,7 +151,7 @@ impl Game {
         self.houses[h].standing.mods.push(LoyaltyMod { cause: LoyaltyCause::Offered { gold, by: by.clone() }, amount: 0, until });
         let label = self.house_label(h);
         self.house_msg(h, || format!("The {by} offered {label} {gold} gold to secede."));
-        self.tel_person(liege, "bribe", "offered");
+        self.tel_house(liege, "bribe", "offered");
     }
 
     /// `buyer` proposes to House player `hp` a deal of `give` (from the buyer: gold) for `get`

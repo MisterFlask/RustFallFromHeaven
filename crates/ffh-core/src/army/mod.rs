@@ -66,11 +66,6 @@ pub struct Army {
     pub group: Option<GroupId>,
     /// The size it is to be kept at: its requisition fills it (0 = none: it requisitions nothing).
     pub target_size: i32,
-    /// Its commander (docs/PERSONS.md): the person with it the player named, else the one of
-    /// the highest level (`Game::player_persons_commanders`). Always `None` for a fleet.
-    pub commander: Option<PersonId>,
-    /// The person its owner named commander (`Game::player_set_commander`), while with it.
-    pub commander_named: Option<PersonId>,
     /// Disbanded: it marches to this city, whose garrison its units join on arrival.
     pub disband_to: Option<CityId>,
     /// The game turn it was formed.
@@ -205,7 +200,7 @@ impl Game {
         let name = (1..).map(|n| format!("{} {kind}", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
         let turn = self.game_turn();
         let line = self.tactic_line();
-        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, commander_named: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), tactic: line, tactic_next: line, unsupplied_turns: 0, domain, station: Station::None, carried: false });
+        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, disband_to: None, formed_turn: turn, requisition: Vec::new(), tactic: line, tactic_next: line, unsupplied_turns: 0, domain, station: Station::None, carried: false });
         self.players[p].armies.push(a);
         a
     }
@@ -378,8 +373,6 @@ impl Game {
                 self.armies[a].carried = carried.contains(&a);
             }
         }
-        // This game's persons of note (docs/PERSONS.md): commanders follow the groups.
-        self.player_persons_commanders(p);
     }
 
     /// Land units of `p` that landed from ships (their army was carried at the last sync, and each

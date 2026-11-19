@@ -556,7 +556,7 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         "court_attention" => persons::attention_count(v),
         // Persons of Note (docs/PERSONS.md, "UI", part H): the human's cast in brief (`{id, name,
         // leader}`), for the alerts' portraits.
-        "persons" => house_marks::cast_brief(v),
+        "houses" => house_marks::houses_brief(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

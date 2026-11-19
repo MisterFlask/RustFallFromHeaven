@@ -716,19 +716,6 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
         }
     }
 
-    // A Disloyal commander's army (docs/PERSONS.md): to our most garrisoned city, where its sworn
-    // units stay at the secession (persons.rs).
-    if let Some(q) = crate::persons::disloyal_commander_haven(g, v, grp, u) {
-        crate::trace!(g, p, "stack {:?}: its commander is Disloyal, to {:?}", grp, g.map.xy(q));
-        if q == here {
-            hold(g, grp);
-        } else {
-            move_to(g, grp, q, 0);
-            finish(g, grp);
-        }
-        return;
-    }
-
     merge_here(g, v, grp, here);
     crate::traits::before_army(g, v, grp); // trait-play
     if !alive(g, grp) {

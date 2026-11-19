@@ -1,11 +1,11 @@
-//! Persons of Note in the existing screens (docs/PERSONS.md, "UI", parts C to I): the JSON pieces
-//! the city screen, the Governors and Armies screens, the cities list, the unit panel, the map's
-//! plates and the screens where an act moves loyalty share. Read only, from the rules' read API
+//! Houses in the existing screens (docs/PERSONS.md, "UI", parts C to I): the JSON pieces the city
+//! screen, the Governors and Armies screens, the cities list, the map's plates and the screens
+//! where an act moves a House's loyalty share. Read only, from the rules' read API
 //! (`ffh_core::persons`); the Court screen and the grant list are `view::persons`.
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::persons::{LoyaltyState, Post, PreviewLine};
+use ffh_core::persons::{LoyaltyState, PreviewLine};
 use ffh_data::*;
 
 use crate::json::Json;
@@ -17,7 +17,7 @@ pub fn state_name(s: LoyaltyState) -> &'static str {
     s.name()
 }
 
-/// One preview line as a sentence: `House Arne: Demand refused: -3 (60 turns). Becomes Restless.`
+/// One preview line as a sentence: `House Arne: Request refused: -3 (60 turns). Becomes Annoyed.`
 pub fn preview_sentence(l: &PreviewLine) -> String {
     let mut s = format!("{}: {}", l.subject, l.text);
     if !s.ends_with('.') {
@@ -64,10 +64,10 @@ pub fn house_chip(g: &Game, h: HouseId) -> Json {
 }
 
 /// A city of the human's in the lists and in the view's city entry: its House's chip, or null for
-/// the Crown's. `None` when the human has no Houses (no persons: the field is left out).
+/// the Crown's. `None` when the human can have no Houses (the field is left out).
 pub fn city_house_field(v: &Viewer, c: CityId) -> Option<Json> {
     let g = v.g;
-    if g.cities[c].owner != v.h || !g.player_has_persons(v.h) {
+    if g.cities[c].owner != v.h || !g.player_has_houses(v.h) {
         return None;
     }
     Some(g.city_house(c).map_or(Json::Null, |h| house_chip(g, h)))
@@ -139,108 +139,6 @@ pub fn player_house_brief(v: &Viewer, p: PlayerId) -> Json {
     j
 }
 
-/// A person in brief: `{person, name, title, leader}` (`leader`: the portrait, null for a hero).
-fn person_brief(g: &Game, x: PersonId) -> Json {
-    let p = &g.persons[x];
-    crate::jobj! {
-        "person" => x,
-        "name" => p.name.as_str(),
-        "title" => p.leader.and_then(|l| ffh_core::persons::leader_title(g.d, l)),
-        "leader" => p.leader.map(Json::idx),
-    }
-}
-
-/// An army's commander (part D), in the army's `commander`: `{person, name, title, leader,
-/// unit_type, level, state, turns, outcome, withholds_attack}` (`outcome`: the countdown's stated
-/// outcome, with its turns; `withholds_attack`: the army takes no order to
-/// attack: Annoyed or Furious), or null; and `persons_with` (`[{person, name, unit_type, level}]`: every person with
-/// the army, the commander among them; `[Change]` when more than one).
-pub fn army_fields(v: &Viewer, a: ArmyId, j: &mut Json) {
-    let g = v.g;
-    if !g.player_has_persons(v.h) {
-        return;
-    }
-    let commander = g.armies[a].commander.filter(|&x| g.persons.contains(x)).and_then(|x| g.person_view(x));
-    j.set(
-        "commander",
-        commander.map(|pv| {
-            let mut c = person_brief(g, pv.id);
-            c.set("unit_type", pv.unit_type.map(Json::idx));
-            c.set("level", pv.level);
-            c.set("state", pv.state.name());
-            c.set("turns", pv.countdown_turns);
-            c.set("outcome", pv.outcome);
-            c.set("withholds_attack", pv.state.withholds());
-            c
-        }),
-    );
-    let with: Vec<Json> = g
-        .army_persons_with(a)
-        .into_iter()
-        .filter_map(|x| g.person_view(x))
-        .map(|pv| crate::jobj! { "person" => pv.id, "name" => pv.name, "unit_type" => pv.unit_type.map(Json::idx), "level" => pv.level })
-        .collect();
-    j.set("persons_with", Json::Arr(with));
-}
-
-/// The person a unit is (part F), in the unit's `person`: `{person, name, title, leader, post
-/// (`commander of the 2nd Army`, `head of House Arne`, `no post`), state, turns}`; null for a unit
-/// that is no person.
-pub fn unit_person(v: &Viewer, u: UnitId) -> Json {
-    let g = v.g;
-    let Some(x) = g.unit_person(u) else { return Json::Null };
-    let Some(pv) = g.person_view(x) else { return Json::Null };
-    let post = match pv.post {
-        Post::Commander(a) if g.armies.contains(a) => format!("commander of the {}", g.armies[a].name),
-        Post::Head(h) if g.houses.contains(h) => format!("head of {}", g.house_label(h)),
-        _ => "no post".to_string(),
-    };
-    let mut j = person_brief(g, x);
-    j.set("post", post);
-    j.set("state", pv.state.name());
-    j.set("turns", pv.countdown_turns);
-    j
-}
-
-/// A great person's `Found a House` (part F), in the unit's `found_house`: `{city, name, label,
-/// text, reminders}` (the Crown's grantable city nearest the unit: the grant list opens there, this
-/// unit first; `label` the button's `Found a [KW=KEYWORD_HOUSE]House[\KW]`, `text` the rest of its
-/// line, ` in Vallus. The great person is consumed; a person of note leads the House.`, the
-/// House's reminder in `reminders`: the text names the keyword and does not restate it) or `{city:
-/// null, why}` (no city can be granted now, or no person of note is left); null for a unit that is
-/// no great person, or a human without Houses.
-pub fn unit_found_house(v: &Viewer, u: UnitId) -> Json {
-    let g = v.g;
-    let unit = &g.units[u];
-    if unit.owner != v.h || !g.player_has_persons(v.h) || !g.unit_is_great_person(u) {
-        return Json::Null;
-    }
-    if let Err(why) = g.player_check_grants(v.h) {
-        return crate::jobj! { "city" => Json::Null, "why" => why };
-    }
-    let nearest = g.players[v.h]
-        .cities
-        .iter()
-        .copied()
-        .filter(|&c| g.cities.contains(c) && g.player_check_grant_city(v.h, c).is_ok())
-        .min_by_key(|&c| (g.step_distance(unit.x, unit.y, g.cities[c].x, g.cities[c].y), c));
-    let Some(c) = nearest else { return crate::jobj! { "city" => Json::Null, "why" => "No city of the Crown can be granted." } };
-    match g.player_check_grant(v.h, c, ffh_core::persons::GrantTo::GreatPerson(u)) {
-        Ok(()) => {
-            let d = g.d;
-            let house: Vec<KeywordType> = d.ty::<KeywordType>("KEYWORD_HOUSE").into_iter().collect();
-            crate::jobj! {
-                "city" => c,
-                "name" => city_name(g, c),
-                "label" => "Found a [KW=KEYWORD_HOUSE]House[\\KW]",
-                "text" => format!(" in {}. The great person is consumed; a person of note leads the House.", city_name(g, c)),
-                "reminders" => crate::view::keywords::reminders(d, house),
-            }
-        }
-        Err(why) => crate::jobj! { "city" => Json::Null, "why" => why },
-    }
-}
-
 /// The civics screen's preview of a proposed set (part I), set on `proposed`: `persons` (the
 /// rules' lines) and, when the set brings direct rule while Houses stand, `persons_warning`
 /// (`Adopting God King: 3 Houses break away, taking 9 cities, each at war with you.`),
@@ -252,7 +150,7 @@ pub fn unit_found_house(v: &Viewer, u: UnitId) -> Json {
 pub fn civics_preview(v: &Viewer, set: &[Option<CivicType>], proposed: &mut Json) {
     let g = v.g;
     let d = g.d;
-    if !g.player_has_persons(v.h) {
+    if !g.player_has_houses(v.h) {
         return;
     }
     let adopted: Vec<CivicType> = set.iter().enumerate().filter_map(|(o, &c)| c.filter(|_| g.players[v.h].civics[CivicOptionType::from_usize(o)] != c)).collect();
@@ -302,32 +200,30 @@ fn and_list(items: &[String]) -> String {
 }
 
 /// The preview lines of act `act` of the human (part I), as [`preview_json`]; an empty array
-/// without Houses or persons.
+/// without Houses.
 pub fn act_preview(v: &Viewer, act: &ffh_core::persons::PersonsAct) -> Json {
-    if !v.g.player_has_persons(v.h) || v.g.players[v.h].persons.is_empty() {
+    if !v.g.player_has_houses(v.h) || v.g.players[v.h].houses.is_empty() {
         return Json::Arr(Vec::new());
     }
     preview_json(&v.g.persons_preview(v.h, act))
 }
 
-/// The human's cast in brief, for the alerts' portraits and where a tap on one goes (part H):
-/// `[{id, name, leader, house, army}]` (`house`: the House the person heads, `army`: the name of
-/// the army they command, `3rd Army`, each null for none; an alert about a head is about its
-/// House).
-pub fn cast_brief(v: &Viewer) -> Json {
+/// The human's Houses in brief, for the alerts' portraits and where a tap on one goes (part H):
+/// `[{id, label, leader, leader_name}]` (`leader`: the portrait).
+pub fn houses_brief(v: &Viewer) -> Json {
     let g = v.g;
     Json::Arr(
         g.players[v.h]
-            .persons
+            .houses
             .iter()
-            .filter(|&&x| g.persons.contains(x))
-            .map(|&x| {
+            .filter(|&&h| g.houses.contains(h))
+            .map(|&h| {
+                let leader = g.house_leader(h);
                 crate::jobj! {
-                    "id" => x,
-                    "name" => g.persons[x].name.as_str(),
-                    "leader" => g.persons[x].leader.map(Json::idx),
-                    "house" => g.person_house(x),
-                    "army" => g.person_army(x).map(|a| g.armies[a].name.clone()),
+                    "id" => h,
+                    "label" => g.house_label(h),
+                    "leader" => leader.map(Json::idx),
+                    "leader_name" => leader.map(|l| ffh_core::persons::leader_name(g.d, l)),
                 }
             })
             .collect(),

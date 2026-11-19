@@ -77,15 +77,8 @@ pub struct Game {
     pub deals: Slab<DealId, Deal>,
     /// This game's armies (docs/ARMIES.md). Owner lists: `Player::armies`.
     pub armies: Slab<ArmyId, crate::army::Army>,
-    /// This game's persons of note (docs/PERSONS.md). Owner lists: `Player::persons`.
-    pub persons: Slab<PersonId, crate::persons::Person>,
     /// This game's Houses (docs/PERSONS.md). Owner lists: `Player::houses`.
     pub houses: Slab<HouseId, crate::persons::House>,
-    /// The minor leaders drawn as persons in this game (none is drawn twice; the Sundering's
-    /// leader choice counts them as in play).
-    pub persons_drawn: Vec<LeaderHeadType>,
-    /// Units that were persons and left the cast (a hero is not entered again).
-    pub persons_barred: Vec<UnitId>,
     /// Engagement combat's battle reports, oldest first: those of the current and the previous
     /// turn and the last `ENGAGEMENT_REPORTS_KEPT` (`engagement/report.rs`; add with
     /// `battle_report_add`).
@@ -385,10 +378,7 @@ impl Game {
             plot_groups: Slab::new(),
             deals: Slab::new(),
             armies: Slab::new(),
-            persons: Slab::new(),
             houses: Slab::new(),
-            persons_drawn: Vec::new(),
-            persons_barred: Vec::new(),
             battle_reports: Vec::new(),
             battle_report_next: 0,
             map_rand: Rng::new(0),

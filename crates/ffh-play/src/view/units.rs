@@ -646,10 +646,6 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     j.set("card_detail", unit.card.map(|c| crate::view::cards::card_json(v, c)));
     // The sea (docs/NAVAL.md, section 10): range, wear, in boats (null for a land unit on land).
     j.set("sea", crate::view::sea::unit_panel(v, u));
-    // Persons of Note (docs/PERSONS.md, "UI", part F): the person the unit is and a great person.s
-    // Found a House.
-    j.set("person", crate::view::house_marks::unit_person(v, u));
-    j.set("found_house", crate::view::house_marks::unit_found_house(v, u));
     j
 }
 
@@ -743,13 +739,8 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
         }
         _ => Json::Null,
     };
-    // Persons of Note (docs/PERSONS.md, "UI", part D): an attack the selection's commander
-    // withholds (Restless or Disloyal), with the rules' reason (`Commander Hrolf is Restless. The
-    // 2nd Army takes no order to attack.`); null otherwise.
-    let attack_refusal = if attack { units.iter().find_map(|&u| g.unit_attack_refusal(u)) } else { None };
     Ok(crate::jobj! {
         "ok" => ok,
-        "attack_refusal" => attack_refusal,
         "turns" => if ok { finder.path_turns().map(Json::from).unwrap_or(Json::Null) } else { Json::Null },
         "nodes" => Json::Arr(nodes),
         "declare_war_team" => war,

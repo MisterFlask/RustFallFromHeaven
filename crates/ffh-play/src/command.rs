@@ -96,13 +96,11 @@ pub enum Command {
     EmpireOrder { city: CityId, order: OrderType, data: i32, dest: Option<ffh_core::army::RecruitDest> },
     /// Take the empire order at `index` of governed city `city`'s queue off.
     EmpireOrderRemove { city: CityId, index: i32 },
-    /// Persons of Note (docs/PERSONS.md): grant city `city`, for good, to `to` (`{house}`, a person
-    /// `{person}` who founds a House, or a great person unit `{unit}`, consumed).
+    /// Houses (docs/PERSONS.md): grant city `city`, for good, to `to` (`{house}`, or `{found:
+    /// true}`: a new House founded with it, while the realm has none).
     GrantCity { city: CityId, to: ffh_core::persons::GrantTo },
     /// Set House `house`'s tribute to `pct` percent (0 to 50 by 10; docs/PERSONS.md, rule 4).
     SetHouseTribute { house: HouseId, pct: i32 },
-    /// Name person `person` (with the army) commander of army `army`.
-    SetCommander { army: ArmyId, person: PersonId },
     /// Free House `house`: its vassalage ends at peace (docs/PERSONS.md, rule 8).
     FreeHouse { house: HouseId },
     /// Set the realm's default tribute (the one a new House takes) to `pct` percent.
@@ -479,7 +477,6 @@ pub const COMMAND_NAMES: &[&str] = &[
     "empire_order_remove",
     "grant_city",
     "house_tribute",
-    "set_commander",
     "free_house",
     "tribute_default",
     "research",
@@ -539,9 +536,8 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("govern_priorities", &["roles"]),
     ("empire_order", &["city", "order", "data", "dest"]),
     ("empire_order_remove", &["city", "index"]),
-    ("grant_city", &["city", "house", "person", "unit"]),
+    ("grant_city", &["city", "house", "found"]),
     ("house_tribute", &["house", "pct"]),
-    ("set_commander", &["army", "person"]),
     ("free_house", &["house"]),
     ("tribute_default", &["pct"]),
     ("research", &["tech", "shift"]),
@@ -668,17 +664,15 @@ fn station_field(j: &Json) -> Result<ffh_core::army::Station, FieldError> {
     }
 }
 
-/// The grantee of `grant_city`: exactly one of `house`, `person` and `unit`.
+/// The grantee of `grant_city`: exactly one of `house` and `found: true`.
 fn grant_to_field(j: &Json) -> Result<ffh_core::persons::GrantTo, FieldError> {
     use ffh_core::persons::GrantTo;
     let house: Option<HouseId> = j.opt("house")?;
-    let person: Option<PersonId> = j.opt("person")?;
-    let unit: Option<UnitId> = j.opt("unit")?;
-    match (house, person, unit) {
-        (Some(x), None, None) => Ok(GrantTo::House(x)),
-        (None, Some(x), None) => Ok(GrantTo::Person(x)),
-        (None, None, Some(u)) => Ok(GrantTo::GreatPerson(u)),
-        _ => Err(FieldError::new("house", "exactly one of `house`, `person` and `unit`")),
+    let found: Option<bool> = j.opt("found")?;
+    match (house, found) {
+        (Some(x), None | Some(false)) => Ok(GrantTo::House(x)),
+        (None, Some(true)) => Ok(GrantTo::NewHouse),
+        _ => Err(FieldError::new("house", "exactly one of `house` and `found: true`")),
     }
 }
 
@@ -745,7 +739,6 @@ impl Command {
             Command::EmpireOrderRemove { .. } => "empire_order_remove",
             Command::GrantCity { .. } => "grant_city",
             Command::SetHouseTribute { .. } => "house_tribute",
-            Command::SetCommander { .. } => "set_commander",
             Command::FreeHouse { .. } => "free_house",
             Command::SetTributeDefault { .. } => "tribute_default",
             Command::Research { .. } => "research",
@@ -870,7 +863,6 @@ impl Command {
             "empire_order_remove" => Command::EmpireOrderRemove { city: j.req("city")?, index: j.req("index")? },
             "grant_city" => Command::GrantCity { city: j.req("city")?, to: grant_to_field(j)? },
             "house_tribute" => Command::SetHouseTribute { house: j.req("house")?, pct: j.req("pct")? },
-            "set_commander" => Command::SetCommander { army: j.req("army")?, person: j.req("person")? },
             "free_house" => Command::FreeHouse { house: j.req("house")? },
             "tribute_default" => Command::SetTributeDefault { pct: j.req("pct")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
@@ -995,11 +987,9 @@ impl Command {
             Command::EmpireOrderRemove { city, index } => j.with("city", *city).with("index", *index),
             Command::GrantCity { city, to } => match *to {
                 ffh_core::persons::GrantTo::House(x) => j.with("city", *city).with("house", x),
-                ffh_core::persons::GrantTo::Person(x) => j.with("city", *city).with("person", x),
-                ffh_core::persons::GrantTo::GreatPerson(u) => j.with("city", *city).with("unit", u),
+                ffh_core::persons::GrantTo::NewHouse => j.with("city", *city).with("found", true),
             },
             Command::SetHouseTribute { house, pct } => j.with("house", *house).with("pct", *pct),
-            Command::SetCommander { army, person } => j.with("army", *army).with("person", *person),
             Command::FreeHouse { house } => j.with("house", *house),
             Command::SetTributeDefault { pct } => j.with("pct", *pct),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
@@ -1302,7 +1292,6 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::EmpireOrderRemove { city, index } => g.city_remove_empire_order(h, *city, *index as usize),
         Command::GrantCity { city, to } => g.player_grant_city(h, *city, *to).map(|_| ()),
         Command::SetHouseTribute { house, pct } => g.player_set_house_tribute(h, *house, *pct),
-        Command::SetCommander { army, person } => g.player_set_commander(h, *army, *person),
         Command::FreeHouse { house } => g.player_free_house(h, *house),
         Command::SetTributeDefault { pct } => g.player_set_house_tribute_default(h, *pct),
         Command::RecruitDest { city, index, dest } => {
@@ -1806,18 +1795,12 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         }
 
         Command::SetTributeDefault { pct } => {
-            if !g.player_has_persons(h) {
+            if !g.player_has_houses(h) {
                 return Err(cannot("This civilization has no Houses."));
             }
             if !(0..=ffh_core::persons::TRIBUTE_MAX).contains(pct) || pct % ffh_core::persons::TRIBUTE_STEP != 0 {
                 return Err(cannot("Tribute: 0 to 50 percent, in steps of 10."));
             }
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::SetCommander { army, person } => {
-            army_of(g, h, *army)?;
-            crate::view::persons::check_set_commander(g, h, *army, *person).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -2676,10 +2659,8 @@ mod tests {
             Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_CONSTRUCT, data: 9, dest: None },
             Command::EmpireOrderRemove { city: CityId(2), index: 1 },
             Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::House(HouseId(1)) },
-            Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::Person(PersonId(3)) },
-            Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::GreatPerson(UnitId(7)) },
+            Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::NewHouse },
             Command::SetHouseTribute { house: HouseId(0), pct: 30 },
-            Command::SetCommander { army: ArmyId(1), person: PersonId(4) },
             Command::FreeHouse { house: HouseId(2) },
             Command::SetTributeDefault { pct: 10 },
             Command::Research { tech: None, shift: false },

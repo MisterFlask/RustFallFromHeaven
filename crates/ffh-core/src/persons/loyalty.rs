@@ -1,23 +1,15 @@
-//! Loyalty: the modifiers, the sum, the five states (the attitude scale) and the Furious
+//! A House's loyalty: the modifiers, the sum, the five states (the attitude scale) and the Furious
 //! countdown (docs/PERSONS.md, "The second build", rule 5).
 //!
-//! A head's loyalty is their House's (`House::standing`); everyone else's is their own
-//! (`Person::standing`). The sum is the modifiers still running plus the standing parts: `State
-//! religion opposed: -2` (the state religion's alignment the opposite of the person's; a House's
-//! is its head's) and, for a House, `Tribute N%: 1 - N/10` and `Holds N cities, more than T: -(N - T)` (rule 14).
-//! The tribute part is the rate in force's (`House::tribute_now`), which moves slowly toward the
-//! rate the liege set (rule 4, `vassals.rs`).
+//! The sum is the modifiers still running plus the standing parts: `State religion opposed: -2`
+//! (the state religion's alignment the opposite of the House's leader's) and `Tribute N%: 1 -
+//! N/10`. The tribute part is the rate in force's (`House::tribute_now`), which moves slowly toward
+//! the rate the liege set (rule 4, `vassals.rs`). (The second build's size part, `Holds N cities,
+//! more than T`, went with the third build, rule 1.)
 
 use ffh_data::*;
 
 use super::*;
-
-/// Whose loyalty: a House's or a person's own.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum Holder {
-    House(HouseId),
-    Person(PersonId),
-}
 
 /// The standing loyalty part of a tribute of `pct` percent: `1 - pct / 10` (0%: +1, 20%: -1,
 /// 50%: -4).
@@ -26,117 +18,38 @@ pub fn tribute_part(pct: i32) -> i32 {
 }
 
 impl Game {
-    /// Whose loyalty person `x` answers to: their House's if they head one, else their own.
-    pub(crate) fn person_holder(&self, x: PersonId) -> Holder {
-        match self.person_house(x) {
-            Some(h) => Holder::House(h),
-            None => Holder::Person(x),
-        }
-    }
-
-    pub(crate) fn holder_standing(&self, hd: Holder) -> &Standing {
-        match hd {
-            Holder::House(h) => &self.houses[h].standing,
-            Holder::Person(x) => &self.persons[x].standing,
-        }
-    }
-
-    pub(crate) fn holder_standing_mut(&mut self, hd: Holder) -> &mut Standing {
-        match hd {
-            Holder::House(h) => &mut self.houses[h].standing,
-            Holder::Person(x) => &mut self.persons[x].standing,
-        }
-    }
-
-    /// Whether the holder still stands (its House or person exists).
-    pub(crate) fn holder_alive(&self, hd: Holder) -> bool {
-        match hd {
-            Holder::House(h) => self.houses.contains(h),
-            Holder::Person(x) => self.persons.contains(x),
-        }
-    }
-
-    /// The person whose alignment and demands a holder has: the House's head, or the person.
-    pub(crate) fn holder_person(&self, hd: Holder) -> Option<PersonId> {
-        match hd {
-            Holder::House(h) => self.houses[h].head.filter(|&x| self.persons.contains(x)),
-            Holder::Person(x) => Some(x),
-        }
-    }
-
-    /// The holder's label: `House Arne`, `Hrolf, 2nd Army`, `Hrolf`.
-    pub(crate) fn holder_label(&self, hd: Holder) -> String {
-        match hd {
-            Holder::House(h) => self.house_label(h),
-            Holder::Person(x) => self.person_subject(x),
-        }
-    }
-
-    /// The standing part `State religion opposed` for person `x` under state religion `religion`:
-    /// [`RELIGION_OPPOSED`] when the religion's alignment is the opposite of the person's.
-    pub(crate) fn person_religion_part(&self, x: PersonId, religion: Option<ReligionType>) -> i32 {
+    /// The standing part `State religion opposed` for House `h` under state religion `religion`:
+    /// [`RELIGION_OPPOSED`] when the religion's alignment is the opposite of its leader's.
+    pub(crate) fn house_religion_part_under(&self, h: HouseId, religion: Option<ReligionType>) -> i32 {
         let Some(r) = religion else { return 0 };
-        if self.alignments_opposed(self.d.religions[r].alignment, self.person_alignment(x)) {
+        if self.alignments_opposed(self.d.religions[r].alignment, self.house_alignment(h)) {
             RELIGION_OPPOSED
         } else {
             0
         }
     }
 
-    /// The holder's standing religion part under its owner's state religion.
-    pub(crate) fn holder_religion_part(&self, hd: Holder) -> i32 {
-        let Some(x) = self.holder_person(hd) else { return 0 };
-        let religion = self.player_get_state_religion(self.persons[x].owner);
-        self.person_religion_part(x, religion)
+    /// House `h`'s standing religion part under its liege's state religion.
+    pub(crate) fn house_religion_part(&self, h: HouseId) -> i32 {
+        let religion = self.player_get_state_religion(self.houses[h].owner);
+        self.house_religion_part_under(h, religion)
     }
 
-    /// The holder's standing tribute part (a House's: [`tribute_part`] of its rate in force; 0
-    /// for a person).
-    pub(crate) fn holder_tribute_part(&self, hd: Holder) -> i32 {
-        match hd {
-            Holder::House(h) => tribute_part(self.houses[h].tribute_now),
-            Holder::Person(_) => 0,
-        }
-    }
-
-    /// The sum of the holder's running modifiers (without the standing parts).
-    pub(crate) fn holder_mods_sum(&self, hd: Holder) -> i32 {
+    /// The sum of House `h`'s running modifiers (without the standing parts).
+    pub(crate) fn house_mods_sum(&self, h: HouseId) -> i32 {
         let turn = self.game_turn();
-        self.holder_standing(hd).mods.iter().filter(|m| m.until.map_or(true, |u| u > turn)).map(|m| m.amount).sum()
+        self.houses[h].standing.mods.iter().filter(|m| m.until.map_or(true, |u| u > turn)).map(|m| m.amount).sum()
     }
 
-    /// The holder's standing size part (a House's: `Holds N cities, more than T: -(N - T)`, rule 14; 0 for a
-    /// person).
-    pub(crate) fn holder_size_part(&self, hd: Holder) -> i32 {
-        match hd {
-            Holder::House(h) => self.house_size_part(h),
-            Holder::Person(_) => 0,
-        }
-    }
-
-    /// The holder's loyalty: its running modifiers plus the standing parts.
-    pub(crate) fn holder_loyalty(&self, hd: Holder) -> i32 {
-        self.holder_mods_sum(hd) + self.holder_religion_part(hd) + self.holder_tribute_part(hd) + self.holder_size_part(hd)
-    }
-
-    /// The holder's state at loyalty `total`.
-    pub(crate) fn holder_state_at(&self, _hd: Holder, total: i32) -> LoyaltyState {
-        LoyaltyState::of(total)
-    }
-
-    /// The holder's state now.
-    pub(crate) fn holder_state(&self, hd: Holder) -> LoyaltyState {
-        self.holder_state_at(hd, self.holder_loyalty(hd))
-    }
-
-    /// House `h`'s loyalty (its head's state religion part and its tribute part included).
+    /// House `h`'s loyalty: its running modifiers plus the standing parts (its state religion part
+    /// and its tribute part).
     pub fn house_loyalty(&self, h: HouseId) -> i32 {
-        self.holder_loyalty(Holder::House(h))
+        self.house_mods_sum(h) + self.house_religion_part(h) + tribute_part(self.houses[h].tribute_now)
     }
 
     /// House `h`'s state: its attitude toward its liege.
     pub fn house_state(&self, h: HouseId) -> LoyaltyState {
-        self.holder_state(Holder::House(h))
+        LoyaltyState::of(self.house_loyalty(h))
     }
 
     /// House `h`'s loyalty once a tribute of `pct` percent is in force (the steady state: the
@@ -147,117 +60,55 @@ impl Game {
         self.house_loyalty(h) - tribute_part(now) + tribute_part(pct)
     }
 
-    /// Person `x`'s loyalty: their House's for a head, else their own.
-    pub fn person_loyalty(&self, x: PersonId) -> i32 {
-        self.holder_loyalty(self.person_holder(x))
-    }
-
-    /// Person `x`'s state: their House's for a head, else their own.
-    pub fn person_state(&self, x: PersonId) -> LoyaltyState {
-        self.holder_state(self.person_holder(x))
-    }
-
-    /// Adds a modifier `(amount, turns)` with `cause` to the holder.
-    pub(crate) fn holder_add_mod(&mut self, hd: Holder, cause: LoyaltyCause, (amount, turns): (i32, i32)) {
+    /// Adds a modifier `(amount, turns)` with `cause` to House `h`.
+    pub(crate) fn house_add_mod(&mut self, h: HouseId, cause: LoyaltyCause, (amount, turns): (i32, i32)) {
         let until = Some(self.game_turn() + turns);
-        self.holder_standing_mut(hd).mods.push(LoyaltyMod { cause, amount, until });
+        self.houses[h].standing.mods.push(LoyaltyMod { cause, amount, until });
     }
 
-    /// Player `p`'s holders: its Houses, then its persons who head none, in their list orders.
-    pub(crate) fn player_holders(&self, p: PlayerId) -> Vec<Holder> {
-        let mut out: Vec<Holder> = self.players[p].houses.iter().copied().filter(|&h| self.houses.contains(h)).map(Holder::House).collect();
-        out.extend(self.players[p].persons.iter().copied().filter(|&x| self.persons.contains(x) && self.person_house(x).is_none()).map(Holder::Person));
-        out
+    /// Player `p`'s Houses that stand, in its list order.
+    pub(crate) fn player_houses(&self, p: PlayerId) -> Vec<HouseId> {
+        self.players[p].houses.iter().copied().filter(|&h| self.houses.contains(h)).collect()
     }
 
     /// Modifiers whose turns ran out end (in player `p`'s turn processing).
     pub(crate) fn player_persons_expire(&mut self, p: PlayerId) {
         let turn = self.game_turn();
-        for hd in self.player_holders(p) {
-            self.holder_standing_mut(hd).mods.retain(|m| m.until.map_or(true, |u| u > turn));
+        for h in self.player_houses(p) {
+            self.houses[h].standing.mods.retain(|m| m.until.map_or(true, |u| u > turn));
         }
     }
 
-    /// The states of player `p`'s holders: a change is told; Furious starts the countdown (a
-    /// commander's records its sworn units), above it the countdown stops; a person without a
-    /// post who is Furious leaves the cast.
+    /// The states of player `p`'s Houses: a change is told; Furious starts the countdown, above it
+    /// the countdown stops.
     pub(crate) fn player_persons_states(&mut self, p: PlayerId) {
         let turn = self.game_turn();
-        for hd in self.player_holders(p) {
-            if !self.holder_alive(hd) {
-                continue;
-            }
-            let state = self.holder_state(hd);
-            let old = self.holder_standing(hd).state;
+        for h in self.player_houses(p) {
+            let state = self.house_state(h);
+            let old = self.houses[h].standing.state;
             if state == LoyaltyState::Furious {
-                if let Holder::Person(x) = hd {
-                    if self.persons[x].post == Post::None {
-                        let name = self.persons[x].name.clone();
-                        self.person_msg(x, || format!("{name} is Furious and leaves the court."));
-                        self.tel_person(p, "state", "left");
-                        self.person_leave(x);
-                        continue;
-                    }
-                }
-                if self.holder_standing(hd).countdown.is_none() {
-                    let sworn = match hd {
-                        Holder::Person(x) => {
-                            let mut sworn = self.person_army(x).map(|a| self.army_units(a)).unwrap_or_default();
-                            if let Some(u) = self.person_unit(x) {
-                                if !sworn.contains(&u) {
-                                    sworn.push(u);
-                                }
-                            }
-                            sworn
-                        }
-                        Holder::House(_) => Vec::new(),
-                    };
+                if self.houses[h].standing.countdown.is_none() {
                     let turns = self.d.defines.person_disloyal_turns;
-                    let st = self.holder_standing_mut(hd);
-                    st.countdown = Some(turn + turns);
-                    st.sworn = sworn;
+                    self.houses[h].standing.countdown = Some(turn + turns);
                 }
-            } else if self.holder_standing(hd).countdown.is_some() {
-                let st = self.holder_standing_mut(hd);
-                st.countdown = None;
-                st.sworn.clear();
+            } else {
+                self.houses[h].standing.countdown = None;
             }
             if state != old {
-                self.holder_standing_mut(hd).state = state;
-                self.tel_person(p, "state", state.name());
-                let label = match hd {
-                    Holder::House(h) => self.house_label(h),
-                    Holder::Person(x) => self.persons[x].name.clone(),
-                };
-                let outcome = match (state, hd) {
-                    (LoyaltyState::Furious, Holder::House(h)) => format!(" {}", self.house_breakaway_outcome(h)),
-                    (LoyaltyState::Furious, Holder::Person(x)) => format!(" {}", self.commander_secession_outcome(x)),
-                    _ => String::new(),
-                };
+                self.houses[h].standing.state = state;
+                self.tel_house(p, "state", state.name());
+                let label = self.house_label(h);
+                let outcome = if state == LoyaltyState::Furious { format!(" {}", self.house_breakaway_outcome(h)) } else { String::new() };
                 let text = format!("{label} is {}.{outcome}", state.name());
-                match hd {
-                    Holder::House(h) => self.house_msg(h, || text),
-                    Holder::Person(x) => self.person_msg(x, || text),
-                }
+                self.house_msg(h, || text);
             }
         }
     }
 
-    /// The countdowns of player `p` that have run out (pure): Houses first, then commanders.
-    /// The persons turn's break-aways act on them (`secession.rs`).
-    pub fn persons_countdowns_due(&self, p: PlayerId) -> Vec<CountdownDue> {
+    /// The Houses of player `p` whose countdown has run out (pure). The persons turn's
+    /// break-aways act on them (`secession.rs`).
+    pub fn persons_countdowns_due(&self, p: PlayerId) -> Vec<HouseId> {
         let turn = self.game_turn();
-        let mut out = Vec::new();
-        for &h in &self.players[p].houses {
-            if self.houses.get(h).is_some_and(|house| house.standing.countdown.is_some_and(|c| c <= turn)) {
-                out.push(CountdownDue::House(h));
-            }
-        }
-        for &x in &self.players[p].persons {
-            if self.persons.get(x).is_some_and(|person| matches!(person.post, Post::Commander(_)) && person.standing.countdown.is_some_and(|c| c <= turn)) {
-                out.push(CountdownDue::Commander(x));
-            }
-        }
-        out
+        self.players[p].houses.iter().copied().filter(|&h| self.houses.get(h).is_some_and(|house| house.standing.countdown.is_some_and(|c| c <= turn))).collect()
     }
 }

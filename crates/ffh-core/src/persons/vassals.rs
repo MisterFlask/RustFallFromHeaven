@@ -4,13 +4,11 @@
 //! - **The records** ([`Game::team_vassal_houses`], called by `team_set_vassal` both ways): when a
 //!   team becomes a vassal by any means (a capitulation, a vassal deal, a card's vassal birth, a
 //!   founding, a colony), each of its living players that is no human gets a House record owned by
-//!   the master team's leading player, headed by a person for its leader (a person of the
-//!   liege's cast with that leader: a founder; else a new one, origin `Ruler`, without a unit).
-//!   Its starting modifier: `Capitulated: -4 (100 turns)` for a capitulation, `Sought
-//!   protection: +2 (60 turns)` otherwise (a founding, a card's birth and a colony clear it).
-//!   When the vassalage ends by any means, or the House's player dies, the record ends and its
-//!   head leaves the cast. A player that becomes a House loses its own cast (its own Houses are
-//!   freed by the vassal rules: a vassal cannot have vassals).
+//!   the master team's leading player; its leader is its player's. Its starting modifier:
+//!   `Capitulated: -4 (100 turns)` for a capitulation, `Sought protection: +2 (60 turns)`
+//!   otherwise (a founding, a card's birth and a colony clear it). When the vassalage ends by any
+//!   means, or the House's player dies, the record ends. A player that becomes a House has no
+//!   Houses of its own (they are freed by the vassal rules: a vassal cannot have vassals).
 //! - **Who may hold vassals** ([`Game::team_vassal_refusal`]): not a vassal, not under No Vassal
 //!   States (the Civ4 rules). A liege under a direct-rule civic holds its vassals as Houses too: it
 //!   grants them no city, and adopting direct rule is civil war (rule 11, `secession.rs`).
@@ -29,7 +27,6 @@
 
 use ffh_data::*;
 
-use super::loyalty::Holder;
 use super::*;
 
 impl Game {
@@ -101,7 +98,7 @@ impl Game {
         }
         if value {
             let Some(owner) = self.team_get_leader_id(master) else { return };
-            if !self.player_has_persons(owner) {
+            if !self.player_has_houses(owner) {
                 return;
             }
             let origin = if capitulated { HouseOrigin::Capitulated } else { HouseOrigin::Vassal };
@@ -128,47 +125,23 @@ impl Game {
         }
     }
 
-    /// Player `hp` becomes a House of `owner` (`origin`): the record, headed by the person of
-    /// `owner`'s cast with `hp`'s leader (a founder), else a new `Ruler`; its starting modifier.
+    /// Player `hp` becomes a House of `owner` (`origin`): the record and its starting modifier. A
+    /// founding ([`Game::player_found_house`]) is known by the name its player was born with:
+    /// `House <name>`, the name its liege has just taken for it.
     pub(crate) fn house_begin(&mut self, hp: PlayerId, owner: PlayerId, origin: HouseOrigin) -> Option<HouseId> {
-        // Its own cast leaves (a House has no persons of its own).
-        for x in self.players[hp].persons.clone() {
-            if self.persons.contains(x) {
-                self.person_leave(x);
-            }
-        }
-        self.players[hp].persons.clear();
-        let leader = self.player_get_leader_type(hp);
         let name = self.player_house_name(hp);
-        let existing = leader.and_then(|l| self.players[owner].persons.iter().copied().find(|&x| self.persons.get(x).is_some_and(|person| person.leader == Some(l) && !matches!(person.post, Post::Head(_)))));
-        // A person of the cast with its leader founded it (a founding names it and tells it).
-        let origin = if existing.is_some() { HouseOrigin::Founded } else { origin };
-        // A founding's civilization is described `House <name>` (houses.rs); the record keeps the
-        // name, and its label adds `House` again.
+        let founded = origin != HouseOrigin::Capitulated && name.strip_prefix("House ").is_some_and(|n| self.players[owner].house_names.last().is_some_and(|l| l == n));
+        let origin = if founded { HouseOrigin::Founded } else { origin };
+        // A founding's civilization is described `House <name>`; the record keeps the name, and
+        // its label adds `House` again.
         let name = match origin {
             HouseOrigin::Founded => name.strip_prefix("House ").map_or(name.clone(), str::to_string),
             _ => name,
         };
-        let head = leader.map(|l| existing.unwrap_or_else(|| self.person_new_quiet(owner, PersonOrigin::Ruler, l, &format!("ruler of the {name}"))));
         let turn = self.game_turn();
         let color = self.house_new_color(owner);
         let tribute = self.players[owner].house_tribute;
         let mut standing = Standing::default();
-        if let Some(x) = head {
-            // A founder's own modifiers move to the House; a commander's command ends.
-            standing.mods = std::mem::take(&mut self.persons[x].standing.mods);
-            self.persons[x].standing = Standing::default();
-            if let Post::Commander(a) = self.persons[x].post {
-                if let Some(army) = self.armies.get_mut(a) {
-                    if army.commander == Some(x) {
-                        army.commander = None;
-                    }
-                    if army.commander_named == Some(x) {
-                        army.commander_named = None;
-                    }
-                }
-            }
-        }
         let start = match origin {
             HouseOrigin::Capitulated => Some((LoyaltyCause::Capitulated, CAPITULATED)),
             HouseOrigin::Vassal => Some((LoyaltyCause::SoughtProtection, SOUGHT_PROTECTION)),
@@ -183,8 +156,10 @@ impl Game {
             player: hp,
             origin,
             name,
-            head,
             standing,
+            demand: None,
+            demand_rest_until: turn,
+            deeds: Vec::new(),
             founded_turn: turn,
             color,
             tribute,
@@ -196,15 +171,17 @@ impl Game {
         });
         self.players[owner].houses.push(h);
         self.players[hp].house = Some(h);
-        if let Some(x) = head {
-            self.persons[x].post = Post::Head(h);
-            let label = self.house_label(h);
-            self.person_add_deed(x, format!("Heads {label}."));
-        }
+        let label = self.house_label(h);
+        let civ = self.player_get_civilization_short_description(owner);
+        let deed = match origin {
+            HouseOrigin::Founded => format!("A House of the {civ}."),
+            HouseOrigin::Capitulated => format!("Capitulated to the {civ}."),
+            HouseOrigin::Vassal => format!("Became a vassal of the {civ}."),
+        };
+        self.house_add_deed(h, deed);
         // The state told so far is the one it starts in (no change to tell).
         let state = self.house_state(h);
         self.houses[h].standing.state = state;
-        let label = self.house_label(h);
         let what = match origin {
             HouseOrigin::Capitulated => "capitulated",
             HouseOrigin::Vassal | HouseOrigin::Founded => "vassal",
@@ -212,7 +189,7 @@ impl Game {
         if origin != HouseOrigin::Founded {
             self.house_msg(h, || format!("{label} is your House: {}.", if origin == HouseOrigin::Capitulated { "it capitulated" } else { "it became your vassal" }));
         }
-        self.tel_person(owner, "house", what);
+        self.tel_house(owner, "record", what);
         Some(h)
     }
 
@@ -225,18 +202,11 @@ impl Game {
         }
     }
 
-    /// House `h`'s record ends (its vassalage ended, or its player died): its head leaves the
-    /// cast, its liege's armies no longer levy its cities.
+    /// House `h`'s record ends (its vassalage ended, or its player died): its liege's armies no
+    /// longer levy its cities.
     pub(crate) fn house_record_end(&mut self, h: HouseId) {
         let Some(house) = self.houses.get(h) else { return };
-        let (owner, hp, head) = (house.owner, house.player, house.head);
-        if let Some(x) = head.filter(|&x| self.persons.contains(x)) {
-            self.persons[x].post = Post::None;
-            self.persons[x].standing = Standing::default();
-            let label = self.house_label(h);
-            self.person_add_deed(x, format!("Left the court with {label}."));
-            self.person_leave(x);
-        }
+        let (owner, hp) = (house.owner, house.player);
         self.players[owner].houses.retain(|&o| o != h);
         if self.players[hp].house == Some(h) {
             self.players[hp].house = None;
@@ -250,7 +220,7 @@ impl Game {
             let keep: Vec<CityId> = self.armies[a].requisition.iter().copied().filter(|&c| self.cities.contains(c) && (self.cities[c].owner == owner || self.player_liege(self.cities[c].owner) == Some(owner))).collect();
             self.armies[a].requisition = keep;
         }
-        self.tel_person(owner, "house", "ended");
+        self.tel_house(owner, "record", "ended");
     }
 
     /// Hook of `player_set_alive(p, false)`: a House's player died, its record ends.
@@ -281,17 +251,14 @@ impl Game {
         Ok(())
     }
 
-    /// Player `p` frees House `h`: the vassalage ends at peace, the record ends, its head leaves
-    /// the cast (docs/PERSONS.md, rule 8).
+    /// Player `p` frees House `h`: the vassalage ends at peace, the record ends (docs/PERSONS.md,
+    /// rule 8).
     pub fn player_free_house(&mut self, p: PlayerId, h: HouseId) -> Result<(), &'static str> {
         self.player_check_free_house(p, h)?;
         let hp = self.houses[h].player;
         let label = self.house_label(h);
         let civ = self.player_get_civilization_short_description(p);
         let (ht, pt) = (self.players[hp].team, self.players[p].team);
-        if let Some(x) = self.houses[h].head.filter(|&x| self.persons.contains(x)) {
-            self.person_add_deed(x, format!("{label} freed."));
-        }
         self.house_msg(h, || format!("{label} is freed: it is no longer your vassal."));
         self.team_end_vassalage(ht, pt);
         // (The vassal rules ended the record; a vassalage no deal recorded too.)
@@ -301,7 +268,7 @@ impl Game {
         let turn = self.game_turn();
         let to = self.audience_met(pt);
         self.log.msg_to(turn, to, || format!("{label} is freed by the {civ}."));
-        self.tel_person(p, "house", "freed");
+        self.tel_house(p, "record", "freed");
         Ok(())
     }
 
@@ -387,7 +354,7 @@ impl Game {
     /// Player `p` sets its realm's default tribute (`Player::house_tribute`), which a new House
     /// takes.
     pub fn player_set_house_tribute_default(&mut self, p: PlayerId, pct: i32) -> Result<(), &'static str> {
-        if !self.player_has_persons(p) {
+        if !self.player_has_houses(p) {
             return Err("This civilization has no Houses.");
         }
         Self::tribute_check(pct)?;
@@ -493,8 +460,8 @@ impl Game {
         if !self.houses.contains(h) {
             return;
         }
-        self.holder_add_mod(Holder::House(h), LoyaltyCause::Levied, LEVIED);
+        self.house_add_mod(h, LoyaltyCause::Levied, LEVIED);
         let owner = self.houses[h].owner;
-        self.tel_person(owner, "levy", "placed");
+        self.tel_house(owner, "levy", "placed");
     }
 }

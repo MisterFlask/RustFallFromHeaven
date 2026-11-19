@@ -345,12 +345,10 @@ pub fn check(g: &Game) {
         }
     }
 
-    // This game's persons of note and Houses (docs/PERSONS.md, "The second build"): a House is a
-    // player of its own, the vassal of its liege: every House record's player is alive, no human,
-    // a vassal of its owner's team, and names the record (`Player::house`); every living vassal
-    // that is no human, whose master's leading player has persons, is a House; a head's post names
-    // their House and the House names them; a person's unit lives and is their owner's; a commander is with their army and
-    // the army names them.
+    // This game's Houses (docs/PERSONS.md, "The second build" and "The third build"): a House is
+    // a player of its own, the vassal of its liege: every House record's player is alive, no
+    // human, a vassal of its owner's team, and names the record (`Player::house`); every living
+    // vassal that is no human, whose master's leading player can have Houses, is a House.
     for (h, house) in g.houses.iter() {
         let hp = house.player;
         if !g.players[hp].alive || g.players[hp].human {
@@ -377,7 +375,7 @@ pub fn check(g: &Game) {
         if pl.alive && !pl.human && pl.house.is_none() && g.team_is_a_vassal(pl.team) {
             let master = g.team_ids().find(|&m| g.team_is_alive(m) && g.teams[pl.team].vassal[m]);
             if let Some(owner) = master.and_then(|m| g.team_get_leader_id(m)) {
-                if g.player_has_persons(owner) {
+                if g.player_has_houses(owner) {
                     fail(format!("player {} is a vassal of player {} without a House", p.0, owner.0));
                 }
             }
@@ -388,46 +386,6 @@ pub fn check(g: &Game) {
             let Some(house) = g.houses.get(h) else { fail(format!("player {} lists dead House {h:?}", p.0)) };
             if house.owner != p {
                 fail(format!("player {} lists House {h:?} of player {}", p.0, house.owner.0));
-            }
-            if let Some(x) = house.head {
-                if g.persons.get(x).map_or(true, |person| person.post != ffh_core::persons::Post::Head(h) || person.owner != p) {
-                    fail(format!("House {h:?} of player {} names head {x:?}, whose post is not it", p.0));
-                }
-            }
-        }
-        for &x in &g.players[p].persons {
-            let Some(person) = g.persons.get(x) else { fail(format!("player {} lists dead person {x:?}", p.0)) };
-            if person.owner != p {
-                fail(format!("player {} lists person {x:?} of player {}", p.0, person.owner.0));
-            }
-            if let Some(u) = person.unit {
-                if !g.units.contains(u) || g.units[u].owner != p {
-                    fail(format!("person {x:?} of player {} has unit {u:?}, dead or not theirs", p.0));
-                }
-            }
-            match person.post {
-                ffh_core::persons::Post::Head(h) => {
-                    if g.houses.get(h).map_or(true, |house| house.head != Some(x)) {
-                        fail(format!("person {x:?} of player {} heads House {h:?}, which does not name them", p.0));
-                    }
-                }
-                ffh_core::persons::Post::Commander(a) => {
-                    let Some(army) = g.armies.get(a) else { fail(format!("person {x:?} of player {} commands dead army {a:?}", p.0)) };
-                    if army.commander != Some(x) || army.owner != p {
-                        fail(format!("person {x:?} of player {} commands army {a:?}, which does not name them", p.0));
-                    }
-                    if !g.army_persons_with(a).contains(&x) {
-                        fail(format!("commander {x:?} of player {} is not with army {a:?}", p.0));
-                    }
-                }
-                ffh_core::persons::Post::None => {}
-            }
-        }
-        for &a in &g.players[p].armies {
-            if let Some(x) = g.armies.get(a).and_then(|army| army.commander) {
-                if g.persons.get(x).map_or(true, |person| person.post != ffh_core::persons::Post::Commander(a)) {
-                    fail(format!("army {a:?} of player {} names commander {x:?}, whose post is not it", p.0));
-                }
             }
         }
     }

@@ -205,9 +205,6 @@ impl Game {
             self.units[u].army = self.units[from].army;
             self.units[u].march = self.units[from].march.take();
         }
-        // This game's persons of note (docs/PERSONS.md): a person follows their unit when the
-        // owner stays.
-        self.unit_persons_converted(u, from);
         // This game's sea (docs/NAVAL.md, 3.1 and 3.4): an upgrade or conversion at sea keeps the
         // ship's wear (only a port clears it) and the out-of-range state of its message.
         self.units[u].trained_specialty = self.units[from].trained_specialty;
@@ -447,8 +444,6 @@ impl Game {
         if self.units[u].march.is_some() {
             self.unit_march_lost(u);
         }
-        // This game's persons of note (docs/PERSONS.md): a person whose unit dies leaves the cast.
-        self.unit_persons_lost(u);
         self.change_global_counter(-info.modify_global_counter);
         for promotion in d.promotions.keys() {
             if self.units[u].has_promotion[promotion] {
@@ -887,10 +882,6 @@ impl Game {
                 }
 
                 // UI: plot flag and plot list dirty bits.
-
-                // This game's persons of note (docs/PERSONS.md): a commander whose unit leaves
-                // its army's group loses the command (the next army sync names another).
-                self.unit_persons_regrouped(u);
             }
 
             // UI: `bRemoveSelected` (interface selection list).
@@ -1064,13 +1055,7 @@ impl Game {
 
                     // C++ `if (NO_PLAYER != eNewOwner)`: `pickConqueredCityOwner` always names a player.
                     let new_owner = self.player_pick_conquered_city_owner(owner, new_city);
-                    // This game's persons of note (docs/PERSONS.md): the commander of the army
-                    // that takes it (read before the capture: the unit may not survive it).
-                    let commander = self.unit_army_commander(u);
                     self.player_acquire_city(new_owner, new_city, true, false, true); // will delete the city
-                    if new_owner == owner {
-                        self.city_persons_taken(np, commander);
-                    }
                 }
             }
 

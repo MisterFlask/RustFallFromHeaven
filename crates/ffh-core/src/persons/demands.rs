@@ -1,15 +1,13 @@
-//! Demands (docs/PERSONS.md, "The first build": Demands; a head makes no Works demand since the
-//! second build: a head of Works ambition demands land).
+//! A House's requests (docs/PERSONS.md, "The third build", rule 2: the second build's demands,
+//! called requests in every text the player reads; the code keeps the word "demand").
 //!
-//! One standing demand a person, checked and made in the owner's turn processing. What a person
-//! demands depends on their post and ambition (the Land, War and Faith lists). Met: `Demand
-//! met: +3 (60 turns)`. Lapsed at its term: `Demand refused: -3 (60 turns)`. Made impossible by an
-//! act of the owner (the city granted to another House or razed by the owner, peace made with the
-//! civilization of a city to be taken): refused at once. Made impossible otherwise: replaced,
-//! without a grievance. The next demand comes `PERSON_DEMAND_REST` turns after one was met or
-//! refused.
-
-use ffh_data::*;
+//! One standing request a House, checked and made in its liege's turn processing. What a House
+//! requests depends on its leader's ambition (the Land, War and Faith lists; Land and Works: the
+//! Land list). Met: `Request met: +3 (60 turns)`. Lapsed at its term: `Request refused: -3 (60
+//! turns)`. Made impossible by an act of the liege (the city granted to another House or razed by
+//! the liege, peace made with the civilization of a city to be taken): refused at once. Made
+//! impossible otherwise: replaced, without a grievance. The next request comes
+//! `PERSON_DEMAND_REST` turns after one was met or refused.
 
 use super::*;
 
@@ -38,22 +36,15 @@ impl Game {
         }
     }
 
-    /// The text of demand `kind` of person `x`, as the doc words it: `Torrin (Sheaim) taken and
-    /// granted to House Ashledger.`
-    pub fn demand_kind_text(&self, x: PersonId, kind: DemandKind) -> String {
-        let p = self.persons[x].owner;
-        let house = || match self.person_house(x) {
-            Some(h) => self.house_label(h),
-            None => "their House".to_string(),
-        };
+    /// The text of request `kind` of House `h`: `Torrin (Sheaim) taken and granted to House
+    /// Ashledger.`
+    pub fn demand_kind_text(&self, h: HouseId, kind: DemandKind) -> String {
+        let p = self.houses[h].owner;
+        let house = self.house_label(h);
         match kind {
-            // A hero has no leader to head a House with (houses.rs).
-            DemandKind::Post if self.persons[x].leader.is_none() => "A post: a command.".into(),
-            DemandKind::Post => "A post: a command or a House.".into(),
-            DemandKind::House => "A House.".into(),
             DemandKind::GrantCity(plot) => match self.persons_city_at(plot) {
-                Some(c) if self.cities[c].owner == p => format!("{} granted to {}.", self.demand_city_name(plot), house()),
-                _ => format!("{} taken and granted to {}.", self.demand_city_owned(p, plot), house()),
+                Some(c) if self.cities[c].owner == p => format!("{} granted to {house}.", self.demand_city_name(plot)),
+                _ => format!("{} taken and granted to {house}.", self.demand_city_owned(p, plot)),
             },
             DemandKind::TakeCity(plot) => format!("{} taken.", self.demand_city_owned(p, plot)),
             DemandKind::War(q) => format!("War with the {}.", self.player_get_civilization_short_description(q)),
@@ -62,16 +53,13 @@ impl Game {
                 Some(r) => format!("{} in {}.", self.d.text.name(&self.d.religions[r].base.description), self.demand_city_name(plot)),
                 None => format!("The state religion in {}.", self.demand_city_name(plot)),
             },
-            DemandKind::Wonder { city, building } => format!("{} built in {}.", self.d.text.name(&self.d.buildings[building].base.description), self.demand_city_name(city)),
         }
     }
 
     /// The short form for the record: `Torrin granted`, `war with the Sheaim`.
-    fn demand_kind_short(&self, x: PersonId, kind: DemandKind) -> String {
-        let p = self.persons[x].owner;
+    fn demand_kind_short(&self, h: HouseId, kind: DemandKind) -> String {
+        let p = self.houses[h].owner;
         match kind {
-            DemandKind::Post => "a post".into(),
-            DemandKind::House => "a House".into(),
             DemandKind::GrantCity(plot) => format!("{} granted", self.demand_city_name(plot)),
             DemandKind::TakeCity(plot) => format!("{} taken", self.demand_city_name(plot)),
             DemandKind::War(q) => format!("war with the {}", self.player_get_civilization_short_description(q)),
@@ -80,21 +68,12 @@ impl Game {
                 Some(r) => format!("{} in {}", self.d.text.name(&self.d.religions[r].base.description), self.demand_city_name(plot)),
                 None => format!("the state religion in {}", self.demand_city_name(plot)),
             },
-            DemandKind::Wonder { city, building } => format!("{} in {}", self.d.text.name(&self.d.buildings[building].base.description), self.demand_city_name(city)),
         }
     }
 
     // -----------------------------------------------------------------------------------------
     // The lists
     // -----------------------------------------------------------------------------------------
-
-    /// The plot a person's demands are measured from: a head's seat, else their unit's.
-    fn person_reference_plot(&self, x: PersonId) -> Option<PlotIdx> {
-        if let Some(c) = self.person_house(x).and_then(|h| self.house_seat(h)) {
-            return Some(self.city_plot(c));
-        }
-        self.person_unit(x).and_then(|u| self.unit_plot_opt(u))
-    }
 
     fn plot_dist(&self, a: PlotIdx, b: PlotIdx) -> i32 {
         let (ax, ay) = self.map.xy(a);
@@ -112,12 +91,12 @@ impl Game {
         self.teams[a].vassal[b] || self.teams[b].vassal[a]
     }
 
-    /// The Land list of person `x`, head of House `h`: (1) the Crown's city nearest their seat (not
-    /// the capital) granted to their House; (2) else a city of another owner within
-    /// [`LAND_RANGE`] plots of a city of their House, the barbarians' first, else of a weaker
-    /// civilization that is not our team, vassal or master, the nearest, taken and granted.
-    fn demand_land(&self, x: PersonId, h: HouseId) -> Option<DemandKind> {
-        let p = self.persons[x].owner;
+    /// The Land list of House `h`: (1) the Crown's city nearest its seat (not the capital)
+    /// granted to it; (2) else a city of another owner within [`LAND_RANGE`] plots of a city of
+    /// the House, the barbarians' first, else of a weaker civilization that is not the liege's
+    /// team, vassal or master, the nearest, taken and granted.
+    fn demand_land(&self, h: HouseId) -> Option<DemandKind> {
+        let p = self.houses[h].owner;
         let team = self.players[p].team;
         let seat = self.house_seat(h)?;
         let seat_plot = self.city_plot(seat);
@@ -160,14 +139,14 @@ impl Game {
         best.map(|(_, plot)| DemandKind::GrantCity(plot))
     }
 
-    /// The War list of person `x`: (1) while our team is at war with a civilization, its city
-    /// nearest the person (a head: their seat), taken; (2) else war with a civilization we have
-    /// met, are at peace with and may declare war on, weaker than us, of the alignment opposite
-    /// the person's first, then the nearest capital.
-    fn demand_war(&self, x: PersonId) -> Option<DemandKind> {
-        let p = self.persons[x].owner;
+    /// The War list of House `h`: (1) while its liege's team is at war with a civilization, its
+    /// city nearest the House's seat, taken; (2) else war with a civilization the liege has met,
+    /// is at peace with and may declare war on, weaker than it, of the alignment opposite the
+    /// House's leader's first, then the nearest capital.
+    fn demand_war(&self, h: HouseId) -> Option<DemandKind> {
+        let p = self.houses[h].owner;
         let team = self.players[p].team;
-        let from = self.person_reference_plot(x)?;
+        let from = self.city_plot(self.house_seat(h)?);
         let barbarian = self.barbarian_player();
         let mut best: Option<((i32, CityId), PlotIdx)> = None;
         for q in self.player_ids() {
@@ -188,7 +167,7 @@ impl Game {
         if let Some((_, plot)) = best {
             return Some(DemandKind::TakeCity(plot));
         }
-        let alignment = self.person_alignment(x);
+        let alignment = self.house_alignment(h);
         let target = self
             .player_ids()
             .filter(|&q| {
@@ -213,18 +192,18 @@ impl Game {
         target.map(DemandKind::War)
     }
 
-    /// The Faith list of person `x`: (1) with no state religion and a religion in one of our
-    /// cities that we may adopt, a state religion adopted; (2) else the state religion in a city
-    /// of ours without it (the nearest to their House's seat or their unit).
-    fn demand_faith(&self, x: PersonId) -> Option<DemandKind> {
-        let p = self.persons[x].owner;
+    /// The Faith list of House `h`: (1) with no state religion in its liege's realm and a
+    /// religion in one of the liege's cities that it may adopt, a state religion adopted; (2) else
+    /// the state religion in a city of the liege's without it (the nearest to the House's seat).
+    fn demand_faith(&self, h: HouseId) -> Option<DemandKind> {
+        let p = self.houses[h].owner;
         match self.player_get_state_religion(p) {
             None => {
                 let any = self.d.religions.keys().any(|r| self.players[p].cities.iter().any(|&c| self.cities[c].has_religion[r]) && self.player_can_convert(p, Some(r)));
                 any.then_some(DemandKind::AdoptReligion)
             }
             Some(r) => {
-                let from = self.person_reference_plot(x);
+                let from = self.house_seat(h).map(|c| self.city_plot(c));
                 self.players[p]
                     .cities
                     .iter()
@@ -236,44 +215,30 @@ impl Game {
         }
     }
 
-    /// The demand person `x` would make now: without a post, a post; a commander, the list of
-    /// their ambition (War, Faith; Land and Works: a House); a head, the list of their ambition
-    /// (War, Faith; Land and Works: none), then the Land list.
-    pub fn person_next_demand(&self, x: PersonId) -> Option<DemandKind> {
-        let ambition = self.persons[x].ambition;
-        match self.persons[x].post {
-            Post::None => Some(DemandKind::Post),
-            Post::Commander(_) => match ambition {
-                Ambition::War => self.demand_war(x),
-                Ambition::Faith => self.demand_faith(x),
-                Ambition::Land | Ambition::Works => Some(DemandKind::House),
-            },
-            Post::Head(h) => {
-                if !self.houses.contains(h) {
-                    return None;
-                }
-                let first = match ambition {
-                    Ambition::Land | Ambition::Works => None,
-                    Ambition::War => self.demand_war(x),
-                    Ambition::Faith => self.demand_faith(x),
-                };
-                first.or_else(|| self.demand_land(x, h))
-            }
+    /// The request House `h` would make now: the list of its ambition (War, Faith; Land and
+    /// Works: none), then the Land list.
+    pub fn house_next_demand(&self, h: HouseId) -> Option<DemandKind> {
+        if !self.houses.contains(h) {
+            return None;
         }
+        let first = match self.house_ambition(h) {
+            Ambition::Land | Ambition::Works => None,
+            Ambition::War => self.demand_war(h),
+            Ambition::Faith => self.demand_faith(h),
+        };
+        first.or_else(|| self.demand_land(h))
     }
 
     // -----------------------------------------------------------------------------------------
-    // Met, impossible, paused
+    // Met, impossible
     // -----------------------------------------------------------------------------------------
 
-    /// Whether demand `kind` of person `x` is met now.
-    pub fn demand_is_met(&self, x: PersonId, kind: DemandKind) -> bool {
-        let p = self.persons[x].owner;
+    /// Whether request `kind` of House `h` is met now.
+    pub fn demand_is_met(&self, h: HouseId, kind: DemandKind) -> bool {
+        let p = self.houses[h].owner;
         let team = self.players[p].team;
         match kind {
-            DemandKind::Post => self.persons[x].post != Post::None,
-            DemandKind::House => self.person_house(x).is_some(),
-            DemandKind::GrantCity(plot) => self.persons_city_at(plot).is_some_and(|c| self.person_house(x).is_some_and(|h| self.cities[c].owner == self.houses[h].player)),
+            DemandKind::GrantCity(plot) => self.persons_city_at(plot).is_some_and(|c| self.cities[c].owner == self.houses[h].player),
             DemandKind::TakeCity(plot) => self.persons_city_at(plot).is_some_and(|c| self.players[self.cities[c].owner].team == team),
             DemandKind::War(q) => self.teams[team].at_war[self.players[q].team],
             DemandKind::AdoptReligion => self.player_get_state_religion(p).is_some(),
@@ -281,34 +246,16 @@ impl Game {
                 (Some(r), Some(c)) => self.cities[c].owner == p && self.cities[c].has_religion[r],
                 _ => false,
             },
-            DemandKind::Wonder { city, building } => self.persons_city_at(city).is_some_and(|c| self.cities[c].owner == p && self.cities[c].num_real_building[building] > 0),
         }
     }
 
-    /// Whether wonder `building` is in the queue of the city at `plot`.
-    fn wonder_queued(&self, plot: PlotIdx, building: BuildingType) -> bool {
-        self.persons_city_at(plot).is_some_and(|c| self.cities[c].order_queue.iter().any(|o| o.order_type == OrderType::ORDER_CONSTRUCT && o.data1 == building.idx() as i32))
-    }
-
-    /// Whether the term of demand `kind` is paused now (a Works wonder in the seat's queue).
-    pub fn demand_is_paused(&self, kind: DemandKind) -> bool {
-        match kind {
-            DemandKind::Wonder { city, building } => self.wonder_queued(city, building),
-            _ => false,
-        }
-    }
-
-    /// Whether demand `kind` of person `x` (not met) can no longer be met.
-    fn demand_is_impossible(&self, x: PersonId, kind: DemandKind) -> bool {
-        let p = self.persons[x].owner;
+    /// Whether request `kind` of House `h` (not met) can no longer be met.
+    fn demand_is_impossible(&self, h: HouseId, kind: DemandKind) -> bool {
+        let p = self.houses[h].owner;
         let team = self.players[p].team;
         match kind {
-            DemandKind::Post | DemandKind::House => false,
             DemandKind::GrantCity(plot) => {
                 let Some(c) = self.persons_city_at(plot) else { return true };
-                if self.person_house(x).is_none() {
-                    return true;
-                }
                 let owner = self.cities[c].owner;
                 if owner == p {
                     self.city_is_capital(c) || self.cities[c].outpost
@@ -327,18 +274,13 @@ impl Game {
             }
             DemandKind::AdoptReligion => !self.d.religions.keys().any(|r| self.players[p].cities.iter().any(|&c| self.cities[c].has_religion[r]) && self.player_can_convert(p, Some(r))),
             DemandKind::SpreadReligion(plot) => self.player_get_state_religion(p).is_none() || self.persons_city_at(plot).map_or(true, |c| self.cities[c].owner != p),
-            DemandKind::Wonder { city, building } => match self.persons_city_at(city) {
-                None => true,
-                Some(c) => self.cities[c].owner != p || (!self.wonder_queued(city, building) && !self.city_can_construct(c, building, false, false, false)),
-            },
         }
     }
 
-    /// Whether demand `kind` names the city at `plot`.
+    /// Whether request `kind` names the city at `plot`.
     pub(crate) fn demand_names_plot(kind: DemandKind, plot: PlotIdx) -> bool {
         match kind {
             DemandKind::GrantCity(q) | DemandKind::TakeCity(q) | DemandKind::SpreadReligion(q) => q == plot,
-            DemandKind::Wonder { city, .. } => city == plot,
             _ => false,
         }
     }
@@ -347,97 +289,85 @@ impl Game {
     // Outcomes
     // -----------------------------------------------------------------------------------------
 
-    /// Person `x`'s demand is made: `kind`, for `PERSON_DEMAND_TURNS` turns.
-    fn person_issue_demand(&mut self, x: PersonId, kind: DemandKind) {
+    /// House `h`'s request is made: `kind`, for `PERSON_DEMAND_TURNS` turns.
+    fn house_issue_demand(&mut self, h: HouseId, kind: DemandKind) {
         let turn = self.game_turn();
         let turns = self.d.defines.person_demand_turns;
-        self.persons[x].demand = Some(Demand { kind, issued: turn, deadline: turn + turns });
-        let subject = self.persons[x].name.clone();
-        let text = self.demand_kind_text(x, kind);
-        self.person_msg(x, || format!("{subject} demands: {text} {turns} turns."));
-        self.tel_person(self.persons[x].owner, "demand", "issued");
+        self.houses[h].demand = Some(Demand { kind, issued: turn, deadline: turn + turns });
+        let subject = self.house_label(h);
+        let text = self.demand_kind_text(h, kind);
+        self.house_msg(h, || format!("{subject} requests: {text} {turns} turns."));
+        self.tel_house(self.houses[h].owner, "request", "issued");
     }
 
-    /// Person `x`'s demand is met: `Demand met: +3 (60 turns)`.
-    pub(crate) fn person_demand_met(&mut self, x: PersonId) {
-        let Some(dm) = self.persons[x].demand.take() else { return };
+    /// House `h`'s request is met: `Request met: +3 (60 turns)`.
+    pub(crate) fn house_demand_met(&mut self, h: HouseId) {
+        let Some(dm) = self.houses[h].demand.take() else { return };
         let turn = self.game_turn();
-        self.persons[x].demand_rest_until = turn + self.d.defines.person_demand_rest;
-        let short = self.demand_kind_short(x, dm.kind);
-        self.holder_add_mod(self.person_holder(x), LoyaltyCause::DemandMet, DEMAND_MET);
-        self.person_add_deed(x, format!("Demand met: {short}."));
-        let subject = self.persons[x].name.clone();
-        self.person_msg(x, || format!("{subject}: demand met ({short}): +{} ({} turns).", DEMAND_MET.0, DEMAND_MET.1));
-        self.tel_person(self.persons[x].owner, "demand", "met");
+        self.houses[h].demand_rest_until = turn + self.d.defines.person_demand_rest;
+        let short = self.demand_kind_short(h, dm.kind);
+        self.house_add_mod(h, LoyaltyCause::DemandMet, DEMAND_MET);
+        self.house_add_deed(h, format!("Request met: {short}."));
+        let subject = self.house_label(h);
+        self.house_msg(h, || format!("{subject}: request met ({short}): +{} ({} turns).", DEMAND_MET.0, DEMAND_MET.1));
+        self.tel_house(self.houses[h].owner, "request", "met");
     }
 
-    /// Person `x`'s demand is refused (lapsed, or made impossible by an act of the owner):
-    /// `Demand refused: -3 (60 turns)`.
-    pub(crate) fn person_demand_refused(&mut self, x: PersonId) {
-        let Some(dm) = self.persons[x].demand.take() else { return };
+    /// House `h`'s request is refused (lapsed, or made impossible by an act of its liege):
+    /// `Request refused: -3 (60 turns)`.
+    pub(crate) fn house_demand_refused(&mut self, h: HouseId) {
+        let Some(dm) = self.houses[h].demand.take() else { return };
         let turn = self.game_turn();
-        self.persons[x].demand_rest_until = turn + self.d.defines.person_demand_rest;
-        let short = self.demand_kind_short(x, dm.kind);
-        self.holder_add_mod(self.person_holder(x), LoyaltyCause::DemandRefused, DEMAND_REFUSED);
-        self.person_add_deed(x, format!("Demand refused: {short}."));
-        let subject = self.persons[x].name.clone();
-        self.person_msg(x, || format!("{subject}: demand refused ({short}): {} ({} turns).", DEMAND_REFUSED.0, DEMAND_REFUSED.1));
-        self.tel_person(self.persons[x].owner, "demand", "refused");
+        self.houses[h].demand_rest_until = turn + self.d.defines.person_demand_rest;
+        let short = self.demand_kind_short(h, dm.kind);
+        self.house_add_mod(h, LoyaltyCause::DemandRefused, DEMAND_REFUSED);
+        self.house_add_deed(h, format!("Request refused: {short}."));
+        let subject = self.house_label(h);
+        self.house_msg(h, || format!("{subject}: request refused ({short}): {} ({} turns).", DEMAND_REFUSED.0, DEMAND_REFUSED.1));
+        self.tel_house(self.houses[h].owner, "request", "refused");
     }
 
-    /// Player `p`'s demands in its turn processing: met, impossible (replaced), lapsed; then new
-    /// ones for those without one whose rest is over.
+    /// Player `p`'s Houses' requests in its turn processing: met, impossible (replaced), lapsed;
+    /// then new ones for those without one whose rest is over.
     pub(crate) fn player_persons_demands(&mut self, p: PlayerId) {
         let turn = self.game_turn();
-        for x in self.players[p].persons.clone() {
-            if !self.persons.contains(x) {
-                continue;
-            }
-            if let Some(dm) = self.persons[x].demand {
-                if self.demand_is_met(x, dm.kind) {
-                    self.person_demand_met(x);
-                } else if self.demand_is_impossible(x, dm.kind) {
+        for h in self.player_houses(p) {
+            if let Some(dm) = self.houses[h].demand {
+                if self.demand_is_met(h, dm.kind) {
+                    self.house_demand_met(h);
+                } else if self.demand_is_impossible(h, dm.kind) {
                     // Replaced, without a grievance (a new one below, at once).
-                    self.persons[x].demand = None;
-                } else {
-                    if self.demand_is_paused(dm.kind) {
-                        if let Some(d) = self.persons[x].demand.as_mut() {
-                            d.deadline += 1;
-                        }
-                    }
-                    let deadline = self.persons[x].demand.map_or(turn, |d| d.deadline);
-                    if turn >= deadline {
-                        self.person_demand_refused(x);
-                    } else if deadline - turn == DEMAND_WARNING_TURNS {
-                        let subject = self.persons[x].name.clone();
-                        let text = self.demand_kind_text(x, dm.kind);
-                        self.person_msg(x, || format!("{subject} demands: {text} {DEMAND_WARNING_TURNS} turns left."));
-                    }
+                    self.houses[h].demand = None;
+                } else if turn >= dm.deadline {
+                    self.house_demand_refused(h);
+                } else if dm.deadline - turn == DEMAND_WARNING_TURNS {
+                    let subject = self.house_label(h);
+                    let text = self.demand_kind_text(h, dm.kind);
+                    self.house_msg(h, || format!("{subject} requests: {text} {DEMAND_WARNING_TURNS} turns left."));
                 }
             }
-            if self.persons[x].demand.is_none() && turn >= self.persons[x].demand_rest_until {
-                // A head's House must stand.
-                if let Some(kind) = self.person_next_demand(x) {
-                    if !self.demand_is_met(x, kind) {
-                        self.person_issue_demand(x, kind);
+            if self.houses[h].demand.is_none() && turn >= self.houses[h].demand_rest_until {
+                if let Some(kind) = self.house_next_demand(h) {
+                    if !self.demand_is_met(h, kind) {
+                        self.house_issue_demand(h, kind);
                     }
                 }
             }
         }
     }
 
-    /// The demands of player `p`'s persons that name the city at `plot` are refused at once (the
+    /// The requests of player `p`'s Houses that name the city at `plot` are refused at once (the
     /// city razed by `p`). Called before the city goes.
     pub(crate) fn persons_city_razed(&mut self, p: PlayerId, plot: PlotIdx) {
-        for x in self.players[p].persons.clone() {
-            if self.persons.get(x).and_then(|person| person.demand).is_some_and(|dm| Self::demand_names_plot(dm.kind, plot)) {
-                self.person_demand_refused(x);
+        for h in self.player_houses(p) {
+            if self.houses[h].demand.is_some_and(|dm| Self::demand_names_plot(dm.kind, plot)) {
+                self.house_demand_refused(h);
             }
         }
     }
 
-    /// Teams `t` and `other` made peace: demands of their persons to take a city of the other
-    /// side are refused at once.
+    /// Teams `t` and `other` made peace: requests of their Houses to take a city of the other side
+    /// are refused at once.
     pub(crate) fn persons_peace_made(&mut self, t: TeamId, other: TeamId) {
         for p in self.player_ids() {
             let mine = self.players[p].team;
@@ -448,17 +378,17 @@ impl Game {
             } else {
                 continue;
             };
-            for x in self.players[p].persons.clone() {
-                let Some(DemandKind::TakeCity(plot)) = self.persons.get(x).and_then(|person| person.demand).map(|dm| dm.kind) else { continue };
+            for h in self.player_houses(p) {
+                let Some(DemandKind::TakeCity(plot)) = self.houses[h].demand.map(|dm| dm.kind) else { continue };
                 if self.persons_city_at(plot).is_some_and(|c| self.players[self.cities[c].owner].team == them) {
-                    self.person_demand_refused(x);
+                    self.house_demand_refused(h);
                 }
             }
         }
     }
 
-    /// The turns left of person `x`'s demand (0 at its last turn).
-    pub fn person_demand_turns_left(&self, x: PersonId) -> Option<i32> {
-        self.persons[x].demand.map(|d| (d.deadline - self.game_turn()).max(0))
+    /// The turns left of House `h`'s request (0 at its last turn).
+    pub fn house_demand_turns_left(&self, h: HouseId) -> Option<i32> {
+        self.houses[h].demand.map(|d| (d.deadline - self.game_turn()).max(0))
     }
 }

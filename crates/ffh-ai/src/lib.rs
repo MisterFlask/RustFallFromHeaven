@@ -219,7 +219,7 @@ impl Controller for Ai {
             if !house {
                 crusade::ask_for_loans(g, p);
             }
-            // Persons of Note (docs/PERSONS.md): tribute, a grant, an offer to an enemy's House. A
+            // Houses (docs/PERSONS.md): tribute, a grant, an offer to an enemy's House. A
             // grant moves a city to a House and an accepted offer makes peace with one: before the
             // view of the turn is built.
             persons::turn(g, p);

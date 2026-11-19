@@ -1,26 +1,16 @@
-//! Grants and claims (docs/PERSONS.md, "The second build", rule 3).
+//! Grants and claims (docs/PERSONS.md, "The third build", rule 3, on "The second build", rule 3).
 //!
 //! A city gained is the Crown's until its owner grants it, for good: to a House, whose player
-//! takes it, or to a person with a leader (a veteran, or a great person unit, which is consumed
-//! and draws the founder), who founds a House: a new player born of the liege
-//! (`world::birth` with `release` and `vassal`), led by the person, who leaves the map. Never the
-//! capital, never under direct rule. Either way the city keeps its buildings and culture, its
+//! takes it, or, while the realm has no House, to a new House founded with it
+//! ([`GrantTo::NewHouse`]): a new player born of the liege (`world::birth` with `release` and
+//! `vassal`), its leader drawn from the free minor leaders ([`Game::house_leader_draw`]). Never
+//! the capital, never under direct rule. Either way the city keeps its buildings and culture, its
 //! garrison goes with it, and the liege's units in an army or marching stay the liege's.
 
 use ffh_data::*;
 
-use super::loyalty::Holder;
 use super::*;
 use crate::ffh::cards::world::{self, Birth};
-
-/// Who claims a city ([`Game::city_claimants`]).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Claimant {
-    /// A House of the city's owner with a city within `PERSON_CLAIM_RANGE` plots.
-    House(HouseId),
-    /// The commander whose army took the city in the last [`TAKEN_CLAIM_TURNS`] turns.
-    Commander(PersonId),
-}
 
 impl Game {
     // -----------------------------------------------------------------------------------------
@@ -57,38 +47,22 @@ impl Game {
     // Claims
     // -----------------------------------------------------------------------------------------
 
-    /// The claimants to city `c`: each House of its owner with a city within
-    /// `PERSON_CLAIM_RANGE` plots (in the owner's House order), then the commander whose army took
-    /// it in the last [`TAKEN_CLAIM_TURNS`] turns, if still in the cast.
-    pub fn city_claimants(&self, c: CityId) -> Vec<Claimant> {
+    /// The Houses that claim city `c`: each House of its owner with a city within
+    /// `PERSON_CLAIM_RANGE` plots, in the owner's House order.
+    pub fn city_claimants(&self, c: CityId) -> Vec<HouseId> {
         let p = self.cities[c].owner;
         let (x, y) = (self.cities[c].x, self.cities[c].y);
         let range = self.d.defines.person_claim_range;
-        let mut out: Vec<Claimant> = Vec::new();
-        for &h in &self.players[p].houses {
-            let Some(house) = self.houses.get(h) else { continue };
-            if self.players[house.player].cities.iter().any(|&o| o != c && self.cities.contains(o) && self.plot_distance(x, y, self.cities[o].x, self.cities[o].y) <= range) {
-                out.push(Claimant::House(h));
-            }
-        }
-        if let Some((x, turn)) = self.cities[c].taken_by {
-            if self.game_turn() - turn <= TAKEN_CLAIM_TURNS && self.persons.get(x).is_some_and(|person| person.owner == p) {
-                // A head claims through their House when it is near; else as the one who took it.
-                let via_house = self.person_house(x).is_some_and(|h| out.contains(&Claimant::House(h)));
-                if !via_house {
-                    out.push(Claimant::Commander(x));
-                }
-            }
-        }
-        out
-    }
-
-    /// The holder a claimant's grievance goes to, and the person who takes the rival.
-    pub(crate) fn claimant_holder(&self, cl: Claimant) -> (Holder, Option<PersonId>, (i32, i32)) {
-        match cl {
-            Claimant::House(h) => (Holder::House(h), self.houses[h].head, SNUB_HOUSE),
-            Claimant::Commander(x) => (self.person_holder(x), Some(x), SNUB_COMMANDER),
-        }
+        self.players[p]
+            .houses
+            .iter()
+            .copied()
+            .filter(|&h| {
+                self.houses.get(h).is_some_and(|house| {
+                    self.players[house.player].cities.iter().any(|&o| o != c && self.cities.contains(o) && self.plot_distance(x, y, self.cities[o].x, self.cities[o].y) <= range)
+                })
+            })
+            .collect()
     }
 
     // -----------------------------------------------------------------------------------------
@@ -97,7 +71,7 @@ impl Game {
 
     /// Whether player `p` may grant cities at all (else why not).
     pub fn player_check_grants(&self, p: PlayerId) -> Result<(), &'static str> {
-        if !self.player_has_persons(p) {
+        if !self.player_has_houses(p) {
             return Err("This civilization has no Houses.");
         }
         if self.player_rules_directly(p) {
@@ -127,6 +101,20 @@ impl Game {
         Ok(())
     }
 
+    /// Whether player `p` may found a House now (else why not): its realm has no House, and a
+    /// leader is free ([`Game::house_leader_pool`]).
+    pub fn player_check_found_house(&self, p: PlayerId) -> Result<(), &'static str> {
+        self.player_check_grants(p)?;
+        if !self.player_houses(p).is_empty() {
+            return Err("A realm with a House grants to its Houses.");
+        }
+        let Some(civ) = self.player_get_civilization_type(p) else { return Err("No leader is free to found a House.") };
+        if self.house_leader_pool(civ, p).leaders.is_empty() {
+            return Err("No leader is free to found a House.");
+        }
+        Ok(())
+    }
+
     /// Whether player `p` may grant city `c` to `to` (else why not).
     pub fn player_check_grant(&self, p: PlayerId, c: CityId, to: GrantTo) -> Result<(), &'static str> {
         self.player_check_grant_city(p, c)?;
@@ -136,42 +124,17 @@ impl Game {
                     return Err("Not a House of yours.");
                 }
             }
-            GrantTo::Person(x) => {
-                if !self.persons.contains(x) || self.persons[x].owner != p {
-                    return Err("Not a person of yours.");
-                }
-                if self.person_house(x).is_some() {
-                    return Err("A head is granted cities through their House.");
-                }
-                if self.persons[x].leader.is_none() {
-                    return Err("A hero cannot head a House.");
-                }
-            }
-            GrantTo::GreatPerson(u) => {
-                if !self.units.contains(u) || self.units[u].owner != p || !self.unit_is_great_person(u) {
-                    return Err("Not a great person of yours.");
-                }
-                if self.persons_pool(p).is_empty() {
-                    return Err("No person of note is left to found a House.");
-                }
-            }
+            GrantTo::NewHouse => self.player_check_found_house(p)?,
         }
         Ok(())
     }
 
-    /// Whether unit `u` is a great person (the five card suits' classes and the Great
-    /// Commander's).
-    pub fn unit_is_great_person(&self, u: UnitId) -> bool {
-        names(self.d).great.contains(&self.unit_get_unit_class_type(u))
-    }
-
     /// What a grant of city `c` does to the units in it (pure, the grant list's preview): the
-    /// garrison that goes with it (`going`: [`Game::persons_move_city`]'s units, but `founder`,
-    /// the founder's unit, which leaves the map first) and its owner's units that would go but
-    /// stay because they are in an army or marching (`staying`).
-    pub fn city_grant_garrison(&self, c: CityId, founder: Option<UnitId>) -> (Vec<UnitId>, Vec<UnitId>) {
-        let going = world::release_garrison(self, c, founder, true);
-        let staying = world::release_garrison(self, c, founder, false).into_iter().filter(|u| !going.contains(u)).collect();
+    /// garrison that goes with it (`going`: [`Game::persons_move_city`]'s units) and its owner's
+    /// units that would go but stay because they are in an army or marching (`staying`).
+    pub fn city_grant_garrison(&self, c: CityId) -> (Vec<UnitId>, Vec<UnitId>) {
+        let going = world::release_garrison(self, c, None, true);
+        let staying = world::release_garrison(self, c, None, false).into_iter().filter(|u| !going.contains(u)).collect();
         (going, staying)
     }
 
@@ -185,45 +148,26 @@ impl Game {
         Some(moved)
     }
 
-    /// Person `x` (with a leader, no House) founds a House of their owner `p` with city `c`: a new
-    /// player born of `p` (its civilization, `p`'s techs), led by `x`'s leader, `p`'s vassal,
-    /// played by the game's AI, named `House <name>`. `x` leaves the map (their unit is
-    /// removed) and heads it; their own loyalty modifiers move to it; a commander's command ends.
-    /// Returns the House and the city as it is now (a city changing hands has a new id).
-    fn person_found_house(&mut self, x: PersonId, c: CityId) -> Option<(HouseId, CityId)> {
-        let p = self.persons[x].owner;
-        let leader = self.persons[x].leader?;
+    /// Player `p` founds a House with city `c`, led by `leader`: a new player born of `p` (its
+    /// civilization, `p`'s techs), `p`'s vassal, played by the game's AI, named `House <name>`
+    /// (docs/PERSONS.md, "The third build", rule 3; part 2's splits found their cadets the same
+    /// way). `cities`: the cities it is born with, its capital first. Returns the House and the
+    /// cities as they are now (a city changing hands has a new id).
+    pub fn player_found_house(&mut self, p: PlayerId, leader: LeaderHeadType, cities: &[CityId]) -> Option<(HouseId, Vec<CityId>)> {
         let civ = self.player_get_civilization_type(p)?;
-        let plot = self.city_plot(c);
-        let settlement = self.cities[c].settlement;
-        // The person leaves the map first (their unit's death is not theirs).
-        if let Some(u) = self.person_unit(x) {
-            self.persons[x].unit = None;
-            self.unit_kill(u, false, None);
-        }
-        if let Post::Commander(a) = self.persons[x].post {
-            if let Some(army) = self.armies.get_mut(a) {
-                if army.commander == Some(x) {
-                    army.commander = None;
-                }
-                if army.commander_named == Some(x) {
-                    army.commander_named = None;
-                }
-            }
-            self.persons[x].post = Post::None;
-        }
+        let plots: Vec<(PlotIdx, bool)> = cities.iter().map(|&c| (self.city_plot(c), self.cities[c].settlement)).collect();
         let name = self.house_new_name(p);
         self.players[p].house_names.push(name.clone());
         let mut b = Birth::new(civ, leader, p);
         b.description = Some(format!("House {name}"));
-        b.release = vec![c];
+        b.release = cities.to_vec();
         b.vassal = true;
         b.keep_armies = true;
         let np = world::birth(self, &b);
-        // Played by the game's AI, not the founder's controller.
+        // Played by the game's AI, not the liege's controller.
         let barbarian = self.barbarian_player();
         self.controllers[np] = self.controllers[barbarian].clone();
-        // The vassal rules made the record (`team_set_vassal`), headed by `x` (their leader).
+        // The vassal rules made the record (`team_set_vassal`).
         let h = match self.player_house(np) {
             Some(h) => h,
             None => self.house_begin(np, p, HouseOrigin::Founded)?,
@@ -232,17 +176,23 @@ impl Game {
         house.origin = HouseOrigin::Founded;
         house.name = name;
         house.standing.mods.retain(|m| m.cause != LoyaltyCause::SoughtProtection);
-        let new_c = self.persons_city_at(plot)?;
+        let state = self.house_state(h);
+        self.houses[h].standing.state = state;
         // A great city stays great, a settlement stays one (rule 14: the realm's count).
-        self.city_keep_settlement(new_c, settlement);
-        Some((h, new_c))
+        let mut now = Vec::new();
+        for (plot, settlement) in plots {
+            if let Some(c) = self.persons_city_at(plot) {
+                self.city_keep_settlement(c, settlement);
+                now.push(c);
+            }
+        }
+        Some((h, now))
     }
 
     /// Player `p` grants city `c` to `to`, for good (docs/PERSONS.md, rule 3): the grantee's
-    /// `Granted <city>: +1 (30 turns)`, each other claimant's `<city> granted to <House>` (-1, -2
-    /// for the commander who took it) and the grantee's head as their rival; the demands it meets
-    /// are met at once, those it makes impossible are refused. The city moves to the House's
-    /// player (a founding: a new one).
+    /// `Granted <city>: +1 (30 turns)`, each other claimant House's `<city> granted to <House>`
+    /// (-1); the requests it meets are met at once, those it makes impossible are refused. The
+    /// city moves to the House's player (a founding: a new one, its leader drawn now).
     pub fn player_grant_city(&mut self, p: PlayerId, c: CityId, to: GrantTo) -> Result<HouseId, &'static str> {
         self.player_check_grant(p, c, to)?;
         let city = self.persons_city_name(c);
@@ -254,66 +204,41 @@ impl Game {
                 self.persons_move_city(c, hp).ok_or("The city cannot be granted.")?;
                 h
             }
-            GrantTo::Person(x) => {
-                let (h, _) = self.person_found_house(x, c).ok_or("The House cannot be founded.")?;
-                let (name, house) = (self.persons[x].name.clone(), self.house_label(h));
-                self.person_add_deed(x, format!("Founded {house} at {city}."));
-                self.person_msg(x, || format!("{name} founds {house} at {city} and leaves the map."));
-                h
-            }
-            GrantTo::GreatPerson(u) => {
-                let l = self.persons_draw(p).ok_or("No person of note is left to found a House.")?;
-                let name = entry::leader_name(self.d, l);
-                let ambition = ambition_of_leader(self.d, l);
-                let unit_name = self.d.text.name(&self.d.units[self.units[u].unit_type].base.description).to_string();
-                self.unit_kill(u, false, None);
-                let house_name = self.house_new_name(p);
-                let line = format!("{unit_name}, House {house_name} at {city}");
-                let x = self.person_new(p, PersonOrigin::GreatPerson, Some(l), None, name, ambition, &line);
-                let (h, _) = self.person_found_house(x, c).ok_or("The House cannot be founded.")?;
-                let house = self.house_label(h);
-                self.person_add_deed(x, format!("Founded {house} at {city}."));
+            GrantTo::NewHouse => {
+                let civ = self.player_get_civilization_type(p).ok_or("No leader is free to found a House.")?;
+                let leader = self.house_leader_draw(civ, p).ok_or("No leader is free to found a House.")?;
+                let (h, _) = self.player_found_house(p, leader, &[c]).ok_or("The House cannot be founded.")?;
+                let (house, name) = (self.house_label(h), leader_name(self.d, leader));
+                self.house_add_deed(h, format!("Founded at {city}, led by {name}."));
+                self.house_msg(h, || format!("{house} is founded at {city}, led by {name}."));
                 h
             }
         };
         let house = self.house_label(h);
-        self.holder_add_mod(Holder::House(h), LoyaltyCause::Granted { city: city.clone() }, GRANTED);
-        let head = self.houses[h].head;
-        if let Some(x) = head {
-            self.person_add_deed(x, format!("Granted {city}."));
-        }
+        self.house_add_mod(h, LoyaltyCause::Granted { city: city.clone() }, GRANTED);
+        self.house_add_deed(h, format!("Granted {city}."));
         // The snubbed claimants.
-        for cl in claimants {
-            let (hd, person, amount) = self.claimant_holder(cl);
-            if hd == Holder::House(h) || (person.is_some() && person == head) || !self.holder_alive(hd) {
+        for o in claimants {
+            if o == h || !self.houses.contains(o) {
                 continue;
             }
-            self.holder_add_mod(hd, LoyaltyCause::GrantedElsewhere { city: city.clone(), house: house.clone() }, amount);
-            if let Some(y) = person.filter(|&y| self.persons.contains(y)) {
-                self.persons[y].rival = head;
-                self.person_add_deed(y, format!("Passed over: {city} granted to {house}."));
-            }
+            self.house_add_mod(o, LoyaltyCause::GrantedElsewhere { city: city.clone(), house: house.clone() }, SNUB_HOUSE);
+            self.house_add_deed(o, format!("Passed over: {city} granted to {house}."));
         }
         self.house_msg(h, || format!("{city} granted to {house}."));
-        self.tel_person(p, "granted", if matches!(to, GrantTo::House(_)) { "house" } else { "founded" });
-        // Demands: those it makes impossible are refused at once; the grantee's met at once.
-        for y in self.players[p].persons.clone() {
-            let Some(dm) = self.persons.get(y).and_then(|person| person.demand) else { continue };
-            if let DemandKind::GrantCity(q) = dm.kind {
-                if q == plot && self.person_house(y) != Some(h) {
-                    self.person_demand_refused(y);
-                }
+        self.tel_house(p, "granted", if matches!(to, GrantTo::House(_)) { "house" } else { "founded" });
+        // Requests: those it makes impossible are refused at once; the grantee's met at once.
+        for o in self.player_houses(p) {
+            let Some(dm) = self.houses[o].demand else { continue };
+            if o != h && dm.kind == DemandKind::GrantCity(plot) {
+                self.house_demand_refused(o);
             }
         }
-        if let Some(x) = head.filter(|&x| self.persons.contains(x)) {
-            if let Some(dm) = self.persons[x].demand {
-                if self.demand_is_met(x, dm.kind) {
-                    self.person_demand_met(x);
-                }
+        if let Some(dm) = self.houses[h].demand {
+            if self.demand_is_met(h, dm.kind) {
+                self.house_demand_met(h);
             }
         }
-        // A commander who founded a House: the army takes another commander.
-        self.player_persons_commanders(p);
         Ok(h)
     }
 
@@ -322,21 +247,18 @@ impl Game {
     // -----------------------------------------------------------------------------------------
 
     /// Whether unit `u` counts for `liege` in the contest for a House's city: a land unit of
-    /// `liege` in one of its land armies whose commander is not Furious.
+    /// `liege` in one of its land armies.
     pub fn unit_holds_for_liege(&self, u: UnitId, liege: PlayerId) -> bool {
         let Some(unit) = self.units.get(u) else { return false };
         if unit.owner != liege || self.unit_get_domain_type(u) != DomainType::DOMAIN_LAND {
             return false;
         }
-        unit.army.and_then(|a| self.armies.get(a)).is_some_and(|army| {
-            army.domain == crate::army::ArmyDomain::Land && army.commander.filter(|&x| self.persons.contains(x)).map_or(true, |x| self.person_state(x) != LoyaltyState::Furious)
-        })
+        unit.army.and_then(|a| self.armies.get(a)).is_some_and(|army| army.domain == crate::army::ArmyDomain::Land)
     }
 
     /// The contest for city `c` of a House when the House breaks away (rule 7): the liege's army
     /// units standing in it ([`Game::unit_holds_for_liege`]) against the House's own land combat
-    /// units in it (those that go with a released city, the predicate of a commander's seizure).
-    /// `None` for a city of no House.
+    /// units in it (those that go with a released city). `None` for a city of no House.
     pub fn city_hold(&self, c: CityId) -> Option<CityHold> {
         let h = self.city_house(c)?;
         let (liege, hp) = (self.houses[h].owner, self.houses[h].player);
@@ -408,8 +330,7 @@ impl Game {
 /// rule 7).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CityHold {
-    /// The liege's army units standing in it (land units of its land armies whose commander is
-    /// not Furious).
+    /// The liege's army units standing in it (land units of its land armies).
     pub liege: i32,
     /// The liege's armies those units are in.
     pub armies: i32,

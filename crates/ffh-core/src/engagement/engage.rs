@@ -799,9 +799,9 @@ impl Game {
         let n = setup.units.len();
         let def_units: Vec<UnitId> = setup.units[setup.n_att..].to_vec();
         let att_units: Vec<UnitId> = setup.units[..setup.n_att].to_vec();
-        // Persons of Note (docs/PERSONS.md, "The record"): who will have this battle in their
-        // record.
-        let persons = self.persons_battle_parties(&att_units, &def_units, to);
+        // Houses (docs/PERSONS.md): the House whose city is assaulted has the battle in its record
+        // when the city holds.
+        let house = self.persons_city_at(to).and_then(|c| self.city_house(c));
         let mut e = Eng {
             p,
             team: self.players[p].team,
@@ -920,7 +920,7 @@ impl Game {
             self.tel_engagement(r, &e, &fought);
         }
         self.engage_messages(id);
-        self.persons_battle_deeds(id, persons);
+        self.house_battle_deed(id, house);
         Ok(EngageOutcome { report: id, result: post.result, plot_taken: post.plot_taken })
     }
 

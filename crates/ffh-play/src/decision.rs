@@ -250,10 +250,10 @@ pub fn keep_city(g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Opti
     }
 }
 
-/// Persons of Note (docs/PERSONS.md, "UI", part I): what razing city `c` does to player `p`'s
-/// cast, `[NEWLINE]`-led lines under `If razed:` (empty when nothing).
+/// Houses (docs/PERSONS.md, "UI", part I): what razing city `c` does to player `p`'s Houses,
+/// `[NEWLINE]`-led lines under `If razed:` (empty when nothing).
 fn raze_preview(g: &Game, p: PlayerId, c: CityId) -> String {
-    if !g.player_has_persons(p) || g.players[p].persons.is_empty() {
+    if !g.player_has_houses(p) || g.players[p].houses.is_empty() {
         return String::new();
     }
     let lines = g.persons_preview(p, &ffh_core::persons::PersonsAct::Raze(c));

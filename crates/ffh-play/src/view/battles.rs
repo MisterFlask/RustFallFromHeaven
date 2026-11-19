@@ -178,7 +178,6 @@ pub fn term_json(t: &Term) -> Json {
         TermSource::InBorders => j("InBorders"),
         TermSource::GlobalCounter => j("GlobalCounter"),
         TermSource::Handicap => j("Handicap"),
-        TermSource::Aura(u) => j("Aura").with("unit", *u),
         TermSource::Typed(x) => j("Typed").with("damage", Json::idx(*x)),
         TermSource::UnitHillsAttack => j("UnitHillsAttack"),
         TermSource::Improvement(x) => j("Improvement").with("improvement", Json::idx(*x)),

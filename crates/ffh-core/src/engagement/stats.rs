@@ -32,7 +32,6 @@
 //! | `AMPHIB_ATTACK_MODIFIER` | on the attacking side only | no |
 //! | `RIVER_ATTACK_MODIFIER` | removed: the river costs slots (Q9) | |
 //! | kamikaze, free wins against barbarians | not read (FfH sets neither) | |
-//! | an army commander's aura (phase 7) | [`Game::army_aura_pct`] | [`Game::army_aura_pct`] |
 //!
 //! A unit's bonuses for where it fights count on both its A and its Dv (the owner's rule,
 //! 2026-11-05; docs/UNIT_STATS.md): a defender's fortification, city, hills, feature and terrain
@@ -389,12 +388,6 @@ impl Game {
         Stat { base_x100: t.base, terms, total_x100: t.strength() }
     }
 
-    /// Phase 7 hook (plan 14): the percentages an army commander's aura adds to the A and Dv of
-    /// army `a`'s units. None in phase 6.
-    pub fn army_aura_pct(&self, _a: ArmyId) -> (i32, i32) {
-        (0, 0)
-    }
-
     /// The base of the unit's A (`attack`) or Dv, x100 (plan 4.2; docs/UNIT_STATS.md): its sheet's
     /// attack (defence) plus its own points, x10; plus its typed strength, each type's points
     /// scaled by the opponent's resistance to it (Q2). A type without a sheet (it never fights a
@@ -510,13 +503,6 @@ impl Game {
         // defence bonuses.
         if let Some(o) = opponent {
             modifier += self.combat_vs_terms(u, o, !attack, 1, log);
-        }
-
-        // Phase 7: the army commander's aura.
-        if let Some(a) = unit.army.filter(|&a| self.armies.contains(a)) {
-            let (aura_a, aura_dv) = self.army_aura_pct(a);
-            let commander = self.armies[a].commander.and_then(|x| self.persons.get(x)).and_then(|x| x.unit).unwrap_or(u);
-            modifier += log.push(if attack { aura_a } else { aura_dv }, || TermSource::Aura(commander));
         }
 
         log.set(|det| {

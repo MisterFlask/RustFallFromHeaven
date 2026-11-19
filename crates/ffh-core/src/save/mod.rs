@@ -171,7 +171,13 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   rule 4).
 /// - 52: a House's tribute lags the rate its liege set (`House::tribute_now`, `tribute_since`;
 ///   docs/PERSONS.md, rule 4); `LoyaltyCause::TributeRaised` gone.
-pub const FORMAT_VERSION: u32 = 52;
+/// - 53: Persons of Note removed, Houses alone (docs/PERSONS.md, "The third build", rules 1 to 3):
+///   no `Game::persons`, `persons_drawn`, `persons_barred`, `Player::persons`, `City::taken_by`,
+///   `Army::commander`, `commander_named`, `Standing::sworn`, `House::head`; a House's own request
+///   and record (`House::demand`, `demand_rest_until`, `deeds`); `DemandKind` without `Post`,
+///   `House` and `Wonder`; `LogMark::House` and `LogTag::House` in place of the person's;
+///   `TermSource::Aura` gone.
+pub const FORMAT_VERSION: u32 = 53;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -325,10 +331,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         plot_groups,
         deals,
         armies,
-        persons,
         houses,
-        persons_drawn,
-        persons_barred,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -452,10 +455,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     plot_groups.grow(slots);
     deals.grow(slots);
     armies.grow(slots);
-    persons.grow(slots);
     houses.grow(slots);
-    persons_drawn.grow(slots);
-    persons_barred.grow(slots);
     battle_reports.grow(slots);
     battle_report_next.grow(slots);
     map_rand.grow(slots);
@@ -578,10 +578,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         plot_groups,
         deals,
         armies,
-        persons,
         houses,
-        persons_drawn,
-        persons_barred,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -704,10 +701,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     plot_groups.write(w);
     deals.write(w);
     armies.write(w);
-    persons.write(w);
     houses.write(w);
-    persons_drawn.write(w);
-    persons_barred.write(w);
     battle_reports.write(w);
     battle_report_next.write(w);
     map_rand.write(w);
@@ -827,10 +821,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         plot_groups: Persist::read(r)?,
         deals: Persist::read(r)?,
         armies: Persist::read(r)?,
-        persons: Persist::read(r)?,
         houses: Persist::read(r)?,
-        persons_drawn: Persist::read(r)?,
-        persons_barred: Persist::read(r)?,
         battle_reports: Persist::read(r)?,
         battle_report_next: Persist::read(r)?,
         map_rand: Persist::read(r)?,

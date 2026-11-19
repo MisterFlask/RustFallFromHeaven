@@ -359,8 +359,6 @@ pub enum TermSource {
     InBorders,
     GlobalCounter,
     Handicap,
-    /// Phase 7: an army commander's aura.
-    Aura(UnitId),
     Typed(DamageType),
     /// The unit's hills attack bonus (`iHillsAttack`; no FfH unit or promotion has one).
     UnitHillsAttack,
