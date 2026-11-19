@@ -40,7 +40,12 @@ lasted and nothing after (`war between us` reads `ai_at_war_counter`, which noth
 and a bought House was the one lasting grudge (`BRIBE_GRUDGE`, an attitude modifier that never
 faded). Now the rules record `MEMORY_DECLARED_WAR`, `MEMORY_TOOK_CITY` and `MEMORY_BOUGHT_HOUSE`
 (a House's wrongs for its liege too), decay them every turn (1 in 50 each), and the AI reads each
-as a term capped at -3. A rules change is not gated on the AI (CLAUDE.md), so no A/B was run.
+as a term capped at -3. A rules change is not gated on the AI (CLAUDE.md). Guardrail, with the
+Houses' revisions of the same day (the army hold a contest, tribute raises remembered, the AI
+keeping its Houses Pleased and buying with Become your vassal): 12 seeds x 300 turns against
+f02bd011, base -> new: military at turn 100 11.7 -> 12.6, at 300 23.0 -> 25.6; research at 300
+99 -> 116; cities taken between civilizations 431 -> 383, by barbarians 39 -> 40; wars 430 -> 502,
+peace 289 -> 382; eliminated 14 -> 14. Nothing broad broke; more wars end in peace.
 What to look at when someone does: how many wars are followed by another between the same two
 within 50 turns (the memory lowers the attitude, which the cautious leaders' target choice reads),
 and whether peace offers after a long war are still accepted (`judge_offer` reads the attitude).
