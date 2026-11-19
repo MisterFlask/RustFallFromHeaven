@@ -835,7 +835,9 @@ table.scores.diplo tr.house-row > td:first-child .leader-cell { border-left: 2px
 .house-price { color: var(--c-sand); }
 /* Courtship (docs/PERSONS.md, "The third build", rule 7): who courts a House, under its line in the
    list and on its card; on a House's trade screen, your courtship of it. */
-.house-courted { color: var(--caution); font-size: 13px; white-space: normal; margin-top: 2px; }
+.house-courted { color: var(--caution); font-size: 13px; white-space: normal; margin-top: 2px; max-width: 18em; }
+/* (A long reason an offer waits, the courtship's, wraps within the column as the courtship does.) */
+.house-who .house-refusal { display: block; white-space: normal; max-width: 18em; }
 .pline.pcourted { color: var(--caution); }
 .house-courting { margin: 8px 0 0; color: var(--c-sand); }
 @media (max-width: 520px) {
