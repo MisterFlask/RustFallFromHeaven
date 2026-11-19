@@ -517,7 +517,9 @@ async function main() {
       const button = await phone.evaluate(() => [...document.querySelectorAll("#modals .modal-buttons button")].map((b) => b.textContent));
       const perHouse = await phone.evaluate(() => [...document.querySelectorAll("#modals .persons-warning ul.persons-warning-houses li")].map((l) => l.textContent));
       check(/^Adopting .+: \d+ Houses break away, taking \d+ cities, each at war with you\./.test(warn), `civics warning: ${warn}`);
-      check(perHouse.length >= 2 && perHouse.some((l) => / returns? to you \(an army of yours stands in /.test(l)), `civics warning, a line per House: ${perHouse.join(" | ")}`);
+      // The contest for each city where an army of yours stands (rule 7): held, and lost.
+      check(perHouse.length >= 2 && perHouse.some((l) => / returns to you: your army's \d+ units? outnumbers? its \d+\./.test(l)), `civics warning, a held city: ${perHouse.join(" | ")}`);
+      check(perHouse.some((l) => / goes with it: its \d+ units? against your army's \d+\./.test(l)), `civics warning, a city contested and lost: ${perHouse.join(" | ")}`);
       check(button.some((b) => /^Adopt .+: \d+ Houses? breaks? away$/.test(b)), `the revolution's button: ${button.join(", ")}`);
       await phone.evaluate(() => document.querySelector("#modals .persons-warning").scrollIntoView({ block: "center" }));
       await sleep(400);

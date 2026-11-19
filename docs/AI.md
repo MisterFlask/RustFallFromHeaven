@@ -1994,11 +1994,16 @@ This game's own system (docs/PERSONS.md; the second build: Houses as vassal civi
 only (`persons::turn`, once a turn after the turn's diplomacy, before the governors' empire
 orders): a human's grants, tribute and offers are the human's.
 
-- **Tribute** (`tribute_for`). Each House pays the realm's default (20%) while it would be Pleased
-  or Friendly paying it, 10% while it would be Cautious, nothing while it would be Annoyed or
-  worse. The state is read at the default rate, not at the current one, so the choice does not
-  feed on itself (at the current rate a House lifted to Pleased by 10% would go back to 20% and
-  Cautious the next turn). Set through the rules' command, only when it changes.
+- **Tribute** (`tribute_for`; the owner's decision of 2026-11-18, replacing "20% Pleased, 10%
+  Cautious, 0% Annoyed"). Each House at the highest rate that keeps it Pleased or better (loyalty
+  1 or more), the raise's modifier counted (`house_loyalty_at_tribute`: a raise of k steps is
+  `Tribute raised: -k` for 30 turns, rule 4): raised one step a turn while the step keeps it
+  Pleased; cut at once, as far as needed (to 0% when no rate is Pleased), whenever it is below
+  Pleased. A cut adds no modifier and is how a Furious House's countdown is stopped. The aim: the
+  AI's Houses cannot be bought (a House Cautious or worse takes a price to secede) and never sit
+  at a countdown the tribute could stop. The raise's cost keeps it from feeding on itself: a
+  House at 20% and loyalty 2 does not step to 30% (2 - 1 - 1 = 0). Set through the rules'
+  command, only when it changes.
 - **Grants** (`choose_grant`), one a turn: only while the Crown is over its limit (rule 14: 3
   cities under a governing civic, the capital alone for the Kuriotates; settlements never count),
   never the capital nor the best production city (`kept_city`), the least populous first, so the
@@ -2014,16 +2019,19 @@ orders): a human's grants, tribute and offers are the human's.
   grant that would make a holder Furious waits. With nobody able to take a city, no previews are
   computed.
 - **The levy** (`levy_city`): the main army's requisition (`armies::requisition_cities`) takes
-  the cities of its Houses that are Pleased or Friendly as candidates beside its own (the House's
-  garrison judges whether the city can spare its production); an order already under way stays
-  when the House turns Cautious, as an order in our own city does.
-- **Offers** (`choose_offer`): at war with a civilization, Secede offered to one of its Houses
-  that is Cautious or worse at the rules' price (`house_bribe_price`), in gold when that is at
-  most a third of our treasury (the gold the Khazad keep left out), else in gold per turn (the
-  price over ten turns) when that is at most a third of our gold rate; the cheapest first, one
-  offer a turn, the same House again only ten turns after our last offer to it (the House's noted
-  offers, `Offered N gold by the X`). Through `player_offer_house`, the deal path the human uses.
-  Asked, an AI House answers by the price alone (`diplomacy::judge_offer`).
+  the cities of its Houses that stay Pleased or better after the levy (`Levied -1`: loyalty 2 or
+  more) as candidates beside its own (the House's garrison judges whether the city can spare its
+  production); an order already under way stays when the House turns Cautious, as an order in
+  our own city does.
+- **Offers** (`choose_offer`; the owner's decision of 2026-11-18): at war with a civilization,
+  an offer to one of its Houses that is Cautious or worse at the rules' price
+  (`house_bribe_price`), in gold only (a House takes gold only): **Become your vassal** when the
+  price is at most half our treasury (the gold the Khazad keep left out) and the House would give
+  it (we can take a vassal) -- we get the cities, their units and a House, and the war is already
+  on -- else **Secede** when it is at most a third; the cheapest House first, one offer a turn,
+  the same House again only ten turns after our last offer to it (the House's noted offers,
+  `Offered N gold by the X`). Through `player_offer_house`, the deal path the human uses. Asked,
+  an AI House answers by the price alone (`diplomacy::judge_offer`).
 - **A House's own turn** (`persons::is_house`). A House cannot declare war or make peace (its
   liege does), so its turn skips the diplomacy (`diplomacy::manage`: peace, vassalage, trades,
   war planning), the offers to humans, the loans asked of others, the field army targets and the
@@ -2038,14 +2046,17 @@ orders): a human's grants, tribute and offers are the human's.
   with many Houses is in the rules' per-player work, not in their AI.
 - **Civics.** A direct-rule civic (Despotism, God King) is not considered while a House stands
   and the AI does not rule directly already (`civic_barred`): adopting one is the civil war.
-- **Armies.** A stack with nothing else to do (before gathering, `military::army`) stands in the
-  largest city of a Furious House where no army of ours stands, within 8 turns (a city where an
-  army stands goes back to the liege when its House breaks away). A Furious commander's army goes
+- **Armies.** A stack with nothing else to do (before gathering, `military::army`) goes to hold
+  a city of a House of ours counting down that a tribute of 0% cannot bring back above Furious
+  (`disloyal_house_post`): the House's most valuable city (the most populous first) that the
+  stack can hold, one not held now where its army units, with ours already there, would outnumber
+  the House's land combat units (rule 7, `city_hold`), within 8 turns; a stack standing in such a
+  city stays when the city is held only with it. A stack that is no army (or whose commander is
+  Furious) counts for nothing and does not go. A Furious commander's army goes
   first of all to our city with the largest garrison of other land units, within 10 turns (its
   sworn units there stay).
 - A demanded war adds a tenth to that civilization's score in the war planning
-  (`diplomacy::manage`), never a war of its own. It never frees a House; it offers no House
-  Become your vassal.
+  (`diplomacy::manage`), never a war of its own. It never frees a House.
 
 Soak (8 AI games, seeds 1-8, 300 turns, 7 civilizations, standard size; against the rules' build
 whose AI granted any Crown city one a turn and took 20% from every House): no panic, no failed

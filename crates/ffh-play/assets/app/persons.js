@@ -109,7 +109,7 @@ addHelp({
     h("h4", "Tribute and levies"),
     h(
       "ul",
-      h("li", "Each House pays a tribute of its gold and research, 0 to 50%; the higher it is, the lower its loyalty. Choose it on the House's card: the list shows what each rate pays and does to its loyalty."),
+      h("li", "Each House pays a tribute of its gold and research, 0 to 50%; the higher it is, the lower its loyalty. A raise also costs -1 for each 10% raised, for 30 turns; a cut costs nothing. Choose it on the House's card: the list shows what each rate pays and does to its loyalty."),
       h("li", "Your armies requisition in your Houses' cities too (the Armies screen): each levy costs the House loyalty for a while. An Annoyed or Furious House takes no levy."),
     ),
     h("h4", "Loyalty"),
@@ -118,7 +118,7 @@ addHelp({
       h("li", "A House's and a person's loyalty is a sum of parts; its state is the attitude scale: Friendly, Pleased, Cautious, Annoyed, Furious. A state's mark says what it does."),
       h("li", "Each person makes one demand at a time, with a term. Met: +3 for 60 turns. Refused at its term, or made impossible by your act: -3 for 60 turns. The demand line's button goes where it is met."),
       h("li", "Every act that moves loyalty shows the change before it is done: the grant list, the tribute list, civics, religion, war and peace, razing a city."),
-      h("li", "A Furious House breaks away at the end of a 10-turn countdown, at war with you; a city of it where your army stands stays yours. A Furious commander's sworn units secede."),
+      h("li", "A Furious House breaks away at the end of a 10-turn countdown, at war with you; a city of it where your army's units outnumber the House's land combat units stays yours (a tie goes to the House). A Furious commander's sworn units secede."),
     ),
     h("h4", "Breaking away, freeing, side deals"),
     h(
@@ -267,9 +267,10 @@ function personCard(p, m) {
 const tributeOpen = new Set();
 
 /** A House's tribute: its line (`Tribute 20%: 12 gold, 8 research last turn.`) and the list of
- *  rates (0 to 50%), each with what the House would pay this turn and its tribute part and
- *  loyalty at that rate (rule 4); a tap on a rate sets it (`house_tribute`) and the Court is read
- *  again. The current rate is marked (`now`); a tap on it does nothing. */
+ *  rates (0 to 50%), each with what the House would pay this turn, its tribute part, the raise's
+ *  modifier for a higher rate (`Raised: -2 (30 turns)`) and its loyalty after (rule 4); a tap on
+ *  a rate sets it (`house_tribute`) and the Court is read again. The current rate is marked
+ *  (`now`); a tap on it does nothing. */
 function tributeBlock(x, reload) {
   const t = x.tribute;
   const set = async (pct) => {
@@ -287,7 +288,7 @@ function tributeBlock(x, reload) {
       },
       h("span.trate-pct", `${r.pct}%`, r.current ? h("span.trate-now", "now") : null),
       h("span.trate-est", r.estimate),
-      h("span.trate-part", `${r.part_text} · ${r.loyalty_text}`),
+      h("span.trate-part", [r.part_text, r.raised_text, r.loyalty_text].filter(Boolean).join(" · ")),
       h("span.trate-state", stateMark(r.state)),
     ),
   );
@@ -311,7 +312,8 @@ function houseCard(x, m, reload) {
       {
         "data-city": c.city,
         // A House's city is its own player's: the map shows it (your city screen does not open on it).
-        title: c.held ? "An army of yours stands in it. Show it on the map" : "Show it on the map",
+        // The contest for it when an army of yours stands in it (`Corona returns to you: ...`).
+        title: c.hold ? `${c.hold} Show it on the map` : "Show it on the map",
         onclick: () => (m.close(null), emit("center", c.x, c.y), emit("flash", c.x, c.y)),
       },
       c.name,

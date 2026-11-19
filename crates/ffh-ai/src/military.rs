@@ -833,8 +833,8 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
         return;
     }
 
-    // A free stack stands in a city of a Disloyal House that no army of ours holds: a city an army
-    // stands in does not secede (docs/PERSONS.md; persons.rs).
+    // A free stack holds a city of a House whose break-away no tribute cut can stop: a city where
+    // our army units outnumber the House's goes back to us (docs/PERSONS.md, rule 7; persons.rs).
     if let Some(q) = crate::persons::disloyal_house_post(g, v, grp, u) {
         crate::trace!(g, p, "stack {:?} holds a Disloyal House's city at {:?}", grp, g.map.xy(q));
         if q == here {

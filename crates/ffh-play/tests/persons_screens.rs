@@ -304,22 +304,24 @@ fn the_civics_screen_warns_of_a_direct_rule_civic() {
     let houses = g.players[st.human].houses.len();
     assert!(warning.starts_with(&format!("Adopting {}: {houses} Houses break away, taking ", ffh_play::names::display(d, god_king))), "{warning}");
     assert!(warning.ends_with(" cities, each at war with you."), "{warning}");
-    // A line per House: the cities it takes, those an army of yours holds.
+    // A line per House: the cities it takes, and the contest for each city where an army of
+    // yours stands (rule 7: held when your army's units outnumber the House's).
     let ph = arr(p, "persons_houses");
     let per_house: Vec<&str> = ph.iter().filter_map(Json::as_str).collect();
     assert_eq!(per_house.len(), houses, "{p}");
     for &h in &g.players[st.human].houses {
         let label = g.house_label(h);
-        let line = per_house.iter().find(|l| l.starts_with(&format!("{label}: ")) || l.starts_with(&format!("{label} (a vassal): ")) || l.starts_with(&format!("{label} ends: "))).unwrap_or_else(|| panic!("{label}: {per_house:?}"));
+        let line = per_house.iter().find(|l| l.starts_with(&format!("{label}: ")) || l.starts_with(&format!("{label} (a vassal): ")) || l.starts_with(&format!("{label} ends."))).unwrap_or_else(|| panic!("{label}: {per_house:?}"));
         let (going, held) = g.house_cities_held(h);
         for c in going {
             assert!(line.contains(&ffh_play::view::city_name(g, c)), "{line}");
         }
         for c in &held {
-            assert!(line.contains(&format!("{} return", ffh_play::view::city_name(g, *c))) && line.contains("(an army of yours stands in "), "{line}");
+            assert!(line.contains(&format!("{} returns to you: your army's ", ffh_play::view::city_name(g, *c))), "{line}");
         }
     }
-    assert!(per_house.iter().any(|l| l.contains(" returns to you (an army of yours stands in it).")), "the held city: {per_house:?}");
+    assert!(per_house.iter().any(|l| l.contains(" returns to you: your army's 2 units outnumber its ")), "the held city: {per_house:?}");
+    assert!(per_house.iter().any(|l| l.contains(" goes with it: its 2 units against your army's 1.")), "the seat contested: {per_house:?}");
     assert_eq!(s_of(p, "persons_button"), format!("Adopt {}: {houses} Houses break away", ffh_play::names::display(d, god_king)));
     let lines = arr(p, "persons");
     assert_eq!(lines.len(), houses, "one line a House: {p}");

@@ -4,10 +4,12 @@
 //! offers are the human's.
 //!
 //! Once a turn ([`turn`], after the empire's civics and religion and the turn's diplomacy):
-//! - **Tribute** ([`tribute_for`]): each House pays the realm's default (20%) while it is Pleased or
-//!   Friendly at that rate, 10% while it would be Cautious, nothing while it would be Annoyed or
-//!   worse. Judged at the default rate, so the choice does not feed on itself (a House that the
-//!   lower rate lifts from Cautious to Pleased keeps the lower rate). Set only when it changes.
+//! - **Tribute** ([`tribute_for`]): each House at the highest rate that keeps it Pleased or better
+//!   (loyalty 1 or more), the raise's `Tribute raised` modifier counted: raised one step at a time
+//!   while the step keeps it Pleased; cut at once, as far as needed, whenever it is below Pleased
+//!   (a cut is free, and stops a Furious House's countdown when it lifts it above Furious). So the
+//!   AI's Houses are not for sale (a House Cautious or worse takes a price) and never count down
+//!   while the tribute could stop it. Set only when it changes.
 //! - **Grants** ([`choose_grant`]): one a turn while the Crown is over its limit (rule 14: 3 cities,
 //!   the capital alone for the Kuriotates; settlements never count), the least populous first,
 //!   never the capital nor the best production city ([`kept_city`]). The candidate by, in
@@ -19,18 +21,20 @@
 //!   [`house_has_room`]), the one with the fewest cities; the fewest holders made Annoyed. A
 //!   commander founds a House (and loses the command) only for their claim or demand; a hero never
 //!   founds one (the rules refuse it). A grant that would make some holder Furious waits.
-//! - **Offers** ([`choose_offer`]): at war with a civilization, Secede offered to one of its Houses
-//!   that is Cautious or worse, at its price ([`Game::house_bribe_price`]), in gold when that is at
-//!   most a third of the treasury, else in gold per turn when that is at most a third of the gold
-//!   rate; the cheapest first, one offer a turn, the same House again only after
-//!   [`OFFER_PERIOD`] turns. Through `player_offer_house`, the deal path the human's offers take.
+//! - **Offers** ([`choose_offer`]): at war with a civilization, an offer to one of its Houses that
+//!   is Cautious or worse, at its price ([`Game::house_bribe_price`]), in gold: Become your vassal
+//!   (the cities, their units and a House, the war already on) when the price is at most half the
+//!   treasury, else Secede when it is at most a third; the cheapest House first, one offer a turn,
+//!   the same House again only after [`OFFER_PERIOD`] turns. Through `player_offer_house`, the
+//!   deal path the human's offers take.
 //!
-//! Elsewhere: the levy ([`levy_city`]: `armies::requisition_cities` adds the cities of a Pleased
-//! or Friendly House); a direct-rule civic is never adopted while a House stands
-//! ([`civic_barred`], `empire.rs`); an idle army stands in an unheld city of a Furious House
-//! ([`disloyal_house_post`], `military.rs`: the city goes back to the liege when the House breaks
-//! away); a Furious commander's army goes to the city of ours with the largest garrison
-//! ([`disloyal_commander_haven`]); a demanded war weighs on the war planning ([`war_demanded`]); a
+//! Elsewhere: the levy ([`levy_city`]: `armies::requisition_cities` adds the cities of a House
+//! that stays Pleased or better after the levy's `Levied -1`); a direct-rule civic is never
+//! adopted while a House stands ([`civic_barred`], `empire.rs`); an idle army goes to hold the
+//! most valuable city it can hold of a House counting down that no tribute cut can stop
+//! ([`disloyal_house_post`], `military.rs`: a city where the liege's army units outnumber the
+//! House's goes back to the liege when it breaks away); a Furious commander's army goes to the
+//! city of ours with the largest garrison ([`disloyal_commander_haven`]); a demanded war weighs on the war planning ([`war_demanded`]); a
 //! House's own turn skips what a vassal cannot do ([`is_house`], `lib.rs`). A House answers offers
 //! by the rules' price (`diplomacy::judge_offer`). The AI never frees a House.
 
@@ -38,15 +42,11 @@ use std::cmp::Reverse;
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::persons::{DemandKind, GrantCandidate, GrantTo, LoyaltyCause, LoyaltyState, Post, OFFER_NOTED_TURNS, TRIBUTE_DEFAULT};
+use ffh_core::persons::{BribeKind, DemandKind, GrantCandidate, GrantTo, LoyaltyCause, LoyaltyState, Post, FURIOUS_AT, LEVIED, OFFER_NOTED_TURNS, PLEASED_AT, TRIBUTE_MAX, TRIBUTE_STEP};
 use ffh_core::structs::TradeData;
 use ffh_data::*;
 
 use crate::view::View;
-
-
-/// The tribute of a House that would be Cautious at the default rate (percent).
-pub const TRIBUTE_CAUTIOUS: i32 = 10;
 
 /// The turns before the AI offers the same House again.
 pub const OFFER_PERIOD: i32 = 10;
@@ -65,11 +65,11 @@ pub fn turn(g: &mut Game, p: PlayerId) {
             Err(e) => crate::trace!(g, p, "persons: no grant of {city}: {e}"),
         }
     }
-    if let Some((hp, give)) = choose_offer(g, p) {
-        let label = g.player_house(hp).map(|h| g.house_label(h)).unwrap_or_default();
-        let get = [TradeData { item_type: TradeableItem::TRADE_SECEDE, data: 0, offering: false, hidden: false }];
-        let accepted = g.player_offer_house(p, hp, &give, &get);
-        crate::trace!(g, p, "persons: Secede offered to {label} for {} ({})", ffh_core::persons::house_offer_value(&give), if accepted { "accepted" } else { "refused" });
+    if let Some(offer) = choose_offer(g, p) {
+        let label = g.player_house(offer.house_player).map(|h| g.house_label(h)).unwrap_or_default();
+        let get = [TradeData { item_type: offer.kind.item(), data: 0, offering: false, hidden: false }];
+        let accepted = g.player_offer_house(p, offer.house_player, &offer.give, &get);
+        crate::trace!(g, p, "persons: {} offered to {label} for {} ({})", offer.kind.name(), ffh_core::persons::house_offer_value(&offer.give), if accepted { "accepted" } else { "refused" });
     }
 }
 
@@ -101,14 +101,23 @@ fn houses_of(g: &Game, p: PlayerId) -> Vec<HouseId> {
 // Tribute
 // -------------------------------------------------------------------------------------------
 
-/// The tribute (percent) the AI liege takes from House `h`: the default while the House would be
-/// Pleased or Friendly paying it, [`TRIBUTE_CAUTIOUS`] while it would be Cautious, nothing while
-/// it would be Annoyed or worse.
+/// The tribute (percent) the AI liege sets for House `h` this turn: the highest rate that keeps it
+/// Pleased or better ([`PLEASED_AT`]), the raise's modifier counted
+/// (`Game::house_loyalty_at_tribute`). Below Pleased now: cut at once to the highest lower rate
+/// at which it is Pleased, else to 0 (a cut adds no modifier). Pleased or better: one step up when
+/// the step keeps it Pleased (a raise of one step costs the step's standing part and
+/// `Tribute raised -1` for 30 turns), else unchanged.
 pub fn tribute_for(g: &Game, h: HouseId) -> i32 {
-    match LoyaltyState::of(g.house_loyalty_at_tribute(h, TRIBUTE_DEFAULT)) {
-        LoyaltyState::Friendly | LoyaltyState::Pleased => TRIBUTE_DEFAULT,
-        LoyaltyState::Cautious => TRIBUTE_CAUTIOUS,
-        LoyaltyState::Annoyed | LoyaltyState::Furious => 0,
+    let now = g.houses[h].tribute;
+    let pleased = |pct: i32| g.house_loyalty_at_tribute(h, pct) >= PLEASED_AT;
+    if !pleased(now) {
+        return (0..now).step_by(TRIBUTE_STEP as usize).rev().find(|&pct| pleased(pct)).unwrap_or(0);
+    }
+    let up = now + TRIBUTE_STEP;
+    if up <= TRIBUTE_MAX && pleased(up) {
+        up
+    } else {
+        now
     }
 }
 
@@ -126,10 +135,11 @@ fn tribute(g: &mut Game, p: PlayerId) {
 // The levy
 // -------------------------------------------------------------------------------------------
 
-/// Whether `p`'s armies levy from city `c` of one of its Houses: the House is Pleased or Friendly
-/// (a levy is a grievance; the rules take none from a House Annoyed or worse).
+/// Whether `p`'s armies levy from city `c` of one of its Houses: the House stays Pleased or better
+/// after the levy's grievance (`Levied -1`; a House Cautious or worse takes a price to secede, and
+/// the rules take no levy from one Annoyed or worse).
 pub fn levy_city(g: &Game, p: PlayerId, c: CityId) -> bool {
-    g.city_levied_by(c, p) && g.city_house(c).is_some_and(|h| g.house_state(h) <= LoyaltyState::Pleased)
+    g.city_levied_by(c, p) && g.city_house(c).is_some_and(|h| g.house_loyalty(h) + LEVIED.0 >= PLEASED_AT)
 }
 
 /// The cities of `p`'s Houses its armies levy from now ([`levy_city`]), in the rules' order.
@@ -293,56 +303,64 @@ fn offered_lately(g: &Game, h: HouseId, by: &str) -> bool {
     g.houses[h].standing.mods.iter().any(|m| matches!(&m.cause, LoyaltyCause::Offered { by: b, .. } if b == by) && m.until.is_some_and(|u| u - OFFER_NOTED_TURNS > turn - OFFER_PERIOD))
 }
 
-/// What `p` offers House `h` (of a civilization it is at war with) for Secede at its price, if it
-/// can pay it: gold up to a third of its treasury (the gold it keeps left out), else gold per turn
-/// up to a third of its gold rate, as the rules let it trade them.
-fn offer_for(g: &Game, p: PlayerId, h: HouseId) -> Option<Vec<TradeData>> {
+/// An offer the AI makes to an enemy's House ([`choose_offer`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Offer {
+    /// The House's player.
+    pub house_player: PlayerId,
+    /// What it asks: Become your vassal or Secede.
+    pub kind: BribeKind,
+    /// What `p` gives: gold, the House's price.
+    pub give: Vec<TradeData>,
+}
+
+/// What `p` offers House `h` (of a civilization it is at war with) at its price, if it can pay it
+/// in gold (a House takes gold only): Become your vassal when the price is at most half its
+/// treasury (the gold it keeps left out) and the House would give it, else Secede when it is at
+/// most a third and the House would give it.
+fn offer_for(g: &Game, p: PlayerId, h: HouseId) -> Option<(BribeKind, Vec<TradeData>)> {
     let price = g.house_bribe_price(h)?;
     let hp = g.houses[h].player;
-    if price <= 0 {
-        return Some(Vec::new());
-    }
     let item = |item_type: TradeableItem, data: i32| TradeData { item_type, data, offering: false, hidden: false };
     let treasury = g.players[p].gold - crate::civs::gold_floor(g, p);
     let gold = item(TradeableItem::TRADE_GOLD, price);
-    if price <= treasury / 3 && g.player_can_trade_item(p, hp, &gold, false) {
-        return Some(vec![gold]);
+    let give = if price <= 0 { Vec::new() } else { vec![gold.clone()] };
+    if price > 0 && !g.player_can_trade_item(p, hp, &gold, false) {
+        return None;
     }
-    let turns = ffh_core::persons::BRIBE_GOLD_PER_TURN_TURNS;
-    let per_turn = (price + turns - 1) / turns;
-    let gpt = item(TradeableItem::TRADE_GOLD_PER_TURN, per_turn);
-    (per_turn <= g.player_calculate_gold_rate(p) / 3 && g.player_can_trade_item(p, hp, &gpt, false)).then(|| vec![gpt])
+    let gives = |kind: BribeKind| g.house_bribe_refusal(h, p, kind).is_none() && g.player_can_trade_item(hp, p, &item(kind.item(), 0), false);
+    if price <= treasury / 2 && gives(BribeKind::Vassal) {
+        return Some((BribeKind::Vassal, give));
+    }
+    (price <= treasury / 3 && gives(BribeKind::Secede)).then_some((BribeKind::Secede, give))
 }
 
-/// The offer `p` makes this turn, if any: (the House's player, what `p` gives). See the module
-/// comment.
-pub fn choose_offer(g: &Game, p: PlayerId) -> Option<(PlayerId, Vec<TradeData>)> {
+/// The offer `p` makes this turn, if any. See the module comment.
+pub fn choose_offer(g: &Game, p: PlayerId) -> Option<Offer> {
     if g.players[p].human || !g.player_has_persons(p) {
         return None;
     }
     let team = g.players[p].team;
     let by = g.player_get_civilization_short_description(p);
-    let secede = TradeData { item_type: TradeableItem::TRADE_SECEDE, data: 0, offering: false, hidden: false };
-    let mut best: Option<((i32, HouseId), PlayerId, Vec<TradeData>)> = None;
+    let mut best: Option<((i32, HouseId), Offer)> = None;
     for q in g.player_ids() {
         let pl = &g.players[q];
         if !pl.alive || pl.houses.is_empty() || !g.at_war(team, pl.team) {
             continue;
         }
         for h in houses_of(g, q) {
-            let hp = g.houses[h].player;
-            if g.house_bribe_refusal(h, p, ffh_core::persons::BribeKind::Secede).is_some() || !g.player_can_trade_item(hp, p, &secede, false) || offered_lately(g, h, &by) {
+            if offered_lately(g, h, &by) {
                 continue;
             }
             let Some(price) = g.house_bribe_price(h) else { continue };
-            let Some(give) = offer_for(g, p, h) else { continue };
+            let Some((kind, give)) = offer_for(g, p, h) else { continue };
             let key = (price, h);
-            if best.as_ref().map_or(true, |(k, ..)| key < *k) {
-                best = Some((key, hp, give));
+            if best.as_ref().map_or(true, |(k, _)| key < *k) {
+                best = Some((key, Offer { house_player: g.houses[h].player, kind, give }));
             }
         }
     }
-    best.map(|(_, hp, give)| (hp, give))
+    best.map(|(_, offer)| offer)
 }
 
 // -------------------------------------------------------------------------------------------
@@ -360,32 +378,42 @@ pub(crate) fn civic_barred(g: &Game, p: PlayerId, c: CivicType) -> bool {
 // Armies
 // -------------------------------------------------------------------------------------------
 
-/// The armies of `p` standing on `plot`, but `except`.
-fn armies_at(g: &Game, p: PlayerId, plot: PlotIdx, except: Option<ArmyId>) -> usize {
-    g.players[p].armies.iter().filter(|&&a| Some(a) != except && g.armies.contains(a) && g.army_plot(a) == Some(plot)).count()
-}
-
-/// Where an idle army stack (`grp`, led by `u`) of `v.p` stands against a break-away: a city of a
-/// Furious House where no army of ours stands (a city where one stands goes back to us), the
-/// largest first, within 8 turns; or the city it holds alone already (its plot).
+/// Where an idle army stack (`grp`, led by `u`) of `v.p` goes against a break-away that the
+/// tribute cannot stop: a House of ours Furious even at a tribute of 0% breaks away at its
+/// countdown's end, and takes every city where our army units do not outnumber its own land
+/// combat units (`Game::city_hold`, rule 7). The stack holds the House's most valuable city it can
+/// hold (the most populous first, ties: the older): one not held now where its army units, with
+/// ours already there, would outnumber the House's, within 8 turns; or it stays in the city it
+/// stands in when that city is held only with it (its plot).
 pub(crate) fn disloyal_house_post(g: &Game, v: &mut View, grp: GroupId, u: UnitId) -> Option<PlotIdx> {
     let p = v.p;
     let mut cities: Vec<CityId> = Vec::new();
     for &h in &g.players[p].houses {
-        if g.houses.contains(h) && g.house_state(h) == LoyaltyState::Furious {
+        if g.houses.contains(h) && g.house_loyalty_at_tribute(h, 0) <= FURIOUS_AT {
             cities.extend(g.house_cities(h));
         }
     }
     if cities.is_empty() {
         return None;
     }
+    // The stack's units that count in the contest (an army's land units, its commander not
+    // Furious).
+    let mine = g.groups[grp].units.iter().filter(|&&o| g.unit_holds_for_liege(o, p)).count() as i32;
+    if mine == 0 {
+        return None;
+    }
     cities.sort_by_key(|&c| (std::cmp::Reverse(g.cities[c].population), c));
     let here = g.unit_plot(u);
-    let mine = g.units[u].army.or_else(|| g.players[p].armies.iter().copied().find(|&a| g.armies.get(a).is_some_and(|army| army.group == Some(grp))));
-    if cities.iter().any(|&c| g.city_plot(c) == here) && armies_at(g, p, here, mine) == 0 {
-        return Some(here);
+    if let Some(hold) = cities.iter().find(|&&c| g.city_plot(c) == here).and_then(|&c| g.city_hold(c)) {
+        if hold.held() && hold.liege - mine <= hold.house {
+            return Some(here);
+        }
     }
-    let open: Vec<PlotIdx> = cities.iter().map(|&c| g.city_plot(c)).filter(|&q| armies_at(g, p, q, None) == 0).collect();
+    let open: Vec<PlotIdx> = cities
+        .iter()
+        .filter(|&&c| g.city_plot(c) != here && g.city_hold(c).is_some_and(|hold| !hold.held() && hold.liege + mine > hold.house))
+        .map(|&c| g.city_plot(c))
+        .collect();
     if open.is_empty() {
         return None;
     }
@@ -422,7 +450,7 @@ pub(crate) fn disloyal_commander_haven(g: &Game, v: &mut View, grp: GroupId, u: 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ffh_core::persons::{Ambition, Demand, LoyaltyMod, BribeKind};
+    use ffh_core::persons::{Ambition, Demand, LoyaltyMod};
 
     const P0: PlayerId = PlayerId(0);
     const P1: PlayerId = PlayerId(1);
@@ -519,29 +547,72 @@ mod tests {
 
     // ---- Tribute ----
 
-    /// The tribute follows the House's state at the default rate: 20% Pleased or Friendly, 10%
-    /// Cautious, nothing Annoyed or Furious; set again, it does not move.
+    /// The tribute keeps a House Pleased or better, the raise counted: it rises one step a turn
+    /// while the step (its standing part and `Tribute raised -1`) keeps the House Pleased, and
+    /// stops there; the raises stack.
     #[test]
-    fn tribute_by_the_state_at_the_default_rate() {
+    fn the_tribute_rises_a_step_at_a_time_while_the_house_stays_pleased() {
         let (mut g, c) = world(&SPOTS[..2]);
         let (_, h) = house(&mut g, c[1]);
-        for (at_default, pct) in [(3, 20), (1, 20), (0, 10), (-2, 10), (-3, 0), (-5, 0), (-6, 0)] {
-            g.houses[h].tribute = TRIBUTE_DEFAULT;
-            set_loyalty(&mut g, h, at_default);
-            assert_eq!(tribute_for(&g, h), pct, "loyalty {at_default} at 20%");
+        g.houses[h].tribute = 10;
+        set_loyalty(&mut g, h, 5);
+        // 20%: 5, -1 for the part, -1 for the raise: 3.
+        assert_eq!(tribute_for(&g, h), 20);
+        super::tribute(&mut g, P0);
+        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (20, 3));
+        // 30%: 3 - 1 - 1 = 1, still Pleased.
+        super::tribute(&mut g, P0);
+        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (30, 1));
+        assert_eq!(g.houses[h].standing.mods.iter().filter(|m| m.cause == LoyaltyCause::TributeRaised).count(), 2, "two raises, two modifiers");
+        // 40% would be -1: it stays.
+        for _ in 0..3 {
             super::tribute(&mut g, P0);
-            assert_eq!(g.houses[h].tribute, pct, "loyalty {at_default} at 20%");
-            super::tribute(&mut g, P0);
-            assert_eq!(g.houses[h].tribute, pct, "stable: loyalty {at_default} at 20%");
+            assert_eq!((g.houses[h].tribute, g.house_state(h)), (30, LoyaltyState::Pleased));
         }
+    }
+
+    /// Below Pleased the tribute is cut at once, as far as needed (to 0 when no rate keeps the
+    /// House Pleased); a cut adds no modifier. A Furious House's countdown stops when the cut
+    /// lifts it above Furious.
+    #[test]
+    fn the_tribute_is_cut_at_once_below_pleased() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        let (_, h) = house(&mut g, c[1]);
+        // At 30% with loyalty 0: 20% gives 1.
+        g.houses[h].tribute = 30;
+        set_loyalty(&mut g, h, 0);
+        super::tribute(&mut g, P0);
+        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (20, 1));
+        // At 30% with loyalty -2: no rate above 0% is Pleased (0% gives +1).
+        g.houses[h].tribute = 30;
+        set_loyalty(&mut g, h, -2);
+        super::tribute(&mut g, P0);
+        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (0, 1));
+        assert!(g.houses[h].standing.mods.iter().all(|m| m.cause != LoyaltyCause::TributeRaised), "a cut adds nothing");
+        // At 0% and below Pleased: it stays at 0%.
+        set_loyalty(&mut g, h, -1);
+        super::tribute(&mut g, P0);
+        assert_eq!(g.houses[h].tribute, 0);
+        // A Furious House at 20% (-6) counting down: cut to 0% (-4), its countdown stops.
+        g.houses[h].tribute = 20;
+        set_loyalty(&mut g, h, -6);
+        let t = g.game_turn();
+        g.set_game_turn(t + 1);
+        g.player_persons_turn(P0);
+        assert!(g.houses[h].standing.countdown.is_some(), "Furious: the countdown runs");
+        super::tribute(&mut g, P0);
+        assert_eq!((g.houses[h].tribute, g.house_loyalty(h)), (0, -4));
+        g.set_game_turn(t + 2);
+        g.player_persons_turn(P0);
+        assert!(g.houses[h].standing.countdown.is_none(), "the cut stopped the countdown");
     }
 
     // ---- The levy ----
 
-    /// The main army's requisition takes a House's city only while the House is Pleased or
-    /// Friendly.
+    /// The main army's requisition takes a House's city only while the House stays Pleased or
+    /// better after the levy's `Levied -1`.
     #[test]
-    fn the_levy_takes_only_a_pleased_or_friendly_house() {
+    fn the_levy_takes_only_a_house_that_stays_pleased() {
         let (mut g, c) = world(&SPOTS[..3]);
         let plot = g.city_plot(c[1]);
         let (_, h) = house(&mut g, c[1]);
@@ -556,7 +627,7 @@ mod tests {
         g.army_set_target_size(P0, a, 4).unwrap();
         let (u, _) = crate::armies::requisition_unit(&g, hc, a).expect("a unit to train");
         g.cities[hc].unit_production[u] = g.city_production_needed_unit(hc, u) - 1;
-        for (total, state, levied) in [(3, LoyaltyState::Friendly, true), (1, LoyaltyState::Pleased, true), (0, LoyaltyState::Cautious, false), (-3, LoyaltyState::Annoyed, false)] {
+        for (total, state, levied) in [(3, LoyaltyState::Friendly, true), (2, LoyaltyState::Pleased, true), (1, LoyaltyState::Pleased, false), (0, LoyaltyState::Cautious, false), (-3, LoyaltyState::Annoyed, false)] {
             set_loyalty(&mut g, h, total);
             assert_eq!(g.house_state(h), state);
             assert_eq!(levy_city(&g, P0, hc), levied, "{state:?}");
@@ -697,8 +768,13 @@ mod tests {
         assert!(g.at_war(g.players[P0].team, g.players[hp].team));
     }
 
-    /// At war, the buyer courts the cheapest House it can pay with a third of its treasury, not one
-    /// it offered lately nor a Pleased one; at peace, none.
+    fn offer(house_player: PlayerId, kind: BribeKind, price: i32) -> Option<Offer> {
+        Some(Offer { house_player, kind, give: vec![gold(price)] })
+    }
+
+    /// At war, the buyer courts the cheapest House it can pay, not one it offered lately nor a
+    /// Pleased one; at peace, none. Able to pay with half its treasury, it asks Become your vassal:
+    /// the House breaks away as its House, at war with the old liege.
     #[test]
     fn the_buyer_courts_the_cheapest_house_it_can_pay() {
         let (mut g, c) = world(&SPOTS[..4]);
@@ -711,29 +787,53 @@ mod tests {
         set_loyalty(&mut g, h3, 2);
         assert_eq!((g.house_bribe_price(h1), g.house_bribe_price(h2), g.house_bribe_price(h3)), (Some(150), Some(75), None));
         let (hp1, hp2) = (g.houses[h1].player, g.houses[h2].player);
-        g.players[P1].gold = 600;
+        let floor = crate::civs::gold_floor(&g, P1);
+        g.players[P1].gold = floor + 600;
         assert_eq!(choose_offer(&g, P1), None, "at peace");
         let (t0, t1) = (g.players[P0].team, g.players[P1].team);
         g.team_declare_war(t1, t0, false, None);
-        assert_eq!(choose_offer(&g, P1), Some((hp2, vec![gold(75)])), "the cheapest");
+        assert_eq!(choose_offer(&g, P1), offer(hp2, BribeKind::Vassal, 75), "the cheapest");
         // Offered lately: the next one.
         g.house_note_offer(P1, hp2, &[gold(10)]);
-        assert_eq!(choose_offer(&g, P1), Some((hp1, vec![gold(150)])));
-        // Its turn: offered and accepted; the House breaks away at peace with the buyer.
+        assert_eq!(choose_offer(&g, P1), offer(hp1, BribeKind::Vassal, 150));
+        // Its turn: offered and accepted; the House breaks away as the buyer's House.
         super::turn(&mut g, P1);
-        assert!(!g.houses.contains(h1), "seceded");
+        assert!(!g.houses.contains(h1), "its record with the old liege ended");
         let nt = g.players[hp1].team;
+        assert!(g.teams[nt].vassal[t1], "the buyer's vassal");
+        assert_eq!(g.player_house(hp1).map(|h| g.houses[h].owner), Some(P1), "a House of the buyer's");
         assert!(g.at_war(t0, nt) && !g.at_war(t1, nt));
-        assert_eq!(g.players[P1].gold, 450);
-        // Ten turns later the second House again, while a third of the treasury pays it.
+        assert_eq!(g.players[P1].gold, floor + 450);
+        // Ten turns later the second House again.
         let t = g.game_turn();
         g.set_game_turn(t + OFFER_PERIOD);
-        assert_eq!(choose_offer(&g, P1), Some((hp2, vec![gold(75)])));
-        g.players[P1].gold = 200;
-        if g.player_calculate_gold_rate(P1) / 3 < 8 {
-            assert_eq!(choose_offer(&g, P1), None, "a third of 200 does not pay 75");
-        }
-        assert!(g.house_bribe_refusal(h2, P1, BribeKind::Secede).is_none());
+        assert_eq!(choose_offer(&g, P1), offer(hp2, BribeKind::Vassal, 75));
+    }
+
+    /// The buyer asks Become your vassal when the price is at most half its treasury, else Secede
+    /// when it is at most a third; when it cannot take a vassal, Secede at a third.
+    #[test]
+    fn the_buyer_asks_become_your_vassal_with_half_its_treasury() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        g.player_init_city(P1, 15, 7, true, true);
+        let (_, h) = house(&mut g, c[1]);
+        set_loyalty(&mut g, h, -3);
+        let hp = g.houses[h].player;
+        assert_eq!(g.house_bribe_price(h), Some(75));
+        let (t0, t1) = (g.players[P0].team, g.players[P1].team);
+        g.team_declare_war(t1, t0, false, None);
+        let floor = crate::civs::gold_floor(&g, P1);
+        g.players[P1].gold = floor + 150;
+        assert_eq!(choose_offer(&g, P1), offer(hp, BribeKind::Vassal, 75), "half of 150 pays 75");
+        g.players[P1].gold = floor + 149;
+        assert_eq!(choose_offer(&g, P1), None, "half of 149 does not, nor a third");
+        // A buyer that cannot take a vassal (no vassal states): Secede, with a third.
+        g.setup.options[GameOptionType::GAMEOPTION_NO_VASSAL_STATES] = true;
+        assert!(g.house_bribe_refusal(h, P1, BribeKind::Vassal).is_some());
+        g.players[P1].gold = floor + 225;
+        assert_eq!(choose_offer(&g, P1), offer(hp, BribeKind::Secede, 75), "a third of 225 pays 75");
+        g.players[P1].gold = floor + 224;
+        assert_eq!(choose_offer(&g, P1), None);
     }
 
     // ---- Civics ----

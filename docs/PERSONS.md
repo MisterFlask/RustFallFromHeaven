@@ -72,7 +72,12 @@ post, the Court screen, the previews, claims).
    research (not taken from the House: knowledge is shared; lost when the liege researches
    nothing). Recorded per House for display: `Tribute 30%: 12 gold, 8 research last turn.`
    A standing loyalty part, as `State religion opposed` is: `Tribute N%: 1 - N/10` (0%: +1,
-   10%: 0, 20%: -1, ..., 50%: -4).
+   10%: 0, 20%: -1, ..., 50%: -4). **A raise is remembered** (the owner's decision of the same
+   day, after an expert used the rate as a free, instant lever: 50% in peace, 0% the turn a
+   countdown starts): raising a House's tribute by k steps of 10% adds a timed modifier `Tribute
+   raised: -k (30 turns)` on top of the standing part. A cut adds nothing: the standing part rises
+   at once, and earlier raises' modifiers keep running. Each raise adds its own modifier, so they
+   stack. A new House taking the realm's default is no raise; nor is setting the default.
 5. **The attitude scale replaces the four states.** Loyalty total: **Friendly** 3 or more,
    **Pleased** 1 to 2, **Cautious** -2 to 0, **Annoyed** -5 to -3, **Furious** -6 or less. A
    House's AI attitude toward its liege is this (`player_ai_get_attitude`). Commanders and persons
@@ -87,8 +92,14 @@ post, the Court screen, the previews, claims).
    takes no levy: the requisition passes its cities over, and the screen says why.
 7. **Breaking away is war.** At the end of a Furious House's countdown, when its liege comes under
    a direct-rule civic (every House at once: the civil war), or when the House accepts a bribe to
-   secede (rule 9): first every city of the House in which an army of the liege stands goes back
-   to the liege (`Censura stays: an army of ours stands in it.`); then the House's team leaves the
+   secede (rule 9): first every city of the House in which the liege's army units outnumber the
+   House's own land combat units goes back to the liege (**holding a city is a contest**, the
+   owner's decision of the same day, after a one-unit army in each House city made every
+   break-away take nothing: the liege's units are the land units of its armies standing in the
+   city whose commander is not Furious, the House's are the land combat units that would go with
+   the city, as a commander's seizure counts them; a tie goes to the House; `Corona returns to
+   you: your army's 4 units outnumber its 2.`, and where an army of the liege stands but does not
+   outnumber, `Corona goes with it: its 3 units against your army's 2.`); then the House's team leaves the
    vassalage and declares war on the liege's team. Its House record ends; its head leads the
    civilization. Everyone who has met the liege is told. Civ4's own vassal freedom rule
    (`team_can_vassal_revolt`: free when master or vassal lost land) no longer frees a House, and
@@ -118,14 +129,23 @@ post, the Court screen, the previews, claims).
     Works ambition demands land), `house_orders` in civics and `PERSON_HOUSE_MAINTENANCE_PERCENT`.
 11. **Direct rule** stays as built: no Houses and no grants under it; adopting it is every House
     breaking away (rule 7), the counter on the map holding.
-12. **AI.** As a liege: tribute 20% by default, 10% for a Cautious House, 0% for an Annoyed one;
-    levy only from Pleased or Friendly Houses; grants of the Crown's cities over its limit (rule
-    14), the least populous first, the capital and the best production city kept, a House
-    enlarged only up to its size threshold (rule 14). As
-    a House: its own turn, trimmed for cost (no war planning, no diplomacy of its own beyond
-    answering offers). As a buyer: at war with a civilization, it offers Secede to that
-    civilization's Houses that are Cautious or worse, gold up to their price when it can pay,
-    one offer per House per 10 turns.
+12. **AI.** As a liege (the owner's decisions of the same day, replacing "20% by default, 10% for
+    a Cautious House, 0% for an Annoyed one", after an expert bought the AI's Cautious Houses at
+    about 150 gold a city): every House at the highest tribute that keeps it Pleased or better
+    (loyalty 1 or more), the raise's modifier counted, raised one step at a time and cut at once
+    whenever it would otherwise be below Pleased (a cut is free, and is how a Furious House's
+    countdown is stopped), so its Houses cannot be bought and never sit at a countdown the
+    tribute could stop; a levy only while the House's loyalty after it (`Levied -1`) stays
+    Pleased or better; a House counting down that a tribute of 0% cannot bring back above Furious
+    has an idle army within reach march to hold its most valuable city, with enough units to
+    outnumber the garrison (rule 7); grants of the Crown's cities over its limit (rule 14), the
+    least populous first, the capital and the best production city kept, a House enlarged only up
+    to its size threshold (rule 14). As a House: its own turn, trimmed for cost (no war planning,
+    no diplomacy of its own beyond answering offers). As a buyer: at war with a civilization, it
+    offers that civilization's Houses that are Cautious or worse **Become your vassal** when it can
+    pay their price with up to half its treasury (it gets the cities, their units and a House, and
+    the war is already on), else Secede with up to a third; gold only, one offer per House per 10
+    turns.
 13. **Interface.** The Court lists the realm: the Crown's cities, and each House as a card (its
     leader's portrait, attitude mark and parts, the tribute selector and what it gave last turn,
     whether it takes levies, the countdown, Free); the realm's default tribute. The grant list
@@ -211,21 +231,32 @@ it left open:
    a hero: `A hero cannot head a House.`
 4. *As built:* `player_set_house_tribute(p, h, pct)`, `player_set_house_tribute_default(p, pct)`
    (refusals `Not a House of yours.`, `Tribute: 0 to 50 percent, in steps of 10.`);
-   `house_tribute_at(h, pct)` is what it would pay this turn (`TributeView::at` lists 0 to 50 with
-   the loyalty and state at each); `house_commerce(h)` the gold and research commerce it is taken
-   from. Paid in `player_persons_turn` of the liege, after the break-aways.
+   `house_tribute_at(h, pct)` is what it would pay this turn (`TributeView::at` lists 0 to 50 as
+   `TributeRate`s: what it pays, the standing part, the raise's modifier and the loyalty and state
+   after, the raise counted: `house_loyalty_at_tribute`); `house_commerce(h)` the gold and
+   research commerce it is taken from. Paid in `player_persons_turn` of the liege, after the
+   break-aways. The raise: `LoyaltyCause::TributeRaised` (label `Tribute raised`), added by
+   `player_set_house_tribute`, `TRIBUTE_RAISED` (-1 a step, 30 turns) in `persons/mod.rs`,
+   `tribute_raise(from, to)` in `loyalty.rs`; save format 50.
 5. *As built:* `LoyaltyState` keeps its name, with the five variants; `withholds()` is Annoyed or
    worse. The keywords Devoted, Loyal, Restless and Disloyal are gone: the states are the game's
    attitude words, no keywords (the client build; a state mark's tooltip is the attitude's own
    help in the data, `attitudes.jsonc`; "UI", part J). The define
    `PERSON_DISLOYAL_TURNS` keeps its name: the Furious countdown.
 6. *As built:* an order already placed stays when its House turns Annoyed; only new ones are
-   passed over. The AI levies only from a Pleased or Friendly House ("AI" below).
+   passed over. The AI levies only from a House that stays Pleased or better after the levy
+   ("AI" below).
 7. *As built:* `house_break_away`; the break-away and the liege take `GRUDGE` (-4) toward each
    other; the news is marked for the alerts (`LogMark::Person`, untagged: the client knows it by
    its wording, `breaks away from the ... : war.`). The vassal rules bring the liege's other Houses
-   into the war (the House declares war on them too). A House whose every city an army holds ends
-   (its player dies without a city).
+   into the war (the House declares war on them too). A House whose every city is held ends
+   (its player dies without a city). The contest: `city_hold(c)` (`CityHold { liege, armies,
+   house }`, `held()` when the liege's units outnumber the House's), `unit_holds_for_liege(u, p)`,
+   `city_held_by_army(c)`, `house_cities_held(h)`; its lines `city_hold_line(c, house)` and
+   `house_hold_text(h)` (the outcome, the civics preview, the Court's cards and city chips). At
+   the break-away the liege is told each held city (`Corona returns to you: your army's 4 units
+   outnumber its 2.`) and each city contested and lost (`Corona goes with House Arne: its 3 units
+   against your army's 2.`), counted before the cities move.
 8. *As built:* `player_check_free_house`, `player_free_house`.
 9. *As built:* the trade items `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL` (`tools/gen_enums.py`
    `EXTRA_MEMBERS`); `player_can_trade_item` lets a House give only them and take only gold
@@ -251,9 +282,10 @@ it left open:
     later under direct rule is a House and stays (note 2).
 12. *As built (the AI build, 2026-11-18):* as the rule says, with rule 14 read into the grants:
     a grant only while the Crown is over its limit, and a House enlarged only up to its realm's
-    size threshold; the tribute is chosen by the House's state at the default rate; a House's own
-    turn skips diplomacy, the war targets and the campaign. Details in "AI" below and
-    docs/AI.md, "Persons of Note".
+    size threshold; a House's own turn skips diplomacy, the war targets and the campaign. The
+    tribute, the levy, the army holding a city and the buyer as the rule says since the owner's
+    decisions of the same day (batch H). Details in "AI" below and docs/AI.md, "Persons of
+    Note".
 13. *As built (the client build, 2026-11-18):* as the rule says; the screens are described in
     "UI" (parts A to J and their "as built" notes) and docs/HUMAN.md, "Persons of Note in the
     screens".
@@ -787,9 +819,10 @@ something reasonable with it.
 
 **Built** (the second build's AI, 2026-11-18, `crates/ffh-ai/src/persons.rs`; docs/AI.md,
 "Persons of Note"), for AI players only:
-- *As a liege.* Tribute by each House's state at the default rate: 20% Pleased or Friendly, 10%
-  Cautious, 0% Annoyed or worse, set only when it changes. The levy: the main army's requisition
-  takes the cities of its Pleased or Friendly Houses beside its own. Grants, one a turn, only while
+- *As a liege.* Tribute: every House at the highest rate that keeps it Pleased or better, the
+  raise's modifier counted: one step up a turn while the step keeps it Pleased, cut at once (as far
+  as needed) below Pleased; set only when it changes. The levy: the main army's requisition takes
+  the cities of its Houses that stay Pleased or better after the levy beside its own. Grants, one a turn, only while
   the Crown is over its limit (rule 14), never the capital nor the best production city, the
   least populous first: a demand met first, then a
   claimant in the best state, then a person without a post founding a House, then a great person
@@ -799,15 +832,18 @@ something reasonable with it.
   skips what a vassal cannot do: diplomacy (peace, vassalage, trades, war planning), offers to
   humans, loans, the field army targets, the amphibious target and the campaign; it keeps its city
   management, its defence and its units' moves.
-- *As a buyer.* At war with a civilization, Secede offered to one of its Houses that is Cautious or
-  worse at its price, in gold up to a third of the treasury, else in gold per turn up to a third of
-  the gold rate; the cheapest first, one offer a turn, the same House again after ten turns.
+- *As a buyer.* At war with a civilization, an offer to one of its Houses that is Cautious or worse
+  at its price, in gold: Become your vassal when that is at most half the treasury, else Secede
+  when it is at most a third; the cheapest first, one offer a turn, the same House again after ten
+  turns.
 - *Elsewhere.* No direct-rule civic while a House stands (unless it rules directly already); an
-  idle army stands in an unheld city of a Furious House; a Furious commander's army goes to the
-  most garrisoned city; a demanded war weighs a tenth more in the war planning.
+  idle army goes to hold the most valuable city it can hold (its units with ours there
+  outnumbering the House's) of a House counting down that a tribute of 0% cannot stop; a Furious
+  commander's army goes to the most garrisoned city; a demanded war weighs a tenth more in the war
+  planning.
 - *Retired with their rules:* heirs, the order quota's skip, the seat's wonder order.
 
-**Not built:** Become your vassal offered by the AI; freeing a House; commands by the AI (the
+**Not built:** freeing a House; commands by the AI (the
 rules' default commander stands); threats.
 
 **Measured** (8 AI games, seeds 1-8, 300 turns, 7 civilizations, standard size; the base is the
@@ -1078,8 +1114,9 @@ left open, or departs from it:
   as a House's card does; the rest stays under `Record`.
 - **The tribute selector** is a list under the tribute line (`Tribute 20%: 12 gold, 8 research last
   turn. Change`): a row per rate, 0 to 50%, each stating what the House would pay this turn
-  (`Pays 12 gold, 8 research.`, the rules' `house_tribute_at`), its tribute part and total at that
-  rate (`Tribute: -2 · Loyalty: +3`) and the state mark at that rate; the current rate is marked
+  (`Pays 12 gold, 8 research.`, the rules' `house_tribute_at`), its tribute part, for a higher
+  rate the raise's modifier, and the total after (`Tribute: -2 · Raised: -2 (30 turns) · Loyalty:
+  +1`) and the state mark after; the current rate is marked
   `now`. One tap sets a rate (no confirmation: it can be set back any turn), and the card is read
   again with the list kept open, so the part, total and state shown are the row's (a test checks
   they are). The realm's default is a plain selector in the header.
@@ -1129,13 +1166,15 @@ left open, or departs from it:
   Gereth Minar: war.`, `..., taking Gereth Minar. Bought by the Bannor: war.`, `..., taking Gereth
   Minar, as a vassal of the Bannor: war.`, the buyer reading `Bought by you` / `as your vassal`;
   `House Aldric will break away in 8 turns, taking Ventry: war.`); a held city `Corona returns to
-  you: an army of yours stands in it.` (the outcome, the civics preview and the message).
+  you: your army's 4 units outnumber its 2.`, a city contested and lost `Corona goes with it: its
+  3 units against your army's 2.` (the outcome, the civics preview, the House card's city chips
+  and the message; batch H, rule 7's contest).
 - **Retired from the screens**: orders and quota lines, maintenance saved, a head's trait in its
   cities, heirs, seat lines, `Release as a vassal` (now `Free`), and the four first-build states'
   keywords.
 
 #### K. A staged scene: `ffh-play stage persons DIR`
-One save that shows every state, for the tests and the screenshots: the player under Aristocracy with a capital, three Crown cities (one with two claimant Houses and a commander who took it), House A (Devoted, three cities, a wonder demand in production), House B (Restless after a refused demand, two cities), House C (Disloyal, countdown at 8, two cities, one held by an army), an empty seat with two candidates, a person without a post, a great person unit, a commander (Loyal) and a commander (Disloyal, countdown), a hero. A second, `stage persons-direct DIR`: the same empire one click from adopting God King.
+One save that shows every state, for the tests and the screenshots: the player under Aristocracy with a capital, three Crown cities (one with two claimant Houses and a commander who took it), House A (Devoted, three cities, a wonder demand in production), House B (Restless after a refused demand, two cities), House C (Disloyal, countdown at 8, two cities, one held by an army of two, its seat contested and lost by an army of one against two of the House's units), an empty seat with two candidates, a person without a post, a great person unit, a commander (Loyal) and a commander (Disloyal, countdown), a hero. A second, `stage persons-direct DIR`: the same empire one click from adopting God King.
 
 ## Open points for the owner
 

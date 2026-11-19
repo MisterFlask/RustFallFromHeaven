@@ -653,8 +653,10 @@ view's `src/view/house_marks.rs`). A loyalty state is always the one mark (`pers
   trade screen at war (`If peace is made:`), each religion the screen can convert to (and No state
   religion), the keep/raze question (`If razed:` in its text). On the civics screen a direct-rule
   civic while Houses stand shows the warning `Adopting God King: 4 Houses break away, taking 5
-  cities, each at war with you.` and a line per House (`House Aldric: Ventry. Corona returns to
-  you (an army of yours stands in it).`, `Malakim (a vassal): Astrum and Golden Leane.`), the
+  cities, each at war with you.` and a line per House, with the contest for each city where an
+  army of yours stands (`House Aldric: Ventry. Ventry goes with it: its 2 units against your
+  army's 1. Corona returns to you: your army's 2 units outnumber its 0.`, `Malakim (a vassal):
+  Astrum and Golden Leane.`), the
   button reads `Adopt God King: 4 Houses break away`, and a click asks once more with the same
   lines (`This cannot be undone.`).
 
@@ -806,8 +808,8 @@ is the line that needs attention's), `Settlements are not counted.` for a civili
 settlements; `Realm: 10 cities. A House holds 3 without a grievance.`; `Tribute of a new House:
 [20%]`, a selector that sends `tribute_default`); the lines that need attention, each with its
 button, in this order: a Furious House or commander with its stated outcome (`House Aldric:
-Furious. Will break away in 8 turns, taking Ventry: war. Corona returns to you: an army of yours
-stands in it. [Show]`, its card), a House that takes no levy (`Malakim is Annoyed. It takes no
+Furious. Will break away in 8 turns, taking Ventry: war. Ventry goes with it: its 2 units against
+your army's 1. Corona returns to you: your army's 2 units outnumber its 0. [Show]`, its card), a House that takes no levy (`Malakim is Annoyed. It takes no
 levy. [Show]`), a demand near its term with the demand's button and what its lapse does, `<person>
 has no post. [Grant a city]`, the Crown's cities over its limit (`Myrean is over the Crown's limit
 of 3: maintenance +7 gold a turn. It pays none while disorder lasts. [Grant Myrean]`: a
@@ -822,8 +824,9 @@ Furious, the head's demand line (`Demands: Vallus granted to Malakim. 40 turns. 
 (60 turns), becomes ✖ Furious.`, the state after only when it changes), the loyalty parts and
 total, the tribute (`Tribute 20%: 12 gold, 8
 research last turn.` and `Change`: the list of the rates 0 to 50%, each a button with `Pays 12
-gold, 8 research.`, `Tribute: -1 · Loyalty: -2` and the state mark at that rate, the current one
-marked `now`; a tap sends `house_tribute` and the card is read again with the list kept open), the
+gold, 8 research.`, `Tribute: -1 · Loyalty: -2` and the state mark at that rate (a higher rate
+adds its raise, `Tribute: -2 · Raised: -2 (30 turns) · Loyalty: -4`, the state after counting it),
+the current one marked `now`; a tap sends `house_tribute` and the card is read again with the list kept open), the
 levy (`Takes levies. Each levy: -1 (20 turns). Annoyed after 2 levies.` or the rules' reason it
 takes none, amber), its
 cities as chips (a tap shows the city on the map: a House's city is its own player's, your city

@@ -167,7 +167,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `TRADE_HOUSE_VASSAL`.
 /// - 50: the memory of wrongs: `MEMORY_TOOK_CITY` and `MEMORY_BOUGHT_HOUSE` lengthen each
 ///   `Player::ai_memory_count` row (`MemoryType::NUM` 38).
-pub const FORMAT_VERSION: u32 = 50;
+/// - 51: a raise of a House's tribute remembered (`LoyaltyCause::TributeRaised`; docs/PERSONS.md,
+///   rule 4).
+pub const FORMAT_VERSION: u32 = 51;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

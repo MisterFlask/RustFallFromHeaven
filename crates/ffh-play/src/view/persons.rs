@@ -434,8 +434,10 @@ fn gold_research(gold: i32, research: i32) -> String {
 /// A House's tribute (rule 4) and its selector: `pct`; `line` (`Tribute 30%: 12 gold, 8 research
 /// last turn.`, or `Tribute 30%. Not paid yet.`); `rates`: each rate it may be set to (0 to 50 by
 /// 10), from the rules' read (`TributeView::at`): `{pct, current, estimate (what it would pay this
-/// turn), part (its tribute part at that rate), part_text, loyalty (its total), loyalty_text,
-/// state, changes (its state differs from now)}`.
+/// turn), part (its tribute part at that rate), part_text, raised (the `Tribute raised` modifier
+/// a raise to it adds, 0 for a cut), raised_text (`Raised: -2 (30 turns)`, null for none),
+/// loyalty (its total after, the raise counted), loyalty_text, state, changes (its state differs
+/// from now)}`.
 fn tribute_json(g: &Game, hv: &HouseView) -> Json {
     let t = &hv.tribute;
     let line = if t.last_turn < 0 {
@@ -445,24 +447,23 @@ fn tribute_json(g: &Game, hv: &HouseView) -> Json {
     } else {
         format!("Tribute {}%: {} on turn {}.", t.pct, gold_research(t.last_gold, t.last_research), t.last_turn)
     };
-    // The tribute part now (the parts' `Tribute N%`), and at each rate: the part changes by what
-    // the total does.
-    let part_now = hv.parts.iter().find(|p| p.label.starts_with("Tribute ") && p.turns_left.is_none()).map_or(0, |p| p.amount);
+    let raise_turns = ffh_core::persons::TRIBUTE_RAISED.1;
     let rates: Vec<Json> = t
         .at
         .iter()
-        .map(|&(pct, gold, research, loyalty, state)| {
-            let part = part_now + loyalty - hv.loyalty;
+        .map(|r| {
             crate::jobj! {
-                "pct" => pct,
-                "current" => pct == t.pct,
-                "estimate" => format!("Pays {}.", gold_research(gold, research)),
-                "part" => part,
-                "part_text" => format!("Tribute: {}", signed(part)),
-                "loyalty" => loyalty,
-                "loyalty_text" => format!("Loyalty: {}", signed(loyalty)),
-                "state" => state_name(state),
-                "changes" => state != hv.state,
+                "pct" => r.pct,
+                "current" => r.pct == t.pct,
+                "estimate" => format!("Pays {}.", gold_research(r.gold, r.research)),
+                "part" => r.part,
+                "part_text" => format!("Tribute: {}", signed(r.part)),
+                "raised" => r.raised,
+                "raised_text" => (r.raised != 0).then(|| format!("Raised: {} ({})", signed(r.raised), turns(raise_turns))),
+                "loyalty" => r.loyalty,
+                "loyalty_text" => format!("Loyalty: {}", signed(r.loyalty)),
+                "state" => state_name(r.state),
+                "changes" => r.state != hv.state,
             }
         })
         .collect();
@@ -513,7 +514,14 @@ fn house_json(v: &Viewer, hv: &HouseView, persons: &[PersonView], grantable: &[C
     let head = hv.head.and_then(|x| persons.iter().find(|p| p.id == x)).map(|pv| person_json(v, pv, grantable));
     let (parts, total) = parts_json(&hv.parts, hv.loyalty);
     let (_, held) = g.house_cities_held(hv.id);
-    let cities: Vec<Json> = hv.cities.iter().filter(|&&c| g.cities.contains(c)).map(|&c| city_ref(g, c).with("held", held.contains(&c)).with("seat", hv.seat == Some(c))).collect();
+    // Each city with the contest for it when an army of yours stands in it (rule 7).
+    let cities: Vec<Json> = hv
+        .cities
+        .iter()
+        .filter(|&&c| g.cities.contains(c))
+        .map(|&c| city_ref(g, c).with("held", held.contains(&c)).with("hold", g.city_hold_line(c, "it").map(|l| core(g, &l))).with("seat", hv.seat == Some(c)))
+        .collect();
+    let contests = g.house_hold_text(hv.id);
     // Its price when it would accept an offer (Cautious or worse) is in the card's body; a House
     // that refuses any says so under Record.
     let price = hv.bribe_price.map(|p| format!("Price to secede: {p} gold."));
@@ -528,7 +536,7 @@ fn house_json(v: &Viewer, hv: &HouseView, persons: &[PersonView], grantable: &[C
         "state" => state_name(hv.state),
         "countdown_turns" => hv.countdown_turns,
         "outcome" => hv.outcome.as_deref().map(|s| core(g, s)),
-        "held" => (hv.countdown_turns.is_some() && !held.is_empty()).then(|| crate::view::house_marks::stays_line(g, &held)),
+        "held" => (hv.countdown_turns.is_some() && !contests.is_empty()).then(|| core(g, contests.trim_start())),
         "head" => head,
         "since" => since_text(hv),
         "cities" => Json::Arr(cities),

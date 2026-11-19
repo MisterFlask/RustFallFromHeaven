@@ -327,12 +327,15 @@ flag.
     player, garrison included (the liege's units in an army or marching stay).
   - *Tribute*: a House pays its liege 0 to 50% (default 20%) of its gold commerce (from its
     treasury) and of its research commerce (to the liege's current research); FFH2's vassals pay
-    nothing. The higher the tribute, the lower its loyalty (`1 - N/10`).
+    nothing. The higher the tribute, the lower its loyalty (`1 - N/10`); a raise of k steps of
+    10% also costs `Tribute raised: -k` for 30 turns (a cut costs nothing; 2026-11-18: the rate
+    was a free, instant loyalty lever).
   - *The levy*: an army requisitions in its owner's Houses' cities; the unit trained is the
     liege's. Each order is a grievance (`Levied: -1 (20 turns)`); an Annoyed House takes none.
   - *Breaking away is war*: a Furious House's countdown, the civil war of direct rule or an
     accepted offer to secede ends its vassalage with a declaration of war on the liege; its
-    cities where an army of the liege stands go back to the liege first. Civ4's own vassal
+    cities where the liege's army units outnumber the House's land combat units go back to the
+    liege first (a tie goes to the House; 2026-11-18, was any army of the liege). Civ4's own vassal
     revolt rule (`canVassalRevolt`: free when master or vassal lost land) no longer frees a House,
     and no player cancels a House's vassal deal; its liege can free it (at peace).
   - *Direct rule*: a liege under a direct-rule civic (Despotism, God King) holds vassals as

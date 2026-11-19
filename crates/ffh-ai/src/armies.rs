@@ -227,7 +227,7 @@ fn interruptible(g: &Game, c: CityId, a: ArmyId) -> bool {
 /// before directly ruled ones, which serve only when what they would interrupt gives way
 /// ([`interruptible`]). Only cities on the army's landmass whose unit can reach it by land. The
 /// cities of its Houses that take a levy now are candidates beside its own
-/// (`persons::levy_cities`: a Pleased or Friendly House).
+/// (`persons::levy_cities`: a House that stays Pleased or better after the levy).
 pub fn requisition_cities(g: &Game, p: PlayerId, a: ArmyId) -> Vec<CityId> {
     let Some(at) = g.army_plot(a) else { return Vec::new() };
     let area = g.map.plots[at].area;
@@ -247,7 +247,7 @@ pub fn requisition_cities(g: &Game, p: PlayerId, a: ArmyId) -> Vec<CityId> {
     let siege = wants_siege(g, a);
     let (ax, ay) = g.map.xy(at);
     let mut cands: Vec<(bool, i32, CityId, UnitType, i32)> = Vec::new();
-    // Its own cities, then its Houses' that take a levy now (Pleased or Friendly: persons.rs).
+    // Its own cities, then its Houses' that take a levy now (Pleased after it: persons.rs).
     let levy = crate::persons::levy_cities(g, p);
     for &c in g.players[p].cities.iter().chain(&levy) {
         if busy.contains(&c) || g.map.plots[g.city_plot(c)].area != area || !can_spare(g, c) {

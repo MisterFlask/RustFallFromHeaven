@@ -535,7 +535,7 @@ fn tribute_takes_gold_and_adds_research() {
     g.player_set_house_tribute(P0, h, 0).unwrap();
     assert_eq!(g.house_loyalty(h), base + 2, "20% is -1, 0% is +1");
     g.player_set_house_tribute(P0, h, 50).unwrap();
-    assert_eq!(g.house_loyalty(h), base - 3, "50% is -4");
+    assert_eq!(g.house_loyalty(h), base - 3 - 5, "50% is -4, and the raise from 0% is -5 for 30 turns");
     assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Tribute 50%" && p.amount == -4));
     assert_eq!(g.player_set_house_tribute(P0, h, 25), Err("Tribute: 0 to 50 percent, in steps of 10."));
     assert_eq!(g.player_set_house_tribute(P1, h, 20), Err("Not a House of yours."));
@@ -635,13 +635,19 @@ fn a_furious_house_breaks_away_and_its_held_cities_return() {
     let (a_plot, b_plot) = (plot(&g, a), plot(&g, b));
     let (x, h) = land_head(&mut g, a);
     g.player_grant_city(P0, b, GrantTo::House(h)).unwrap();
-    // An army of the liege stands in B (a vassal's land is friendly to its master).
+    // An army of the liege stands in B (a vassal's land is friendly to its master), where the
+    // House has no unit; another in A, outnumbered by the House's two warriors.
     let w = unit(&mut g, P0, "UNIT_WARRIOR", 11, 4);
     g.army_form(P0, &[w]).unwrap();
+    let hp = g.houses[h].player;
+    unit(&mut g, hp, "UNIT_WARRIOR", 7, 4);
+    unit(&mut g, hp, "UNIT_WARRIOR", 7, 4);
+    let wa = unit(&mut g, P0, "UNIT_WARRIOR", 7, 4);
+    g.army_form(P0, &[wa]).unwrap();
     let hb = city_at(&g, b_plot);
     let (going, held) = g.house_cities_held(h);
     assert_eq!((going, held), (vec![city_at(&g, a_plot)], vec![hb]));
-    let hp = g.houses[h].player;
+    let (a_name, b_name) = (g.d.text.name(&g.cities[city_at(&g, a_plot)].name).to_string(), g.d.text.name(&g.cities[hb].name).to_string());
     let label = g.house_label(h);
     countdown_ends(&mut g, h);
     assert!(!g.houses.contains(h), "the record ended");
@@ -653,7 +659,109 @@ fn a_furious_house_breaks_away_and_its_held_cities_return() {
     assert_eq!(g.cities[city_at(&g, a_plot)].owner, hp, "A goes");
     assert_eq!(g.cities[city_at(&g, b_plot)].owner, P0, "B, held, went back to the liege");
     assert!(logged(&g, &format!("{label} breaks away from the Bannor, taking ")), "told");
-    assert!(logged(&g, " returns to you: an army of yours stands in it."));
+    assert!(logged(&g, &format!("{b_name} returns to you: your army's 1 unit outnumbers its 0.")));
+    assert!(logged(&g, &format!("{a_name} goes with {label}: its 2 units against your army's 1.")));
+}
+
+/// The contest for a House's city (rule 7): the liege's army units standing in it against the
+/// House's own land combat units; a tie goes to the House; a unit without strength and the units
+/// of an army whose commander is Furious do not count.
+#[test]
+fn a_city_is_held_only_when_the_lieges_army_outnumbers_the_house() {
+    let World { mut g, a, b, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let b_plot = plot(&g, b);
+    let (_, h) = land_head(&mut g, a);
+    g.player_grant_city(P0, b, GrantTo::House(h)).unwrap();
+    let hp = g.houses[h].player;
+    let hb = city_at(&g, b_plot);
+    let name = g.d.text.name(&g.cities[hb].name).to_string();
+    // The House: two warriors (its settler, without strength, does not count).
+    unit(&mut g, hp, "UNIT_WARRIOR", 11, 4);
+    unit(&mut g, hp, "UNIT_WARRIOR", 11, 4);
+    unit(&mut g, hp, "UNIT_SETTLER", 11, 4);
+    assert_eq!(g.city_hold(hb), Some(CityHold { liege: 0, armies: 0, house: 2 }));
+    assert_eq!(g.city_hold_line(hb, "it"), None, "no army of the liege: nothing to say");
+    // The liege: an army of two: a tie.
+    let l: Vec<UnitId> = (0..2).map(|_| unit(&mut g, P0, "UNIT_WARRIOR", 11, 4)).collect();
+    let army = g.army_form(P0, &l).unwrap();
+    assert_eq!(g.city_hold(hb), Some(CityHold { liege: 2, armies: 1, house: 2 }));
+    assert!(!g.city_held_by_army(hb), "a tie goes to the House");
+    assert!(g.house_cities_held(h).1.is_empty());
+    assert_eq!(g.city_hold_line(hb, "it"), Some(format!("{name} goes with it: its 2 units against your army's 2.")));
+    // A third unit in the army: held.
+    let l3 = unit(&mut g, P0, "UNIT_WARRIOR", 11, 4);
+    g.army_join(P0, &[l3], army).unwrap();
+    assert!(g.city_held_by_army(hb));
+    assert_eq!(g.house_cities_held(h).1, vec![hb]);
+    let line = format!("{name} returns to you: your army's 3 units outnumber its 2.");
+    assert_eq!(g.city_hold_line(hb, "it"), Some(line.clone()));
+    assert!(g.house_breakaway_outcome(h).ends_with(&line), "{}", g.house_breakaway_outcome(h));
+    // A second army of one: the armies' units together.
+    let w = unit(&mut g, P0, "UNIT_WARRIOR", 11, 4);
+    let second = g.army_form(P0, &[w]).unwrap();
+    assert_ne!(second, army);
+    assert_eq!(g.city_hold_line(hb, "it"), Some(format!("{name} returns to you: your armies' 4 units outnumber its 2.")));
+    // A veteran joins and commands the first army: 5 against 2. Furious, that army counts for
+    // nothing: the second's one unit against the House's two.
+    let v = veteran(&mut g, 11, 4, 9);
+    g.army_join(P0, &[v], army).unwrap();
+    turn(&mut g);
+    let x = g.unit_person(v).expect("a veteran");
+    assert_eq!(g.armies[army].commander, Some(x));
+    assert_eq!(g.city_hold(hb).map(|hold| (hold.liege, hold.held())), Some((5, true)));
+    set_person_loyalty(&mut g, x, -6);
+    assert_eq!(g.person_state(x), LoyaltyState::Furious);
+    assert_eq!(g.city_hold(hb), Some(CityHold { liege: 1, armies: 1, house: 2 }));
+    assert_eq!(g.city_hold_line(hb, "it"), Some(format!("{name} goes with it: its 2 units against your army's 1.")));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Tribute raises
+// ---------------------------------------------------------------------------------------------
+
+fn raises(g: &Game, h: HouseId) -> Vec<i32> {
+    g.houses[h].standing.mods.iter().filter(|m| m.cause == LoyaltyCause::TributeRaised).map(|m| m.amount).collect()
+}
+
+/// A raise of the tribute by k steps is remembered (rule 4): `Tribute raised: -k (30 turns)` on
+/// top of the standing part; a cut adds nothing and leaves the raises running; two raises stack;
+/// the realm's default taken by a new House is no raise. The selector counts the raise.
+#[test]
+fn a_tribute_raise_is_remembered_and_a_cut_is_not() {
+    let World { mut g, a, .. } = world();
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let (_, h) = land_head(&mut g, a);
+    assert_eq!(g.houses[h].tribute, 20, "the realm's default");
+    assert!(raises(&g, h).is_empty(), "the default is no raise");
+    let base = g.house_loyalty(h);
+    // The selector: 40% is two steps up (the standing part -3, raised -2); 0% a cut.
+    let view = g.house_tribute_view(h);
+    let rate = |pct: i32| view.at.iter().find(|r| r.pct == pct).copied().unwrap();
+    assert_eq!((rate(40).part, rate(40).raised, rate(40).loyalty), (-3, -2, base - 4));
+    assert_eq!((rate(20).part, rate(20).raised, rate(20).loyalty), (-1, 0, base));
+    assert_eq!((rate(0).part, rate(0).raised, rate(0).loyalty), (1, 0, base + 2));
+    assert_eq!(g.house_loyalty_at_tribute(h, 40), base - 4);
+    // Raised two steps.
+    g.player_set_house_tribute(P0, h, 40).unwrap();
+    assert_eq!(g.house_loyalty(h), base - 4);
+    assert_eq!(raises(&g, h), vec![-2]);
+    assert!(g.house_view(h).unwrap().parts.iter().any(|p| p.label == "Tribute raised" && p.amount == -2 && p.turns_left == Some(TRIBUTE_RAISED.1)));
+    // Cut to 10%: the standing part rises at once (+2), the raise keeps running.
+    g.player_set_house_tribute(P0, h, 10).unwrap();
+    assert_eq!(g.house_loyalty(h), base + 1 - 2);
+    assert_eq!(raises(&g, h), vec![-2], "a cut adds nothing");
+    // A second raise stacks: 10% to 20%.
+    g.player_set_house_tribute(P0, h, 20).unwrap();
+    assert_eq!(raises(&g, h), vec![-2, -1]);
+    assert_eq!(g.house_loyalty(h), base - 3);
+    // The same rate again is no raise.
+    g.player_set_house_tribute(P0, h, 20).unwrap();
+    assert_eq!(raises(&g, h), vec![-2, -1]);
+    // They run 30 turns.
+    let t = g.game_turn();
+    g.set_game_turn(t + TRIBUTE_RAISED.1);
+    assert!(g.house_view(h).unwrap().parts.iter().all(|p| p.label != "Tribute raised"), "ended");
 }
 
 #[test]

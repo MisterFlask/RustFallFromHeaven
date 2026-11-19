@@ -56,9 +56,10 @@ mod vassals;
 pub use bribes::{house_item, house_offer_value, BribeKind};
 pub use crown::CROWN_OVER_FACTOR;
 pub use entry::{leader_name, leader_title};
-pub use houses::Claimant;
+pub use houses::{CityHold, Claimant};
+pub use loyalty::{tribute_part, tribute_raise};
 pub use preview::{GrantCandidate, PersonsAct, PreviewLine};
-pub use read::{CourtView, DemandView, GrantMaintenance, HouseMark, HouseView, LevyStatus, LoyaltyPart, PersonView, PersonWhere};
+pub use read::{CourtView, DemandView, GrantMaintenance, HouseMark, HouseView, LevyStatus, LoyaltyPart, PersonView, PersonWhere, TributeRate, TributeView};
 
 // ---------------------------------------------------------------------------------------------
 // Numbers of the build that are not defines (docs/PERSONS.md, "The second build")
@@ -76,6 +77,9 @@ pub const SNUB_HOUSE: (i32, i32) = (-1, 30);
 pub const SNUB_COMMANDER: (i32, i32) = (-2, 30);
 /// `Levied: -1 (20 turns)`: each levy order placed in a House's city.
 pub const LEVIED: (i32, i32) = (-1, 20);
+/// `Tribute raised: -k (30 turns)`: a raise of a House's tribute by k steps of [`TRIBUTE_STEP`]
+/// (this amount a step), on top of the standing part; a cut adds nothing.
+pub const TRIBUTE_RAISED: (i32, i32) = (-1, 30);
 /// `Capitulated: -4 (100 turns)`: a House that became a vassal by capitulating.
 pub const CAPITULATED: (i32, i32) = (-4, 100);
 /// `Sought protection: +2 (60 turns)`: a House that became a vassal by a deal.
@@ -100,9 +104,6 @@ pub const TRIBUTE_MAX: i32 = 50;
 pub const TRIBUTE_STEP: i32 = 10;
 /// A House's price to secede: `(loyalty + 6) x` this `x` its cities, gold.
 pub const BRIBE_PER_CITY: i32 = 25;
-/// Gold per turn in an offer counted this many times. Unused by the rules: a House takes gold only
-/// (the owner's decision, 2026-11-18); to go once ffh-ai's offers no longer name it.
-pub const BRIBE_GOLD_PER_TURN_TURNS: i32 = 10;
 /// The commander whose army took a city is a claimant to it for this many turns.
 pub const TAKEN_CLAIM_TURNS: i32 = 20;
 /// The Land list's foreign cities: within this many plots of a city of the House.
@@ -225,9 +226,11 @@ pub enum LoyaltyCause {
     Capitulated,
     /// The House became a vassal by a deal.
     SoughtProtection,
-    /// An offer to secede (`gold`: its worth, gold per turn counted ten times; `by`: the
+    /// An offer to secede (`gold`: its worth, gold only; `by`: the
     /// civilization, `Hippus`).
     Offered { gold: i32, by: String },
+    /// The House's tribute raised (its amount: [`TRIBUTE_RAISED`] a step of the raise).
+    TributeRaised,
 }
 
 impl LoyaltyCause {
@@ -242,6 +245,7 @@ impl LoyaltyCause {
             LoyaltyCause::Capitulated => "Capitulated".into(),
             LoyaltyCause::SoughtProtection => "Sought protection".into(),
             LoyaltyCause::Offered { gold, by } => format!("Offered {gold} gold by the {by}"),
+            LoyaltyCause::TributeRaised => "Tribute raised".into(),
         }
     }
 }

@@ -172,6 +172,14 @@ fn the_court_shows_the_realm() {
         assert_eq!(int(rate, "loyalty"), loyalty as i64);
         assert_eq!(int(rate, "part"), (1 - pct / 10) as i64, "the tribute part at {pct}%");
         assert_eq!(s(rate, "part_text"), format!("Tribute: {}", signed(1 - pct / 10)));
+        // A higher rate is a raise: `Raised: -k (30 turns)`, counted in its loyalty.
+        let k = pct / 10;
+        assert_eq!(int(rate, "raised"), -k as i64);
+        if k > 0 {
+            assert_eq!(s(rate, "raised_text"), format!("Raised: -{k} (30 turns)"));
+        } else {
+            assert!(rate.get("raised_text").unwrap().is_null());
+        }
         assert_eq!(s(rate, "state"), LoyaltyState::of(loyalty).name());
         assert_eq!(bool_of(rate, "current"), pct == 0);
         let (gold, research) = g.house_tribute_at(ah, pct);
@@ -188,8 +196,13 @@ fn the_court_shows_the_realm() {
     assert_eq!(s(&c, "state"), "Furious");
     assert_eq!(int(&c, "countdown_turns"), 8);
     assert!(s(&c, "outcome").contains(" will break away in 8 turns, taking ") && s(&c, "outcome").contains(": war."), "{c:?}");
-    assert!(s(&c, "outcome").contains(" returns to you: an army of yours stands in it."), "the held city: {c:?}");
-    assert!(s(&c, "held").contains(" to you: an army of yours stands in "), "{}", s(&c, "held"));
+    // The contest for each city where an army of yours stands: the held one, the seat lost.
+    assert!(s(&c, "outcome").contains(" returns to you: your army's 2 units outnumber its "), "the held city: {c:?}");
+    assert!(s(&c, "outcome").contains(" goes with it: its 2 units against your army's 1."), "the seat contested: {c:?}");
+    assert!(s(&c, "held").contains(" returns to you: your army's 2 units outnumber its ") && s(&c, "held").contains(" goes with it: "), "{}", s(&c, "held"));
+    let chips = arr(&c, "cities");
+    assert!(chips.iter().any(|x| bool_of(x, "held") && s(x, "hold").contains(" returns to you: ")), "{chips:?}");
+    assert!(chips.iter().any(|x| !bool_of(x, "held") && s(x, "hold").contains(" goes with it: ")), "{chips:?}");
     assert_eq!(c.get("free").and_then(|f| f.get("ok")).and_then(Json::as_bool), Some(true));
     assert_eq!(s(c.get("free").unwrap(), "confirm"), format!("Free {f_label}? It is no longer your vassal, at peace with you. This cannot be undone."));
 
@@ -254,8 +267,17 @@ fn the_tribute_list_previews_its_change() {
         ses.execute(&Command::SetHouseTribute { house: x, pct }).unwrap();
         assert_eq!(ses.g.houses[x].tribute, pct);
         let card = house_card(&ses.query(&Query::Court).unwrap(), x);
-        let part = strs(&card, "parts").into_iter().find(|p| p.starts_with("Tribute ")).unwrap();
-        assert_eq!(part, format!("Tribute {pct}%: {}", signed(int(&rate, "part") as i32)), "{role}: the part the row said");
+        let parts = strs(&card, "parts");
+        let part = parts.iter().find(|p| p.starts_with(&format!("Tribute {pct}%: "))).unwrap();
+        assert_eq!(*part, format!("Tribute {pct}%: {}", signed(int(&rate, "part") as i32)), "{role}: the part the row said");
+        // A raise: its own part, as the row said (`Tribute raised: -3 (30 turns)`); a cut: none.
+        let raised = int(&rate, "raised") as i32;
+        let raised_parts: Vec<&String> = parts.iter().filter(|p| p.starts_with("Tribute raised: ")).collect();
+        if raised < 0 {
+            assert_eq!(raised_parts, [&format!("Tribute raised: {raised} (30 turns)")], "{role}: the raise the row said");
+        } else {
+            assert!(raised_parts.is_empty(), "{role}: a cut adds no raise: {parts:?}");
+        }
         assert_eq!(s(&card, "total"), format!("Loyalty: {}.", signed(int(&rate, "loyalty") as i32)), "{role}: the total the row said");
         assert_eq!(s(&card, "state"), s(&rate, "state"), "{role}: the state the row said");
         let t = card.get("tribute").unwrap();

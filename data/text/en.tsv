@@ -1741,7 +1741,7 @@ TXT_KEY_ATTITUDE_CAUTIOUS_HELP	Loyalty from -2 to 0. A House takes levies and se
 TXT_KEY_ATTITUDE_FRIENDLY	Friendly
 TXT_KEY_ATTITUDE_FRIENDLY_HELP	Loyalty +3 or more. A House takes levies and refuses any offer to secede. A commander's army takes every order.
 TXT_KEY_ATTITUDE_FURIOUS	Furious
-TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy, secedes for any offer, and at the end of a 10-turn countdown breaks away at war with its liege, its cities where an army of the liege stands going back to the liege. A commander's army takes no order to attack; at the end of the countdown its sworn units seize a city and secede, or the commander resigns. A person without a post leaves the court. Loyalty above -6 stops the countdown.
+TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy, secedes for an offer that meets its price (at least 25 gold a city), and at the end of a 10-turn countdown breaks away at war with its liege; each of its cities where the liege's army units outnumber the House's land combat units goes back to the liege. A commander's army takes no order to attack; at the end of the countdown its sworn units seize a city and secede, or the commander resigns. A person without a post leaves the court. Loyalty above -6 stops the countdown.
 TXT_KEY_ATTITUDE_MASTER_OF	Master of %s1_player
 TXT_KEY_ATTITUDE_PLEASED	Pleased
 TXT_KEY_ATTITUDE_PLEASED_HELP	Loyalty +1 or +2. A House takes levies and refuses any offer to secede. A commander's army takes every order.
@@ -14976,7 +14976,7 @@ TXT_KEY_KEYWORD_HOUSE_REMINDER	A vassal civilization led by a person of its lieg
 TXT_KEY_KEYWORD_CROWN	Crown
 TXT_KEY_KEYWORD_CROWN_REMINDER	The cities a civilization holds itself; the capital is always the Crown's. A city of the Crown can be granted to a House, or to a person of note or a great person who founds one. Under a governing civic, the Crown's cities beyond its limit (the capital first, settlements not counted) pay triple city-count maintenance.
 TXT_KEY_KEYWORD_TRIBUTE	Tribute
-TXT_KEY_KEYWORD_TRIBUTE_REMINDER	Each turn a House pays its liege a share of its cities' gold and research, from 0 to 50%: the gold from its treasury, the research added to the liege's. A part of the House's loyalty: +1 at 0%, 1 less for each 10% more.
+TXT_KEY_KEYWORD_TRIBUTE_REMINDER	Each turn a House pays its liege a share of its cities' gold and research, from 0 to 50%: the gold from its treasury, the research added to the liege's. A part of the House's loyalty: +1 at 0%, 1 less for each 10% more. A raise also costs -1 for each 10% raised, for 30 turns; a cut costs nothing.
 TXT_KEY_KEYWORD_LEVY	Levy
 TXT_KEY_KEYWORD_LEVY_REMINDER	An army's requisition in a city of its owner's House: the city trains a unit for the army, the liege's unit. Each levy placed costs the House -1 loyalty for 20 turns. A House Annoyed or Furious takes no levy.
 TXT_KEY_KEYWORD_SWORN	Sworn
