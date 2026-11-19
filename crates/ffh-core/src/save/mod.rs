@@ -177,7 +177,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   and record (`House::demand`, `demand_rest_until`, `deeds`); `DemandKind` without `Post`,
 ///   `House` and `Wonder`; `LogMark::House` and `LogTag::House` in place of the person's;
 ///   `TermSource::Aura` gone.
-pub const FORMAT_VERSION: u32 = 53;
+/// - 54: courtship and gold tribute (docs/PERSONS.md, "The third build", rules 7 and 10):
+///   `House::gifts`, `courtships`; no `House::last_research`; `MEMORY_COURTED_HOUSE` lengthens each
+///   `Player::ai_memory_count` row (`MemoryType::NUM` 39).
+pub const FORMAT_VERSION: u32 = 54;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

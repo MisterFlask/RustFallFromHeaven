@@ -102,11 +102,13 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
 }
 
 /// The memories [`relation_parts`] weighs, with their labels: the wrongs of the owner's decision
-/// of 2026-11-18 (docs/PERSONS.md, "The second build"; FFH2's other memories are not read).
-pub const MEMORY_TERMS: [(MemoryType, &str); 3] = [
+/// of 2026-11-18 (docs/PERSONS.md, "The second build"; FFH2's other memories are not read), and a
+/// House courted (the third build, rule 7: -200 on FfH's scale, -1 here).
+pub const MEMORY_TERMS: [(MemoryType, &str); 4] = [
     (MemoryType::MEMORY_DECLARED_WAR, "declared war on us"),
     (MemoryType::MEMORY_TOOK_CITY, "took our cities"),
     (MemoryType::MEMORY_BOUGHT_HOUSE, "bought our House"),
+    (MemoryType::MEMORY_COURTED_HOUSE, "courted our House"),
 ];
 
 /// A memory term of [`relation_parts`] is at most this many points either way.
@@ -1502,8 +1504,12 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let has = |items: &[TradeData], kind: TradeableItem| items.iter().any(|t| t.item_type == kind);
     // ---- Houses (docs/PERSONS.md, "The second build", rule 9): a House answers offers to secede
     // or become `from`'s vassal by the rules' price alone (`house_bribe_price`), takes gold only,
-    // and trades nothing else (persons.rs makes the AI's own offers).
+    // and trades nothing else (persons.rs makes the AI's own offers). A gift (nothing asked back:
+    // gold or a resource, a courtship's, the third build's rule 7) it accepts, any.
     if let Some(h) = g.player_house(p) {
+        if we_give.is_empty() && !they_give.is_empty() {
+            return rule(true, "");
+        }
         if !we_give.iter().any(|t| ffh_core::persons::house_item(t.item_type).is_some()) {
             return no("a House trades only Secede and Become your vassal");
         }
@@ -1925,6 +1931,12 @@ mod tests {
         assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), -1, "the second: -2 to -3");
         g.players[us].ai_memory_count[them][MemoryType::MEMORY_BOUGHT_HOUSE] = 2;
         assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), 0, "at the cap");
+        // MEMORY_COURTED_HOUSE -200: -1 a courtship (the third build, rule 7), the cap at three.
+        assert_eq!(term(&g, "courted our House"), None);
+        for (count, want) in [(1, Some(-1)), (2, Some(-2)), (3, Some(-3)), (9, Some(-3))] {
+            g.players[us].ai_memory_count[them][MemoryType::MEMORY_COURTED_HOUSE] = count;
+            assert_eq!(term(&g, "courted our House"), want, "{count} courtships");
+        }
         assert_eq!(memory_part(&g, us, MemoryType::MEMORY_TOOK_CITY, 100), -MEMORY_TERM_CAP);
         // A declaration is remembered by the side declared on, through these terms.
         let mut g = one_landmass_game(19);

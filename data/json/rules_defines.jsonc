@@ -122,6 +122,10 @@
   //      cities the Crown holds at the normal city-count maintenance, the capital first; each
   //      further one pays triple (a trait's crown_cities_change adds to it; never below 1)
   "PERSON_CROWN_CITIES": 3,
+  // ---- Courtship (docs/PERSONS.md, "The third build", rule 7) ----
+  // the turns a civilization's courtship of a House is open before the House takes its offer
+  //      (Secede, Become your vassal)
+  "PERSON_COURTSHIP_TURNS": 10,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
   //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
   //      engage_row_order in units.jsonc; plot

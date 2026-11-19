@@ -214,8 +214,9 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
     let can = contact(v, with);
     let (ours, theirs) = if can.is_ok() { (trade_table(g, v.h, with), trade_table(g, with, v.h)) } else { (Vec::new(), Vec::new()) };
     // A House (docs/PERSONS.md, "The second build", rule 9): it takes gold (no gold per turn) and
-    // gives Secede and Become your vassal, each listed with the rules' refusal when it would not;
-    // the values are its price and the gold offered (`house_trade_items`). No troops.
+    // resources (the third build's courtship, rule 7) and gives Secede and Become your vassal, each
+    // listed with the rules' refusal when it would not; the values are its price, the gold offered
+    // and what a resource counts toward a courtship (`house_trade_items`). No troops.
     let house = g.player_house(with);
     let troops = if can.is_ok() && house.is_none() { troops(v, with) } else { Json::Null };
     let (we_give, they_give): (Vec<Json>, Vec<Json>) = match house {
@@ -243,11 +244,14 @@ fn own_house(v: &Viewer, hh: HouseId) -> bool {
     v.g.players[v.g.houses[hh].owner].team == v.team
 }
 
-/// The trade tables with House `hh` (docs/PERSONS.md, "The second build", rule 9): what the human
-/// can give it (`ours`, the rules' table: gold only), each worth what it counts toward the House's
-/// price (gold 1); and what it gives, Secede and Become your vassal, each with `refusal` (the rules' reason it would
-/// not give it to the human now, `House Arne is Pleased with the Bannor.`; null: it would) and
-/// worth its price (negative: what it gives; null when refused). None for the human's own House.
+/// The trade tables with House `hh` (docs/PERSONS.md, "The second build", rule 9; "The third
+/// build", rule 7): what the human can give it (`ours`, the rules' table: gold and resources), each
+/// worth what it counts (gold 1, toward the House's price or a courtship; a resource the
+/// courtship's `resource_worth`, while it is given); and what it gives, Secede and Become your
+/// vassal, each with `refusal` (the rules' reason it would not give it to the human now, `House
+/// Arne is Pleased with the Bannor.`, `Court House Arne first: gifts worth 180 (you have given
+/// 140).`, `Offers possible from turn 140.`; null: it would) and worth its price (negative: what it
+/// gives; null when its terms refuse it, the courtship aside). None for the human's own House.
 fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>, Vec<Json>) {
     use ffh_core::persons::BribeKind;
     let g = v.g;
@@ -255,11 +259,19 @@ fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>,
     if own_house(v, hh) {
         return (Vec::new(), Vec::new());
     }
+    let worth = g.courtship_resource_worth();
     let we = ours
         .iter()
         .map(|t| {
             let mut j = item_json(g, hp, v.h, hp, t);
-            j.set("value", if t.item_type == TradeableItem::TRADE_GOLD { Json::from(1) } else { Json::Null });
+            j.set(
+                "value",
+                match t.item_type {
+                    TradeableItem::TRADE_GOLD => Json::from(1),
+                    TradeableItem::TRADE_RESOURCES => Json::from(worth),
+                    _ => Json::Null,
+                },
+            );
             j
         })
         .collect();
@@ -270,7 +282,8 @@ fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>,
             let t = item(kind.item(), 0);
             let refusal = g.house_bribe_refusal(hh, v.h, kind);
             let mut j = item_json(g, hp, hp, v.h, &t);
-            j.set("value", if refusal.is_none() { price.map_or(Json::Null, |p| Json::from(-p)) } else { Json::Null });
+            // Its price shows while only the courtship stands between (the third build, rule 7).
+            j.set("value", if g.house_bribe_terms_refusal(hh, v.h, kind).is_none() { price.map_or(Json::Null, |p| Json::from(-p)) } else { Json::Null });
             j.set("refusal", refusal);
             j
         })
@@ -291,7 +304,8 @@ fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>,
 /// the human's own: `view::player::war_parties`, labels); `grudge` and `vassal_grudge`: what an
 /// accepted Secede or Become your vassal costs with its liege (`The Bannor's attitude toward you
 /// -1 (fades).`, under `If accepted:`: [`offer_grudge`]; null for the human's own House, a human
-/// liege, which has no attitude, and when it moves nothing, at the cap).
+/// liege, which has no attitude, and when it moves nothing, at the cap); `courting`: the human's
+/// courtship of it (the third build, rule 7: [`courting_json`]; null for the human's own House).
 fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
     use crate::view::player::{party_labels, war_parties};
     use ffh_core::persons::BribeKind;
@@ -318,6 +332,27 @@ fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
         "vassal_war_join" => party_labels(g, &join),
         "grudge" => grudge_line(g, own, liege, v.h, BribeKind::Secede),
         "vassal_grudge" => grudge_line(g, own, liege, v.h, BribeKind::Vassal),
+        "courting" => if own { Json::Null } else { courting_json(g, hh, v.h) },
+    }
+}
+
+/// The human `h`'s courtship of House `hh` (docs/PERSONS.md, "The third build", rule 7), for its
+/// trade screen: `line` (`Courting House Aldric: 140 of 180 given (Wine counts 60).`; null while
+/// nothing counts), `value` (its gifts' worth now), `requirement`, `resource_worth` (what a
+/// resource given counts), `opened` (the game turn it opened, null: not open), `offers_from` (the
+/// first game turn an offer is possible), `turns` (an open courtship's turns before an offer),
+/// `gift_turns` (the turns gold counts), `turn` (the game turn now).
+fn courting_json(g: &Game, hh: HouseId, h: PlayerId) -> Json {
+    crate::jobj! {
+        "line" => g.house_courting_line(hh, h),
+        "value" => g.house_courtship_value(hh, h),
+        "requirement" => g.courtship_requirement(),
+        "resource_worth" => g.courtship_resource_worth(),
+        "opened" => g.house_courtship_opened(hh, h),
+        "offers_from" => g.house_courtship_offers_from(hh, h),
+        "turns" => g.d.defines.person_courtship_turns,
+        "gift_turns" => ffh_core::persons::COURTSHIP_GIFT_TURNS,
+        "turn" => g.game_turn(),
     }
 }
 
@@ -365,13 +400,20 @@ fn reason_text(s: String) -> String {
 /// build", rule 9), from the rules alone: refused with the rules' reason when it would not give
 /// an item asked for (`House Arne is Pleased with the Bannor`), or when the deal is not one it
 /// takes (`propose_deal`'s checks: no gold per turn); else accepted when the gold offered covers
-/// its price (`margin`: offered less price; refused: `House Arne asks 450 gold`).
+/// its price (`margin`: offered less price; refused: `House Arne asks 450 gold`). A gift (nothing
+/// asked back: gold or resources, the third build's courtship) is accepted.
 fn house_answer(g: &Game, hh: HouseId, h: PlayerId, give: &[TradeData], get: &[TradeData]) -> ffh_core::controller::OfferVerdict {
     use ffh_core::controller::OfferVerdict;
     use ffh_core::persons::{house_item, house_offer_value};
     let no = |why: String| OfferVerdict { accept: false, margin: None, why: Some(reason_text(why)) };
     let label = g.house_label(hh);
     let kinds: Vec<_> = get.iter().filter_map(|t| house_item(t.item_type)).collect();
+    if get.is_empty() && !give.is_empty() {
+        return match check_deal(g, h, g.houses[hh].player, give, get) {
+            Ok(()) => OfferVerdict { accept: true, margin: None, why: None },
+            Err(e) => no(e.detail()),
+        };
+    }
     if kinds.is_empty() {
         return no(format!("{label} trades only Secede and Become your vassal"));
     }
@@ -530,8 +572,10 @@ pub fn check_deal(g: &Game, h: PlayerId, to: PlayerId, give: &[TradeData], get: 
         }
     }
     // At war every deal makes peace (`CvDeal::addTrades`): it has to be a peace deal. (Not a House's
-    // side deal, docs/PERSONS.md: it secedes, and the deal ends its share in its liege's war.)
-    let house_deal = get.iter().any(|t| ffh_core::persons::house_item(t.item_type).is_some());
+    // side deal, docs/PERSONS.md: it secedes, and the deal ends its share in its liege's war; nor a
+    // gift to a House, the third build's courtship, which makes no peace.)
+    let house_gift = get.is_empty() && g.player_house(to).is_some();
+    let house_deal = house_gift || get.iter().any(|t| ffh_core::persons::house_item(t.item_type).is_some());
     if !house_deal && g.at_war(g.players[h].team, g.players[to].team) {
         let has = |kind: TradeableItem| give.iter().chain(get).any(|t| t.item_type == kind);
         if !has(TradeableItem::TRADE_PEACE_TREATY) && !has(TradeableItem::TRADE_SURRENDER) {

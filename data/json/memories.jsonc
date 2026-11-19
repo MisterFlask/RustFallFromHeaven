@@ -41,7 +41,9 @@
   {"type": "MEMORY_SOMNIUM_NEGATIVE", "description": "TXT_KEY_MEMORY_SOMNIUM_NEGATIVE"},
   {"type": "MEMORY_SOMNIUM_DELAY", "description": "TXT_KEY_MEMORY_SOMNIUM"},
   // This game's own (docs/PORTING.md, "Changes from FFH2"; tools/gen_enums.py EXTRA_MEMBERS): a
-  // city taken in battle, and a House bought away by a side deal (docs/PERSONS.md, rule 9).
+  // city taken in battle, a House bought away by a side deal (docs/PERSONS.md, rule 9), and a
+  // House courted with gifts (docs/PERSONS.md, "The third build", rule 7).
   {"type": "MEMORY_TOOK_CITY", "description": "TXT_KEY_MEMORY_TOOK_CITY"},
-  {"type": "MEMORY_BOUGHT_HOUSE", "description": "TXT_KEY_MEMORY_BOUGHT_HOUSE"}
+  {"type": "MEMORY_BOUGHT_HOUSE", "description": "TXT_KEY_MEMORY_BOUGHT_HOUSE"},
+  {"type": "MEMORY_COURTED_HOUSE", "description": "TXT_KEY_MEMORY_COURTED_HOUSE"}
 ]

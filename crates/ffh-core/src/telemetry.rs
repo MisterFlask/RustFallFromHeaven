@@ -408,8 +408,9 @@ impl Game {
     /// Houses (docs/PERSONS.md): `kind` `granted` (house / founded), `request` (issued / met /
     /// refused), `state` (Friendly / Pleased / Cautious / Annoyed / Furious), `record` (vassal /
     /// capitulated: a vassal became a House; ended; freed), `seceded` (countdown / civil_war /
-    /// bribe / bribe_vassal / held), `levy` (placed), `bribe` (offered); counted as
-    /// `house_<kind>` by what, for the liege.
+    /// bribe / bribe_vassal / held), `levy` (placed), `bribe` (offered), `courtship` (opened: a
+    /// rival's courtship of a House opened, the third build's rule 7); counted as `house_<kind>` by
+    /// what, for the liege.
     pub(crate) fn tel_house(&self, p: PlayerId, kind: &'static str, what: &'static str) {
         if !self.telemetry.on() {
             return;
@@ -423,6 +424,7 @@ impl Game {
                 "seceded" => "house_seceded",
                 "levy" => "house_levy",
                 "bribe" => "house_bribe",
+                "courtship" => "house_courtship",
                 _ => "house_record",
             };
             t.count(p, key, what, 1);
@@ -430,17 +432,16 @@ impl Game {
         });
     }
 
-    /// A House's tribute paid to its liege `p` (docs/PERSONS.md): counted as `house_tribute`
-    /// `gold` and `research` (the amounts); the event `tribute` with both.
-    pub(crate) fn tel_tribute(&self, p: PlayerId, gold: i32, research: i32) {
+    /// A House's tribute paid to its liege `p` (docs/PERSONS.md; gold only since the third build,
+    /// rule 10): counted as `house_tribute` `gold` (the amount); the event `tribute` with it.
+    pub(crate) fn tel_tribute(&self, p: PlayerId, gold: i32) {
         if !self.telemetry.on() {
             return;
         }
         let turn = self.game_turn();
         self.telemetry.with(|t| {
             t.count(p, "house_tribute", "gold", gold as i64);
-            t.count(p, "house_tribute", "research", research as i64);
-            t.event(|| ev(turn, "tribute", p).i("gold", gold as i64).i("research", research as i64).end());
+            t.event(|| ev(turn, "tribute", p).i("gold", gold as i64).end());
         });
     }
 

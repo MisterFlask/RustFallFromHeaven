@@ -184,6 +184,20 @@ fn item(t: TradeableItem) -> TradeData {
     TradeData { item_type: t, data: 0, offering: false, hidden: false }
 }
 
+/// `buyer` courts House `h` (the third build, rule 7): a gift of the gold its courtship still
+/// lacks, through a deal (gold given to it), then `PERSON_COURTSHIP_TURNS` game turns pass: its
+/// offers are possible.
+fn court(g: &mut Game, buyer: PlayerId, h: HouseId) {
+    let hp = g.houses[h].player;
+    let need = (g.courtship_requirement() - g.house_courtship_value(h, buyer)).max(1);
+    g.players[buyer].gold += need;
+    g.implement_deal(buyer, hp, &[gold(need)], &[], false);
+    assert!(g.house_courtship_opened(h, buyer).is_some(), "the gift opens the courtship");
+    let t = g.game_turn();
+    g.set_game_turn(t + g.d.defines.person_courtship_turns);
+    assert_eq!(g.house_courtship_refusal(h, buyer), None);
+}
+
 // ---------------------------------------------------------------------------------------------
 // The attitude scale, the ambition
 // ---------------------------------------------------------------------------------------------
@@ -513,8 +527,10 @@ fn a_vassal_deal_seeks_protection_even_under_direct_rule() {
 // Tribute
 // ---------------------------------------------------------------------------------------------
 
+/// Tribute is gold only (the third build, rule 10: a realm shares its knowledge, so a research part
+/// would count a House's beakers twice).
 #[test]
-fn tribute_takes_gold_and_adds_research() {
+fn tribute_takes_gold_only() {
     let World { mut g, a, .. } = world();
     government(&mut g, "CIVIC_ARISTOCRACY");
     let h = land_house(&mut g, a);
@@ -531,33 +547,28 @@ fn tribute_takes_gold_and_adds_research() {
     assert_eq!(g.player_set_house_tribute(P1, h, 20), Err("Not a House of yours."));
     g.player_set_house_tribute_default(P0, 30).unwrap();
     assert_eq!(g.players[P0].house_tribute, 30);
-    // The transfer.
-    let (gold_commerce, research_commerce) = g.house_commerce(h);
+    // The transfer: gold only; the liege's research is not touched.
+    let gold_commerce = g.house_commerce(h);
     g.players[hp].gold = 1000;
     let liege_gold = g.players[P0].gold;
     let tech = g.d.techs.keys().find(|&t| g.player_can_research(P0, t, false)).expect("a tech to research");
     g.player_push_research(P0, tech, true);
     let team = g.players[P0].team;
     let progress = g.team_get_research_progress(team, Some(tech));
+    let own = g.player_calculate_research_rate(P0, Some(tech));
     turn(&mut g);
     let want_gold = gold_commerce * 50 / 100;
-    let want_research = research_commerce * 50 / 100;
     assert_eq!(g.players[hp].gold, 1000 - want_gold);
     assert_eq!(g.players[P0].gold, liege_gold + want_gold);
     assert_eq!(g.houses[h].last_gold, want_gold);
-    assert_eq!(g.houses[h].last_research, want_research);
-    if !g.team_is_has_tech(team, Some(tech)) {
-        assert_eq!(g.team_get_research_progress(team, Some(tech)), progress + want_research, "added to the liege's research");
-    }
+    assert_eq!(g.house_tribute_at(h, 50), want_gold);
+    // (The Houses' turn alone adds no research: the liege's own is added in its own turn.)
+    assert_eq!(g.team_get_research_progress(team, Some(tech)), progress, "no research from the tribute (the liege's own rate is {own})");
     // No more than it holds.
     g.players[hp].gold = 0;
     turn(&mut g);
     assert_eq!(g.houses[h].last_gold, 0);
-    // Lost while the liege researches nothing.
-    g.player_clear_research_queue(P0);
-    turn(&mut g);
-    assert_eq!(g.houses[h].last_research, 0);
-    assert_eq!(g.house_tribute_at(h, 50).1, 0);
+    assert_eq!(g.house_tribute_at(h, 50), 0);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -708,7 +719,7 @@ fn turns_paid(g: &mut Game, h: HouseId, turns: usize) -> Vec<i32> {
     let mut out = Vec::new();
     for _ in 0..turns {
         g.players[hp].gold = 100_000;
-        let (want, _) = g.house_tribute_at(h, g.houses[h].tribute_now);
+        let want = g.house_tribute_at(h, g.houses[h].tribute_now);
         turn(g);
         assert_eq!(g.houses[h].last_gold, want, "paid at the rate in force");
         out.push(g.houses[h].tribute_now);
@@ -868,16 +879,23 @@ fn a_houses_price_and_its_refusals() {
     assert_eq!(g.house_bribe_refusal(h, P1, BribeKind::Secede), Some(format!("{} is Pleased with the Bannor.", g.house_label(h))));
     assert!(!g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_SECEDE), false));
     assert_eq!(g.house_bribe_refusal(h, P0, BribeKind::Secede), Some(format!("{} pays its liege by tribute.", g.house_label(h))));
-    // Cautious: (loyalty + 6) x 25 x its cities.
+    // Cautious: (loyalty + 6) x P x its cities (P a share of the world unit, the third build's rule
+    // 8); offers wait for a courtship open 10 turns (rule 7).
     set_house_loyalty(&mut g, h, -1);
     assert_eq!(g.house_state(h), LoyaltyState::Cautious);
-    assert_eq!(g.house_bribe_price(h), Some(5 * 25));
+    let step = g.house_price_step();
+    assert_eq!(g.house_bribe_price(h), Some(5 * step));
+    assert_eq!(g.house_bribe_terms_refusal(h, P1, BribeKind::Secede), None);
+    assert!(g.house_bribe_refusal(h, P1, BribeKind::Secede).is_some_and(|r| r.starts_with(&format!("Court {} first: ", g.house_label(h)))));
+    assert!(!g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_SECEDE), false), "not before the courtship");
+    court(&mut g, P1, h);
     assert_eq!(g.house_bribe_refusal(h, P1, BribeKind::Secede), None);
     assert!(g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_SECEDE), false));
     // Furious: one step at least (never free: the countdown is the liege's window).
     set_house_loyalty(&mut g, h, -7);
-    assert_eq!(g.house_bribe_price(h), Some(25));
-    // A House trades nothing else; only gold comes to it, and not from its liege.
+    assert_eq!(g.house_bribe_price(h), Some(step));
+    // A House trades nothing else; only gold (and resources, by the ordinary rules) comes to it,
+    // and not from its liege.
     assert!(!g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_MAPS), false));
     assert!(!g.player_can_trade_item(P1, hp, &item(TradeableItem::TRADE_OPEN_BORDERS), false));
     assert!(g.player_can_trade_item(P1, hp, &gold(0), false));
@@ -910,6 +928,7 @@ fn an_offer_refused_leaves_no_trace() {
 fn secede_breaks_away_for_the_buyer() {
     let (mut g, h) = bribe_world(-1);
     let hp = g.houses[h].player;
+    court(&mut g, P1, h);
     g.players[P1].gold = 500;
     let price = g.house_bribe_price(h).unwrap();
     let extra = g.players[P0].ai_attitude_extra[P1];
@@ -933,6 +952,7 @@ fn secede_breaks_away_for_the_buyer() {
 fn become_your_vassal_makes_it_the_buyers_house_and_the_buyer_shares_its_war() {
     let (mut g, h) = bribe_world(-1);
     let hp = g.houses[h].player;
+    court(&mut g, P1, h);
     g.players[P1].gold = 500;
     let price = g.house_bribe_price(h).unwrap();
     g.implement_deal(P1, hp, &[gold(price)], &[item(TradeableItem::TRADE_HOUSE_VASSAL)], false);

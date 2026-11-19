@@ -5,7 +5,8 @@
 // headless Chromium on the HD-2D map (with `--shots`; else the map the page chooses). It checks the
 // Court button's count; opens the Court with Shift+F9 (the header with the Crown's limit and the
 // realm's default tribute, the lines that need attention, the Crown and the four Houses, each with
-// its leader and its request; no person anywhere); opens a
+// its leader and its request; no person anywhere; the courted House's card with the courtship
+// and its gold-only tribute line, the third build's rules 7 and 10); opens a
 // House's tribute list, reads each rate once in force and when (a step every 5 turns), sets another
 // rate and sees the card say the rate set and the rate in force while its parts, total and state
 // stay the rate in force's; opens the grant list of the contested Crown city (the claimants
@@ -275,6 +276,26 @@ async function main() {
       await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
     }
 
+    // ---- The third build, part 2B (rules 7 and 10): the neighbour courts House `pleased` (a
+    // resource and gold, open); its card says so, and its tribute line is gold only.
+    {
+      const courted = await page.evaluate((sel) => {
+        const c = document.querySelector(sel);
+        return { lines: [...c.querySelectorAll(".pcourted")].map((e) => e.textContent), tribute: c.querySelector(".ptribute-line")?.textContent ?? "" };
+      }, houseSel(houseP.id));
+      check(courted.lines.length === 1 && /^Courted by the \S.* \(gifts: \d+ gold, [^)]+\)\. Offers possible from turn \d+\.$/.test(courted.lines[0]), `the courted House's card: ${JSON.stringify(courted.lines)}`);
+      check(!/research/.test(courted.tribute) && /^Tribute \d+%(: \d+ gold last turn\.|\. Not paid yet\.)$/.test(courted.tribute), `its tribute line, gold only: ${courted.tribute}`);
+      const others = await page.evaluate((id) => [...document.querySelectorAll(`.modal[data-tag=court] .house-card:not([data-house="${id}"]) .pcourted`)].length, houseP.id);
+      check(others === 0, `no other House of yours is courted (${others})`);
+      steps.push(`${houseP.label}'s card: "${courted.lines[0]}"; tribute "${courted.tribute}"`);
+      if (SHOTS) {
+        await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), houseSel(houseP.id));
+        await sleep(300);
+        await crop(page, houseSel(houseP.id), "court-house-courted.png", { pad: 4 });
+        await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
+      }
+    }
+
     // A state mark's tooltip: the attitude's help from the data.
     const tipText = await page.evaluate(async (sel) => {
       const mark = document.querySelector(`${sel} .phead > .pstate`);
@@ -306,10 +327,10 @@ async function main() {
     // Each row, once in force (rule 4): when (`In force in 15 turns.`: a step of 10% every 5 turns
     // from the rate in force), its part and the total then.
     const ROW = /^(In force\.|In force in (\d+) turns?\.) Tribute: ([+-]?\d+) · Loyalty: ([+-]?\d+)$/;
-    check(rates.every((r) => /^Pays \d+ gold, \d+ research\.$/.test(r.est) && ROW.test(r.part)), `the rows' lines: ${JSON.stringify(rates)}`);
+    check(rates.every((r) => /^Pays \d+ gold\.$/.test(r.est) && ROW.test(r.part)), `the rows' lines: ${JSON.stringify(rates)}`);
     check(rates.every((r) => Number(ROW.exec(r.part)?.[2] ?? 0) === (Math.abs(r.pct - now.pct) / 10) * 5), `each row's turns until in force: ${JSON.stringify(rates)}`);
     const before = await cardState(page, houseA.id);
-    check(/^Tribute 0%: \d+ gold, \d+ research last turn\.$|^Tribute 0%\. Not paid yet\.$/.test(before.line), `the line of a rate at rest: ${before.line}`);
+    check(/^Tribute 0%: \d+ gold last turn\.$|^Tribute 0%\. Not paid yet\.$/.test(before.line), `the line of a rate at rest: ${before.line}`);
     await page.evaluate((sel) => document.querySelector(`${sel} details.ptribute`).scrollIntoView({ block: "center" }), card);
     await crop(page, `${card} details.ptribute`, "court-house-tribute.png", { pad: 6 });
     const pick = rates.find((r) => r.pct === 30);

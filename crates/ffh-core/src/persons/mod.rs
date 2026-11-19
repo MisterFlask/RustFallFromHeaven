@@ -19,7 +19,12 @@
 //! Furious House starts a countdown, at whose end it breaks away (war; `secession.rs`; a
 //! direct-rule civic is every House breaking away at once). Annoyed or worse takes no levy.
 //!
-//! **Side deals** (`bribes.rs`): a House gives Secede or Become your vassal (trade items) for gold.
+//! **Side deals** (`bribes.rs`): a House gives Secede or Become your vassal (trade items) for gold,
+//! at a price that follows the world unit, to a civilization whose courtship has been open long
+//! enough (`courtship.rs`: gifts of gold and resources, in the open).
+//!
+//! **A realm shares its knowledge** (`knowledge.rs`): a tech one team of a realm (a liege's team
+//! and its Houses' teams) gains, every other team of the realm gains too.
 //!
 //! **The world unit** (`world_unit.rs`): the mean commerce of the world's civilizations, the scale
 //! of what passes in gold between a realm and the world.
@@ -35,9 +40,11 @@ use crate::ids::*;
 use crate::log::{LogMark, LogTag};
 
 mod bribes;
+mod courtship;
 mod crown;
 mod demands;
 mod houses;
+mod knowledge;
 mod leaders;
 mod loyalty;
 mod preview;
@@ -48,6 +55,7 @@ mod vassals;
 mod world_unit;
 
 pub use bribes::{house_item, house_offer_value, BribeKind};
+pub use courtship::CourtshipView;
 pub use crown::CROWN_OVER_FACTOR;
 pub use houses::CityHold;
 pub use leaders::{leader_name, leader_title, LeaderPool};
@@ -94,8 +102,6 @@ pub const TRIBUTE_STEP: i32 = 10;
 /// A House's rate in force moves one [`TRIBUTE_STEP`] toward the rate its liege set every this
 /// many turns (rule 4: 0% to 50% takes 25 turns, and so does 50% back to 0%).
 pub const TRIBUTE_LAG_TURNS: i32 = 5;
-/// A House's price to secede: `(loyalty + 6) x` this `x` its cities, gold.
-pub const BRIBE_PER_CITY: i32 = 25;
 /// The Land list's foreign cities: within this many plots of a city of the House.
 pub const LAND_RANGE: i32 = 12;
 /// A House keeps at most this many lines of record (the oldest go).
@@ -104,6 +110,19 @@ pub const DEEDS_KEPT: usize = 40;
 pub const DEMAND_WARNING_TURNS: i32 = 10;
 /// The colours a House's shield is drawn with (`House::color` is an index below this).
 pub const HOUSE_COLORS: u8 = 8;
+
+// ---- The third build, rules 7 and 8 (courtship, the price; `courtship.rs`) ----
+
+/// A House's price is `(loyalty + 6) x P x` its cities, P this percent of the world unit (at
+/// least 1): P is 25 at turn 150's world unit of 47 (docs/PERSONS.md, "The third build as built,
+/// part 1", rule 9), the second build's flat 25.
+pub const PRICE_PERCENT_OF_UNIT: i32 = 54;
+/// A courtship's requirement: this many turns of the world unit.
+pub const COURTSHIP_UNITS: i32 = 3;
+/// A resource given counts the requirement divided by this (a third).
+pub const COURTSHIP_RESOURCE_SHARE: i32 = 3;
+/// Gold given to a House counts toward a courtship for this many turns.
+pub const COURTSHIP_GIFT_TURNS: i32 = 20;
 
 // ---------------------------------------------------------------------------------------------
 // Types
@@ -322,12 +341,31 @@ pub struct House {
     /// took effect, or the turn the liege set a new rate while the rate in force was at rest. The
     /// next step takes effect [`TRIBUTE_LAG_TURNS`] turns after it.
     pub tribute_since: i32,
-    /// The gold its last tribute gave.
+    /// The gold its last tribute gave (tribute is gold only: the third build, rule 10).
     pub last_gold: i32,
-    /// The research its last tribute gave (0 when the liege researched nothing).
-    pub last_research: i32,
     /// The game turn its last tribute was paid (-1: none yet).
     pub last_turn: i32,
+    // ---- The third build, rule 7 (courtship; `courtship.rs`) ----
+    /// The gold given to it, oldest first, kept [`COURTSHIP_GIFT_TURNS`] turns.
+    pub gifts: Vec<Gift>,
+    /// The courtships open, by giver: the game turn each opened (in giver order).
+    pub courtships: Vec<Courtship>,
+}
+
+/// A gift of gold to a House (the third build, rule 7): who gave it, how much, on which game turn.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Gift {
+    pub giver: PlayerId,
+    pub gold: i32,
+    pub turn: i32,
+}
+
+/// A courtship of a House that is open (the third build, rule 7): its giver and the game turn it
+/// opened.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Courtship {
+    pub giver: PlayerId,
+    pub opened: i32,
 }
 
 /// Whom a city is granted to ([`Game::player_grant_city`]).

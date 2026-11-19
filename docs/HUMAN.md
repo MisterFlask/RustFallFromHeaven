@@ -603,7 +603,11 @@ commander or great person founder anywhere; `persons_lines.js`, the view's
   portrait's height: yours, its attitude toward you with the countdown (`House Aldric, your
   vassal` / `✖ Furious 8 turns`); another's, its state toward its own liege and, when it would
   take your offer, its price (`House Alyndra, vassal of the Svartalfar` / `◆ Annoyed` / `Secede:
-  150 gold`; Pleased or Friendly, the mark alone says why it takes none). The
+  150 gold`; Pleased or Friendly, the mark alone says why it takes none), else the rules' reason
+  (the courtship's: `Court House Alyndra first: gifts worth 141 (you have given 94)`, `Offers
+  possible from turn 140`). Under any House's line, its courtships, in the open (docs/PERSONS.md,
+  "The third build", rule 7): `Courted by the Bannor (gifts: 120 gold, Wine). Offers possible from
+  turn 140.`, or `... Not open: 120 of 180.` The
   war question names who the war brings in for certain by the vassal rules (`At war with you as
   well: House Alyndra, Malakim.`, `Your Houses join: House Aldric, House Bertram.`; declared on a
   House: its liege and the liege's other Houses, `At war with you as well: the Svartalfar, House
@@ -613,11 +617,17 @@ commander or great person founder anywhere; `persons_lines.js`, the view's
   (fades). So do House Alyndra.` (the memory of a declared war, docs/PERSONS.md rule 15; the
   parties named are those the vassal rules bring in whose attitude it moves). A House's leader
   speaks as any leader. Its trade
-  screen offers what the rules let it trade: you give gold (`+1` a gold; no gold per turn), it
-  gives `Secede` or `Become your vassal` (one of the two),
+  screen offers what the rules let it trade: you give gold (`+1` a gold, toward its price or a
+  courtship; no gold per turn) and resources (a lease, each worth what it counts toward a
+  courtship), it gives `Secede` or `Become your vassal` (one of the two),
   each worth its price (`−150`) or greyed with the rules' reason (`(House Alyndra is Pleased with
-  the Svartalfar.)`); under the tables `Trades through the Svartalfar.` with `Trade with the
-  Svartalfar…`. The answer is the rules' (`This proposal will be refused. Reason: House Alyndra
+  the Svartalfar.)`; before your courtship allows it, its reason with the price shown: `(Court
+  House Alyndra first: gifts worth 141 (you have given 94).)`, `(Offers possible from turn
+  140.)`); under the tables your courtship (`Courting House Alyndra: 94 of 141 given (Wine counts
+  47).`) and `Trades through the Svartalfar.` with `Trade with the Svartalfar…`. A deal of yours
+  alone is a gift (the House accepts any): `Gifts now: 94 of 141.`, `Value of this gift: 47.`,
+  `Effect: the courtship opens. Offers possible from turn 140.` (or `Effect: 120 of 141 given. The
+  courtship opens at 141.`), `Gold counts for 20 turns; a resource while it is given (47).` The answer is the rules' (`This proposal will be refused. Reason: House Alyndra
   asks 150 gold.`), and with a House's item in the deal, under `If accepted:`, what accepting
   means: `House Alyndra will break away from the Svartalfar: war between them.`, and for Become
   your vassal `You become its liege: war with the Svartalfar.` with the parties the vassal rules
@@ -627,7 +637,7 @@ commander or great person founder anywhere; `persons_lines.js`, the view's
   for Become your vassal also of the war you then declare on the liege, as the attitude's parts
   will count them; nothing at the cap). A vassal deal the rules hold (a
   House's, a capitulation) shows no `cancel in` count. At war: `You are at war. An accepted offer makes peace with
-  House Alyndra first.` Your own House's screen has no tables: `House Aldric pays its liege by
+  House Alyndra first; a gift makes none.` Your own House's screen has no tables: `House Aldric pays its liege by
   tribute.`, its attitude and `Open the Court`.
 - *Alerts* (part H): the Houses' messages (the log's `kind: "house"` with the House's id, and
   `mark: "house"` for one left untagged: a city held or lost at a break-away) and the news of a
@@ -637,7 +647,9 @@ commander or great person founder anywhere; `persons_lines.js`, the view's
   `{id, label, leader, leader_name}`). A change of state shows the one mark over the rest of the
   text, and a House turned Annoyed or Furious adds `House Arne takes no levy.`; a request is the
   rules' line (`House Arne requests: Torrin granted to House Arne. 40 turns.`); an offer to one of
-  your Houses is the rules' line (`The Svartalfar offered House Arne 300 gold to secede.`). A click
+  your Houses is the rules' line (`The Svartalfar offered House Arne 300 gold to secede.`), and so is
+  a rival's courtship of one opening (`The Svartalfar court House Arne: offers possible from turn
+  140.`). A click
   opens the Court at the House (the one the entry tags, else the one its text names; a
   break-away's toast is dismissed). At most the newest three a batch, with `Houses: N more
   messages in the log.`
@@ -817,17 +829,18 @@ title (its player's leader), `Founded on turn 3.` / `Capitulated on turn 120.` /
 turn 40.`, the state mark with a countdown's turns, the outcome when Furious, its request line
 (`Request: Vallus granted to Malakim. 40 turns. At its term: -3 (60 turns), becomes ✖ Furious.`,
 the state after only when it changes; between requests `No request. Next in 14 turns.`), the
-loyalty parts and total, the tribute (`Tribute 20%: 12 gold, 8 research last turn.`, or while the
-rate in force moves toward the rate set `Tribute 30%, now 10%: reaches 30% in 10 turns. Paid last
-turn: 4 gold, 6 research.`, and `Change`: the list of the rates 0 to 50%, each a button with `Pays
-12 gold, 8 research.`, `In force in 15 turns. Tribute: -2 · Loyalty: 0` (the rate in force's row
+loyalty parts and total, the tribute (gold only, the third build's rule 10: `Tribute 20%: 12 gold
+last turn.`, or while the rate in force moves toward the rate set `Tribute 30%, now 10%: reaches 30%
+in 10 turns. Paid last turn: 4 gold.`, and `Change`: the list of the rates 0 to 50%, each a button
+with `Pays 12 gold.`, `In force in 15 turns. Tribute: -2 · Loyalty: 0` (the rate in force's row
 `In force.`) and the state mark at that rate once in force, the rate set marked `set`; a tap
 sends `house_tribute` and the card is read again with the list kept open: docs/PERSONS.md, rule
 4, the rate in force moves a step of 10% every 5 turns), the levy (`Takes levies. Each levy: -1
 (20 turns). Annoyed after 2 levies.` or the rules' reason it takes none, amber), its cities as
 chips (a tap shows the city on the map: a House's city is its own player's, your city screen does
 not open on it), its price to secede while it would accept an offer (`Price to secede: 125
-gold.`: Cautious or worse), `Free` (two steps: `Free House Arne? It is no longer your vassal, at
+gold.`: Cautious or worse), a line per rival's courtship of it (`Courted by the Svartalfar (gifts:
+120 gold, Wine). Offers possible from turn 140.`), `Free` (two steps: `Free House Arne? It is no longer your vassal, at
 peace with you. This cannot be undone. [Free] [Back]`), and opened (`Record`): `Refuses any offer
 to secede.` (Pleased or Friendly), its leader's ambition (`Ambition: Land.`), its record (`Turn
 12: Founded at Vallus, led by Odran Vale.`, `Turn 40: Request refused: Ventry granted.`), the
@@ -1780,7 +1793,8 @@ node tools/web-persons-smoke.mjs --bin B # the Houses: the Court, a tribute set,
   persons`): the Court button's count; Shift+F9 opens the Court (the header with the Crown's limit
   in amber and the default tribute, the lines that need attention in their order, the Crown and
   the four Houses each with its leader and its request, no person card, a state mark's tooltip
-  from the attitude's help); a House's tribute list
+  from the attitude's help; the House a rival courts, its courtship's line and its gold-only
+  tribute line); a House's tribute list
   opened (each row's turns until in force), a rate set, and the card's line with both rates while
   its tribute part, total and state stay the rate in force's, the row marked; the grant list
   of the contested Crown city (its head, the claimants first, the first card's lines); the grant in
@@ -1809,10 +1823,14 @@ node tools/web-persons-smoke.mjs --bin B # the Houses: the Court, a tribute set,
   colours, the map's plates (a crop), a state change's alert, the city screen's Governance line of
   a Crown city at 390 px (no sideways scroll), the Armies screen without a commander line, the unit
   panel without a person line or Found a House, the war question's preview lines; the diplomacy list (your Houses first, the neighbour's
-  House under its liege) and the House's trade screen (Secede and Become your vassal, `Trades
-  through the ...`, a Secede offer below its price refused with the rules' reason and proposed,
-  one at its price accepted with the war it means, proposed: the House breaks away and its alert
-  shows); and the civics screen's God King warning with its button. With `--shots DIR` it saves
+  House under its liege with the reason an offer waits, the courtships under the Houses' lines)
+  and the House's trade screen (gold and resources, Secede and Become your vassal greyed with the
+  courtship's reason, your courtship's line, `Trades through the ...`, a gift that opens the
+  courtship, then `Offers possible from turn N.`); in `persons-direct` (your courtship open 10
+  turns) the trade screen again (a Secede offer below its price refused with the rules' reason and
+  proposed, one at its price accepted with the war it means, proposed: the House breaks away and
+  its alert shows, the liege's attitude names the House bought) and the civics screen's God King
+  warning with its button. With `--shots DIR` it saves
   the review crops (deviceScaleFactor 2). Any console or page error fails it.
 * `web-smoke.mjs [--turns 4] [--seed 5] [--out DIR] [--assets DIR] [--cdp] [--headed]` drives the
   page with the mouse and keyboard in headless Chromium (the `playwright` package if it resolves,

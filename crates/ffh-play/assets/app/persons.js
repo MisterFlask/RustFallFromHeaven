@@ -92,7 +92,7 @@ addHelp({
     h("h4", "Tribute and levies"),
     h(
       "ul",
-      h("li", "Each House pays a tribute of its gold and research, 0 to 50%; the higher it is, the lower its loyalty. The rate in force moves one step of 10% toward the rate you set every 5 turns, up or down, and the payment and the loyalty follow the rate in force. Set it on the House's card: the list shows what each rate pays and does to its loyalty once in force, and when."),
+      h("li", "Each House pays a tribute of its gold, 0 to 50%; the higher it is, the lower its loyalty. The rate in force moves one step of 10% toward the rate you set every 5 turns, up or down, and the payment and the loyalty follow the rate in force. Set it on the House's card: the list shows what each rate pays and does to its loyalty once in force, and when."),
       h("li", "Your armies requisition in your Houses' cities too (the Armies screen): each levy costs the House loyalty for a while. An Annoyed or Furious House takes no levy."),
     ),
     h("h4", "Loyalty"),
@@ -109,6 +109,8 @@ addHelp({
       h("li", "Adopting a government of direct rule (Despotism, God King) makes every House break away at once, each at war with you."),
       h("li", "You can free a House: it is no longer your vassal, at peace with you."),
       h("li", "Others can offer your Cautious or worse Houses gold to secede (the diplomacy screen); you can do the same to theirs. A secession is a war on the old liege."),
+      h("li", "A House takes an offer only from a civilization that has courted it for 10 turns: gifts of gold (counted 20 turns) and resources (while given) worth 3 turns of the world's mean commerce open a courtship. A House's card shows who courts it; you are told when a courtship of yours opens."),
+      h("li", "A realm shares its knowledge: a tech you or one of your Houses learns, all of you learn. Techs are yours to trade, not your Houses'."),
     ),
     h("h4", "Keys"),
     h("ul", h("li", "Shift+F9 opens the Court. Its button's count is what needs attention: a Furious House, a request with 10 turns or fewer.")),
@@ -289,6 +291,8 @@ function houseCard(x, m, reload) {
     h("div.pchips", chips),
     // Its price while it would accept an offer (Cautious or worse); a refusal is under Record.
     x.price ? h("div.pline.pprice", x.price) : null,
+    // Who courts it (docs/PERSONS.md, "The third build", rule 7): a line each.
+    ...(x.courtships ?? []).map((l) => h("div.pline.pcourted", l)),
     foot,
     moreBlock({ record: x.record, backstory: x.backstory }, [x.price_refusal ? h("div.pline", x.price_refusal) : null, x.ambition ? h("div.pline", x.ambition) : null]),
   );

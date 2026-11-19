@@ -6,8 +6,9 @@ House a vassal civilization of its own; **the third build (2026-11-19) removed t
 stand alone.** A civilization's Houses are its vassals, each a player with a leader of its own:
 they make requests, pay tribute, give less when crossed, and can break away with what they hold.
 **Part 1 of the third build is built (rules 1 to 3 and 9: no persons, requests, the first grant
-founds a House, the world unit); the second build's other rules stay in force until part 2
-changes them.** The owner's concept and decisions of 2026-11-18 and 2026-11-19; the numbers are
+founds a House, the world unit), and part 2B (rules 7, 8 and 10: courtship, the price on the
+world unit, shared knowledge, gold tribute); the second build's other rules stay in force until
+part 2A changes them.** The owner's concept and decisions of 2026-11-18 and 2026-11-19; the numbers are
 first guesses. "Open points" says which rules are the owner's decisions and which are proposals
 still to be confirmed.
 
@@ -20,10 +21,10 @@ still to be confirmed.
 | 4 | foreign persons: side deals with a rival's Houses (Secede, Become your vassal); seeing persons, courting, agents abroad | side deals built (second build, rule 9, `persons/bribes.rs`); the rest not built |
 | 5 | the annals: what each character did in the player's earlier games | not built |
 | second build | Houses as vassal civilizations, rules 1 to 14 below | built (2026-11-18): the rules (ffh-core), the AI (rule 12, `crates/ffh-ai/src/persons.rs`) and the screens (rule 13: the Court, the grant list, the levy, diplomacy, the map's plates) |
-| third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | part 1 built (2026-11-19: the persons removed, the first grant founds, requests, the world unit: rules 1 to 3 and 9, and rule 11's grants; "The third build as built, part 1" below); part 2 being built: splits and ultimatums (4 to 6) with courtship, price, knowledge and tribute (7 to 10) |
+| third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | part 1 built (2026-11-19: the persons removed, the first grant founds, requests, the world unit: rules 1 to 3 and 9, and rule 11's grants; "The third build as built, part 1" below); part 2B built (courtship, the price on the world unit, shared knowledge, gold tribute: rules 7, 8 and 10, and rule 11's buyer and courted House; "... part 2B" below); part 2A being built: splits and ultimatums (4 to 6) |
 
-**"The third build" (2026-11-19, below) is the contract in force; its part 1 is built (its "as
-built" note). Where it differs from the second build, it holds; everything below it on persons
+**"The third build" (2026-11-19, below) is the contract in force; its parts 1 and 2B are built
+(their "as built" notes). Where it differs from the second build, it holds; everything below it on persons
 (the cast, commanders, posts, persons' demands, great persons founding) is retired by it.**
 
 "The second build" below is in force where the third does not change it, with its "as built"
@@ -243,6 +244,87 @@ the rules left open:
 12. *As built (the screens):* see "UI", "The third build's screens as built" below and
     docs/HUMAN.md.
 
+### The third build as built, part 2B (2026-11-19)
+
+Rules 7, 8 and 10, and rule 11's buyer and courted House, are built (`persons/courtship.rs`,
+`persons/knowledge.rs`, `bribes.rs`, `vassals.rs`; tests `crates/ffh-core/tests/persons_courtship.rs`,
+the AI's in `crates/ffh-ai/src/persons.rs`). They replace the second build's research tribute (rule
+4) and flat price (rule 9). Where the build settles what the rules left open:
+
+7. *As built (courtship):* a gift is a deal the House gives nothing in (`player_offer_house` with
+   `get` empty, the path the client's `propose_deal` and the AI share): gold, or a resource (its
+   trade by the ordinary rules: a trade network and a spare source; gold per turn stays refused),
+   from a civilization that may court it (`house_courter_refusal`: a civilization, not of its
+   liege's team, not a House, that has met it); the House accepts any gift (ffh-ai's
+   `judge_offer`; the view's answer says so too). A gift to a House at war with the giver makes no
+   peace (`deal_add_trades`: a House's war is its liege's). Gold given to a House in a deal is
+   recorded (`House::gifts`: giver, gold, turn; any gold it receives from one who may court it,
+   the price paid with an offer included), counted `COURTSHIP_GIFT_TURNS` (20) turns (a gift of
+   turn t counts through t + 19) and pruned in the liege's turn; resources are the live deals'
+   (`house_gift_resources`). The value: that gold + `requirement / COURTSHIP_RESOURCE_SHARE` (a
+   third) per resource; the requirement `COURTSHIP_UNITS` (3) x the world unit
+   (`courtship_requirement`; at least 1). The courtships are checked (`house_update_courtships`)
+   when a deal with a House starts or ends (`house_deal_done`, called at the end of
+   `deal_add_trades` and of `deal_kill`) and in the liege's turn processing, last
+   (`player_persons_courtships`: gifts age, the world unit moves); one opens when its value
+   reaches the requirement (`House::courtships`: giver and opening turn) and closes when it falls
+   below; a read (`house_courtship_opened`) also checks the value now, so a resource cancelled
+   mid-turn closes it at once. `PERSON_COURTSHIP_TURNS` (10) is a define. The refusal
+   (`house_courtship_refusal`, after the terms', `house_bribe_terms_refusal`: who may buy, Become
+   your vassal's checks, the state): `Court House Aldric first: gifts worth 180 (you have given
+   140).`, `Offers possible from turn 140.` When one opens: `The Bannor court House Aldric: offers
+   possible from turn 140.` to the liege (`house_msg`: an alert for a human), `Courted by the
+   Bannor.` in the House's record, `player_add_memory(liege, giver, MEMORY_COURTED_HOUSE)`
+   (memories.jsonc, `courted our House`; every leader with memory data -200, decay 50; ffh-ai's
+   relation term `courted our House`, -1 a courtship, capped at -3), telemetry `house_courtship
+   opened`. The lines (`house_courtships(h) -> Vec<CourtshipView>`, every courtship with gifts
+   that count or open, in player order; `HouseView::courtships`): `Courted by the Bannor (gifts:
+   120 gold, Wine). Offers possible from turn 140.`, not open `Courted by the Bannor (gifts: 120
+   gold). Not open: 120 of 180.`; the courter's (`house_courting_line`): `Courting House Aldric:
+   140 of 180 given (Wine counts 60).` (none while nothing counts). Save format 54.
+8. *As built (the price):* `house_price_step()` = `max(1, world unit x PRICE_PERCENT_OF_UNIT /
+   100)`, the constant 54 (part 1's table: 25 at turn 150's 47, 7 at turn 50, 82 at turn 300);
+   `house_bribe_price` = `(loyalty + 6).max(1) x P x cities`; `BRIBE_PER_CITY` is gone. Every reader
+   goes through it (the trade table, the diplomacy list, the card's price line, the AI).
+10. *As built (knowledge, tribute, techs):* `team_set_has_tech` is a wrapper: it sets the tech
+    (`team_set_has_tech_one`, the C++ `setHasTech`) and, when a team gained it, shares it
+    (`team_share_tech`): every other team of the realm (`team_realm(t)`: the liege's team and its
+    living Houses' teams, in team id order; empty without a realm) that lacks it gains it through
+    `team_set_has_tech_one` with `first: false` (no religion, no free great person, no free tech),
+    so a share reaches no further and loops nowhere. Not shared: a card of the deck (a tech of the
+    data, one of a kind) and a repeatable tech. A team joining a realm: `team_vassal_houses` (the
+    vassal rules' hook) calls `realm_share_knowledge(liege)` after the records are made: each tech
+    a team of the realm has, every team of it that lacks it gains, by tech then team id order
+    (a founding, a capitulation, a vassal deal, a card's birth, a bought House alike). Tribute:
+    `house_tribute_at(h, pct) -> i32` (gold), `house_commerce(h) -> i32` (its cities' gold
+    commerce), `House::last_research`, `TributeView::last_research` and `TributeRate::research`
+    gone, `tel_tribute(p, gold)`; the card's line `Tribute 30%: 12 gold last turn.` / `Paid last
+    turn: 4 gold.`, the list's `Pays 4 gold.`, the keyword Tribute's reminder and the Court's help
+    say gold. Techs: the second build's trade rule already gave a House no tech either way (a
+    House gives only its side deals; it takes gold and, now, resources); a test holds it.
+11. *As built (the AI's part 2B):* as buyer (`choose_courtship`, `choose_offer`): the Houses it
+    would buy as before (at war with their liege, Cautious or worse, not offered lately); a House
+    it courts already (gifts that count, or open) is kept while it is still one of them (one
+    courtship at a time), else the cheapest by gift and price together; the gift is the gold the
+    courtship lacks, given when the gift and the price together fit the offer's budget (half the
+    treasury for Become your vassal, a third for Secede); nothing while the courtship waits its 10
+    turns; then the offer as before (its refusal includes the courtship's). As liege:
+    `courted_to_hold(g, h)` (a courtship of it open or building, `house_courtships` not empty, and
+    Cautious or worse) is added with an `||` to the House filter of `disloyal_house_post` (the
+    hold-march; `house_beyond_tribute` is part 2A's to replace). As a House: any gift accepted.
+12. *As built (the screens):* the House card: a line per courtship (`.pcourted`) under the price;
+    the diplomacy list: every House's courtships under its line (`players[].house.courted`; in
+    the open, for every viewer), another's House's line the courtship's refusal while it is the
+    reason an offer waits; a House's trade table: gold and resources (`+1` a gold, a resource the
+    courtship's worth), the courtship's line (`house.courting`), Secede and Become your vassal
+    greyed with the courtship's refusal while their price shows, and a gift's summary (`Gifts
+    now: 140 of 180.`, `Value of this gift: 40.`, `Effect: the courtship opens. Offers possible
+    from turn 140.`); at war, `... makes peace with House Alyndra first; a gift makes none.` The
+    staged scene (`stage_courtships`): the neighbour courts House `pleased` with a resource and
+    gold (open), the human has given the neighbour's House two thirds of the requirement (not
+    open); in `persons-direct` the human's courtship of it is open and 10 turns old (set by hand),
+    where the screens smoke now plays the accepted offer.
+
 ## The second build (2026-11-18): Houses as vassal civilizations
 
 The owner's decisions of 2026-11-18, after the first build: **a House is a civilization of its
@@ -296,7 +378,9 @@ post, the Court screen, the previews, claims).
    commerce, added to the liege team's current research (not taken from the House: knowledge is
    shared; lost when the liege researches nothing). Recorded per House for display: `Tribute 30%:
    12 gold, 8 research last turn.`, and while the rate in force moves `Tribute 30%, now 10%:
-   reaches 30% in 10 turns. Paid last turn: 4 gold, 6 research.` A standing loyalty part, as
+   reaches 30% in 10 turns. Paid last turn: 4 gold, 6 research.` *(The research part is replaced
+   by the third build, rule 10: tribute is gold only, a realm sharing its knowledge.)* A standing
+   loyalty part, as
    `State religion opposed` is: `Tribute N%: 1 - N/10` with N the rate in force (0%: +1, 10%: 0,
    20%: -1, ..., 50%: -4). One slowly moving rate drives both: lagging only the loyalty part would
    let a liege collect a raised rate before its cost arrived. A new House starts with the default
@@ -338,7 +422,9 @@ post, the Court screen, the previews, claims).
    be paid for one turn and ended by a war on the seceded House), and gives **Secede** (it breaks
    away at once, rule 7) or **Become your vassal** (it breaks away and becomes the buyer's House; by the vassal rules
    the buyer then shares its war with the old liege). It accepts when its loyalty is Cautious or
-   worse and the offer covers its price: `(loyalty + 6) x 25 x its cities` gold (one step, `25 x its cities`, at least: a Furious House
+   worse and the offer covers its price: `(loyalty + 6) x 25 x its cities` gold *(the flat 25
+   replaced by the third build, rule 8: a share of the world unit; and an offer waits for a
+   courtship open 10 turns, rule 7)* (one step, `25 x its cities`, at least: a Furious House
    is never free, its countdown being its liege's window to answer); refusals in the screen's
    words (`House Arne is Pleased with the Bannor.`). The liege learns of a bribe: it remembers the
    buyer (`MEMORY_BOUGHT_HOUSE`, rule 15: -300 on FfH's scale, the AI's relation -1, fading; the

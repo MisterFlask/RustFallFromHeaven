@@ -117,7 +117,8 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50
+        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -151,7 +152,8 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300
+        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {"ATTITUDE_ANNOYED": 10, "ATTITUDE_CAUTIOUS": 50, "ATTITUDE_PLEASED": 90, "ATTITUDE_FRIENDLY": 100},
       "improvement_weight_modifiers": {
@@ -294,7 +296,8 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50
+        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -328,7 +331,8 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300
+        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {"ATTITUDE_ANNOYED": 10, "ATTITUDE_CAUTIOUS": 50, "ATTITUDE_PLEASED": 90, "ATTITUDE_FRIENDLY": 100},
       "improvement_weight_modifiers": {
@@ -475,7 +479,8 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50
+        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -509,7 +514,8 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300
+        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {"ATTITUDE_ANNOYED": 10, "ATTITUDE_CAUTIOUS": 50, "ATTITUDE_PLEASED": 90, "ATTITUDE_FRIENDLY": 100},
       "improvement_weight_modifiers": {"IMPROVEMENT_MANA_NATURE": 20, "IMPROVEMENT_MANA_SPIRIT": 20},
@@ -635,7 +641,8 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50
+        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -669,7 +676,8 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300
+        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {"ATTITUDE_ANNOYED": 20, "ATTITUDE_CAUTIOUS": 70, "ATTITUDE_PLEASED": 100, "ATTITUDE_FRIENDLY": 100},
       "improvement_weight_modifiers": {"IMPROVEMENT_CITADEL": 40, "IMPROVEMENT_MINE": 20, "IMPROVEMENT_MANA_EARTH": 40},
@@ -802,7 +810,8 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50
+        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -836,7 +845,8 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300
+        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {"ATTITUDE_ANNOYED": 10, "ATTITUDE_CAUTIOUS": 50, "ATTITUDE_PLEASED": 90, "ATTITUDE_FRIENDLY": 100},
       "improvement_weight_modifiers": {"IMPROVEMENT_MANA_WATER": 20, "IMPROVEMENT_MANA_CHAOS": 20},
@@ -962,7 +972,8 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50
+        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -996,7 +1007,8 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300
+        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {"ATTITUDE_CAUTIOUS": 20, "ATTITUDE_PLEASED": 80, "ATTITUDE_FRIENDLY": 100},
       "improvement_weight_modifiers": {"IMPROVEMENT_MANA_DEATH": -40, "IMPROVEMENT_MANA_ENTROPY": -40, "IMPROVEMENT_MANA_LIFE": 40},

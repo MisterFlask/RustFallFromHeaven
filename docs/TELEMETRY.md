@@ -68,7 +68,8 @@ described in docs/AUTOPSY.md.
 | `house_seceded` | `countdown`, `civil_war`, `bribe`, `bribe_vassal` (a House broke away: a Furious countdown, direct rule, an offer to Secede or to Become your vassal), `held` (every city of it held: it ended) | – |
 | `house_levy` | `placed` (a levy order in a House's city, counted for the liege) | – |
 | `house_bribe` | `offered` (an accepted offer to one of the player's Houses, counted for the liege) | – |
-| `house_tribute` | `gold`, `research` (a House's tribute, counted for the liege) | the gold and the research paid |
+| `house_tribute` | `gold` (a House's tribute, counted for the liege; gold only since the third build, rule 10) | the gold paid |
+| `house_courtship` | `opened` (a rival's courtship of a House of the liege opened, the third build's rule 7) | 1 each |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -167,7 +168,7 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
   `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
 - `house` (the Houses, docs/PERSONS.md: `how` granted / request / state / record / seceded / levy /
   bribe and `what`, as the counts above; `person` before the third build) and `tribute` (a House's
-  tribute paid: `gold`, `research`; the event's player is the liege);
+  tribute paid: `gold`; the event's player is the liege);
 - `intent` and `decision`;
 - `prediction`: an AI estimate resolved by the rules (the prediction ledger, docs/CALIBRATION.md).
 

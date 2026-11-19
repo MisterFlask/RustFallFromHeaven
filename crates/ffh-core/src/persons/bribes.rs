@@ -5,10 +5,14 @@
 //! for a turn and ended by a war on the seceded House), and gives **Secede** (`TRADE_SECEDE`: it
 //! breaks away at once) or
 //! **Become your vassal** (`TRADE_HOUSE_VASSAL`: it breaks away and becomes the buyer's House, and
-//! by the vassal rules the buyer shares its war with the old liege). War, peace and the rest are
-//! its liege's to trade (`player_can_trade_item`). It accepts when it is Cautious or worse and the
-//! offer covers its price ([`Game::house_bribe_price`], the one rules function every controller
-//! reads): `(loyalty + 6) x 25 x its cities` gold (one step at least when Furious).
+//! by the vassal rules the buyer shares its war with the old liege). War, peace, techs and the rest
+//! are its liege's to trade (`player_can_trade_item`). It accepts when it is Cautious or worse, the
+//! buyer's courtship of it has been open `PERSON_COURTSHIP_TURNS` turns (the third build, rule 7:
+//! `courtship.rs`), and the offer covers its price ([`Game::house_bribe_price`], the one rules
+//! function every controller reads): `(loyalty + 6) x P x its cities` gold, P a share of the world
+//! unit (the third build, rule 8: [`Game::house_price_step`]; one step at least when Furious).
+//! Besides its side deals a House takes gifts: gold and resources, from a civilization that may
+//! court it, nothing asked back (the courtship's gifts; it accepts any).
 //!
 //! The liege learns of an accepted offer ([`Game::house_note_offer`], where the deal takes effect:
 //! `house_trade`, from `deal_start_trade`): it remembers it (`MEMORY_BOUGHT_HOUSE` toward the
@@ -67,9 +71,10 @@ pub fn house_offer_value(items: &[TradeData]) -> i32 {
 }
 
 impl Game {
-    /// House `h`'s price to secede or become another's vassal (gold): `(loyalty + 6) x 25 x its
-    /// cities`, one step at least when Furious; `None` when it refuses any offer (Pleased or
-    /// Friendly: [`Game::house_bribe_refusal`] says so).
+    /// House `h`'s price to secede or become another's vassal (gold): `(loyalty + 6) x P x its
+    /// cities`, P [`Game::house_price_step`] (a share of the world unit), one step at least when
+    /// Furious; `None` when it refuses any offer (Pleased or Friendly: [`Game::house_bribe_refusal`]
+    /// says so).
     pub fn house_bribe_price(&self, h: HouseId) -> Option<i32> {
         let house = self.houses.get(h)?;
         if !self.players[house.player].alive || self.house_state(h) < LoyaltyState::Cautious {
@@ -78,27 +83,29 @@ impl Game {
         let cities = self.house_cities(h).len() as i32;
         // At least one step even when Furious: a rival cannot take a House for nothing during the
         // countdown that is its liege's window to answer (docs/PERSONS.md, rule 9).
-        Some((self.house_loyalty(h) + 6).max(1) * BRIBE_PER_CITY * cities)
+        Some((self.house_loyalty(h) + 6).max(1) * self.house_price_step() * cities)
     }
 
     /// Why House `h` does not give `kind` to `buyer` now (`None`: it would, at its price): the
-    /// screen's words (`House Arne is Pleased with the Bannor.`).
+    /// screen's words (`House Arne is Pleased with the Bannor.`, `Court House Arne first: gifts
+    /// worth 180 (you have given 140).`, `Offers possible from turn 140.`): its terms
+    /// ([`Game::house_bribe_terms_refusal`]), then the buyer's courtship (the third build, rule 7:
+    /// [`Game::house_courtship_refusal`]).
     pub fn house_bribe_refusal(&self, h: HouseId, buyer: PlayerId, kind: BribeKind) -> Option<String> {
-        let Some(house) = self.houses.get(h) else { return Some("Not a House.".into()) };
-        let (hp, liege) = (house.player, house.owner);
+        self.house_bribe_terms_refusal(h, buyer, kind).or_else(|| self.house_courtship_refusal(h, buyer))
+    }
+
+    /// [`Game::house_bribe_refusal`], the courtship aside: who may buy it (who may court it,
+    /// [`Game::house_courter_refusal`]), whether the buyer may take a vassal (Become your vassal),
+    /// and its state (Cautious or worse).
+    pub fn house_bribe_terms_refusal(&self, h: HouseId, buyer: PlayerId, kind: BribeKind) -> Option<String> {
+        if let Some(why) = self.house_courter_refusal(h, buyer) {
+            return Some(why);
+        }
+        let liege = self.houses[h].owner;
         let label = self.house_label(h);
-        if !self.players[buyer].alive || self.player_is_barbarian(buyer) || self.player_is_minor_civ(buyer) || self.player_is_crusade_host(buyer) || self.players[buyer].house.is_some() {
-            return Some(format!("{label} trades with civilizations only."));
-        }
-        let (bt, lt) = (self.players[buyer].team, self.players[liege].team);
-        if bt == lt {
-            return Some(format!("{label} pays its liege by tribute."));
-        }
-        if !self.teams[bt].has_met[self.players[hp].team] {
-            return Some(format!("You have not met {label}."));
-        }
         if kind == BribeKind::Vassal {
-            if let Some(why) = self.team_vassal_refusal(bt) {
+            if let Some(why) = self.team_vassal_refusal(self.players[buyer].team) {
                 return Some(why.to_string());
             }
             if !self.player_has_houses(buyer) {
@@ -119,8 +126,10 @@ impl Game {
     }
 
     /// Whether player `p` may give `item` to player `to` when either is a House (`None`: neither
-    /// is). A House gives only Secede and Become your vassal; it takes only gold (no gold per
-    /// turn), from a civilization that is not its liege.
+    /// is, or the ordinary rules decide). A House gives only Secede and Become your vassal (no
+    /// tech: techs, like war, are its liege's to trade); it takes gold (no gold per turn) and
+    /// resources (the third build, rule 7: a resource's trade by the ordinary rules, a trade network
+    /// and a spare source), from a civilization that may court it ([`Game::house_courter_refusal`]).
     pub(crate) fn house_trade_item_allowed(&self, p: PlayerId, to: PlayerId, item: &TradeData) -> Option<bool> {
         if let Some(kind) = house_item(item.item_type) {
             return Some(self.house_can_give(p, to, kind));
@@ -130,10 +139,14 @@ impl Game {
             return None;
         }
         let Some(h) = to_house.filter(|_| from_house.is_none()) else { return Some(false) };
-        if self.players[self.houses[h].owner].team == self.players[p].team {
+        if self.house_courter_refusal(h, p).is_some() {
             return Some(false);
         }
-        Some(item.item_type == TradeableItem::TRADE_GOLD && self.players[p].gold >= item.data)
+        match item.item_type {
+            TradeableItem::TRADE_GOLD => Some(self.players[p].gold >= item.data),
+            TradeableItem::TRADE_RESOURCES => None,
+            _ => Some(false),
+        }
     }
 
     /// The liege of House player `hp` learns of an accepted offer of `give` by `buyer` (called
@@ -155,13 +168,15 @@ impl Game {
     }
 
     /// `buyer` proposes to House player `hp` a deal of `give` (from the buyer: gold) for `get`
-    /// (from the House: Secede or Become your vassal): the House's controller
-    /// answers (`Controller::consider_offer`), and an accepted deal is implemented, where the liege
-    /// learns of it (`house_trade`). Returns whether it was accepted. A refused offer, or one the
-    /// rules refuse at its implementation, moves nothing: the liege does not learn of it. The one
-    /// way the client and the AI propose a side deal to a House.
+    /// (from the House: Secede or Become your vassal), or a gift (`get` empty: gold or resources,
+    /// the third build's courtship): the House's controller answers
+    /// (`Controller::consider_offer`), and an accepted deal is implemented, where the liege
+    /// learns of it (`house_trade`; a gift may open a courtship). Returns whether it was accepted.
+    /// A refused offer, or one the rules refuse at its implementation, moves nothing: the liege does
+    /// not learn of it. The one way the client and the AI propose a side deal or a gift to a House.
     pub fn player_offer_house(&mut self, buyer: PlayerId, hp: PlayerId, give: &[TradeData], get: &[TradeData]) -> bool {
-        if self.player_house(hp).is_none() || !get.iter().any(|t| house_item(t.item_type).is_some()) {
+        let gift = get.is_empty() && !give.is_empty();
+        if self.player_house(hp).is_none() || !(gift || get.iter().any(|t| house_item(t.item_type).is_some())) {
             return false;
         }
         let accept = self.controller(hp).consider_offer(self, hp, buyer, give, get);

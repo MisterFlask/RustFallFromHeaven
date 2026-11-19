@@ -14,8 +14,9 @@
 //!   grants them no city, and adopting direct rule is civil war (rule 11, `secession.rs`).
 //! - **Tribute** ([`Game::player_persons_tribute`], the liege's turn processing): for each House
 //!   in id order, its rate in force (`House::tribute_now`) of its cities' gold commerce, from its
-//!   treasury (no more than it holds) to the liege's, and of their research commerce, added to the
-//!   liege team's current research (lost when it researches nothing). The liege sets a rate
+//!   treasury (no more than it holds) to the liege's. Gold only (the third build, rule 10: a realm
+//!   shares its knowledge, `knowledge.rs`, so a research part would count a House's beakers
+//!   twice). The liege sets a rate
 //!   (`House::tribute`, [`Game::player_set_house_tribute`]); the rate in force moves one step
 //!   toward it every [`TRIBUTE_LAG_TURNS`] turns, both ways, counted from its last step or, when
 //!   it was at rest, from the setting ([`Game::house_tribute_in_force_turn`]). A new House starts
@@ -114,6 +115,9 @@ impl Game {
                 }
                 self.house_begin(hp, owner, origin);
             }
+            // The third build, rule 10: the realm and the team that joined it share what they
+            // know, both ways (`knowledge.rs`).
+            self.realm_share_knowledge(owner);
         } else {
             for hp in members {
                 if let Some(h) = self.player_house(hp) {
@@ -169,8 +173,9 @@ impl Game {
             tribute_now: tribute,
             tribute_since: turn,
             last_gold: 0,
-            last_research: 0,
             last_turn: -1,
+            gifts: Vec::new(),
+            courtships: Vec::new(),
         });
         self.players[owner].houses.push(h);
         self.players[hp].house = Some(h);
@@ -365,26 +370,16 @@ impl Game {
         Ok(())
     }
 
-    /// The gold commerce and the research commerce of House `h`'s cities (a turn's).
-    pub fn house_commerce(&self, h: HouseId) -> (i32, i32) {
-        let mut gold = 0;
-        let mut research = 0;
-        for c in self.house_cities(h) {
-            gold += self.city_commerce_rate(c, CommerceType::COMMERCE_GOLD);
-            research += self.city_commerce_rate(c, CommerceType::COMMERCE_RESEARCH);
-        }
-        (gold, research)
+    /// The gold commerce of House `h`'s cities (a turn's): what its tribute is taken from.
+    pub fn house_commerce(&self, h: HouseId) -> i32 {
+        self.house_cities(h).into_iter().map(|c| self.city_commerce_rate(c, CommerceType::COMMERCE_GOLD)).sum()
     }
 
-    /// What House `h` would pay its liege this turn at a tribute of `pct` percent: (gold, research).
-    /// The gold is no more than its treasury holds; the research is 0 while the liege researches
-    /// nothing.
-    pub fn house_tribute_at(&self, h: HouseId, pct: i32) -> (i32, i32) {
-        let Some(house) = self.houses.get(h) else { return (0, 0) };
-        let (gold, research) = self.house_commerce(h);
-        let gold = (gold * pct / 100).min(self.players[house.player].gold).max(0);
-        let research = if self.player_get_current_research(house.owner).is_some() { (research * pct / 100).max(0) } else { 0 };
-        (gold, research)
+    /// The gold House `h` would pay its liege this turn at a tribute of `pct` percent: that share
+    /// of its gold commerce, no more than its treasury holds (gold only: the third build, rule 10).
+    pub fn house_tribute_at(&self, h: HouseId, pct: i32) -> i32 {
+        let Some(house) = self.houses.get(h) else { return 0 };
+        (self.house_commerce(h) * pct / 100).min(self.players[house.player].gold).max(0)
     }
 
     /// Player `p`'s Houses pay their tribute at the rate in force (its turn processing), in id
@@ -393,7 +388,6 @@ impl Game {
     pub(crate) fn player_persons_tribute(&mut self, p: PlayerId) {
         let mut houses: Vec<HouseId> = self.players[p].houses.iter().copied().filter(|&h| self.houses.contains(h)).collect();
         houses.sort();
-        let team = self.players[p].team;
         let turn = self.game_turn();
         for h in houses {
             let hp = self.houses[h].player;
@@ -401,20 +395,15 @@ impl Game {
                 continue;
             }
             let pct = self.houses[h].tribute_now;
-            let (gold, mut research) = self.house_tribute_at(h, pct);
+            let gold = self.house_tribute_at(h, pct);
             if gold > 0 {
                 self.players[hp].gold -= gold;
                 self.players[p].gold += gold;
             }
-            match self.player_get_current_research(p) {
-                Some(tech) if research > 0 => self.team_change_research_progress(team, tech, research, p),
-                _ => research = 0,
-            }
             let house = &mut self.houses[h];
             house.last_gold = gold;
-            house.last_research = research;
             house.last_turn = turn;
-            self.tel_tribute(p, gold, research);
+            self.tel_tribute(p, gold);
             self.house_tribute_step(h);
         }
     }

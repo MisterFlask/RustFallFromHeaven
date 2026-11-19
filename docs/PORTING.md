@@ -371,6 +371,25 @@ flag.
   more than T`) is gone. The world unit (the mean commerce of the world's civilizations) is
   computed for part 2's prices. Why: the persons did no work the Houses did not (the owner). Save
   format 53.
+- **Courtship, the price on the world unit, shared knowledge, gold tribute** (docs/PERSONS.md, "The
+  third build", rules 7, 8 and 10, part 2B; the owner's decisions of 2026-11-19):
+  - *Courtship*: a civilization that has met a House (not of its liege's team) gives it gifts in
+    the trade table: gold (counted 20 turns) or a resource (while it is given, a third of the
+    requirement); the House accepts any, and a gift makes no peace. The courtship opens when its
+    value reaches 3 turns of the world unit (the mean total commerce of the civilizations); the
+    House takes an offer (Secede, Become your vassal) only from a courtship open 10 turns
+    (`PERSON_COURTSHIP_TURNS`). Its liege is told and remembers it: `MEMORY_COURTED_HOUSE`
+    ("courted our House", -200 on FfH's scale, decay 50, in every leader with memory data; ffh-ai
+    reads it as a relation term). Why: a rival buying a House is telegraphed (the owner).
+  - *The price*: `(loyalty + 6) x P x its cities`, P 54% of the world unit (25 around turn 150,
+    the flat 25 it replaces).
+  - *Knowledge is shared in a realm*: a tech a liege's team or one of its Houses' teams gains by
+    any means, every other team of the realm gains too, not as its first discoverer (no religion,
+    great person or free tech from it); a team joining a realm and the realm share both ways. A
+    card of the deck and a repeatable tech are not shared. FFH2's vassals share nothing.
+  - *Tribute is gold only* (the research part went: with knowledge shared it counted a House's
+    beakers twice). Techs stay the liege's to trade: a House trades none.
+  Save format 54.
 - **The memory of wrongs** (the owner's decisions of 2026-11-18; docs/PERSONS.md, "The second
   build"; docs/AI.md, "Relations"):
   - *A declared war fades*: every leader forgets a `MEMORY_DECLARED_WAR` at 1 in 50 a turn

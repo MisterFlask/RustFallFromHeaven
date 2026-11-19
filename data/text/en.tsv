@@ -1735,13 +1735,13 @@ TXT_KEY_ATG_UNIT_PELTAST	Peltast
 TXT_KEY_ATG_UNIT_PELTISTS_STRATEGY	[COLOR_UNIT_TEXT]Peltasts[COLOR_REVERT] are cheap units, useful for reinforcing tactical locations such as hills and forests.
 TXT_KEY_ATG_UNIT_PRODROMOI_STRATEGY	[COLOR_UNIT_TEXT]Prodromoi[COLOR_REVERT] are good scouting units. They are lightly armored and extremely fast. 
 TXT_KEY_ATTITUDE_ANNOYED	Annoyed
-TXT_KEY_ATTITUDE_ANNOYED_HELP	Loyalty from -5 to -3. A House takes no levy and secedes for an offer that meets its price.
+TXT_KEY_ATTITUDE_ANNOYED_HELP	Loyalty from -5 to -3. A House takes no levy and, courted for 10 turns, secedes for an offer that meets its price.
 TXT_KEY_ATTITUDE_CAUTIOUS	Cautious
-TXT_KEY_ATTITUDE_CAUTIOUS_HELP	Loyalty from -2 to 0. A House takes levies and secedes for an offer that meets its price.
+TXT_KEY_ATTITUDE_CAUTIOUS_HELP	Loyalty from -2 to 0. A House takes levies and, courted for 10 turns, secedes for an offer that meets its price.
 TXT_KEY_ATTITUDE_FRIENDLY	Friendly
 TXT_KEY_ATTITUDE_FRIENDLY_HELP	Loyalty +3 or more. A House takes levies and refuses any offer to secede.
 TXT_KEY_ATTITUDE_FURIOUS	Furious
-TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy, secedes for an offer that meets its price (at least 25 gold a city), and at the end of a 10-turn countdown breaks away at war with its liege; each of its cities where the liege's army units outnumber the House's land combat units goes back to the liege. Loyalty above -6 stops the countdown.
+TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy, courted for 10 turns secedes for an offer that meets its price, and at the end of a 10-turn countdown breaks away at war with its liege; each of its cities where the liege's army units outnumber the House's land combat units goes back to the liege. Loyalty above -6 stops the countdown.
 TXT_KEY_ATTITUDE_MASTER_OF	Master of %s1_player
 TXT_KEY_ATTITUDE_PLEASED	Pleased
 TXT_KEY_ATTITUDE_PLEASED_HELP	Loyalty +1 or +2. A House takes levies and refuses any offer to secede.
@@ -9383,6 +9383,7 @@ TXT_KEY_MEMORY_ACCEPTED_RELIGION	"You accepted our state religion."
 TXT_KEY_MEMORY_ACCEPTED_STOP_TRADING	"You agreed to stop trading with our worst enemy."
 TXT_KEY_MEMORY_ACCEPT_DEMAND	"You gave us tribute."
 TXT_KEY_MEMORY_BOUGHT_HOUSE	"You bought our House!"
+TXT_KEY_MEMORY_COURTED_HOUSE	"You courted our House!"
 TXT_KEY_MEMORY_CANCELLED_OPEN_BORDERS	"You cancelled our open border agreement!"
 TXT_KEY_MEMORY_DECLARED_WAR	"You declared war on us!"
 TXT_KEY_MEMORY_DECLARED_WAR_ON_FRIEND	"You declared war on our friend!"
@@ -14978,7 +14979,7 @@ TXT_KEY_KEYWORD_CROWN_REMINDER	The cities a civilization holds itself; the capit
 TXT_KEY_KEYWORD_REQUEST	Request
 TXT_KEY_KEYWORD_REQUEST_REMINDER	A House's wish, one at a time, with a term of 40 turns. Met: +3 loyalty for 60 turns. Lapsed at its term, or made impossible by its liege's act: -3 loyalty for 60 turns. The next one comes 20 turns later.
 TXT_KEY_KEYWORD_TRIBUTE	Tribute
-TXT_KEY_KEYWORD_TRIBUTE_REMINDER	Each turn a House pays its liege a share of its cities' gold and research, from 0 to 50%: the gold from its treasury, the research added to the liege's. A part of the House's loyalty: +1 at 0%, 1 less for each 10% more. The rate in force moves one step of 10% toward the rate set every 5 turns; the payment and the loyalty follow the rate in force.
+TXT_KEY_KEYWORD_TRIBUTE_REMINDER	Each turn a House pays its liege a share of its cities' gold, from 0 to 50%, from its treasury. A part of the House's loyalty: +1 at 0%, 1 less for each 10% more. The rate in force moves one step of 10% toward the rate set every 5 turns; the payment and the loyalty follow the rate in force.
 TXT_KEY_KEYWORD_LEVY	Levy
 TXT_KEY_KEYWORD_LEVY_REMINDER	An army's requisition in a city of its owner's House: the city trains a unit for the army, the liege's unit. Each levy placed costs the House -1 loyalty for 20 turns. A House Annoyed or Furious takes no levy.
 TXT_KEY_KEYWORD_CLAIMANT	Claimant

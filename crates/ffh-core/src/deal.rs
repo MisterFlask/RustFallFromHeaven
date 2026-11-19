@@ -153,6 +153,9 @@ impl Game {
 
         // CvGame::deleteDeal
         self.deals.remove(d);
+        // Not in C++: a resource no longer given to a House may close a courtship (docs/PERSONS.md,
+        // "The third build", rule 7).
+        self.house_deal_done(first, second);
     }
 
     /// C++ `CvDeal::addTrades`: start the trades (`first` given by `first_player`), making peace
@@ -179,8 +182,11 @@ impl Game {
 
         let first_team = self.players[first_player].team;
         let second_team = self.players[second_player].team;
+        // Not in C++: a gift to a House (docs/PERSONS.md, "The third build", rule 7: the House gives
+        // nothing) makes no peace; a House's war is its liege's.
+        let house_gift = (second.is_empty() && self.players[second_player].house.is_some()) || (first.is_empty() && self.players[first_player].house.is_some());
 
-        if self.at_war(first_team, second_team) {
+        if self.at_war(first_team, second_team) && !house_gift {
             // free vassals of capitulating team before peace is signed
             if Deal::is_vassal_trade(second) {
                 for loop_team in self.team_ids() {
@@ -234,6 +240,10 @@ impl Game {
                 self.deals[d].second_trades.push(trade.clone());
             }
         }
+
+        // Not in C++: a gift of gold or a resource reaching a House may open a courtship
+        // (docs/PERSONS.md, "The third build", rule 7).
+        self.house_deal_done(first_player, second_player);
 
         let alliance = first.iter().chain(second.iter()).any(|t| t.item_type == TradeableItem::TRADE_PERMANENT_ALLIANCE);
 
@@ -416,6 +426,9 @@ impl Game {
             TradeableItem::TRADE_GOLD => {
                 self.players[from_player].gold -= trade.data;
                 self.players[to_player].gold += trade.data;
+                // Not in C++: gold given to a House counts toward a courtship (docs/PERSONS.md, "The
+                // third build", rule 7).
+                self.house_gift_received(from_player, to_player, trade.data);
                 // AI_changeGoldTradedTo (AI bookkeeping)
                 self.players[from_player].ai_gold_traded_to[to_player] += trade.data;
 

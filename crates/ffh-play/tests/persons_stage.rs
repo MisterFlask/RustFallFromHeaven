@@ -82,12 +82,26 @@ fn the_staged_persons_scenes_hold_every_state() {
         let claims = g.city_claimants(st.taken);
         assert!(claims.contains(&house("pleased")), "{claims:?}");
 
-        // The neighbour's House takes an offer.
+        // The neighbour's House takes an offer by its terms; the human's courtship of it (the third
+        // build, rule 7) is not open in `persons` (the trade screen says why an offer waits), open
+        // 10 turns in `persons-direct` (an offer is accepted).
         let n = house("neighbour");
         assert_eq!(g.houses[n].owner, st.neighbour);
         assert!(g.house_state(n) >= LoyaltyState::Cautious);
         assert!(g.house_bribe_price(n).is_some());
-        assert_eq!(g.house_bribe_refusal(n, h, BribeKind::Secede), None);
+        assert_eq!(g.house_bribe_terms_refusal(n, h, BribeKind::Secede), None);
+        assert!(g.house_courtship_value(n, h) > 0);
+        if direct {
+            assert_eq!(g.house_bribe_refusal(n, h, BribeKind::Secede), None);
+        } else {
+            assert!(g.house_courtship_opened(n, h).is_none());
+            assert!(g.house_bribe_refusal(n, h, BribeKind::Secede).is_some_and(|r| r.starts_with("Court ")));
+        }
+        // The neighbour courts House `pleased` with a resource and gold: open; the human was told.
+        let p = house("pleased");
+        assert!(g.house_courtship_opened(p, st.neighbour).is_some());
+        assert!(!g.house_gift_resources(p, st.neighbour).is_empty());
+        assert!(g.house_courtships(p).iter().any(|c| c.giver == st.neighbour && c.line.contains(". Offers possible from turn ")));
         let court = g.court_view(h);
         assert_eq!(court.grants, Ok(()));
         assert_eq!(court.houses.len(), 4);
