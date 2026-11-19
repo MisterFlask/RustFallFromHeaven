@@ -100,11 +100,9 @@ pub const TRIBUTE_MAX: i32 = 50;
 pub const TRIBUTE_STEP: i32 = 10;
 /// A House's price to secede: `(loyalty + 6) x` this `x` its cities, gold.
 pub const BRIBE_PER_CITY: i32 = 25;
-/// Gold per turn in an offer counts this many times.
+/// Gold per turn in an offer counted this many times. Unused by the rules: a House takes gold only
+/// (the owner's decision, 2026-11-18); to go once ffh-ai's offers no longer name it.
 pub const BRIBE_GOLD_PER_TURN_TURNS: i32 = 10;
-/// The attitude modifier (`ai_attitude_extra`, FfH's scale: 4 a step, the AI's relation 2) an AI
-/// liege takes toward a civilization that offered one of its Houses to secede.
-pub const BRIBE_GRUDGE: i32 = -4;
 /// The commander whose army took a city is a claimant to it for this many turns.
 pub const TAKEN_CLAIM_TURNS: i32 = 20;
 /// The Land list's foreign cities: within this many plots of a city of the House.

@@ -57,7 +57,8 @@ functions were skipped (2689 lines, of which `read`/`write` are 983). `Player` h
 
 | C++ call (from CvUnit/CvCity/CvPlayer/CvGame/CvTeam/CvDeal or FFH Python) | Rust |
 |---|---|
-| `AI_getMemoryCount(ePlayer, eMemory)` / `AI_changeMemoryCount(..)` | `players[p].ai_memory_count[other][memory]` (asserts >= 0) |
+| `AI_getMemoryCount(ePlayer, eMemory)` / `AI_changeMemoryCount(..)` | `players[p].ai_memory_count[other][memory]` (asserts >= 0); this game's own memories through `player_add_memory` (`player/memory.rs`) |
+| `AI_doCounter`'s memory decay | `player_do_memory_decay` (`player/memory.rs`), a rule in every player's turn (docs/PORTING.md, "Changes from FFH2") |
 | `AI_setFirstContact(ePlayer, b)` | `players[p].ai_first_contact[other]` |
 | `AI_getCivicTimer` / `AI_setCivicTimer` / `AI_changeCivicTimer` | `players[p].ai_civic_timer` |
 | `AI_getReligionTimer` / `AI_setReligionTimer` / `AI_changeReligionTimer` | `players[p].ai_religion_timer` |

@@ -8,8 +8,9 @@
 // tooltips (the Furious countdown's pill, a House capital's star), the war declaration's dialog
 // (the Houses it brings in, its preview), the diplomacy list's Houses (yours first with their
 // state, the neighbour's under its liege with its state and price) and the neighbour's House's
-// trade screen (a Secede offer refused, Become your vassal's war, then a Secede offer accepted
-// with its cost with the liege: the House breaks away and its alert shows), and in
+// trade screen (gold only; a Secede offer refused, Become your vassal's war, then a Secede offer
+// accepted with its cost with the liege, a memory that fades: the House breaks away and its alert
+// shows), the war dialog's cost with the target (`They remember it: ...`), and in
 // `persons-direct` the civics screen's warning for God King. Any
 // console error or page error fails it. (The second build, docs/PERSONS.md: a House's city is its
 // own player's, so it has no Governance section on the liege's city screen; the stage's Houses
@@ -19,8 +20,9 @@
 // in a screenshot": crops at deviceScaleFactor 2, the screens at a 390 px wide page): the map's
 // plates and two of their marks' tooltips, the Governance sections, the commander lines, the unit
 // panels, the alerts, the diplomacy list (on a desktop page and a phone's) and its Houses, the
-// House's trade screen refused, with Become your vassal and accepted, the civics warning and the
-// war declaration's dialog.
+// House's trade screen refused, with Become your vassal and accepted, the liege's attitude tooltip
+// that then names the House bought, the civics warning and the war declaration's dialog (with its
+// cost line).
 //
 //   node tools/web-persons-screens-smoke.mjs [--bin PATH] [--assets DIR] [--shots DIR] [--gpu]
 //
@@ -155,7 +157,8 @@ async function diplomacyHouses(page, url, st) {
   await until(() => page.evaluate(() => !!document.querySelector('#modals .trade-item[data-item="TRADE_SECEDE"]')), "the House's trade table", 60000, 200);
   await sleep(500);
   const items = await page.evaluate(() => [...document.querySelectorAll("#modals .trade-side")].map((s) => [...s.querySelectorAll(".trade-item")].map((e) => e.dataset.item)));
-  check(items[1]?.join(",") === "TRADE_SECEDE,TRADE_HOUSE_VASSAL" && items[0]?.every((x) => x === "TRADE_GOLD" || x === "TRADE_GOLD_PER_TURN"), `the House's trade table: ${JSON.stringify(items)}`);
+  // A House takes gold only (the owner's decision, 2026-11-18): no gold per turn on offer.
+  check(items[1]?.join(",") === "TRADE_SECEDE,TRADE_HOUSE_VASSAL" && items[0]?.length > 0 && items[0].every((x) => x === "TRADE_GOLD"), `the House's trade table: ${JSON.stringify(items)}`);
   const through = await page.evaluate(() => document.querySelector("#modals .trades-through")?.textContent ?? "");
   check(/^Trades through the \S.*\./.test(through), `what is its liege's: ${through}`);
   // Secede for 1 gold: refused, the rules' reason (its price).
@@ -180,7 +183,7 @@ async function diplomacyHouses(page, url, st) {
     const v = await tradeAnswer(page, "accepted");
     const yours = ["friendly", "pleased", "annoyed", "furious"].map((r) => st.houses[r].label);
     check(/You become its liege: war with the \S.*\./.test(v) && yours.every((l) => v.includes(l)) && v.includes("Your Houses join: "), `Become your vassal: ${v}`);
-    check(/If accepted: .*The \S.*'s attitude toward you -\d+ \(lasting\)\./.test(v), `Become your vassal's cost with the liege: ${v}`);
+    check(/If accepted: .*The \S.*'s attitude toward you -\d+ \(fades\)\./.test(v), `Become your vassal's cost with the liege: ${v}`);
     await tradeCrop(page, "trade-house-vassal.png");
     await page.evaluate(() => document.querySelector('#modals .trade-item[data-item="TRADE_SECEDE"] button').click());
     await setGold(page, 1);
@@ -194,7 +197,7 @@ async function diplomacyHouses(page, url, st) {
   const accepted = await tradeAnswer(page, "accepted");
   check(accepted.includes(`${nh.label} will break away from the `), `accepted: ${accepted}`);
   const grudge = await page.evaluate(() => document.querySelector("#modals .trade-summary .house-grudge")?.textContent ?? "");
-  check(/^The \S.*'s attitude toward you -\d+ \(lasting\)\.$/.test(grudge), `an accepted offer's cost with the liege: ${grudge}`);
+  check(/^The \S.*'s attitude toward you -\d+ \(fades\)\.$/.test(grudge), `an accepted offer's cost with the liege: ${grudge}`);
   await tradeCrop(page, "trade-house-accepted.png");
   await page.evaluate(() => [...document.querySelectorAll("#modals .modal:last-child .modal-buttons button")].find((b) => b.textContent === "Propose").click());
   await until(() => page.evaluate(() => !!document.querySelector('#modals .modal:last-child [data-answer="accepted"]')), "the offer accepted", 30000, 100);
@@ -212,6 +215,23 @@ async function diplomacyHouses(page, url, st) {
     });
     await crop(page, ["#shot-alert"], "alert-break-away.png");
     await page.evaluate(() => document.getElementById("shot-alert")?.remove());
+  }
+  // The liege remembers the House bought: its attitude's reasons name it (ffh-ai `relation_parts`,
+  // the diplomacy list's Attitude tooltip).
+  const lrow = after.players.find((p) => p.id === liege);
+  check(lrow?.attitude_parts?.some(([w, n]) => w === "bought our House" && n < 0), `the liege's attitude names the House bought: ${JSON.stringify(lrow?.attitude_parts)}`);
+  if (SHOTS) {
+    await clear(page);
+    await page.evaluate(() => void window.ffh.openScreen("diplomacy"));
+    await until(() => page.evaluate((id) => !!document.querySelector(`#modals tr[data-player="${id}"] td:nth-child(3)`), liege), "the liege's row", 60000, 200);
+    await page.evaluate((id) => {
+      const td = document.querySelector(`#modals tr[data-player="${id}"] td:nth-child(3)`);
+      td.scrollIntoView({ block: "center" });
+      const r = td.getBoundingClientRect();
+      td.dispatchEvent(new MouseEvent("mouseenter", { clientX: r.left + 4, clientY: r.bottom }));
+    }, liege);
+    await until(() => page.evaluate(() => /bought our House/.test(document.querySelector(".tooltip.richtip:not([hidden])")?.textContent ?? "")), "the liege's attitude tooltip", 30000, 100);
+    await crop(page, [".tooltip.richtip"], "attitude-memory.png");
   }
 }
 
@@ -460,6 +480,11 @@ async function main() {
       check(parties[1]?.startsWith("Your Houses join: ") && yours.every((l) => parties[1].includes(l)), `war dialog: ${parties[1]}`);
       const pactLine = await phone.evaluate(() => [...document.querySelectorAll("#modals .modal:last-child p")].some((e) => e.textContent === "Their defensive pact partners may join them."));
       check(pactLine, "war dialog: defensive pacts may");
+      // What the war costs with them (the memory of a declared war, which fades), and the House
+      // pulled in remembers it too.
+      const memory = await phone.evaluate(() => document.querySelector("#modals .modal:last-child .war-memory")?.textContent ?? "");
+      check(/^They remember it: attitude toward you -\d+ \(fades\)\. So do .+\.$/.test(memory) && memory.includes(st.houses.neighbour.label), `war dialog's cost: ${memory}`);
+      await crop(phone, ["#modals .modal:last-child .war-parties", "#modals .modal:last-child .war-memory"], "war-dialog-memory.png");
       // (The second build: the stage's persons need not demand this war; a preview shown has lines.)
       await sleep(3000);
       const war = await phone.evaluate(() => document.querySelector("#modals .modal .persons-preview")?.textContent ?? null);

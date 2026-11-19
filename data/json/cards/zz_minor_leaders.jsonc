@@ -96,6 +96,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -117,7 +118,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -140,7 +143,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -261,6 +266,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -282,7 +288,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -305,7 +313,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -429,6 +439,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -450,7 +461,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -482,7 +495,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -613,6 +628,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -634,7 +650,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -657,7 +675,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -777,6 +797,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -798,7 +819,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -830,7 +853,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -967,6 +992,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -988,7 +1014,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -1020,7 +1048,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -1151,6 +1181,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -1172,7 +1203,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -1204,7 +1237,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -1326,6 +1361,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -1347,7 +1383,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -1370,7 +1408,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -1488,6 +1528,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -1509,7 +1550,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -1532,7 +1575,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -1655,6 +1700,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -1676,7 +1722,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -1708,7 +1756,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -1840,6 +1890,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -1861,7 +1912,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -1893,7 +1946,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 30,
@@ -2019,6 +2074,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -2040,7 +2096,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -2072,7 +2130,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -2200,6 +2260,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -2221,7 +2282,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -2253,7 +2316,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -2390,6 +2455,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -2411,7 +2477,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -2443,7 +2511,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -2581,6 +2651,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -2602,7 +2673,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -2634,7 +2707,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -2758,6 +2833,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -2779,7 +2855,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -2811,7 +2889,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -2930,6 +3010,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -2951,7 +3032,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -2983,7 +3066,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -3102,6 +3187,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -3123,7 +3209,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -3155,7 +3243,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -3274,6 +3364,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -3295,7 +3386,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -3327,7 +3420,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -3445,6 +3540,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -3466,7 +3562,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -3498,7 +3596,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -3619,6 +3719,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -3640,7 +3741,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -3672,7 +3775,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -3807,6 +3912,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -3828,7 +3934,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -3860,7 +3968,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -3985,6 +4095,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -4006,7 +4117,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -4038,7 +4151,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -4173,6 +4288,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -4194,7 +4310,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -4226,7 +4344,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -4350,6 +4470,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -4371,7 +4492,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -4403,7 +4526,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -4535,6 +4660,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -4556,7 +4682,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -4588,7 +4716,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -4709,6 +4839,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -4730,7 +4861,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -4762,7 +4895,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -4892,6 +5027,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -4913,7 +5049,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -4945,7 +5083,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -5067,6 +5207,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -5088,7 +5229,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -5120,7 +5263,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -5241,6 +5386,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -5262,7 +5408,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -5294,7 +5442,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -5419,6 +5569,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -5440,7 +5591,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -5472,7 +5625,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -5603,6 +5758,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -5624,7 +5780,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -5656,7 +5814,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -5787,6 +5947,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -5808,7 +5969,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -5840,7 +6003,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -5966,6 +6131,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -5987,7 +6153,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -6019,7 +6187,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -6147,6 +6317,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -6168,7 +6339,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -6200,7 +6373,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -6326,6 +6501,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -6347,7 +6523,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -6379,7 +6557,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -6500,6 +6680,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -6521,7 +6702,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -6553,7 +6736,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -6676,6 +6861,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -6697,7 +6883,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -6729,7 +6917,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -6861,6 +7051,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -6882,7 +7073,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -6914,7 +7107,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -7045,6 +7240,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -7066,7 +7262,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -7098,7 +7296,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -7221,6 +7421,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -7242,7 +7443,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -7274,7 +7477,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -7397,6 +7602,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -7418,7 +7624,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -7450,7 +7658,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -7576,6 +7786,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -7597,7 +7808,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -7629,7 +7842,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -7751,6 +7966,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -7772,7 +7988,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -7804,7 +8022,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -7926,6 +8146,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -7947,7 +8168,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -7979,7 +8202,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -8104,6 +8329,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -8125,7 +8351,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -8157,7 +8385,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 30,
@@ -8276,6 +8506,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -8297,7 +8528,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -8329,7 +8562,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 30,
@@ -8454,6 +8689,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -8475,7 +8711,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -8507,7 +8745,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -8633,6 +8873,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -8654,7 +8895,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -8686,7 +8929,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 30,
@@ -8806,6 +9051,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -8827,7 +9073,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -8859,7 +9107,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 30,
@@ -8983,6 +9233,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -9004,7 +9255,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -9036,7 +9289,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -9168,6 +9423,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -9189,7 +9445,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -9221,7 +9479,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -9352,6 +9612,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -9373,7 +9634,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -9405,7 +9668,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -9536,6 +9801,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -9557,7 +9823,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -9589,7 +9857,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -9721,6 +9991,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -9742,7 +10013,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -9774,7 +10047,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -9903,6 +10178,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -9924,7 +10200,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -9956,7 +10234,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -10082,6 +10362,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -10103,7 +10384,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -10135,7 +10418,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -10259,6 +10544,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -10280,7 +10566,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -10312,7 +10600,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -10436,6 +10726,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -10457,7 +10748,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -10489,7 +10782,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -10612,6 +10907,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -10633,7 +10929,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -10665,7 +10963,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -10786,6 +11086,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -10807,7 +11108,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -10839,7 +11142,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -10961,6 +11266,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -10982,7 +11288,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -11014,7 +11322,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -11140,6 +11450,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -11161,7 +11472,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -11184,7 +11497,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -11305,6 +11620,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -11326,7 +11642,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -11358,7 +11676,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -11480,6 +11800,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -11501,7 +11822,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -11533,7 +11856,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -11655,6 +11980,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -11676,7 +12002,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -11708,7 +12036,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -11828,6 +12158,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -11849,7 +12180,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -11881,7 +12214,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -12007,6 +12342,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -12028,7 +12364,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -12060,7 +12398,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -12181,6 +12521,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -12202,7 +12543,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -12234,7 +12577,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -12353,6 +12698,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -12374,7 +12720,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -12406,7 +12754,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -12530,6 +12880,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -12551,7 +12902,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -12583,7 +12936,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 400,
-        "MEMORY_SOMNIUM_NEGATIVE": -400
+        "MEMORY_SOMNIUM_NEGATIVE": -400,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -12705,6 +13060,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -12726,7 +13082,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -12758,7 +13116,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 400,
-        "MEMORY_SOMNIUM_NEGATIVE": -400
+        "MEMORY_SOMNIUM_NEGATIVE": -400,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -12877,6 +13237,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -12898,7 +13259,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -12930,7 +13293,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 300,
-        "MEMORY_SOMNIUM_NEGATIVE": -300
+        "MEMORY_SOMNIUM_NEGATIVE": -300,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -13067,6 +13432,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -13088,7 +13454,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -13120,7 +13488,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 400,
-        "MEMORY_SOMNIUM_NEGATIVE": -400
+        "MEMORY_SOMNIUM_NEGATIVE": -400,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -13242,6 +13612,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -13263,7 +13634,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -13295,7 +13668,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 400,
-        "MEMORY_SOMNIUM_NEGATIVE": -400
+        "MEMORY_SOMNIUM_NEGATIVE": -400,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -13418,6 +13793,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -13439,7 +13815,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -13471,7 +13849,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -13595,6 +13975,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -13616,7 +13997,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -13648,7 +14031,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -13773,6 +14158,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -13794,7 +14180,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -13826,7 +14214,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -13959,6 +14349,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -13980,7 +14371,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -14012,7 +14405,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -14137,6 +14532,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -14158,7 +14554,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -14190,7 +14588,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -14324,6 +14724,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -14345,7 +14746,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -14377,7 +14780,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -14496,6 +14901,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -14517,7 +14923,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -14549,7 +14957,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -14668,6 +15078,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -14689,7 +15100,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -14721,7 +15134,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -14846,6 +15261,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -14867,7 +15283,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -14899,7 +15317,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -15024,6 +15444,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -15045,7 +15466,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -15077,7 +15500,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -15194,6 +15619,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -15215,7 +15641,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -15247,7 +15675,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 30,
@@ -15368,6 +15798,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -15389,7 +15820,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -15412,7 +15845,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -15532,6 +15967,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -15553,7 +15989,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -15585,7 +16023,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 30,
@@ -15718,6 +16158,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -15739,7 +16180,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -15771,7 +16214,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -15899,6 +16344,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -15920,7 +16366,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -15952,7 +16400,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 200,
-        "MEMORY_SOMNIUM_NEGATIVE": -200
+        "MEMORY_SOMNIUM_NEGATIVE": -200,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 30,
@@ -16086,6 +16536,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -16107,7 +16558,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -16139,7 +16592,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -16264,6 +16719,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -16285,7 +16741,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -16317,7 +16775,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -16442,6 +16902,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -16463,7 +16924,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -16495,7 +16958,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -16623,6 +17088,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -16644,7 +17110,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -16676,7 +17144,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -16805,6 +17275,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -16826,7 +17297,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -16858,7 +17331,9 @@
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 20,
@@ -16982,6 +17457,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -17003,7 +17479,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -17034,7 +17512,9 @@
         "MEMORY_EVENT_GOOD_TO_US": 100,
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
-        "MEMORY_SOMNIUM_POSITIVE": -100
+        "MEMORY_SOMNIUM_POSITIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -17160,6 +17640,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -17181,7 +17662,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -17212,7 +17695,9 @@
         "MEMORY_EVENT_GOOD_TO_US": 100,
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
-        "MEMORY_SOMNIUM_POSITIVE": -100
+        "MEMORY_SOMNIUM_POSITIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -17330,6 +17815,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -17351,7 +17837,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -17382,7 +17870,9 @@
         "MEMORY_EVENT_GOOD_TO_US": 100,
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
-        "MEMORY_SOMNIUM_POSITIVE": -100
+        "MEMORY_SOMNIUM_POSITIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -17508,6 +17998,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -17529,7 +18020,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -17560,7 +18053,9 @@
         "MEMORY_EVENT_GOOD_TO_US": 100,
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
-        "MEMORY_SOMNIUM_POSITIVE": -100
+        "MEMORY_SOMNIUM_POSITIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -17687,6 +18182,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -17708,7 +18204,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -17739,7 +18237,9 @@
         "MEMORY_EVENT_GOOD_TO_US": 100,
         "MEMORY_EVENT_BAD_TO_US": -100,
         "MEMORY_LIBERATED_CITIES": 150,
-        "MEMORY_SOMNIUM_POSITIVE": -100
+        "MEMORY_SOMNIUM_POSITIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_CAUTIOUS": 20,
@@ -17867,6 +18367,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -17888,7 +18389,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -17920,7 +18423,9 @@
         "MEMORY_EVENT_BAD_TO_US": -200,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -18051,6 +18556,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -18072,7 +18578,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -18104,7 +18612,9 @@
         "MEMORY_EVENT_BAD_TO_US": -200,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -18235,6 +18745,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -18256,7 +18767,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -18288,7 +18801,9 @@
         "MEMORY_EVENT_BAD_TO_US": -200,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -18418,6 +18933,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -18439,7 +18955,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -18471,7 +18989,9 @@
         "MEMORY_EVENT_BAD_TO_US": -200,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,
@@ -18602,6 +19122,7 @@
         "CONTACT_TRADE_MAP": 50
       },
       "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
         "MEMORY_GIVE_HELP": 200,
         "MEMORY_REFUSED_HELP": 100,
         "MEMORY_ACCEPT_DEMAND": 50,
@@ -18623,7 +19144,9 @@
         "MEMORY_VOTED_FOR_US": 10,
         "MEMORY_EVENT_GOOD_TO_US": 50,
         "MEMORY_EVENT_BAD_TO_US": 50,
-        "MEMORY_SOMNIUM_DELAY": 1
+        "MEMORY_SOMNIUM_DELAY": 1,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
@@ -18655,7 +19178,9 @@
         "MEMORY_EVENT_BAD_TO_US": -200,
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": 100,
-        "MEMORY_SOMNIUM_NEGATIVE": -100
+        "MEMORY_SOMNIUM_NEGATIVE": -100,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
       },
       "no_war_attitude_probs": {
         "ATTITUDE_ANNOYED": 10,

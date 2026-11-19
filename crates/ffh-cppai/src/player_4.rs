@@ -1248,21 +1248,7 @@ impl Cai {
             }
         }
 
-        for other in g.player_ids() {
-            if g.players[other].alive {
-                for j in 0..MemoryType::NUM {
-                    let memory = MemoryType::from_usize(j);
-                    if self.player_ai_get_memory_count(g, p, other, memory) > 0 {
-                        let decay_rand = leader.memory_decay_rand[memory];
-                        if decay_rand > 0 {
-                            if self.rand(decay_rand, "Memory Decay") == 0 {
-                                self.player_ai_change_memory_count(g, p, other, memory, -1);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // The memory decay is a rule now (ffh-core `player_do_memory_decay`, every player's turn).
     }
 
     /// C++ `void CvPlayerAI::AI_doMilitary()` (CvPlayerAI.cpp:12009-12027)

@@ -1322,7 +1322,19 @@ go while the invasion is on).
 Relations come from alignment, state religion, war history, open borders and the Trust spell
 (+2 towards a player who has cast it: the spell only sets a feat, and FfH's C++ AI read it as
 +4 attitude, `AI_getTrustAttitude`; before 2026-10-23 nothing read it, so Trust did nothing in
-this game, docs/ENTITIES.md). One war at a
+this game, docs/ENTITIES.md). The terms (`relation_parts`, in its order; the human's diplomacy
+screen shows each as a reason of the attitude): `different alignment` (-2 a step apart) or `same
+alignment` +1; `same state religion` +2 or `different state religion` -1; `war between us` -1
+(the team's war counter; nothing counts it up now); the remembered wrongs (the owner's decision,
+2026-11-18; docs/PERSONS.md rule 15): `declared war on us`, `took our cities` and `bought our
+House`, each `count x` the leader's `memory_attitude_percent / 100` halved (2 a step here, 4 on
+FfH's scale), capped at -3 (a declared war -1, two -3; a city taken 0, two -1, four -3; a House
+bought -1), fading as the rules decay the memories (1 in 50 a turn); `open borders` +1; `the
+Trust spell` +2; `attitude modifier` (the rules' `ai_attitude_extra`, halved); `alignment
+leaning`; `cultural hostility` / `cultural friendship`; `gifts` and `demands paid`; and in the
+attitude, `at war` -2 while the war lasts. FFH2's other memories are recorded by the rules but
+not read. `memory_part` and `memory_added` are what the screens use to say what an act will
+cost (the war question, a House's trade table). One war at a
 time; war is **greedy expansion**, not a dice roll: when free to start one (checked every 5
 turns from turn 50, with 2+ cities), a civ prepares war on the met, land-reachable (within 16
 plots) rival whose weakest known city its best trainable attacker can take (siege engines

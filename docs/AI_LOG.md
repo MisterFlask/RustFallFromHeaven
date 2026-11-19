@@ -32,6 +32,21 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## The memory of wrongs (2026-11-18, the owner's decision; a rules change, not measured)
+
+**Built, in every game** (docs/PERSONS.md rule 15, docs/PORTING.md "Changes from FFH2"). Before
+it, `relation_parts` had no memory of a war or a conquest: a war counted -2 `at war` while it
+lasted and nothing after (`war between us` reads `ai_at_war_counter`, which nothing counts up),
+and a bought House was the one lasting grudge (`BRIBE_GRUDGE`, an attitude modifier that never
+faded). Now the rules record `MEMORY_DECLARED_WAR`, `MEMORY_TOOK_CITY` and `MEMORY_BOUGHT_HOUSE`
+(a House's wrongs for its liege too), decay them every turn (1 in 50 each), and the AI reads each
+as a term capped at -3. A rules change is not gated on the AI (CLAUDE.md), so no A/B was run.
+What to look at when someone does: how many wars are followed by another between the same two
+within 50 turns (the memory lowers the attitude, which the cautious leaders' target choice reads),
+whether peace offers after a long war are still accepted (`judge_offer` reads the attitude), and
+how often a single city taken reads 0 (`-150 x 1 / 100 / 2` truncates: two cities make the first
+step; the owner chose the weights, the rounding is the brief's formula).
+
 ## Amphibious invasion on the forecast (2026-11-11, switch `INVASION`)
 
 **Built, off by default** (`FFH_AI_INVASION_ONLY=ALL` turns it on). It fails steps 3 and 4 of the

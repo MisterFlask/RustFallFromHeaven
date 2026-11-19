@@ -331,11 +331,14 @@ function itemTip(it, techHelp) {
 
 async function declareWar(p) {
   // Who the war brings in for certain (the vassal rules: their Houses and yours), then what is not
-  // certain (defensive pacts, which you do not see); Persons of Note (docs/PERSONS.md, "UI", part
-  // I): what the war does to the cast, under the question (nothing when nothing).
+  // certain (defensive pacts, which you do not see); what it costs with them (the memory of a
+  // declared war, which fades: `They remember it: attitude toward you -1 (fades).`, and the
+  // Houses that remember it too); Persons of Note (docs/PERSONS.md, "UI", part I): what the war
+  // does to the cast, under the question (nothing when nothing).
   const pv = previewList(p.war_preview);
   const parties = warPartyLines(p.war_against, p.war_join).map((t) => h("p.war-parties", t));
-  const body = [h("p", `Declare war on ${teamName(p.team)}?`), ...parties, h("p", "Their defensive pact partners may join them."), pv].filter(Boolean);
+  const memory = p.war_memory ? h("p.caution.war-memory", p.war_memory) : null;
+  const body = [h("p", `Declare war on ${teamName(p.team)}?`), ...parties, h("p", "Their defensive pact partners may join them."), memory, pv].filter(Boolean);
   const v = await ask("Declare war?", body, [
     { label: "Declare war", value: true, primary: true, danger: true },
     { label: "Cancel", value: null },
@@ -398,11 +401,9 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     if (!hasValue(it)) return isDual(it) ? "No value. Traded only for the same item." : "No value. Adds 0 to the deal.";
     const v = Math.abs(it.value);
     const turns = it.value_turns;
-    // A House's side deal (docs/PERSONS.md, rule 9): gold against its price.
+    // A House's side deal (docs/PERSONS.md, rule 9): gold (only) against its price.
     if (t.house) {
       switch (tname("TradeableItem", it.item)) {
-        case "TRADE_GOLD_PER_TURN":
-          return `${v} per gold per turn: counted ${turns} times toward the price.`;
         case "TRADE_SECEDE":
         case "TRADE_HOUSE_VASSAL":
           return `Price: ${v} gold.`;
@@ -490,8 +491,8 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
   // stated before the deal: `House Arne will break away from the Bannor: war between them.`, and
   // for Become your vassal `You become its liege: war with the Bannor.` with the parties the vassal
   // rules bring into that war (the liege's other Houses, yours); when it will be accepted, what it
-  // costs with the liege (rule 9: `The Bannor's attitude toward you -2 (lasting).`; a refused
-  // offer moves nothing).
+  // costs with the liege (rule 9: the liege remembers the House bought, and Become your vassal's
+  // war: `The Bannor's attitude toward you -1 (fades).`; a refused offer moves nothing).
   const houseWar = (get, accept) => {
     if (!t.house) return [];
     const kinds = new Set(get.map((x) => tname("TradeableItem", x.item)));
@@ -501,7 +502,8 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       out.push(h("div.warn.house-war", t.house.vassal_war));
       for (const line of warPartyLines(t.house.vassal_war_against, t.house.vassal_war_join)) out.push(h("div.warn.house-war.war-parties", line));
     }
-    if (accept && t.house.grudge) out.push(h("div.caution.house-grudge", t.house.grudge));
+    const grudge = kinds.has("TRADE_HOUSE_VASSAL") ? t.house.vassal_grudge : t.house.grudge;
+    if (accept && grudge) out.push(h("div.caution.house-grudge", grudge));
     return out;
   };
   const HOUSE_ITEMS = ["TRADE_SECEDE", "TRADE_HOUSE_VASSAL"];

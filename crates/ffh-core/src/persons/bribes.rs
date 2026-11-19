@@ -1,19 +1,21 @@
 //! Side deals with Houses (docs/PERSONS.md, "The second build", rule 9).
 //!
 //! A House is a party on the diplomacy screen for anyone who has met it. It trades only this: it
-//! takes gold and gold per turn, and gives **Secede** (`TRADE_SECEDE`: it breaks away at once) or
+//! takes gold (a lump sum only, the owner's decision of 2026-11-18: gold per turn could be paid
+//! for a turn and ended by a war on the seceded House), and gives **Secede** (`TRADE_SECEDE`: it
+//! breaks away at once) or
 //! **Become your vassal** (`TRADE_HOUSE_VASSAL`: it breaks away and becomes the buyer's House, and
 //! by the vassal rules the buyer shares its war with the old liege). War, peace and the rest are
 //! its liege's to trade (`player_can_trade_item`). It accepts when it is Cautious or worse and the
 //! offer covers its price ([`Game::house_bribe_price`], the one rules function every controller
-//! reads): `(loyalty + 6) x 25 x its cities` gold (0 when Furious), gold per turn counted ten
-//! times.
+//! reads): `(loyalty + 6) x 25 x its cities` gold (one step at least when Furious).
 //!
 //! The liege learns of an accepted offer ([`Game::house_note_offer`], where the deal takes effect:
-//! `house_trade`, from `deal_start_trade`): an AI liege's attitude modifier toward the buyer
-//! ([`BRIBE_GRUDGE`]), the House's loyalty list shows `Offered 300 gold by the Hippus` (no amount,
-//! [`OFFER_NOTED_TURNS`] turns), and the liege is told (an alert). A refused offer leaves no trace
-//! (the owner's decision, 2026-11-18): no grudge, no entry, no alert, no telemetry; the trade table
+//! `house_trade`, from `deal_start_trade`): it remembers it (`MEMORY_BOUGHT_HOUSE` toward the
+//! buyer, which fades; the House itself was paid and is not angered), the House's loyalty list
+//! shows `Offered 300 gold by the Hippus` (no amount, [`OFFER_NOTED_TURNS`] turns), and the liege
+//! is told (an alert). A refused offer leaves no trace (the owner's decision, 2026-11-18): no
+//! memory, no entry, no alert, no telemetry; the trade table
 //! says before an offer is made whether it will be accepted. [`Game::player_offer_house`] is the
 //! one way to propose it that the client and the AI share.
 
@@ -59,23 +61,15 @@ impl BribeKind {
     }
 }
 
-/// The worth of an offer to a House: its gold, and its gold per turn counted
-/// [`BRIBE_GOLD_PER_TURN_TURNS`] times.
+/// The worth of an offer to a House: its gold (a House takes nothing else).
 pub fn house_offer_value(items: &[TradeData]) -> i32 {
-    items
-        .iter()
-        .map(|t| match t.item_type {
-            TradeableItem::TRADE_GOLD => t.data.max(0),
-            TradeableItem::TRADE_GOLD_PER_TURN => t.data.max(0) * BRIBE_GOLD_PER_TURN_TURNS,
-            _ => 0,
-        })
-        .sum()
+    items.iter().filter(|t| t.item_type == TradeableItem::TRADE_GOLD).map(|t| t.data.max(0)).sum()
 }
 
 impl Game {
-    /// House `h`'s price to secede or become another's vassal (gold; gold per turn counts ten
-    /// times): `(loyalty + 6) x 25 x its cities`, 0 when Furious; `None` when it refuses any
-    /// offer (Pleased or Friendly: [`Game::house_bribe_refusal`] says so).
+    /// House `h`'s price to secede or become another's vassal (gold): `(loyalty + 6) x 25 x its
+    /// cities`, one step at least when Furious; `None` when it refuses any offer (Pleased or
+    /// Friendly: [`Game::house_bribe_refusal`] says so).
     pub fn house_bribe_price(&self, h: HouseId) -> Option<i32> {
         let house = self.houses.get(h)?;
         if !self.players[house.player].alive || self.house_state(h) < LoyaltyState::Cautious {
@@ -125,8 +119,8 @@ impl Game {
     }
 
     /// Whether player `p` may give `item` to player `to` when either is a House (`None`: neither
-    /// is). A House gives only Secede and Become your vassal; it takes only gold and gold per turn,
-    /// from a civilization that is not its liege.
+    /// is). A House gives only Secede and Become your vassal; it takes only gold (no gold per
+    /// turn), from a civilization that is not its liege.
     pub(crate) fn house_trade_item_allowed(&self, p: PlayerId, to: PlayerId, item: &TradeData) -> Option<bool> {
         if let Some(kind) = house_item(item.item_type) {
             return Some(self.house_can_give(p, to, kind));
@@ -139,25 +133,20 @@ impl Game {
         if self.players[self.houses[h].owner].team == self.players[p].team {
             return Some(false);
         }
-        Some(match item.item_type {
-            TradeableItem::TRADE_GOLD => self.players[p].gold >= item.data,
-            TradeableItem::TRADE_GOLD_PER_TURN => true,
-            _ => false,
-        })
+        Some(item.item_type == TradeableItem::TRADE_GOLD && self.players[p].gold >= item.data)
     }
 
     /// The liege of House player `hp` learns of an accepted offer of `give` by `buyer` (called
-    /// where the deal takes effect, `house_trade`; a refused offer is not noted): an AI liege's
-    /// attitude modifier toward the buyer ([`BRIBE_GRUDGE`]), `Offered N gold by the <buyer>` in
-    /// the House's loyalty list, and an alert to the liege.
+    /// where the deal takes effect, `house_trade`; a refused offer is not noted): it remembers it
+    /// (`MEMORY_BOUGHT_HOUSE` toward the buyer, which fades; the House was paid and is not
+    /// angered), `Offered N gold by the <buyer>` in the House's loyalty list, and an alert to the
+    /// liege.
     pub fn house_note_offer(&mut self, buyer: PlayerId, hp: PlayerId, give: &[TradeData]) {
         let Some(h) = self.player_house(hp) else { return };
         let liege = self.houses[h].owner;
         let gold = house_offer_value(give);
         let by = self.player_get_civilization_short_description(buyer);
-        if !self.players[liege].human {
-            self.players[liege].ai_attitude_extra[buyer] += BRIBE_GRUDGE;
-        }
+        self.player_add_memory(liege, buyer, MemoryType::MEMORY_BOUGHT_HOUSE);
         let until = Some(self.game_turn() + OFFER_NOTED_TURNS);
         self.houses[h].standing.mods.push(LoyaltyMod { cause: LoyaltyCause::Offered { gold, by: by.clone() }, amount: 0, until });
         let label = self.house_label(h);
@@ -165,8 +154,8 @@ impl Game {
         self.tel_person(liege, "bribe", "offered");
     }
 
-    /// `buyer` proposes to House player `hp` a deal of `give` (from the buyer: gold, gold per
-    /// turn) for `get` (from the House: Secede or Become your vassal): the House's controller
+    /// `buyer` proposes to House player `hp` a deal of `give` (from the buyer: gold) for `get`
+    /// (from the House: Secede or Become your vassal): the House's controller
     /// answers (`Controller::consider_offer`), and an accepted deal is implemented, where the liege
     /// learns of it (`house_trade`). Returns whether it was accepted. A refused offer, or one the
     /// rules refuse at its implementation, moves nothing: the liege does not learn of it. The one

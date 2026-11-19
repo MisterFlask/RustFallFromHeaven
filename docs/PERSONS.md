@@ -99,15 +99,16 @@ post, the Court screen, the previews, claims).
    the House record ends.
 9. **Side deals.** A House is a party on the diplomacy screen for anyone who has met it. War,
    peace, open borders, pacts, techs and vassalage are its liege's to trade; the House trades only
-   this: it takes gold and gold per turn, and gives **Secede** (it breaks away at once, rule 7)
-   or **Become your vassal** (it breaks away and becomes the buyer's House; by the vassal rules
+   this: it takes gold, a lump sum only (the owner's decision of 2026-11-18: gold per turn could
+   be paid for one turn and ended by a war on the seceded House), and gives **Secede** (it breaks
+   away at once, rule 7) or **Become your vassal** (it breaks away and becomes the buyer's House; by the vassal rules
    the buyer then shares its war with the old liege). It accepts when its loyalty is Cautious or
    worse and the offer covers its price: `(loyalty + 6) x 25 x its cities` gold (one step, `25 x its cities`, at least: a Furious House
-   is never free, its countdown being its liege's window to answer),
-   gold per turn counted ten times; refusals in the screen's words (`House Arne is Pleased with
-   the Bannor.`). The liege learns of a bribe: an AI liege's attitude memory toward the buyer
-   (-2, as a broken deal); the House's loyalty list shows `Offered 300 gold by the Hippus` and a
-   human liege gets an alert. **Only an accepted offer is noted** (the owner's decision of the
+   is never free, its countdown being its liege's window to answer); refusals in the screen's
+   words (`House Arne is Pleased with the Bannor.`). The liege learns of a bribe: it remembers the
+   buyer (`MEMORY_BOUGHT_HOUSE`, rule 15: -300 on FfH's scale, the AI's relation -1, fading; the
+   House was paid and is not angered); the House's loyalty list shows `Offered 300 gold by the
+   Hippus` and a human liege gets an alert. **Only an accepted offer is noted** (the owner's decision of the
    same day): a refused offer leaves no trace, since the trade table already says in advance
    whether an offer will be accepted, so the player never risks a refusal. The price is one rules
    function every controller reads. Threats are not in this build.
@@ -160,6 +161,18 @@ post, the Court screen, the previews, claims).
     2 and `PERSON_HOUSE_SIZE_PER` 8: 3 up to 15 cities, 4 from 16, 5 from 24. A grant or a founding
     moves a city within the realm and leaves `T` as it is; a capture or a loss moves it. The
     numbers are first guesses.
+15. **An act against a House angers the House and its liege** (the owner's rule, 2026-11-18),
+    with the AI's memory of wrongs (the owner's decision of the same day): a civilization
+    remembers who declared war on it (`MEMORY_DECLARED_WAR`), took its cities in battle
+    (`MEMORY_TOOK_CITY`) and bought one of its Houses (`MEMORY_BOUGHT_HOUSE`), and the memories
+    fade (each at 1 in 50 a turn). One rules function records a wrong (`player_add_memory`): when
+    the wronged player is a House, its liege remembers it too. A war declared on a liege reaches
+    its Houses by the vassal rules, and each player declared on remembers it once (the liege no
+    more for its Houses). The AI weighs the three as terms of its attitude (`declared war on us`,
+    `took our cities`, `bought our House`; docs/AI.md, "Relations"), and the screens say what an
+    act will cost where it is done: the war question (`They remember it: attitude toward you -1
+    (fades). So do House Arne.`) and a House's trade table (`The Svartalfar's attitude toward
+    you -1 (fades).`).
 
 ### The second build as built (2026-11-18)
 
@@ -215,20 +228,21 @@ it left open:
    (its player dies without a city).
 8. *As built:* `player_check_free_house`, `player_free_house`.
 9. *As built:* the trade items `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL` (`tools/gen_enums.py`
-   `EXTRA_MEMBERS`); `player_can_trade_item` lets a House give only them and take only gold and
-   gold per turn (without the gold-trading tech), from a civilization that met it and is not its
-   liege; a House can be contacted at war (`player_can_contact`). An offer made at war makes peace
+   `EXTRA_MEMBERS`); `player_can_trade_item` lets a House give only them and take only gold
+   (without the gold-trading tech; no gold per turn since 2026-11-18, and ffh-ai's House refuses
+   any other item), from a civilization that met it and is not its liege; a House can be contacted at war (`player_can_contact`). An offer made at war makes peace
    between the buyer and the House first (a deal at war makes peace), then the House breaks away.
    `player_offer_house(buyer, house_player, give, get) -> bool` is the one way to propose it (the
    client's `propose_deal` to a House and the AI use it): the House's controller answers
    (`consider_offer`; ffh-ai by `house_bribe_price`); an accepted offer is noted where the deal
    takes effect (`house_trade`, after `house_bribe_refusal` passes: `house_note_offer`), and a
-   refused one, or one the rules refuse at its implementation, moves nothing (no grudge, no
+   refused one, or one the rules refuse at its implementation, moves nothing (no memory, no
    `Offered` entry, no alert, no telemetry; built first noting every offer, changed by the
    owner's decision of 2026-11-18). The AI's `offered_lately` reads the `Offered` entry, which an
-   accepted offer leaves only on a House that then breaks away. The AI liege's memory is an attitude modifier
-   (`ai_attitude_extra -4`, the AI's relation -2), which does not fade (FfH's modifiers do not);
-   `Offered N gold by the X` stands in the House's parts for 20 turns, amount 0.
+   accepted offer leaves only on a House that then breaks away. The liege's memory is
+   `MEMORY_BOUGHT_HOUSE` toward the buyer (rule 15; built first as an attitude modifier,
+   `BRIBE_GRUDGE`, -4 on FfH's scale, which did not fade); `Offered N gold by the X` stands in the
+   House's parts for 20 turns, amount 0.
 10. *As built:* all retired, with `house_orders`, `PERSON_HOUSE_MAINTENANCE_PERCENT` and
     `PERSON_LEVY_TURNS`. A first build's `DemandKind::Wonder` stays readable in saves; nothing
     makes one.
@@ -973,7 +987,7 @@ Rule 13's parts outside the Court (`view/house_marks.rs`, `view/diplo.rs`, `asse
   its state's mark with its loyalty parts as the tip. The trade query serves a House's tables from
   the rules (`house_bribe_refusal`, `house_bribe_price`, `house_offer_value`): Secede and Become
   your vassal always listed, each with the rules' refusal or valued at minus the price, gold at 1
-  and gold per turn at `BRIBE_GOLD_PER_TURN_TURNS`; the screen's totals and answer then read as for
+  (no gold per turn: the rules' table has none for a House); the screen's totals and answer then read as for
   any deal (`Total offered: 1`, `Total requested: 150`, `Reason: House Alyndra asks 150 gold.`).
   `trade_answer` for a House is the rules' answer whoever plays it. The war a deal means is said
   under the answer (`If accepted:`, `secede_war`, `vassal_war`). *The second critic pass
@@ -994,9 +1008,14 @@ Rule 13's parts outside the Court (`view/house_marks.rs`, `view/diplo.rs`, `asse
   `may` for defensive pacts, which the human does not see; Become
   your vassal names the same for its war with the liege (`vassal_war_against`, `vassal_war_join`).
   An accepted offer's cost with an AI liege is one of the `If accepted:` lines (`The Svartalfar's
-  attitude toward you -2 (lasting).`, `grudge`), shown when the proposal will be accepted: the
-  amount is `BRIBE_GRUDGE` (-4 on FfH's scale) as the attitude's parts count it (ffh-ai
-  `attitude_extra_part`: half), the number the liege's attitude tooltip then shows. A House's vassal deal, which the
+  attitude toward you -1 (fades).`, `grudge` for Secede, `vassal_grudge` for Become your vassal),
+  shown when the proposal will be accepted: the memory's effect (rule 15; ffh-ai `memory_added`,
+  the term with one more memory less the term now) of the House bought, and for Become your
+  vassal also of the war the buyer then declares on the liege (unless at war already); nothing
+  when it moves nothing (the cap), the number the liege's attitude tooltip then shows (`bought
+  our House`, `declared war on us`). The war question carries the same for a declaration
+  (`war_memory`: `They remember it: attitude toward you -1 (fades).`, and `So do House Alyndra,
+  the Svartalfar.` for the parties the vassal rules bring in whose attitude it moves). A House's vassal deal, which the
   rules never let be cancelled, shows no `cancel in` count in the list (it showed one). Departure: **no gift to one's own House.** The
   contract asked that the usual gift items (gold) work for one's own Houses; the rules refuse
   every item between a House and its liege's team (`house_trade_item_allowed`), and a gift would

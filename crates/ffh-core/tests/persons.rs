@@ -724,7 +724,7 @@ fn a_houses_price_and_its_refusals() {
     assert!(g.player_can_trade_item(P1, hp, &gold(0), false));
     assert!(!g.player_can_trade_item(P0, hp, &gold(0), false));
     assert!(!g.player_can_trade_item(P1, P0, &item(TradeableItem::TRADE_SECEDE), false), "only a House gives it");
-    assert_eq!(house_offer_value(&[gold(100), TradeData { item_type: TradeableItem::TRADE_GOLD_PER_TURN, data: 5, offering: false, hidden: false }]), 150);
+    assert_eq!(house_offer_value(&[gold(100), TradeData { item_type: TradeableItem::TRADE_GOLD_PER_TURN, data: 5, offering: false, hidden: false }]), 100, "gold only");
 }
 
 /// A refused offer leaves no trace (the owner's decision, 2026-11-18): no grudge of the liege, no
@@ -762,7 +762,8 @@ fn secede_breaks_away_for_the_buyer() {
     assert_eq!(g.players[P1].gold, 500 - price);
     // An accepted offer is noted: the liege is told, an AI liege remembers.
     assert!(logged(&g, "The Elohim offered "));
-    assert_eq!(g.players[P0].ai_attitude_extra[P1], extra + BRIBE_GRUDGE, "the AI liege remembers");
+    assert_eq!(g.players[P0].ai_memory_count[P1][MemoryType::MEMORY_BOUGHT_HOUSE], 1, "the liege remembers");
+    assert_eq!(g.players[P0].ai_attitude_extra[P1], extra, "as a memory, not a modifier");
     // The news names the cities after "taking"; the buyer reads "you".
     let told = |p: PlayerId, s: &str| g.log.entries.iter().any(|e| e.text.contains(s) && matches!(&e.audience, Audience::Players(l) if l.contains(&p)));
     assert!(told(P0, ", taking ") && told(P0, ". Bought by the Elohim: war."), "the liege's news");

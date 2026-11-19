@@ -357,6 +357,9 @@ pub fn players(v: &Viewer) -> Json {
         let (against, join) = if can_war { war_parties(g, v.team, t, None) } else { (Vec::new(), Vec::new()) };
         j.set("war_against", party_labels(g, &against));
         j.set("war_join", party_labels(g, &join));
+        // What the declaration costs with them (the owner's decision, 2026-11-18): the war dialog's
+        // `They remember it: attitude toward you -1 (fades).` (null when nothing).
+        j.set("war_memory", if can_war { war_memory(g, v.h, t, &against) } else { None });
         // A House not the human's (rule 9; the diplomacy list's second line): its state toward
         // its own liege and its price to secede.
         if let Some(hh) = g.player_house(p).filter(|&hh| g.players[g.houses[hh].owner].team != v.team) {
@@ -405,7 +408,12 @@ pub fn war_parties(g: &Game, t: TeamId, other: TeamId, gone: Option<TeamId>) -> 
 /// `Malakim`; another by its civilization, `the Svartalfar`: a House's liege, when war is declared
 /// on the House), alive, in player order.
 pub fn party_labels(g: &Game, teams: &[TeamId]) -> Json {
-    let label = |p: PlayerId| match g.player_house(p) {
+    Json::Arr(g.player_ids().into_iter().filter(|&p| g.players[p].alive && teams.contains(&g.players[p].team)).map(|p| Json::from(party_label(g, p))).collect())
+}
+
+/// Player `p` as the screens name a party: `House Arne`, `Malakim`, `the Svartalfar`.
+fn party_label(g: &Game, p: PlayerId) -> String {
+    match g.player_house(p) {
         Some(h) => g.house_label(h),
         None => {
             let name = g.player_house_name(p);
@@ -415,8 +423,39 @@ pub fn party_labels(g: &Game, teams: &[TeamId]) -> Json {
                 name
             }
         }
-    };
-    Json::Arr(g.player_ids().into_iter().filter(|&p| g.players[p].alive && teams.contains(&g.players[p].team)).map(|p| Json::from(label(p))).collect())
+    }
+}
+
+/// The war dialog's line of what declaring war on team `t` costs with it (the owner's decision,
+/// 2026-11-18): its leader remembers it (`MEMORY_DECLARED_WAR`, which fades) and its attitude
+/// toward the human `h` moves by ffh-ai's `memory_added`: `They remember it: attitude toward you
+/// -1 (fades).`; the parties the vassal rules bring in (`against`, [`war_parties`]) each remember
+/// it too, and those it moves are named: ` So do House Arne and House Vel.` Null when it moves
+/// nothing (a human leader, the cap).
+pub fn war_memory(g: &Game, h: PlayerId, t: TeamId, against: &[TeamId]) -> Option<String> {
+    use ffh_ai::diplomacy::memory_added;
+    let war = MemoryType::MEMORY_DECLARED_WAR;
+    let leader = g.team_get_leader_id(t)?;
+    let n = memory_added(g, leader, h, war);
+    if n == 0 {
+        return None;
+    }
+    let also: Vec<String> = g.player_ids().filter(|&p| g.players[p].alive && against.contains(&g.players[p].team) && memory_added(g, p, h, war) != 0).map(|p| party_label(g, p)).collect();
+    let signed = if n > 0 { format!("+{n}") } else { n.to_string() };
+    let mut line = format!("They remember it: attitude toward you {signed} (fades).");
+    if !also.is_empty() {
+        line.push_str(&format!(" So do {}.", and_list(&also)));
+    }
+    Some(line)
+}
+
+/// "A", "A and B", "A, B and C".
+fn and_list(items: &[String]) -> String {
+    match items.len() {
+        0 => String::new(),
+        1 => items[0].clone(),
+        n => format!("{} and {}", items[..n - 1].join(", "), items[n - 1]),
+    }
 }
 
 /// House `hh` (not the human's) as the diplomacy list's second line states it (docs/PERSONS.md,

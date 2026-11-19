@@ -111,6 +111,9 @@ EXTRA_MEMBERS = {
     # A House's side deals (docs/PERSONS.md, "The second build", rule 9): it gives Secede or
     # Become your vassal.
     "TradeableItems": ["TRADE_SECEDE", "TRADE_HOUSE_VASSAL"],
+    # The AI's memory of wrongs (docs/PERSONS.md, the owner's decision of 2026-11-18): a city
+    # taken in battle, a House bought away by a side deal.
+    "MemoryTypes": ["MEMORY_TOOK_CITY", "MEMORY_BOUGHT_HOUSE"],
 }
 
 # C++ members this game removed (docs/PORTING.md "Changes from FFH2"). The members after one move

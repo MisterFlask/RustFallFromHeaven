@@ -19,6 +19,7 @@
 //! - `civics_religion.rs`  civics, anarchy, religion, corporations, votes, traits
 //! - `diplomacy_trade.rs`  contact, trade items, deals, bonuses, espionage
 //! - `events.rs`           random events and quests
+//! - `memory.rs`           what a player remembers of the others: recording, decay
 
 
 pub mod civics_religion;
@@ -26,6 +27,7 @@ pub mod cities;
 pub mod diplomacy_trade;
 pub mod economy;
 pub mod events;
+pub mod memory;
 pub mod research_path;
 pub mod start;
 pub mod turn;

@@ -1,8 +1,9 @@
 //! Persons of Note on the diplomacy screen (docs/PERSONS.md, "The second build", rules 7, 9 and
 //! 13; "UI"): the war a declaration brings in for certain by the vassal rules (the war dialog's
 //! `war_against` and `war_join`, checked against the war the rules then make), the same for
-//! Become your vassal in a House's trade table, what an accepted offer costs with the liege
-//! (`grudge`, checked against the liege's attitude parts after it), and a House's state and price
+//! Become your vassal in a House's trade table, what a declaration (`war_memory`) and an accepted
+//! offer (`vassal_grudge`) cost with them, checked against their attitude parts after it (the
+//! memory of wrongs, the owner's decision of 2026-11-18), and a House's state and price
 //! on its line in the list. On the staged scene (`ffh-play stage persons`), with the neighbour
 //! given a second House by the rules' own calls (one of the human's freed, then the neighbour's
 //! vassal by a deal).
@@ -88,6 +89,18 @@ fn the_war_dialog_names_the_houses_that_join() {
     want.insert(format!("the {}", g.player_get_civilization_short_description(st.neighbour)));
     assert_eq!(strs(&hrow, "war_against"), want, "{hrow}");
     assert_eq!(strs(&hrow, "war_join"), labels(g, &ours), "{hrow}");
+    // What it costs: the neighbour remembers it, and so does each House of its at war with the
+    // human (the war on a House names its liege).
+    let line = row.get("war_memory").and_then(Json::as_str).expect("an AI neighbour remembers it").to_string();
+    let n: i32 = line.strip_prefix("They remember it: attitude toward you ").and_then(|r| r.split_once(" (fades). So do ")).unwrap_or_else(|| panic!("{line}")).0.parse().unwrap();
+    assert!(n < 0, "{line}");
+    let war_term = |g: &ffh_core::game::Game| ffh_ai::diplomacy::attitude_parts(g, st.neighbour, st.human).iter().filter(|x| x.0 == "declared war on us").map(|x| x.1).sum::<i32>();
+    let term_before = war_term(g);
+    for name in labels(g, &theirs) {
+        assert!(line.contains(&name), "{line} names {name}");
+    }
+    let hline = hrow.get("war_memory").and_then(Json::as_str).unwrap().to_string();
+    assert!(hline.contains(&format!("the {}", g.player_get_civilization_short_description(st.neighbour))), "{hline}");
     // The human's own Houses: no war to declare, nobody listed.
     let own = st.houses.iter().find(|x| x.role == "pleased").unwrap();
     let orow = find(&arr(&pl, "players"), "id", own.player.0 as i64);
@@ -103,11 +116,14 @@ fn the_war_dialog_names_the_houses_that_join() {
     let joined: BTreeSet<TeamId> = at_war(g, nt).difference(&before_n).copied().filter(|&o| o != ht).collect();
     assert_eq!(against, theirs);
     assert_eq!(joined, ours);
+    // The line's number is what the neighbour's attitude part moved.
+    assert_eq!(war_term(g) - term_before, n, "{line}");
 }
 
 /// A House's trade table: Become your vassal names the liege's other Houses at war with the
 /// human and the human's Houses that join (as the rules then make the war), and an accepted offer
-/// states its cost with the liege (`grudge`), which the liege's attitude parts then show.
+/// states its cost with the liege (`vassal_grudge`: the House bought and the war declared, both
+/// remembered), which the liege's attitude parts then show.
 #[test]
 fn become_your_vassal_names_the_war_and_an_offer_its_cost() {
     let (_dir, st, mut s) = load("persons-diplo-vassal");
@@ -120,11 +136,17 @@ fn become_your_vassal_names_the_war_and_an_offer_its_cost() {
     let house = tr.get("house").unwrap().clone();
     assert_eq!(strs(&house, "vassal_war_against"), labels(&s.g, &[xt].into()), "{house}");
     assert_eq!(strs(&house, "vassal_war_join"), labels(&s.g, &ours), "{house}");
-    let grudge = house.get("grudge").and_then(Json::as_str).expect("an AI liege's grudge").to_string();
     let prefix = format!("The {liege}'s attitude toward you ");
-    let amount: i32 = grudge.strip_prefix(&prefix).and_then(|r| r.strip_suffix(" (lasting).")).unwrap_or_else(|| panic!("{grudge}")).parse().unwrap();
-    assert!(amount < 0, "{grudge}");
-    let modifier = |s: &ffh_play::Session| ffh_ai::diplomacy::attitude_parts(&s.g, st.neighbour, st.human).iter().filter(|x| x.0 == "attitude modifier").map(|x| x.1).sum::<i32>();
+    let amount = |key: &str| -> i32 {
+        let grudge = house.get(key).and_then(Json::as_str).unwrap_or_else(|| panic!("an AI liege's {key}")).to_string();
+        grudge.strip_prefix(&prefix).and_then(|r| r.strip_suffix(" (fades).")).unwrap_or_else(|| panic!("{grudge}")).parse().unwrap()
+    };
+    // Secede: the House bought. Become your vassal: and the war the human then declares on it.
+    assert!(amount("grudge") < 0);
+    let grudge = amount("vassal_grudge");
+    assert!(grudge < amount("grudge"), "{grudge}");
+    let memories = ["bought our House", "declared war on us"];
+    let modifier = |s: &ffh_play::Session| ffh_ai::diplomacy::attitude_parts(&s.g, st.neighbour, st.human).iter().filter(|x| memories.contains(&x.0)).map(|x| x.1).sum::<i32>();
     let before = modifier(&s);
 
     // Proposed at its price, accepted: the war is the one the table named.
@@ -144,7 +166,7 @@ fn become_your_vassal_names_the_war_and_an_offer_its_cost() {
     assert_eq!(against, BTreeSet::from([xt]));
     assert_eq!(joined, ours);
     // Its cost with the liege, as its attitude's parts count it.
-    assert_eq!(modifier(&s) - before, amount, "{grudge}");
+    assert_eq!(modifier(&s) - before, grudge);
 }
 
 /// The diplomacy list's line of a House not the human's: its state toward its liege, its price to

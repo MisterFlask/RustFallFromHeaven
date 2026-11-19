@@ -616,10 +616,13 @@ view's `src/view/house_marks.rs`). A loyalty state is always the one mark (`pers
   well: House Alyndra, Malakim.`, `Your Houses join: House Aldric, House Bertram.`; declared on a
   House: its liege and the liege's other Houses, `At war with you as well: the Svartalfar, House
   Bertram.`) and keeps `may`
-  for what you cannot see (`Their defensive pact partners may join them.`). A House's leader
+  for what you cannot see (`Their defensive pact partners may join them.`), then what the war
+  costs with them, when it moves an AI's attitude: `They remember it: attitude toward you -1
+  (fades). So do House Alyndra.` (the memory of a declared war, docs/PERSONS.md rule 15; the
+  parties named are those the vassal rules bring in whose attitude it moves). A House's leader
   speaks as any leader. Its trade
-  screen offers what the rules let it trade: you give gold and gold per turn (`+1` a gold, `+10`
-  a gold per turn: counted ten times), it gives `Secede` or `Become your vassal` (one of the two),
+  screen offers what the rules let it trade: you give gold (`+1` a gold; no gold per turn), it
+  gives `Secede` or `Become your vassal` (one of the two),
   each worth its price (`−150`) or greyed with the rules' reason (`(House Alyndra is Pleased with
   the Svartalfar.)`); under the tables `Trades through the Svartalfar.` with `Trade with the
   Svartalfar…`. The answer is the rules' (`This proposal will be refused. Reason: House Alyndra
@@ -628,8 +631,9 @@ view's `src/view/house_marks.rs`). A loyalty state is always the one mark (`pers
   your vassal `You become its liege: war with the Svartalfar.` with the parties the vassal rules
   bring into that war (the liege's other Houses, `At war with you as well: ...`; yours, `Your
   Houses join: ...`); when the proposal will be accepted and the liege is an AI, its cost with the
-  liege (`The Svartalfar's attitude toward you -2 (lasting).`: the rules' modifier, `BRIBE_GRUDGE`
-  -4 on FfH's scale, as the attitude's parts count it). A vassal deal the rules hold (a
+  liege (`The Svartalfar's attitude toward you -1 (fades).`: the memory of the House bought, and
+  for Become your vassal also of the war you then declare on the liege, as the attitude's parts
+  will count them; nothing at the cap). A vassal deal the rules hold (a
   House's, a capitulation) shows no `cancel in` count. At war: `You are at war. An accepted offer makes peace with
   House Alyndra first.` Your own House's screen has no tables: `House Aldric pays its liege by
   tribute.`, its attitude and `Open the Court`.

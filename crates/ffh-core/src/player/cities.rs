@@ -237,6 +237,12 @@ impl Game {
                 self.tel_autopsy_city_fell(p, old_city);
             }
         }
+        // Not in C++: a city taken in battle is remembered by its owner (and, the owner a House,
+        // by its liege: `player_add_memory`). A trade, a card, a grant or a break-away is no
+        // conquest (docs/PORTING.md, "Changes from FFH2").
+        if conquest {
+            self.player_add_memory(old_owner, p, MemoryType::MEMORY_TOOK_CITY);
+        }
 
         // C++ copies the plot's unit list first (`oldUnits`).
         let old_units = self.map.plots[city_plot].units.clone();

@@ -96,6 +96,32 @@ fn table_sizes() {
     }
 }
 
+/// The memory of wrongs (the owner's decision, 2026-11-18): every leader but the barbarians'
+/// (the cards' leaders and the Houses' minor leaders included) weighs a declared war -300, a city
+/// taken -150 and a House bought -300, and forgets each at 1 in 50 a turn.
+#[test]
+fn every_leader_remembers_the_wrongs_and_forgets_them() {
+    let barbarian = d().t::<LeaderHeadType>("LEADER_BARBARIAN");
+    let mut n = 0;
+    for (l, info) in d().leader_heads.iter_enumerated() {
+        if l == barbarian {
+            continue;
+        }
+        n += 1;
+        let pct = &info.memory_attitude_percent;
+        let decay = &info.memory_decay_rand;
+        let t = &info.base.type_;
+        assert_eq!(pct[MemoryType::MEMORY_DECLARED_WAR], -300, "{t}");
+        assert_eq!(pct[MemoryType::MEMORY_TOOK_CITY], -150, "{t}");
+        assert_eq!(pct[MemoryType::MEMORY_BOUGHT_HOUSE], -300, "{t}");
+        for m in [MemoryType::MEMORY_DECLARED_WAR, MemoryType::MEMORY_TOOK_CITY, MemoryType::MEMORY_BOUGHT_HOUSE] {
+            assert_eq!(decay[m], 50, "{t}");
+        }
+    }
+    assert!(n > 100, "the cards' leaders are read too: {n}");
+    assert_eq!(d().memories.len(), MemoryType::NUM);
+}
+
 #[test]
 fn fixed_prereq_lists_match_global_defines() {
     // The reader mirrors these two defines; they must agree with global_defines(_alt).jsonc.
@@ -452,7 +478,8 @@ fn leader_sabathiel_personality() {
     assert_eq!(l.contact_delay[ContactType::CONTACT_DEMAND_TRIBUTE], 100);
     assert_eq!(l.contact_delay[ContactType::CONTACT_PEACE_TREATY], 10);
     assert_eq!(l.memory_decay_rand[MemoryType::MEMORY_GIVE_HELP], 200);
-    assert_eq!(l.memory_decay_rand[MemoryType::MEMORY_DECLARED_WAR], 0);
+    // FFH2: 0 (never forgotten); this game's 50 (2026-11-18, docs/PORTING.md "Changes from FFH2").
+    assert_eq!(l.memory_decay_rand[MemoryType::MEMORY_DECLARED_WAR], 50);
     assert_eq!(l.memory_attitude_percent[MemoryType::MEMORY_DECLARED_WAR], -300);
     assert_eq!(l.memory_attitude_percent[MemoryType::MEMORY_VOTED_FOR_US], 200);
     assert_eq!(l.no_war_attitude_prob[AttitudeType::ATTITUDE_ANNOYED], 10);

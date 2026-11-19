@@ -192,7 +192,10 @@ impl Game {
         }
 
         self.verify_deals();
-        // AI: AI_doTurnPre() -- AI_doCounter (contact timers, memory decay; game RNG),
+        // The memories fade (the memory part of C++ `CvPlayerAI::AI_doCounter`, a rule here, for
+        // every player: docs/PORTING.md, "Changes from FFH2"). Game RNG.
+        self.player_do_memory_decay(p);
+        // AI: AI_doTurnPre() -- the rest of AI_doCounter (contact timers),
         // enemy unit data, and for AI players research/commerce/military/civics/religion
         // choices: the controller does this while the player's turn is active.
         self.ai_hook(p, AiHook::PlayerTurnPre(p));

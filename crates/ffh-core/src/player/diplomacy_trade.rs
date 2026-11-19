@@ -312,7 +312,7 @@ impl Game {
         }
 
         // Not in C++: a House trades only its side deals (docs/PERSONS.md, rule 9): it gives
-        // Secede or Become your vassal, and takes gold and gold per turn from a civilization that
+        // Secede or Become your vassal, and takes gold (no gold per turn) from a civilization that
         // is not its liege; war, peace and the rest are its liege's.
         if let Some(allowed) = self.house_trade_item_allowed(p, who_to, item) {
             return allowed;

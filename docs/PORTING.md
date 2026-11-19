@@ -339,10 +339,11 @@ flag.
     Houses, but grants no city; adopting direct rule (a change of civics) breaks every House
     away.
   - *Side deals*: a House trades only Secede and Become your vassal (new trade items), for gold
-    and gold per turn, with a civilization that has met it and is not its liege, at war too; it
+    only (2026-11-18: no gold per turn, which could be paid for one turn and ended by a war on
+    the seceded House), with a civilization that has met it and is not its liege, at war too; it
     accepts when Cautious or worse and the offer covers `(loyalty + 6) x 25 x its cities` gold.
-    The AI liege remembers the buyer (an attitude modifier). Only an accepted offer is noted
-    (2026-11-18): a refused one leaves no trace (no grudge, no `Offered` entry, no alert).
+    The liege remembers the buyer (`MEMORY_BOUGHT_HOUSE`, below). Only an accepted offer is noted
+    (2026-11-18): a refused one leaves no trace (no memory, no `Offered` entry, no alert).
   - *The attitude scale*: a person's or a House's loyalty reads Friendly, Pleased, Cautious,
     Annoyed or Furious; a House's AI attitude toward its liege is its loyalty's.
   - *The Crown's limit* (rule 14): under a governing civic the Crown holds 3 great cities at the
@@ -354,6 +355,26 @@ flag.
     together; a city moving between a liege and its House keeps its settlement status.
   Why: a large empire is shared with holders who have a view of how it is ruled, in the game's
   own idioms (vassalage, attitude, the diplomacy screen, requisition, war). Save format 49.
+- **The memory of wrongs** (the owner's decisions of 2026-11-18; docs/PERSONS.md, "The second
+  build"; docs/AI.md, "Relations"):
+  - *A declared war fades*: every leader forgets a `MEMORY_DECLARED_WAR` at 1 in 50 a turn
+    (`memory_decays`; FFH2's leaders never did).
+  - *Two new memories*: `MEMORY_TOOK_CITY` ("took our cities": a city taken in battle, recorded
+    by its former owner in `player_acquire_city` with conquest; not a trade, a card, a grant, a
+    break-away or a held city returning) at -150, and `MEMORY_BOUGHT_HOUSE` ("bought our House":
+    an accepted side deal, recorded by the House's liege toward the buyer; the House was paid) at
+    -300, both fading at 1 in 50, in every leader but the barbarians' (the cards' leaders and the
+    Houses' minor leaders included; those without memory data got these three weights alone).
+    An act against a House angers the House and its liege: `player_add_memory` records it for
+    both (a declared war already reaches every player of the side declared on, a House pulled in
+    included, once each). These replace the bought House's attitude modifier (`BRIBE_GRUDGE`).
+  - *The decay is a rule*: the memory part of C++ `CvPlayerAI::AI_doCounter` runs in every
+    player's turn (`player_do_memory_decay`, game RNG; the C++ AI port's copy is removed).
+  - *ffh-ai reads these three memories* (it read none): each a term of the relation, `count x
+    percent / 100` halved to its scale (2 a step), capped at -3: a declared war -1, two -3; a
+    city taken nothing alone, two -1, four -3; a House bought -1.
+  Why: the AI forgot a war the turn it ended and minded no conquest, while a bought House was a
+  grudge for good. Save format 50.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
   every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
   Line, Charge, Volley, Vanguard; four tactics). A side's auto formation in every battle, attacking or

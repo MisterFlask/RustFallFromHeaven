@@ -12,7 +12,7 @@
 //!   gains, a peace treaty is offered through a real deal the other side's controller judges.
 //!
 //! Relations are a small explicit score (alignment, religion, shared borders, war history, the
-//! Trust spell) instead of the C++ attitude machinery.
+//! wrongs it remembers, the Trust spell) instead of the C++ attitude machinery.
 
 use ffh_core::controller::OfferVerdict;
 use ffh_core::game::Game;
@@ -49,6 +49,14 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     if g.teams[ta].ai_at_war_counter[tb] > 0 {
         out.push(("war between us", -1));
     }
+    // The wrongs `p` remembers of `other` (the rules' memories, which fade: ffh-core
+    // `player_add_memory`, `player_do_memory_decay`), each its own term.
+    for (mem, label) in MEMORY_TERMS {
+        let n = memory_part(g, p, mem, a.ai_memory_count[other][mem]);
+        if n != 0 {
+            out.push((label, n));
+        }
+    }
     if g.team_is_open_borders(ta, tb) {
         out.push(("open borders", 1));
     }
@@ -63,7 +71,7 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     // docs/CARDS.md: a civilization's birth, a city bought or annexed) and a born civilization's leaning toward an
     // alignment (`Player::alignment_attitude`). They are on FfH's scale, where 4 is about a step;
     // here 2 is one, so they count half (as the Trust spell does).
-    let extra = attitude_extra_part(a.ai_attitude_extra[other]);
+    let extra = a.ai_attitude_extra[other] / 2;
     if extra != 0 {
         out.push(("attitude modifier", extra));
     }
@@ -93,11 +101,35 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     out
 }
 
-/// The rules' attitude modifiers `extra` (`Player::ai_attitude_extra`, FfH's scale: 4 about a step)
-/// as a term of [`relation_parts`] (2 a step: they count half). The screens read it to state what a
-/// modifier will do (an offer to a House, docs/PERSONS.md rule 9).
-pub fn attitude_extra_part(extra: i32) -> i32 {
-    extra / 2
+/// The memories [`relation_parts`] weighs, with their labels: the wrongs of the owner's decision
+/// of 2026-11-18 (docs/PERSONS.md, "The second build"; FFH2's other memories are not read).
+pub const MEMORY_TERMS: [(MemoryType, &str); 3] = [
+    (MemoryType::MEMORY_DECLARED_WAR, "declared war on us"),
+    (MemoryType::MEMORY_TOOK_CITY, "took our cities"),
+    (MemoryType::MEMORY_BOUGHT_HOUSE, "bought our House"),
+];
+
+/// A memory term of [`relation_parts`] is at most this many points either way.
+pub const MEMORY_TERM_CAP: i32 = 3;
+
+/// The term of [`relation_parts`] for `count` memories `mem` held by player `p`: `count x` its
+/// leader's `memory_attitude_percent / 100` (C++ `AI_getMemoryAttitude`, FfH's scale: 4 about a
+/// step), halved to this scale (2 a step) as the rules' attitude modifiers are, capped at
+/// [`MEMORY_TERM_CAP`]. 0 without a leader. The screens read it to state what an act will do
+/// ([`memory_added`]).
+pub fn memory_part(g: &Game, p: PlayerId, mem: MemoryType, count: i32) -> i32 {
+    let percent = g.players[p].personality_type.map_or(0, |l| g.d.leader_heads[l].memory_attitude_percent[mem]);
+    (count * percent / 100 / 2).clamp(-MEMORY_TERM_CAP, MEMORY_TERM_CAP)
+}
+
+/// How far one more memory `mem` of `of` moves player `p`'s relation toward `of` now: the term
+/// with the count + 1 less the term now (0 at the cap, and for a human, who has no attitude).
+pub fn memory_added(g: &Game, p: PlayerId, of: PlayerId, mem: MemoryType) -> i32 {
+    if g.players[p].human {
+        return 0;
+    }
+    let count = g.players[p].ai_memory_count[of][mem];
+    memory_part(g, p, mem, count + 1) - memory_part(g, p, mem, count)
 }
 
 /// Relation of player `p` towards `other`: < 0 hostile, > 0 friendly.
@@ -1465,11 +1497,14 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let on_value = |margin: i64| OfferVerdict { accept: margin >= 0, margin: Some(margin as i32), why: None };
     let has = |items: &[TradeData], kind: TradeableItem| items.iter().any(|t| t.item_type == kind);
     // ---- Houses (docs/PERSONS.md, "The second build", rule 9): a House answers offers to secede
-    // or become `from`'s vassal by the rules' price alone (`house_bribe_price`; gold per turn
-    // counted ten times), and trades nothing else (persons.rs makes the AI's own offers).
+    // or become `from`'s vassal by the rules' price alone (`house_bribe_price`), takes gold only,
+    // and trades nothing else (persons.rs makes the AI's own offers).
     if let Some(h) = g.player_house(p) {
         if !we_give.iter().any(|t| ffh_core::persons::house_item(t.item_type).is_some()) {
             return no("a House trades only Secede and Become your vassal");
+        }
+        if they_give.iter().any(|t| t.item_type != TradeableItem::TRADE_GOLD) {
+            return no("a House takes gold only");
         }
         let kind = we_give.iter().find_map(|t| ffh_core::persons::house_item(t.item_type)).expect("a House item");
         if let Some(why) = g.house_bribe_refusal(h, from, kind) {
@@ -1857,6 +1892,47 @@ mod tests {
         assert_eq!(relation(&g, us, them), before + 2, "Trust adds one attitude step towards its caster");
         assert!(attitude_parts(&g, us, them).contains(&("the Trust spell", 2)), "and the reason shows");
         assert_eq!(relation(&g, them, us), theirs, "the caster's own attitude is unchanged");
+    }
+
+    /// The three remembered wrongs are terms of their own: `count x percent / 100`, halved, capped
+    /// at -3; a declared war is remembered by the side declared on, and fades.
+    #[test]
+    fn remembered_wrongs_are_terms_capped_at_three() {
+        let mut g = one_landmass_game(19);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        let term = |g: &Game, label: &str| relation_parts(g, us, them).iter().find(|t| t.0 == label).map(|t| t.1);
+        assert_eq!(term(&g, "declared war on us"), None);
+        // MEMORY_DECLARED_WAR -300: -3 on FfH's scale a count, -1 here.
+        let m = MemoryType::MEMORY_DECLARED_WAR;
+        for (count, want) in [(1, Some(-1)), (2, Some(-3)), (5, Some(-3))] {
+            g.players[us].ai_memory_count[them][m] = count;
+            assert_eq!(term(&g, "declared war on us"), want, "{count} declarations");
+        }
+        // MEMORY_TOOK_CITY -150: a city is -0.75 here (nothing), two -1, four the cap.
+        let m = MemoryType::MEMORY_TOOK_CITY;
+        for (count, want) in [(1, None), (2, Some(-1)), (3, Some(-2)), (4, Some(-3)), (9, Some(-3))] {
+            g.players[us].ai_memory_count[them][m] = count;
+            assert_eq!(term(&g, "took our cities"), want, "{count} cities");
+        }
+        // MEMORY_BOUGHT_HOUSE -300, as a declared war.
+        g.players[us].ai_memory_count[them][MemoryType::MEMORY_BOUGHT_HOUSE] = 1;
+        assert_eq!(term(&g, "bought our House"), Some(-1));
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), -2, "the second: -1 to -3");
+        g.players[us].ai_memory_count[them][MemoryType::MEMORY_BOUGHT_HOUSE] = 2;
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), 0, "at the cap");
+        assert_eq!(memory_part(&g, us, MemoryType::MEMORY_TOOK_CITY, 100), -MEMORY_TERM_CAP);
+        // A declaration is remembered by the side declared on, through these terms.
+        let mut g = one_landmass_game(19);
+        let (t0, t1) = (g.players[us].team, g.players[them].team);
+        g.team_meet(t0, t1, false);
+        assert_eq!(memory_added(&g, them, us, MemoryType::MEMORY_DECLARED_WAR), -1, "the preview");
+        g.team_declare_war(t0, t1, true, Some(WarPlanType::WARPLAN_TOTAL));
+        assert!(relation_parts(&g, them, us).contains(&("declared war on us", -1)));
+        assert!(!relation_parts(&g, us, them).iter().any(|t| t.0 == "declared war on us"), "not by the declarer");
+        for _ in 0..2000 {
+            g.player_do_memory_decay(them);
+        }
+        assert!(!relation_parts(&g, them, us).iter().any(|t| t.0 == "declared war on us"), "it fades");
     }
 
     /// At war, a player under a civic without diplomacy with enemies (the Bannor's Crusade) makes

@@ -165,7 +165,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   attitude scale (`LoyaltyState`), `PersonOrigin::Ruler`, `LoyaltyCause::Levied`,
 ///   `Capitulated`, `SoughtProtection`, `Offered`, the trade items `TRADE_SECEDE` and
 ///   `TRADE_HOUSE_VASSAL`.
-pub const FORMAT_VERSION: u32 = 49;
+/// - 50: the memory of wrongs: `MEMORY_TOOK_CITY` and `MEMORY_BOUGHT_HOUSE` lengthen each
+///   `Player::ai_memory_count` row (`MemoryType::NUM` 38).
+pub const FORMAT_VERSION: u32 = 50;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

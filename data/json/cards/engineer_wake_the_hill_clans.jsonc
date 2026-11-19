@@ -280,6 +280,16 @@
       "at_war_attitude_divisor": -5,
       "at_war_attitude_change_limit": 5,
       "same_religion_attitude_change": 4,
+      "memory_decays": {
+        "MEMORY_DECLARED_WAR": 50,
+        "MEMORY_TOOK_CITY": 50,
+        "MEMORY_BOUGHT_HOUSE": 50
+      },
+      "memory_attitude_percents": {
+        "MEMORY_DECLARED_WAR": -300,
+        "MEMORY_TOOK_CITY": -150,
+        "MEMORY_BOUGHT_HOUSE": -300
+      },
       "demand_tribute_attitude_threshold": "ATTITUDE_CAUTIOUS",
       "no_give_help_attitude_threshold": "ATTITUDE_CAUTIOUS",
       "traits": {"TRAIT_INDUSTRIOUS": true, "TRAIT_DEFENDER": true},

@@ -38,7 +38,8 @@ fn table_sizes() {
         ("denials", d.denials.len(), 29),
         ("domains", d.domains.len(), 4),
         ("invisibles", d.invisibles.len(), 3),
-        ("memories", d.memories.len(), 36),
+        // FFH2's 36 and this game's MEMORY_TOOK_CITY and MEMORY_BOUGHT_HOUSE.
+        ("memories", d.memories.len(), 38),
         ("months", d.months.len(), 12),
         ("seasons", d.seasons.len(), 4),
         ("unit_ais", d.unit_ais.len(), 49),
