@@ -38,7 +38,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until, skipped, chromiumLaunch } from "./web-lib.mjs";
+import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until, skipped, chromiumLaunch, calcLines, shownCalc, hideTip } from "./web-lib.mjs";
 
 const args = parseArgs(process.argv.slice(2), { bin: "value", assets: "value", shots: "value", gpu: "flag" });
 const ASSETS = path.resolve(args.assets ?? path.join(ROOT, "crates", "ffh-play", "assets"));
@@ -280,6 +280,22 @@ async function courting(page, st) {
   await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
   await sleep(300);
   await crop(page, sel, "court-house-courted.png", { pad: 4 });
+  // The Guard button's preview and the courtship's line tell how their numbers are made
+  // (docs/PLAY_DESIGN.md 4.9): a tap shows the lines the view sends.
+  const card = (await query(page, "court")).houses.find((x) => x.id === houseP.id);
+  const tipOf = async (s, shot = null) => {
+    await tap(page, s);
+    await sleep(250);
+    const lines = await shownCalc(page);
+    if (shot && lines) await crop(page, `${s}, .richtip`, shot, { pad: 8 });
+    await hideTip(page);
+    return lines;
+  };
+  const guardTip = await tipOf(`${sel} .pchannel .pchannel-line`, "calc-house-guard.png");
+  check(JSON.stringify(guardTip) === JSON.stringify(calcLines(card.channel?.calc)) && /^Guard: .+ a turn from each courtship\.$/.test(guardTip?.at(-1) ?? ""), `the Guard preview's tooltip: ${JSON.stringify(guardTip)}`);
+  const lineTip = await tipOf(`${sel} .pcourted-line`, "calc-house-courtship.png");
+  check(JSON.stringify(lineTip) === JSON.stringify(calcLines(card.courtships[0].calc)) && lineTip.some((l) => l.startsWith("Next liege turn: ")), `the courtship's tooltip: ${JSON.stringify(lineTip)}`);
+  steps.push(`tooltips: "${guardTip.at(-1)}"; "${lineTip.at(-1)}"`);
   // Guard: the card says its guard, the button is gone.
   await tap(page, `${sel} button.pchannel-set[data-channel=guard]`);
   const after = await until(async () => {

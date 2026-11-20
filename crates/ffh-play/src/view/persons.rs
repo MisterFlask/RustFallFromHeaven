@@ -13,7 +13,7 @@
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::culture::{ChannelOrder, ChannelTarget};
+use ffh_core::culture::{ChannelEffect, ChannelOrder, ChannelTarget};
 use ffh_core::persons::{CourtView, CourtshipView, DemandKind, GrantCandidate, GrantTo, HouseOrigin, HouseView, LoyaltyPart, LoyaltyState, PreviewLine, DEMAND_REFUSED, DEMAND_WARNING_TURNS};
 use ffh_data::*;
 
@@ -389,7 +389,7 @@ fn courtship_json(v: &Viewer, cv: &CourtshipView) -> Json {
     let g = v.g;
     let own = cv.courter == v.h;
     let line = if own { g.house_courting_line(cv.house, v.h).unwrap_or_else(|| cv.line.clone()) } else { cv.line.clone() };
-    crate::jobj! { "courter" => cv.courter, "line" => core(g, &line), "attention" => cv.attention, "own" => own }
+    crate::jobj! { "courter" => cv.courter, "line" => core(g, &line), "attention" => cv.attention, "own" => own, "calc" => crate::view::culture::courtship_calc_json(v, cv) }
 }
 
 /// The line that needs attention of a courtship of one of the human's Houses past two thirds of its
@@ -434,10 +434,17 @@ pub fn channel_button(v: &Viewer, order: &ChannelOrder) -> Json {
     };
     let kind = if g.culture_effect(order.action) == CultureEffect::Guard { "guard" } else { "court" };
     let line = (preview.refusal.is_none() && !preview.line.is_empty()).then(|| core(g, &preview.line));
+    // How the preview's numbers are made (docs/PLAY_DESIGN.md, "Calculated numbers").
+    let calc = match (&preview.effect, &line) {
+        (ChannelEffect::Court(cv), Some(_)) => crate::view::culture::courtship_calc_json(v, cv),
+        (ChannelEffect::Guard(gv), Some(_)) => crate::view::culture::calc_lines(v, &g.house_guard_calc(gv, v.h)),
+        _ => Json::Null,
+    };
     crate::jobj! {
         "kind" => kind,
         "label" => label,
         "line" => line,
+        "calc" => calc,
         "refusal" => preview.refusal.map(|r| core(g, &r)),
         "cmd" => crate::jobj! { "c" => "culture_channel", "action" => g.d.cultural_actions[order.action].base.type_.as_str(), "target" => house.player },
     }
@@ -497,6 +504,7 @@ fn house_json(v: &Viewer, hv: &HouseView) -> Json {
         "levy" => levy_status(hv.levy.reason.as_deref(), hv.loyalty),
         "courtships" => Json::Arr(hv.courtships.iter().map(|c| courtship_json(v, c)).collect()),
         "guard" => hv.guard.as_ref().map(|gv| gv.line.clone()),
+        "guard_calc" => hv.guard.as_ref().map_or(Json::Null, |gv| crate::view::culture::calc_lines(v, &g.house_guard_calc(gv, v.h))),
         "channel" => guard_button(v, hv),
         "free" => crate::jobj! { "ok" => hv.free.is_ok(), "refusal" => hv.free.err(), "confirm" => format!("Free {}? It is no longer your vassal, at peace with you. This cannot be undone.", hv.label) },
         "parts" => parts,
@@ -584,7 +592,7 @@ fn attention(v: &Viewer, cv: &CourtView) -> (Vec<Json>, usize) {
     for hv in houses {
         for cv in hv.courtships.iter().filter(|cv| cv.attention) {
             badge += 1;
-            out.push(line(courted_text(g, &hv.label, cv), "Culture", crate::jobj! { "kind" => "culture" }, "courted").with("urgent", true).with("house", hv.id));
+            out.push(line(courted_text(g, &hv.label, cv), "Culture", crate::jobj! { "kind" => "culture" }, "courted").with("urgent", true).with("house", hv.id).with("calc", crate::view::culture::courtship_calc_json(v, cv)));
         }
     }
     // A House that takes no levy (a Furious one is told above).
@@ -757,7 +765,9 @@ pub fn house(v: &Viewer, h: HouseId) -> Result<Json, QueryErr> {
         "cities" => Json::Arr(known_cities(v, &hv)),
         "courtships" => Json::Arr(hv.courtships.iter().map(|c| courtship_json(v, c)).collect()),
         "guard" => hv.guard.as_ref().map(|gv| gv.line.clone()),
+        "guard_calc" => hv.guard.as_ref().map_or(Json::Null, |gv| crate::view::culture::calc_lines(v, &g.house_guard_calc(gv, v.h))),
         "requirement" => requirement_line(g, h, v.h),
+        "requirement_calc" => crate::view::culture::calc_lines(v, &g.house_requirement_steps_calc(h, v.h)),
         "channel" => if running.is_some() { Json::Null } else { order.map_or(Json::Null, |o| channel_button(v, &o)) },
         "courting" => running.map(|o| format!("Your channel: {}.", core(g, &g.culture_channel_name(&o)))),
     };

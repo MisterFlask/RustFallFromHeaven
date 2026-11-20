@@ -427,6 +427,61 @@ fn guard_subtracts_from_every_courter() {
     assert!(g.houses[h].favour.iter().all(|f| f.amount == 0) || g.houses[h].favour.is_empty());
 }
 
+/// The tooltips' calculations (docs/PLAY_DESIGN.md, "Calculated numbers") show the numbers the
+/// rules use: the courtship's requirement, gain, guard and next turn, the guard's product, the
+/// inflow by city, the reach's falloff and the requirement at each better attitude.
+#[test]
+fn the_calculations_show_the_rules_numbers() {
+    let World { mut g, a, b, .. } = world_of(true);
+    let h = house_with(&mut g, a, &[b]);
+    for (p, rate) in [(P0, 900), (P1, 1100)] {
+        for c in g.players[p].cities.clone() {
+            g.cities[c].commerce_rate[CULTURE] = rate;
+        }
+    }
+    g.player_set_culture_channel(P1, Some(court(&g, h))).expect("courts");
+    g.player_set_culture_channel(P0, Some(guard(&g, h))).expect("the liege guards it");
+    set_favour(&mut g, h, P1, 530);
+    let cv = g.house_courtship_view(h, P1);
+    assert!(cv.inflow > 0 && cv.gain > 0 && cv.guard > 0, "{cv:?}");
+    let reach = cv.reach.expect("a reach");
+    let calc = g.house_courtship_calc(&cv, P1);
+    let t = ffh_core::culture::format_tenths;
+    assert_eq!(calc.requirement[0], format!("Requirement: {}.", cv.requirement.formula()));
+    assert!(calc.requirement[1].contains("attitude toward you"), "{:?}", calc.requirement);
+    assert_eq!(calc.inflow, vec![g.culture_inflow_line(P1, P1, cv.inflow)]);
+    assert_eq!(calc.reach, vec![format!("Reach: {}", g.culture_reach_calc(&reach))]);
+    assert_eq!(calc.gain, vec![format!("Gain: {} \u{d7} {}% = {} a turn.", t(cv.inflow), reach.effect, t(cv.gain))]);
+    assert!(calc.guard.last().unwrap().contains(&format!("= {} a turn", t(cv.guard))), "{:?}", calc.guard);
+    assert!(calc.guard[0].starts_with("Inflow: the "), "{:?}", calc.guard);
+    let next = g.favour_step(cv.favour, cv.gain, cv.guard);
+    assert!(calc.turn[0].starts_with("Next liege turn: 5.3 + ") && calc.turn[0].ends_with(&format!(": {}.", t(next))), "{:?}", calc.turn);
+    assert_eq!(calc.lines().len(), calc.requirement.len() + calc.inflow.len() + calc.reach.len() + calc.gain.len() + calc.guard.len() + calc.turn.len());
+    // The liege's own view of the guard says "your".
+    let gv = g.house_guard_view(h).expect("a guard");
+    assert!(g.house_guard_calc(&gv, P0)[0].starts_with("Inflow: your cities' culture "), "{:?}", g.house_guard_calc(&gv, P0));
+    // The inflow by city ends with the inflow now.
+    let inflow = g.player_culture_inflow_calc(P1);
+    assert_eq!(inflow.last().unwrap(), &format!("Inflow: {} a turn.", t(g.player_culture_inflow_now(P1))));
+    assert_eq!(inflow.len(), g.players[P1].cities.len() + 1);
+    // The reach's falloff.
+    use ffh_core::culture::Reach;
+    assert_eq!(g.culture_reach_calc(&Reach { distance: 8, effect: g.culture_distance_effect(8) }), "8 plots: (5 \u{f7} 8)\u{b2} = 39%.");
+    assert_eq!(g.culture_reach_calc(&Reach { distance: 3, effect: 100 }), "3 plots: within 5, 100%.");
+    assert_eq!(g.culture_reach_calc(&Reach { distance: 23, effect: 0 }), "23 plots: beyond 20, 0%.");
+    // The requirement at the attitude now and each better one.
+    let steps = g.house_requirement_steps(h, P1);
+    let lines = g.house_requirement_steps_calc(h, P1);
+    assert_eq!(lines.len(), steps.len() + 1);
+    for ((_, total), line) in steps.iter().zip(&lines) {
+        assert!(line.ends_with(&format!(" = {total}.")), "{line}");
+    }
+    // Without a channel at the House, its gain is 0 and says why.
+    g.player_set_culture_channel(P1, None).expect("stopped");
+    let idle = g.house_courtship_view(h, P1);
+    assert_eq!(g.house_courtship_calc(&idle, P1).gain, vec![format!("Gain: 0 (no Court channel of yours at {}).", g.house_label(h))]);
+}
+
 /// While a Court channel runs at one of its Houses, the liege remembers its caster: a point of
 /// `MEMORY_COURTED_HOUSE` every 5 turns, while the count is below 8.
 #[test]

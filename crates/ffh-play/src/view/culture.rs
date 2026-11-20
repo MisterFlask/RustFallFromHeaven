@@ -32,6 +32,27 @@ fn text(v: &Viewer, s: &str) -> String {
     crate::names::resolve_keys(v.g.d, s).into_owned()
 }
 
+/// A calculation's lines (the rules' `*_calc` reads), names resolved: the tooltip of the number
+/// or line beside it (docs/PLAY_DESIGN.md, "Calculated numbers").
+pub fn calc_lines(v: &Viewer, lines: &[String]) -> Json {
+    Json::Arr(lines.iter().map(|l| Json::from(text(v, l))).collect())
+}
+
+/// How courtship `cv`'s numbers are made, from the human's side (`Game::house_courtship_calc`):
+/// `{requirement, inflow, reach, gain, guard, turn}`, each a list of lines (`inflow` and `guard`
+/// may be empty), the whole tooltip in that order.
+pub fn courtship_calc_json(v: &Viewer, cv: &CourtshipView) -> Json {
+    let c = v.g.house_courtship_calc(cv, v.h);
+    crate::jobj! {
+        "requirement" => calc_lines(v, &c.requirement),
+        "inflow" => calc_lines(v, &c.inflow),
+        "reach" => calc_lines(v, &c.reach),
+        "gain" => calc_lines(v, &c.gain),
+        "guard" => calc_lines(v, &c.guard),
+        "turn" => calc_lines(v, &c.turn),
+    }
+}
+
 /// A civilization's short name: `Sheaim`.
 fn civ(v: &Viewer, p: PlayerId) -> String {
     text(v, &v.g.player_get_civilization_short_description(p))
@@ -120,8 +141,8 @@ fn split_json(v: &Viewer, sp: &SplitView) -> Json {
 }
 
 /// A courtship (`persons::CourtshipView`) with its names: `{house, label, liege, liege_name,
-/// courter, courter_name, favour, gain, reach, guard, requirement, settles, turns, split,
-/// attention, summary, line}`.
+/// courter, courter_name, favour, inflow, gain, reach, guard, requirement, settles, turns, split,
+/// attention, summary, line, calc}` (`calc`: [`courtship_calc_json`]).
 fn courtship_json(v: &Viewer, cv: &CourtshipView) -> Json {
     let g = v.g;
     let h = cv.house;
@@ -133,6 +154,7 @@ fn courtship_json(v: &Viewer, cv: &CourtshipView) -> Json {
         "courter" => cv.courter,
         "courter_name" => civ(v, cv.courter),
         "favour" => cv.favour,
+        "inflow" => cv.inflow,
         "gain" => cv.gain,
         "reach" => reach_json(cv.reach),
         "guard" => cv.guard,
@@ -143,10 +165,12 @@ fn courtship_json(v: &Viewer, cv: &CourtshipView) -> Json {
         "attention" => cv.attention,
         "summary" => text(v, &cv.summary),
         "line" => text(v, &cv.line),
+        "calc" => courtship_calc_json(v, cv),
     }
 }
 
-/// A guard (`persons::GuardView`): `{house, label, guard, reach, inflow, loss, courtships, line}`,
+/// A guard (`persons::GuardView`): `{house, label, guard, reach, inflow, loss, courtships, line,
+/// calc}` (`calc`: how the loss is made, `Game::house_guard_calc`),
 /// each courtship `{courter, courter_name, favour, requirement, gain, settles_with,
 /// settles_without, turns_with, turns_without}` (`requirement`: its total, in culture).
 fn guard_json(v: &Viewer, gv: &GuardView) -> Json {
@@ -178,13 +202,15 @@ fn guard_json(v: &Viewer, gv: &GuardView) -> Json {
         "loss" => gv.loss,
         "courtships" => Json::Arr(courtships),
         "line" => text(v, &gv.line),
+        "calc" => calc_lines(v, &g.house_guard_calc(gv, v.h)),
     }
 }
 
-/// A Spread Religion's effect: `{chance, religion, cities}`, each city `{city, distance, effect,
-/// amount, has, can}` (`amount`: its share of the chance; `has`: it has the religion; `can`: it
-/// could take it).
-fn spread_json(v: &Viewer, caster: PlayerId, religion: Option<ReligionType>, chance: i32, cities: &[ChannelReach]) -> Json {
+/// A Spread Religion's effect: `{chance, religion, cities, calc}`, each city `{city, distance,
+/// effect, amount, has, can}` (`amount`: its share of the chance; `has`: it has the religion;
+/// `can`: it could take it); `calc`: how the chance is made at inflow `inflow`
+/// (`Game::culture_spread_calc`; empty without a religion).
+fn spread_json(v: &Viewer, caster: PlayerId, religion: Option<ReligionType>, inflow: i32, chance: i32, cities: &[ChannelReach]) -> Json {
     let g = v.g;
     let cities: Vec<Json> = cities
         .iter()
@@ -199,7 +225,8 @@ fn spread_json(v: &Viewer, caster: PlayerId, religion: Option<ReligionType>, cha
             }
         })
         .collect();
-    crate::jobj! { "chance" => chance, "religion" => Json::opt_idx(religion), "cities" => Json::Arr(cities) }
+    let calc = religion.map(|r| g.culture_spread_calc(r, inflow, cities)).unwrap_or_default();
+    crate::jobj! { "chance" => chance, "religion" => Json::opt_idx(religion), "cities" => Json::Arr(cities), "calc" => calc_lines(v, &calc) }
 }
 
 /// An order previewed (`Game::culture_channel_preview`): `{order, refusal, inflow, reach, line,
@@ -209,7 +236,7 @@ fn preview_json(v: &Viewer, caster: PlayerId, pv: &ChannelPreview) -> Json {
     match &pv.effect {
         ChannelEffect::Court(cv) => court = courtship_json(v, cv),
         ChannelEffect::Guard(gv) => guard = guard_json(v, gv),
-        ChannelEffect::Spread { chance, cities } => spread = spread_json(v, caster, pv.order.religion, *chance, cities),
+        ChannelEffect::Spread { chance, cities } => spread = spread_json(v, caster, pv.order.religion, pv.inflow, *chance, cities),
         ChannelEffect::None => {}
     }
     crate::jobj! {
@@ -345,7 +372,8 @@ fn aimed_houses(v: &Viewer) -> Vec<Json> {
 /// rule 10).
 /// - `refusal`: why the human may set no channel at all (null: it may);
 /// - `percent`, `inflow`, `base`: the share a channel takes, what the human's cities would divert
-///   now and the culture of the cities that would divert (the head's `half of`);
+///   now and the culture of the cities that would divert (the head's `half of`); `inflow_calc`:
+///   the inflow by city (`Game::player_culture_inflow_calc`, the head's tooltip);
 /// - `channel`, `preview`: the human's channel (null: none) and its full preview;
 /// - `actions`: the chooser (`action_json`);
 /// - `aimed`: the human's courted Houses (`aimed_houses`); `aimed_spread`: the Spread Religion
@@ -374,13 +402,14 @@ pub fn culture(v: &Viewer) -> Json {
             continue;
         }
         let pv = g.culture_channel_preview(ch.caster, &ch.channel.order());
-        let chance = match pv.effect {
-            ChannelEffect::Spread { chance, .. } => chance,
-            _ => 0,
+        let (chance, calc) = match (&pv.effect, ch.channel.religion) {
+            (ChannelEffect::Spread { chance, cities }, Some(r)) => (*chance, g.culture_spread_calc(r, pv.inflow, cities)),
+            _ => (0, Vec::new()),
         };
         let mut j = channel_json(v, &ch);
         j.set("line", text(v, &pv.line));
         j.set("chance", chance);
+        j.set("calc", calc_lines(v, &calc));
         aimed_spread.push(j);
     }
     let others: Vec<Json> = g.culture_channels_between_others(team).iter().filter(|ch| ch.caster != h).map(|ch| channel_json(v, ch)).collect();
@@ -408,6 +437,7 @@ pub fn culture(v: &Viewer) -> Json {
         "percent" => d.defines.culture_channel_percent,
         "inflow" => g.player_culture_inflow_now(h),
         "base" => g.player_culture_channel_base_now(h),
+        "inflow_calc" => calc_lines(v, &g.player_culture_inflow_calc(h)),
         "channel" => channel,
         "preview" => preview,
         "actions" => Json::Arr(actions),
@@ -420,9 +450,10 @@ pub fn culture(v: &Viewer) -> Json {
     }
 }
 
-/// The city query's `cultural` (city `c` of the human): `{rate, diverted, disorder, channel,
+/// The city query's `cultural` (city `c` of the human): `{rate, diverted, calc, disorder, channel,
 /// reminders}`. `rate`: its culture a turn (hundredths); `diverted`: what it diverts a turn now
-/// to its owner's channel (hundredths; 0 without one or in disorder); `channel`: that channel
+/// to its owner's channel (hundredths; 0 without one or in disorder); `calc`: how (`12.8 × 50% =
+/// 6.4`, `Game::city_culture_diverted_calc`; null without a channel); `channel`: that channel
 /// (`{name, action, effect, since_turn}`; null: none); `reminders`: the keyword Channel.
 pub fn city_cultural(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
@@ -442,6 +473,7 @@ pub fn city_cultural(v: &Viewer, c: CityId) -> Json {
     crate::jobj! {
         "rate" => g.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE),
         "diverted" => g.city_culture_diverted_times100(c),
+        "calc" => (owner == v.h && g.players[owner].culture_channel.is_some()).then(|| text(v, &g.city_culture_diverted_calc(c))),
         "disorder" => g.city_is_disorder(c),
         "channel" => channel,
         "reminders" => reminders(g.d, &["KEYWORD_CHANNEL"]),

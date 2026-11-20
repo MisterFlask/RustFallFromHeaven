@@ -247,9 +247,8 @@ pub fn spared(g: &Game, p: PlayerId, liege: PlayerId, keeping: bool) -> Option<&
 /// scaled by the leader's aggression; `None` when the split would not come within
 /// [`COURT_HORIZON`] turns or would take nothing.
 fn court_value(g: &Game, ctx: &Ctx, h: HouseId) -> Option<i64> {
-    let reach = g.culture_house_reach(ctx.p, h)?;
-    let gain = (ctx.inflow as i64 * reach.effect as i64 / 100) as i32;
-    let cv = g.house_courtship_at(h, ctx.p, gain);
+    g.culture_house_reach(ctx.p, h)?;
+    let cv = g.house_courtship_at(h, ctx.p, ctx.inflow);
     let turns = cv.turns.filter(|&t| t <= COURT_HORIZON)?;
     let going = cv.split.map(|s| s.going).unwrap_or_default();
     if going.is_empty() {

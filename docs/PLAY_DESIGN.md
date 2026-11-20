@@ -650,6 +650,32 @@ every entity's rules text, and list its distinctive fragments in `tests/keywords
 (the test fails until you do). A keyword is worth adding only for a rule that many entities share
 word for word and that fits in a short reminder.
 
+### 4.9 Calculated numbers
+
+A number the rules calculate shows how it is made in a tooltip (the owner's rule, 2026-11-20:
+"tooltips are how you want to expose that information"). The screen shows the result; the
+tooltip shows its parts and how they combine, with the values in play, one line each, bare:
+`Inflow: your cities' culture 11.0 × 50% = 5.5 a turn.`, `Reach: 8 plots: (5 ÷ 8)² = 39%.`,
+`Gain: 5.5 × 39% = 2.1 a turn.`, `Next liege turn: 5.3 + 2.1 − 0.0 = 7.4, less 5%: 7.0.` A number
+made of several parts that are themselves calculated shows each (a courtship's requirement, its
+inflow, reach, gain, guard and next turn); a sum of many parts uses a parts list (`infotips.js`
+`partsList`: a city's mood, the gold rate).
+
+The rules write the lines, next to the formula they explain, so the two cannot drift apart: the
+`*_calc` reads of `ffh-core` (`Requirement::formula`, `culture_reach_calc`,
+`player_culture_inflow_calc`, `house_courtship_calc`, `house_guard_calc`,
+`house_requirement_steps_calc`, `culture_spread_calc`). A view sends them as a `calc` field beside
+the number or line it explains (a list of lines; a courtship's `{requirement, inflow, reach, gain,
+guard, turn}`), and `app/calc.js` draws them: `withCalc(el, calc)` makes the tooltip, shown on
+hover, focus or a tap (a touch screen has no hover), and marks the text with a dotted underline.
+The client does no arithmetic of its own. A calculation's lines are rules text: they name a
+keyword's quantities (the world culture unit) but do not restate its rule (4.8).
+
+Built for the culture and courting numbers (the Culture screen, the House cards, the trade table
+with a House, the diplomacy list, the city screen's Culture section, the Court's attention line).
+The rest of the game's calculated numbers are on the work list (TODO.md, "Calculated numbers:
+the other screens").
+
 ---
 
 ## 5. Front-end features

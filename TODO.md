@@ -19,6 +19,42 @@ wants done next into this file.
 - Other: "Next steps" in docs/PORTING.md, "Not in this change" in docs/SUPPLY.md, the "Not built"
   notes in docs/NAVAL.md
 
+## Calculated numbers: the other screens
+
+The owner's rule (2026-11-20; docs/PLAY_DESIGN.md 4.9): a number the rules calculate shows its
+calculation in a tooltip. Built for culture and courting. A survey of the client (2026-11-20)
+found these without one, most looked at first (file:function in `crates/ffh-play/assets/app/`):
+
+- **Top bar** (hud.js `renderTop`): the turns to finish research (no research rate shown); the
+  score % (the tip names "average of your shares" without the three shares; no tip at all in
+  diplo.js and the game-over screen); the Armageddon counter (the tip lists the deck, not what
+  raised it).
+- **City screen** (city.js): production a turn (`summaryRow`, `productionView`: the payload's
+  `base` and `modifier` are sent and unused); build and production turns; turns to grow; the food
+  grown; gold, research and espionage (`commerceView`: parts inline, the modifier never combined);
+  upkeep and defence (`growthView`); great people progress and rate; hurry cost; build cost (the
+  tier and national percentages only as words); plot yields; work crews; outpost cost. The iso
+  city panel's rows (isoui.js `renderCityPanel`) and the plates' production turns (map.js
+  `drawCities`, iso.js `drawCityLabels`).
+- **Units and combat** (units.js): a plot's yields, defence and move cost; path turns and supply
+  cost; the retreat chance and how the odds come from the two strengths (`combatLines` explains
+  the modifiers only); XP needed; upgrade price; action and build turns.
+- **Research** (empire.js): research a turn; turns per tech; tech cost (the multipliers are
+  explained, not the cost); doctrine research left; finances' research.
+- **Civics and religion** (empire.js): each civic's upkeep, the total, anarchy turns.
+- **Diplomacy and trade** (diplo.js): the AI's value of techs, peace and war (`valueTip`, words
+  only); total offered and requested.
+- **Armies, governors, Houses, crusades, naval, rituals, battles**: an army's supply cost against
+  its budget (armies.js); fleet wear; march, training and requisition turns; a role's suitability
+  (governors.js) and the empire-order picker's turns and cost; tribute at each rate (persons.js
+  `tributeBlock`: the House's commerce × rate); a crusade's obligation, lendable strength, credit
+  and spoils (crusade.js); a sea's side strength and port range (seas.js, sea.js); a ritual's cost
+  and next cost (ritual_rows.js); a battle's ATK and DEF and damage per hit (battle_plan.js,
+  battle_log.js).
+
+Most need the parts added to their payloads (`src/view/*.rs`) from a `*_calc` read in `ffh-core`
+next to the formula; the city screen's production can be done from what the payload already sends.
+
 ## Trace the fourth build's research fall
 
 The fourth build's guardrail (docs/AI_LOG.md, "Courting is a cultural channel") found the world's

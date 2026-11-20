@@ -129,8 +129,13 @@ fn a_rival_houses_line_states_its_state_and_courtship() {
     let o = r.get("house_offer").expect("a rival's House states its line");
     assert_eq!(o.get("state").and_then(Json::as_str), Some(s.g.house_state(nh.id).name()));
     assert_eq!(o.get("courting").and_then(Json::as_str).map(str::to_string), s.g.house_courting_line(nh.id, st.human));
-    let courted = strs(r.get("house").unwrap(), "courted");
+    let courted: Vec<&Json> = r.get("house").unwrap().get("courted").and_then(Json::as_arr).expect("courted").iter().collect();
     assert_eq!(courted.len(), s.g.house_courtships(nh.id).iter().filter(|c| c.courter != st.human).count(), "{courted:?}");
+    for c in &courted {
+        assert!(c.get("line").and_then(Json::as_str).is_some_and(|l| l.starts_with("Courted by the ")), "{c:?}");
+        let turn = c.get("calc").and_then(|k| k.get("turn")).and_then(Json::as_arr).expect("its calculation");
+        assert!(turn.first().and_then(Json::as_str).is_some_and(|l| l.starts_with("Next liege turn: ")), "{c:?}");
+    }
     assert!(o.get("courting").and_then(Json::as_str).is_some(), "the human courts it (the stage)");
     // The human's own Houses carry no line (their state is the record's, for the liege).
     let own = st.houses.iter().find(|x| x.role == "furious").unwrap();

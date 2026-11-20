@@ -262,7 +262,9 @@ fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>,
 /// `house_courting_line`; `You do not court House Aldric.` while `courts` is false); `requirement`:
 /// that courtship's requirement against its leader's attitude toward the human (`Its leader's
 /// attitude toward you: Cautious. Requirement: 168; at Pleased 120; at Friendly 72.`: what a gift
-/// that raises the attitude brings); `reminders`: the Court keyword's. Null for the human's own.
+/// that raises the attitude brings); `courting_calc` and `requirement_calc`: how their numbers are
+/// made (docs/PLAY_DESIGN.md, "Calculated numbers"); `reminders`: the Court keyword's. Null for the
+/// human's own.
 fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
     let g = v.g;
     let d = g.d;
@@ -285,7 +287,9 @@ fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
         "takes" => (!own).then(|| format!("{label} takes gifts of gold and resources and gives nothing.")),
         "courts" => courting.is_some(),
         "courting" => if own { None } else { Some(courting.unwrap_or_else(|| format!("You do not court {label}."))) },
+        "courting_calc" => if !own && courting.is_some() { crate::view::culture::courtship_calc_json(v, &g.house_courtship_view(hh, v.h)) } else { Json::Null },
         "requirement" => (!own).then(|| crate::view::persons::requirement_line(g, hh, v.h)),
+        "requirement_calc" => if own { Json::Null } else { crate::view::culture::calc_lines(v, &g.house_requirement_steps_calc(hh, v.h)) },
         "reminders" => if own { Json::Arr(Vec::new()) } else { crate::view::keywords::reminders(d, court) },
     }
 }

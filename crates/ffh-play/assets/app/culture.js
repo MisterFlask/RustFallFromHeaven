@@ -20,6 +20,7 @@ import { run } from "./commands.js";
 import { infoTip } from "./infotips.js";
 import { addHelp } from "./help.js";
 import { keywordChips, remindersNode } from "./keywords.js";
+import { withCalc } from "./calc.js";
 
 // ---------------------------------------------------------------------------------------------
 // The help topic: where things are; the rules are the keywords' reminders (from the data).
@@ -238,9 +239,14 @@ function cityLinks(m, cities) {
 }
 
 /** `[label, value]` rows as a two-column table (`cls` its class). */
-function rowsTable(cls, rows) {
-  return h(`table.${cls}`, h("tbody", rows.map(([k, v]) => h("tr", h("th", { scope: "row" }, k), h("td", v)))));
+/** A table of `[label, value]` rows; `calcOf(label)`: the `[calc, parts]` of a value's tooltip
+ *  (calc.js), or null. */
+function rowsTable(cls, rows, calcOf = () => null) {
+  return h(`table.${cls}`, h("tbody", rows.map(([k, v]) => h("tr", h("th", { scope: "row" }, k), withCalc(h("td", v), ...(calcOf(k) ?? [null]))))));
 }
+
+/** The parts of a courtship's calculation each of its rows' tooltips shows (`courtRows`). */
+const ROW_PARTS = { Reach: ["reach"], Gain: ["inflow", "reach", "gain"], Guard: ["guard"], "Settles near": ["turn"], Split: ["turn"] };
 
 /** The requirement's table: its parts as rows, the formula last across both columns (`Requirement:
  *  (3 + 6 − 2 × 1) × 24 = 168`: it stays whole on a phone). */
@@ -278,7 +284,8 @@ function courtView(m, cv) {
           h("p.culture-split", "Would go: ", sp.going.length ? cityLinks(m, sp.going) : "none", "."),
           sp.held.length ? h("p.culture-held", "Held: ", cityLinks(m, sp.held), ".") : null,
         ];
-  return h("div.culture-court", { "data-house": cv.house }, favourBarView(cv.favour, cv.requirement.total, cv.attention), requirementTable(requirementRows(cv, mePlayer())), rowsTable("culture-facts", courtRows(cv)), cities);
+  const calcOf = (k) => (ROW_PARTS[k] ? [cv.calc, ROW_PARTS[k]] : null);
+  return h("div.culture-court", { "data-house": cv.house }, favourBarView(cv.favour, cv.requirement.total, cv.attention), requirementTable(requirementRows(cv, mePlayer())), rowsTable("culture-facts", courtRows(cv), calcOf), cities);
 }
 
 /** A guard cell's two parts, each kept whole when the cell wraps ("near 40;" "no split"). */
@@ -291,7 +298,7 @@ function cellParts(text) {
 /** A Guard preview: what it takes from each courtship, and each courter's favour, settling and
  *  split with the guard and without it. */
 function guardView(gv) {
-  const head = [h("p.culture-loss", guardLossLine(gv)), rowsTable("culture-facts", [["Reach", reachText(gv.reach)]])];
+  const head = [withCalc(h("p.culture-loss", guardLossLine(gv)), gv.calc), rowsTable("culture-facts", [["Reach", reachText(gv.reach)]])];
   if (!gv.courtships.length) return h("div.culture-guard", head, h("p.dim", `No civilization courts ${gv.label}.`));
   return h(
     "div.culture-guard",
@@ -313,7 +320,7 @@ function spreadView(m, sp, line) {
   const rows = [...sp.cities].sort((a, b) => b.amount - a.amount || a.distance - b.distance);
   return h(
     "div.culture-spread",
-    h("p.culture-chance", line),
+    withCalc(h("p.culture-chance", line), sp.calc),
     rows.length
       ? h(
           "table.culture-reach",
@@ -348,7 +355,7 @@ export function cultureView(c, reload) {
   return h(
     "div.section.culture",
     h("h4", "Culture"),
-    h("p.culture-line", cityCultureLine(k)),
+    withCalc(h("p.culture-line", cityCultureLine(k)), k.calc ? [k.calc] : null),
     h("div.culture-links", h("button.link.culture-open", { title: "Your civilization's channel [F8]", onclick: open }, "Culture screen"), keywordChips(k.reminders)),
   );
 }
@@ -392,7 +399,7 @@ async function setChannel(order, reload) {
 
 function screenParts(m, r, reload) {
   const [line1, line2] = headLines(r);
-  const head = h("div.culture-head", h("p.culture-channel-line", line1), h("p.culture-inflow", { class: r.refusal && !r.channel ? "dim" : "" }, line2));
+  const head = h("div.culture-head", h("p.culture-channel-line", line1), withCalc(h("p.culture-inflow", { class: r.refusal && !r.channel ? "dim" : "" }, line2), r.refusal && !r.channel ? null : r.inflow_calc));
   const ours = r.channel && r.preview
     ? [
         h("h4", "Your channel"),
@@ -460,7 +467,7 @@ function chooserParts(m, r, reload, draw) {
     "div.culture-targets",
     { role: "radiogroup", "aria-label": "Target" },
     options.map((o) => [
-      h(
+      withCalc(h(
         "button.culture-target",
         {
           class: [o.target.player === pick.target ? "on" : "", o.refusal ? "refused" : "", o.current ? "current" : ""].filter(Boolean).join(" "),
@@ -472,7 +479,7 @@ function chooserParts(m, r, reload, draw) {
         },
         h("span.target-name", o.label),
         h("span.target-line", { class: o.refusal ? "warn" : "dim" }, o.current ? `Your channel. ${o.line}` : (o.refusal ?? o.line)),
-      ),
+      ), o.refusal ? null : (o.preview?.court?.calc ?? o.preview?.guard?.calc ?? o.preview?.spread?.calc ?? null)),
       o === sel ? picked : null,
     ]),
   );
@@ -486,20 +493,20 @@ function aimedView(m, r, reload) {
   const houses = r.aimed.map((x) => {
     const lines = h(
       "ul.culture-courtships",
-      x.courtships.map((cv) => h("li.courtship", { class: cv.attention ? "attention" : "", "data-courter": cv.courter, title: cv.attention ? "Past two thirds of the requirement" : null }, cv.attention ? h("span.attention-mark", { "aria-label": "Needs attention" }, "! ") : null, cv.line)),
+      x.courtships.map((cv) => h("li.courtship", { class: cv.attention ? "attention" : "", "data-courter": cv.courter }, cv.attention ? h("span.attention-mark", { "aria-label": "Needs attention", title: "Past two thirds of the requirement" }, "! ") : null, withCalc(h("span.courtship-line", cv.line), cv.calc))),
     );
     const guard = x.guarded
-      ? h("p.culture-guarded-line", `Your channel guards it. ${guardLossLine(x.guard)}`)
+      ? withCalc(h("p.culture-guarded-line", `Your channel guards it. ${guardLossLine(x.guard)}`), x.guard.calc)
       : x.guard_order
         ? h(
             "div.culture-guard-offer",
             h("button.small.culture-guard", { "data-house": x.house, disabled: !!x.guard_refusal, title: x.guard_refusal ?? null, onclick: () => setChannel(x.guard_order, reload) }, r.channel ? `Guard ${x.label} (replaces ${r.channel.name})` : `Guard ${x.label}`),
-            h("p.culture-guard-preview", { class: x.guard_refusal ? "warn" : "" }, x.guard_refusal ?? guardButtonLine(x.guard)),
+            withCalc(h("p.culture-guard-preview", { class: x.guard_refusal ? "warn" : "" }, x.guard_refusal ?? guardButtonLine(x.guard)), x.guard_refusal ? null : x.guard.calc),
           )
         : null;
     return h("div.culture-aimed-house", { "data-house": x.house }, h("div.culture-aimed-head", h("b", x.label)), lines, guard);
   });
-  const spreads = r.aimed_spread.length ? h("ul.culture-aimed-spread", r.aimed_spread.map((ch) => h("li", { class: ch.hostile ? "hostile" : "" }, `${ch.caster_name}: ${ch.name}, since turn ${ch.since_turn}. ${ch.line}`))) : null;
+  const spreads = r.aimed_spread.length ? h("ul.culture-aimed-spread", r.aimed_spread.map((ch) => withCalc(h("li", { class: ch.hostile ? "hostile" : "" }, `${ch.caster_name}: ${ch.name}, since turn ${ch.since_turn}. ${ch.line}`), ch.calc))) : null;
   if (!houses.length && !spreads) return h("p.dim.culture-aimed", "No channel is aimed at you.");
   return h("div.culture-aimed", houses, spreads);
 }

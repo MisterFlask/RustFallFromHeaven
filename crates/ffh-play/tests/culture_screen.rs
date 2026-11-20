@@ -66,6 +66,8 @@ fn the_culture_screen_reads_the_rules() {
     assert_eq!(int(&r, "inflow"), g.player_culture_inflow_now(h) as i64);
     assert_eq!(int(&r, "base"), g.player_culture_channel_base_now(h) as i64);
     assert_eq!(int(&r, "percent"), g.d.defines.culture_channel_percent as i64);
+    let inflow_calc: Vec<String> = arr(&r, "inflow_calc").iter().map(|l| l.as_str().expect("a line").to_string()).collect();
+    assert_eq!(inflow_calc, g.player_culture_inflow_calc(h), "the head's tooltip: the inflow by city");
     let keys: Vec<&str> = arr(&r, "reminders").iter().map(|k| s_of(k, "key")).collect();
     assert_eq!(keys, ["KEYWORD_CHANNEL", "KEYWORD_COURT", "KEYWORD_GUARD"]);
 
@@ -89,6 +91,12 @@ fn the_culture_screen_reads_the_rules() {
         let sp = cv.split.clone().expect("a split view");
         assert_eq!(arr(split, "going").iter().map(|c| int(c, "id")).collect::<Vec<_>>(), sp.going.iter().map(|c| c.0 as i64).collect::<Vec<_>>());
         assert_eq!(split.get("whole").and_then(Json::as_bool), Some(sp.whole));
+        // How its numbers are made (docs/PLAY_DESIGN.md 4.9): the rules' lines, as they are.
+        let calc = obj(court, "calc");
+        let lines = |k: &str| arr(calc, k).iter().map(|l| l.as_str().expect("a line").to_string()).collect::<Vec<_>>();
+        let ffh_core::culture::ChannelEffect::Court(pcv) = g.culture_channel_preview(h, &ch.order()).effect else { panic!("a courtship") };
+        let want = g.house_courtship_calc(&pcv, h);
+        assert_eq!((lines("requirement"), lines("inflow"), lines("reach"), lines("gain"), lines("guard"), lines("turn")), (want.requirement, want.inflow, want.reach, want.gain, want.guard, want.turn));
     } else {
         assert!(st.hand_set.iter().any(|l| l.starts_with("the human's Court of the neighbour's House refused")), "the stage lists the refusal");
     }

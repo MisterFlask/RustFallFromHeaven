@@ -27,14 +27,14 @@
 //!
 //! The read API: [`Game::house_courtships`] (every courtship of a House: favour, requirement and
 //! its parts, where it settles, the turns to the split, the cities that would go and those the
-//! hold contest keeps), [`Game::house_courtship_at`] (a courtship at a given gain: the previews),
+//! hold contest keeps), [`Game::house_courtship_at`] (a courtship at a given inflow: the previews),
 //! [`Game::house_guard_view`] and [`Game::house_guard_with`] (a guard's effect on each courter),
 //! [`Game::house_courting_line`] (the courter's line in its trade table with the House).
 
 use ffh_data::*;
 
 use super::*;
-use crate::culture::{ChannelTarget, Reach};
+use crate::culture::{format_tenths, ChannelTarget, Reach};
 use crate::log::Audience;
 
 /// A House's favour toward one courter (`House::favour`).
@@ -104,6 +104,9 @@ pub struct CourtshipView {
     pub courter: PlayerId,
     /// Its favour now, hundredths of culture.
     pub favour: i32,
+    /// The courter's inflow behind the gain (hundredths a turn; 0 without a Court channel at the
+    /// House).
+    pub inflow: i32,
     /// What its Court channel adds a turn at the inflow now (hundredths; 0 without one at the
     /// House), and its reach.
     pub gain: i32,
@@ -153,6 +156,56 @@ pub struct GuardView {
     pub courtships: Vec<GuardedCourtship>,
     /// `Guarded: −6 a turn to each courtship.`
     pub line: String,
+}
+
+/// How a courtship's numbers are made, as its tooltip shows them ([`Game::house_courtship_calc`];
+/// docs/PLAY_DESIGN.md, "Calculated numbers"): each part a few lines, in this order.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct CourtshipCalc {
+    /// The requirement's formula and its parts ([`Game::house_requirement_calc`]).
+    pub requirement: Vec<String>,
+    /// The courter's inflow ([`Game::culture_inflow_line`]; empty without a Court channel).
+    pub inflow: Vec<String>,
+    /// The reach from the courter's nearest city ([`Game::culture_reach_calc`]).
+    pub reach: Vec<String>,
+    /// The gain: the inflow times the reach.
+    pub gain: Vec<String>,
+    /// The guard, if one runs ([`Game::house_guard_calc`]).
+    pub guard: Vec<String>,
+    /// The next liege turn's favour, and where the favour goes at these inflows.
+    pub turn: Vec<String>,
+}
+
+impl CourtshipCalc {
+    /// Every line, in order: the whole courtship's tooltip.
+    pub fn lines(&self) -> Vec<String> {
+        [&self.requirement, &self.inflow, &self.reach, &self.gain, &self.guard, &self.turn].into_iter().flatten().cloned().collect()
+    }
+}
+
+/// The name of step `a` on the requirement's scale of attitudes.
+fn attitude_step_name(a: i32) -> &'static str {
+    match a {
+        i32::MIN..=-2 => "Furious",
+        -1 => "Annoyed",
+        0 => "Cautious",
+        1 => "Pleased",
+        _ => "Friendly",
+    }
+}
+
+/// `+1`, `−2`, `0`.
+fn signed_step(n: i32) -> String {
+    match n {
+        1.. => format!("+{n}"),
+        0 => "0".into(),
+        _ => format!("\u{2212}{}", -n),
+    }
+}
+
+/// `3`, `−2`.
+fn minus_int(n: i32) -> String {
+    if n < 0 { format!("\u{2212}{}", -n) } else { n.to_string() }
 }
 
 /// The step of an attitude on the requirement's scale: Furious −2, Annoyed −1, Cautious 0,
@@ -314,9 +367,11 @@ impl Game {
         out
     }
 
-    /// `courter`'s courtship of House `h` at a gain of `gain` a turn (hundredths), the guard as it
-    /// runs at the inflow now (pure): the previews read it with the gain an order would have.
-    pub fn house_courtship_at(&self, h: HouseId, courter: PlayerId, gain: i32) -> CourtshipView {
+    /// `courter`'s courtship of House `h` at an inflow of `inflow` a turn (hundredths; its gain is
+    /// that inflow at the courter's reach), the guard as it runs at the inflow now (pure): the
+    /// previews read it with the inflow an order would have.
+    pub fn house_courtship_at(&self, h: HouseId, courter: PlayerId, inflow: i32) -> CourtshipView {
+        let gain = self.inflow_at(courter, h, inflow);
         let favour = self.house_favour(h, courter);
         let guard = self.house_guard_loss(h, true);
         let requirement = self.house_requirement(h, courter);
@@ -327,12 +382,13 @@ impl Game {
         let summary = self.courtship_summary(favour, gain, requirement.total, settles, turns, split.as_ref());
         let by = self.player_get_civilization_short_description(courter);
         let line = format!("Courted by the {by}: {}{}", summary[..1].to_lowercase(), &summary[1..]);
-        CourtshipView { house: h, courter, favour, gain, reach: self.culture_house_reach(courter, h), guard, requirement, settles, turns, split, attention, summary, line }
+        CourtshipView { house: h, courter, favour, inflow, gain, reach: self.culture_house_reach(courter, h), guard, requirement, settles, turns, split, attention, summary, line }
     }
 
     /// `courter`'s courtship of House `h` as it runs (its Court channel's gain at the inflow now).
     pub fn house_courtship_view(&self, h: HouseId, courter: PlayerId) -> CourtshipView {
-        self.house_courtship_at(h, courter, self.house_court_gain(h, courter, true))
+        let inflow = if self.channel_at(courter, h, CultureEffect::Court) { self.player_culture_inflow_now(courter) } else { 0 };
+        self.house_courtship_at(h, courter, inflow)
     }
 
     /// Every courtship of House `h` ([`Game::house_courters`]), in player order.
@@ -394,6 +450,80 @@ impl Game {
     pub fn house_guard_view(&self, h: HouseId) -> Option<GuardView> {
         let liege = self.houses.get(h)?.owner;
         self.channel_at(liege, h, CultureEffect::Guard).then(|| self.house_guard_with(h, self.player_culture_inflow_now(liege)))
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // The calculations, as the tooltips show them (docs/PLAY_DESIGN.md, "Calculated numbers")
+    // -----------------------------------------------------------------------------------------
+
+    /// `you` for `viewer`, else `the Sheaim`.
+    fn whom(&self, p: PlayerId, viewer: PlayerId) -> String {
+        if p == viewer { "you".into() } else { format!("the {}", self.player_get_civilization_short_description(p)) }
+    }
+
+    /// Requirement `r` of `courter`'s courtship as its calculation, from `viewer`'s side:
+    /// `Requirement: (0 + 6 − 2 × 1) × 2 = 8.`, `Loyalty 0; attitude toward you: Pleased (+1);
+    /// world culture unit 2.`
+    pub fn house_requirement_calc(&self, r: &Requirement, courter: PlayerId, viewer: PlayerId) -> Vec<String> {
+        vec![
+            format!("Requirement: {}.", r.formula()),
+            format!("Loyalty {}; attitude toward {}: {} ({}); world culture unit {}.", minus_int(r.loyalty), self.whom(courter, viewer), attitude_step_name(r.attitude), signed_step(r.attitude), r.unit),
+        ]
+    }
+
+    /// The requirement of `courter`'s courtship of House `h` at its leader's attitude now and at
+    /// each better one up to Friendly ([`Game::house_requirement_steps`]), as calculations:
+    /// `Cautious: (3 + 6 − 2 × 0) × 24 = 216.`, `Pleased: (3 + 6 − 2 × 1) × 24 = 168.`, ...; then
+    /// `Loyalty 3; world culture unit 24.`
+    pub fn house_requirement_steps_calc(&self, h: HouseId, courter: PlayerId) -> Vec<String> {
+        let r = self.house_requirement(h, courter);
+        let mut out: Vec<String> = (r.attitude.max(-2)..=2).map(|a| format!("{}: {}.", attitude_step_name(a), Requirement { total: r.at(a), attitude: a, ..r }.formula())).collect();
+        out.push(format!("Loyalty {}; world culture unit {}.", minus_int(r.loyalty), r.unit));
+        out
+    }
+
+    /// How guard `gv` comes to take what it takes, from `viewer`'s side: the liege's inflow, the
+    /// reach and their product (`Guard: 5.5 × 100% = 5.5 a turn from each courtship.`).
+    pub fn house_guard_calc(&self, gv: &GuardView, viewer: PlayerId) -> Vec<String> {
+        let mut out = vec![self.culture_inflow_line(gv.guard, viewer, gv.inflow)];
+        if let Some(r) = gv.reach {
+            out.push(format!("Reach: {}", self.culture_reach_calc(&r)));
+        }
+        out.push(format!("Guard: {} \u{d7} {}% = {} a turn from each courtship.", format_tenths(gv.inflow), gv.reach.map_or(0, |r| r.effect), format_tenths(gv.loss)));
+        out
+    }
+
+    /// How courtship `cv`'s numbers are made, from `viewer`'s side ([`CourtshipCalc`]): the
+    /// requirement, the gain (`Gain: 5.5 × 39% = 2.1 a turn.`), the guard, the next liege turn
+    /// (`Next liege turn: 5.3 + 2.1 − 0.0 = 7.4, less 5%: 7.0.`) and where the favour goes.
+    pub fn house_courtship_calc(&self, cv: &CourtshipView, viewer: PlayerId) -> CourtshipCalc {
+        let t = format_tenths;
+        let requirement = self.house_requirement_calc(&cv.requirement, cv.courter, viewer);
+        let reach = cv.reach.map(|r| format!("Reach: {}", self.culture_reach_calc(&r))).into_iter().collect();
+        let (mut inflow, mut gain) = (Vec::new(), Vec::new());
+        if cv.inflow > 0 || self.channel_at(cv.courter, cv.house, CultureEffect::Court) {
+            inflow.push(self.culture_inflow_line(cv.courter, viewer, cv.inflow));
+            gain.push(format!("Gain: {} \u{d7} {}% = {} a turn.", t(cv.inflow), cv.reach.map_or(0, |r| r.effect), t(cv.gain)));
+        } else {
+            let whose = if cv.courter == viewer { "yours".to_string() } else { format!("the {}'s", self.player_get_civilization_short_description(cv.courter)) };
+            gain.push(format!("Gain: 0 (no Court channel of {whose} at {}).", self.house_label(cv.house)));
+        }
+        let guard = if cv.guard > 0 { self.house_guard_view(cv.house).map(|gv| self.house_guard_calc(&gv, viewer)).unwrap_or_default() } else { Vec::new() };
+        let fade = self.d.defines.culture_favour_fade_percent;
+        let raw = cv.favour + cv.gain - cv.guard;
+        let floor = if raw < 0 { " (not below 0)" } else { "" };
+        let next = self.favour_step(cv.favour, cv.gain, cv.guard);
+        let need = cv.requirement.total;
+        let mut turn = vec![format!("Next liege turn: {} + {} \u{2212} {} = {}{floor}, less {fade}%: {}.", t(cv.favour), t(cv.gain), t(cv.guard), t(raw.max(0)), t(next))];
+        turn.push(match cv.turns {
+            _ if cv.favour >= 100 * need => format!("At its requirement of {need}: the split comes in the liege's next turn."),
+            Some(1) => format!("It reaches {need} in the liege's next turn."),
+            Some(n) => format!("At these inflows it reaches {need} in ~{n} turns."),
+            None if cv.gain > cv.guard => format!("At these inflows it settles near {}, below {need}: there the {fade}% equals what is added.", cv.settles / 100),
+            None if cv.gain > 0 => "It fades: the guard takes at least the gain.".into(),
+            None => "It fades: nothing is added.".into(),
+        });
+        CourtshipCalc { requirement, inflow, reach, gain, guard, turn }
     }
 
     /// The courter's line in its trade table with House `h`: `Your courtship of House Aldric:

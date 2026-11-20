@@ -28,6 +28,7 @@ import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
 import { previewList } from "./persons_lines.js";
 import { stateMark, houseShield, openCourt, openHouse } from "./persons.js";
 import { keywordChips } from "./keywords.js";
+import { withCalc } from "./calc.js";
 
 /** The players screen. */
 export async function openDiplomacy() {
@@ -53,8 +54,8 @@ export async function openDiplomacy() {
         const who = house ? [houseLine(house), houseState(p)] : `${dname("CivilizationType", p.civ)} · team ${p.team}`;
         // Its courtships (docs/PERSONS.md, "The fourth build", rule 1: a channel is in the open),
         // a line each under its line; another's House, your courtship of it first.
-        const yours = !ownHouse && p.house_offer?.courting ? [h("div.house-courting-row", p.house_offer.courting)] : [];
-        const courted = [...yours, ...(house?.courted ?? []).map((l) => h("div.house-courted", l))];
+        const yours = !ownHouse && p.house_offer?.courting ? [withCalc(h("div.house-courting-row", p.house_offer.courting), p.house_offer.courting_calc)] : [];
+        const courted = [...yours, ...(house?.courted ?? []).map((c) => withCalc(h("div.house-courted", c.line), c.calc))];
         const attitude = ownHouse && house.state
           ? h("td", { tip: () => houseAttitudeTip(p) }, stateMark(house.state, house.turns))
           : h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-");
@@ -508,8 +509,8 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     t.house && !t.house.own
       ? h(
           "div.house-courting-block",
-          h("p.house-courting", { "data-courts": t.house.courts ? "1" : "0" }, t.house.courting, " ", h("button.link.small", { "data-house-card": t.house.id, onclick: () => openHouse(t.house.id) }, "House card")),
-          h("p.house-requirement", t.house.requirement),
+          h("p.house-courting", { "data-courts": t.house.courts ? "1" : "0" }, withCalc(h("span.house-courting-line", t.house.courting), t.house.courting_calc), " ", h("button.link.small", { "data-house-card": t.house.id, onclick: () => openHouse(t.house.id) }, "House card")),
+          withCalc(h("p.house-requirement", t.house.requirement), t.house.requirement_calc),
         )
       : null;
   const tradesThrough = () =>

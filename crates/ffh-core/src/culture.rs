@@ -675,8 +675,7 @@ impl Game {
         let effect = match (self.culture_effect(o.action), o.target) {
             (CultureEffect::Court, ChannelTarget::House(h)) if self.houses.contains(h) => {
                 reach = self.culture_house_reach(p, h);
-                let gain = (inflow as i64 * reach.map_or(0, |r| r.effect) as i64 / 100) as i32;
-                let cv = self.house_courtship_at(h, p, gain);
+                let cv = self.house_courtship_at(h, p, inflow);
                 line = cv.summary.clone();
                 ChannelEffect::Court(cv)
             }
@@ -755,6 +754,96 @@ impl Game {
     pub(crate) fn culture_city_names(&self, cities: &[CityId]) -> String {
         and_list(&cities.iter().map(|&c| self.d.text.name(&self.cities[c].name).to_string()).collect::<Vec<_>>())
     }
+
+    // -----------------------------------------------------------------------------------------
+    // The calculations, as the tooltips show them (docs/PLAY_DESIGN.md, "Calculated numbers")
+    // -----------------------------------------------------------------------------------------
+
+    /// How reach `r` comes from its distance ([`Game::culture_distance_effect`]): `8 plots: (5 ÷
+    /// 8)² = 39%.`, `3 plots: within 5, 100%.`, `23 plots: beyond 20, 0%.`
+    pub fn culture_reach_calc(&self, r: &Reach) -> String {
+        let defines = &self.d.defines;
+        let full = defines.culture_channel_full_range.max(1);
+        let plots = if r.distance == 1 { "1 plot".to_string() } else { format!("{} plots", r.distance) };
+        if r.distance > defines.culture_channel_range {
+            format!("{plots}: beyond {}, 0%.", defines.culture_channel_range)
+        } else if r.distance <= full {
+            format!("{plots}: within {full}, 100%.")
+        } else {
+            format!("{plots}: ({full} \u{f7} {})\u{b2} = {}%.", r.distance, r.effect)
+        }
+    }
+
+    /// Where player `p`'s inflow now ([`Game::player_culture_inflow_now`]) comes from, a line a
+    /// city: `Ventry: 6.0 × 50% = 3.0.`, `Idris: 4.0, in disorder: 0.`; then `Inflow: 5.5 a turn.`
+    pub fn player_culture_inflow_calc(&self, p: PlayerId) -> Vec<String> {
+        let pct = self.d.defines.culture_channel_percent;
+        let mut out: Vec<String> = self
+            .culture_cities_of(p)
+            .map(|c| {
+                let name = self.d.text.name(&self.cities[c].name);
+                let rate = self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE).max(0);
+                if self.city_is_disorder(c) {
+                    format!("{name}: {}, in disorder: 0.", format_tenths(rate))
+                } else {
+                    format!("{name}: {} \u{d7} {pct}% = {}.", format_tenths(rate), format_tenths(self.city_culture_diverted_if_channelling(c)))
+                }
+            })
+            .collect();
+        out.push(format!("Inflow: {} a turn.", format_tenths(self.player_culture_inflow_now(p))));
+        out
+    }
+
+    /// Player `p`'s inflow now from its cities' culture, as a calculation's line, from `viewer`'s
+    /// side (`your cities'`, `the Sheaim's cities'`): `Inflow: your cities' culture 11.0 × 50% =
+    /// 5.5 a turn.`
+    pub fn culture_inflow_line(&self, p: PlayerId, viewer: PlayerId, inflow: i32) -> String {
+        let whose = if p == viewer { "your cities'".to_string() } else { format!("the {}'s cities'", self.player_get_civilization_short_description(p)) };
+        let base = self.player_culture_channel_base_now(p);
+        format!("Inflow: {whose} culture {} \u{d7} {}% = {} a turn.", format_tenths(base), self.d.defines.culture_channel_percent, format_tenths(inflow))
+    }
+
+    /// What city `c` diverts to its owner's channel a turn, as a calculation: `12.8 × 50% = 6.4`
+    /// (`in disorder: 0`).
+    pub fn city_culture_diverted_calc(&self, c: CityId) -> String {
+        let rate = self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE).max(0);
+        if self.city_is_disorder(c) {
+            return format!("{}, in disorder: 0", format_tenths(rate));
+        }
+        format!("{} \u{d7} {}% = {}", format_tenths(rate), self.d.defines.culture_channel_percent, format_tenths(self.city_culture_diverted_if_channelling(c)))
+    }
+
+    /// How a Spread Religion channel's chance a turn comes from its cities in reach
+    /// ([`Game::culture_spread_reach`] at `inflow`; [`Game::culture_spread_chance`]): a line a city
+    /// (`Thariss: 5.5 × 1% × 20% ÷ (1 + 0) = 1.1%.`: the inflow, a chance per culture, the reach,
+    /// one more than the religions it has; `Thariss: has it.`, `cannot take it.`), then the chance
+    /// (`Chance a turn: the sum, 1.1% (at most 25%).`).
+    pub fn culture_spread_calc(&self, r: ReligionType, inflow: i32, cities: &[ChannelReach]) -> Vec<String> {
+        let per = format_chance(self.d.defines.culture_spread_per_culture.max(0));
+        let mut out: Vec<String> = cities
+            .iter()
+            .map(|x| {
+                let name = self.d.text.name(&self.cities[x.city].name);
+                if self.cities[x.city].has_religion[r] {
+                    format!("{name}: has it.")
+                } else if x.amount <= 0 {
+                    format!("{name}: cannot take it.")
+                } else {
+                    let present = self.d.religions.keys().filter(|&o| self.cities[x.city].has_religion[o]).count();
+                    format!("{name}: {} \u{d7} {per} \u{d7} {}% \u{f7} (1 + {present}) = {}.", format_tenths(inflow), x.effect, format_chance(x.amount))
+                }
+            })
+            .collect();
+        out.push(format!("Chance a turn: the sum, {} (at most {}).", format_chance(self.culture_spread_chance(cities)), format_chance(self.d.defines.culture_spread_max.max(0))));
+        out
+    }
+}
+
+/// Hundredths with one decimal, as the screens write culture: 640 -> "6.4", 1200 -> "12.0",
+/// -320 -> "−3.2" (rounded to the nearest tenth).
+pub fn format_tenths(n: i32) -> String {
+    let t = (n.abs() + 5) / 10;
+    format!("{}{}.{}", if n < 0 && t > 0 { "\u{2212}" } else { "" }, t / 10, t % 10)
 }
 
 /// A chance in hundredths of a percent as the player reads it: "12%", "0.5%".
@@ -763,5 +852,22 @@ pub fn format_chance(bp: i32) -> String {
         format!("{}%", (bp + 50) / 100)
     } else {
         format!("{}.{}%", bp / 100, (bp % 100) / 10)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Hundredths with one decimal, rounded to the nearest tenth, as the screens write them.
+    #[test]
+    fn tenths() {
+        assert_eq!(format_tenths(640), "6.4");
+        assert_eq!(format_tenths(1200), "12.0");
+        assert_eq!(format_tenths(214), "2.1");
+        assert_eq!(format_tenths(215), "2.2");
+        assert_eq!(format_tenths(0), "0.0");
+        assert_eq!(format_tenths(4), "0.0");
+        assert_eq!(format_tenths(-320), "\u{2212}3.2");
     }
 }
