@@ -210,9 +210,10 @@ fn guard_json(v: &Viewer, gv: &GuardView) -> Json {
 /// effect, amount, has, can}` (`amount`: its share of the chance; `has`: it has the religion;
 /// `can`: it could take it); `calc`: how the chance is made at inflow `inflow`
 /// (`Game::culture_spread_calc`; empty without a religion).
-fn spread_json(v: &Viewer, caster: PlayerId, religion: Option<ReligionType>, inflow: i32, chance: i32, cities: &[ChannelReach]) -> Json {
+fn spread_json(v: &Viewer, caster: PlayerId, religion: Option<ReligionType>, inflow: i32, chance: i32, reach: &[ChannelReach]) -> Json {
     let g = v.g;
-    let cities: Vec<Json> = cities
+    let calc = religion.map(|r| g.culture_spread_calc(r, inflow, reach)).unwrap_or_default();
+    let cities: Vec<Json> = reach
         .iter()
         .map(|x| {
             crate::jobj! {
@@ -225,7 +226,6 @@ fn spread_json(v: &Viewer, caster: PlayerId, religion: Option<ReligionType>, inf
             }
         })
         .collect();
-    let calc = religion.map(|r| g.culture_spread_calc(r, inflow, cities)).unwrap_or_default();
     crate::jobj! { "chance" => chance, "religion" => Json::opt_idx(religion), "cities" => Json::Arr(cities), "calc" => calc_lines(v, &calc) }
 }
 
