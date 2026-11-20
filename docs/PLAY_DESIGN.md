@@ -659,7 +659,8 @@ tooltip shows its parts and how they combine, with the values in play, one line 
 `Gain: 5.5 × 39% = 2.1 a turn.`, `Next liege turn: 5.3 + 2.1 − 0.0 = 7.4, less 5%: 7.0.` A number
 made of several parts that are themselves calculated shows each (a courtship's requirement, its
 inflow, reach, gain, guard and next turn); a sum of many parts uses a parts list (`infotips.js`
-`partsList`: a city's mood, the gold rate).
+`partsList`: a city's mood, the gold rate). The parts of a sum add up to its total as written:
+show them at the precision the rules count in (`Ventry: 7.70 × 50% = 3.85.`), not rounded.
 
 The rules write the lines, next to the formula they explain, so the two cannot drift apart: the
 `*_calc` reads of `ffh-core` (`Requirement::formula`, `culture_reach_calc`,

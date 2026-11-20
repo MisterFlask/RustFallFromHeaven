@@ -775,7 +775,8 @@ impl Game {
     }
 
     /// Where player `p`'s inflow now ([`Game::player_culture_inflow_now`]) comes from, a line a
-    /// city: `Ventry: 6.0 × 50% = 3.0.`, `Idris: 4.0, in disorder: 0.`; then `Inflow: 5.5 a turn.`
+    /// city: `Ventry: 7.70 × 50% = 3.85.`, `Idris: 4.00, in disorder: 0.`; then `Inflow: 5.50 a
+    /// turn.` In hundredths, as the rules count them, so that the lines add up to the total.
     pub fn player_culture_inflow_calc(&self, p: PlayerId) -> Vec<String> {
         let pct = self.d.defines.culture_channel_percent;
         let mut out: Vec<String> = self
@@ -784,13 +785,13 @@ impl Game {
                 let name = self.d.text.name(&self.cities[c].name);
                 let rate = self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE).max(0);
                 if self.city_is_disorder(c) {
-                    format!("{name}: {}, in disorder: 0.", format_tenths(rate))
+                    format!("{name}: {}, in disorder: 0.", format_hundredths(rate))
                 } else {
-                    format!("{name}: {} \u{d7} {pct}% = {}.", format_tenths(rate), format_tenths(self.city_culture_diverted_if_channelling(c)))
+                    format!("{name}: {} \u{d7} {pct}% = {}.", format_hundredths(rate), format_hundredths(self.city_culture_diverted_if_channelling(c)))
                 }
             })
             .collect();
-        out.push(format!("Inflow: {} a turn.", format_tenths(self.player_culture_inflow_now(p))));
+        out.push(format!("Inflow: {} a turn.", format_hundredths(self.player_culture_inflow_now(p))));
         out
     }
 
@@ -839,6 +840,12 @@ impl Game {
     }
 }
 
+/// Hundredths with two decimals, for the parts of a sum (they add up to its total): 385 ->
+/// "3.85", 1200 -> "12.00".
+pub fn format_hundredths(n: i32) -> String {
+    format!("{}{}.{:02}", if n < 0 { "\u{2212}" } else { "" }, n.abs() / 100, n.abs() % 100)
+}
+
 /// A loss a turn in hundredths, as the screens write it: 320 -> "−3.2", 0 -> "0.0".
 pub fn format_loss(n: i32) -> String {
     if n > 0 { format!("\u{2212}{}", format_tenths(n)) } else { "0.0".into() }
@@ -876,5 +883,8 @@ mod tests {
         assert_eq!(format_tenths(-320), "\u{2212}3.2");
         assert_eq!(format_loss(320), "\u{2212}3.2");
         assert_eq!(format_loss(0), "0.0");
+        assert_eq!(format_hundredths(385), "3.85");
+        assert_eq!(format_hundredths(1200), "12.00");
+        assert_eq!(format_hundredths(5), "0.05");
     }
 }

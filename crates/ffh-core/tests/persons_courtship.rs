@@ -462,7 +462,7 @@ fn the_calculations_show_the_rules_numbers() {
     assert!(g.house_guard_calc(&gv, P0)[0].starts_with("Inflow: your cities' culture "), "{:?}", g.house_guard_calc(&gv, P0));
     // The inflow by city ends with the inflow now.
     let inflow = g.player_culture_inflow_calc(P1);
-    assert_eq!(inflow.last().unwrap(), &format!("Inflow: {} a turn.", t(g.player_culture_inflow_now(P1))));
+    assert_eq!(inflow.last().unwrap(), &format!("Inflow: {} a turn.", ffh_core::culture::format_hundredths(g.player_culture_inflow_now(P1))));
     assert_eq!(inflow.len(), g.players[P1].cities.len() + 1);
     // The reach's falloff.
     use ffh_core::culture::Reach;
