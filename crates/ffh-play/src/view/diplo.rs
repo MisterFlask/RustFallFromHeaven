@@ -251,19 +251,27 @@ fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>,
     (ours.iter().map(|t| item_json(g, hp, v.h, hp, t)).collect(), Vec::new())
 }
 
-/// House `hh` as a party, the `trade` reply's `house` (docs/PERSONS.md, "The fourth build", rule
-/// 3): `{id, label, liege, liege_name, colour, own, trades_through, liege_contact, line, courting}`.
-/// `own`: the human is its liege (no gift: `line` says why, the rules' `House Arne pays its liege
-/// by tribute.`); `trades_through`: `Trades through the Bannor.` (the rest is its liege's to trade;
-/// `liege_contact`: the human can open the liege's trade screen); `courting`: the human's
-/// courtship of it (`Your courtship of House Aldric: favour 80 of 188, ...`; null while it courts
-/// it not: `Game::house_courting_line`).
+/// House `hh` as a party, the `trade` reply's `house` (docs/PERSONS.md, "The fourth build", rules
+/// 3 and 10): `{id, label, liege, liege_name, colour, own, trades_through, liege_contact, line,
+/// takes, courting, courts, requirement, reminders}`. `own`: the human is its liege (no gift: `line`
+/// says why, the rules' `House Arne pays its liege by tribute.`); `trades_through`: `Trades through
+/// the Bannor.` (the rest is its liege's to trade; `liege_contact`: the human can open the liege's
+/// trade screen). A House of another realm takes gifts only: `takes` (`House Aldric takes gifts of
+/// gold and resources and gives nothing.`, its side of the table); `courting`: the human's
+/// courtship of it (`Your courtship of House Aldric: favour 80 of 188, ...`, the rules'
+/// `house_courting_line`; `You do not court House Aldric.` while `courts` is false); `requirement`:
+/// that courtship's requirement against its leader's attitude toward the human (`Its leader's
+/// attitude toward you: Cautious. Requirement: 168; at Pleased 120; at Friendly 72.`: what a gift
+/// that raises the attitude brings); `reminders`: the Court keyword's. Null for the human's own.
 fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
     let g = v.g;
+    let d = g.d;
     let liege = g.houses[hh].owner;
     let label = g.house_label(hh);
     let civ = g.player_get_civilization_short_description(liege);
     let own = own_house(v, hh);
+    let courting = if own { None } else { g.house_courting_line(hh, v.h) };
+    let court = d.ty::<KeywordType>("KEYWORD_COURT");
     crate::jobj! {
         "id" => hh,
         "label" => label.as_str(),
@@ -274,7 +282,11 @@ fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
         "trades_through" => (!own).then(|| format!("Trades through the {civ}.")),
         "liege_contact" => !own && liege != v.h && contact(v, liege).is_ok(),
         "line" => if own { g.house_gift_refusal(hh, v.h) } else { None },
-        "courting" => if own { None } else { g.house_courting_line(hh, v.h) },
+        "takes" => (!own).then(|| format!("{label} takes gifts of gold and resources and gives nothing.")),
+        "courts" => courting.is_some(),
+        "courting" => if own { None } else { Some(courting.unwrap_or_else(|| format!("You do not court {label}."))) },
+        "requirement" => (!own).then(|| crate::view::persons::requirement_line(g, hh, v.h)),
+        "reminders" => if own { Json::Arr(Vec::new()) } else { crate::view::keywords::reminders(d, court) },
     }
 }
 
@@ -335,7 +347,8 @@ pub fn trade_answer(v: &Viewer, with: PlayerId, give: &[TradeData], get: &[Trade
     if g.players[with].human {
         return Ok(crate::jobj! { "accept" => Json::Null, "margin" => Json::Null, "why" => Json::Null });
     }
-    // A House answers by the rules' price and reasons (docs/PERSONS.md, rule 9), whatever plays it.
+    // A House answers by the rules (docs/PERSONS.md, "The fourth build", rule 3: gifts only),
+    // whatever plays it.
     if let Some(hh) = g.player_house(with) {
         let verdict = house_answer(g, hh, v.h, give, get);
         return Ok(crate::jobj! { "accept" => verdict.accept, "margin" => verdict.margin, "why" => verdict.why });

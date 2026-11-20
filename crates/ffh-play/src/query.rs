@@ -67,6 +67,9 @@ pub enum Query {
     Court,
     /// Part B: the grant list of one of the human's cities.
     Grant { city: CityId },
+    /// One House's card (docs/PERSONS.md, "The fourth build", rule 10): one of the human's, or a
+    /// House of another realm it has met (with its Court button).
+    House { house: HouseId },
     /// Engagement combat (docs/ENGAGEMENTS.md): the plan of an attack on `to` by `by` in
     /// `formation` (else the rules' auto formation): the pool, both formations, the slots and
     /// lanes, the ground, the defenders seen and their formation, and the forecast
@@ -146,7 +149,7 @@ impl Layer {
 
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
-    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "empire_items", "empire_cities", "court", "grant", "engage_preview",
+    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "empire_items", "empire_cities", "court", "grant", "house", "engage_preview",
     "battle_log", "battle_reports", "trade", "trade_answer", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
     "sea", "seas", "place_menu",
@@ -177,6 +180,7 @@ pub const QUERY_FIELDS: &[(&str, &[&str])] = &[
     ("empire_cities", &["order", "data", "army"]),
     ("court", &[]),
     ("grant", &["city"]),
+    ("house", &["house"]),
     ("engage_preview", &["army", "units", "from", "to", "formation"]),
     ("battle_log", &["report"]),
     ("battle_reports", &[]),
@@ -272,6 +276,7 @@ impl Query {
             Query::EmpireCities { .. } => "empire_cities",
             Query::Court => "court",
             Query::Grant { .. } => "grant",
+            Query::House { .. } => "house",
             Query::EngagePreview { .. } => "engage_preview",
             Query::BattleLog { .. } => "battle_log",
             Query::BattleReports => "battle_reports",
@@ -329,6 +334,7 @@ impl Query {
             }
             "court" => Query::Court,
             "grant" => Query::Grant { city: j.req("city")? },
+            "house" => Query::House { house: j.req("house")? },
             "engage_preview" => Query::EngagePreview {
                 by: crate::command::EngageBy::from_json(j)?,
                 to: crate::command::plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
@@ -388,6 +394,7 @@ impl Query {
             Query::EmpireItems { army } => j.with("army", *army),
             Query::EmpireCities { order, data, army } => j.with("order", Json::idx(*order)).with("data", *data).with("army", *army),
             Query::Grant { city } => j.with("city", *city),
+            Query::House { house } => j.with("house", *house),
             Query::EngagePreview { by, to, formation } => {
                 by.put(j).with("to", crate::command::plot_json(to.0, to.1)).with("formation", formation.as_deref().map(crate::command::formation_json))
             }
@@ -498,6 +505,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::EmpireCities { order, data, army } => view::governors::empire_cities(&v, *order, *data, *army)?,
         Query::Court => view::persons::court(&v),
         Query::Grant { city } => view::persons::grant(&v, *city)?,
+        Query::House { house } => view::persons::house(&v, *house)?,
         Query::EngagePreview { by, to, formation } => view::battles::engage_preview(&v, by, *to, formation.as_deref())?,
         Query::BattleLog { report } => view::battles::battle_log(&v, *report)?,
         Query::BattleReports => view::battles::battle_reports(&v),
@@ -576,6 +584,7 @@ mod tests {
             Query::EmpireCities { order: ffh_data::OrderType::ORDER_CONSTRUCT, data: 7, army: None },
             Query::Court,
             Query::Grant { city: CityId(4) },
+            Query::House { house: HouseId(2) },
             Query::EngagePreview { by: crate::command::EngageBy::Army(ArmyId(2)), to: (3, 4), formation: None },
             Query::EngagePreview {
                 by: crate::command::EngageBy::Units(vec![UnitId(1)]),

@@ -26,7 +26,8 @@ import { run } from "./commands.js";
 import { openTroops, troopsLabel } from "./crusade.js";
 import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
 import { previewList } from "./persons_lines.js";
-import { stateMark, houseShield, openCourt } from "./persons.js";
+import { stateMark, houseShield, openCourt, openHouse } from "./persons.js";
+import { keywordChips } from "./keywords.js";
 
 /** The players screen. */
 export async function openDiplomacy() {
@@ -50,9 +51,10 @@ export async function openDiplomacy() {
         // (Your own House is always at peace with you: its relations do not say it.)
         const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : ownHouse ? null : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us && !ownHouse ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
         const who = house ? [houseLine(house), houseState(p)] : `${dname("CivilizationType", p.civ)} · team ${p.team}`;
-        // Its courtships, open or not yet (docs/PERSONS.md, "The third build", rule 7: in the
-        // open), a line each under its line.
-        const courted = (house?.courted ?? []).map((l) => h("div.house-courted", l));
+        // Its courtships (docs/PERSONS.md, "The fourth build", rule 1: a channel is in the open),
+        // a line each under its line; another's House, your courtship of it first.
+        const yours = !ownHouse && p.house_offer?.courting ? [h("div.house-courting-row", p.house_offer.courting)] : [];
+        const courted = [...yours, ...(house?.courted ?? []).map((l) => h("div.house-courted", l))];
         const attitude = ownHouse && house.state
           ? h("td", { tip: () => houseAttitudeTip(p) }, stateMark(house.state, house.turns))
           : h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-");
@@ -85,6 +87,8 @@ export async function openDiplomacy() {
                 ? h("span.dim", { title: "A crusade's Host fights its crusade only: see the Crusades advisor" }, "crusade")
                 : h("span.dim", !p.alive ? "dead" : "no contact"),
             ownHouse ? h("button.small", { "data-court": house.id, title: "Open the Court at this House", onclick: () => openCourt({ house: house.id }).then(load) }, "Court") : null,
+            // Another's House: its card, where you court it (the fourth build, rule 10).
+            house && !ownHouse && p.alive ? h("button.small", { "data-house-card": house.id, title: "Open the House's card", onclick: () => openHouse(house.id).then(load) }, "House") : null,
             p.can_declare_war && !p.war ? h("button.small.danger", { "data-war": p.team, onclick: () => declareWar(p).then(load) }, "Declare war") : null,
             !p.war && p.war_refusal ? h("button.small.danger", { disabled: true, title: p.war_refusal, "data-war-refusal": p.team }, "Declare war") : null,
           ),
@@ -139,9 +143,8 @@ function houseLine(house) {
 
 /** A House's state under its line in the list, where a phone sees it (docs/PERSONS.md, "UI"; the
  *  Attitude column is cut at 390 px), each part a line of its own (style.css; the separators read
- *  as text only): yours, its attitude toward you (`✖ Furious`);
- *  another's, its state toward its own liege and, when it would take your offer, its price (`◆
- *  Annoyed`, `Secede: 150 gold`; the rules' reason when that is not its state). Null when the view
+ *  as text only): yours, its attitude toward you (`✖ Furious`); another's, its state toward its
+ *  own liege (your courtship of it is the line under it: the fourth build). Null when the view
  *  sends no state. */
 function houseState(p) {
   // Each part a chunk that wraps whole, after a space a line may break at (on a phone a line of its
@@ -151,9 +154,7 @@ function houseState(p) {
   if (x.liege === me()?.player) return x.state ? h("span.house-state", chunk(stateMark(x.state, x.turns))) : null;
   const o = p.house_offer;
   if (!o) return null;
-  const hasPrice = o.price !== null && o.price !== undefined;
-  const offer = hasPrice ? h("span.house-price", { "data-price": o.price }, `Secede: ${o.price} gold`) : o.refusal ? h("span.house-refusal", o.refusal.replace(/\.$/, "")) : null;
-  return h("span.house-state", chunk(stateMark(o.state, o.turns)), offer ? chunk(offer) : null);
+  return h("span.house-state", chunk(stateMark(o.state, o.turns)));
 }
 
 /** The parties a war brings in for certain, by the vassal rules (docs/PERSONS.md, "The second
@@ -407,20 +408,6 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     if (!hasValue(it)) return isDual(it) ? "No value. Traded only for the same item." : "No value. Adds 0 to the deal.";
     const v = Math.abs(it.value);
     const turns = it.value_turns;
-    // A House's side deal (docs/PERSONS.md, rule 9): gold (only) against its price; gold and
-    // resources count toward a courtship (the third build, rule 7).
-    if (t.house) {
-      const c = t.house.courting;
-      switch (tname("TradeableItem", it.item)) {
-        case "TRADE_SECEDE":
-        case "TRADE_HOUSE_VASSAL":
-          return `Price: ${v} gold.`;
-        case "TRADE_GOLD":
-          return `${v} per gold: toward its price, or toward a courtship for ${c?.gift_turns ?? 20} turns.`;
-        case "TRADE_RESOURCES":
-          return `Counts ${v} toward a courtship while it is given. Lease: ${turns} turns at least, then either side may cancel it.`;
-      }
-    }
     switch (tname("TradeableItem", it.item)) {
       case "TRADE_GOLD":
         return `${v} per gold.`;
@@ -454,26 +441,6 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       h("div.dim", `Gift tiers: ${tiers.join(". ")}. Gifts count for ${tr.turns} turns.`),
     ];
   };
-  // A gift to a House: what it does to your courtship of it (docs/PERSONS.md, "The third build",
-  // rule 7: the trade query's `house.courting`): the gifts' worth now and after it, and whether it
-  // opens the courtship (offers possible 10 turns after it opens).
-  const courtshipLines = (offered) => {
-    const c = t.house.courting;
-    if (!c) return [];
-    const after = c.value + offered;
-    const effect =
-      c.opened !== null && c.opened !== undefined
-        ? `Effect: the courtship stays open. Offers possible from turn ${c.offers_from}.`
-        : after >= c.requirement
-          ? `Effect: the courtship opens. Offers possible from turn ${c.turn + c.turns}.`
-          : `Effect: ${after} of ${c.requirement} given. The courtship opens at ${c.requirement}.`;
-    return [
-      h("div", `Gifts now: ${c.value} of ${c.requirement}.`),
-      h("div", `Value of this gift: ${offered}.`),
-      h("div.house-courtship-effect", effect),
-      h("div.dim", `Gold counts for ${c.gift_turns} turns; a resource while it is given (${c.resource_worth}).`),
-    ];
-  };
   let asked = 0;
   const refreshSummary = async () => {
     const give = [...deal.give.values()];
@@ -487,18 +454,15 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     for (const it of t.we_give) if (deal.give.has(keyOf(it))) offered += points(it, deal.give.get(keyOf(it)).data);
     for (const it of t.they_give) if (deal.get.has(keyOf(it))) requested -= points(it, deal.get.get(keyOf(it)).data);
     // Only your side: a gift; only theirs: a demand (the trade query's `tribute`); else a trade. (A
-    // House's side deal is a trade: the gold offered against its price, docs/PERSONS.md, rule 9; a
-    // gift to a House courts it, the third build's rule 7.)
-    const mode = deal.troops ? "trade" : t.house ? (!get.length ? "courtship" : "trade") : !get.length ? "gift" : !give.length ? "demand" : "trade";
+    // House takes gifts only, an ordinary gift: docs/PERSONS.md, "The fourth build", rule 3.)
+    const mode = deal.troops ? "trade" : !get.length ? "gift" : !give.length ? "demand" : "trade";
     const tr = t.tribute;
     const lines =
       mode === "gift"
         ? giftLines(tr, offered)
-        : mode === "courtship"
-          ? courtshipLines(offered)
-          : mode === "demand"
-            ? [h("div", `This would ask for: ${requested}.`)]
-            : [h("div", `Total offered: ${offered}`), h("div", `Total requested: ${requested}`)];
+        : mode === "demand"
+          ? [h("div", `This would ask for: ${requested}.`)]
+          : [h("div", `Total offered: ${offered}`), h("div", `Total requested: ${requested}`)];
     summary.dataset.mode = mode;
     summary.replaceChildren(...lines);
     summary.hidden = false;
@@ -514,36 +478,16 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     if (ask !== asked || m.closed || r.accept === null || r.accept === undefined) return;
     const answer = h("div", { "data-answer": r.accept ? "accepted" : "refused" }, "This proposal will be ", h(r.accept ? "b.good" : "b.warn", r.accept ? "accepted" : "refused"), ".");
     const reason = r.why ? h("div.dim", `Reason: ${r.why}.`) : null;
-    if (mode === "gift" || mode === "courtship") summary.replaceChildren(...lines, answer);
+    if (mode === "gift") summary.replaceChildren(...[...lines, answer, r.accept ? null : reason].filter(Boolean));
     else if (mode === "demand") {
       // The most they would hand over is what is asked plus the answer's margin.
       const most = Math.max(0, requested + (r.margin ?? -requested));
       const effect = `Effect: −1 relations for ${tr.turns} turns. No further demands for ${tr.demands.pause_turns} turns.`;
       summary.replaceChildren(...[h("div", `Maximum possible value extorted: ${most}.`), ...lines, answer, r.accept ? h("div", effect) : reason].filter(Boolean));
-    } else summary.replaceChildren(...[...lines, answer, reason, ...houseWar(get, r.accept)].filter(Boolean));
+    } else summary.replaceChildren(...[...lines, answer, reason].filter(Boolean));
   };
-  // What a House's side deal does once accepted (docs/PERSONS.md, rule 7: breaking away is war),
-  // stated before the deal: `House Arne will break away from the Bannor: war between them.`, and
-  // for Become your vassal `You become its liege: war with the Bannor.` with the parties the vassal
-  // rules bring into that war (the liege's other Houses, yours); when it will be accepted, what it
-  // costs with the liege (rule 9: the liege remembers the House bought, and Become your vassal's
-  // war: `The Bannor's attitude toward you -1 (fades).`; a refused offer moves nothing).
-  const houseWar = (get, accept) => {
-    if (!t.house) return [];
-    const kinds = new Set(get.map((x) => tname("TradeableItem", x.item)));
-    if (!kinds.has("TRADE_SECEDE") && !kinds.has("TRADE_HOUSE_VASSAL")) return [];
-    const out = [h("div.house-war-title", "If accepted:"), h("div.warn.house-war", t.house.secede_war)];
-    if (kinds.has("TRADE_HOUSE_VASSAL")) {
-      out.push(h("div.warn.house-war", t.house.vassal_war));
-      for (const line of warPartyLines(t.house.vassal_war_against, t.house.vassal_war_join)) out.push(h("div.warn.house-war.war-parties", line));
-    }
-    const grudge = kinds.has("TRADE_HOUSE_VASSAL") ? t.house.vassal_grudge : t.house.grudge;
-    if (accept && grudge) out.push(h("div.caution.house-grudge", grudge));
-    return out;
-  };
-  const HOUSE_ITEMS = ["TRADE_SECEDE", "TRADE_HOUSE_VASSAL"];
-  // Your own House (docs/PERSONS.md, rules 4 and 9): no side deal; it pays you by tribute (the
-  // rules' line), its attitude toward you, and the Court.
+  // Your own House (docs/PERSONS.md, rules 4 and 9): no gift; it pays you by tribute (the rules'
+  // line), its attitude toward you, and the Court.
   const ownHouseBody = () => {
     const x = S.players.get(withPlayer)?.house;
     return h(
@@ -556,9 +500,18 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
   };
   // A House's other trades are its liege's: `Trades through the Bannor.`, with the liege's trade
   // screen a tap away when you can trade with it.
-  // Your courtship of a House (docs/PERSONS.md, "The third build", rule 7): `Courting House Aldric:
-  // 140 of 180 given (Wine counts 60).`
-  const courting = () => (t.house?.courting?.line ? h("p.house-courting", t.house.courting.line) : null);
+  // A House of another realm (docs/PERSONS.md, "The fourth build", rules 3 and 10), above the
+  // items: your courtship of it (`Your courtship of House Aldric: favour 80 of 188, ...`, or `You
+  // do not court House Aldric.`) and its requirement against its leader's attitude toward you
+  // (what a gift that raises the attitude brings), with its card a tap away.
+  const courting = () =>
+    t.house && !t.house.own
+      ? h(
+          "div.house-courting-block",
+          h("p.house-courting", { "data-courts": t.house.courts ? "1" : "0" }, t.house.courting, " ", h("button.link.small", { "data-house-card": t.house.id, onclick: () => openHouse(t.house.id) }, "House card")),
+          h("p.house-requirement", t.house.requirement),
+        )
+      : null;
   const tradesThrough = () =>
     t.house?.trades_through
       ? h(
@@ -568,7 +521,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
         )
       : null;
   const draw = () => {
-    const side = (list, mapKey, other, title) =>
+    const side = (list, mapKey, other, title, none = "Nothing.") =>
       h(
         "div.trade-side",
         h("h4", title),
@@ -594,9 +547,6 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
                     onclick: () => {
                       const toggle = (map, item) => (map.has(keyOf(item)) ? map.delete(keyOf(item)) : map.set(keyOf(item), { item: item.item, data: isGold(item) ? Math.min(item.max, 1) : item.data }));
                       toggle(deal[mapKey], it);
-                      // A House gives one of Secede and Become your vassal.
-                      const kind = tname("TradeableItem", it.item);
-                      if (HOUSE_ITEMS.includes(kind) && deal[mapKey].has(k)) for (const o of list) if (o !== it && HOUSE_ITEMS.includes(tname("TradeableItem", o.item))) deal[mapKey].delete(keyOf(o));
                       if (isDual(it)) {
                         const twin = other.find((o) => o.item === it.item);
                         const otherKey = mapKey === "give" ? "get" : "give";
@@ -627,7 +577,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
               );
               return row;
             })
-          : h("p.dim", "Nothing."),
+          : h("p.dim.trade-none", none),
         troopsRow(mapKey),
       );
     // Troops (crusades): a loan of units, each way; adding it opens the troops screen
@@ -672,20 +622,21 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       m.setButtons([{ label: "Close", value: null }]);
       return;
     }
-    // At war with a House: an accepted offer makes peace with it first (docs/PERSONS.md, rule 9).
+    // At war with a House: a gift makes no peace (docs/PERSONS.md, "The fourth build", rule 3).
     const atWar = t.house
-      ? h("p.warn", `You are at war. An accepted offer makes peace with ${t.house.label} first; a gift makes none.`)
+      ? h("p.warn", `You are at war. A gift to ${t.house.label} makes no peace.`)
       : h("p.warn", { title: "A deal makes peace, so it must hold the peace treaty (or a capitulation)." }, "You are at war.");
     m.setBody(
       leader.el,
       t.war ? atWar : null,
       // Houses (docs/PERSONS.md, "UI", part I): what making peace does to the Houses.
       t.war ? previewList(t.peace_preview, { title: "If peace is made:" }) : null,
-      h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
       courting(),
+      h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give", t.house?.takes ?? "Nothing.")),
       tradesThrough(),
       summary,
       status,
+      t.house?.reminders?.length ? h("div.court-keywords", keywordChips(t.house.reminders)) : null,
     );
     refreshSummary();
   };
@@ -710,7 +661,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
         const accepted = !!reply.r?.accepted;
         const weGet = get.length || (k && !k.lend);
         const weGive = give.length || (k && k.lend);
-        // (A gift to a House makes no peace: docs/PERSONS.md, "The third build", rule 7.)
+        // (A gift to a House makes no peace: docs/PERSONS.md, "The fourth build", rule 3.)
         const peace = t.war && !(t.house && !get.length && !k);
         const comment = accepted ? (peace ? "AI_DIPLOCOMMENT_PEACE" : weGet ? "AI_DIPLOCOMMENT_ACCEPT" : "AI_DIPLOCOMMENT_THANKS") : peace ? "AI_DIPLOCOMMENT_NO_PEACE" : weGive ? "AI_DIPLOCOMMENT_NO_DEAL" : "AI_DIPLOCOMMENT_REJECT";
         if (accepted) {

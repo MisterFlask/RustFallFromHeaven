@@ -66,6 +66,12 @@ pub struct Requirement {
 pub const REQUIREMENT_BASE: i32 = 6;
 pub const REQUIREMENT_ATTITUDE: i32 = 2;
 
+/// A requirement's total from its parts: `(L + REQUIREMENT_BASE − REQUIREMENT_ATTITUDE × A, at
+/// least 1) × W`.
+pub fn requirement_total(loyalty: i32, attitude: i32, unit: i32) -> i32 {
+    (loyalty + REQUIREMENT_BASE - REQUIREMENT_ATTITUDE * attitude).max(1) * unit
+}
+
 impl Requirement {
     /// The requirement as the screens write it, its parts and its total: `(3 + 6 − 2 × 1) × 24 =
     /// 168`; a negative attitude in brackets (`(3 + 6 − 2 × (−1)) × 24 = 264`), and `at least 1`
@@ -176,7 +182,7 @@ impl Game {
         let loyalty = self.house_loyalty(h);
         let attitude = attitude_step(self.player_ai_get_attitude(self.houses[h].player, courter, true));
         let unit = self.world_culture_unit();
-        Requirement { total: (loyalty + REQUIREMENT_BASE - REQUIREMENT_ATTITUDE * attitude).max(1) * unit, loyalty, attitude, unit }
+        Requirement { total: requirement_total(loyalty, attitude, unit), loyalty, attitude, unit }
     }
 
     /// A turn of favour `amount` (hundredths) under `gain` and a guard's `guard` (hundredths a
@@ -466,14 +472,16 @@ impl Game {
         }
     }
 
-    /// A message to `courter` about House `h` (at the House's seat, marked as the Houses' are).
+    /// A message to `courter` about House `h` (at the House's seat, marked as the Houses' are;
+    /// tagged with the House when it is the courter's own: the House a split gave it).
     fn courter_msg(&mut self, courter: PlayerId, h: HouseId, text: String) {
         if !self.log.enabled {
             return;
         }
         let turn = self.game_turn();
+        let tag = if self.houses[h].owner == courter { LogTag::House(h) } else { LogTag::None };
         match self.house_seat(h).map(|c| (self.cities[c].x, self.cities[c].y)) {
-            Some(at) => self.log.msg_marked(turn, Some(courter), at, LogMark::House, LogTag::None, || text),
+            Some(at) => self.log.msg_marked(turn, Some(courter), at, LogMark::House, tag, || text),
             None => self.log.msg(turn, Some(courter), || text),
         }
     }
@@ -535,6 +543,8 @@ impl Game {
         }
         let names = self.culture_city_names(&split.going);
         let verb = if split.going.len() == 1 { "joins" } else { "join" };
+        // Where the news is marked when the House's seat cannot say (the first city that goes).
+        let first_at = (self.cities[split.going[0]].x, self.cities[split.going[0]].y);
         let to = if split.whole {
             if self.team_vassal_refusal(self.players[courter].team).is_some() {
                 return None;
@@ -542,9 +552,9 @@ impl Game {
             tell_contest(self, contest);
             let nh = self.house_join_whole(h, courter)?;
             let others = self.split_audience(liege, courter);
-            self.log.msg(turn, Some(liege), || format!("The {by}'s courtship takes {label}: {names} {verb} them."));
+            self.log.msg_marked(turn, Some(liege), first_at, LogMark::House, LogTag::None, || format!("The {by}'s courtship takes {label}: {names} {verb} them."));
             self.courter_msg(courter, nh, format!("{label} joins you with {names}: a House of your realm."));
-            self.log.msg_to(turn, others, || format!("{label} leaves the {liege_name} for the {by} with {names}."));
+            self.log.msg_to_at(turn, others, first_at, LogMark::House, || format!("{label} leaves the {liege_name} for the {by} with {names}."));
             self.house_add_deed(nh, format!("Courted away from the {liege_name} by the {by}, with {names}."));
             self.tel_house(liege, "split", "courted_whole");
             nh
@@ -572,10 +582,10 @@ impl Game {
             if self.houses.contains(h) {
                 self.house_msg(h, || text);
             } else {
-                self.log.msg(turn, Some(liege), || text);
+                self.log.msg_marked(turn, Some(liege), first_at, LogMark::House, LogTag::None, || text);
             }
             self.courter_msg(courter, nh, format!("{label} splits toward you: {names} {verb} you as {new}, led by {led}."));
-            self.log.msg_to(turn, others, || format!("The {by}'s courtship splits {label} of the {liege_name}: {names} {verb} the {by} as {new}, led by {led}."));
+            self.log.msg_to_at(turn, others, first_at, LogMark::House, || format!("The {by}'s courtship splits {label} of the {liege_name}: {names} {verb} the {by} as {new}, led by {led}."));
             self.tel_house(liege, "split", "courted");
             nh
         };
@@ -636,7 +646,7 @@ mod tests {
     /// The requirement's formula as the screens write it, from its parts and its total.
     #[test]
     fn the_requirement_formula() {
-        let r = |loyalty: i32, attitude: i32, unit: i32| Requirement { total: (loyalty + REQUIREMENT_BASE - REQUIREMENT_ATTITUDE * attitude).max(1) * unit, loyalty, attitude, unit };
+        let r = |loyalty: i32, attitude: i32, unit: i32| Requirement { total: requirement_total(loyalty, attitude, unit), loyalty, attitude, unit };
         assert_eq!(r(3, 1, 24).formula(), "(3 + 6 \u{2212} 2 \u{d7} 1) \u{d7} 24 = 168");
         assert_eq!(r(3, -1, 24).formula(), "(3 + 6 \u{2212} 2 \u{d7} (\u{2212}1)) \u{d7} 24 = 264");
         assert_eq!(r(-2, 0, 5).formula(), "(\u{2212}2 + 6 \u{2212} 2 \u{d7} 0) \u{d7} 5 = 20");

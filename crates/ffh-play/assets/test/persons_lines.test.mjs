@@ -36,6 +36,10 @@ test("an alert opens the Court at its House", () => {
   assert.deepEqual(alertFocus({ house: 4, text: "House Arne requests: ..." }, houses), { house: 4 }, "the House the entry tags");
   assert.deepEqual(alertFocus({ text: "Torrin granted to House Arne." }, houses), { house: 2 }, "the longest label named");
   assert.equal(alertFocus({ text: "Nothing of ours." }, houses), null);
+  // A House of another realm the text names: its card (a courtship of yours, the fourth build).
+  const others = [{ id: 7, label: "House Alyndra" }];
+  assert.deepEqual(alertFocus({ text: "House Alyndra: your favour is 130 of 188." }, houses, others), { foreign: 7 });
+  assert.deepEqual(alertFocus({ text: "House Arne and House Alyndra." }, houses, others), { house: 2 }, "yours first");
 });
 
 test("the diplomacy list: your Houses first, each House under its liege", () => {

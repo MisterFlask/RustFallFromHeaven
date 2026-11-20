@@ -838,6 +838,17 @@ pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> us
     if mine.is_empty() {
         ask(Query::Grant { city: CityId(u32::MAX) }, May::BeGone);
     }
+    // Every House it knows of (its own and the met players'), one House's card each; with none, a
+    // House that does not stand.
+    let houses: Vec<HouseId> = ask(Query::Players, May::Answer)
+        .map(|pl| arr(&pl, "players").iter().filter_map(|p| p.get("house").and_then(|x| x.get("id")).and_then(Json::as_i64)).map(|id| HouseId(id as u32)).collect())
+        .unwrap_or_default();
+    for &house in &houses {
+        ask(Query::House { house }, May::Answer);
+    }
+    if houses.is_empty() {
+        ask(Query::House { house: HouseId(u32::MAX) }, May::BeGone);
+    }
     if let Some(armies) = ask(Query::Armies, May::Answer) {
         if let Some(a) = arr(&armies, "armies").iter().chain(arr(&armies, "fleets")).next() {
             ask(Query::EmpireItems { army: Some(ArmyId(int(a, "id") as u32)) }, May::BeInvalid);

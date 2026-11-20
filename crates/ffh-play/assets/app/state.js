@@ -459,11 +459,6 @@ export function tradeItemLabel(it) {
       return `Declare war on ${teamName(n)}`;
     case "TRADE_EMBARGO":
       return `Stop trading with ${teamName(n)}`;
-    // A House's side deals (docs/PERSONS.md, "The second build", rule 9).
-    case "TRADE_SECEDE":
-      return "Secede";
-    case "TRADE_HOUSE_VASSAL":
-      return "Become your vassal";
   }
   return dname("TradeableItem", it.item);
 }

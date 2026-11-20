@@ -19,20 +19,33 @@ wants done next into this file.
 - Other: "Next steps" in docs/PORTING.md, "Not in this change" in docs/SUPPLY.md, the "Not built"
   notes in docs/NAVAL.md
 
+## Trace the fourth build's research fall
+
+The fourth build's guardrail (docs/AI_LOG.md, "Courting is a cultural channel") found the world's
+research at turn 300 down 14% (lower in 9 of 12 seeds) and the world's military and unit upkeep up
+about a fifth, with fewer wars declared, fewer units built and fewer battles. What turns the extra
+upkeep into the research fall is not found. Candidates: units kept alive by the hold-march
+(`courted_to_hold`, which never fired among AIs before), the lieges' grudge memories
+(`MEMORY_COURTED_HOUSE`, `MEMORY_SPLIT_HOUSE`) moving the sliders, fewer spreads of a state
+religion. Start from games (CLAUDE.md, "How AI changes are checked", step 1): per player, where
+the upkeep and the research went between turns 200 and 300, base against new.
+
 ## Houses: what is not built
 
-Houses as vassal civilizations (tribute, the levy, breaking away, side deals with a rival's
-Houses) are built (docs/PERSONS.md, "The second build"); the third build's part 1 (2026-11-19)
-removed Persons of Note (the cast, commanders, veterans and great persons as founders) and made a
-realm's first grant found a House; its part 2 built splits, ultimatums and contracts, courtship,
-the price on the world unit, shared knowledge and gold tribute. Still to build, each described
-there:
+Houses as vassal civilizations (tribute, the levy, breaking away) are built (docs/PERSONS.md, "The
+second build"); the third build's part 1 (2026-11-19) removed Persons of Note (the cast,
+commanders, veterans and great persons as founders) and made a realm's first grant found a House;
+its part 2 built splits, ultimatums and contracts, shared knowledge and gold tribute. The fourth
+build (2026-11-20) made courting a cultural channel (Court, Guard, Spread Religion: a successful
+courtship splits the House toward the courter) and retired the side deals, the price and revolt.
+Still to build, each described there:
 
 - Claims abroad (stage 3).
 - The annals (stage 5): what each House did in the player's earlier games.
-- Ultimatums and courtships among AIs: in AI games neither fires (docs/AI_LOG.md, "Houses without
-  Persons of Note": the AI keeps its Houses Pleased, and courts only an enemy's Cautious House),
-  so the AI's answer to an ultimatum and its courting are exercised only against a human. A probe
-  that squeezes its Houses (tribute at the most, requests refused) would show both.
+- Ultimatums among AIs: in AI games they do not fire (docs/AI_LOG.md, "Houses without Persons of
+  Note": the AI keeps its Houses Pleased), so the AI's answer to an ultimatum is exercised only
+  against a human. A probe that squeezes its Houses (tribute at the most, requests refused) would
+  show it. Courting by culture does fire among AIs (docs/AI_LOG.md, "Courting is a cultural
+  channel": 314 Court channels and 44 courtships at their requirement over 12 games).
 - To be judged in play (docs/PERSONS.md, "Open points for the owner"): requests with a term, an
   Annoyed House's withheld levy, claims, the Crown's limit of 3, the tribute's loyalty cost.

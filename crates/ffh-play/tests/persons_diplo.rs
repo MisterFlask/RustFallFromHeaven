@@ -119,8 +119,8 @@ fn the_war_dialog_names_the_houses_that_join() {
 }
 
 /// The diplomacy list's line of a House not the human's: its state toward its liege and the human's
-/// courtship of it (`courting`: the rules' `house_courting_line`; the fourth build), and every
-/// courtship of it, in the open (`courted`).
+/// courtship of it (`courting`: the rules' `house_courting_line`; the fourth build), and every other
+/// courtship of it, in the open (`courted`: the human's own is its `courting` line).
 #[test]
 fn a_rival_houses_line_states_its_state_and_courtship() {
     let (_dir, st, s) = load("persons-diplo-line");
@@ -130,7 +130,8 @@ fn a_rival_houses_line_states_its_state_and_courtship() {
     assert_eq!(o.get("state").and_then(Json::as_str), Some(s.g.house_state(nh.id).name()));
     assert_eq!(o.get("courting").and_then(Json::as_str).map(str::to_string), s.g.house_courting_line(nh.id, st.human));
     let courted = strs(r.get("house").unwrap(), "courted");
-    assert_eq!(courted.len(), s.g.house_courtships(nh.id).len(), "{courted:?}");
+    assert_eq!(courted.len(), s.g.house_courtships(nh.id).iter().filter(|c| c.courter != st.human).count(), "{courted:?}");
+    assert!(o.get("courting").and_then(Json::as_str).is_some(), "the human courts it (the stage)");
     // The human's own Houses carry no line (their state is the record's, for the liege).
     let own = st.houses.iter().find(|x| x.role == "furious").unwrap();
     let r = find(&arr(&q(&s, r#"{"q":"players"}"#), "players"), "id", own.player.0 as i64);

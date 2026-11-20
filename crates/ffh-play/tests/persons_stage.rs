@@ -4,7 +4,10 @@
 //! civilizations in each state (Friendly, Pleased or Cautious, the capitulated one Annoyed under a
 //! contract, Furious with its ultimatum due and a city held by an army, a House of five Furious
 //! too), two tributes, each House led by its player's leader, the taken city's claimant House, and
-//! the neighbour's own House and the courtships; `persons-direct` can adopt God King at once.
+//! the neighbour's own House and the courtships (the neighbour's of House `pleased` past two
+//! thirds, the human's of the neighbour's House at a third); `persons-direct` can adopt God King at
+//! once, has no ultimatum due, and its courtship of the neighbour's House is one liege turn from a
+//! split.
 
 mod common;
 
@@ -65,11 +68,12 @@ fn the_staged_persons_scenes_hold_every_state() {
         assert_eq!(g.house_state(house("annoyed")), LoyaltyState::Annoyed);
         assert_eq!(g.houses[house("annoyed")].origin, HouseOrigin::Capitulated);
         assert!(g.house_levy_refusal(house("annoyed")).is_some(), "an Annoyed House takes no levy");
-        assert_eq!(g.house_state(house("furious")), LoyaltyState::Furious);
-        assert!(g.houses[house("furious")].contract.is_none(), "its ultimatum due at the next turn");
+        // `persons-direct` leaves no ultimatum due at the next turn (its news is the split).
+        assert_eq!(g.house_state(house("furious")), if direct { LoyaltyState::Annoyed } else { LoyaltyState::Furious });
+        assert!(g.houses[house("furious")].contract.is_none(), "its ultimatum due at the next turn (not in persons-direct)");
         assert!(g.houses[house("annoyed")].contract.is_some_and(|c| c.kind == ffh_core::persons::UltimatumKind::Tribute(10)), "under a contract");
         assert_eq!(g.houses[house("annoyed")].ultimatums, 1);
-        assert_eq!(g.house_state(house("large")), LoyaltyState::Furious);
+        assert_eq!(g.house_state(house("large")) == LoyaltyState::Furious, !direct);
         assert_eq!(g.house_great_cities(house("large")), 5, "one grant from the split's threshold");
         assert!(g.houses[house("large")].contract.is_none());
         assert_eq!(g.house_cities(house("furious")).len(), 2);
@@ -96,6 +100,21 @@ fn the_staged_persons_scenes_hold_every_state() {
         // The neighbour courts House `pleased` by its Court channel, its favour past two thirds.
         let p = house("pleased");
         assert!(g.house_courtships(p).iter().any(|c| c.courter == st.neighbour && c.attention && c.line.starts_with("Courted by the ")));
+        // The human courts the neighbour's House by its Court channel (the fourth build, rule 2),
+        // its favour set by hand: a third of the requirement, or in persons-direct one liege turn
+        // from a split toward it, at a House of two cities or more besides its seat.
+        let court = ffh_core::culture::ChannelOrder { action: d.t::<CulturalActionType>("CULTURALACTION_COURT_HOUSE"), target: ffh_core::culture::ChannelTarget::House(n), religion: None };
+        assert_eq!(g.players[h].culture_channel.as_ref().map(|ch| ch.order()), Some(court));
+        let cv = g.house_courtship_view(n, h);
+        let need = 100 * cv.requirement.total;
+        if direct {
+            assert!(cv.favour < need && cv.turns == Some(1), "one liege turn from a split: {}", cv.line);
+            assert!(g.house_cities(n).len() >= 3);
+            assert!(st.hand_set.iter().any(|l| l.contains("one liege turn from a split")), "{:?}", st.hand_set);
+        } else {
+            assert_eq!(cv.favour, need / 3, "a third of the requirement");
+            assert!(st.hand_set.iter().any(|l| l.contains("a third of its requirement")), "{:?}", st.hand_set);
+        }
         let court = g.court_view(h);
         assert_eq!(court.grants, Ok(()));
         assert_eq!(court.houses.len(), 5);

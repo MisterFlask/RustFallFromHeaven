@@ -32,6 +32,49 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Courting is a cultural channel (2026-11-20, the fourth build; a rules change, not measured)
+
+**Built, in every game** (docs/PERSONS.md, "The fourth build"; docs/CULTURE.md). A rules change is
+not gated on the AI (CLAUDE.md). The guardrail ran 12 seeds × 300 turns, 6 civilizations, against
+94be8522 (base → new). Turn 100 is identical: no channel is set before turn 110.
+
+**What changed between turns 200 and 300:**
+- **Research.** The world's research at turn 300 fell 26283 → 22692 (−14%; lower in 9 of 12 seeds),
+  with the same population (4317 → 4327) and the same number of cities (622 → 619). Research per
+  population fell in both groups: the Crowns 5.72 → 5.06, the Houses 6.43 → 5.41. At turn 200 it was
+  higher (8238 → 9154).
+- **Military and upkeep.** The world's military at turn 300 rose 4045 → 4824 (+19%), and unit upkeep
+  per player 6.8 → 8.6. The cause is not more war or more building. With telemetry, over the same 12
+  seeds:
+  - war declarations made first-hand fell 113 → 103, of which between original civilizations
+    48 → 43;
+  - units built after turn 100 fell 4217 → 4165;
+  - battles fell 2489 → 2421.
+
+  The `wars` counter (704 → 897) counts team pairs: there are more Houses (alive at turn 300,
+  191 → 210 players), and each joins its liege's wars.
+- **Cities and eliminations.**
+  - Cities taken between original civilizations rose 73 → 81; cities taken by barbarians fell
+    47 → 38.
+  - Eliminations rose 11 → 26: original civilizations 5 → 7, Houses 6 → 19. Of the Houses, 14 were
+    ordinary one-city Houses, and 4 had been born of a courtship.
+- **Culture.**
+  - Channels set: Court 314, Guard 206, Spread Religion 90 (it was Foment Revolt 70 and Spread
+    Religion 99).
+  - 44 courtships reached their requirement: 33 split a House, 11 took a one-city House whole, and
+    2 were held in full. Splits of the third build: 45 → 38.
+  - Religions spread by a channel fell 69 → 52: Court and Guard now compete with Spread Religion
+    for the one channel.
+
+**Open:** what turns the extra upkeep into the research fall is not yet found. Candidates:
+- units kept alive by the hold-march (`courted_to_hold` now fires: among AIs it never did under
+  the third build);
+- the lieges' grudge (`MEMORY_COURTED_HOUSE`, `MEMORY_SPLIT_HOUSE`) shifting sliders;
+- fewer spreads of a state religion.
+
+Nothing else broad broke. The research fall is on the work list (TODO.md), to be traced from
+games.
+
 ## Houses without Persons of Note (2026-11-19, the third build; a rules change, not measured)
 
 **Built, in every game** (docs/PERSONS.md, "The third build"). A rules change is not gated on the

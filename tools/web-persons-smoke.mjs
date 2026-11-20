@@ -5,8 +5,11 @@
 // headless Chromium on the HD-2D map (with `--shots`; else the map the page chooses). It checks the
 // Court button's count; opens the Court with Shift+F9 (the header with the Crown's limit and the
 // realm's default tribute, the lines that need attention, the Crown and the five Houses, each with
-// its leader and its request; no person anywhere; the courted House's card with the courtship
-// and its gold-only tribute line, the third build's rules 7 and 10); opens a
+// its leader and its request; no person anywhere; no price); the fourth build's courting (rule
+// 10: the courted House's card with the courtship in the rules' line, needing attention, its
+// gold-only tribute line, the Guard button pressed and the guard's line; the neighbour's House's
+// card with your courtship, your requirement against its leader's attitude and the Court button
+// pressed; a refused channel's reason); opens a
 // House's tribute list, reads each rate once in force and when (a step every 5 turns), sets another
 // rate and sees the card say the rate set and the rate in force while its parts, total and state
 // stay the rate in force's; opens the grant list of the contested Crown city (the claimants
@@ -235,6 +238,111 @@ async function contractAndSplit(browser, url, st) {
   await page.close();
 }
 
+/** `Courted by the Sheaim: favour 80 of 188, a split in ~12 turns (Ventry, Corona).` (the rules'
+ *  prediction: a split, settling, fading; the cities that would go, those held). */
+const COURTSHIP = /^Courted by the \S.*: favour \d+ of \d+, (a split next turn|a split in ~\d+ turns|settling near \d+|fading)( \([^)]+\))?\.$/;
+const YOURS = /^Your courtship of .+: favour \d+ of \d+, (a split next turn|a split in ~\d+ turns|settling near \d+|fading)( \([^)]+\))?\.$/;
+
+/** The fourth build (docs/PERSONS.md, rule 10) on the open Court (the staged `persons`: the
+ *  neighbour courts House `pleased` past two thirds of its requirement; the human courts the
+ *  neighbour's House): House `pleased`'s card lists the courtship in the rules' line, marked as
+ *  needing attention, and offers the Guard button (`Guard (replaces Court House Alyndra)`: the
+ *  human's channel courts already) with the rules' preview; pressed, the card says its guard
+ *  (`Guarded: −N a turn to each courtship.`) and the button is gone; the Court's keywords hold
+ *  Court and Guard. Then the neighbour's House's card (a House of another realm): your courtship's
+ *  line, your requirement against its leader's attitude, the Court button (`Court (replaces Guard
+ *  House Casimir)`) with its preview; pressed, `Your channel: Court House Alyndra.`. A command the
+ *  rules refuse (a Guard of the neighbour's House) comes back with the rules' reason. */
+async function courting(page, st) {
+  const houseP = st.houses.pleased;
+  const houseN = st.houses.neighbour;
+  const sel = houseSel(houseP.id);
+  const read = () =>
+    page.evaluate((sel) => {
+      const c = document.querySelector(sel);
+      return {
+        lines: [...c.querySelectorAll(".pcourted")].map((e) => ({ text: e.querySelector(".pcourted-line")?.textContent ?? "", attention: e.dataset.attention === "1", mark: !!e.querySelector(".pcourted-mark") })),
+        guard: c.querySelector(".pguard")?.textContent ?? null,
+        button: c.querySelector("button.pchannel-set[data-channel=guard]")?.textContent ?? null,
+        line: c.querySelector(".pchannel .pchannel-line")?.textContent ?? null,
+        tribute: c.querySelector(".ptribute-line")?.textContent ?? "",
+      };
+    }, sel);
+  const before = await read();
+  check(before.lines.length === 1 && COURTSHIP.test(before.lines[0].text) && before.lines[0].attention && before.lines[0].mark, `House pleased's courtship, needing attention: ${JSON.stringify(before.lines)}`);
+  check(!/research/.test(before.tribute) && /^Tribute \d+%(: \d+ gold last turn\.|\. Not paid yet\.)$/.test(before.tribute), `its tribute line, gold only: ${before.tribute}`);
+  check(/^Guard \(replaces Court .+\)$/.test(before.button ?? "") && /^Guard: −\d+ a turn to each courtship\.$/.test(before.line ?? "") && before.guard === null, `the Guard button and its preview: ${JSON.stringify(before)}`);
+  const others = await page.evaluate((id) => document.querySelectorAll(`.modal[data-tag=court] .house-card:not([data-house="${id}"]) .pcourted`).length, houseP.id);
+  check(others === 0, `no other House of yours is courted (${others})`);
+  const chips = await page.evaluate(() => [...document.querySelectorAll(".modal[data-tag=court] .court-keywords .kw-chip")].map((c) => c.textContent));
+  check(chips.includes("Court") && chips.includes("Guard"), `the Court and Guard keywords where courting shows: ${chips}`);
+  steps.push(`${houseP.label}'s card: "${before.lines[0].text}" (needs attention); [${before.button}] "${before.line}"`);
+  await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
+  await sleep(300);
+  await crop(page, sel, "court-house-courted.png", { pad: 4 });
+  // Guard: the card says its guard, the button is gone.
+  await tap(page, `${sel} button.pchannel-set[data-channel=guard]`);
+  const after = await until(async () => {
+    const r = await read();
+    return r.guard && !r.button ? r : null;
+  }, "House pleased guarded", 20000 * SLOW);
+  check(/^Guarded: −\d+ a turn to each courtship\.$/.test(after.guard), `the guard line: ${after.guard}`);
+  const culture = await query(page, "culture");
+  check(culture.ours?.name === `Guard ${houseP.label}`, `the human's channel guards it: ${culture.ours?.name}`);
+  steps.push(`Guard set: "${after.guard}"`);
+  await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
+  await sleep(300);
+  await crop(page, sel, "court-house-guarded.png", { pad: 4 });
+
+  // The neighbour's House's card: a House of another realm, with the Court button.
+  await page.evaluate((id) => void window.ffh.persons.openHouse(id), houseN.id);
+  const fsel = `.modal[data-tag=house] .house-card.foreign[data-house="${houseN.id}"]`;
+  await until(() => page.evaluate((sel) => !!document.querySelector(sel), fsel), "the neighbour's House's card", 20000 * SLOW);
+  const readF = () =>
+    page.evaluate((sel) => {
+      const c = document.querySelector(sel);
+      return {
+        lines: [...c.querySelectorAll(".pcourted .pcourted-line")].map((e) => e.textContent),
+        requirement: c.querySelector(".prequirement")?.textContent ?? "",
+        vassal: c.querySelector(".psince")?.textContent ?? "",
+        button: c.querySelector("button.pchannel-set[data-channel=court]")?.textContent ?? null,
+        disabled: !!c.querySelector("button.pchannel-set[data-channel=court]")?.disabled,
+        line: c.querySelector(".pchannel .pchannel-line")?.textContent ?? null,
+        courting: c.querySelector(".pcourting")?.textContent ?? null,
+        chips: [...document.querySelectorAll(".modal[data-tag=house] .kw-chip")].map((k) => k.textContent),
+      };
+    }, fsel);
+  const f = await readF();
+  check(f.lines.some((l) => YOURS.test(l)), `your courtship on its card: ${JSON.stringify(f.lines)}`);
+  check(/^Its leader's attitude toward you: (Furious|Annoyed|Cautious|Pleased|Friendly)\. Requirement: \d+(; at (Annoyed|Cautious|Pleased|Friendly) \d+)*\.$/.test(f.requirement), `your requirement against its attitude: ${f.requirement}`);
+  check(/^Vassal of the \S.*\. /.test(f.vassal), `its liege: ${f.vassal}`);
+  check(f.button === `Court (replaces Guard ${houseP.label})` && !f.disabled && /^Favour \d+ of \d+, /.test(f.line ?? "") && f.courting === null, `the Court button and its preview: ${JSON.stringify(f)}`);
+  check(f.chips.includes("Court") && f.chips.includes("House"), `its keywords: ${f.chips}`);
+  steps.push(`${houseN.label}'s card: "${f.requirement}"; [${f.button}] "${f.line}"`);
+  await crop(page, fsel, "house-foreign-court.png", { pad: 4 });
+  await tap(page, `${fsel} button.pchannel-set[data-channel=court]`);
+  const courted = await until(async () => {
+    const r = await readF();
+    return r.courting ? r : null;
+  }, "the Court set", 20000 * SLOW);
+  check(courted.courting === `Your channel: Court ${houseN.label}.` && courted.button === null, `the card once you court it: ${JSON.stringify(courted)}`);
+  steps.push(`Court set: "${courted.courting}"`);
+  await crop(page, fsel, "house-foreign-courting.png", { pad: 4 });
+  // A refusal: the rules' reason comes back (a Guard of a House not yours).
+  const refused = await page.evaluate(async (hp) => {
+    try {
+      await window.ffh.api.cmd("culture_channel", { action: "CULTURALACTION_GUARD_HOUSE", target: hp });
+      return null;
+    } catch (e) {
+      return e?.detail ?? e?.message ?? String(e);
+    }
+  }, houseN.player);
+  check((refused ?? "").includes(`${houseN.label} is not your House.`), `a Guard of the neighbour's House refused, the rules' reason: ${refused}`);
+  steps.push(`a refusal: "${refused}"`);
+  await page.keyboard.press("Escape");
+  await until(async () => (await topTag(page)) === "court", "back to the Court", 5000 * SLOW);
+}
+
 /** A query (`{k: "q", q}`) from the page's API, its reply. */
 function query(page, q) {
   return page.evaluate((q) => window.ffh.api.query(q), q);
@@ -293,7 +401,8 @@ async function main() {
     check(/^The Crown holds 4 cities, 1 over its limit of 3\.$/.test(court.crown) && court.crownCaution, `the Crown's limit, in the caution colour, without its cost: ${court.crown}`);
     check(court.tributeDefault === "20", `the realm's default tribute: ${court.tributeDefault}`);
     const kinds = court.attention.map((a) => a.kind);
-    check(kinds.indexOf("furious") === 0 && kinds.indexOf("levy") > kinds.lastIndexOf("furious") && kinds.indexOf("crown_over") > kinds.indexOf("levy") && kinds.indexOf("grantable") > kinds.indexOf("crown_over"), `the needs-attention lines' order: ${kinds}`);
+    check(kinds.indexOf("furious") === 0 && kinds.indexOf("courted") > kinds.lastIndexOf("furious") && kinds.indexOf("levy") > kinds.indexOf("courted") && kinds.indexOf("crown_over") > kinds.indexOf("levy") && kinds.indexOf("grantable") > kinds.indexOf("crown_over"), `the needs-attention lines' order: ${kinds}`);
+    check(court.attention.some((a) => a.kind === "courted" && a.text.startsWith(`${houseP.label}: the `) && /'s favour is \d+ of \d+, /.test(a.text)), `the courtship past two thirds: ${court.attention.map((a) => a.text).join(" | ")}`);
     check(court.attention.some((a) => /Furious\. Issues an ultimatum at your next turn\. Refused, it breaks away, taking .*: war\./.test(a.text)), `the Furious House's line: ${court.attention.map((a) => a.text).join(" | ")}`);
     check(court.attention.some((a) => a.text.startsWith(`${houseV.label} is Annoyed. It takes no levy.`)), `the House that takes no levy: ${court.attention.map((a) => a.text).join(" | ")}`);
     check(court.attention.some((a) => a.kind === "crown_over" && a.text.includes(`${taken.name} is over the Crown's limit of 3: maintenance +`)), `the city over the Crown's limit, its cost signed: ${court.attention.map((a) => a.text).join(" | ")}`);
@@ -315,17 +424,15 @@ async function main() {
       await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
     }
 
-    // A request's term says what its lapse does; a House that would accept an offer shows its
-    // price on the card.
-    const cards = await page.evaluate((v) => {
+    // A request's term says what its lapse does; no card has a price (the fourth build retired it).
+    const cards = await page.evaluate(() => {
       const m = document.querySelector(".modal[data-tag=court]");
       const lapse = [...m.querySelectorAll(".pdemand-lapse")].map((e) => e.textContent);
-      const price = (id) => m.querySelector(`.house-card[data-house="${id}"] > .pprice`)?.textContent ?? null;
-      return { lapse, priceV: price(v.annoyed), priceA: price(v.friendly) };
-    }, { annoyed: houseV.id, friendly: houseA.id });
+      return { lapse, prices: m.querySelectorAll(".pprice").length, secede: /secede|Price/.test(m.textContent) };
+    });
     check(cards.lapse.length > 0 && cards.lapse.every((t) => /^ At its term: -3 \(60 turns\)(, becomes .+?(: an ultimatum)?)?\.$/.test(t)), `the requests' lapse: ${JSON.stringify(cards.lapse)}`);
-    check(/^Price to secede: \d+ gold\.$/.test(cards.priceV ?? "") && cards.priceA === null, `the price in the card (Annoyed: ${cards.priceV}; Friendly: ${cards.priceA})`);
-    steps.push(`request terms: "${cards.lapse[0].trim()}"; ${houseV.label}: "${cards.priceV}"`);
+    check(cards.prices === 0 && !cards.secede, `no price on any card: ${JSON.stringify(cards)}`);
+    steps.push(`request terms: "${cards.lapse[0].trim()}"; no price on the cards`);
     // The Furious House's outcome: the contest for each city where an army of yours stands (rule
     // 7: held when your army's units outnumber the House's; its seat contested and lost).
     const houseC = st.houses.furious;
@@ -338,7 +445,6 @@ async function main() {
         await sleep(300);
         await crop(page, sel, name, { pad: 4 });
       };
-      await shoot(houseSel(houseV.id), "court-house-price.png");
       await shoot(houseSel(houseC.id), "court-house-furious.png");
       const requestCard = await page.evaluate(() => {
         const c = document.querySelector(".modal[data-tag=court] .house-card .pdemand-lapse")?.closest(".house-card");
@@ -348,25 +454,11 @@ async function main() {
       await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
     }
 
-    // ---- The third build, part 2B (rules 7 and 10): the neighbour courts House `pleased` (a
-    // resource and gold, open); its card says so, and its tribute line is gold only.
-    {
-      const courted = await page.evaluate((sel) => {
-        const c = document.querySelector(sel);
-        return { lines: [...c.querySelectorAll(".pcourted")].map((e) => e.textContent), tribute: c.querySelector(".ptribute-line")?.textContent ?? "" };
-      }, houseSel(houseP.id));
-      check(courted.lines.length === 1 && /^Courted by the \S.* \(gifts: \d+ gold, [^)]+\)\. Offers possible from turn \d+\.$/.test(courted.lines[0]), `the courted House's card: ${JSON.stringify(courted.lines)}`);
-      check(!/research/.test(courted.tribute) && /^Tribute \d+%(: \d+ gold last turn\.|\. Not paid yet\.)$/.test(courted.tribute), `its tribute line, gold only: ${courted.tribute}`);
-      const others = await page.evaluate((id) => [...document.querySelectorAll(`.modal[data-tag=court] .house-card:not([data-house="${id}"]) .pcourted`)].length, houseP.id);
-      check(others === 0, `no other House of yours is courted (${others})`);
-      steps.push(`${houseP.label}'s card: "${courted.lines[0]}"; tribute "${courted.tribute}"`);
-      if (SHOTS) {
-        await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), houseSel(houseP.id));
-        await sleep(300);
-        await crop(page, houseSel(houseP.id), "court-house-courted.png", { pad: 4 });
-        await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
-      }
-    }
+    // ---- The fourth build, rule 10: the neighbour courts House `pleased` by its channel, past two
+    // thirds of the requirement; the card's line (needs attention), the Guard button; its tribute
+    // line is gold only (the third build, rule 10).
+    await courting(page, st);
+    await page.evaluate(() => (document.querySelector(".modal[data-tag=court] .modal-body").scrollTop = 0));
 
     // A state mark's tooltip: the attitude's help from the data.
     const tipText = await page.evaluate(async (sel) => {

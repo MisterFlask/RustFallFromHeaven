@@ -17,7 +17,10 @@
 //! rules issue one at once), and the demand of the ultimatum the capitulated House's contract came
 //! from (the rules' own acceptance carries it out). The courtships (the fourth build:
 //! [`stage_courtships`]) are the rules' Court channels; set by hand there: the neighbour's favour
-//! at House `pleased` and the gold of the human's gift (each listed in `hand_set`).
+//! at House `pleased`, the human's at the neighbour's House and the gold of the human's gift (each
+//! listed in `hand_set`). In `persons-direct` the neighbour's House founds three more cities
+//! ([`grow_neighbour_house`], their plots shown to the human as the neighbour's other city's are),
+//! and the human's favour there is one liege turn from a split.
 
 use std::path::{Path, PathBuf};
 
@@ -39,8 +42,10 @@ pub struct StagedHouse {
     /// its own leader; under a contract: no tribute above 10%), `furious` (Furious, its ultimatum
     /// due at the human's next turn; two cities: one held by an army of the human, its seat
     /// contested by a smaller one and lost), `large` (five cities, one grant from the split's
-    /// threshold; tribute 10%, Furious: its ultimatum due at the human's next turn too); the
-    /// neighbour's: `neighbour` (Cautious or worse; the human courts it when the rules allow).
+    /// threshold; tribute 10%, Furious: its ultimatum due at the human's next turn too; in
+    /// `persons-direct` neither is Furious: `furious` Annoyed, no ultimatum due); the neighbour's:
+    /// `neighbour` (Cautious or worse; the human courts it: in `persons-direct` four cities, the
+    /// human's favour one liege turn from a split).
     pub role: &'static str,
     pub id: HouseId,
     /// Its label (`House Arne`, `Hippus`).
@@ -58,9 +63,13 @@ pub struct StagedHouse {
 /// holds all three), the Houses of [`StagedHouse`], the armies by role (`armies`: `main`, an army of the human
 /// for the levy; `holds_furious` in House `furious`'s second city; `contests_furious` in its seat,
 /// outnumbered), and the neighbour civilization (`neighbour`, met, at peace) with two cities, one
-/// (`neighbour_near`) within 12 plots of a House's city, the other its House's. `persons-direct` is
-/// the same realm with Mysticism known: the civics screen can adopt God King at once (no anarchy,
-/// no revolution timer).
+/// (`neighbour_near`) within 12 plots of a House's city, the other its House's. The courtships:
+/// the neighbour courts House `pleased` (its favour past two thirds of the requirement), the human
+/// courts the neighbour's House (its favour a third of the requirement). `persons-direct` is the
+/// same realm with Mysticism known (the civics screen can adopt God King at once: no anarchy, no
+/// revolution timer), the neighbour's House of four cities and the human's favour there one liege
+/// turn from a split toward it (its next turn: the human's inflow crosses the requirement; a leader
+/// is free).
 pub struct StagedPersons {
     pub save: PathBuf,
     pub stage: &'static str,
@@ -124,14 +133,14 @@ const SEEDS: [u32; 8] = [11, 12, 13, 14, 15, 16, 17, 18];
 /// Writes a [`StagedPersons`] into `dir` (a game directory): `persons`, or with `direct`
 /// `persons-direct`.
 pub fn persons(dir: &Path, direct: bool) -> Result<StagedPersons, String> {
-    let mut last = String::new();
+    let mut why: Vec<String> = Vec::new();
     for seed in SEEDS {
         match persons_seed(dir, seed, direct) {
             Ok(st) => return Ok(st),
-            Err(e) => last = format!("seed {seed}: {e}"),
+            Err(e) => why.push(format!("seed {seed}: {e}")),
         }
     }
-    Err(last)
+    Err(why.join("; "))
 }
 
 /// A land plot on which a unit may be placed: not water or impassable, no unit, no city.
@@ -275,7 +284,12 @@ fn layout(g: &Game, h: PlayerId) -> Result<Layout, String> {
 ///   default of 10%; one grant from the split's threshold of 6; two refusals by hand make it
 ///   Furious, so its ultimatum (not a refused request, no lower tribute below 20%, no memory: a
 ///   resource or gold a turn) is due at the human's next turn too.
-fn stage_ultimatums(g: &mut Game, h: PlayerId, house_c: HouseId, house_v: HouseId, taken: CityId, hand_set: &mut Vec<String>) -> Result<HouseId, String> {
+///
+/// With `direct` the last refusals are left out: no ultimatum is due at the human's next turn
+/// (House `furious` stays Annoyed, House `large` as founded), whose news is the split of the
+/// neighbour's House (an ultimatum could make the human declare war on the neighbour, which would
+/// turn the House's leader against it and raise the requirement).
+fn stage_ultimatums(g: &mut Game, h: PlayerId, house_c: HouseId, house_v: HouseId, taken: CityId, direct: bool, hand_set: &mut Vec<String>) -> Result<HouseId, String> {
     use ffh_core::persons::{LoyaltyCause, LoyaltyMod, Ultimatum, UltimatumKind, DEMAND_REFUSED};
     let turn = g.game_turn();
     let refusal = |g: &mut Game, hh: HouseId| g.houses[hh].standing.mods.push(LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount: DEMAND_REFUSED.0, until: Some(turn + DEMAND_REFUSED.1) });
@@ -331,12 +345,14 @@ fn stage_ultimatums(g: &mut Game, h: PlayerId, house_c: HouseId, house_v: HouseI
     g.houses[house_l].standing.state = state;
 
     // The last refusals: Furious, the ultimatums due at the human's next turn.
-    refusal(g, house_c);
-    hand_set.push("House furious: its last `Request refused` (Furious: its ultimatum at the next turn)".into());
-    while g.house_state(house_l) != LoyaltyState::Furious {
-        refusal(g, house_l);
+    if !direct {
+        refusal(g, house_c);
+        hand_set.push("House furious: its last `Request refused` (Furious: its ultimatum at the next turn)".into());
+        while g.house_state(house_l) != LoyaltyState::Furious {
+            refusal(g, house_l);
+        }
+        hand_set.push("House large: two `Request refused` (Furious: its ultimatum at the next turn)".into());
     }
-    hand_set.push("House large: two `Request refused` (Furious: its ultimatum at the next turn)".into());
     if g.house_great_cities(house_l) != 5 {
         return Err(format!("House large holds {} great cities", g.house_great_cities(house_l)));
     }
@@ -358,29 +374,97 @@ fn free_civ(g: &Game) -> Option<(CivilizationType, LeaderHeadType)> {
 /// The fourth build (docs/PERSONS.md, rules 1 to 5): the courtships of the scene. The neighbour
 /// `ai` courts the human's House `pleased` with its Court channel (the rules' own call), its
 /// favour set by hand to two thirds of the requirement (a courtship that needs attention); the
-/// human courts the neighbour's House `neighbour` with its own Court channel when the rules allow
-/// it, and gives that House a gift of gold (an ordinary gift: its leader's attitude toward the
-/// human). Set by hand, and listed in `hand_set`: the favour, and the gold of the gift.
-fn stage_courtships(g: &mut Game, h: PlayerId, ai: PlayerId, pleased: HouseId, neighbour: HouseId, _direct: bool, hand_set: &mut Vec<String>) -> Result<(), String> {
+/// human courts the neighbour's House `neighbour` with its own Court channel (refused: the seed is
+/// not used), gives that House a gift of gold (an ordinary gift: its leader's attitude toward the
+/// human), and has a favour there set by hand after the gift (which may move the requirement): a
+/// third of the requirement (its lines show a prediction), or with `direct` just under the
+/// requirement, so that the House's next liege turn crosses it at the human's inflow now (a quarter
+/// of that gain spared, against a guard the neighbour might set at the inflow its cities last
+/// diverted) and splits it toward the human (the half going not whole, not held, a leader free).
+/// Set by hand, and listed in `hand_set`: the favours, and the gold of the gift.
+fn stage_courtships(g: &mut Game, h: PlayerId, ai: PlayerId, pleased: HouseId, neighbour: HouseId, direct: bool, hand_set: &mut Vec<String>) -> Result<(), String> {
     use ffh_core::culture::{ChannelOrder, ChannelTarget};
+    use ffh_core::persons::Favour;
     use ffh_core::structs::TradeData;
     let court = g.culture_action(CultureEffect::Court).ok_or("no Court action in the data")?;
     let order = |h: HouseId| ChannelOrder { action: court, target: ChannelTarget::House(h), religion: None };
     // The neighbour courts House `pleased`.
     g.player_set_culture_channel(ai, Some(order(pleased))).map_err(|e| format!("the neighbour cannot court House pleased: {e}"))?;
     let need = 100 * g.house_requirement(pleased, ai).total;
-    g.houses[pleased].favour = vec![ffh_core::persons::Favour { courter: ai, amount: need * 2 / 3 + 1, warned: false }];
+    g.houses[pleased].favour = vec![Favour { courter: ai, amount: need * 2 / 3 + 1, warned: false }];
     hand_set.push("House pleased: the neighbour's favour at two thirds of its requirement".into());
-    // The human courts the neighbour's House, when the rules allow it, and gives it gold.
-    if let Err(e) = g.player_set_culture_channel(h, Some(order(neighbour))) {
-        hand_set.push(format!("the human's Court of the neighbour's House refused: {e}"));
-    }
+    // The human courts the neighbour's House, and gives it gold.
+    g.player_set_culture_channel(h, Some(order(neighbour))).map_err(|e| format!("the human cannot court the neighbour's House: {e}"))?;
     let gold = 50;
     g.players[h].gold += gold;
     hand_set.push(format!("{gold} gold added to the human's treasury for a gift"));
     let hp = g.houses[neighbour].player;
     if !g.player_offer_house(h, hp, &[TradeData { item_type: TradeableItem::TRADE_GOLD, data: gold, offering: false, hidden: false }], &[]) {
         return Err("the human's gift to the neighbour's House refused".into());
+    }
+    // The human's favour there.
+    let need = 100 * g.house_requirement(neighbour, h).total;
+    let amount = if direct {
+        let gain = g.house_court_gain(neighbour, h, true);
+        let guard = g.house_guard_with(neighbour, g.players[ai].culture_inflow).loss;
+        let amount = need - 1;
+        if g.favour_step(amount, gain * 3 / 4, guard) < need {
+            return Err(format!("the human's courtship of the neighbour's House does not cross {need} in a turn (gain {gain}, a guard {guard})"));
+        }
+        let split = g.house_split_toward(neighbour, h).ok_or("the neighbour's House has no city")?;
+        if split.whole || split.going.is_empty() || !split.held.is_empty() {
+            return Err(format!("the split toward the human: {split:?}"));
+        }
+        let civ = g.player_get_civilization_type(hp).ok_or("the neighbour's House has no civilization")?;
+        if g.house_leader_pool(civ, h).leaders.is_empty() {
+            return Err("no leader is free for a split toward the human".into());
+        }
+        hand_set.push("the neighbour's House: the human's favour just under its requirement (one liege turn from a split)".into());
+        amount
+    } else {
+        hand_set.push("the neighbour's House: the human's favour at a third of its requirement".into());
+        need / 3
+    };
+    let list = &mut g.houses[neighbour].favour;
+    list.retain(|f| f.courter != h);
+    list.push(Favour { courter: h, amount, warned: false });
+    list.sort_by_key(|f| f.courter);
+    Ok(())
+}
+
+/// `persons-direct`: the neighbour's House `house` founds `n` cities (set by hand, as the stage
+/// founds the human's: a grant would move the House's loyalty, and the requirement with it), each
+/// at the free site nearest the human's cities (4 plots or more from them and from the capitulated
+/// civilization's capital `v`, as the neighbour's other city); their plots are shown to the human
+/// (each city's and its ring). A split of the House toward the human then takes the half of them
+/// nearest it.
+fn grow_neighbour_house(g: &mut Game, h: PlayerId, house: HouseId, v: PlotIdx, n: usize) -> Result<(), String> {
+    let team = g.players[h].team;
+    let hp = g.houses[house].player;
+    let (vx, vy) = g.map.xy(v);
+    for _ in 0..n {
+        let human: Vec<(i32, i32)> = g.players[h].cities.iter().map(|&c| (g.cities[c].x, g.cities[c].y)).collect();
+        let mut best: Option<(i32, PlotIdx)> = None;
+        for q in g.map.plot_ids() {
+            let (x, y) = g.map.xy(q);
+            if g.plot_is_water(q) || g.plot_is_impassable(q) || !g.player_can_found(hp, x, y, false) || g.plot_distance(x, y, vx, vy) < 4 {
+                continue;
+            }
+            let near = human.iter().map(|&(cx, cy)| g.plot_distance(x, y, cx, cy)).min().unwrap_or(i32::MAX);
+            if near >= 4 && best.is_none_or(|k| (near, q) < k) {
+                best = Some((near, q));
+            }
+        }
+        let (_, q) = best.ok_or("no site for the neighbour's House's cities")?;
+        let (x, y) = g.map.xy(q);
+        g.player_init_city(hp, x, y, true, true);
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                if let Some(r) = g.plot_xy(x, y, dx, dy) {
+                    g.plot_set_revealed(r, team, true, false, None, true);
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -533,6 +617,9 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         let c = neighbour_cities.iter().copied().find(|&c| !g.city_is_capital(c)).ok_or("the neighbour's second city")?;
         g.player_grant_city(ai, c, GrantTo::NewHouse).map_err(|e| format!("the neighbour's grant: {e}"))?
     };
+    if direct {
+        grow_neighbour_house(&mut s.g, h, house_n, lay.v, 3)?;
+    }
 
     // States: House `furious` Annoyed, by refused requests (the last refusal, which makes it
     // Furious, is set by `stage_ultimatums`: a Furious House issues its ultimatum at once).
@@ -594,7 +681,7 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
     }
 
     // The third build, part 2A: the ultimatums due, a contract, a House one grant from a split.
-    let house_l = stage_ultimatums(&mut s.g, h, house_c, house_v, taken, &mut hand_set)?;
+    let house_l = stage_ultimatums(&mut s.g, h, house_c, house_v, taken, direct, &mut hand_set)?;
     // The fourth build: the courtships (rules 1 to 5).
     stage_courtships(&mut s.g, h, ai, house_b, house_n, direct, &mut hand_set)?;
 
@@ -605,8 +692,15 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         want("House friendly", g.house_state(house_a), &[LoyaltyState::Friendly])?;
         want("House pleased", g.house_state(house_b), &[LoyaltyState::Pleased, LoyaltyState::Cautious])?;
         want("House annoyed", g.house_state(house_v), &[LoyaltyState::Annoyed])?;
-        want("House furious", g.house_state(house_c), &[LoyaltyState::Furious])?;
-        want("House large", g.house_state(house_l), &[LoyaltyState::Furious])?;
+        if direct {
+            want("House furious", g.house_state(house_c), &[LoyaltyState::Annoyed])?;
+            if g.house_state(house_l) == LoyaltyState::Furious {
+                return Err("House large is Furious: an ultimatum is due".into());
+            }
+        } else {
+            want("House furious", g.house_state(house_c), &[LoyaltyState::Furious])?;
+            want("House large", g.house_state(house_l), &[LoyaltyState::Furious])?;
+        }
         want("the neighbour's House", g.house_state(house_n), &[LoyaltyState::Cautious, LoyaltyState::Annoyed, LoyaltyState::Furious])?;
         if !g.city_claimants(taken).contains(&house_b) {
             return Err(format!("the taken city's claimants are {:?}", g.city_claimants(taken)));

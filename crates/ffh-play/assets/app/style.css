@@ -811,29 +811,37 @@ table.scores.diplo td { vertical-align: top; }
 input.amount { width: 80px; }
 /* Houses as parties (docs/PERSONS.md, "The second build", rule 13): a House's row under its liege's,
    indented, with its shield and `House Arne, vassal of the Bannor`; on its trade screen the line of
-   what is its liege's to trade and, in the answer, what accepting does (war). */
+   what is its liege's to trade. */
 table.scores.diplo tr.house-row > td:first-child { padding-left: 26px; }
 table.scores.diplo tr.house-row > td:first-child .leader-cell { border-left: 2px solid var(--frame); padding-left: 8px; }
 .house-of { white-space: nowrap; }
 .house-of .house-shield { vertical-align: -2px; }
 .trades-through { margin: 8px 0 0; }
-.trade-summary .house-war-title { margin-top: 6px; font-weight: 700; }
-.trade-summary .house-war { font-weight: 700; }
 .own-house p { margin: 6px 0; }
-/* A House's line in the list carries its state (and another's price to secede), where a phone sees
+/* A House's line in the list carries its state, where a phone sees
    it: each part a line of its own under the House's (within the portrait's height), so the table
    keeps to the dialog's width; the separators read only as text. */
 .leader-cell .house-who, .leader-cell .house-who .house-of { white-space: normal; }
 .house-who .house-chunk { display: block; white-space: nowrap; }
 .house-who .house-chunk > .sep { display: none; }
-.house-price { color: var(--c-sand); }
-/* Courtship (docs/PERSONS.md, "The third build", rule 7): who courts a House, under its line in the
-   list and on its card; on a House's trade screen, your courtship of it. */
-.house-courted { color: var(--caution); font-size: 13px; white-space: normal; margin-top: 2px; max-width: 18em; }
-/* (A long reason an offer waits, the courtship's, wraps within the column as the courtship does.) */
-.house-who .house-refusal { display: block; white-space: normal; max-width: 18em; }
-.pline.pcourted { color: var(--caution); }
+/* Courting (docs/PERSONS.md, "The fourth build", rule 10): who courts a House, under its line in
+   the list (yours first) and on its card, a courtship past two thirds marked; its guard; the
+   button that sets your channel (Court, Guard) with what it would do; on a House's trade screen,
+   your courtship of it and the requirement against its leader's attitude. */
+.house-courted, .house-courting-row { font-size: 13px; white-space: normal; margin-top: 2px; max-width: 18em; }
+.house-courted { color: var(--caution); }
+.house-courting-row { color: var(--c-sand); }
+.pline.pcourted { color: var(--caution); display: flex; align-items: baseline; gap: 6px; }
+.pline.pcourted.own { color: var(--c-sand); }
+.pline.pcourted.attention { color: var(--warn); font-weight: 600; }
+.pcourted-mark { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border-radius: 50%; background: var(--warn); color: var(--c-soot); font-weight: 800; font-size: 12px; line-height: 1; }
+.pline.pguard { color: var(--c-sand); }
+.pline.prequirement { color: var(--dim); font-size: 13px; }
+.pchannel { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 2px; }
+.pchannel > .pchannel-line, .pchannel > .pchannel-refusal { flex: 1 1 14em; min-width: 0; font-size: 13px; }
 .house-courting { margin: 8px 0 0; color: var(--c-sand); }
+.house-requirement { margin: 2px 0 8px; color: var(--dim); font-size: 13px; }
+.trade-none { font-size: 13px; }
 @media (max-width: 520px) {
   table.scores.diplo tr.house-row > td:first-child { padding-left: 10px; }
   .house-of { white-space: normal; }

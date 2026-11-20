@@ -683,7 +683,8 @@ impl Game {
             (CultureEffect::Guard, ChannelTarget::House(h)) if self.houses.contains(h) => {
                 reach = self.culture_house_reach(p, h);
                 let gv = self.house_guard_with(h, inflow);
-                line = gv.line.clone();
+                // What the order would do (the standing guard's own line reads `Guarded: ...`).
+                line = format!("Guard: \u{2212}{} a turn to each courtship.", gv.loss / 100);
                 ChannelEffect::Guard(gv)
             }
             (CultureEffect::SpreadReligion, ChannelTarget::Player(t)) if self.players.get(t).is_some() => match o.religion {
