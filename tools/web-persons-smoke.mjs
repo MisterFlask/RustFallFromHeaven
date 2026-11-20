@@ -38,7 +38,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until, skipped, chromiumLaunch } from "./web-lib.mjs";
+import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until, skipped, chromiumLaunch, calcLines, shownCalc, hideTip } from "./web-lib.mjs";
 
 const args = parseArgs(process.argv.slice(2), { bin: "value", assets: "value", shots: "value", gpu: "flag" });
 const ASSETS = path.resolve(args.assets ?? path.join(ROOT, "crates", "ffh-play", "assets"));
@@ -271,7 +271,7 @@ async function courting(page, st) {
   const before = await read();
   check(before.lines.length === 1 && COURTSHIP.test(before.lines[0].text) && before.lines[0].attention && before.lines[0].mark, `House pleased's courtship, needing attention: ${JSON.stringify(before.lines)}`);
   check(!/research/.test(before.tribute) && /^Tribute \d+%(: \d+ gold last turn\.|\. Not paid yet\.)$/.test(before.tribute), `its tribute line, gold only: ${before.tribute}`);
-  check(/^Guard \(replaces Court .+\)$/.test(before.button ?? "") && /^Guard: −\d+ a turn to each courtship\.$/.test(before.line ?? "") && before.guard === null, `the Guard button and its preview: ${JSON.stringify(before)}`);
+  check(/^Guard \(replaces Court .+\)$/.test(before.button ?? "") && /^Guard: −\d+\.\d a turn to each courtship\.$/.test(before.line ?? "") && before.guard === null, `the Guard button and its preview: ${JSON.stringify(before)}`);
   const others = await page.evaluate((id) => document.querySelectorAll(`.modal[data-tag=court] .house-card:not([data-house="${id}"]) .pcourted`).length, houseP.id);
   check(others === 0, `no other House of yours is courted (${others})`);
   const chips = await page.evaluate(() => [...document.querySelectorAll(".modal[data-tag=court] .court-keywords .kw-chip")].map((c) => c.textContent));
@@ -280,13 +280,29 @@ async function courting(page, st) {
   await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
   await sleep(300);
   await crop(page, sel, "court-house-courted.png", { pad: 4 });
+  // The Guard button's preview and the courtship's line tell how their numbers are made
+  // (docs/PLAY_DESIGN.md 4.9): a tap shows the lines the view sends.
+  const card = (await query(page, "court")).houses.find((x) => x.id === houseP.id);
+  const tipOf = async (s, shot = null) => {
+    await tap(page, s);
+    await sleep(250);
+    const lines = await shownCalc(page);
+    if (shot && lines) await crop(page, `${s}, .richtip`, shot, { pad: 8 });
+    await hideTip(page);
+    return lines;
+  };
+  const guardTip = await tipOf(`${sel} .pchannel .pchannel-line`, "calc-house-guard.png");
+  check(JSON.stringify(guardTip) === JSON.stringify(calcLines(card.channel?.calc)) && /^Guard: .+ a turn from each courtship\.$/.test(guardTip?.at(-1) ?? ""), `the Guard preview's tooltip: ${JSON.stringify(guardTip)}`);
+  const lineTip = await tipOf(`${sel} .pcourted-line`, "calc-house-courtship.png");
+  check(JSON.stringify(lineTip) === JSON.stringify(calcLines(card.courtships[0].calc)) && lineTip.some((l) => l.startsWith("Next liege turn: ")), `the courtship's tooltip: ${JSON.stringify(lineTip)}`);
+  steps.push(`tooltips: "${guardTip.at(-1)}"; "${lineTip.at(-1)}"`);
   // Guard: the card says its guard, the button is gone.
   await tap(page, `${sel} button.pchannel-set[data-channel=guard]`);
   const after = await until(async () => {
     const r = await read();
     return r.guard && !r.button ? r : null;
   }, "House pleased guarded", 20000 * SLOW);
-  check(/^Guarded: −\d+ a turn to each courtship\.$/.test(after.guard), `the guard line: ${after.guard}`);
+  check(/^Guarded: −\d+\.\d a turn to each courtship\.$/.test(after.guard), `the guard line: ${after.guard}`);
   const culture = await query(page, "culture");
   check(culture.channel?.name === `Guard ${houseP.label}`, `the human's channel guards it: ${culture.channel?.name}`);
   steps.push(`Guard set: "${after.guard}"`);

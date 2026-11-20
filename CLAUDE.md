@@ -398,6 +398,11 @@ reminder is drawn in its own box beside or below the tooltip, never inside the r
 restate a keyword's rule in an entity's text (`crates/ffh-play/tests/keywords.rs` fails on it);
 when the same sentence appears on many entities, make it a keyword.
 
+A number the rules calculate shows its calculation in a tooltip (the owner's rule, 2026-11-20;
+docs/PLAY_DESIGN.md 4.9): the screen shows the result, the tooltip its parts and how they combine
+with the values in play (`Gain: 5.5 × 39% = 2.1 a turn.`). The rules write those lines next to
+the formula (`ffh-core`'s `*_calc` reads), the view sends them as `calc`, `app/calc.js` draws them.
+
 ## Show UI changes in a screenshot
 
 Whenever a change adds to or alters what the player sees in support of a feature (a panel, a

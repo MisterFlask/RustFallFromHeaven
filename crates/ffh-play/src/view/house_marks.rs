@@ -117,9 +117,10 @@ fn part_line(p: &ffh_core::persons::LoyaltyPart) -> String {
 /// ultimatum's stated outcome, else null), `contract` (its contract's line, else null),
 /// `parts` (`["Tribute 20%: -1", ..]`) and `loyalty` (`Loyalty: -2.`); null for a player that is
 /// no House. `liege_name` is the liege's civilization (`Bannor`), as the rules' lines name it.
-/// For every viewer, `courted`: the courtships of it, a line each (the fourth build, rule 1: a
-/// channel is in the open: `Courted by the Sheaim: favour 80 of 188, a split in ~12 turns (Ventry,
-/// Corona).`), but the viewer's own (its line is `house_offer.courting`).
+/// For every viewer, `courted`: the courtships of it, `{line, calc}` each (the fourth build, rule
+/// 1: a channel is in the open: `Courted by the Sheaim: favour 80 of 188, a split in ~12 turns
+/// (Ventry, Corona).`; `calc`: how its numbers are made), but the viewer's own (its line is
+/// `house_offer.courting`).
 pub fn player_house_brief(v: &Viewer, p: PlayerId) -> Json {
     let g = v.g;
     let Some(h) = g.player_house(p) else { return Json::Null };
@@ -133,7 +134,7 @@ pub fn player_house_brief(v: &Viewer, p: PlayerId) -> Json {
         "colour" => house.color as i32,
     };
     // The fourth build, rule 1.
-    j.set("courted", Json::Arr(g.house_courtships(h).into_iter().filter(|c| c.courter != v.h).map(|c| Json::from(crate::names::resolve_keys(g.d, &c.line).into_owned())).collect()));
+    j.set("courted", Json::Arr(g.house_courtships(h).into_iter().filter(|c| c.courter != v.h).map(|c| crate::jobj! { "line" => crate::names::resolve_keys(g.d, &c.line).into_owned(), "calc" => crate::view::culture::courtship_calc_json(v, &c) }).collect()));
     if liege == v.h {
         if let Some(hv) = g.house_view(h) {
             j.set("state", hv.state.name());

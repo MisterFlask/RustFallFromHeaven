@@ -64,7 +64,7 @@ mod vassals;
 mod world_unit;
 
 pub use crown::CROWN_OVER_FACTOR;
-pub use favour::{attitude_step, CourtshipView, Favour, GuardView, GuardedCourtship, Requirement, SplitView};
+pub use favour::{attitude_step, CourtshipCalc, CourtshipView, Favour, GuardView, GuardedCourtship, Requirement, SplitView};
 pub use houses::{CityHold, FULL_CITY_TO_CAPPED_HOUSE};
 pub use leaders::{leader_name, leader_title, LeaderPool};
 pub use loyalty::tribute_part;

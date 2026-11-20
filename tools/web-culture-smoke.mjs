@@ -14,13 +14,16 @@
 //   attention, and the Guard button's preview;
 // - the Guard button: it sets the guard, the head and the preview change, the courter's prediction
 //   moves to where the guard's preview said; Stop; a Court set again from the chooser;
-// - the city screen's Culture line and its link to the Culture screen; the keywords' boxes.
+// - the city screen's Culture line and its link to the Culture screen; the keywords' boxes;
+// - the calculation tooltips (docs/PLAY_DESIGN.md 4.9): a tap on the head's inflow, your Court's
+//   gain, a courtship aimed at you and the Guard button's preview shows the lines the view sends.
 // Any console error or page error fails it.
 //
 // With `--shots DIR` it also saves the screenshots the owner reviews (CLAUDE.md, "Show UI changes
 // in a screenshot": crops at deviceScaleFactor 2 on a 390 px wide page, the HD-2D map): the head
 // and your Court channel with its requirement, the chooser with a refused target, aimed at you
-// with the Guard preview, a Guard channel, the city screen's Culture section, the keyword boxes.
+// with the Guard preview, a Guard channel, the city screen's Culture section, the keyword boxes,
+// and the calculation tooltips (`calc-*.png`).
 //
 //   node tools/web-culture-smoke.mjs [--bin PATH] [--assets DIR] [--shots DIR] [--gpu]
 //
@@ -30,7 +33,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { parseArgs, findBin, tempDir, startServer, stage, until, skipped, chromiumLaunch } from "./web-lib.mjs";
+import { parseArgs, findBin, tempDir, startServer, stage, until, skipped, chromiumLaunch, calcLines, shownCalc, hideTip } from "./web-lib.mjs";
 
 const args = parseArgs(process.argv.slice(2), { bin: "value", assets: "value", shots: "value", gpu: "flag" });
 const SHOTS = args.shots ? path.resolve(args.shots) : null;
@@ -207,6 +210,47 @@ async function click(page, sel) {
 
 // ---- the checks --------------------------------------------------------------------------------
 
+/** Taps the element `sel` matches and returns the calculation lines its tooltip shows (null: no
+ *  tooltip); with `shot`, saves the element and its tooltip as one crop; then hides the tooltip. */
+async function tipOf(page, sel, shot = null) {
+  await click(page, sel);
+  await sleep(250);
+  const lines = await shownCalc(page);
+  if (shot && lines) await crop(page, [sel, ".richtip"], shot, { pad: 8 });
+  await hideTip(page);
+  return lines;
+}
+
+/** The calculation tooltips: the head's inflow by city, your Court's gain (its inflow, reach and
+ *  product), the first courtship aimed at you and its Guard preview, each as the view sends it. */
+async function calcTips(page, r) {
+  const inflow = await tipOf(page, `${M} .culture-head p.culture-inflow`, "calc-inflow.png");
+  check(JSON.stringify(inflow) === JSON.stringify(calcLines(r.inflow_calc)) && inflow.at(-1).startsWith("Inflow: "), `the inflow's tooltip: ${JSON.stringify(inflow)}`);
+  const cv = r.preview?.court;
+  if (cv) {
+    const gainCell = await page.evaluate((M) => {
+      const tr = [...document.querySelectorAll(`${M} .culture-ours table.culture-facts tr`)].find((t) => t.querySelector("th")?.textContent === "Gain");
+      tr?.querySelector("td")?.setAttribute("data-test", "gain");
+      return !!tr;
+    }, M);
+    check(gainCell, "your Court's Gain row");
+    await scrollTo(page, `${M} .culture-ours`);
+    const gain = await tipOf(page, `${M} td[data-test=gain]`, "calc-gain.png");
+    const want = calcLines(cv.calc, ["inflow", "reach", "gain"]);
+    check(JSON.stringify(gain) === JSON.stringify(want) && /^Gain: .+ × \d+% = .+ a turn\.$/.test(gain.at(-1)), `the gain's tooltip: ${JSON.stringify(gain)}`);
+  }
+  const x = r.aimed[0];
+  if (x) {
+    await scrollTo(page, `${M} .culture-aimed`);
+    const line = await tipOf(page, `${M} .culture-aimed-house[data-house="${x.house}"] li.courtship .courtship-line`, "calc-courtship.png");
+    check(JSON.stringify(line) === JSON.stringify(calcLines(x.courtships[0].calc)) && line.some((l) => l.startsWith("Next liege turn: ")), `a courtship's tooltip: ${JSON.stringify(line)}`);
+    if (!x.guarded && !x.guard_refusal) {
+      const guard = await tipOf(page, `${M} .culture-aimed-house[data-house="${x.house}"] p.culture-guard-preview`, "calc-guard.png");
+      check(JSON.stringify(guard) === JSON.stringify(calcLines(x.guard.calc)) && /^Guard: .+ × \d+% = .+ a turn from each courtship\.$/.test(guard.at(-1)), `the Guard preview's tooltip: ${JSON.stringify(guard)}`);
+    }
+  }
+}
+
 /** The head and your channel's preview against the view's numbers; a Court preview's
  *  requirement, turns and cities. */
 async function headAndChannel(page, r) {
@@ -331,6 +375,10 @@ async function main() {
     await headAndChannel(page, r);
     await scrollTo(page, `${M} .culture-head`);
     await crop(page, [`${M} .culture-head`, `${M} .culture-ours`], "culture-head-court.png");
+
+    // The calculation tooltips.
+    await calcTips(page, r);
+    await scrollTo(page, `${M} .culture-head`);
 
     // The chooser and its refusals.
     const seen = await chooser(page, r);

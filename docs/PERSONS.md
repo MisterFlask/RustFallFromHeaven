@@ -160,7 +160,7 @@ build stands.**
       remember of your channels.
     - *The city screen* shows the half of its culture diverted, under the civilization's channel.
     - *The House card* lists every courtship of the House (`Courted by the Sheaim: favour 80 of 188,
-      a split in ~12 turns (Ventry, Corona).`) and a guard (`Guarded: −6 a turn to each courtship.`);
+      a split in ~12 turns (Ventry, Corona).`) and a guard (`Guarded: −6.0 a turn to each courtship.`);
       a courtship past two thirds is a line that needs attention.
     - *The trade table with a House* offers gifts only (gold, resources), with the line of your
       courtship of it.
@@ -308,7 +308,7 @@ The read API (pure; for part 2's screens):
 - `culture_channel_preview(p, &ChannelOrder) -> ChannelPreview { order, refusal, inflow, reach,
   effect, line }`, `effect` one of `ChannelEffect::Court(CourtshipView)` (the courtship as the order
   would run it), `Guard(GuardView)`, `Spread { chance, cities: Vec<ChannelReach> }`, `None`; `line`
-  `Favour 0 of 188, a split in ~31 turns (Ventry, Corona).`, `Guard: −6 a turn to each
+  `Favour 0 of 188, a split in ~31 turns (Ventry, Corona).`, `Guard: −6.0 a turn to each
   courtship.` (a standing guard's own line reads `Guarded: ...`), `12% a turn (3 cities in reach can take it).`
 - `culture_channel_options(p, action, religion) -> Vec<ChannelOption { target, label, line,
   refusal }>`: Court, every House of another realm the caster has met; Guard, its Houses; Spread
@@ -421,7 +421,7 @@ city screen are part 2A's. Where it settles what the rule left open:
 
 1. *The House card.* Each courtship is the rules' line (`HouseView::courtships`, `Courted by the
    Sheaim: favour 80 of 188, a split in ~12 turns (Ventry, Corona).`); one past two thirds of its
-   requirement is drawn in red with a `!` mark (`attention`). Its guard is its line (`Guarded: −6 a
+   requirement is drawn in red with a `!` mark (`attention`). Its guard is its line (`Guarded: −6.0 a
    turn to each courtship.`). While one of your Houses is courted, its card carries the `Guard`
    button, unless your channel guards it already; the button's line beside it is the rules'
    preview of the order (`culture_channel_preview`), and a refused order shows the rules' reason

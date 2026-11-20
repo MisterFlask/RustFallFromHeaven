@@ -165,3 +165,24 @@ export function webglRenderer(page) {
     return String(x ? gl.getParameter(x.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
   });
 }
+
+/** A calculation's lines, flat, as the page's calc.js shows them in a tooltip (docs/PLAY_DESIGN.md
+ *  4.9): a list of lines, or a courtship's parts in their order (`parts`: only those). */
+export function calcLines(calc, parts = ["requirement", "inflow", "reach", "gain", "guard", "turn"]) {
+  if (!calc) return [];
+  return Array.isArray(calc) ? calc.filter(Boolean) : parts.flatMap((k) => calc[k] ?? []).filter(Boolean);
+}
+
+/** The calculation lines the page's tooltip shows now (null: no tooltip shown), then hides it. */
+export async function shownCalc(page) {
+  const lines = await page.evaluate(() => {
+    const b = document.querySelector(".richtip");
+    return b && !b.hidden ? [...b.querySelectorAll(".tip-calc-line")].map((l) => l.textContent) : null;
+  });
+  return lines;
+}
+
+/** Hides the page's tooltip and its reminder boxes. */
+export async function hideTip(page) {
+  await page.evaluate(() => document.querySelectorAll(".richtip, .tip-side").forEach((b) => (b.hidden = true)));
+}

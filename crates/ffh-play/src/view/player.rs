@@ -467,13 +467,14 @@ fn and_list(items: &[String]) -> String {
 }
 
 /// House `hh` (not the human's) as the diplomacy list's second line states it (docs/PERSONS.md,
-/// "The second build", rule 5; "The fourth build"): `{state, courting}`, its state toward its own
-/// liege and the human's courtship of it (`Game::house_courting_line`; null while it courts it
-/// not).
+/// "The second build", rule 5; "The fourth build"): `{state, courting, courting_calc}`, its state
+/// toward its own liege and the human's courtship of it (`Game::house_courting_line`; null while it
+/// courts it not) with how its numbers are made (docs/PLAY_DESIGN.md, "Calculated numbers").
 fn house_offer(v: &Viewer, hh: HouseId) -> Json {
     let g = v.g;
     crate::jobj! {
         "state" => g.house_state(hh).name(),
         "courting" => g.house_courting_line(hh, v.h),
+        "courting_calc" => if g.house_courting_line(hh, v.h).is_some() { crate::view::culture::courtship_calc_json(v, &g.house_courtship_view(hh, v.h)) } else { Json::Null },
     }
 }

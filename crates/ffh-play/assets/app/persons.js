@@ -23,6 +23,7 @@ import { addHelp } from "./help.js";
 import { leaderPortrait, PORTRAIT } from "./portraits.js";
 import { keywordChips, remindersNode } from "./keywords.js";
 import { render as markup } from "./markup.js";
+import { withCalc } from "./calc.js";
 import { SHIELD, SHIELD_EDGE, houseColour, stateClass, stateGlyph, stateKey, stateWord, turnsText } from "./persons_mark.js";
 
 const SVG = "http://www.w3.org/2000/svg";
@@ -205,10 +206,10 @@ function courtshipLines(x) {
         `div.pline.pcourted${c.attention ? ".attention" : ""}${c.own ? ".own" : ""}`,
         { "data-courter": c.courter, "data-attention": c.attention ? "1" : "0" },
         c.attention ? h("span.pcourted-mark", { title: "Needs attention: past two thirds of the requirement", "aria-label": "Needs attention" }, "!") : null,
-        h("span.pcourted-line", c.line),
+        withCalc(h("span.pcourted-line", c.line), c.calc),
       ),
     ),
-    x.guard ? h("div.pline.pguard", x.guard) : null,
+    x.guard ? withCalc(h("div.pline.pguard", x.guard), x.guard_calc) : null,
   ];
 }
 
@@ -225,7 +226,7 @@ export function channelButton(b, done) {
     "div.pchannel",
     { "data-kind": b.kind },
     h(`button.small.pchannel-set`, { disabled: !!b.refusal, title: b.refusal ?? null, "data-channel": b.kind, onclick: set }, b.label),
-    b.refusal ? h("span.pchannel-refusal.dim", b.refusal) : b.line ? h("span.pchannel-line", b.line) : null,
+    b.refusal ? h("span.pchannel-refusal.dim", b.refusal) : b.line ? withCalc(h("span.pchannel-line", b.line), b.calc) : null,
   );
 }
 
@@ -378,7 +379,7 @@ function foreignCard(x, m, reload) {
     ),
     h("div.pchips", chips),
     ...courtshipLines(x),
-    h("div.pline.prequirement", x.requirement),
+    withCalc(h("div.pline.prequirement", x.requirement), x.requirement_calc),
     x.courting ? h("div.pline.pcourting", x.courting) : channelButton(x.channel, reload),
   );
 }
@@ -477,7 +478,7 @@ export async function openCourt(focus = null) {
             h(
               `div.pattn${a.urgent || a.kind === "furious" ? ".urgent" : ""}`,
               { role: "listitem", "data-kind": a.kind, "data-house": a.house ?? null },
-              h("span", a.text),
+              withCalc(h("span", a.text), a.calc),
               lapseText(a),
               a.note ? h("span.dim", ` ${a.note}`) : null,
               actButton(a.button, m),
