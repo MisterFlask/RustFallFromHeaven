@@ -288,7 +288,7 @@ async function courting(page, st) {
   }, "House pleased guarded", 20000 * SLOW);
   check(/^Guarded: −\d+ a turn to each courtship\.$/.test(after.guard), `the guard line: ${after.guard}`);
   const culture = await query(page, "culture");
-  check(culture.ours?.name === `Guard ${houseP.label}`, `the human's channel guards it: ${culture.ours?.name}`);
+  check(culture.channel?.name === `Guard ${houseP.label}`, `the human's channel guards it: ${culture.channel?.name}`);
   steps.push(`Guard set: "${after.guard}"`);
   await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "start" }), sel);
   await sleep(300);
