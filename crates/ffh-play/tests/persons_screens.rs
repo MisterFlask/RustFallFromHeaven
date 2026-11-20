@@ -206,8 +206,12 @@ fn a_houses_trade_table_and_its_answers() {
     let names = |side: &str| -> Vec<&'static str> { arr(&tr, side).iter().filter_map(|x| x.get("item").and_then(Json::as_i64)).map(|i| TradeableItem::NAMES[i as usize]).collect() };
     assert!(names("they_give").is_empty(), "it gives nothing");
     assert!(names("we_give").iter().all(|x| ["TRADE_GOLD", "TRADE_RESOURCES"].contains(x)), "{:?}", names("we_give"));
-    // The human's courtship of it: the rules' line (null while it courts it not).
+    // It takes gifts and gives nothing; the human's courtship of it: the rules' line (the stage:
+    // the human courts it); its requirement against its leader's attitude (the fourth build, rule
+    // 10; `tests/persons_courting.rs` reads them closer).
+    assert_eq!(s_of(house, "takes"), format!("{} takes gifts of gold and resources and gives nothing.", n.label));
     assert_eq!(house.get("courting").and_then(Json::as_str).map(str::to_string), s.g.house_courting_line(n.id, st.human));
+    assert!(s_of(house, "requirement").starts_with("Its leader's attitude toward you: "), "{house}");
     // A gift is accepted; anything asked back is refused.
     let gift = q(&s, &format!(r#"{{"q":"trade_answer","with":{},"give":[{{"item":"TRADE_GOLD","data":1}}],"get":[]}}"#, hp.0));
     assert_eq!(gift.get("accept").and_then(Json::as_bool), Some(true), "{gift}");

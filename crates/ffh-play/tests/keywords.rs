@@ -121,8 +121,9 @@ fn strings_of(j: &Json, out: &mut Vec<String>) {
     }
 }
 
-/// Houses (docs/PERSONS.md, "UI", part J): the Court's and every grant list's lines, on the staged
-/// scene (and the founding's, the human's Houses freed), do not restate a keyword's reminder.
+/// Houses (docs/PERSONS.md, "UI", part J): the Court's, every grant list's, every House's card's
+/// and the trade table's with a House lines, on the staged scene (and the founding's, the human's
+/// Houses freed), do not restate a keyword's reminder.
 #[test]
 fn the_court_does_not_restate_reminder_text() {
     let bad = forbidden(ffh_data::global());
@@ -136,6 +137,13 @@ fn the_court_does_not_restate_reminder_text() {
     for c in s.g.players[s.human].cities.clone() {
         strings_of(&s.query(&ffh_play::query::Query::Grant { city: c }).unwrap(), &mut texts);
     }
+    // Every House's card and the trade table with the neighbour's House (the fourth build, rule
+    // 10: the courtships, the guard, the channel buttons, the requirement).
+    for hs in &st.houses {
+        strings_of(&s.query(&ffh_play::query::Query::House { house: hs.id }).unwrap(), &mut texts);
+    }
+    let neighbour = st.houses.iter().find(|x| x.role == "neighbour").unwrap().player;
+    strings_of(&s.query(&ffh_play::query::Query::Trade { with: neighbour }).unwrap(), &mut texts);
     // The founding (a realm without a House): the Court's line and the grant list's card.
     for hs in st.houses.iter().filter(|x| x.role != "neighbour") {
         s.g.player_free_house(st.human, hs.id).unwrap();

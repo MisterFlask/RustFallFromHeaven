@@ -10,13 +10,38 @@
 //! [`Game::implement_proposal`]): it raises the House leader's attitude toward the giver (the AI's
 //! `gifts` relation), which lowers a courtship's requirement (`favour.rs`). Nothing else counts
 //! it. [`Game::player_offer_house`] is the one way the client and the AI give a House a gift.
+//!
+//! The trade table with a House states what a better attitude would bring:
+//! [`Game::house_requirement_steps`], a courtship's requirement at the attitude now and at each
+//! better one up to Friendly ([`Requirement::at`]).
 
 use ffh_data::*;
 
 use super::*;
 use crate::structs::TradeData;
 
+/// The attitudes on the requirement's scale, from Furious (−2) to Friendly (+2).
+const STEPS: [AttitudeType; 5] = [AttitudeType::ATTITUDE_FURIOUS, AttitudeType::ATTITUDE_ANNOYED, AttitudeType::ATTITUDE_CAUTIOUS, AttitudeType::ATTITUDE_PLEASED, AttitudeType::ATTITUDE_FRIENDLY];
+
+impl Requirement {
+    /// The requirement (culture) at attitude step `attitude` (−2 Furious to +2 Friendly), its
+    /// loyalty and world unit as they are: `(L + 6 − 2A, at least 1) × W` (`total` is
+    /// `at(attitude)`).
+    pub fn at(&self, attitude: i32) -> i32 {
+        (self.loyalty + 6 - 2 * attitude).max(1) * self.unit
+    }
+}
+
 impl Game {
+    /// The requirement of `courter`'s courtship of House `h` (culture) at its leader's attitude
+    /// toward the courter now and at each better attitude up to Friendly, the House's loyalty and
+    /// the world unit as they are (pure; the trade table with a House: what a gift that raises the
+    /// attitude would bring): `[(attitude, requirement)]`, the first the attitude now.
+    pub fn house_requirement_steps(&self, h: HouseId, courter: PlayerId) -> Vec<(AttitudeType, i32)> {
+        let r = self.house_requirement(h, courter);
+        STEPS.iter().zip(-2..=2).filter(|&(_, a)| a >= r.attitude).map(|(&t, a)| (t, r.at(a))).collect()
+    }
+
     /// Why `giver` may not give House `h` gifts, in the screen's words (`None`: it may): a
     /// civilization (not the barbarians, a minor civilization, a crusade Host or a House), not of
     /// its liege's team, that has met it.

@@ -241,9 +241,11 @@ fn the_court_shows_the_realm() {
     assert!(requests > 0, "the stage has requests with a term");
     assert!(r.get("persons").is_none(), "no persons");
 
-    // Part J: the keywords (the loyalty states are the attitude words: none of their own).
+    // Part J: the keywords (the loyalty states are the attitude words: none of their own); a
+    // House of the realm is courted, so courting's too (the fourth build, rule 10: Court and
+    // Guard, each implying Channel).
     let keys: Vec<&str> = arr(&r, "reminders").iter().map(|x| s(x, "key")).collect();
-    assert_eq!(keys, ["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_REQUEST", "KEYWORD_ULTIMATUM", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_CLAIMANT"]);
+    assert_eq!(keys, ["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_REQUEST", "KEYWORD_ULTIMATUM", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_CLAIMANT", "KEYWORD_COURT", "KEYWORD_CHANNEL", "KEYWORD_GUARD"]);
     for st in LoyaltyState::ALL {
         assert!(ffh_data::global().ty::<KeywordType>(&format!("KEYWORD_{}", st.name().to_uppercase())).is_none(), "{} is no keyword", st.name());
     }
@@ -636,13 +638,16 @@ fn the_command_set() {
     assert_eq!(Command::from_json(d, &j).unwrap(), Command::FreeHouse { house: HouseId(2) });
 }
 
-/// `court`, every city's `grant`, the Armies screen and the city screens leave the game as it was
-/// (PLAY_DESIGN 2.5).
+/// `court`, every House's card (`house`), every city's `grant`, the Armies screen and the city
+/// screens leave the game as it was (PLAY_DESIGN 2.5).
 #[test]
 fn the_queries_are_pure() {
-    let (_dir, _st, ses) = staged("persons-pure");
+    let (_dir, st, ses) = staged("persons-pure");
     let before = ses.g.save();
     ses.query(&Query::Court).unwrap();
+    for hs in &st.houses {
+        ses.query(&Query::House { house: hs.id }).unwrap();
+    }
     for c in ses.g.players[ses.human].cities.clone() {
         ses.query(&Query::Grant { city: c }).unwrap();
         ses.query(&Query::City { city: c }).unwrap();

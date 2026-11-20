@@ -293,6 +293,34 @@ fn a_gift_lowers_the_requirement_through_the_attitude() {
     assert_eq!(g.house_gift_refusal(h, P0), Some(format!("{} pays its liege by tribute.", g.house_label(h))));
 }
 
+/// The trade table's read of what a better attitude brings (`house_requirement_steps`): the
+/// requirement at the attitude now and at each better one up to Friendly, from the same parts
+/// (`Requirement::at`: `(L + 6 − 2A, at least 1) × W`).
+#[test]
+fn the_requirement_at_each_better_attitude() {
+    let World { mut g, a, .. } = world();
+    let h = house(&mut g, a);
+    let hp = g.houses[h].player;
+    let r = g.house_requirement(h, P1);
+    assert_eq!(r.at(r.attitude), r.total);
+    assert_eq!(
+        g.house_requirement_steps(h, P1),
+        vec![(AttitudeType::ATTITUDE_CAUTIOUS, 5 * 20), (AttitudeType::ATTITUDE_PLEASED, 3 * 20), (AttitudeType::ATTITUDE_FRIENDLY, 20)],
+        "Cautious (L -1, A 0, W 20), then Pleased and Friendly"
+    );
+    g.controllers[hp] = Arc::new(Attitude(AttitudeType::ATTITUDE_FURIOUS));
+    let steps = g.house_requirement_steps(h, P1);
+    assert_eq!(steps.len(), 5);
+    assert_eq!(steps[0], (AttitudeType::ATTITUDE_FURIOUS, 9 * 20));
+    assert_eq!(steps[0].1, g.house_requirement(h, P1).total, "the first is the requirement now");
+    g.controllers[hp] = Arc::new(Attitude(AttitudeType::ATTITUDE_FRIENDLY));
+    assert_eq!(g.house_requirement_steps(h, P1), vec![(AttitudeType::ATTITUDE_FRIENDLY, 20)], "Friendly: no better step");
+    // At least 1 × W at every step.
+    loyalty(&mut g, h, -6);
+    g.controllers[hp] = Arc::new(Attitude(AttitudeType::ATTITUDE_CAUTIOUS));
+    assert!(g.house_requirement_steps(h, P1).iter().all(|&(_, t)| t == 20));
+}
+
 /// The side deals are gone: no Secede, no Become your vassal; a House gives nothing and takes only
 /// gold (no gold per turn) and resources, not from its liege.
 #[test]
@@ -526,6 +554,49 @@ fn the_hold_contest_keeps_a_held_city() {
     assert_eq!(g.players[P0].ai_memory_count[P1][SPLIT], 0, "nothing split");
 }
 
+/// The courtship's news reaches the log as a House's (`LogMark::House`, the client's alerts): the
+/// notice at two thirds to the liege (tagged with its House) and to the courter; the split to the
+/// liege (tagged), to the courter (tagged with the House it gained) and to the others; a House that
+/// goes whole, to its old liege too.
+#[test]
+fn the_courtship_news_is_marked_as_a_houses() {
+    use ffh_core::log::{LogMark, LogTag};
+    let World { mut g, a, b, c } = world_of(true);
+    let h = house_with(&mut g, a, &[b, c]);
+    let label = g.house_label(h);
+    let marked = |g: &Game, p: PlayerId, s: &str| -> Option<LogTag> {
+        let e = g.log.entries.iter().rev().find(|e| e.text.contains(s) && e.player == Some(p.0))?;
+        assert_eq!(e.mark, LogMark::House, "{}", e.text);
+        assert!(e.at.is_some(), "{}", e.text);
+        Some(e.tag)
+    };
+    let need = 100 * g.house_requirement(h, P1).total;
+    g.player_set_culture_channel(P1, Some(court(&g, h))).expect("P1 courts the House");
+    g.players[P1].culture_inflow = need / 10;
+    set_favour(&mut g, h, P1, need * 2 / 3 + 1);
+    turn(&mut g);
+    assert!(g.houses[h].favour[0].warned && g.house_favour(h, P1) < need, "past two thirds, short of the requirement");
+    assert_eq!(marked(&g, P0, &format!("{label}: the Elohim's favour is ")), Some(LogTag::House(h)), "the liege's notice");
+    assert_eq!(marked(&g, P1, &format!("{label}: your favour is ")), Some(LogTag::None), "the courter's: not its House");
+    set_favour(&mut g, h, P1, 2 * need);
+    turn(&mut g);
+    assert_eq!(marked(&g, P0, &format!("The Elohim's courtship splits {label}: ")), Some(LogTag::House(h)));
+    let tag = marked(&g, P1, &format!("{label} splits toward you: ")).expect("the courter is told");
+    let LogTag::House(nh) = tag else { panic!("tagged with the new House: {tag:?}") };
+    assert_eq!(g.houses[nh].owner, P1);
+    let news = g.log.entries.iter().find(|e| e.text.starts_with(&format!("The Elohim's courtship splits {label} of the "))).expect("the others' news");
+    assert_eq!(news.mark, LogMark::House);
+    // A House of one city goes whole: its old liege's news is marked too.
+    let World { mut g, a, .. } = world();
+    let h = house(&mut g, a);
+    let label = g.house_label(h);
+    let need = 100 * g.house_requirement(h, P1).total;
+    set_favour(&mut g, h, P1, 2 * need);
+    turn(&mut g);
+    assert_eq!(marked(&g, P0, &format!("The Elohim's courtship takes {label}: ")), Some(LogTag::None));
+    assert!(marked(&g, P1, &format!("{label} joins you with ")).is_some_and(|t| matches!(t, LogTag::House(_))));
+}
+
 /// No leader free: no split this turn (each party told once), the favour kept.
 #[test]
 fn no_free_leader_no_split() {
@@ -549,6 +620,9 @@ fn no_free_leader_no_split() {
     assert_eq!(g.house_cities(h).len(), 2, "no split");
     assert!(g.house_favour(h, P1) >= need, "the favour kept");
     assert_eq!(told(&g), 1);
+    let both: Vec<_> = g.log.entries.iter().filter(|e| e.text.ends_with(": no leader is free.")).collect();
+    assert_eq!(both.len(), 2, "the liege and the courter");
+    assert!(both.iter().all(|e| e.mark == ffh_core::log::LogMark::House), "marked as a House's news");
     turn(&mut g);
     assert_eq!(told(&g), 1, "told once");
 }

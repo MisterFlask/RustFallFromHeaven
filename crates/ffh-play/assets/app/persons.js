@@ -1,12 +1,14 @@
 // Houses in the browser client (docs/PERSONS.md, "The third build", on "The second build", rule
 // 13; "UI"): the one mark of a loyalty state (every screen draws it with stateMark, never
 // restyled), a House's shield, the Court screen (the realm: Shift+F9, the menu's Court), a city's
-// grant list and the help topic. (The module keeps the name of the system it began as.)
+// grant list, a House's card on its own (`openHouse`: a House of another realm with its Court
+// button) and the help topic. (The module keeps the name of the system it began as.)
 //
-// The server makes every line about the rules (`court`, `grant {city}`: view/persons.rs); this
-// module lays them out, puts the buttons where the lines say, and sends `grant_city` (to a House,
-// or `found` for a realm's first House), `house_tribute`, `tribute_default` and `free_house`, which
-// the server checks. A grant, and freeing a House, take two steps: the choice, then a line that
+// The server makes every line about the rules (`court`, `grant {city}`, `house {house}`:
+// view/persons.rs); this module lays them out, puts the buttons where the lines say, and sends
+// `grant_city` (to a House, or `found` for a realm's first House), `house_tribute`,
+// `tribute_default`, `free_house` and `culture_channel` (Court or Guard: docs/PERSONS.md, "The
+// fourth build", rule 10), which the server checks. A grant, and freeing a House, take two steps: the choice, then a line that
 // names what is given and says it cannot be undone. A tribute is chosen from a
 // list that states, for every rate, what the House would pay this turn and its loyalty part and
 // total at that rate. Nothing here blocks the turn: what needs attention is a line at the top of
@@ -105,17 +107,19 @@ addHelp({
       h("li", "A Furious House issues an ultimatum at your next turn: one demand you can meet at once. Accepted, a contract binds you for 20 turns and the House stays at least Annoyed. Refused, the House breaks away, at war with you; a city of it where your army's units outnumber the House's land combat units stays yours (a tie goes to the House)."),
       h("li", "A House holding 6 cities or more splits with a chance of 5% a turn: a new House, its cadet, takes the half of its cities farthest from its capital."),
     ),
-    h("h4", "Breaking away, freeing, side deals"),
+    h("h4", "Breaking away, freeing, courting"),
     h(
       "ul",
       h("li", "Adopting a government of direct rule (Despotism, God King) makes every House break away at once, each at war with you."),
       h("li", "You can free a House: it is no longer your vassal, at peace with you."),
-      h("li", "Others can offer your Cautious or worse Houses gold to secede (the diplomacy screen); you can do the same to theirs. A secession is a war on the old liege."),
-      h("li", "A House takes an offer only from a civilization that has courted it for 10 turns: gifts of gold (counted 20 turns) and resources (while given) worth 3 turns of the world's mean commerce open a courtship. A House's card shows who courts it; you are told when a courtship of yours opens."),
+      h("li", "A civilization courts a rival's House with its culture: its channel (the Culture screen, F8) set to Court that House. When the House's favour toward it reaches the requirement, half of the House's cities, the nearest, join the courter as a new House of its realm, in peace. A House's loyalty to its liege and its leader's attitude toward the courter set the requirement."),
+      h("li", "A liege guards one of its Houses with its own channel, set to Guard: every courtship of the House loses that culture each turn."),
+      h("li", "A House's card shows every courtship of it, its guard and the button that sets your channel: Guard on yours, Court on a House of another realm (the diplomacy screen opens it). A courtship of yours past two thirds of its requirement needs attention."),
+      h("li", "A House takes gifts of gold and resources (its trade table) and gives nothing. A gift raises its leader's attitude toward you, and with it lowers your requirement."),
       h("li", "A realm shares its knowledge: a tech you or one of your Houses learns, all of you learn. Techs are yours to trade, not your Houses'."),
     ),
     h("h4", "Keys"),
-    h("ul", h("li", "Shift+F9 opens the Court. Its button's count is what needs attention: a Furious House, a request with 10 turns or fewer.")),
+    h("ul", h("li", "Shift+F9 opens the Court. Its button's count is what needs attention: a Furious House, a courtship of yours past two thirds, a request with 10 turns or fewer.")),
   ],
 });
 
@@ -151,6 +155,9 @@ async function doAct(act, m = null) {
       return focusCard({ house: act.house });
     case "crown":
       return focusCard({ crown: true });
+    case "culture":
+      // The Culture screen (F8), over the Court: closed, the Court is where it was.
+      return emit("open-screen", "culture");
   }
 }
 
@@ -184,6 +191,41 @@ function requestLine(d, m) {
 /** The loyalty parts, one a line, and the total. */
 function partsBlock(x) {
   return [h("ul.pparts", x.parts.length ? x.parts.map((p) => h("li", p)) : h("li.dim", "No modifiers.")), h("div.ptotal", x.total)];
+}
+
+/** A House's courtships, a line each (`Courted by the Sheaim: favour 80 of 188, a split in ~12
+ *  turns (Ventry, Corona).`; yours `Your courtship of House Alyndra: ...`), one past two thirds of
+ *  its requirement marked as needing attention; and its guard (`Guarded: −6 a turn to each
+ *  courtship.`). */
+function courtshipLines(x) {
+  return [
+    ...(x.courtships ?? []).map((c) =>
+      h(
+        `div.pline.pcourted${c.attention ? ".attention" : ""}${c.own ? ".own" : ""}`,
+        { "data-courter": c.courter, "data-attention": c.attention ? "1" : "0" },
+        c.attention ? h("span.pcourted-mark", { title: "Needs attention: past two thirds of the requirement", "aria-label": "Needs attention" }, "!") : null,
+        h("span.pcourted-line", c.line),
+      ),
+    ),
+    x.guard ? h("div.pline.pguard", x.guard) : null,
+  ];
+}
+
+/** A button that sets your channel (`{kind, label, line, refusal, cmd}`: Court or Guard;
+ *  docs/PERSONS.md, "The fourth build", rule 10): the button, which sends `culture_channel` (the
+ *  server checks it), and beside it what the order would do (the rules' preview) or why it cannot
+ *  be set. `done`: called once it is set. */
+export function channelButton(b, done) {
+  if (!b) return null;
+  const set = async () => {
+    if (await run(b.cmd)) done?.();
+  };
+  return h(
+    "div.pchannel",
+    { "data-kind": b.kind },
+    h(`button.small.pchannel-set`, { disabled: !!b.refusal, title: b.refusal ?? null, "data-channel": b.kind, onclick: set }, b.label),
+    b.refusal ? h("span.pchannel-refusal.dim", b.refusal) : b.line ? h("span.pchannel-line", b.line) : null,
+  );
 }
 
 /** The opened part of a House's card: `extra` lines, the record, and its leader's backstory as
@@ -246,8 +288,9 @@ function tributeBlock(x, reload) {
 
 /** A House's card: who leads it (portrait, House, leader and title, since when), its attitude and,
  *  Furious, its ultimatum's outcome; its contract and its split line (docs/PERSONS.md, "The third
- *  build", rules 4 to 6), the request, its loyalty parts, its tribute, its levy, its cities, Free;
- *  opened: the record, the refusal of any offer, the leader's ambition and backstory. */
+ *  build", rules 4 to 6), the request, its loyalty parts, its tribute, its levy, its cities, the
+ *  courtships of it and its guard with the Guard button (the fourth build, rule 10), Free; opened:
+ *  the record, the leader's ambition and backstory. */
 function houseCard(x, m, reload) {
   const chips = x.cities.map((c) =>
     h(
@@ -297,12 +340,45 @@ function houseCard(x, m, reload) {
     tributeBlock(x, reload),
     h(`div.pline.plevy${x.levy.takes ? "" : furious ? ".warn" : ".caution"}`, x.levy.text),
     h("div.pchips", chips),
-    // Its price while it would accept an offer (Cautious or worse); a refusal is under Record.
-    x.price ? h("div.pline.pprice", x.price) : null,
-    // Who courts it (docs/PERSONS.md, "The third build", rule 7): a line each.
-    ...(x.courtships ?? []).map((l) => h("div.pline.pcourted", l)),
+    // Who courts it and its guard (docs/PERSONS.md, "The fourth build", rule 10), with the Guard
+    // button while it is courted.
+    ...courtshipLines(x),
+    channelButton(x.channel, reload),
     foot,
-    moreBlock({ record: x.record, backstory: x.backstory }, [x.price_refusal ? h("div.pline", x.price_refusal) : null, x.ambition ? h("div.pline", x.ambition) : null]),
+    moreBlock({ record: x.record, backstory: x.backstory }, [x.ambition ? h("div.pline", x.ambition) : null]),
+  );
+}
+
+/** The card of a House of another realm (the `house` query's): who leads it, whose vassal it is
+ *  and its state toward its liege, the cities your map shows, every courtship of it and its guard,
+ *  your requirement against its leader's attitude, and the Court button (with your channel running
+ *  elsewhere, what it replaces), or your channel when it courts the House already. */
+function foreignCard(x, m, reload) {
+  const chips = x.cities.map((c) =>
+    h(
+      `button.small.city-chip${c.seat ? ".seat" : ""}`,
+      { "data-city": c.city, title: "Show it on the map", onclick: () => (m.close(null), emit("center", c.x, c.y), emit("flash", c.x, c.y)) },
+      c.name,
+    ),
+  );
+  return h(
+    "div.pcard.house-card.foreign",
+    { "data-house": x.id, "data-player": x.player },
+    h(
+      "div.phead",
+      portrait({ leader: x.leader, name: x.leader_name || x.label }),
+      h(
+        "div.pname",
+        h("div.phouse-name", houseShield(x.color, 18), h("b", x.label)),
+        x.leader_name ? h("div.pleader", x.leader_name, x.title ? h("span.ptitle.dim", `, ${x.title}`) : null) : null,
+        h("div.psince.dim", `${x.vassal} ${x.since}`),
+      ),
+      stateMark(x.state, null, { note: `Toward the ${x.liege_name}.` }),
+    ),
+    h("div.pchips", chips),
+    ...courtshipLines(x),
+    h("div.pline.prequirement", x.requirement),
+    x.courting ? h("div.pline.pcourting", x.courting) : channelButton(x.channel, reload),
   );
 }
 
@@ -399,7 +475,7 @@ export async function openCourt(focus = null) {
           r.attention.map((a) =>
             h(
               `div.pattn${a.urgent || a.kind === "furious" ? ".urgent" : ""}`,
-              { role: "listitem", "data-kind": a.kind },
+              { role: "listitem", "data-kind": a.kind, "data-house": a.house ?? null },
               h("span", a.text),
               lapseText(a),
               a.note ? h("span.dim", ` ${a.note}`) : null,
@@ -424,6 +500,34 @@ export async function openCourt(focus = null) {
   const done = await m.done;
   if (court?.m === m) court = null;
   return done;
+}
+
+// ---- a House's card on its own (the fourth build, rule 10) -------------------------------------
+
+/** Opens House `id`'s card (the `house` query): one of yours opens the Court at its card; a House
+ *  of another realm its card in a dialog of its own, read again once your channel is set.
+ *  Resolves when it closes. */
+export async function openHouse(id) {
+  let r;
+  try {
+    r = await api.query("house", { house: id });
+  } catch (e) {
+    toast(errorText(e), "error");
+    return null;
+  }
+  if (r.own) return openCourt({ house: id });
+  const m = openModal({ title: r.house.label, tag: "house", className: "court house-dialog", body: [], buttons: [{ label: "Close", value: null }], help: "persons" });
+  const draw = (x) => m.setBody(h("div.pcards.one", foreignCard(x.house, m, reload)), h("div.court-keywords", keywordChips(x.reminders)));
+  const reload = async () => {
+    try {
+      const again = await api.query("house", { house: id });
+      if (!m.closed) draw(again);
+    } catch {
+      /* keep the card as it was */
+    }
+  };
+  draw(r);
+  return m.done;
 }
 
 /** The Court again, if it is open (after a grant, a House freed). */

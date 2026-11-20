@@ -1735,16 +1735,16 @@ TXT_KEY_ATG_UNIT_PELTAST	Peltast
 TXT_KEY_ATG_UNIT_PELTISTS_STRATEGY	[COLOR_UNIT_TEXT]Peltasts[COLOR_REVERT] are cheap units, useful for reinforcing tactical locations such as hills and forests.
 TXT_KEY_ATG_UNIT_PRODROMOI_STRATEGY	[COLOR_UNIT_TEXT]Prodromoi[COLOR_REVERT] are good scouting units. They are lightly armored and extremely fast. 
 TXT_KEY_ATTITUDE_ANNOYED	Annoyed
-TXT_KEY_ATTITUDE_ANNOYED_HELP	Loyalty from -5 to -3. A House takes no levy and, courted for 10 turns, secedes for an offer that meets its price.
+TXT_KEY_ATTITUDE_ANNOYED_HELP	Loyalty from -5 to -3. A House takes no levy.
 TXT_KEY_ATTITUDE_CAUTIOUS	Cautious
-TXT_KEY_ATTITUDE_CAUTIOUS_HELP	Loyalty from -2 to 0. A House takes levies and, courted for 10 turns, secedes for an offer that meets its price.
+TXT_KEY_ATTITUDE_CAUTIOUS_HELP	Loyalty from -2 to 0. A House takes levies.
 TXT_KEY_ATTITUDE_FRIENDLY	Friendly
-TXT_KEY_ATTITUDE_FRIENDLY_HELP	Loyalty +3 or more. A House takes levies and refuses any offer to secede.
+TXT_KEY_ATTITUDE_FRIENDLY_HELP	Loyalty +3 or more. A House takes levies.
 TXT_KEY_ATTITUDE_FURIOUS	Furious
-TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy and, courted for 10 turns, secedes for an offer that meets its price. It issues an ultimatum in its liege's turn; refused, it breaks away at war with its liege, and each of its cities where the liege's army units outnumber the House's land combat units goes back to the liege.
+TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy. It issues an ultimatum in its liege's turn; refused, it breaks away at war with its liege, and each of its cities where the liege's army units outnumber the House's land combat units goes back to the liege.
 TXT_KEY_ATTITUDE_MASTER_OF	Master of %s1_player
 TXT_KEY_ATTITUDE_PLEASED	Pleased
-TXT_KEY_ATTITUDE_PLEASED_HELP	Loyalty +1 or +2. A House takes levies and refuses any offer to secede.
+TXT_KEY_ATTITUDE_PLEASED_HELP	Loyalty +1 or +2. A House takes levies.
 TXT_KEY_ATTITUDE_TOWARDS	%s1_attitude towards %s2_leader
 TXT_KEY_ATTITUDE_VASSAL_OF	Vassal of %s1_CivDesc
 TXT_KEY_AT_WAR_WITH	[ICON_BULLET][COLOR_WARNING_TEXT]War with %s1_player[COLOR_REVERT]

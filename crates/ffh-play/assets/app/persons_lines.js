@@ -6,7 +6,7 @@
 import { S, observing } from "./state.js";
 import { h, toastNode } from "./dom.js";
 import { leaderPortrait, PORTRAIT } from "./portraits.js";
-import { stateMark, houseShield, openCourt } from "./persons.js";
+import { stateMark, houseShield, openCourt, openHouse } from "./persons.js";
 import { SHIELD, SHIELD_EDGE, houseColour, stateColour, stateGlyph, stateKey } from "./persons_mark.js";
 
 /** A House in a list or a line: its shield and `House Arne`, and the state mark when it is
@@ -112,8 +112,9 @@ export function houseAlertEntries(entries, { fresh, turn }) {
 const ALERTS_SHOWN = 3;
 
 /** Shows the Houses' news among new log `entries` as toasts: the House leader's portrait where the
- *  entry names one of the human's Houses; a click opens the Court at the House (a secession's
- *  news: a click dismisses it). Not while observing. */
+ *  entry names one of the human's Houses; a click opens the Court at the House, or the card of a
+ *  House of another realm the entry names (a courtship of yours: docs/PERSONS.md, "The fourth
+ *  build"; a secession's news: a click dismisses it). Not while observing. */
 export function houseAlerts(entries, { fresh = false } = {}) {
   if (observing()) return;
   const mine = new Map((S.view?.houses ?? []).map((x) => [x.id, x]));
@@ -127,31 +128,39 @@ export function houseAlerts(entries, { fresh = false } = {}) {
   // The human's Houses among the players (the players' `house` whose liege is the human), for the
   // news of a House the entry does not tag (its label in the text says which).
   const me_ = S.view?.me?.player;
-  const houses = [...(S.players?.values() ?? [])].map((p) => p.house).filter((x) => x && x.liege === me_);
+  const all_ = [...(S.players?.values() ?? [])].map((p) => p.house).filter(Boolean);
+  const houses = all_.filter((x) => x.liege === me_);
+  const others = all_.filter((x) => x.liege !== me_);
   for (const e of shown) {
-    const focus = alertFocus(e, houses);
+    const focus = alertFocus(e, houses, others);
     const brief = focus ? mine.get(focus.house) : null;
     const face = brief && brief.leader !== null && brief.leader !== undefined ? leaderPortrait(brief.leader, { size: PORTRAIT.small, title: brief.leader_name ?? brief.label }) : null;
     const court = e.kind !== "secession";
+    const foreign = focus?.foreign !== undefined;
     const el = h(
       `div.toast.log.house-alert${e.kind === "secession" ? ".secession" : ""}`,
-      { role: "status", title: court ? "Click: open the Court" : "Click to dismiss", "data-house": focus?.house ?? "" },
+      { role: "status", title: !court ? "Click to dismiss" : foreign ? "Click: open the House's card" : "Click: open the Court", "data-house": focus?.house ?? focus?.foreign ?? "" },
       face ?? h("span.house-alert-mark", { "aria-hidden": "true" }, e.kind === "secession" ? "✖" : "✦"),
-      h("span.house-alert-text", alertBody(e.text, !!focus)),
+      h("span.house-alert-text", alertBody(e.text, !!focus && !foreign)),
     );
-    if (court) el.addEventListener("click", () => openCourt(focus));
+    if (court) el.addEventListener("click", () => (foreign ? openHouse(focus.foreign) : openCourt(focus)));
     toastNode(el, 12000);
   }
 }
 
-/** Where a tap on a House alert opens the Court (part H): at the House the entry tags (`house`),
- *  else at the House whose label the text names, else at the top. */
-export function alertFocus(e, houses = []) {
+/** Where a tap on a House alert goes (part H): the Court at the House the entry tags (`house`),
+ *  else at the House of yours whose label the text names (`{house}`); else the card of a House of
+ *  another realm the text names (`others`: `{foreign}`: a courtship of yours, "The fourth build");
+ *  else the Court's top (null). */
+export function alertFocus(e, houses = [], others = []) {
   if (e.house !== undefined && e.house !== null) return { house: e.house };
   const text = e.text ?? "";
   // The longest label the text names (`House Arne` before a vassal civilization's `Arne`).
-  const named = houses.filter((x) => x.label && text.includes(x.label)).sort((a, b) => b.label.length - a.label.length)[0];
-  return named ? { house: named.id } : null;
+  const longest = (list) => list.filter((x) => x.label && text.includes(x.label)).sort((a, b) => b.label.length - a.label.length)[0];
+  const named = longest(houses);
+  if (named) return { house: named.id };
+  const theirs = longest(others);
+  return theirs ? { foreign: theirs.id } : null;
 }
 
 /** An alert's text (part H). A change of state (`House Arne is Annoyed.`, `House Arne is

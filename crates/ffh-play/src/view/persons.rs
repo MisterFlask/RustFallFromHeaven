@@ -2,8 +2,10 @@
 //! 13; "UI": parts A, B and J): the Court screen (`court`: the realm, the Crown and its limit, a
 //! card per House with its leader, request, tribute selector, levy and Free), a city's grant list
 //! (`grant {city}`: the Houses, or with none the founding of one), the count of what needs
-//! attention (the view's `court_attention`, the menu's badge), a requisition candidate's House line
-//! (the levy, for the Armies screen) and a Crown city's Governance line (the city screen).
+//! attention (the view's `court_attention`, the menu's badge), a House's card on its own (`house
+//! {house}`: one of the human's, or a House of another realm with its Court button; "The fourth
+//! build", rule 10), a requisition candidate's House line (the levy, for the Armies screen) and a
+//! Crown city's Governance line (the city screen).
 //!
 //! Every line the page shows about the rules is made here, from the rules' own read API
 //! (`ffh_core::persons`: `court_view`, `house_view`, `grant_candidates`, the label functions); the
@@ -11,7 +13,8 @@
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::persons::{CourtView, DemandKind, GrantCandidate, GrantTo, HouseOrigin, HouseView, LoyaltyPart, LoyaltyState, PreviewLine, DEMAND_REFUSED, DEMAND_WARNING_TURNS};
+use ffh_core::culture::{ChannelOrder, ChannelTarget};
+use ffh_core::persons::{CourtView, CourtshipView, DemandKind, GrantCandidate, GrantTo, HouseOrigin, HouseView, LoyaltyPart, LoyaltyState, PreviewLine, DEMAND_REFUSED, DEMAND_WARNING_TURNS};
 use ffh_data::*;
 
 use crate::json::Json;
@@ -374,14 +377,91 @@ fn levy_status(reason: Option<&str>, loyalty: i32) -> Json {
     crate::jobj! { "takes" => reason.is_none(), "text" => text }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Courting (the fourth build, rule 10)
+// ---------------------------------------------------------------------------------------------
+
+/// One courtship of a House as its card lists it: `{courter, line, attention, own}`; `line` the
+/// rules' (`Courted by the Sheaim: favour 80 of 188, a split in ~12 turns (Ventry, Corona).`), the
+/// human's own courtship its own line (`Your courtship of House Alyndra: ...`, `own`); `attention`:
+/// past two thirds of its requirement.
+fn courtship_json(v: &Viewer, cv: &CourtshipView) -> Json {
+    let g = v.g;
+    let own = cv.courter == v.h;
+    let line = if own { g.house_courting_line(cv.house, v.h).unwrap_or_else(|| cv.line.clone()) } else { cv.line.clone() };
+    crate::jobj! { "courter" => cv.courter, "line" => core(g, &line), "attention" => cv.attention, "own" => own }
+}
+
+/// The line that needs attention of a courtship of one of the human's Houses past two thirds of its
+/// requirement: `House Aldric: the Sheaim's favour is 130 of 188, a split in ~6 turns.` (`settling
+/// near 150`, `fading`, as the rules' prediction reads).
+fn courted_text(g: &Game, label: &str, cv: &CourtshipView) -> String {
+    let by = core(g, &g.player_get_civilization_short_description(cv.courter));
+    let then = match cv.turns {
+        Some(1) => ", a split next turn".to_string(),
+        Some(t) => format!(", a split in ~{t} turns"),
+        None if cv.gain > 0 => format!(", settling near {}", cv.settles / 100),
+        None => ", fading".to_string(),
+    };
+    format!("{label}: the {by}'s favour is {} of {}{then}.", cv.favour / 100, cv.requirement.total)
+}
+
+/// The human's channel order of `effect` at House `h`, if the data has the action.
+fn house_order(g: &Game, effect: CultureEffect, h: HouseId) -> Option<ChannelOrder> {
+    g.culture_action(effect).map(|action| ChannelOrder { action, target: ChannelTarget::House(h), religion: None })
+}
+
+/// A button that makes `order` the human's channel (the `culture_channel` command, which the
+/// server checks): `{kind (court, guard), label, line, refusal, cmd}`. `label`: the action
+/// (`Court`), with another channel running what it replaces (`Court (replaces Spread Religion
+/// (Octopus Overlords) to the Sheaim)`: a civilization has one channel); `line`: what the order
+/// would do, the rules' preview (`Favour 0 of 188, a split in ~31 turns (Ventry, Corona).`, `Guarded:
+/// −6 a turn to each courtship.`); `refusal`: the rules' reason it cannot be set, else null. Null
+/// when `order` is the human's channel already.
+pub fn channel_button(v: &Viewer, order: &ChannelOrder) -> Json {
+    let g = v.g;
+    let current = g.players[v.h].culture_channel.as_ref().map(|ch| ch.order());
+    if current == Some(*order) {
+        return Json::Null;
+    }
+    let ChannelTarget::House(h) = order.target else { return Json::Null };
+    let Some(house) = g.houses.get(h) else { return Json::Null };
+    let preview = g.culture_channel_preview(v.h, order);
+    let action = g.culture_action_name(order);
+    let label = match current {
+        Some(c) => format!("{action} (replaces {})", core(g, &g.culture_channel_name(&c))),
+        None => action,
+    };
+    let kind = if g.culture_effect(order.action) == CultureEffect::Guard { "guard" } else { "court" };
+    let line = (preview.refusal.is_none() && !preview.line.is_empty()).then(|| core(g, &preview.line));
+    crate::jobj! {
+        "kind" => kind,
+        "label" => label,
+        "line" => line,
+        "refusal" => preview.refusal.map(|r| core(g, &r)),
+        "cmd" => crate::jobj! { "c" => "culture_channel", "action" => g.d.cultural_actions[order.action].base.type_.as_str(), "target" => house.player },
+    }
+}
+
+/// The Guard button of one of the human's Houses (rule 5): while it is courted, unless the
+/// human's channel guards it already ([`channel_button`]); null otherwise.
+fn guard_button(v: &Viewer, hv: &HouseView) -> Json {
+    if hv.courtships.is_empty() || hv.owner != v.h {
+        return Json::Null;
+    }
+    house_order(v.g, CultureEffect::Guard, hv.id).map_or(Json::Null, |o| channel_button(v, &o))
+}
+
 /// A House's card (rule 13; "The third build", rule 1: a House carries what its head carried):
 /// its leader (portrait, name, title), its attitude and, Furious, the outcome of its ultimatum
 /// (rule 5), its contract (rule 6: `Contract until turn 160: no tribute above 10%.`), its split
 /// line (rule 4: `Holds 7 cities: 5% a turn to split.`), its request, its loyalty parts, its
 /// tribute and the selector, its levy, its cities, the rivals' courtships of it (the fourth build,
-/// rule 10: `courtships`, a line each: `Courted by the Sheaim: favour 80 of 188, a split in ~12
-/// turns (Ventry, Corona).`) and its guard (`guard`: `Guarded: −6 a turn to each courtship.`),
-/// Free; and opened, its record, its leader's ambition and backstory.
+/// rule 10: `courtships`, [`courtship_json`] each: `Courted by the Sheaim: favour 80 of 188, a split
+/// in ~12 turns (Ventry, Corona).`, past two thirds `attention`), its guard (`guard`: `Guarded: −6 a
+/// turn to each courtship.`) and, courted, the Guard button (`channel`, [`channel_button`]; null
+/// when it is not courted or the human's channel guards it already), Free; and opened, its record,
+/// its leader's ambition and backstory.
 fn house_json(v: &Viewer, hv: &HouseView) -> Json {
     let g = v.g;
     let (parts, total) = parts_json(&hv.parts, hv.loyalty);
@@ -415,8 +495,9 @@ fn house_json(v: &Viewer, hv: &HouseView) -> Json {
         "cities" => Json::Arr(cities),
         "tribute" => tribute_json(g, hv),
         "levy" => levy_status(hv.levy.reason.as_deref(), hv.loyalty),
-        "courtships" => Json::Arr(hv.courtships.iter().map(|c| Json::from(core(g, &c.line))).collect()),
+        "courtships" => Json::Arr(hv.courtships.iter().map(|c| courtship_json(v, c)).collect()),
         "guard" => hv.guard.as_ref().map(|gv| gv.line.clone()),
+        "channel" => guard_button(v, hv),
         "free" => crate::jobj! { "ok" => hv.free.is_ok(), "refusal" => hv.free.err(), "confirm" => format!("Free {}? It is no longer your vassal, at peace with you. This cannot be undone.", hv.label) },
         "parts" => parts,
         "total" => total,
@@ -479,9 +560,12 @@ fn and_list(items: &[String]) -> String {
 }
 
 /// The lines that need attention (rule 13; part A.2), each with its button, in this order: a
-/// Furious House with its stated outcome, a House that takes no levy, a request with 10 turns or
-/// fewer, the Crown's cities over its limit, the Crown's cities that can be granted; and the badge
-/// count (principle 6: a Furious House, a request with 10 turns or fewer).
+/// Furious House with its stated outcome, a courtship of a House past two thirds of its requirement
+/// (the fourth build, rule 10: `House Aldric: the Sheaim's favour is 130 of 188, a split in ~6
+/// turns.`, its button the Culture screen, where the channel is set), a House that takes no levy, a
+/// request with 10 turns or fewer, the Crown's cities over its limit, the Crown's cities that can be
+/// granted; and the badge count (principle 6: a Furious House, a courtship past two thirds, a
+/// request with 10 turns or fewer).
 fn attention(v: &Viewer, cv: &CourtView) -> (Vec<Json>, usize) {
     let g = v.g;
     let (houses, grantable) = (&cv.houses, &cv.grantable);
@@ -494,6 +578,13 @@ fn attention(v: &Viewer, cv: &CourtView) -> (Vec<Json>, usize) {
             let outcome = hv.outcome.as_deref().map(|s| core(g, s)).unwrap_or_default();
             let text = format!("{}: Furious. {}", hv.label, outcome_rest(&hv.label, &outcome));
             out.push(line(text, "Show", crate::jobj! { "kind" => "card", "house" => hv.id }, "furious"));
+        }
+    }
+    // A courtship past two thirds: the split may come soon.
+    for hv in houses {
+        for cv in hv.courtships.iter().filter(|cv| cv.attention) {
+            badge += 1;
+            out.push(line(courted_text(g, &hv.label, cv), "Culture", crate::jobj! { "kind" => "culture" }, "courted").with("urgent", true).with("house", hv.id));
         }
     }
     // A House that takes no levy (a Furious one is told above).
@@ -557,6 +648,7 @@ pub fn attention_count(v: &Viewer) -> usize {
     }
     let court = g.court_view(v.h);
     let mut n = court.houses.iter().filter(|hv| hv.state == LoyaltyState::Furious).count();
+    n += court.houses.iter().map(|hv| hv.courtships.iter().filter(|cv| cv.attention).count()).sum::<usize>();
     n += court.houses.iter().filter(|hv| hv.demand.as_ref().is_some_and(|dm| dm.turns_left <= DEMAND_WARNING_TURNS)).count();
     n
 }
@@ -564,6 +656,10 @@ pub fn attention_count(v: &Viewer) -> usize {
 /// The keywords of this system (rule 13; part J). The loyalty states are the game's attitude
 /// words, no keywords: a state mark's tooltip is the attitude's own help (attitudes.jsonc).
 const KEYWORDS: &[&str] = &["KEYWORD_HOUSE", "KEYWORD_CROWN", "KEYWORD_REQUEST", "KEYWORD_ULTIMATUM", "KEYWORD_TRIBUTE", "KEYWORD_LEVY", "KEYWORD_CLAIMANT"];
+
+/// The keywords of courting (the fourth build, rule 10), where a courtship or a guard shows: Court
+/// and Guard (each implies Channel).
+const COURTING_KEYWORDS: [&str; 2] = ["KEYWORD_COURT", "KEYWORD_GUARD"];
 
 fn keywords(d: &GameData, names: &[&str]) -> Vec<KeywordType> {
     names.iter().filter_map(|n| d.ty::<KeywordType>(n)).collect()
@@ -581,6 +677,11 @@ pub fn court(v: &Viewer) -> Json {
     let (attention, badge) = if has { attention(v, &cv) } else { (Vec::new(), 0) };
     let houses: Vec<Json> = cv.houses.iter().map(|hv| house_json(v, hv)).collect();
     let steps: Vec<i32> = (0..=ffh_core::persons::TRIBUTE_MAX).step_by(ffh_core::persons::TRIBUTE_STEP as usize).collect();
+    // Courting shows (a House of the realm courted or guarded): its keywords too.
+    let mut kws = KEYWORDS.to_vec();
+    if cv.houses.iter().any(|hv| !hv.courtships.is_empty() || hv.guard.is_some()) {
+        kws.extend(COURTING_KEYWORDS);
+    }
     crate::jobj! {
         "government" => Json::opt_idx(gov),
         "header" => header,
@@ -595,8 +696,87 @@ pub fn court(v: &Viewer) -> Json {
         "crown" => Json::Arr(crown_cities_json(g, h, &cv)),
         "houses" => Json::Arr(houses),
         "crown_limit" => cv.crown_limit,
-        "reminders" => crate::view::keywords::reminders(d, keywords(d, KEYWORDS)),
+        "reminders" => crate::view::keywords::reminders(d, keywords(d, &kws)),
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// One House's card
+// ---------------------------------------------------------------------------------------------
+
+/// The cities of House `hv` the human's map shows, as chips (`{city, name, x, y, seat}`).
+fn known_cities(v: &Viewer, hv: &HouseView) -> Vec<Json> {
+    let g = v.g;
+    hv.cities.iter().copied().filter(|&c| v.city_revealed(c)).map(|c| city_ref(g, c).with("seat", hv.seat == Some(c))).collect()
+}
+
+/// `house {house}`: one House's card (docs/PERSONS.md, "The fourth build", rule 10). One of the
+/// human's: `{own: true, house}` with the Court's card ([`house_json`]). A House of another realm
+/// the human has met: `{own: false, house}`, the card as its courter sees it: `{id, player, label,
+/// civilization, leader, leader_name, title, color, liege, liege_name, vassal (`Vassal of the
+/// Svartalfar.`), state (toward its liege), since, cities (those the human's map shows), courtships
+/// ([`courtship_json`]), guard, requirement (the human's: `Its leader's attitude toward you:
+/// Cautious. Requirement: 168; at Pleased 120; at Friendly 72.`, [`requirement_line`]), channel
+/// (the Court button, [`channel_button`]; null when the human courts it already), courting (`Your
+/// channel: Court House Alyndra.` then)}`; and the `reminders` of the keywords it shows.
+pub fn house(v: &Viewer, h: HouseId) -> Result<Json, QueryErr> {
+    let g = v.g;
+    let d = g.d;
+    let Some(hv) = g.house_view(h) else { return Err(QueryErr::Gone) };
+    if hv.owner == v.h {
+        let mut kws = vec!["KEYWORD_HOUSE", "KEYWORD_TRIBUTE"];
+        if !hv.courtships.is_empty() || hv.guard.is_some() {
+            kws.extend(COURTING_KEYWORDS);
+        }
+        return Ok(crate::jobj! { "own" => true, "house" => house_json(v, &hv), "reminders" => crate::view::keywords::reminders(d, keywords(d, &kws)) });
+    }
+    if !v.player_met(hv.player) {
+        return Err(QueryErr::Invalid(format!("field `house`: House {} is not one the human has met", h.0)));
+    }
+    let liege = core(g, &g.player_get_civilization_short_description(hv.owner));
+    let order = house_order(g, CultureEffect::Court, h);
+    let running = order.filter(|o| g.players[v.h].culture_channel.as_ref().map(|ch| ch.order()) == Some(*o));
+    let mut kws = vec!["KEYWORD_HOUSE", "KEYWORD_COURT"];
+    if hv.guard.is_some() {
+        kws.push("KEYWORD_GUARD");
+    }
+    let card = crate::jobj! {
+        "id" => hv.id,
+        "player" => hv.player,
+        "label" => hv.label.as_str(),
+        "civilization" => core(g, &hv.civilization_name),
+        "leader" => Json::opt_idx(hv.leader),
+        "leader_name" => hv.leader_name.as_str(),
+        "title" => hv.leader_title.clone(),
+        "color" => hv.color as i64,
+        "liege" => hv.owner,
+        "liege_name" => liege.as_str(),
+        "vassal" => format!("Vassal of the {liege}."),
+        "state" => state_name(hv.state),
+        "since" => since_text(&hv),
+        "cities" => Json::Arr(known_cities(v, &hv)),
+        "courtships" => Json::Arr(hv.courtships.iter().map(|c| courtship_json(v, c)).collect()),
+        "guard" => hv.guard.as_ref().map(|gv| gv.line.clone()),
+        "requirement" => requirement_line(g, h, v.h),
+        "channel" => if running.is_some() { Json::Null } else { order.map_or(Json::Null, |o| channel_button(v, &o)) },
+        "courting" => running.map(|o| format!("Your channel: {}.", core(g, &g.culture_channel_name(&o)))),
+    };
+    Ok(crate::jobj! { "own" => false, "house" => card, "reminders" => crate::view::keywords::reminders(d, keywords(d, &kws)) })
+}
+
+/// The requirement of `courter`'s courtship of House `h` against its leader's attitude toward the
+/// courter (the rules' `house_requirement_steps`): `Its leader's attitude toward you: Cautious.
+/// Requirement: 168; at Pleased 120; at Friendly 72.`, only the better attitudes, up to Friendly.
+pub fn requirement_line(g: &Game, h: HouseId, courter: PlayerId) -> String {
+    let steps = g.house_requirement_steps(h, courter);
+    let word = |a: AttitudeType| names::display(g.d, a).into_owned();
+    let Some(&(now, total)) = steps.first() else { return String::new() };
+    let mut text = format!("Its leader's attitude toward you: {}. Requirement: {total}", word(now));
+    for &(a, t) in &steps[1..] {
+        text.push_str(&format!("; at {} {t}", word(a)));
+    }
+    text.push('.');
+    text
 }
 
 // ---------------------------------------------------------------------------------------------
