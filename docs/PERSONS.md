@@ -346,6 +346,70 @@ diplomacy list's `house_offer` is `{state, courting}`; the House card has no `pr
 neighbour's favour at House `pleased` set past two thirds by hand) and a gift. The tests reading
 the retired screens are gone (`culture_predictions.rs`, the offers' and the price's).
 
+### The fourth build as built, part 2A (2026-11-20)
+
+Rule 10's Culture screen and city screen are built (the Houses' side, the House card, the trade
+table and the diplomacy list, is part 2B's). docs/CULTURE.md, "UI", describes them as the player
+sees them, docs/HUMAN.md has the protocol. Where the build settles what the rule left open:
+
+1. *The Culture screen* (F8, the modal `culture`; `crates/ffh-play/src/view/culture.rs`,
+   `assets/app/culture.js`), from top to bottom: the head (`Channel: Court House Aldric, since turn
+   140.` / `Channel: none. Your cities keep all their culture.`; `Inflow: 6.4 culture a turn (half
+   of 12.8).` / `A channel would take ...`); your channel's full preview and Stop; Choose a channel;
+   Aimed at you; Between others; What others remember; the keywords Channel, Court and Guard as
+   chips (their reminder boxes). Culture shows with one decimal, favour and requirements as whole
+   numbers. The Cultural pressure panel and its help are gone; the screen's help (its (i)) says
+   where things are and shows the three keywords' reminders.
+2. *The previews* lay out the rules' structures (`culture_channel_preview`): Court a favour bar
+   (a mark at two thirds), the requirement's table (its formula last, across the table), the
+   reach, the gain and the guard a turn, where the favour settles, the split's turns (`Never at
+   these inflows.`) and its cities as links (`It joins whole.`); Guard what it takes from each
+   courtship and a row per courter (its favour of its requirement; where it settles and its split,
+   with the guard and without); Spread Religion the chance and a row per city in reach (distance,
+   share, `has it`, `cannot take it`).
+3. *The chooser*: the three actions, Spread Religion with the religions your cities have; each
+   target of `culture_channel_options` a button with its label and line, a refused one disabled
+   with its refusal, your channel's marked `Your channel.`; the picked target's preview and Set
+   open under it (a phone sees them together; a second click folds it), `Set (replaces Court House
+   Aldric)` while a channel runs; an action without a target says why in one line (`No House of
+   another realm that you have met.`, `You have no House.`, `None of your cities has a
+   religion.`), a civilization that may set none reads the rules' reason. Beyond the rule: Spread
+   Religion's targets name a House as a House (`House Aldric (Bannor)`, where part 1 said
+   `Bannor` for each) and yours `Bannor (yours)`, and a channel's name says `Spread Religion
+   (Esus) to House Aldric` (`culture_target_name`).
+4. *Aimed at you*: each courtship of each of your Houses by its `line`, past two thirds marked `!`
+   (attention); a `Guard House Aldric` button for each such House (`... (replaces Court House
+   Bertram)` while a channel runs, disabled with the rules' reason when refused) with its preview
+   from `house_guard_with(h, your inflow now)` (`Guard: −3.2 a turn to each courtship. The Sheaim:
+   a split in ~6 turns without it, settling near 40 with it.`); a House your channel guards says
+   `Your channel guards it.` instead; then the Spread Religion channels aimed at your civilization
+   with their chance.
+5. *The city screen*: one line (`Culture: 12.8 a turn; 6.4 of it to Court House Aldric.`,
+   `...; nothing diverted in disorder.`, `...; no channel.`), a link that opens the Culture screen
+   (the city screen is read again when it closes) and the keyword Channel. The map's revolt marks
+   (`iso.js` `revoltMark`, `drawRevoltMark`, on the isometric, HD-2D and 2D plates) are gone.
+6. *The payload* (`culture`): `{refusal, percent, inflow, base, channel, preview, actions, aimed,
+   aimed_spread, others, memories, memory_max, reminders}`; a preview `{order, refusal, inflow,
+   reach, line, court | guard | spread}` with the rules' structures as fields (the requirement's
+   parts and its `formula`, the split's cities `{id, name, owner, x, y, known, own}`, the guard's
+   rows with each courter's requirement); the chooser's options carry their full preview (null
+   when refused); a courted House `{house, player, label, courtships, guarded, guard, guard_order,
+   guard_refusal}`. The city query's `cultural` is `{rate, diverted, disorder, channel,
+   reminders}` (hundredths).
+7. *The reads added* (ffh-core, pure, tested): `culture_channel_refusal(p)` (the check's first
+   part: a civilization that cannot have Houses, or has no city), `player_culture_channel_base_now
+   (p)` (the culture of the cities that would divert now: the head's `half of`),
+   `Requirement::formula()` with `REQUIREMENT_BASE` and `REQUIREMENT_ATTITUDE`, the constants
+   `house_requirement` now reads.
+8. *Tests*: `crates/ffh-play/tests/culture_screen.rs` (the view's numbers against the rules' on
+   the stage below), `assets/test/culture.test.mjs` (the formatting; the revolt pieces are gone),
+   `tools/web-culture-smoke.mjs` (the screen in a browser, its review crops), `tools/web-smoke.mjs`'s
+   `cultureUi` (a fresh game). `ffh-play stage culture` (`stage/culture.rs`) is the `persons` stage
+   with one religion in every city of the human, set by hand and listed in `hand_set`: the
+   `persons` stage offers no refused target (the human's Court of the neighbour's House stands,
+   its Guards are all in reach and it has no religion), and with the religion Spread Religion has
+   one (your own civilization, every city of which has it).
+
 ## The third build (2026-11-19): Houses without Persons of Note
 
 The owner's decisions of 2026-11-19. Persons of Note did no work the Houses did not ("the work is

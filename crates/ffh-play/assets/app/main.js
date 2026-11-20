@@ -424,7 +424,7 @@ function citiesList() {
 
 /** The screens of the menu and the F keys (Civ4's advisors: F1 cities, F2 finances, F3 civics,
  *  F4 diplomacy, F5 military (this game's armies), F6 technology, F7 religion; F8 this game's
- *  cultural pressure, F9 its governors). */
+ *  culture screen, F9 its governors). */
 function openScreen(name) {
   if (!S.view) return;
   switch (name) {

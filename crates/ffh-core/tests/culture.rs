@@ -123,6 +123,33 @@ fn the_inflow_is_half_the_culture_and_nothing_from_a_city_in_disorder() {
     assert_eq!(g.players[P0].culture_inflow, 350, "b in disorder added nothing");
 }
 
+/// What the screens read beside the inflow: the culture of the cities that would divert
+/// (`half of` it; a city in disorder counts in neither), and why a civilization may set no
+/// channel at all (the check's first part).
+#[test]
+fn the_channel_base_and_the_refusal_of_any_channel() {
+    let (mut g, a, b, _) = game();
+    set_rate(&mut g, a, 7);
+    set_rate(&mut g, b, 5);
+    assert_eq!(g.player_culture_channel_base_now(P0), 1200, "7 and 5, in hundredths");
+    assert_eq!(g.player_culture_inflow_now(P0), 1200 * g.d.defines.culture_channel_percent / 100);
+    g.city_set_occupation_timer(b, 2);
+    assert!(g.city_is_disorder(b));
+    assert_eq!((g.player_culture_channel_base_now(P0), g.player_culture_inflow_now(P0)), (700, 350), "b in disorder counts in neither");
+    assert_eq!(g.culture_channel_refusal(P0), None);
+    // The chooser's labels: your own civilization is marked yours.
+    let (o, r) = spread_order(&mut g, a);
+    let labels: Vec<(ChannelTarget, String)> = g.culture_channel_options(P0, o.action, Some(r)).into_iter().map(|x| (x.target, x.label)).collect();
+    let civ = |p| g.player_get_civilization_short_description(p);
+    assert!(labels.contains(&(ChannelTarget::Player(P0), format!("{} (yours)", civ(P0)))), "{labels:?}");
+    assert!(labels.contains(&(ChannelTarget::Player(P1), civ(P1))), "{labels:?}");
+    assert_eq!(g.culture_target_name(ChannelTarget::Player(P1)), format!("the {}", civ(P1)));
+    let barbarian = g.barbarian_player();
+    assert_eq!(g.culture_channel_refusal(barbarian).as_deref(), Some("Only a civilization that can have Houses channels its culture."));
+    let (o, _) = spread_order(&mut g, a);
+    assert_eq!(g.culture_channel_check(barbarian, &o).err(), g.culture_channel_refusal(barbarian), "the check's first part");
+}
+
 /// Spread Religion is the civilization's: the chance sums over the target's cities in reach, each at
 /// its distance from the caster's nearest city, from the turn's inflow; it rolls after the cities'
 /// turns, and the channel ends with nothing left to do.

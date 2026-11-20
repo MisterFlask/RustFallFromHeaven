@@ -137,7 +137,8 @@ pub struct ChannelPreview {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ChannelOption {
     pub target: ChannelTarget,
-    /// `House Aldric (Bannor)`, `Sheaim`.
+    /// `House Aldric (Bannor)`, `Sheaim`, `Bannor (yours)`; a civilization that is a House (Spread
+    /// Religion) as a House: `House Aldric (Bannor)`.
     pub label: String,
     /// What the order would do ([`ChannelPreview::line`]); empty when refused.
     pub line: String,
@@ -218,6 +219,13 @@ impl Game {
         self.culture_cities_of(p).map(|c| self.city_culture_diverted_if_channelling(c)).sum()
     }
 
+    /// The culture a turn (hundredths) of player `p`'s cities that would divert to a channel now:
+    /// those not in disorder (pure). The inflow now ([`Game::player_culture_inflow_now`]) is
+    /// `CULTURE_CHANNEL_PERCENT` of each of these cities' culture: the screens' `half of 12.8`.
+    pub fn player_culture_channel_base_now(&self, p: PlayerId) -> i32 {
+        self.culture_cities_of(p).filter(|&c| !self.city_is_disorder(c)).map(|c| self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE).max(0)).sum()
+    }
+
     // -----------------------------------------------------------------------------------------
     // The check, the setting
     // -----------------------------------------------------------------------------------------
@@ -241,23 +249,37 @@ impl Game {
         }
     }
 
-    /// How a target reads: `House Aldric`, `the Sheaim`.
+    /// How a target reads: `House Aldric`, `the Sheaim`; a civilization that is a House (Spread
+    /// Religion into a House) by its House's label.
     pub fn culture_target_name(&self, target: ChannelTarget) -> String {
         match target {
             ChannelTarget::House(h) if self.houses.contains(h) => self.house_label(h),
             ChannelTarget::House(_) => "a House that is gone".into(),
-            ChannelTarget::Player(t) => format!("the {}", self.player_get_civilization_short_description(t)),
+            ChannelTarget::Player(t) => match self.player_house(t) {
+                Some(h) => self.house_label(h),
+                None => format!("the {}", self.player_get_civilization_short_description(t)),
+            },
         }
+    }
+
+    /// Why player `p` may set no channel at all now, in the screen's words (`None`: it may set one
+    /// its target's checks allow): it cannot have Houses, or it has no city. The first part of
+    /// [`Game::culture_channel_check`].
+    pub fn culture_channel_refusal(&self, p: PlayerId) -> Option<String> {
+        if !self.player_has_houses(p) {
+            return Some("Only a civilization that can have Houses channels its culture.".into());
+        }
+        if self.culture_cities_of(p).next().is_none() {
+            return Some("You have no city.".into());
+        }
+        None
     }
 
     /// Why player `p` may not set channel `o` now, in the screen's words (`Ok`: it may). See the
     /// module comment and docs/PERSONS.md, "The fourth build", rules 1, 2, 5 and 6.
     pub fn culture_channel_check(&self, p: PlayerId, o: &ChannelOrder) -> Result<(), String> {
-        if !self.player_has_houses(p) {
-            return Err("Only a civilization that can have Houses channels its culture.".into());
-        }
-        if self.culture_cities_of(p).next().is_none() {
-            return Err("You have no city.".into());
+        if let Some(why) = self.culture_channel_refusal(p) {
+            return Err(why);
         }
         let defines = &self.d.defines;
         let effect = self.culture_effect(o.action);
@@ -716,7 +738,11 @@ impl Game {
                 let preview = self.culture_channel_preview(p, &o);
                 let label = match target {
                     ChannelTarget::House(h) => format!("{} ({})", self.house_label(h), self.player_get_civilization_short_description(self.houses[h].owner)),
-                    ChannelTarget::Player(t) => self.player_get_civilization_short_description(t),
+                    ChannelTarget::Player(t) if t == p => format!("{} (yours)", self.player_get_civilization_short_description(t)),
+                    ChannelTarget::Player(t) => match self.player_house(t) {
+                        Some(h) => format!("{} ({})", self.house_label(h), self.player_get_civilization_short_description(self.houses[h].owner)),
+                        None => self.player_get_civilization_short_description(t),
+                    },
                 };
                 let line = if preview.refusal.is_some() { String::new() } else { preview.line };
                 ChannelOption { target, label, line, refusal: preview.refusal }

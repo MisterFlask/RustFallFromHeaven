@@ -568,23 +568,10 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
 }
 
 /// The city's part in its owner's cultural channel (docs/CULTURE.md; docs/PERSONS.md, "The
-/// fourth build", rule 1): its culture rate, the culture it diverts a turn under the
-/// civilization's channel (`diverted`, hundredths; 0 without one or in disorder) and the
-/// civilization's channel (null: none). The channel is chosen at the civilization's level
-/// (the `culture` query; part 2's Culture screen).
+/// fourth build", rules 1 and 10): `view::culture::city_cultural`. The channel is chosen at the
+/// civilization's level, on the Culture screen.
 fn cultural(v: &Viewer, c: CityId) -> Json {
-    let g = v.g;
-    let owner = g.cities[c].owner;
-    let channel = g.players[owner]
-        .culture_channel
-        .clone()
-        .filter(|_| owner == v.h || v.reveal || g.culture_channel_visible(v.team, owner))
-        .map_or(Json::Null, |channel| crate::view::culture::channel_json(v, &ffh_core::culture::Channel { caster: owner, channel }));
-    crate::jobj! {
-        "rate" => g.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE),
-        "diverted" => crate::view::culture::city_diverted(v, c),
-        "channel" => channel,
-    }
+    crate::view::culture::city_cultural(v, c)
 }
 
 /// City `c`'s Sentinels (docs/SIEGES.md): each one's HP left in percent (0: breached).

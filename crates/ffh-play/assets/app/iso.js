@@ -1609,8 +1609,6 @@ export class IsoMap {
         g.stroke();
         this.plateHits.push(starHit(city, x0 - 2, y0 + 1, Math.max(4, 6 * u)));
       }
-      // Revolt pressure (docs/CULTURE.md): a mark at the plaque's right end by its level.
-      drawRevoltMark(g, city, x0 + w + Math.max(4, 5 * u) - u, y0 + h / 2, Math.max(4, 5 * u), u, base);
       // Houses (docs/PERSONS.md, "UI", part G): an own city's House shield at the
       // plaque's left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
       const shieldH = h + 2 * u;
@@ -1727,44 +1725,6 @@ function star(g, cx, cy, points, ro, ri) {
     i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
   }
   g.closePath();
-}
-
-/** The map mark of a city under revolt pressure (docs/CULTURE.md; the view's cities carry
- *  `revolt`, the level, and `unrest` for the cities you see under pressure): null for none, else
- *  its fill, rim, glyph, ink and a title by level: 0 pressure building (no effect yet, a small
- *  ochre dot), 1 unrest (amber "!"), 2 revolt (red "!"), 3 close to changing hands (red "!!" in a
- *  gold ring). The isometric and the 2D map draw it (`drawRevoltMark`). */
-export function revoltMark(city) {
-  const lvl = city?.revolt;
-  if (lvl === null || lvl === undefined) return null;
-  if (lvl <= 0) return { level: 0, fill: "#c9a24a", rim: "#0c0703", glyph: "", ink: "#0c0703", title: "Revolt pressure is building" };
-  if (lvl === 1) return { level: 1, fill: "#f0a020", rim: "#0c0703", glyph: "!", ink: "#0c0703", title: `Unrest from revolt pressure${city.unrest ? ` (−${city.unrest} happy)` : ""}` };
-  if (lvl === 2) return { level: 2, fill: "#c0241c", rim: "#0c0703", glyph: "!", ink: "#ffffff", title: "In revolt from revolt pressure" };
-  return { level: 3, fill: "#c0241c", rim: "#ffe58c", glyph: "!!", ink: "#ffffff", title: "Close to changing hands from revolt pressure" };
-}
-
-/** Draws city `city`'s revolt mark (`revoltMark`), if any, as a disc of radius `r` centred at
- *  (`cx`, `cy`), its glyph on baseline `base` in the current font; `u` the line unit. */
-export function drawRevoltMark(g, city, cx, cy, r, u, base) {
-  const mk = revoltMark(city);
-  if (!mk) return;
-  const rr = mk.level === 0 ? Math.max(2.5, r * 0.55) : mk.level === 3 ? r * 1.2 : r;
-  const x = mk.glyph.length > 1 ? cx + rr * 0.15 : cx;
-  g.fillStyle = mk.fill;
-  g.strokeStyle = mk.rim;
-  g.lineWidth = Math.max(1, u) * (mk.level === 3 ? 1.5 : 1);
-  g.beginPath();
-  if (mk.glyph.length > 1) g.ellipse(x, cy, rr * 1.25, rr, 0, 0, Math.PI * 2);
-  else g.arc(x, cy, rr, 0, Math.PI * 2);
-  g.fill();
-  g.stroke();
-  if (mk.glyph) {
-    const align = g.textAlign;
-    g.fillStyle = mk.ink;
-    g.textAlign = "center";
-    g.fillText(mk.glyph, x, base);
-    g.textAlign = align;
-  }
 }
 
 /** The colours of a ritual under way (the view's cities carry `ritual`, its name, while their

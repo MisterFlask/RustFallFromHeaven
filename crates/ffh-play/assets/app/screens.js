@@ -665,7 +665,7 @@ function keysTable() {
     ["Screens", ""],
     ["F1 / F2 / F3 / F4", "cities / finances (the sliders) / civics / diplomacy and trade"],
     ["F5", "armies: your armies, their supply and the units on their way"],
-    ["F6 / F7 / F8", "the tech tree / religion / cultural pressure"],
+    ["F6 / F7 / F8", "the tech tree / religion / culture"],
     ["F9", "governors: who runs your cities, their roles, priorities and empire orders"],
     ["Shift+F9", "the court: your Houses, their requests, and grants of cities"],
     ["Ctrl+S / Ctrl+L", "save / load"],

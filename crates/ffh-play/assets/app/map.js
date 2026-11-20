@@ -15,7 +15,7 @@ import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "
 import * as T from "./tiles.js";
 import { stackHead } from "./stacks.js";
 import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
-import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
+import { IsoMap, ISO_DEFAULT_ZOOM, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { drawPlateShield } from "./persons_lines.js";
 import { shieldHits, starHit, plateHitAt, plateTip } from "./plates.js";
@@ -1488,9 +1488,6 @@ export class MapView {
             const sw = g.measureText("★").width;
             this.plateHits.push(starHit(c, sx + ts / 2 - tw / 2 + 4 + sw / 2, sy - 2, Math.max(5, sw / 2 + 1)));
           }
-          // Revolt pressure (docs/CULTURE.md): a mark at the label's right end by its level.
-          g.font = `bold ${ts >= 32 ? 11 : 9}px ${FONT}`;
-          drawRevoltMark(g, c, sx + ts / 2 + tw / 2 + 4, sy - 2, 6, 1, sy - 1.5);
           // Houses (docs/PERSONS.md, "UI", part G): an own city's House shield at the
           // label's left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
           const shieldW = c.house ? drawPlateShield(g, c.house, sx + ts / 2 - tw / 2 - 8, sy - 2, 17) : 0;

@@ -61,6 +61,24 @@ pub struct Requirement {
     pub unit: i32,
 }
 
+/// The requirement's base and the weight of the attitude in it: `(L + REQUIREMENT_BASE −
+/// REQUIREMENT_ATTITUDE × A, at least 1) × W` ([`Game::house_requirement`]).
+pub const REQUIREMENT_BASE: i32 = 6;
+pub const REQUIREMENT_ATTITUDE: i32 = 2;
+
+impl Requirement {
+    /// The requirement as the screens write it, its parts and its total: `(3 + 6 − 2 × 1) × 24 =
+    /// 168`; a negative attitude in brackets (`(3 + 6 − 2 × (−1)) × 24 = 264`), and `at least 1`
+    /// when the bracket's sum is below 1 (`(−6 + 6 − 2 × 2, at least 1) × 24 = 24`).
+    pub fn formula(&self) -> String {
+        let signed = |v: i32| if v < 0 { format!("\u{2212}{}", -v) } else { v.to_string() };
+        let attitude = if self.attitude < 0 { format!("({})", signed(self.attitude)) } else { self.attitude.to_string() };
+        let sum = self.loyalty + REQUIREMENT_BASE - REQUIREMENT_ATTITUDE * self.attitude;
+        let floor = if sum < 1 { ", at least 1" } else { "" };
+        format!("({} + {REQUIREMENT_BASE} \u{2212} {REQUIREMENT_ATTITUDE} \u{d7} {attitude}{floor}) \u{d7} {} = {}", signed(self.loyalty), self.unit, self.total)
+    }
+}
+
 /// The cities a split toward a courter takes ([`Game::house_split_toward`]).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SplitView {
@@ -158,7 +176,7 @@ impl Game {
         let loyalty = self.house_loyalty(h);
         let attitude = attitude_step(self.player_ai_get_attitude(self.houses[h].player, courter, true));
         let unit = self.world_culture_unit();
-        Requirement { total: (loyalty + 6 - 2 * attitude).max(1) * unit, loyalty, attitude, unit }
+        Requirement { total: (loyalty + REQUIREMENT_BASE - REQUIREMENT_ATTITUDE * attitude).max(1) * unit, loyalty, attitude, unit }
     }
 
     /// A turn of favour `amount` (hundredths) under `gain` and a guard's `guard` (hundredths a
@@ -608,5 +626,20 @@ impl Game {
         let state = self.house_state(nh);
         self.houses[nh].standing.state = state;
         Some(nh)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The requirement's formula as the screens write it, from its parts and its total.
+    #[test]
+    fn the_requirement_formula() {
+        let r = |loyalty: i32, attitude: i32, unit: i32| Requirement { total: (loyalty + REQUIREMENT_BASE - REQUIREMENT_ATTITUDE * attitude).max(1) * unit, loyalty, attitude, unit };
+        assert_eq!(r(3, 1, 24).formula(), "(3 + 6 \u{2212} 2 \u{d7} 1) \u{d7} 24 = 168");
+        assert_eq!(r(3, -1, 24).formula(), "(3 + 6 \u{2212} 2 \u{d7} (\u{2212}1)) \u{d7} 24 = 264");
+        assert_eq!(r(-2, 0, 5).formula(), "(\u{2212}2 + 6 \u{2212} 2 \u{d7} 0) \u{d7} 5 = 20");
+        assert_eq!(r(-6, 2, 24).formula(), "(\u{2212}6 + 6 \u{2212} 2 \u{d7} 2, at least 1) \u{d7} 24 = 24");
     }
 }

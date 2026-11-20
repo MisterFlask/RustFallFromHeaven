@@ -12,7 +12,7 @@ religion among a civilization's cities (Spread Religion).**
 | 1 Baseline | AI autoplay turn times before the sprint | done (below); the owner then ruled turn time out of the acceptance criteria (2026-10-30: "no perf optimization until it impedes testing") |
 | 2-3 Culture core and escalation | built as a cultural queue of timed actions (Festival, Trade Fair, Spread Religion, Incite Unrest, Siphon Knowledge, Foment Revolt, Flip City), then replaced (below) | replaced 2026-10-30 |
 | Redesign (owner, 2026-10-30) | standing channels of a city: Foment Revolt (unrest, disorder, the city) and Spread Religion, aimed at a civilization; effect by the square of the distance; no festivals, fairs, siphoning | replaced 2026-11-20 |
-| Redesign (owner, 2026-11-20) | one standing channel of the civilization: Court and Guard a House (docs/PERSONS.md, "The fourth build"), Spread Religion; Foment Revolt and per-city channels retired | part 1 built (the rules, the AI, the read API: "Rules as built" below); part 2 (the screens) being built |
+| Redesign (owner, 2026-11-20) | one standing channel of the civilization: Court and Guard a House (docs/PERSONS.md, "The fourth build"), Spread Religion; Foment Revolt and per-city channels retired | part 1 built (the rules, the AI, the read API: "Rules as built" below); part 2A built (the Culture screen and the city screen's line: "UI" below); part 2B (the Houses' side: the House card, the trade table, the diplomacy list) being built |
 | 7 FfH layer | Incite Mutiny (needs armies) | later |
 
 Code: rules `crates/ffh-core/src/culture.rs` and `crates/ffh-core/src/persons/` (favour and the
@@ -94,7 +94,11 @@ docs/PERSONS.md, "The fourth build as built, part 1", has every detail; in short
   (`SPREAD_RELIGION`, `DIFFERENT_STATE_RELIGION`); `CULTURALACTION_FOMENT_REVOLT` is gone.
 - **Read API**: `culture_channel_preview`, `culture_channel_options`, `culture_channels`,
   `culture_channels_between_others`, `culture_channel_visible`; the courtships and guards
-  `house_courtships`, `house_guard_view`, `house_courting_line`.
+  `house_courtships`, `house_guard_view`, `house_courting_line`. Part 2A added
+  `culture_channel_refusal` (why a civilization may set no channel at all: the check's first
+  part), `player_culture_channel_base_now` (the culture of the cities that would divert: the
+  screen's `half of`) and `Requirement::formula` (`(3 + 6 − 2 × 1) × 24 = 168`, with the
+  constants `REQUIREMENT_BASE` and `REQUIREMENT_ATTITUDE` the requirement reads).
 - **Telemetry**: `culture_channel` / `culture_channel_end` / `culture_spread` by action,
   `house_split` `courted` / `courted_whole` / `courted_held` / `courted_no_leader`; the AI's
   decisions of kind `culture`.
@@ -131,59 +135,72 @@ one channel (the fourth build, rule 9; a rules change: reasonable, not measured)
 Retired with Foment Revolt: the revolt simulation, the defenders against revolt pressure (the
 governors' and the directly ruled cities'), the provocation of a city close to flipping.
 
-## UI (ffh-play) -- the per-city build of 2026-10-30, retired by the fourth build
+## UI (ffh-play) -- the fourth build's part 2A (2026-11-20)
 
-The fourth build's part 1 left the client a plain reading of the new channel (docs/PERSONS.md, "The
-fourth build as built, part 1", the last paragraph); part 2 builds the screens of rule 10. What
-follows is the retired per-city interface, kept for the record.
+The civilization's channel has one screen, **Culture** (F8, the menu's Culture), and one line on
+each city screen (docs/PERSONS.md, "The fourth build", rule 10, and "as built, part 2A";
+docs/HUMAN.md has the screens and the protocol). Every number is the rules' read API's
+(`culture_channel_preview`, `culture_channel_options`, `house_courtships`, `house_guard_with`,
+`house_requirement`, `player_culture_inflow_now`, `player_culture_channel_base_now`): the view
+(`crates/ffh-play/src/view/culture.rs`) sends the parts as fields, the client
+(`assets/app/culture.js`) formats and lays them out, with no formula of its own. Culture shows
+with one decimal, favour and requirements as whole numbers, as the rules' lines write them.
 
-- **City screen, "Culture"** sits in the left column, under the city's numbers. It shows the culture rate and, under a channel, the half it takes and what is left to the city.
-  - **The channel:** action, civilization (and religion), since when, the culture it takes a turn, "Stop", and what it does now.
-    - Foment Revolt lists each of their cities in reach, strongest first, with:
-      - its distance and the distance effect;
-      - the caster's pressure there now;
-      - what this channel adds a turn, and what the caster's other cities add, against the city's resistance;
-      - a small bar with the pressure now, a marker where it settles, and the thresholds.
+- **The head.** `Channel: Court House Aldric, since turn 140.` or `Channel: none. Your cities keep
+  all their culture.`; then `Inflow: 6.4 culture a turn (half of 12.8).` or, without a channel, `A
+  channel would take 6.4 culture a turn (half of 12.8).` (the "half of" is the culture of the
+  cities that would divert: those not in disorder). A civilization that cannot channel (a House,
+  one without a city) reads the rules' reason instead.
+- **Your channel**, while one runs: its full preview and **Stop**.
+  - Court: a favour bar (the favour against the requirement, a mark at two thirds); the
+    requirement's parts as a table (`Loyalty of House Aldric to the Bannor: 3`, `Attitude of its
+    leader toward you: Pleased (+1)`, `World culture unit: 24`, `Requirement: (3 + 6 − 2 × 1) × 24 =
+    168`, the formula written by `Requirement::formula`); the reach (`7 plots: 51%`), the gain and
+    the guard a turn, where the favour settles, the split (`In ~31 turns.`, `Never at these
+    inflows.`); the cities that would go and those the hold contest keeps, as city links (`It
+    joins whole.` for a House of one city).
+  - Guard: what it takes from each courtship a turn (`Guard: −3.2 a turn to each courtship.`), its
+    reach, and a row per courter: its favour of its requirement, where it settles and its split,
+    with the guard and without it.
+  - Spread Religion: the chance a turn and its cities in reach (city, distance, share; `has it`,
+    `cannot take it`).
+- **Choose a channel.** The three actions (Spread Religion with the religions your cities have);
+  the targets of the picked one from `culture_channel_options`, each a button with its label and
+  one line (a refused one disabled, with the rules' refusal; your channel's `Your channel.`); a
+  picked target's full preview opens under it with **Set** (`Set (replaces Court House Aldric)`
+  while a channel runs). An action without a target says why in one line (`No House of another
+  realm that you have met.`, `You have no House.`, `None of your cities has a religion.`). Spread
+  Religion's targets are every civilization you have met with a city, a House among them by its
+  label (`House Aldric (Bannor)`), yours `Bannor (yours)`.
+- **Aimed at you.** Each courtship of each of your Houses by its line, a line past two thirds
+  marked `!` as needing attention; each such House a **Guard House Aldric** button (`... (replaces
+  Court House Bertram)` while a channel runs; disabled with the reason when refused) with its
+  preview from `house_guard_with(h, your inflow now)` (`Guard: −3.2 a turn to each courtship. The
+  Sheaim: a split in ~6 turns without it, settling near 40 with it.`), or `Your channel guards
+  it.`; then the Spread Religion channels aimed at your civilization, each with its chance.
+- **Between others**: the channels you see between others, by name (`Sheaim: Court House Bertram
+  (Kuriotates), since turn 130.`).
+- **What others remember**: each met leader's cultural hostility, friendship and courted-House
+  memory, each out of `CULTURE_MEMORY_MAX`.
+- **Keywords**: Channel, Court and Guard as chips; a chip shows its reminder boxes. The screen's
+  help (its (i)) says where things are and shows the same reminders; no text restates them.
+- **The city screen's Culture section** is one line: `Culture: 12.8 a turn; 6.4 of it to Court
+  House Aldric.`, `Culture: 12.8 a turn; nothing diverted in disorder.` or `Culture: 12.8 a turn;
+  no channel.`, then a link that opens the Culture screen (the city screen is read again when it
+  closes) and the keyword Channel.
+- **The map** draws nothing of channels: the revolt marks went with Foment Revolt.
+- **Protocol**: the command `culture_channel {action?, target?, religion?}` (no action stops); the
+  `culture` query; the city query's `cultural` (`{rate, diverted, disorder, channel, reminders}`).
+- **Tests**: `crates/ffh-play/tests/culture_screen.rs` (the view's numbers against the rules' on
+  `ffh-play stage culture`), `assets/test/culture.test.mjs` (the formatting),
+  `tools/web-culture-smoke.mjs` (the screen in a browser on that stage, with the review crops),
+  `tools/web-smoke.mjs`'s `cultureUi` (a fresh game: the city's line and link, the three actions).
+  `ffh-play stage culture` is the `persons` stage with a religion in every city of the human (set
+  by hand), so Spread Religion has a refused target.
 
-      It then says what that brings (no effect, unrest with its unhappiness, revolt, or the city joins you; a capital never) and when ("revolt in ~6 turns").
-    - Spread Religion shows the chance a turn (with the 25% cap) and each city's part of it, divided by the religions already there. It also lists the cities that have the religion or cannot take it, and how many cities in reach you have not seen; those count in the chance.
-  - **"Channel culture"** is open while the city channels nothing, and folded as "Change the channel" under one.
-    - You pick the action, the religion (for a spread), and a civilization with a city in reach.
-    - Each civilization has a one-line summary: how many cities and the most the channel would bring, or the chance a turn; "hostile"; or why it is not possible.
-    - Below come the preview of the one picked and the button that sets it ("Channel …" / "Switch to …").
-    - A city whose half rounds to nothing says so.
-  - **"Revolt pressure on this city"** has a bar by civilization, in their colours, against the thresholds: each point of unrest, revolt, two thirds of the way, and the line where one civilization's own pressure takes the city.
-    - Then come the level and its unhappiness, and each civilization's pressure with what its channels add a turn, where that settles and when the next level comes (or that it fades, and when it is gone).
-    - Last come the city's resistance (half its culture, 2 per defender; in revolt only its defenders) and, close to the flip, what to do.
-- **Cultural pressure (F8, the menu's Culture)** lists:
-  - your cities under revolt pressure, most pressed first (a click opens the city);
-  - the channels aimed at you, with the cities of yours they reach and what they do there;
-  - your channels, with what they do and "Stop";
-  - the channels you see between others (a click centres the map on the casting city);
-  - what other leaders remember of your cultural actions: hostility and friendship, out of `CULTURE_MEMORY_MAX`.
-- **Map:** a city's banner ends with a mark while you see it under revolt pressure, on the isometric and 2D maps:
-  - a small ochre dot while the pressure has no effect yet;
-  - an amber "!" for unrest;
-  - a red "!" in revolt;
-  - a red "!!" in a gold ring when a civilization's pressure is two thirds of the way to taking the city.
-- **Messages** from the rules reach the turn report and the message log like any other, and the located ones have their ⌖. They report:
-  - a spread, with its chance a turn;
-  - a city's revolt level changing;
-  - a hostile channel against you started or stopped;
-  - a channel that ended, and why;
-  - a city changing hands.
-- **Predictions:** "settles near" is where a civilization's pressure ends up after the city's turn under a steady inflow, found by running the turns from the pressure now: about `(inflow − resistance) / 5% − inflow`. "When" counts the same turns.
-  - The turns have two resistances. Out of revolt the city resists in full (half its culture and its defenders). From the turn after its total (this civilization's pressure and the others', taken as constant) reaches the revolt, only its defenders resist, since a city in disorder makes no culture; its culture resists again from the turn after the total falls below.
-  - So a city whose full resistance would hold the pressure above the revolt loses its culture's part, and the pressure runs on, often to the flip: the prediction says "the city joins you" there, as the rules will.
-  - A city in revolt now resists with its defenders both ways: its full resistance cannot be read while it makes no culture.
-  - Unrest and the revolt count the city's total, the flip the civilization's own pressure. The chooser's one line names the reached city with the furthest stage (a capital never changes hands).
-  - Pressure from civilizations you have not met shows only as "unknown".
-- **Protocol:**
-  - The command `culture_channel {city, action?, target?, religion?}`; no action means stop.
-  - The `culture` query.
-  - The city query's `cultural`: `rate`, `amount`, `diverted`, `channel`, `options`, `pressure`, `thresholds`.
-  - The view's cities carry `channel` (your own cities) and `revolt` / `unrest` (cities you see under pressure).
-  - docs/HUMAN.md has the fields.
+The per-city interface of 2026-10-30 (a city's channel and its chooser, the revolt pressure on a
+city and its scale, the Cultural pressure panel, the map's revolt marks, the predictions of
+revolt pressure) is retired with Foment Revolt; git history has it.
 
 ## Phase 1 baseline (master `9be40af`, before the sprint)
 
