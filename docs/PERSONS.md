@@ -1066,6 +1066,19 @@ post, the Court screen, the previews, claims).
     2 and `PERSON_HOUSE_SIZE_PER` 8: 3 up to 15 cities, 4 from 16, 5 from 24. A grant or a founding
     moves a city within the realm and leaves `T` as it is; a capture or a loss moves it. The
     numbers are first guesses.
+    **Revised 2026-11-20 (the owner's decisions; replaces (b) to (d)).** A settlement is a city
+    of radius 1 under every other rule (docs/PORTING.md, "Kuriotates settlements are cities of
+    radius 1"). (b') Settlements count in the Crown like any city, after its full cities (the
+    Crown's order: the capital, the full cities, the settlements), so the cities over the limit
+    are settlements where there are any; they count in a House's split too (third build, rule 4:
+    its cities but outposts). (c') The Kuriotates' Crown limit is the usual 3 (`crown_cities_change`
+    is gone). (d') The city cap counts the player's own full cities. A House with a city cap (a
+    Kuriotate House) holds only settlements: a city it founds or takes is a settlement, and a full
+    city cannot be granted to it (`A House with a city limit holds only settlements.`; the grant
+    list shows it on a full city when no House of the realm could take one). A city moving within
+    a realm otherwise keeps what it was. Promote Settlement is cast only by a civilization that
+    is no House. A House freed or broken away is an ordinary capped civilization: its next full
+    city comes under its cap, and it may promote. The AI grants a Crown city a House can take.
 15. **An act against a House angers the House and its liege** (the owner's rule, 2026-11-18),
     with the AI's memory of wrongs (the owner's decision of the same day): a civilization
     remembers who declared war on it (`MEMORY_DECLARED_WAR`), took its cities in battle

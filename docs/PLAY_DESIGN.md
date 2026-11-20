@@ -1085,7 +1085,8 @@ Each phase is independently testable and committable. `cargo build --release && 
 * **ffh-core hooks**, each a defaulted Controller method plus one call site and a policy entry:
   1. `ai_choose_research` for the economy.rs:1262 site (default: `choose_research`). Removes the research-mark rule.
   2. `disband_acquired_city` for `disband_city_popup` (default: `raze_conquered_city`).
-  3. `confirm_settlement(g, p, c) -> Option<bool>` for Kuriotates (already in PORTING.md next steps).
+  3. `confirm_settlement(g, p, c) -> Option<bool>` for Kuriotates (built; removed 2026-11-20 with
+     the question: docs/PORTING.md, "Kuriotates settlements are cities of radius 1").
   4. The raze gift option.
   5. Election deferral (keep the selection when `None`).
   6. (Recipients done: each untagged entry carries its `Audience`, and `LogFog` is gone; the marker at the slot move is still open.) Log recipients: tag each `log.msg` with who C++ sends it to (a player, or a recipient rule such as "met both teams" / "revealed the city" / "voting members" / "everyone" with its ids), so `LogFog` (`view/fog.rs`) stops matching message texts and the event world news (held back today) reach the players who met the event's player. With it (P2 review), a marker entry at `reassign_player_advanced` (old and new slot), so the session splits the log of an `update()` in which FfH moved the human exactly at the move (today it drains such an update for the new slot, F23).

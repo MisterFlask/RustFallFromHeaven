@@ -2,7 +2,7 @@
 //!
 //! * A [`Decision`] is a **blocking** question a rules call asks the human (the C++ popups whose
 //!   "no answer" would lose information): free tech, keep/raze/gift a conquered city, keep or
-//!   disband an acquired city, city or settlement (Kuriotates), take control of a new
+//!   disband an acquired city, take control of a new
 //!   civilization, offer, religion. It is answered inside the rules call through the session's
 //!   `Answerer`.
 //! * [`Pending`] lists what the human answers at a control point with a journaled command: the
@@ -29,9 +29,6 @@ pub enum DecisionKind {
     /// C++ BUTTONPOPUP_DISBANDCITY (a city that came by culture, a spell or an event): option 0
     /// keeps it, 1 disbands it.
     DisbandCity { city: CityId },
-    /// FfH BUTTONPOPUP_CONFIRMSETTLEMENT (a Kuriotates city below the limit): option 0 makes a
-    /// city (radius 3), 1 a settlement.
-    Settlement { city: CityId },
     /// FfH's "take control" popup after the Infernal Pact or the Mercurian Gate: option 0 plays
     /// `player` from now on, 1 keeps the human's civilization.
     TakeControl { player: PlayerId },
@@ -62,7 +59,6 @@ impl DecisionKind {
             DecisionKind::FreeTech => "free_tech",
             DecisionKind::KeepCity { .. } => "keep_city",
             DecisionKind::DisbandCity { .. } => "disband_city",
-            DecisionKind::Settlement { .. } => "settlement",
             DecisionKind::TakeControl { .. } => "take_control",
             DecisionKind::Offer { .. } => "offer",
             DecisionKind::Draft { .. } => "draft",
@@ -78,8 +74,7 @@ impl DecisionKind {
 /// One button of a decision.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DecisionOption {
-    /// Stable key: a type name (`TECH_X`), or `keep` / `raze` / `gift` / `disband` / `city` /
-    /// `settlement` / `yes` / `no` / `accept` / `refuse`.
+    /// Stable key: a type name (`TECH_X`), or `keep` / `raze` / `gift` / `disband` / `yes` / `no` / `accept` / `refuse`.
     pub key: String,
     pub label: String,
     /// What this choice brings, shown with the button (an event's effects, a tech's help, a cost).
@@ -321,27 +316,6 @@ pub fn disband_city(g: &Game, p: PlayerId, c: CityId, advisor_disbands: bool) ->
         options: vec![DecisionOption::new("keep", "Keep"), disband],
         advisor: Some(advisor_disbands as usize),
         context: city_context(g, c, city.previous_owner),
-        keywords: Vec::new(),
-    }
-}
-
-/// BUTTONPOPUP_CONFIRMSETTLEMENT (`launchConfirmSettlementPopup`): a city (button 0: radius 3)
-/// or a settlement (button 1).
-pub fn settlement(g: &Game, p: PlayerId, c: CityId, advisor_settlement: bool) -> Decision {
-    let city = &g.cities[c];
-    let mut as_city = DecisionOption::new("city", "City");
-    as_city.tip = format!("A full city that also works the outer ring of plots (radius 3); you may have {} cities.", g.players[p].max_cities);
-    let mut as_settlement = DecisionOption::new("settlement", "Settlement");
-    as_settlement.tip = "Settlements produce no gold, research or culture, nothing can be built in them, and they cost no maintenance (they do not count against the city limit).".into();
-    Decision {
-        id: 0,
-        player: p,
-        kind: DecisionKind::Settlement { city: c },
-        title: format!("{}: city or settlement?", city.name),
-        text: names::text(g.d, "TXT_KEY_POPUP_SETTLEMENT_OR_CITY").to_string(),
-        options: vec![as_city, as_settlement],
-        advisor: Some(advisor_settlement as usize),
-        context: city_context(g, c, None),
         keywords: Vec::new(),
     }
 }

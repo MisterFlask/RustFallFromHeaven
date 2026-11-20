@@ -88,7 +88,8 @@ addHelp({
     h(
       "ul",
       h("li", "Every city starts as the Crown's. The capital stays the Crown's."),
-      h("li", "Under a governing civic the Crown holds a few cities at the normal maintenance (3; the Kuriotates: the capital alone, settlements not counted). Each city beyond pays triple city-count maintenance. The Court says how many and what they cost."),
+      h("li", "Under a governing civic the Crown holds 3 cities at the normal maintenance. Each city beyond pays triple city-count maintenance. The Court says how many and what they cost."),
+      h("li", "A House with a city limit (the Kuriotates) holds only settlements: a full city cannot be granted to it, and a city it founds or takes is a settlement."),
       h("li", "A grant moves a Crown city to a House, for good: the city, its production and its commerce are the House's. A realm without a House founds one with its first grant: its leader is drawn from the free minor leaders of your civilization (else of other civilizations of your alignment)."),
       h("li", "A House is a civilization of its own and your vassal. Every vassal is one, whether it capitulated or sought protection."),
     ),

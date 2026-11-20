@@ -144,14 +144,14 @@ impl Game {
     }
 
     /// C++ `CvCity::canTrain(UnitTypes, ...)` (CvCity.cpp:1832-1850). FFH: min level and
-    /// settlement checks, then `canUpgrade`. (C++ returns false for `NO_UNIT`; callers holding
+    /// outpost check, then `canUpgrade`. (C++ returns false for `NO_UNIT`; callers holding
     /// an `Option` check it first.)
     pub fn city_can_train(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool) -> bool {
         let min_level = self.d.units[unit].min_level;
         if min_level > 0 {
             return false;
         }
-        if self.cities[c].settlement || self.cities[c].outpost {
+        if self.cities[c].outpost {
             return false;
         }
         // Card: the Gilded Legion (docs/CARDS.md): its city trains the chosen civilization's units
@@ -280,7 +280,7 @@ impl Game {
         let info = &d.buildings[building];
 
         // FfH: Modified by Kael 08/24/2007
-        if city.settlement || city.outpost {
+        if city.outpost {
             return false;
         }
 
@@ -462,7 +462,7 @@ impl Game {
         let info = &self.d.projects[project];
 
         // FfH: Added by Kael 04/11/2008
-        if self.cities[c].settlement || self.cities[c].outpost {
+        if self.cities[c].outpost {
             return false;
         }
         if let Some(prereq_civ) = info.prereq_civilization {
@@ -493,7 +493,7 @@ impl Game {
     /// C++ `CvCity::canMaintain` (CvCity.cpp:2377-2419). Python `canMaintain`/`cannotMaintain`.
     pub fn city_can_maintain(&self, c: CityId, process: ProcessType, cont: bool) -> bool {
         // FfH: Added by Kael 11/08/2007
-        if self.cities[c].settlement || self.cities[c].outpost {
+        if self.cities[c].outpost {
             return false;
         }
 
@@ -1070,7 +1070,7 @@ impl Game {
         }
 
         // FfH: Added by Kael 11/08/2007
-        if self.cities[c].settlement || self.cities[c].outpost {
+        if self.cities[c].outpost {
             return false;
         }
 
@@ -1260,7 +1260,7 @@ impl Game {
         }
 
         // FfH: Added by Kael 11/08/2007
-        if self.cities[c].settlement || self.cities[c].outpost {
+        if self.cities[c].outpost {
             return false;
         }
 

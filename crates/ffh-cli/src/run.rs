@@ -114,9 +114,6 @@ impl Controller for Timed {
     fn disband_acquired_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
         self.time(|| self.inner.disband_acquired_city(g, p, c))
     }
-    fn confirm_settlement(&self, g: &Game, p: PlayerId, c: CityId) -> Option<bool> {
-        self.time(|| self.inner.confirm_settlement(g, p, c))
-    }
     fn judge_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> ffh_core::controller::OfferVerdict {
         self.time(|| self.inner.judge_offer(g, p, from, they_give, we_give))
     }
@@ -288,9 +285,6 @@ impl Controller for CppCitizens {
     }
     fn disband_acquired_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
         self.inner.disband_acquired_city(g, p, c)
-    }
-    fn confirm_settlement(&self, g: &Game, p: PlayerId, c: CityId) -> Option<bool> {
-        self.inner.confirm_settlement(g, p, c)
     }
     fn keep_captured_unit(&self, g: &Game, p: PlayerId, unit: UnitType, plot: PlotIdx) -> bool {
         self.inner.keep_captured_unit(g, p, unit, plot)
@@ -1147,9 +1141,6 @@ impl Controller for FreeRider {
     }
     fn disband_acquired_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
         self.inner.disband_acquired_city(g, p, c)
-    }
-    fn confirm_settlement(&self, g: &Game, p: PlayerId, c: CityId) -> Option<bool> {
-        self.inner.confirm_settlement(g, p, c)
     }
     fn keep_captured_unit(&self, g: &Game, p: PlayerId, unit: UnitType, plot: PlotIdx) -> bool {
         self.inner.keep_captured_unit(g, p, unit, plot)

@@ -1,7 +1,7 @@
 //! Houses split (docs/PERSONS.md, "The third build", rule 4).
 //!
 //! In its liege's turn processing, after the tribute, each House holding
-//! `PERSON_HOUSE_SPLIT_CITIES` (6) great cities or more (settlements and outposts left out), in id
+//! `PERSON_HOUSE_SPLIT_CITIES` (6) cities or more (outposts left out; settlements count), in id
 //! order, splits with a chance of `PERSON_HOUSE_SPLIT_PERCENT` (5): one draw `soren_rand_num(100)`
 //! per such House a turn. The parent keeps its capital and the half of its cities nearest it (half
 //! rounded up, by plot distance from its capital, ties to the lower city id); the others go to a
@@ -15,26 +15,26 @@
 use super::*;
 
 impl Game {
-    /// House `h`'s great cities: its cities but settlements and outposts.
-    pub fn house_great_cities(&self, h: HouseId) -> i32 {
-        self.house_cities(h).into_iter().filter(|&c| !self.cities[c].settlement && !self.cities[c].outpost).count() as i32
+    /// The cities that count toward House `h`'s split: its cities but outposts.
+    pub fn house_split_cities(&self, h: HouseId) -> i32 {
+        self.house_cities(h).into_iter().filter(|&c| !self.cities[c].outpost).count() as i32
     }
 
     /// The House card's split line, when House `h` may split: `Holds 7 cities: 5% a turn to
     /// split.`
     pub fn house_split_line(&self, h: HouseId) -> Option<String> {
-        let n = self.house_great_cities(h);
+        let n = self.house_split_cities(h);
         let d = &self.d.defines;
         (n >= d.person_house_split_cities).then(|| format!("Holds {n} cities: {}% a turn to split.", d.person_house_split_percent))
     }
 
-    /// A grant's split line, when granting city `c` (a great city) to House `h` brings it to the
+    /// A grant's split line, when granting city `c` (not an outpost) to House `h` brings it to the
     /// split's threshold or beyond: `House Aldric will hold 6 cities: 5% a turn to split.`
     pub fn house_split_line_after_grant(&self, h: HouseId, c: CityId) -> Option<String> {
-        if !self.houses.contains(h) || !self.cities.contains(c) || self.cities[c].settlement || self.cities[c].outpost {
+        if !self.houses.contains(h) || !self.cities.contains(c) || self.cities[c].outpost {
             return None;
         }
-        let n = self.house_great_cities(h) + 1;
+        let n = self.house_split_cities(h) + 1;
         let d = &self.d.defines;
         (n >= d.person_house_split_cities).then(|| format!("{} will hold {n} cities: {}% a turn to split.", self.house_label(h), d.person_house_split_percent))
     }
@@ -87,7 +87,7 @@ impl Game {
         let mut houses = self.player_houses(p);
         houses.sort();
         for h in houses {
-            if !self.houses.contains(h) || self.house_great_cities(h) < at {
+            if !self.houses.contains(h) || self.house_split_cities(h) < at {
                 continue;
             }
             if self.soren_rand_num(100, "House split") < pct {

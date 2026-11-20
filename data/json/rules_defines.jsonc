@@ -105,10 +105,10 @@
   "PERSON_CLAIM_RANGE": 6,
   // the Crown's limit under a governing civic (docs/PERSONS.md, "The second build", rule 14): the
   //      cities the Crown holds at the normal city-count maintenance, the capital first; each
-  //      further one pays triple (a trait's crown_cities_change adds to it; never below 1)
+  //      further one pays triple
   "PERSON_CROWN_CITIES": 3,
   // ---- the third build, part 2A (docs/PERSONS.md, "The third build", rules 4 to 6) ----
-  // a House holding this many great cities or more (settlements left out) may split
+  // a House holding this many cities or more (outposts left out) may split
   "PERSON_HOUSE_SPLIT_CITIES": 6,
   // the chance, percent, that such a House splits in its liege's turn processing
   "PERSON_HOUSE_SPLIT_PERCENT": 5,

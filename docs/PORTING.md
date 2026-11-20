@@ -354,11 +354,12 @@ flag.
     Annoyed or Furious; a House's AI attitude toward its liege is its loyalty's.
   - *The Crown's limit* (rule 14): under a governing civic the Crown holds 3 great cities at the
     normal city-count maintenance (the capital first; settlements not counted; the Kuriotates 1,
-    the trait key `crown_cities_change`); each further one pays triple. A House of more great
+    the trait key `crown_cities_change`; revised 2026-11-20, below); each further one pays triple. A House of more great
     cities than `T = max(3, 2 + the realm's great cities / 8)`: `Holds N cities, more than T:
     -(N - T)`.
   - *The Kuriotates' city cap* counts the realm: the liege's great cities and its Houses'
-    together; a city moving between a liege and its House keeps its settlement status.
+    together; a city moving between a liege and its House keeps its settlement status (revised
+    2026-11-20: "Kuriotates settlements are cities of radius 1", below).
   Why: a large empire is shared with holders who have a view of how it is ruled, in the game's
   own idioms (vassalage, attitude, the diplomacy screen, requisition, war). Save format 49.
 - **Houses without Persons of Note** (docs/PERSONS.md, "The third build", part 1, the owner's
@@ -436,6 +437,25 @@ flag.
   Why: "revolts are meh generally", a city alone makes too little culture to channel, courting a
   House was all or nothing; the owner merged them into one sliding system (docs/PERSONS.md).
   Save format 56.
+- **Kuriotates settlements are cities of radius 1; a Kuriotate House holds only settlements**
+  (the owner's decisions of 2026-11-20; docs/PERSONS.md, rule 14 as revised):
+  - *A settlement* is a city of radius 1 (9 plots) under every other rule: FFH2's -75% on every
+    yield, its bans on training, building, projects, processes, hurrying and conscripting, its
+    exemption from city maintenance (distance and number of cities) and civic upkeep, and its
+    divisor of 8 as the city a new religion founds in are gone. The cap stays: past it (3 full
+    cities on a standard map) a city founded, taken or raised from an outpost is a settlement.
+  - *No more city-or-settlement question*: FFH2 asked a human Kuriotates player
+    (`BUTTONPOPUP_CONFIRMSETTLEMENT`); below the cap a city is always a full city (radius 3).
+  - *Houses*: a House with a city cap (a Kuriotate House) holds only settlements: a city it
+    founds or takes is one, and a full city cannot be granted to it (`A House with a city limit
+    holds only settlements.`). The cap counts the player's own full cities (no longer the realm's).
+    Promote Settlement works for a civilization that is no House.
+  - *The Crown*: the Kuriotates' limit is the usual 3 (Sprawling's `crown_cities_change` -2 and
+    the key are gone); settlements count in the Crown, after its full cities, and in a House's
+    split count.
+  Why: settlements were land markers that took plots from the full cities and built nothing
+  (the owner: "regular cities but radius one"); the Kuriotates' sprawl is held by their Houses,
+  three great cities under the boy-king and the tribes around them.
 - **The memory of wrongs** (the owner's decisions of 2026-11-18; docs/PERSONS.md, "The second
   build"; docs/AI.md, "Relations"):
   - *A declared war fades*: every leader forgets a `MEMORY_DECLARED_WAR` at 1 in 50 a turn
@@ -1430,9 +1450,6 @@ could never run them.
   `Controller::consider_offer`.
 - **Headless.** No active player: mission timers stay 0 and combat is always quick (no
   animation delay); "active player" UI branches never run.
-- **Kuriotates settlements**: the human-only `BUTTONPOPUP_CONFIRMSETTLEMENT` (city or settlement)
-  is the controller's `confirm_settlement` (ffh-play asks the human); with no answer the city stays
-  as it is (radius 2, not a settlement). AI players follow the C++ rule (radius 3).
 - **Team attitude value** (`CvTeamAI::AI_getAttitudeVal`, used to pick the worst enemy) averages
   the controller's `AttitudeType` (0-4) instead of the C++ raw attitude score.
 - **Barbarian city founding unit**: C++ asks `CvCityAI::AI_bestUnitAI(UNITAI_CITY_DEFENSE)`
@@ -1632,8 +1649,9 @@ that no player chooses):
    `crates/ffh-ai/tests/save_resume.rs`). Scenarios (world-builder saves + ScenarioFunctions.py) are out
    of scope for now; the focus is the sandbox game.
 2. **Controller hooks** for the remaining rules-side stand-ins: the barbarian city defender
-   (`AI_bestUnitAI`) and the favorite religion (`AI_doFavoriteReligion`); `confirm_settlement`
-   (Kuriotates `BUTTONPOPUP_CONFIRMSETTLEMENT`) is done.
+   (`AI_bestUnitAI`) and the favorite religion (`AI_doFavoriteReligion`). (`confirm_settlement`,
+   Kuriotates `BUTTONPOPUP_CONFIRMSETTLEMENT`, was built and then removed with the question,
+   2026-11-20.)
 3. **AI quality**: see `docs/AI.md` for the current AI and its known gaps.
 4. Keep the stress matrix green after rules changes (`ffh-stress batch --matrix all`, also on the
    checked build).

@@ -1019,56 +1019,53 @@ fn the_crown_beyond_its_limit_pays_triple() {
     assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0));
 }
 
-/// The Kuriotates (Sprawling: a city cap, here 2 great cities on a Duel map, and
-/// `crown_cities_change` -2): the Crown's limit is the capital alone; settlements never count
-/// toward it and are granted like any city, staying settlements; the cap counts the realm, the
-/// Houses' great cities with the liege's.
+/// The Kuriotates (Sprawling: a city cap, here 2 full cities on a Duel map; rule 14 as revised
+/// 2026-11-20): beyond the cap a city is a settlement, a city of radius 1 under every other rule
+/// (it pays maintenance and counts in the Crown, after the full cities); the Crown's limit is the
+/// usual 3; a House with a city cap holds only settlements: a full city cannot be granted to one,
+/// and a city it founds is a settlement.
 #[test]
-fn the_kuriotates_crown_is_the_capital_and_the_realm_counts_its_houses() {
+fn the_kuriotates_houses_hold_only_settlements() {
     let World { mut g, cap, a, b, c, .. } = world_of("CIVILIZATION_KURIOTATES", "LEADER_CARDITH");
-    let cap_of_great = g.players[P0].max_cities;
-    assert_eq!(cap_of_great, 2, "Sprawling's 3, the Duel map's -1");
+    let cap_of_full = g.players[P0].max_cities;
+    assert_eq!(cap_of_full, 2, "Sprawling's 3, the Duel map's -1");
     assert!(!g.cities[cap].settlement && !g.cities[a].settlement);
+    assert_eq!((g.cities[cap].plot_radius, g.cities[a].plot_radius), (3, 3));
     assert!(g.cities[b].settlement && g.cities[c].settlement, "beyond the cap: settlements");
-    assert_eq!(g.player_realm_great_cities(P0), 2);
-    // (c) The Crown's limit: 3 - 2 = 1, the capital alone.
+    assert_eq!((g.cities[b].plot_radius, g.cities[c].plot_radius), (1, 1));
+    assert_eq!(g.city_num_city_plots(b), 9);
+    assert_eq!(g.player_full_cities(P0, None), 2);
+    // A settlement pays maintenance as any city.
+    assert!(g.city_calculate_num_cities_maintenance_times100(b) > 0);
+    // The Crown's limit is the usual 3; settlements count, after the full cities.
     government(&mut g, "CIVIC_ARISTOCRACY");
-    assert_eq!(g.player_crown_limit(P0), Some(1));
-    // (b) Settlements never count toward it, nor are over it.
-    assert_eq!(g.player_crown_cities(P0), vec![cap, a]);
-    assert_eq!(g.player_crown_over(P0), vec![a]);
-    assert!(g.player_crown_over_cost_times100(P0) > 0);
+    assert_eq!(g.player_crown_limit(P0), Some(3));
+    assert_eq!(g.player_crown_cities(P0), vec![cap, a, b, c]);
+    assert_eq!(g.player_crown_over(P0), vec![c]);
     assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0));
-    // (b) A settlement is granted like any city: it founds a House and stays a settlement.
-    let b_plot = plot(&g, b);
-    assert_eq!(g.player_check_grant(P0, b, GrantTo::NewHouse), Ok(()));
-    let h = g.player_grant_city(P0, b, GrantTo::NewHouse).expect("granted");
+    // A full city cannot go to a capped House, new or standing.
+    assert_eq!(g.player_check_grant(P0, a, GrantTo::NewHouse), Err(FULL_CITY_TO_CAPPED_HOUSE));
+    assert_eq!(g.player_check_grant_city(P0, a), Err(FULL_CITY_TO_CAPPED_HOUSE), "no House could take it");
+    // A settlement founds a House and stays a settlement.
+    let c_plot = plot(&g, c);
+    assert_eq!(g.player_check_grant(P0, c, GrantTo::NewHouse), Ok(()));
+    let h = g.player_grant_city(P0, c, GrantTo::NewHouse).expect("granted");
     let hp = g.houses[h].player;
-    let b2 = city_at(&g, b_plot);
-    assert_eq!(g.cities[b2].owner, hp);
-    assert!(g.cities[b2].settlement, "a settlement stays one");
-    assert_eq!(g.cities[b2].plot_radius, 2);
-    assert_eq!(g.players[hp].max_cities, cap_of_great, "the House is Kuriotate: the same cap");
-    assert_eq!(g.player_crown_cities(P0), vec![cap, a], "the Crown's count unchanged");
-    // (d) The realm's great cities: the liege's and its Houses' together, from either side.
-    assert_eq!(g.player_realm_great_cities(P0), 2);
-    assert_eq!(g.player_realm_great_cities(hp), 2);
-    // A great city granted stays great; the realm's count is unchanged.
-    let a_plot = plot(&g, a);
-    g.player_grant_city(P0, a, GrantTo::House(h)).expect("granted");
-    let a2 = city_at(&g, a_plot);
-    assert_eq!(g.cities[a2].owner, hp);
-    assert!(!g.cities[a2].settlement, "a great city stays great");
-    assert_eq!(g.cities[a2].plot_radius, 3);
-    assert_eq!(g.player_realm_great_cities(P0), 2);
-    assert!(g.player_crown_over(P0).is_empty(), "the capital alone");
+    let c2 = city_at(&g, c_plot);
+    assert_eq!(g.cities[c2].owner, hp);
+    assert!(g.cities[c2].settlement, "a settlement stays one");
+    assert_eq!(g.cities[c2].plot_radius, 1);
+    assert_eq!(g.players[hp].max_cities, cap_of_full, "the House is Kuriotate: the same cap");
+    assert!(g.player_crown_over(P0).is_empty());
     assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0));
-    // (d) A city the House founds beyond the realm's cap is a settlement, as one its liege founds.
+    assert_eq!(g.player_check_grant(P0, a, GrantTo::House(h)), Err(FULL_CITY_TO_CAPPED_HOUSE));
+    assert_eq!(g.player_check_grant(P0, b, GrantTo::House(h)), Ok(()));
+    // A city the House founds is a settlement, though it holds no full city.
     let new = g.player_init_city(hp, 11, 7, true, true);
-    assert!(g.cities[new].settlement, "the realm is at its cap");
+    assert!(g.cities[new].settlement && g.cities[new].plot_radius == 1, "a capped House founds settlements");
+    // The liege at its cap founds a settlement too.
     let own = g.player_init_city(P0, 15, 4, true, true);
     assert!(g.cities[own].settlement);
-    assert_eq!(g.player_realm_great_cities(P0), 2);
 }
 
 // ---------------------------------------------------------------------------------------------

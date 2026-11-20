@@ -23,7 +23,7 @@
 // Armies screen, an army's and a garrison's battle tactic, a requisition order in a city's queue),
 // supply lines (`stage supply` on the HD-2D map: a line drawn, a Hunger marker, the readout under
 // the pointer, the words on the Armies screen), the secretary general's election
-// popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`);
+// popup (`stage election`);
 // crusades (`stage crusade`: the call popup, lending with the war confirmation, the Crusades
 // screen, a loan proposed); the decks (`stage cards`: the Armageddon deck's slots in the counter's
 // tooltip, a great person's card and its Discover action, card spells cast at a trait picked from
@@ -2067,20 +2067,6 @@ async function crusadeHd2d(url, bin, saves) {
   steps.push(`crusades in the HD-2D map (stage crusade): the rail's advisor marked while the call waited, the call popup with the target's leader and its (i) opening the help display, ${ids.length} units lent from the lend dialog after the war confirmation, Show the Host from the Crusades advisor, troops lent to the ally as a deal from the trade screen`);
 }
 
-/** P7, `stage settlement`: a Kuriotates settler founds a city below the city limit: the
- *  city-or-settlement decision (BUTTONPOPUP_CONFIRMSETTLEMENT), answered "settlement". */
-async function stagedSettlement(bin, saves) {
-  const st = await loadStaged(bin, saves, "settlement");
-  await selectUnit(st.settler);
-  await b.key("b");
-  await until(async () => (await modalTitles()).some((t) => /city or settlement/i.test(t)), "the city-or-settlement decision", 30000);
-  await shot("settlement");
-  await click('#modals .modal.decision button.option[data-option="1"]');
-  await until2(`(() => { const S = window.ffh.S; return !!(S.view && S.view.cities.find((c) => c.x === ${st.x} && c.y === ${st.y} && c.owner === S.view.me.player)); })()`, "the new settlement");
-  steps.push("city-or-settlement decision (stage settlement): a settlement founded");
-  await answerPopups(false);
-}
-
 /** Shift waypoints, on the staged AutoMoves situation (the warrior `ready` is the only group
  *  waiting; another has orders): with Shift-right-clicks (P5 review), or (`how` "goto") in the
  *  go-to mode, G then Shift-clicks (C++ `selectionListMove` with bShift: P6 review). While Shift
@@ -2338,7 +2324,6 @@ async function main() {
     await stagedGovernors(bin, saves);
     await stagedEngagement(bin, saves);
     await stagedElection(bin, saves);
-    await stagedSettlement(bin, saves);
     await stagedCrusade(bin, saves);
     await stagedCards(bin, saves);
     await stagedLoad(bin, saves);

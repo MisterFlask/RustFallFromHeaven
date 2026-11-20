@@ -1837,11 +1837,13 @@ impl Game {
         best_yield_available
     }
 
-    /// The radius `c` has without a radius building (not in C++): 3 for a full city of a player
-    /// with a city limit (Kuriotates: its cities found at radius 3, its settlements at 2), else 2.
+    /// The radius `c` has without a radius building (not in C++): 1 for a settlement, 3 for a
+    /// full city of a player with a city limit (the Kuriotates), else 2.
     pub fn city_base_plot_radius(&self, c: CityId) -> i32 {
         let city = &self.cities[c];
-        if self.players[city.owner].max_cities != -1 && !city.settlement {
+        if city.settlement {
+            1
+        } else if self.players[city.owner].max_cities != -1 {
             3
         } else {
             2

@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|breakaway|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice|persons|persons-direct|culture DIR`,
+//! capture|attack|automoves|load|trade|breakaway|diplomacy|automate|armies|governors|engagement|supply|election|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice|persons|persons-direct|culture DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -944,45 +944,6 @@ pub fn election(dir: &Path) -> Result<StagedElection, String> {
     let selection = g.vote_selections.iter().map(|v| v.id).find(|id| !before.contains(id)).ok_or("no election to hold")?;
     let paths = s.save("election").map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedElection { save: paths.save, selection, turn: s.g.game_turn() })
-}
-
-/// A saved game at a human control point (turn 2 of a duel, seed 12, the Kuriotates) where a
-/// new settler `settler` of the human stands on a city site at (`x`, `y`): founding there asks
-/// city or settlement (BUTTONPOPUP_CONFIRMSETTLEMENT, P7).
-pub struct StagedSettlement {
-    pub save: PathBuf,
-    pub settler: UnitId,
-    pub x: i32,
-    pub y: i32,
-    pub turn: i32,
-}
-
-impl StagedSettlement {
-    pub fn to_json(&self) -> Json {
-        crate::jobj! { "stage" => "settlement", "save" => self.save.display().to_string(), "settler" => self.settler, "x" => self.x, "y" => self.y, "turn" => self.turn }
-    }
-}
-
-/// Writes a [`StagedSettlement`] into `dir` (a game directory).
-pub fn settlement(dir: &Path) -> Result<StagedSettlement, String> {
-    let d = ffh_data::global();
-    let mut s = duel_as(dir, 12, 2, Some("CIVILIZATION_KURIOTATES"))?;
-    let h = s.human;
-    let g = &mut s.g;
-    let capital = *g.players[h].cities.first().ok_or("no city")?;
-    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
-    let mut site = None;
-    for q in g.map.plot_ids() {
-        let (x, y) = g.map.xy(q);
-        let dist = g.plot_distance(x, y, cx, cy);
-        if (4..=6).contains(&dist) && g.player_can_found(h, x, y, false) && g.map.plots[q].units.is_empty() && site.map_or(true, |(b, _, _)| dist < b) {
-            site = Some((dist, x, y));
-        }
-    }
-    let (_, x, y) = site.ok_or("no city site near the capital")?;
-    let settler = g.player_init_unit(h, d.t::<UnitType>("UNIT_SETTLER"), x, y, None, None);
-    let paths = s.save("settlement").map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedSettlement { save: paths.save, settler, x, y, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point in a real mid-game world, for the 3D renderer's vertical

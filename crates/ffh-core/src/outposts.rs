@@ -167,10 +167,9 @@ impl Game {
         self.cities[c].outpost = false;
         self.cities[c].lane_cut_turns = 0;
         self.cities[c].lane.clear();
-        // A player with a city limit (the Kuriotates): a city beyond it is a settlement.
-        let max_cities = self.players[p].max_cities;
-        // The realm's great cities, its Houses' included (docs/PERSONS.md, rule 14).
-        if max_cities != -1 && self.player_realm_great_cities(p) - 1 >= max_cities {
+        // A player with a city limit (the Kuriotates): a city beyond it, or a capped House's, is
+        // a settlement (docs/PERSONS.md, rule 14).
+        if self.player_new_city_is_settlement(p, c) {
             self.cities[c].settlement = true;
         }
         let radius = self.city_base_plot_radius(c);

@@ -326,8 +326,8 @@ pub fn check(g: &Game) {
         }
     }
 
-    // This game's governors (docs/GOVERNORS.md): a governed city always has production (an FfH
-    // settlement builds nothing at all) and a role; every city of a player is in the mode its
+    // This game's governors (docs/GOVERNORS.md): a governed city always has production and a
+    // role; every city of a player is in the mode its
     // civics give.
     for p in g.player_ids() {
         let direct = g.player_rules_directly(p);
@@ -336,7 +336,7 @@ pub fn check(g: &Game) {
             if !g.cities[c].outpost && g.city_is_governed(c) == direct {
                 fail(format!("city {} of player {} is not in its owner's mode (direct rule: {direct})", g.cities[c].name, p.0));
             }
-            if g.city_is_governed(c) && !g.cities[c].settlement && g.cities[c].order_queue.is_empty() {
+            if g.city_is_governed(c) && g.cities[c].order_queue.is_empty() {
                 fail(format!("governed city {} of player {} has no production", g.cities[c].name, p.0));
             }
             if g.city_is_governed(c) && g.cities[c].role.is_none() {

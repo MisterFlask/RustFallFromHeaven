@@ -181,11 +181,6 @@ fn request_lapse(g: &Game, hv: &HouseView) -> (String, Option<&'static str>) {
 // The Crown
 // ---------------------------------------------------------------------------------------------
 
-/// Whether player `h` counts settlements apart (a city cap: the Kuriotates).
-fn has_settlements(g: &Game, h: PlayerId) -> bool {
-    g.players[h].max_cities != -1
-}
-
 /// `1 city`, `4 cities`.
 fn cities_text(n: i32) -> String {
     if n == 1 {
@@ -229,28 +224,24 @@ fn crown_over_lasting_times100(g: &Game, h: PlayerId, without: Option<CityId>) -
 }
 
 /// The Crown's limit as the rules state it (docs/PERSONS.md, rule 14): `The Crown holds 5
-/// cities, 2 over its limit of 3.` or `The Crown holds 3 cities; its limit is 3.`, with
-/// `Settlements are not counted.` for a civilization with settlements; `over`: beyond the limit
+/// cities, 2 over its limit of 3.` or `The Crown holds 3 cities; its limit is 3.`; `over`: beyond the limit
 /// (the caution colour). What the cities over it cost is the line that needs attention's (with its
 /// button). `None` where there is no limit (no city can be granted).
-fn crown_line(g: &Game, h: PlayerId, cv: &CourtView) -> Option<Json> {
+fn crown_line(cv: &CourtView) -> Option<Json> {
     let limit = cv.crown_limit?;
     let n = cv.crown_cities.len() as i32;
     let over = cv.crown_over.len();
-    let mut text = if over > 0 {
+    let text = if over > 0 {
         format!("The Crown holds {}, {over} over its limit of {limit}.", cities_text(n))
     } else {
         format!("The Crown holds {}; its limit is {limit}.", cities_text(n))
     };
-    if has_settlements(g, h) {
-        text.push_str(" Settlements are not counted.");
-    }
     Some(crate::jobj! { "text" => text, "over" => over > 0 })
 }
 
 /// The Crown's card's cities: the Crown's in its order (the capital first), then the player's
-/// settlements and outposts: `{city, name, x, y, capital, grantable, refusal, over, note}`
-/// (`note`: `Over the Crown's limit.`, `Settlement: not counted.`).
+/// outposts: `{city, name, x, y, capital, grantable, refusal, over, note}` (`note`: `Over the
+/// Crown's limit.`).
 fn crown_cities_json(g: &Game, h: PlayerId, cv: &CourtView) -> Vec<Json> {
     let mut list: Vec<CityId> = cv.crown_cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
     let rest: Vec<CityId> = g.players[h].cities.iter().copied().filter(|&c| g.cities.contains(c) && !list.contains(&c)).collect();
@@ -259,13 +250,7 @@ fn crown_cities_json(g: &Game, h: PlayerId, cv: &CourtView) -> Vec<Json> {
         .map(|&c| {
             let why = g.player_check_grant_city(h, c).err();
             let over = cv.crown_over.contains(&c);
-            let note = if over {
-                Some("Over the Crown's limit.")
-            } else if g.cities[c].settlement && cv.crown_limit.is_some() {
-                Some("Settlement: not counted.")
-            } else {
-                None
-            };
+            let note = over.then_some("Over the Crown's limit.");
             city_ref(g, c).with("capital", g.city_is_capital(c)).with("grantable", why.is_none()).with("refusal", why).with("over", over).with("note", note)
         })
         .collect()
@@ -685,7 +670,7 @@ pub fn court(v: &Viewer) -> Json {
     crate::jobj! {
         "government" => Json::opt_idx(gov),
         "header" => header,
-        "crown_line" => crown_line(g, h, &cv),
+        "crown_line" => crown_line(&cv),
         "founding" => founding_json(&cv),
         "tribute_default" => has.then_some(cv.tribute_default),
         "tribute_steps" => steps,
@@ -1035,7 +1020,7 @@ pub fn grant(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "title" => format!("Grant {name}"),
         "note" => "A grant is for good.",
         "baseline" => baseline,
-        "crown_line" => crown_line(g, v.h, &cv),
+        "crown_line" => crown_line(&cv),
         "refusal" => refusal,
         "none" => (refusal.is_none() && candidates.is_empty()).then_some("No House to grant it to."),
         "candidates" => Json::Arr(candidates.into_iter().map(|(_, j)| j).collect()),
