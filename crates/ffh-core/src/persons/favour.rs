@@ -154,7 +154,7 @@ pub struct GuardView {
     pub inflow: i32,
     pub loss: i32,
     pub courtships: Vec<GuardedCourtship>,
-    /// `Guarded: −6 a turn to each courtship.`
+    /// `Guarded: −6.0 a turn to each courtship.`
     pub line: String,
 }
 
@@ -443,7 +443,7 @@ impl Game {
                 }
             })
             .collect();
-        GuardView { house: h, guard: liege, reach: self.culture_house_reach(liege, h), inflow, loss, courtships, line: format!("Guarded: \u{2212}{} a turn to each courtship.", loss / 100) }
+        GuardView { house: h, guard: liege, reach: self.culture_house_reach(liege, h), inflow, loss, courtships, line: format!("Guarded: {} a turn to each courtship.", crate::culture::format_loss(loss)) }
     }
 
     /// The guard of House `h`, while its liege's Guard channel runs at it (at the inflow now).

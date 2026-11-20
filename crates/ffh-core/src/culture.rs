@@ -683,7 +683,7 @@ impl Game {
                 reach = self.culture_house_reach(p, h);
                 let gv = self.house_guard_with(h, inflow);
                 // What the order would do (the standing guard's own line reads `Guarded: ...`).
-                line = format!("Guard: \u{2212}{} a turn to each courtship.", gv.loss / 100);
+                line = format!("Guard: {} a turn to each courtship.", format_loss(gv.loss));
                 ChannelEffect::Guard(gv)
             }
             (CultureEffect::SpreadReligion, ChannelTarget::Player(t)) if self.players.get(t).is_some() => match o.religion {
@@ -839,6 +839,11 @@ impl Game {
     }
 }
 
+/// A loss a turn in hundredths, as the screens write it: 320 -> "−3.2", 0 -> "0.0".
+pub fn format_loss(n: i32) -> String {
+    if n > 0 { format!("\u{2212}{}", format_tenths(n)) } else { "0.0".into() }
+}
+
 /// Hundredths with one decimal, as the screens write culture: 640 -> "6.4", 1200 -> "12.0",
 /// -320 -> "−3.2" (rounded to the nearest tenth).
 pub fn format_tenths(n: i32) -> String {
@@ -869,5 +874,7 @@ mod tests {
         assert_eq!(format_tenths(0), "0.0");
         assert_eq!(format_tenths(4), "0.0");
         assert_eq!(format_tenths(-320), "\u{2212}3.2");
+        assert_eq!(format_loss(320), "\u{2212}3.2");
+        assert_eq!(format_loss(0), "0.0");
     }
 }

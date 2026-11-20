@@ -465,7 +465,7 @@ fn guard_button(v: &Viewer, hv: &HouseView) -> Json {
 /// line (rule 4: `Holds 7 cities: 5% a turn to split.`), its request, its loyalty parts, its
 /// tribute and the selector, its levy, its cities, the rivals' courtships of it (the fourth build,
 /// rule 10: `courtships`, [`courtship_json`] each: `Courted by the Sheaim: favour 80 of 188, a split
-/// in ~12 turns (Ventry, Corona).`, past two thirds `attention`), its guard (`guard`: `Guarded: −6 a
+/// in ~12 turns (Ventry, Corona).`, past two thirds `attention`), its guard (`guard`: `Guarded: −6.0 a
 /// turn to each courtship.`) and, courted, the Guard button (`channel`, [`channel_button`]; null
 /// when it is not courted or the human's channel guards it already), Free; and opened, its record,
 /// its leader's ambition and backstory.

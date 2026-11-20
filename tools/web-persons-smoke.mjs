@@ -271,7 +271,7 @@ async function courting(page, st) {
   const before = await read();
   check(before.lines.length === 1 && COURTSHIP.test(before.lines[0].text) && before.lines[0].attention && before.lines[0].mark, `House pleased's courtship, needing attention: ${JSON.stringify(before.lines)}`);
   check(!/research/.test(before.tribute) && /^Tribute \d+%(: \d+ gold last turn\.|\. Not paid yet\.)$/.test(before.tribute), `its tribute line, gold only: ${before.tribute}`);
-  check(/^Guard \(replaces Court .+\)$/.test(before.button ?? "") && /^Guard: −\d+ a turn to each courtship\.$/.test(before.line ?? "") && before.guard === null, `the Guard button and its preview: ${JSON.stringify(before)}`);
+  check(/^Guard \(replaces Court .+\)$/.test(before.button ?? "") && /^Guard: −\d+\.\d a turn to each courtship\.$/.test(before.line ?? "") && before.guard === null, `the Guard button and its preview: ${JSON.stringify(before)}`);
   const others = await page.evaluate((id) => document.querySelectorAll(`.modal[data-tag=court] .house-card:not([data-house="${id}"]) .pcourted`).length, houseP.id);
   check(others === 0, `no other House of yours is courted (${others})`);
   const chips = await page.evaluate(() => [...document.querySelectorAll(".modal[data-tag=court] .court-keywords .kw-chip")].map((c) => c.textContent));
@@ -302,7 +302,7 @@ async function courting(page, st) {
     const r = await read();
     return r.guard && !r.button ? r : null;
   }, "House pleased guarded", 20000 * SLOW);
-  check(/^Guarded: −\d+ a turn to each courtship\.$/.test(after.guard), `the guard line: ${after.guard}`);
+  check(/^Guarded: −\d+\.\d a turn to each courtship\.$/.test(after.guard), `the guard line: ${after.guard}`);
   const culture = await query(page, "culture");
   check(culture.channel?.name === `Guard ${houseP.label}`, `the human's channel guards it: ${culture.channel?.name}`);
   steps.push(`Guard set: "${after.guard}"`);
