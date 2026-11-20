@@ -288,13 +288,21 @@ async function split(browser, url, sd) {
   const m = re.exec(msg.text);
   check(!!m && msg.mark === "house" && msg.kind === "house" && Number.isInteger(msg.house), `the split's message, a House's: ${JSON.stringify(msg)}`);
   const [, cities, label, leader] = m;
-  await until(() => page.evaluate(() => [...document.querySelectorAll("#toasts .house-alert")].some((e) => / splits toward you: /.test(e.textContent))), "the split's alert", 60000, 200);
+  // Found and (for the screenshot) held in one step: a toast expires on its own, and under load
+  // it can between two steps.
+  const hold = !!SHOTS;
+  await until(
+    () =>
+      page.evaluate((hold) => {
+        const t = [...document.querySelectorAll("#toasts .house-alert")].find((e) => / splits toward you: /.test(e.textContent));
+        if (t && hold) t.parentElement.replaceChild(Object.assign(t.cloneNode(true), { id: "shot-alert" }), t);
+        return !!t;
+      }, hold),
+    "the split's alert",
+    60000,
+    200,
+  );
   if (SHOTS) {
-    // (Held for the screenshot, as the state's alert.)
-    await page.evaluate(() => {
-      const t = [...document.querySelectorAll("#toasts .house-alert")].find((e) => / splits toward you: /.test(e.textContent));
-      if (t) t.parentElement.replaceChild(Object.assign(t.cloneNode(true), { id: "shot-alert" }), t);
-    });
     await crop(page, ["#shot-alert"], "alert-split.png");
     await page.evaluate(() => document.getElementById("shot-alert")?.remove());
   }
