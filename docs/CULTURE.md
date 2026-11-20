@@ -1,126 +1,73 @@
 # Cultural channels
 
 This game's own rules, not FFH2's: the first system of the owner's design spec "FfH Culture
-Actions & Army Combat" (2026-10-29), redesigned on the owner's direction of 2026-10-30. A city may
-channel half its culture into one standing order aimed at a civilization, until its owner changes
-it: fomenting revolt among its people, or spreading a religion among its cities.
+Actions & Army Combat" (2026-10-29), redesigned on the owner's direction of 2026-10-30, and again
+on 2026-11-20, when courting a House became a cultural channel (docs/PERSONS.md, "The fourth
+build"). **A civilization may channel half its culture into one standing order until it changes
+it: courting a rival's House (Court), guarding one of its own Houses (Guard), or spreading a
+religion among a civilization's cities (Spread Religion).**
 
 | Phase (spec) | What | Status |
 |---|---|---|
 | 1 Baseline | AI autoplay turn times before the sprint | done (below); the owner then ruled turn time out of the acceptance criteria (2026-10-30: "no perf optimization until it impedes testing") |
 | 2-3 Culture core and escalation | built as a cultural queue of timed actions (Festival, Trade Fair, Spread Religion, Incite Unrest, Siphon Knowledge, Foment Revolt, Flip City), then replaced (below) | replaced 2026-10-30 |
-| Redesign (owner, 2026-10-30) | standing channels: Foment Revolt (unrest, disorder, the city) and Spread Religion, aimed at a civilization; effect by the square of the distance; no festivals, fairs, siphoning | this file |
+| Redesign (owner, 2026-10-30) | standing channels of a city: Foment Revolt (unrest, disorder, the city) and Spread Religion, aimed at a civilization; effect by the square of the distance; no festivals, fairs, siphoning | replaced 2026-11-20 |
+| Redesign (owner, 2026-11-20) | one standing channel of the civilization: Court and Guard a House (docs/PERSONS.md, "The fourth build"), Spread Religion; Foment Revolt and per-city channels retired | being built |
 | 7 FfH layer | Incite Mutiny (needs armies) | later |
 
-Code: rules `crates/ffh-core/src/culture.rs` (hooks in the city turn, unhappiness, `city_kill`,
-the player turn); data `data/json/cultural_actions.jsonc` (`ffh-data`
-`infos/culture.rs`), tuning `data/json/rules_defines.jsonc` (`CULTURE_*`); AI
-`crates/ffh-ai/src/culture.rs`; UI `crates/ffh-play/src/view/culture.rs`, the city query's
-`cultural`, `assets/app/culture.js`. Tests: `crates/ffh-core/tests/culture.rs`.
+Code: rules `crates/ffh-core/src/culture.rs` and `crates/ffh-core/src/persons/` (favour and the
+split); data `data/json/cultural_actions.jsonc` (`ffh-data` `infos/culture.rs`), tuning
+`data/json/rules_defines.jsonc` (`CULTURE_*`); AI `crates/ffh-ai/src/culture.rs`; UI
+`crates/ffh-play/src/view/culture.rs`, `assets/app/culture.js`. Tests:
+`crates/ffh-core/tests/culture.rs`.
 
 Every game has cultural channels, the AI-only ones (`ffh autoplay`, `ffh stats`, the AI batches,
 `ffh-play agent`, soaks) too. Until 2026-11-05 they were a game option
-(`GAMEOPTION_CULTURE_ACTIONS`, on by default only in the browser's new-game screen); the owner
-removed it, with those of the armies and the governors.
+(`GAMEOPTION_CULTURE_ACTIONS`); the owner removed it, with those of the armies and the governors.
 
-## Rules
+## Rules (2026-11-20)
 
-**The channel.** A city has at most one channel (`City::culture_channel`): an action, a target
-civilization and, for Spread Religion, a religion of the city. Each turn, before its culture is
-added, the city diverts `CULTURE_CHANNEL_PERCENT` (50%) of its culture rate, rounded down
-(`City::culture_diverted`); that culture reaches neither the city's culture (its level, the
-culture victory) nor its plots. The channel stands until its owner changes it, or until it has
-nothing left to do: its target is gone, none of the target's cities is within reach (or, for a
-spread, could take the religion), the city lost the religion. A turn in which the city makes no
-culture (in disorder) leaves it standing. The owner is told why it ended. A channel is always the
-owner's decision: a governor never sets, changes or ends one (the owner's decision, 2026-10-30;
-docs/GOVERNORS.md).
+The contract is docs/PERSONS.md, "The fourth build", rules 1 to 10; in short:
 
-**Reach and distance.** The effect on each of the target's cities falls with the square of the
-distance from the channelling city: in full within `CULTURE_CHANNEL_FULL_RANGE` (5 plots), then
-`100·5²/d²` percent (7 plots 51%, 10 plots 25%, 15 plots 11%), nothing beyond
-`CULTURE_CHANNEL_RANGE` (20 plots). Distance is Civ4's plot distance.
+- **The channel** is the civilization's (one that can have Houses): at most one, a standing order;
+  while it runs every city diverts `CULTURE_CHANNEL_PERCENT` (50%) of its culture, counted in
+  hundredths, and the sum is the channel's inflow. The diverted culture reaches neither the cities'
+  culture (levels, borders, the culture victory) nor their plots; a city in disorder diverts
+  nothing. A governor never sets a channel.
+- **Reach** falls with the distance from the caster's nearest city to the target's nearest city: in
+  full within `CULTURE_CHANNEL_FULL_RANGE` (5 plots), then `100·5²/d²` percent (7 plots 51%, 10
+  plots 25%, 15 plots 11%), nothing beyond `CULTURE_CHANNEL_RANGE` (20). Distance is Civ4's plot
+  distance.
+- **Court** a House of another team's realm: the House's favour toward the courter gains the inflow
+  times the reach in the liege's turn, loses a guard's, fades `CULTURE_FAVOUR_FADE_PERCENT` (5%);
+  at `(L + 6 − 2A, at least 1) × W` (L the House's loyalty to its liege, A its leader's attitude
+  toward the courter from −2 to +2, W the world culture unit: the median civilization's culture a
+  turn) the House splits toward the courter: the half of its cities nearest the courter (never its
+  capital; a House of one city whole) becomes a House of the courter's realm, in peace, the hold
+  contest keeping what the liege's armies outnumber. The liege remembers a running Court channel
+  (`MEMORY_COURTED_HOUSE`, a point every `CULTURE_COURT_MEMORY_TURNS` turns) and a split
+  (`MEMORY_SPLIT_HOUSE`).
+- **Guard** one of your own Houses: each courter's favour at it loses the guard's inflow times its
+  reach, each turn. Nothing else.
+- **Spread Religion**: each turn one roll for the target civilization: the chance is the sum over its
+  cities in reach (each at its distance from the caster's nearest city) that lack the religion and
+  may take it (a foreign owner whose civics admit only its state religion takes only that one) of
+  `CULTURE_SPREAD_PER_CULTURE` (1% per culture of inflow) times the reach divided by one plus the
+  number of religions already in that city, at most `CULTURE_SPREAD_MAX` (25%). The religion is one
+  that a city of the caster has. On a success one of those cities, picked by its share of the
+  chance, gets the religion as from a missionary (FfH's religion hooks run). A spread into a
+  civilization with a state religion leaves friendship (its own religion) or hostility (another),
+  up to `CULTURE_MEMORY_MAX` (8) points, each fading a point every `CULTURE_MEMORY_DECAY_TURNS`
+  (10) turns ("cultural friendship", "cultural hostility" on the diplomacy screen).
+- **Visibility.** Every channel is public to the civilizations that have met its caster; its target
+  (a House's liege, for Court) is told when it starts and when it stops.
 
-**Targets.** Any civilization the caster's team has met, and the barbarians. Foment Revolt only
-another team's; Spread Religion any, the caster's own included. No war is needed, and no channel
-is an act of war.
+**Retired 2026-11-20:** per-city channels and Foment Revolt (revolt pressure, unrest, revolt, the
+flip, a city's resistance and garrison, the revolt levels and marks). They had taken 0 to 14 cities
+a game in 12 AI games of 400 turns, nearly all after turn 300 and by one strong cultural
+civilization a game; a city alone made too little culture to channel before turn 250.
 
-**Foment Revolt.** Each turn of the channelling city, every target city in reach gains revolt
-pressure from the caster (`City::culture_pressure[caster]`, in hundredths of culture) equal to the
-diverted culture times the distance effect. In its own turn a city resists: each caster's pressure
-loses the city's resistance (`CULTURE_REVOLT_RESIST_PERCENT`, 50%, of the city's own culture rate,
-plus `CULTURE_REVOLT_GARRISON`, 2, per land unit of its team able to defend it) and fades by
-`CULTURE_REVOLT_FADE_PERCENT` (5%, at least a culture a turn). Under a steady inflow the pressure
-settles near `(inflow - resistance) / 5%`, twenty times the net culture poured in a turn. What the
-pressure does (all casters' together, except the flip):
-- **Unrest:** a point of unhappiness per `CULTURE_REVOLT_UNHAPPY_STEP` (25), at most
-  `CULTURE_REVOLT_UNHAPPY_MAX` (4).
-- **Revolt:** at `CULTURE_REVOLT_DISORDER` (100) the city is in revolt: disorder (the occupation
-  timer, as a culture revolt) for as long as the pressure stays there. The disorder holds through
-  the city's whole turn (the pressure step runs before the occupation timer counts down), so in
-  revolt the city makes no culture and resists with its garrison alone; it ends the turn the
-  pressure falls below the threshold. A city that would settle just above the threshold with its
-  culture resisting therefore runs on, usually to the flip.
-- **Flip:** a caster whose own pressure reaches `CULTURE_REVOLT_FLIP` (300) takes the city, as a
-  culture revolt flips a city (barbarian units on the plot move away, defenders lose half their hit
-  points, the plot and the city change hands; in a one-city challenge a human caster's flip
-  destroys it). Never a capital; not with `GAMEOPTION_NO_CITY_FLIPPING`.
-The city's owner and the leading caster are told when the city's state changes: unrest, revolt,
-close to flipping (two thirds of the way; never for a city that cannot flip), calm again, flipped
-(`City::culture_revolt_level`).
-Pressure from a caster that dies or joins the city's team goes.
-
-**Spread Religion.** Each turn of the channelling city, one roll for the target civilization: the
-chance is the sum over its cities in reach that lack the religion and may take it (a foreign owner
-whose civics admit only its state religion takes only that one) of `CULTURE_SPREAD_PER_CULTURE`
-(1% per culture diverted) times the distance effect divided by one plus the number of religions
-already in that city, at most `CULTURE_SPREAD_MAX` (25%). On a success one of those cities, picked
-by its share of the chance, gets the religion as from a missionary (FfH's religion hooks run).
-The caster and the target are told where it spread and the chance a turn; the city screen shows
-the chance and each city's part of it.
-
-**Memory.** The target's leader remembers a hostile channel: a point of cultural hostility every
-`CULTURE_REVOLT_MEMORY_TURNS` (5) turns it runs; a spread into a civilization with a state
-religion leaves friendship (its own religion) or hostility (another). Up to `CULTURE_MEMORY_MAX`
-(8) points; every `CULTURE_MEMORY_DECAY_TURNS` (10) turns each memory loses a point. The AI's
-attitude reads them, and the diplomacy screen lists them ("cultural hostility", "cultural
-friendship").
-
-**Visibility.** Every channel is public to the civilizations that have met its caster
-(`Game::culture_channels`, `culture_channel_visible`). The target is told when a hostile channel
-starts and when it stops.
-
-## Edge cases decided
-
-- **Half, rounded down.** A city making 1 culture channels nothing: the channel stands but does
-  nothing that turn.
-- **Pressure is per caster**, so two casters each fight the city's full resistance (allies do not
-  pool against it), while unrest and revolt count every caster's pressure together; the flip goes to
-  the one whose own pressure reached the threshold.
-- **The flip happens in the target city's turn**, as a culture revolt would; a flipped city starts
-  with no pressure (it is a new city).
-- **Barbarian cities** may be targeted (and flipped); barbarians channel nothing.
-- **Espionage overlap.** There is no espionage (FfH locked `GAMEOPTION_NO_ESPIONAGE` on; the option
-  and the espionage code are gone), so BtS's influence missions cannot run: nothing to disable.
-- **Saves before format 8** (the cultural queue) do not load.
-
-## Open points for the owner
-
-- **How many cities revolt takes.** In 12 AI games of 400 turns (8 civs, standard map) revolt took
-  60 cities, 0–14 a game. In a third of the games one strong cultural civilization (the Hippus, the
-  Amurites) took 10 or more from weak neighbours at peace, although they trained the defenders the
-  AI asks for (up to six: 12 culture a turn of resistance). The cliff is disorder: a city in revolt
-  makes no culture, so only its garrison resists, and the pressure usually runs on to the flip. If
-  that is too strong, the levers are a city's own culture still resisting in revolt (its culture
-  before the revolt), a larger `CULTURE_REVOLT_GARRISON`, a lower `CULTURE_AI_MAX_HOSTILE_PER_TARGET`
-  (2 channels at a civilization at peace), or a higher `CULTURE_REVOLT_FLIP`.
-
-- **The numbers are first guesses** (the `CULTURE_*` defines): a city channelling 10 culture 7
-  plots from a rival town without culture or garrison settles its pressure near 100 (revolt); a
-  flip needs about 15 net culture a turn on the city, a great cultural city near the border or
-  several channels.
-
-## AI (summary; docs/AI.md "Cultural actions")
+## AI (summary; docs/AI.md "Cultural actions") -- the per-city build of 2026-10-30, to be rewritten by the fourth build
 
 Once a turn (`ffh-ai/src/culture.rs`), after the diplomacy and the governors:
 
@@ -162,7 +109,7 @@ Measured on 8 civs, a standard map and 350 turns, with `GAMEOPTION_CULTURE_ACTIO
 - The AI's cultural play as one civilization's edge (docs/AI.md): on fresh seeds, share at the end +86 (t 0.83), legacy +132 (t 1.10), win rate unchanged within the noise; the Sheaim lose by it there (−390, t −2.00).
 - Flips, 12 games of 400 turns: 60 in all, 0–14 a game, nearly all by one strong cultural civilization a game.
 
-## UI (ffh-play)
+## UI (ffh-play) -- the per-city build of 2026-10-30, to be rewritten by the fourth build
 
 - **City screen, "Culture"** sits in the left column, under the city's numbers. It shows the culture rate and, under a channel, the half it takes and what is left to the city.
   - **The channel:** action, civilization (and religion), since when, the culture it takes a turn, "Stop", and what it does now.

@@ -9,7 +9,10 @@ they make requests, pay tribute, give less when crossed, and can break away with
 founds a House, the world unit), part 2A (rules 4 to 6: splits, ultimatums and contracts, with
 rule 11's answer to an ultimatum and the hold-march's trigger) and part 2B (rules 7, 8 and 10:
 courtship, the price on the world unit, shared knowledge, gold tribute, with rule 11's buyer and
-courted House): the third build is built.** The owner's concept and decisions of 2026-11-18 and 2026-11-19; the numbers are
+courted House): the third build is built.** **The fourth build (2026-11-20) makes courting a
+cultural channel: a civilization channels its culture to court a rival's House, and a courtship
+that succeeds splits it; it is being built.** The owner's concept and decisions of 2026-11-18 to
+2026-11-20; the numbers are
 first guesses. "Open points" says which rules are the owner's decisions and which are proposals
 still to be confirmed.
 
@@ -23,15 +26,146 @@ still to be confirmed.
 | 5 | the annals: what each character did in the player's earlier games | not built |
 | second build | Houses as vassal civilizations, rules 1 to 14 below | built (2026-11-18): the rules (ffh-core), the AI (rule 12, `crates/ffh-ai/src/persons.rs`) and the screens (rule 13: the Court, the grant list, the levy, diplomacy, the map's plates) |
 | third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | built (2026-11-19). Part 1: the persons removed, the first grant founds, requests, the world unit (rules 1 to 3 and 9, and rule 11's grants; "The third build as built, part 1" below). Part 2A: splits, ultimatums and contracts (rules 4 to 6, and rule 11's answer and hold-march; "... part 2A" below). Part 2B: courtship, the price on the world unit, shared knowledge, gold tribute (rules 7, 8 and 10, and rule 11's buyer and courted House; "... part 2B" below) |
+| fourth build | Courting is a cultural channel: a civilization's channel (Court, Guard, Spread Religion), favour and its sliding requirement, the split toward the courter; revolt and side deals retired (rules 1 to 10 below) | being built (2026-11-20) |
 
-**"The third build" (2026-11-19, below) is the contract in force; its parts 1, 2A and 2B are
-built (their "as built" notes). Where it differs from the second build, it holds; everything below it on persons
+**"The fourth build" (2026-11-20, below) is the contract in force where it reaches (courting,
+culture); "The third build" (2026-11-19) for the rest, its parts 1, 2A and 2B built (their "as
+built" notes). Where it differs from the second build, it holds; everything below it on persons
 (the cast, commanders, posts, persons' demands, great persons founding) is retired by it.**
 
 "The second build" below is in force where the third does not change it, with its "as built"
 notes; "The first build" is what was built before it (its persons retired by the third build);
 "UI" is the interface as first built, with the builds' "as built" notes. The sections between
 them ("Rules") are the design the builds came from.
+
+## The fourth build (2026-11-20): courting is a cultural channel
+
+The owner's decisions of 2026-11-20. Cultural actions were lackluster ("revolts are meh
+generally"), and a city alone makes too little culture to channel ("most cities don't even have
+meaningful culture to channel": the median city makes 1.3 culture a turn at turn 100, 2.5 at 200,
+6.8 at 300). Courting a House and channelling culture merge into one system: a civilization
+channels its culture to court a rival's House, and a courtship that succeeds splits the House
+("less intensely all or nothing"). How hard it is slides with the House's loyalty to its liege and
+its leader's attitude toward the courter ("a sliding scale of difficulty instead of a hard stop at
+Pleased"); gifts help only by raising that attitude ("not a separate mechanic"); the channel is
+what antagonizes the Crown. The defence is a channel too: a liege guards its House with its own
+culture. **This section is the contract for the fourth build. It replaces the third build's rules
+7 (courtship by gifts) and 8 (the price), the second build's rule 9 (side deals: Secede, Become
+your vassal), and docs/CULTURE.md's per-city channels and Foment Revolt; the rest of the third
+build stands.**
+
+1. **A civilization's channel.** A civilization that can have Houses (`player_has_houses`: alive,
+   not a House, not the barbarians, a minor civilization or a crusade Host) has at most one cultural
+   channel, a standing order until it changes it: **Court** a House, **Guard** a House, or **Spread
+   Religion**. While it runs, every city of the civilization diverts `CULTURE_CHANNEL_PERCENT` (50%)
+   of its culture a turn, counted in hundredths (nothing lost to rounding); the diverted culture
+   reaches neither the cities' culture (their levels, borders, the culture victory) nor their
+   plots. The channel's *inflow* is the sum over the cities; a city in disorder diverts nothing. The
+   channel is public to every civilization that met the caster, and its target (a House's liege, for
+   Court) is told when it starts and when it stops. A governor never sets one. *Reach*: the effect
+   falls with the distance from the caster's nearest city to the target's nearest city, as channels
+   did: in full within `CULTURE_CHANNEL_FULL_RANGE` (5 plots), then `100·5²/d²` percent, nothing
+   beyond `CULTURE_CHANNEL_RANGE` (20). Setting, changing or stopping the channel is free; favour
+   already built fades on its own (rule 2).
+2. **Court and favour.** The target: a House of another team's realm that the caster has met. A
+   House keeps a *favour* toward each civilization that courts it. In its liege's turn (with the
+   other House rules, in courter order), each courter's favour gains the courter's inflow times its
+   reach (from the courter's nearest city to the House's nearest city), loses the guard's (rule 5),
+   then fades `CULTURE_FAVOUR_FADE_PERCENT` (5%, at least a hundredth), at least 0. Under a steady
+   inflow favour settles near twenty times the net inflow a turn. A courter whose channel stopped
+   keeps its favour while it fades; favour goes when its courter dies or joins the House's team, and
+   with the House.
+3. **The requirement**: `(L + 6 − 2A, at least 1) × W`, read each turn.
+   - L: the House's loyalty to its liege (`house_loyalty`, a contract's floor included).
+   - A: its leader's attitude toward the courter (`player_ai_get_attitude(house, courter, true)`):
+     Furious −2, Annoyed −1, Cautious 0, Pleased +1, Friendly +2.
+   - W, the *world culture unit*: the median of the total culture a turn (the culture rate of its
+     cities, summed) of the civilizations that can have Houses (the lower middle value of an even
+     count), at least 1. Measured in the guardrail games of 2026-11-19 (the mean, skewed by one or
+     two cultural civilizations a game): 5 at turn 100, 18 at 200, 68 at 300; the median Crown made
+     4, 9 and 32.
+   - A civilization of median culture channelling at full reach settles at 10 W: it splits a
+     Cautious House (L 0, A 0: 6 W) in about 18 turns, a Pleased one (+2) in about 31, a Friendly
+     one (+4) never alone; one of twice the median, a Friendly one in about 14.
+   - Gifts to a House (gold or a resource in the trade table, from a civilization that met it, not
+     of its liege's team) are ordinary gifts: they raise its leader's attitude toward the giver (the
+     AI's `gifts` relation, `tribute.rs`), which lowers the requirement. Nothing else counts them.
+4. **The split.** In the liege's turn, when a courter's favour reaches the requirement:
+   - *What goes*: the half of the House's cities nearest the courter (plot distance to the
+     courter's nearest city; ties to the lower city id), rounded down, at least one, never the
+     House's capital. A House of one city goes whole: it becomes the courter's vassal, a House of
+     its realm (its record ends with its liege and begins with the courter, origin `Courted`).
+   - *The new House*: a House of the courter's realm (its vassal, played by the game's AI), of the
+     courted House's civilization, its leader drawn from that civilization's free minor leaders
+     (`house_leader_draw`, the third build's rule 3); origin `Courted`; no modifiers, request or
+     contract; its tribute the courter's realm default, in force; knowledge shared with its new
+     realm (the third build's rule 10). No leader free: no split this turn (each party told once).
+   - *The hold contest* (the second build's rule 7): a city of the half going where the liege's
+     army units outnumber the House's land combat units stays with the old House, as a break-away's
+     does; if every such city is held, nothing goes and the favour is spent all the same.
+   - *No war*: the cities change allegiance in peace (no channel is an act of war); the liege
+     remembers it (`MEMORY_SPLIT_HOUSE`, "split our House": the second build's `MEMORY_BOUGHT_HOUSE`,
+     renamed in place).
+   - *After*: the courter's favour at the old House is 0; other courters keep theirs. The old House
+     keeps its leader, record, loyalty and contract.
+   - *Told*: to the liege `The Sheaim's courtship splits House Aldric: Ventry and Corona join them
+     as House Bertram, led by Tovin Cinderwright.`; to the courter `House Aldric splits toward you:
+     Ventry and Corona join you as House Bertram, led by Tovin Cinderwright.`; the hold contest's
+     lines as a break-away's; to others who met them, in the third person. When a courter's favour
+     first reaches two thirds of the requirement, the liege and the courter are told (`House Aldric:
+     the Sheaim's favour is 130 of 188.`).
+5. **Guard.** The target: one of the caster's own Houses. In the liege's turn, each courter's
+   favour at that House loses the guard's inflow times its reach (from the liege's nearest city to
+   the House's nearest city), before it fades. One guard counts against every courter of the House.
+   It does nothing else: no loyalty, no memory.
+6. **Spread Religion**, as docs/CULTURE.md's, cast by the civilization: a religion one of its cities
+   has; the chance a turn sums over the target civilization's cities in reach (each at its distance
+   from the caster's nearest city) that lack the religion and may take it, of
+   `CULTURE_SPREAD_PER_CULTURE` (1% a culture of inflow) times the reach divided by one plus the
+   religions already there, at most `CULTURE_SPREAD_MAX` (25%); the memories of a spread as before
+   (cultural friendship, cultural hostility).
+7. **The Crown's grudge.** While a Court channel runs at one of its Houses, the House's liege
+   remembers its caster: a point of `MEMORY_COURTED_HOUSE` ("courted our House") every
+   `CULTURE_COURT_MEMORY_TURNS` (5) turns, while that memory's count is below 8; it decays as the
+   other memories do. Gifts and Guard leave no memory.
+8. **What goes.**
+   - Foment Revolt and all it built: revolt pressure, unrest, revolt (disorder), the flip, a city's
+     resistance and garrison, revolt levels and their messages and map marks, the
+     `CULTURE_REVOLT_*` defines, the AI's defenders against revolt, cultural hostility from revolt.
+   - Per-city channels: `City::culture_channel` and the city's chooser.
+   - From the Houses: the third build's courtship by gifts (`House::gifts`, `House::courtships`,
+     `PERSON_COURTSHIP_TURNS`, the ten turns), the price (rule 8, `PRICE_PERCENT_OF_UNIT`,
+     `house_bribe_price`), the side deals (the second build's rule 9: Secede, Become your vassal,
+     `Why::Bribe`), and the AI's buying.
+9. **The AI** (a rules change: reasonable, not measured).
+   - Its channel, once a turn: **Guard** a House of its own whose strongest rival favour is past half
+     its requirement, or would reach it within 20 turns at the inflows now; else **Court** the House
+     whose cities it would gain are worth most for the time (each city 150 + 50 a population + 20 a
+     building + 150 a wonder + 200 a holy city, the revolt AI's values, over the turns to the
+     requirement plus 5, at most 60 turns), sparing those the revolt AI spared (a liege it is Pleased
+     or Friendly with, vassals and masters, defensive pacts, and at peace a liege above 125% of its
+     power); else **Spread Religion** as it did; nothing while it pursues a cultural victory. A
+     channel that stands is kept while it is worth 70% of the best; a new one must beat the standing
+     one by a quarter.
+   - As liege: a House whose strongest rival favour is past half its requirement is held (the
+     hold-march, `courted_to_hold`).
+   - As a House: it accepts any gift. The AI gives no gifts to court (left out).
+10. **Screens.**
+    - *The Culture screen* (F8) is the civilization's channel: what its cities divert, what the
+      channel does (Court: the favour, the requirement and its parts `L`, `A`, `W`, the turns to
+      the split, the cities that would go and the hold contest; Guard: each courter's favour at the
+      House, settling with and without the guard; Spread: the chance a turn and its cities), the
+      chooser (each target with its one line) and Stop; the channels aimed at you (each courtship of
+      your Houses, the same lines, and Guard from here); the channels between others; what others
+      remember of your channels.
+    - *The city screen* shows the half of its culture diverted, under the civilization's channel.
+    - *The House card* lists every courtship of the House (`Courted by the Sheaim: favour 80 of 188,
+      a split in ~12 turns (Ventry, Corona).`) and a guard (`Guarded: −6 a turn to each courtship.`);
+      a courtship past two thirds is a line that needs attention.
+    - *The trade table with a House* offers gifts only (gold, resources), with the line of your
+      courtship of it.
+    - Keywords `Court` and `Guard` (their reminders: what favour is, what the requirement reads,
+      what a split takes; what a guard does).
 
 ## The third build (2026-11-19): Houses without Persons of Note
 
