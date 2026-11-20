@@ -5,7 +5,7 @@
 // a religion in every city of the human: Spread Religion then has a refused target), serves it,
 // loads the page on the HD-2D map (`?force3d=1`: SwiftShader here, slow) at a phone's width and
 // reads, against the `culture` query's numbers:
-// - the head (the channel, the inflow and the half of it);
+// - the head (the channel and the inflow);
 // - your Court channel's preview: the requirement's parts and its formula, the turns to the split,
 //   the split's cities (`It joins whole.` for a House of one city);
 // - the chooser: the three actions, each with its targets or its line of why none; Spread
@@ -255,13 +255,12 @@ async function calcTips(page, r) {
  *  requirement, turns and cities. */
 async function headAndChannel(page, r) {
   const lines = await headLines(page);
-  const half = r.percent === 50 ? "half of" : `${r.percent}% of`;
   if (r.channel) {
     check(lines[0] === `Channel: ${r.channel.name}, since turn ${r.channel.since_turn}.`, `the head's channel: ${lines[0]}`);
-    check(lines[1] === `Inflow: ${t(r.inflow)} culture a turn (${half} ${t(r.base)}).`, `the head's inflow: ${lines[1]}`);
+    check(lines[1] === `Inflow: ${t(r.inflow)} culture a turn.`, `the head's inflow: ${lines[1]}`);
   } else {
     check(lines[0] === "Channel: none. Your cities keep all their culture.", `the head without a channel: ${lines[0]}`);
-    check(lines[1] === `A channel would take ${t(r.inflow)} culture a turn (${half} ${t(r.base)}).`, `the head's inflow: ${lines[1]}`);
+    check(lines[1] === `A channel would take ${t(r.inflow)} culture a turn.`, `the head's inflow: ${lines[1]}`);
   }
   const cv = r.preview?.court;
   if (!cv) return;

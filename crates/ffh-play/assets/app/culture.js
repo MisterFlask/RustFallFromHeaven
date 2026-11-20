@@ -79,20 +79,16 @@ export function reachText(r) {
   return r ? `${plots(r.distance)}: ${r.effect}%` : "none";
 }
 
-/** "half of", or "35% of" for another share. */
-function shareOf(percent) {
-  return percent === 50 ? "half of" : `${percent}% of`;
-}
-
 /** The head's two lines from the `culture` query: the channel (`Channel: Court House Aldric,
  *  since turn 140.` / `Channel: none. Your cities keep all their culture.`) and the inflow
- *  (`Inflow: 6.4 culture a turn (half of 12.8).` / `A channel would take ...`), or why no channel
+ *  (`Inflow: 6.4 culture a turn.` / `A channel would take 6.4 culture a turn.`; how it is made, by
+ *  city, is the line's tooltip: the share a channel takes is the keyword Channel's), or why no channel
  *  can be set. */
 export function headLines(r) {
   const ch = r.channel;
   const first = ch ? `Channel: ${ch.name}, since turn ${ch.since_turn}.` : "Channel: none. Your cities keep all their culture.";
   if (r.refusal && !ch) return [first, r.refusal];
-  const what = `${tenths(r.inflow)} culture a turn (${shareOf(r.percent)} ${tenths(r.base)})`;
+  const what = `${tenths(r.inflow)} culture a turn`;
   return [first, ch ? `Inflow: ${what}.` : `A channel would take ${what}.`];
 }
 

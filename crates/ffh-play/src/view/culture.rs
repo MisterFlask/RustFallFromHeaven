@@ -371,9 +371,8 @@ fn aimed_houses(v: &Viewer) -> Vec<Json> {
 /// `culture`: the Culture screen (docs/HUMAN.md, "Culture"; docs/PERSONS.md, "The fourth build",
 /// rule 10).
 /// - `refusal`: why the human may set no channel at all (null: it may);
-/// - `percent`, `inflow`, `base`: the share a channel takes, what the human's cities would divert
-///   now and the culture of the cities that would divert (the head's `half of`); `inflow_calc`:
-///   the inflow by city (`Game::player_culture_inflow_calc`, the head's tooltip);
+/// - `percent`, `inflow`: the share a channel takes and what the human's cities would divert now;
+///   `inflow_calc`: the inflow by city (`Game::player_culture_inflow_calc`, the head's tooltip);
 /// - `channel`, `preview`: the human's channel (null: none) and its full preview;
 /// - `actions`: the chooser (`action_json`);
 /// - `aimed`: the human's courted Houses (`aimed_houses`); `aimed_spread`: the Spread Religion
@@ -436,7 +435,6 @@ pub fn culture(v: &Viewer) -> Json {
         "refusal" => refusal,
         "percent" => d.defines.culture_channel_percent,
         "inflow" => g.player_culture_inflow_now(h),
-        "base" => g.player_culture_channel_base_now(h),
         "inflow_calc" => calc_lines(v, &g.player_culture_inflow_calc(h)),
         "channel" => channel,
         "preview" => preview,

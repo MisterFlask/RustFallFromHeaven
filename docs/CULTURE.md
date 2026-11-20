@@ -97,7 +97,7 @@ docs/PERSONS.md, "The fourth build as built, part 1", has every detail; in short
   `house_courtships`, `house_guard_view`, `house_courting_line`. Part 2A added
   `culture_channel_refusal` (why a civilization may set no channel at all: the check's first
   part), `player_culture_channel_base_now` (the culture of the cities that would divert: the
-  screen's `half of`) and `Requirement::formula` (`(3 + 6 − 2 × 1) × 24 = 168`, with the
+  inflow's calculation) and `Requirement::formula` (`(3 + 6 − 2 × 1) × 24 = 168`, with the
   constants `REQUIREMENT_BASE` and `REQUIREMENT_ATTITUDE` the requirement reads).
 - **Telemetry**: `culture_channel` / `culture_channel_end` / `culture_spread` by action,
   `house_split` `courted` / `courted_whole` / `courted_held` / `courted_no_leader`; the AI's
@@ -147,10 +147,10 @@ docs/HUMAN.md has the screens and the protocol). Every number is the rules' read
 with one decimal, favour and requirements as whole numbers, as the rules' lines write them.
 
 - **The head.** `Channel: Court House Aldric, since turn 140.` or `Channel: none. Your cities keep
-  all their culture.`; then `Inflow: 6.4 culture a turn (half of 12.8).` or, without a channel, `A
-  channel would take 6.4 culture a turn (half of 12.8).` (the "half of" is the culture of the
-  cities that would divert: those not in disorder). A civilization that cannot channel (a House,
-  one without a city) reads the rules' reason instead.
+  all their culture.`; then `Inflow: 6.4 culture a turn.` or, without a channel, `A channel would
+  take 6.4 culture a turn.`, with each city's part in its tooltip (docs/PLAY_DESIGN.md 4.9; the
+  share a channel takes is the keyword Channel's, not repeated on the screen). A civilization that
+  cannot channel (a House, one without a city) reads the rules' reason instead.
 - **Your channel**, while one runs: its full preview and **Stop**.
   - Court: a favour bar (the favour against the requirement, a mark at two thirds); the
     requirement's parts as a table (`Loyalty of House Aldric to the Bannor: 3`, `Attitude of its

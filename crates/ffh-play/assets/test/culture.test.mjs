@@ -29,8 +29,8 @@ test("hundredths with one decimal, whole numbers, chances", () => {
 const court = { name: "Court House Aldric", since_turn: 140, action: 0, effect: "court" };
 
 test("the head: the channel and its inflow, or what a channel would take", () => {
-  assert.deepEqual(headLines({ channel: court, inflow: 640, base: 1280, percent: 50, refusal: null }), ["Channel: Court House Aldric, since turn 140.", "Inflow: 6.4 culture a turn (half of 12.8)."]);
-  assert.deepEqual(headLines({ channel: null, inflow: 640, base: 1280, percent: 50, refusal: null }), ["Channel: none. Your cities keep all their culture.", "A channel would take 6.4 culture a turn (half of 12.8)."]);
+  assert.deepEqual(headLines({ channel: court, inflow: 640, percent: 50, refusal: null }), ["Channel: Court House Aldric, since turn 140.", "Inflow: 6.4 culture a turn."]);
+  assert.deepEqual(headLines({ channel: null, inflow: 640, percent: 50, refusal: null }), ["Channel: none. Your cities keep all their culture.", "A channel would take 6.4 culture a turn."]);
   assert.deepEqual(headLines({ channel: null, inflow: 0, base: 0, percent: 50, refusal: "Only a civilization that can have Houses channels its culture." }), ["Channel: none. Your cities keep all their culture.", "Only a civilization that can have Houses channels its culture."]);
   assert.equal(headLines({ channel: null, inflow: 350, base: 1000, percent: 35, refusal: null })[1], "A channel would take 3.5 culture a turn (35% of 10.0).");
 });

@@ -64,7 +64,6 @@ fn the_culture_screen_reads_the_rules() {
     let r = q(&s, r#"{"q":"culture"}"#);
     assert!(matches!(r.get("refusal"), Some(Json::Null)), "the human may channel");
     assert_eq!(int(&r, "inflow"), g.player_culture_inflow_now(h) as i64);
-    assert_eq!(int(&r, "base"), g.player_culture_channel_base_now(h) as i64);
     assert_eq!(int(&r, "percent"), g.d.defines.culture_channel_percent as i64);
     let inflow_calc: Vec<String> = arr(&r, "inflow_calc").iter().map(|l| l.as_str().expect("a line").to_string()).collect();
     assert_eq!(inflow_calc, g.player_culture_inflow_calc(h), "the head's tooltip: the inflow by city");

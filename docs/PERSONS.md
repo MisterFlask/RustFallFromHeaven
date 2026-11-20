@@ -353,8 +353,9 @@ sees them, docs/HUMAN.md has the protocol. Where the build settles what the rule
 
 1. *The Culture screen* (F8, the modal `culture`; `crates/ffh-play/src/view/culture.rs`,
    `assets/app/culture.js`), from top to bottom: the head (`Channel: Court House Aldric, since turn
-   140.` / `Channel: none. Your cities keep all their culture.`; `Inflow: 6.4 culture a turn (half
-   of 12.8).` / `A channel would take ...`); your channel's full preview and Stop; Choose a channel;
+   140.` / `Channel: none. Your cities keep all their culture.`; `Inflow: 6.4 culture a turn.` / `A channel
+   would take ...`; the head's `(half of 12.8)` was dropped on 2026-11-20 as the keyword Channel's
+   rule restated, the inflow's tooltip giving each city's part); your channel's full preview and Stop; Choose a channel;
    Aimed at you; Between others; What others remember; the keywords Channel, Court and Guard as
    chips (their reminder boxes). Culture shows with one decimal, favour and requirements as whole
    numbers. The Cultural pressure panel and its help are gone; the screen's help (its (i)) says
@@ -397,7 +398,7 @@ sees them, docs/HUMAN.md has the protocol. Where the build settles what the rule
    reminders}` (hundredths).
 7. *The reads added* (ffh-core, pure, tested): `culture_channel_refusal(p)` (the check's first
    part: a civilization that cannot have Houses, or has no city), `player_culture_channel_base_now
-   (p)` (the culture of the cities that would divert now: the head's `half of`),
+   (p)` (the culture of the cities that would divert now: the inflow's calculation),
    `Requirement::formula()` with `REQUIREMENT_BASE` and `REQUIREMENT_ATTITUDE`, the constants
    `house_requirement` now reads.
 8. *Tests*: `crates/ffh-play/tests/culture_screen.rs` (the view's numbers against the rules' on

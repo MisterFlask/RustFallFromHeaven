@@ -780,7 +780,7 @@ async function cultureUi() {
   await until2(`!!document.querySelector(${q(`${M} .culture-head`)})`, "the Culture screen from the city's link");
   const head = () => b.eval(`[...document.querySelectorAll(${q(`${M} .culture-head p`)})].map((p) => p.textContent)`);
   const h0 = await head();
-  if (h0[0] !== "Channel: none. Your cities keep all their culture." || !/^A channel would take \d+\.\d culture a turn \(half of \d+\.\d\)\.$/.test(h0[1] ?? "")) throw new Error(`the head: ${h0.join(" | ")}`);
+  if (h0[0] !== "Channel: none. Your cities keep all their culture." || !/^A channel would take \d+\.\d culture a turn\.$/.test(h0[1] ?? "")) throw new Error(`the head: ${h0.join(" | ")}`);
   const n = await b.eval(`window.ffh.S.data.tables.CulturalActionType.length`);
   const shown = await b.eval(`document.querySelectorAll(${q(`${M} .culture-actions button[data-action]`)}).length`);
   if (shown !== n) throw new Error(`the Culture screen offers ${shown} actions of ${n}`);
