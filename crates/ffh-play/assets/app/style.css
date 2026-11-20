@@ -817,16 +817,14 @@ table.scores.diplo td { vertical-align: top; }
 input.amount { width: 80px; }
 /* Houses as parties (docs/PERSONS.md, "The second build", rule 13): a House's row under its liege's,
    indented, with its shield and `House Arne, vassal of the Bannor`; on its trade screen the line of
-   what is its liege's to trade and, in the answer, what accepting does (war). */
+   what is its liege's to trade. */
 table.scores.diplo tr.house-row > td:first-child { padding-left: 26px; }
 table.scores.diplo tr.house-row > td:first-child .leader-cell { border-left: 2px solid var(--frame); padding-left: 8px; }
 .house-of { white-space: nowrap; }
 .house-of .house-shield { vertical-align: -2px; }
 .trades-through { margin: 8px 0 0; }
-.trade-summary .house-war-title { margin-top: 6px; font-weight: 700; }
-.trade-summary .house-war { font-weight: 700; }
 .own-house p { margin: 6px 0; }
-/* A House's line in the list carries its state (and another's price to secede), where a phone sees
+/* A House's line in the list carries its state, where a phone sees
    it: each part a line of its own under the House's (within the portrait's height), so the table
    keeps to the dialog's width; the separators read only as text. */
 .leader-cell .house-who, .leader-cell .house-who .house-of { white-space: normal; }

@@ -346,6 +346,82 @@ diplomacy list's `house_offer` is `{state, courting}`; the House card has no `pr
 neighbour's favour at House `pleased` set past two thirds by hand) and a gift. The tests reading
 the retired screens are gone (`culture_predictions.rs`, the offers' and the price's).
 
+### The fourth build as built, part 2B (2026-11-20)
+
+Rule 10 on the Houses' side: the House card, the trade table with a House, the Court's attention
+line and the courtship's news (`crates/ffh-play/src/view/persons.rs`, `view/diplo.rs`,
+`view/house_marks.rs`; `assets/app/persons.js`, `persons_lines.js`, `diplo.js`; tests
+`crates/ffh-play/tests/persons_courting.rs`, the core read's in
+`crates/ffh-core/tests/persons_courtship.rs`; `tools/web-persons-smoke.mjs`,
+`tools/web-persons-screens-smoke.mjs`; the shapes in docs/HUMAN.md). The Culture screen and the
+city screen are part 2A's. Where it settles what the rule left open:
+
+1. *The House card.* Each courtship is the rules' line (`HouseView::courtships`, `Courted by the
+   Sheaim: favour 80 of 188, a split in ~12 turns (Ventry, Corona).`); one past two thirds of its
+   requirement is drawn in red with a `!` mark (`attention`). Its guard is its line (`Guarded: −6 a
+   turn to each courtship.`). While one of your Houses is courted, its card carries the `Guard`
+   button, unless your channel guards it already; the button's line beside it is the rules'
+   preview of the order (`culture_channel_preview`), and a refused order shows the rules' reason
+   (`culture_channel_check`) in its place. A civilization has one channel, so while another runs
+   the button names what it replaces: `Guard (replaces Court House Alyndra)`, `Court (replaces
+   Spread Religion (Octopus Overlords) to the Sheaim)`. Both buttons send `culture_channel {action,
+   target}` (the House's player) and read the card again. The price, the offers and the gift
+   courtship are gone from the card; the attitudes' help (the state marks' tooltips,
+   `TXT_KEY_ATTITUDE_*_HELP`) no longer speaks of offers to secede.
+2. *A House of another realm's card* (the `house {house}` query, `persons.openHouse`): the
+   rule names a Court button on such a House, and no screen showed one; its card opens from the
+   diplomacy list's `House` button, the trade screen's `House card` and a courtship's alert. It
+   shows who leads it, `Vassal of the Svartalfar.` and its origin, its state toward its liege (the
+   diplomacy list showed it already: public), the cities the human's map shows, every courtship of
+   it (the human's own as its own line, `Your courtship of House Alyndra: ...`), its guard, the
+   human's requirement against its leader's attitude (as the trade table, below) and the `Court`
+   button; while the human's channel courts it, `Your channel: Court House Alyndra.` in its place.
+   One of the human's own Houses opens the Court at its card.
+3. *The trade table with a House* takes gifts only: the human's side its gold (a lump sum) and
+   resources, the House's side the bare line `House Alyndra takes gifts of gold and resources and
+   gives nothing.`; above the items the human's courtship (`house_courting_line`, else `You do not
+   court House Alyndra.`) and the requirement against its leader's attitude: `Its leader's
+   attitude toward you: Cautious. Requirement: 168; at Pleased 120; at Friendly 72.` (the better
+   attitudes only, up to Friendly). The core read is `house_requirement_steps(h, courter) ->
+   Vec<(AttitudeType, i32)>` (`persons/gifts.rs`; `Requirement::at(attitude)`, the formula at
+   another attitude step): the view does no arithmetic. A gift's summary is any civilization's (the
+   gift relation and its steps, `gift_steps`): a gift helps a courtship only through that
+   attitude, which the line above shows. The Court keyword's chip. The diplomacy list's House row
+   shows the human's courting line (`house_offer.courting`) and the other courtships of it (the
+   human's own left out of `house.courted`).
+4. *Attention.* A courtship of one of the human's Houses past two thirds is a line that needs
+   attention, after the Furious Houses: `House Aldric: the Sheaim's favour is 130 of 188, a split
+   in ~6 turns.` (`settling near 150`, `fading`, as the rules' prediction reads), its button
+   `Culture`, which opens the Culture screen (F8) over the Court; it counts in the Court button's
+   badge (a split takes cities: it is an act-now line, as a Furious House is). The Court's keyword
+   chips add Court and Guard (each implying Channel) while a House of the realm is courted or
+   guarded.
+5. *The news.* Every message of a courtship is marked as a House's (`LogMark::House`): the
+   notice at two thirds and `no leader is free` were; part 2B marked the rest in `favour.rs`
+   (`house_courted_split`): a House gone whole and the third person's news of a split (marked at
+   the first city that goes), and the courter's message of the split tagged with the House it
+   gained (`LogTag::House`), so its alert opens the Court at the new House; a courter's message
+   about a House of another realm (the notice, a failed split) opens that House's card
+   (`alertFocus`'s `{foreign}`).
+6. *The stages.* `persons`: the human's Court of the neighbour's House must be set (a refusal no
+   longer passes: the seed is not used), and the human's favour there is a third of the
+   requirement, set by hand after the gift (listed in `hand_set`); the neighbour's courtship of
+   House `pleased` stays past two thirds. `persons-direct`: the neighbour's House founds three more
+   cities (set by hand: a grant would raise the House's loyalty, and the requirement with it), the
+   human's favour there is just under the requirement, checked to cross it at the next liege turn
+   with a quarter of the human's gain spared against a guard the neighbour could set at the inflow
+   its cities last diverted (none yet: in the first games the neighbour did set Guard that turn,
+   to no effect), the split's half
+   not held and a leader free; and no ultimatum is due at the next turn (the last refusals of
+   Houses `furious` and `large` are left out: an ultimatum demanding war on the neighbour turned
+   its House's leader Furious toward the human and doubled the requirement). Ending the turn
+   splits the House: `House Alyndra splits toward you: Nameless Tower and Idris join you as House
+   Helmund, led by Thariel Voss.`
+7. *Not shown on the staged scene:* a refused Court or Guard button. On a duel map every House is
+   within 20 plots of the human's cities, and the rules' other refusals do not arise there; the
+   smoke checks a refused `culture_channel` comes back with the rules' reason, and the tests read
+   the button's refusal from the rules (`channel_button`).
+
 ## The third build (2026-11-19): Houses without Persons of Note
 
 The owner's decisions of 2026-11-19. Persons of Note did no work the Houses did not ("the work is
@@ -1867,7 +1943,7 @@ Rule 13's parts outside the Court (`view/house_marks.rs`, `view/diplo.rs`, `asse
   the trade screen's offer can be accepted.
 
 #### J. Help and keywords
-A help topic `Persons of Note` (the rules in short bullets, as the Governors topic does). Keywords with reminders (data/json/keywords.jsonc, data/text/en.tsv): House, Crown, Tribute, Levy, Sworn, Claimant (the second build). Reminders are bare and short. The loyalty states are the game's attitude words (Friendly, Pleased, Cautious, Annoyed, Furious), not keywords: a state mark's tooltip is the attitude's own help in the data (`attitudes.jsonc` `help`: what the state does for a House and for a commander). The texts of this system mark the keywords and never restate a reminder (tests/keywords.rs).
+A help topic `Persons of Note` (the rules in short bullets, as the Governors topic does). Keywords with reminders (data/json/keywords.jsonc, data/text/en.tsv): House, Crown, Tribute, Levy, Sworn, Claimant (the second build); Request and Ultimatum (the third build); Channel, Court and Guard (the fourth build: on the Court while a House of the realm is courted or guarded, on a House of another realm's card, on the trade table with a House). The price and the offers (the second build's side deals, the third build's courtship by gifts) are retired by the fourth build, and with them their lines on the cards, the diplomacy list and the trade table, and the attitudes' help about offers. Reminders are bare and short. The loyalty states are the game's attitude words (Friendly, Pleased, Cautious, Annoyed, Furious), not keywords: a state mark's tooltip is the attitude's own help in the data (`attitudes.jsonc` `help`: what the state does for a House and for a commander). The texts of this system mark the keywords and never restate a reminder (tests/keywords.rs).
 
 #### The second build's Court, grant list, levy and Governance line as built (2026-11-18)
 Rule 13's interface for the Court, the grant list, the levy and a Crown city's Governance line
@@ -1900,7 +1976,7 @@ left open, or departs from it:
   cities as chips (a tap shows the city on the map: it is the House's player's, the liege's city
   screen answers NotOwner for it), its size against the threshold (`Size: 2 of 3 cities without a
   grievance.`; the contract's wording, `before it grows uppity`, is flavour, against the rule for
-  rules text), its price to secede while it would accept an offer (Cautious or worse: `Price to
+  rules text), *(retired by the fourth build: the price and its refusal)* its price to secede while it would accept an offer (Cautious or worse: `Price to
   secede: 125 gold.`), Free (two steps), and folded under `Record`: `Refuses any offer to secede.`
   (Pleased or Friendly), the head's ambition, rival, record and backstory. A demand with a term
   says what its lapse does, from the rules' refusal and state function: `Demands: Vallus granted to
