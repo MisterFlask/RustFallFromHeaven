@@ -1,20 +1,20 @@
-//! Kuriotates (`CvCity::init`, FfH): the Sprawling trait limits them to 3 full cities on a
-//! standard map (radius 3, as for every AI); past the limit a new city is a *settlement* (radius
-//! 2, -75% yields, nothing to build, but no maintenance or civic upkeep, and it claims land and
-//! resources). The ported C++ `AI_foundValue` already scores settlement-sized sites for a
-//! sprawling player at its limit and favours sites away from our cities. What the AI does:
+//! Kuriotates (`CvCity::init`): the Sprawling trait limits them to 3 full cities on a standard
+//! map (radius 3); past the limit a new city is a *settlement*: a city of radius 1 under every
+//! other rule (changed from FFH2 2026-11-20: docs/PORTING.md). A Kuriotate House holds only
+//! settlements (docs/PERSONS.md, rule 14), so the Crown's settlements beyond its limit of 3 go to
+//! Houses (`persons::choose_grant`). The ported C++ `AI_foundValue` already scores
+//! settlement-sized sites (9 plots) for a sprawling player at its limit. What the AI does:
 //! - [`Kuriotates::production`] builds one settler at a time for a settlement site on the city's
 //!   landmass, from a full city of size 5+ (or at its happy cap) at peace;
-//! - [`Kuriotates::site_value`]: at the limit, no settlement site within 5 plots of a full city.
+//! - [`Kuriotates::site_value`]: at the limit, no settlement site within 4 plots of a full city.
 //!   A plot is worked by the city nearest to it (`CvPlot::updateWorkingCity`), so a settlement
-//!   inside a full city's radius-3 ring takes plots the full city could work and leaves them
-//!   nearly idle (a size-1 settlement works one plot at a quarter of its yield): measured, full
-//!   cities stayed smaller (population at turn 300 37 against 41 without settlements, commerce
-//!   117 against 159);
-//! - settlements cannot train units: the nearest full city trains a defender for a settlement that
-//!   has none (the garrison logic walks it there);
+//!   inside a full city's radius-3 ring takes plots the full city could work (measured with FFH2's
+//!   radius-2 settlements: full cities stayed smaller, population at turn 300 37 against 41
+//!   without settlements, commerce 117 against 159); 5 plots out, a radius-1 settlement shares
+//!   none;
 //! - after losing a full city, the next city founded is a full one, but the generic settler step
-//!   counts settlements towards the limit and stops: a settler for a full city then.
+//!   counts settlements towards the limit and stops: a settler for a full city then (not for a
+//!   House: a House founds only settlements).
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -33,7 +33,7 @@ impl CivPlay for Kuriotates {
     }
 
     fn production(&self, ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choice> {
-        settlement_defender(g, c).or_else(|| full_city_settler(ai, g, c, threat)).or_else(|| settlement_settler(ai, g, c, threat))
+        full_city_settler(ai, g, c, threat).or_else(|| settlement_settler(ai, g, c, threat))
     }
 
     fn site_value(&self, g: &Game, p: PlayerId, q: PlotIdx, value: i32) -> i32 {
@@ -42,9 +42,9 @@ impl CivPlay for Kuriotates {
         if pl.max_cities <= 0 || full < pl.max_cities {
             return value;
         }
-        // A full city's radius (3) plus a settlement's (2): closer, they share plots.
+        // A full city's radius (3) plus a settlement's (1): closer, they share plots.
         let (x, y) = g.map.xy(q);
-        if pl.cities.iter().any(|&c| !g.cities[c].settlement && g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 5) {
+        if pl.cities.iter().any(|&c| !g.cities[c].settlement && g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 4) {
             return 0;
         }
         value
@@ -58,7 +58,7 @@ impl CivPlay for Kuriotates {
 fn full_city_settler(ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choice> {
     let p = g.cities[c].owner;
     let pl = &g.players[p];
-    if pl.max_cities <= 0 || threat > 0 || g.cities[c].settlement || g.city_is_occupation(c) {
+    if pl.max_cities <= 0 || threat > 0 || g.cities[c].settlement || g.city_is_occupation(c) || crate::persons::is_house(g, p) {
         return None;
     }
     let settlements = g.player_get_num_settlements(p);
@@ -118,37 +118,4 @@ fn settlement_settler(ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choic
         return None;
     }
     Some(Choice::Train(u, UnitAIType::UNITAI_SETTLE))
-}
-
-
-fn civ_war(g: &Game, p: PlayerId) -> bool {
-    let team = g.players[p].team;
-    let barb = g.barbarian_team();
-    g.teams.keys().any(|t| t != team && t != barb && g.teams[t].alive_count > 0 && g.at_war(team, t))
-}
-
-/// Settlements cannot train: the nearest full city trains a defender for one that has none
-/// (the garrison logic walks it there), unless one is already on its way.
-fn settlement_defender(g: &Game, c: CityId) -> Option<Choice> {
-    let p = g.cities[c].owner;
-    let pl = &g.players[p];
-    if pl.max_cities <= 0 || g.cities[c].settlement {
-        return None;
-    }
-    let area = g.map.plots[g.city_plot(c)].area;
-    let empty: Vec<CityId> = pl.cities.iter().copied().filter(|&s| g.cities[s].settlement && g.map.plots[g.city_plot(s)].area == area && crate::production::garrison(g, p, g.city_plot(s)).0 == 0).collect();
-    if empty.is_empty() {
-        return None;
-    }
-    let moving = pl.units.iter().filter(|&&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_CITY_DEFENSE) && g.map.plots[g.unit_plot(u)].plot_city.is_none()).count() as i32
-        + pl.ai_num_train_ai_units[UnitAIType::UNITAI_CITY_DEFENSE];
-    if moving >= empty.len() as i32 {
-        return None;
-    }
-    let dist = |a: CityId, b: CityId| g.plot_distance(g.cities[a].x, g.cities[a].y, g.cities[b].x, g.cities[b].y);
-    let nearest_full = |s: CityId| pl.cities.iter().copied().filter(|&o| !g.cities[o].settlement).min_by_key(|&o| (dist(o, s), o));
-    if !empty.iter().any(|&s| nearest_full(s) == Some(c)) || !crate::economy::can_afford_unit(g, p, true, civ_war(g, p)) {
-        return None;
-    }
-    best_unit(g, c, Role::Defense).map(|u| Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE))
 }

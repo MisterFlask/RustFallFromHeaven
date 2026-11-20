@@ -182,9 +182,9 @@ pub fn turn(ai: &Ai, g: &mut Game, p: PlayerId) {
 }
 
 /// The cities `p` places empire orders in: its capital (if governed) and its most productive other
-/// governed cities, [`EMPIRE_CITIES`] in all (ties: the older city); no settlement.
+/// governed cities, [`EMPIRE_CITIES`] in all (ties: the older city).
 pub(crate) fn empire_cities(g: &Game, p: PlayerId) -> Vec<CityId> {
-    let ok = |c: CityId| g.cities.contains(c) && g.cities[c].owner == p && g.city_is_governed(c) && !g.cities[c].settlement;
+    let ok = |c: CityId| g.cities.contains(c) && g.cities[c].owner == p && g.city_is_governed(c);
     let capital = g.players[p].capital_city.filter(|&c| ok(c));
     let mut rest: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| ok(c) && Some(c) != capital).collect();
     rest.sort_by_key(|&c| (std::cmp::Reverse(g.city_yield_rate(c, YieldType::YIELD_PRODUCTION)), c));

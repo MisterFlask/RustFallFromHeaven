@@ -99,15 +99,6 @@ pub trait Controller: Send + Sync {
         self.raze_conquered_city(g, p, c)
     }
 
-    /// FfH's BUTTONPOPUP_CONFIRMSETTLEMENT (`launchConfirmSettlementPopup`): human `p`'s new
-    /// city `c` (Kuriotates, below their city limit, not the first city, single player) becomes
-    /// a city of radius 3 (button 0, `Some(false)`) or a settlement (button 1, `Some(true)`).
-    /// `None` = not answered: the city stays as founded (radius 2, not a settlement), as with a
-    /// popup never answered. AI players are not asked (C++ gives them radius 3). Default: `None`.
-    fn confirm_settlement(&self, _g: &Game, _p: PlayerId, _c: CityId) -> Option<bool> {
-        None
-    }
-
     /// C++ `CvPlayerAI::AI_chooseEvent`: pick one of the trigger's events (None = no choice).
     fn choose_event(&self, _g: &Game, _p: PlayerId, _t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
         options.first().copied()
@@ -401,7 +392,6 @@ mod tests {
         assert!(r.disband_acquired_city(&g, p, c));
         assert_eq!(r.conquered_city_choice(&g, p, c, true, Some(PlayerId(1))), ConqueredCityChoice::Raze);
         assert_eq!(r.conquered_city_choice(&g, p, c, false, Some(PlayerId(1))), ConqueredCityChoice::Keep, "no raze button");
-        assert_eq!(r.confirm_settlement(&g, p, c), None);
         assert!(!r.take_control(&g, p, PlayerId(1)));
         let n = NullController;
         assert_eq!(n.ai_choose_research(&g, p), None);

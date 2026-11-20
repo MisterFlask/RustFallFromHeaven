@@ -1,6 +1,5 @@
 //! The P7 controller hooks (docs/PLAY_DESIGN.md §7 P7) answered by the human through the
-//! session: the raze popup's gift button, the disband popup, the Kuriotates city-or-settlement
-//! popup, deferred elections, the take-control popup, and `doResearch`'s AI pick.
+//! session: the raze popup's gift button, the disband popup, deferred elections, the take-control popup, and `doResearch`'s AI pick.
 
 mod common;
 use std::sync::{Arc, Mutex};
@@ -247,44 +246,31 @@ fn an_acquired_city_asks_keep_or_disband() {
     assert_eq!(s.stats().decisions_of("disband_city"), 2);
 }
 
-/// A human Kuriotates city below the city limit (not the first) asks city or settlement
-/// (BUTTONPOPUP_CONFIRMSETTLEMENT): "city" gives radius 3, "settlement" a settlement; past the
-/// limit a new city is a settlement without asking, as for the AI.
+/// A human Kuriotates city is not asked city or settlement (FFH2's BUTTONPOPUP_CONFIRMSETTLEMENT
+/// is gone): below the city limit it is a full city (radius 3), past it a settlement (radius 1),
+/// as for the AI.
 #[test]
-fn kuriotates_cities_ask_city_or_settlement() {
+fn kuriotates_cities_are_full_below_the_limit_and_settlements_past_it() {
     let (mut s, script) = session(34, 1, "WORLDSIZE_SMALL", Some("CIVILIZATION_KURIOTATES"));
     found_capital(&mut s);
     let h = s.human;
     let max = s.g.players[h].max_cities;
     assert!(max >= 2, "the Kuriotates have a city limit ({max})");
     let capital = s.g.players[h].cities[0];
-    assert_eq!(s.g.cities[capital].plot_radius, 3, "the first city is not asked");
-    assert!(asked(&script).is_empty());
+    assert_eq!(s.g.cities[capital].plot_radius, 3);
     let home = (s.g.cities[capital].x, s.g.cities[capital].y);
-    // A settlement.
-    answer(&script, "settlement", "settlement");
     let (x, y) = city_site(&s.g, h, home, 5);
     let c2 = s.g.player_init_city(h, x, y, true, true);
-    let d = asked(&script);
-    assert_eq!(d.len(), 1);
-    assert!(matches!(d[0].kind, DecisionKind::Settlement { city } if city == c2));
-    assert_eq!(d[0].options.iter().map(|o| o.key.as_str()).collect::<Vec<_>>(), ["city", "settlement"]);
-    assert_eq!(d[0].advisor, Some(0), "the advisor suggests what an AI gets: a city");
-    assert!(s.g.cities[c2].settlement);
-    assert_eq!(s.g.cities[c2].plot_radius, 2);
-    // A city.
-    answer(&script, "settlement", "city");
+    assert!(asked(&script).is_empty());
+    assert!(!s.g.cities[c2].settlement);
+    assert_eq!(s.g.cities[c2].plot_radius, 3);
+    // Past the limit: a settlement.
+    s.g.players[h].max_cities = 2;
     let (x, y) = city_site(&s.g, h, home, 5);
     let c3 = s.g.player_init_city(h, x, y, true, true);
-    assert_eq!(asked(&script).len(), 1);
-    assert!(!s.g.cities[c3].settlement);
-    assert_eq!(s.g.cities[c3].plot_radius, 3);
-    // Past the limit: a settlement without asking.
-    s.g.players[h].max_cities = 1;
-    let (x, y) = city_site(&s.g, h, home, 5);
-    let c4 = s.g.player_init_city(h, x, y, true, true);
     assert!(asked(&script).is_empty());
-    assert!(s.g.cities[c4].settlement);
+    assert!(s.g.cities[c3].settlement);
+    assert_eq!(s.g.cities[c3].plot_radius, 1);
 }
 
 /// The human secretary general's election is deferred (BUTTONPOPUP_CHOOSEELECTION): ffh-core

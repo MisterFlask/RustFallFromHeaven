@@ -602,8 +602,8 @@ impl Game {
 
         let mut temp_maintenance = std::cmp::min(worst_city_maintenance, best_capital_maintenance);
 
-        // FfH: Added by Kael 11/18/2008
-        if city.settlement || city.outpost {
+        // FfH: Added by Kael 11/18/2008 (settlements paid none either: they pay now)
+        if city.outpost {
             temp_maintenance = 0;
         }
         // FfH: End Add
@@ -660,19 +660,19 @@ impl Game {
         let granted = without.filter(|&w| self.cities.contains(w) && self.cities[w].owner == owner);
         num_vassal_cities += i32::from(granted.is_some());
         num_vassal_cities /= std::cmp::max(1, self.teams[team].num_members);
-        let own_less = granted.map_or(0, |w| i32::from(!self.cities[w].settlement && !self.cities[w].outpost));
+        let own_less = granted.map_or(0, |w| i32::from(!self.cities[w].outpost));
 
-        // FfH: Modified by Kael 03/29/2009 (settlements do not count)
+        // FfH: Modified by Kael 03/29/2009 (settlements did not count; they count now, outposts do not)
         let mut num_cities_maintenance =
-            ((self.players[owner].num_cities() - self.player_get_num_settlements(owner) - self.player_get_num_outposts(owner) - own_less) + num_vassal_cities) * num_cities_percent;
+            ((self.players[owner].num_cities() - self.player_get_num_outposts(owner) - own_less) + num_vassal_cities) * num_cities_percent;
         // FfH: End Modify
 
         num_cities_maintenance = std::cmp::min(num_cities_maintenance, handicap.max_num_cities_maintenance * 100);
         num_cities_maintenance *= std::cmp::max(0, self.players[owner].num_cities_maintenance_modifier + 100);
         num_cities_maintenance /= 100;
 
-        // FfH: Added by Kael 11/18/2008
-        if self.cities[c].settlement || self.cities[c].outpost {
+        // FfH: Added by Kael 11/18/2008 (settlements paid none either: they pay now)
+        if self.cities[c].outpost {
             num_cities_maintenance = 0;
         }
         // FfH: End Add

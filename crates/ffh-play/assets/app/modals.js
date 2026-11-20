@@ -153,7 +153,7 @@ export function ask(title, text, choices, { tag = "ask" } = {}) {
 
 // ---------------------------------------------------------------------------------------------
 // The blocking decision (design §2.3 (b)): free tech, keep, raze or give back a conquered city,
-// keep or disband a city that joined, city or settlement, take control of a new civilization,
+// keep or disband a city that joined, take control of a new civilization,
 // offer, religion. It cannot be dismissed: the game waits inside a rules call for the answer.
 
 let decisionModal = null;
@@ -196,7 +196,7 @@ export function showDecision(d, answer) {
       h(
         "button.option",
         // A long help (a free tech's) shows its first line and the whole text as the tooltip; the
-        // rules behind a choice (`tip`: what a settlement is) are in the tooltip alone.
+        // rules behind a choice (`tip`) are in the tooltip alone.
         { disabled: !o.enabled, tip: optionTip(o), "data-option": i, onclick: () => send(i) },
         h("span", o.label),
         d.advisor === i ? h("span.badge", "advisor") : null,

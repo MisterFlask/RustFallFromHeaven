@@ -143,27 +143,16 @@ impl Game {
         self.city_update_feature_happiness(c);
         self.city_update_power_health(c);
 
-        // FfH: Added by Kael 11/07/2007
-        let max_cities = self.players[owner].max_cities;
-        if max_cities != -1 && !outpost {
-            let num_cities = self.players[owner].num_cities();
-            // This game's Houses (docs/PERSONS.md, rule 14): the cap counts the realm's great
-            // cities, the liege's and its Houses' together (C++: the owner's own).
-            if self.player_realm_great_cities(owner) - 1 >= max_cities {
+        // FfH: Added by Kael 11/07/2007. Changed from FFH2 (docs/PORTING.md): a settlement is a
+        // city of radius 1 under every other rule; a city below the cap is always a full city
+        // (FFH2 asked a human, BUTTONPOPUP_CONFIRMSETTLEMENT); a capped House founds or takes
+        // only settlements (docs/PERSONS.md, rule 14).
+        if self.players[owner].max_cities != -1 && !outpost {
+            if self.player_new_city_is_settlement(owner, c) {
                 self.cities[c].settlement = true;
-            } else if !self.players[owner].human || num_cities == 1 || self.is_game_multi_player() {
+                self.city_set_plot_radius(c, 1);
+            } else {
                 self.city_set_plot_radius(c, 3);
-            } else if self.players[owner].human && num_cities != 1 {
-                // BUTTONPOPUP_CONFIRMSETTLEMENT (`OnOkClicked`): "city" (button 0,
-                // setPlotRadius(3)) or "settlement" (button 1, setSettlement(true)), the
-                // controller's `confirm_settlement`. C++ applies the answer when the human clicks,
-                // after the city is founded; here it is applied where the AI gets radius 3. No
-                // answer: the city stays as it is (radius 2, not a settlement).
-                match self.controller(owner).confirm_settlement(self, owner, c) {
-                    Some(false) => self.city_set_plot_radius(c, 3),
-                    Some(true) => self.cities[c].settlement = true,
-                    None => {}
-                }
             }
         }
         self.cities[c].civ = self.player_get_civilization_type(owner);

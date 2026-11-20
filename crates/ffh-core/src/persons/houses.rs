@@ -12,6 +12,9 @@ use ffh_data::*;
 use super::*;
 use crate::ffh::cards::world::{self, Birth};
 
+/// Why a full city cannot go to a House with a city limit (rule 14 as revised 2026-11-20).
+pub const FULL_CITY_TO_CAPPED_HOUSE: &str = "A House with a city limit holds only settlements.";
+
 impl Game {
     // -----------------------------------------------------------------------------------------
     // Names and colours
@@ -98,6 +101,13 @@ impl Game {
         if self.cities[c].outpost {
             return Err("An outpost cannot be granted.");
         }
+        // Rule 14 as revised 2026-11-20: a House with a city limit holds only settlements.
+        if !self.cities[c].settlement && self.players[p].max_cities != -1 {
+            let houses = self.player_houses(p);
+            if houses.is_empty() || houses.iter().all(|&h| self.players[self.houses[h].player].max_cities != -1) {
+                return Err(FULL_CITY_TO_CAPPED_HOUSE);
+            }
+        }
         Ok(())
     }
 
@@ -123,8 +133,17 @@ impl Game {
                 if !self.houses.contains(h) || self.houses[h].owner != p || !self.players[self.houses[h].player].alive {
                     return Err("Not a House of yours.");
                 }
+                if !self.cities[c].settlement && self.players[self.houses[h].player].max_cities != -1 {
+                    return Err(FULL_CITY_TO_CAPPED_HOUSE);
+                }
             }
-            GrantTo::NewHouse => self.player_check_found_house(p)?,
+            // A new House is of `p`'s civilization: capped as `p` is.
+            GrantTo::NewHouse => {
+                self.player_check_found_house(p)?;
+                if !self.cities[c].settlement && self.players[p].max_cities != -1 {
+                    return Err(FULL_CITY_TO_CAPPED_HOUSE);
+                }
+            }
         }
         Ok(())
     }

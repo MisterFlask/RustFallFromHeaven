@@ -5,7 +5,7 @@
 //!   production, events, diplomatic votes, elections, the research popup. The human answers at
 //!   the next control point with the C++ net message's port (`command.rs`).
 //! * **Blocking** (no answer would lose information): free tech, keep/raze/gift a conquered
-//!   city, keep/disband an acquired city, city or settlement, take control, offer, religion. The
+//!   city, keep/disband an acquired city, take control, offer, religion. The
 //!   [`Answerer`] answers inside the rules call.
 //! * **Advisor**: AI work the C++ also does for humans (`AI_getAttitude`, `doResearch`'s
 //!   `AI_chooseResearch`, automated groups) goes to a private `ffh_ai::Ai` (never the AI
@@ -59,7 +59,6 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("raze_conquered_city", Policy::Blocking),
     ("conquered_city_choice", Policy::Blocking),
     ("disband_acquired_city", Policy::Blocking),
-    ("confirm_settlement", Policy::Blocking),
     ("choose_event", Policy::Deferred),
     ("choose_election", Policy::Deferred),
     ("diplo_vote", Policy::Deferred),
@@ -404,16 +403,6 @@ impl Controller for HumanController {
         }
         let advice = self.suggest(g, |g| self.advisor.disband_acquired_city(g, p, c));
         self.block(g, decision::disband_city(g, p, c, advice)) == 1
-    }
-
-    /// FfH BUTTONPOPUP_CONFIRMSETTLEMENT: blocking city (0) / settlement (1). The advisor
-    /// suggests what C++ gives an AI player: a city.
-    fn confirm_settlement(&self, g: &Game, p: PlayerId, c: CityId) -> Option<bool> {
-        if !g.players[p].human {
-            return self.advisor.confirm_settlement(g, p, c);
-        }
-        let advice = self.suggest(g, |g| self.advisor.confirm_settlement(g, p, c)).unwrap_or(false);
-        Some(self.block(g, decision::settlement(g, p, c, advice)) == 1)
     }
 
     /// C++ `CvPlayer::trigger` for a human queues BUTTONPOPUP_EVENT: deferred (F7). The rules

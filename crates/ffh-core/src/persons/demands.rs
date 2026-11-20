@@ -91,8 +91,8 @@ impl Game {
         self.teams[a].vassal[b] || self.teams[b].vassal[a]
     }
 
-    /// The Land list of House `h`: (1) the Crown's city nearest its seat (not the capital)
-    /// granted to it; (2) else a city of another owner within [`LAND_RANGE`] plots of a city of
+    /// The Land list of House `h`: (1) the Crown's city nearest its seat (not the capital; a
+    /// settlement for a House with a city limit) granted to it; (2) else a city of another owner within [`LAND_RANGE`] plots of a city of
     /// the House, the barbarians' first, else of a weaker civilization that is not the liege's
     /// team, vassal or master, the nearest, taken and granted.
     fn demand_land(&self, h: HouseId) -> Option<DemandKind> {
@@ -105,6 +105,8 @@ impl Game {
             .iter()
             .copied()
             .filter(|&c| !self.city_is_capital(c) && !self.cities[c].outpost)
+            // A House with a city limit asks only for a settlement (rule 14 as revised 2026-11-20).
+            .filter(|&c| self.cities[c].settlement || self.players[self.houses[h].player].max_cities == -1)
             .min_by_key(|&c| (self.plot_dist(self.city_plot(c), seat_plot), c));
         if let Some(c) = crown {
             return Some(DemandKind::GrantCity(self.city_plot(c)));

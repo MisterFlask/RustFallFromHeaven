@@ -159,7 +159,7 @@ fn is_tithe(g: &Game, project: ProjectType) -> bool {
 pub fn ritual_needs_tech(g: &Game, c: CityId, project: ProjectType) -> Option<TechType> {
     let info = &g.d.projects[project];
     let city = &g.cities[c];
-    if !info.world_ritual || g.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) || city.settlement || city.outpost || info.prereq_civilization.is_some_and(|civ| civ != g.city_civilization_type(c)) {
+    if !info.world_ritual || g.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) || city.outpost || info.prereq_civilization.is_some_and(|civ| civ != g.city_civilization_type(c)) {
         return None;
     }
     info.tech_prereq.filter(|&t| !g.team_is_has_tech(g.players[city.owner].team, Some(t)))

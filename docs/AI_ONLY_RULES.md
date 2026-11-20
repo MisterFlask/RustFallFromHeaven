@@ -95,8 +95,8 @@ are gone (2026-11-10): the AI trains and builds by the same rules as a human. Th
 ## C. Decisions a human makes in a popup and the AI by code (no rules difference)
 
 These go through `Controller`: production and its re-choice triggers, research and free techs,
-conquered and flipped cities (the AI never gifts a conquered city and keeps a flipped one), the
-Kuriotates city-or-settlement choice (the AI takes a full city), captured units, gifts, elections,
+conquered and flipped cities (the AI never gifts a conquered city and keeps a flipped one),
+captured units, gifts, elections,
 take-control offers, the citizen governor, trade denials, end of turn, war-plan bookkeeping, the
 AI's queued follow-up attack, automation and wake-ups, `AI_isDeclareWar` (AI units enter closed
 borders or declare war when moving only with a war plan ready; inert because `ffh-ai` declares war

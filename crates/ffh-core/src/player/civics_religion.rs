@@ -524,10 +524,10 @@ impl Game {
             * upkeep_info.population_percent)
             / 100;
 
-        //FfH: Modified by Kael 11/18/2007 (settlements are not counted)
+        //FfH: Modified by Kael 11/18/2007 (settlements were not counted; now only outposts are not)
         upkeep_value += (std::cmp::max(
             0,
-            (pl.num_cities() - self.player_get_num_settlements(p) - self.player_get_num_outposts(p)) + d.defines.upkeep_city_offset + civic_option.i()
+            (pl.num_cities() - self.player_get_num_outposts(p)) + d.defines.upkeep_city_offset + civic_option.i()
                 - (d.civic_options.len() as i32 / 2),
         ) * upkeep_info.city_percent)
             / 100;
@@ -1097,12 +1097,6 @@ impl Game {
                 if self.city_is_capital(c) {
                     value /= 8;
                 }
-
-                //FfH: Added by Kael 11/18/2007
-                if self.cities[c].settlement {
-                    value /= 8;
-                }
-                //FfH: End Add
 
                 value = std::cmp::max(1, value);
 
@@ -1729,10 +1723,6 @@ impl Game {
         }
 
         self.player_update_max_anarchy_turns(p);
-        // This game's Crown's limit (docs/PERSONS.md, rule 14) moves with the trait.
-        if info.crown_cities_change != 0 {
-            self.player_update_maintenance(p);
-        }
     }
 }
 

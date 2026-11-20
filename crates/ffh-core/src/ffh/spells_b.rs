@@ -324,9 +324,9 @@ fn req_promote_settlement(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         return false;
     }
     let p = g.units[caster].owner;
-    // This game's Houses (docs/PERSONS.md, rule 14): the realm's great cities, its Houses'
-    // included.
-    if g.player_realm_great_cities(p) >= g.players[p].max_cities {
+    // This game's Houses (docs/PERSONS.md, rule 14): a House with a cap holds only settlements;
+    // the cap counts the player's own full cities.
+    if g.player_house(p).is_some() || g.player_full_cities(p, None) >= g.players[p].max_cities {
         return false;
     }
     true

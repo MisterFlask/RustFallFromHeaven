@@ -3,18 +3,17 @@
 //! empire size", and its revision of the same day).
 //!
 //! - **The Crown's limit** ([`Game::player_crown_limit`]): under every governing civic the Crown
-//!   holds `PERSON_CROWN_CITIES` (3) cities at the normal city-count maintenance, plus its traits'
-//!   `crown_cities_change` (the Kuriotates' Sprawling: -2, the capital alone), never below 1. The
-//!   Crown's cities are the player's own great cities (not a settlement, not an outpost), the
-//!   capital first, then in the player's city order ([`Game::player_crown_cities`]); those beyond
+//!   holds `PERSON_CROWN_CITIES` (3) cities at the normal city-count maintenance. The Crown's
+//!   cities are the player's own cities but outposts, the capital first, then its full cities, then
+//!   its settlements, each in the player's city order ([`Game::player_crown_cities`]); those beyond
 //!   the limit pay [`CROWN_OVER_FACTOR`] times their city-count maintenance
 //!   (`city_calculate_num_cities_maintenance_times100`). There is no limit where no city can be
 //!   granted (direct rule, a vassal, No Vassal States, a civilization without Houses): the remedy
 //!   is a grant.
-//! - **The realm's great cities** ([`Game::player_realm_great_cities`]): a player with a city cap
-//!   (the Kuriotates' `max_cities`) counts its liege's and every House's of that liege together
-//!   against it, so a House founding or receiving cities does not raise the realm's number of
-//!   great cities. A city granted keeps what it was (a great city or a settlement).
+//! - **The city cap** (the Kuriotates' `max_cities`, rule 14 as revised 2026-11-20): a player's own
+//!   full cities count against it ([`Game::player_full_cities`]); a city that comes to a House with
+//!   a cap is a settlement ([`Game::player_new_city_is_settlement`]), and a full city cannot be
+//!   granted to one. A city moving within a realm otherwise keeps what it was.
 
 use super::*;
 
@@ -23,30 +22,33 @@ pub const CROWN_OVER_FACTOR: i32 = 3;
 
 impl Game {
     /// The cities player `p`'s Crown holds at the normal city-count maintenance (`None`: no
-    /// limit, where it cannot grant cities): `PERSON_CROWN_CITIES` plus its traits'
-    /// `crown_cities_change`, never below 1.
+    /// limit, where it cannot grant cities): `PERSON_CROWN_CITIES`.
     pub fn player_crown_limit(&self, p: PlayerId) -> Option<i32> {
         if self.player_check_grants(p).is_err() {
             return None;
         }
-        let d = self.d;
-        let change: i32 = d.traits.keys().filter(|&t| self.players[p].traits[t]).map(|t| d.traits[t].crown_cities_change).sum();
-        Some((d.defines.person_crown_cities + change).max(1))
+        Some(self.d.defines.person_crown_cities)
     }
 
-    /// The great cities (no settlement, no outpost) of player `p`'s realm: its liege's (or its
-    /// own, for a player that is no House) and those of every House of that liege. A player's
-    /// city cap (`max_cities`, the Kuriotates) counts them.
-    pub fn player_realm_great_cities(&self, p: PlayerId) -> i32 {
-        let head = self.player_house(p).map_or(p, |h| self.houses[h].owner);
-        let great = |q: PlayerId| self.players[q].num_cities() - self.player_get_num_settlements(q) - self.player_get_num_outposts(q);
-        great(head) + self.players[head].houses.iter().filter_map(|&h| self.houses.get(h)).map(|house| great(house.player)).sum::<i32>()
+    /// Player `p`'s full cities (neither a settlement nor an outpost), `without` left out. A city
+    /// cap (`max_cities`, the Kuriotates) counts them.
+    pub fn player_full_cities(&self, p: PlayerId, without: Option<CityId>) -> i32 {
+        self.players[p].cities.iter().filter(|&&c| Some(c) != without && self.cities.get(c).is_some_and(|k| !k.settlement && !k.outpost)).count() as i32
+    }
+
+    /// Whether city `c`, coming to player `p` now (founded, captured, raised from an outpost), is
+    /// a settlement: `p` has a city cap and is a House (a capped House holds only settlements:
+    /// docs/PERSONS.md, rule 14 as revised 2026-11-20), or its other full cities reach the cap.
+    pub fn player_new_city_is_settlement(&self, p: PlayerId, c: CityId) -> bool {
+        let max_cities = self.players[p].max_cities;
+        max_cities != -1 && (self.player_house(p).is_some() || self.player_full_cities(p, Some(c)) >= max_cities)
     }
 
     /// City `c`, which moved to a House or back from one (a grant, a founding, a break-away's
-    /// held city), keeps what it was before (`settlement`): a great city stays great, a
+    /// held city), keeps what it was before (`settlement`): a full city stays full, a
     /// settlement stays one, whatever its new owner's count, where its new owner has a city cap
-    /// (a player without one has no settlements).
+    /// (a player without one has no settlements). (A grant never brings a full city to a House
+    /// with a cap: `player_check_grant`.)
     pub(crate) fn city_keep_settlement(&mut self, c: CityId, settlement: bool) {
         let d = self.d;
         let owner = self.cities[c].owner;
@@ -55,7 +57,7 @@ impl Game {
         }
         let changed = self.cities[c].settlement != settlement;
         self.cities[c].settlement = settlement;
-        // Its radius as a great city or a settlement, or its radius building's.
+        // Its radius as a full city or a settlement, or its radius building's.
         let building = d.buildings.keys().filter(|&b| d.buildings[b].plot_radius != 0 && self.city_num_active_building(c, b) > 0).map(|b| d.buildings[b].plot_radius).max().unwrap_or(0);
         let radius = self.city_base_plot_radius(c).max(building);
         self.city_set_plot_radius(c, radius);
@@ -64,26 +66,27 @@ impl Game {
         }
     }
 
-    /// Whether city `c` counts in its Crown (a great city: no settlement, no
-    /// outpost).
+    /// Whether city `c` counts in its Crown (any city but an outpost).
     fn city_counts_for_crown(&self, c: CityId) -> bool {
-        self.cities.get(c).is_some_and(|city| !city.settlement && !city.outpost)
+        self.cities.get(c).is_some_and(|city| !city.outpost)
     }
 
-    /// Player `p`'s Crown cities, the capital first, then in its city order; `without` left out
-    /// (a grant's preview).
+    /// Player `p`'s Crown cities, the capital first, then its full cities, then its settlements,
+    /// each in its city order; `without` left out (a grant's preview).
     pub(crate) fn player_crown_cities_without(&self, p: PlayerId, without: Option<CityId>) -> Vec<CityId> {
         let capital = self.player_get_capital_city(p);
         let mut out: Vec<CityId> = Vec::new();
         if let Some(cap) = capital.filter(|&k| Some(k) != without && self.city_counts_for_crown(k)) {
             out.push(cap);
         }
-        out.extend(self.players[p].cities.iter().copied().filter(|&k| Some(k) != capital && Some(k) != without && self.city_counts_for_crown(k)));
+        let rest: Vec<CityId> = self.players[p].cities.iter().copied().filter(|&k| Some(k) != capital && Some(k) != without && self.city_counts_for_crown(k)).collect();
+        out.extend(rest.iter().copied().filter(|&k| !self.cities[k].settlement));
+        out.extend(rest.iter().copied().filter(|&k| self.cities[k].settlement));
         out
     }
 
-    /// Player `p`'s Crown cities: the capital first, then in its city order (settlements and
-    /// outposts left out).
+    /// Player `p`'s Crown cities: the capital first, then its full cities, then its settlements
+    /// (outposts left out).
     pub fn player_crown_cities(&self, p: PlayerId) -> Vec<CityId> {
         self.player_crown_cities_without(p, None)
     }

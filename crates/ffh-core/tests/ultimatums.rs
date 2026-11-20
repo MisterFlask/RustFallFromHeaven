@@ -173,7 +173,7 @@ fn a_split_divides_by_distance_and_the_cadet_inherits_nothing() {
     g.houses[h].ultimatums = 2;
     g.players[hp].ai_memory_count[P1][MemoryType::MEMORY_TOOK_CITY] = 1;
     g.players[P0].house_tribute = 30;
-    assert_eq!(g.house_great_cities(h), 6);
+    assert_eq!(g.house_split_cities(h), 6);
     assert_eq!(g.house_split_line(h), Some("Holds 6 cities: 5% a turn to split.".to_string()));
     let (keep, cadet) = g.house_split_division(h).expect("a division");
     let at = |g: &Game, cs: &[CityId]| -> Vec<(i32, i32)> {
@@ -241,7 +241,7 @@ fn no_split_without_a_free_leader() {
     g.players[P0].alignment = None;
     assert!(g.house_leader_pool(civ, P0).leaders.is_empty());
     assert_eq!(g.house_split(big), None, "no leader is free");
-    assert_eq!(g.house_great_cities(big), 6);
+    assert_eq!(g.house_split_cities(big), 6);
     assert_eq!(g.players[P0].houses.len(), 10);
 }
 

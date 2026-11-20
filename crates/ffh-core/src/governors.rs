@@ -316,7 +316,7 @@ impl Game {
             } else if !direct && !governed {
                 self.city_become_governed(c);
                 changed += 1;
-                if self.cities.contains(c) && self.cities[c].order_queue.is_empty() && !self.cities[c].settlement && !self.cities[c].outpost {
+                if self.cities.contains(c) && self.cities[c].order_queue.is_empty() && !self.cities[c].outpost {
                     self.city_choose_production(c, None, None, None, false, false);
                 }
             }

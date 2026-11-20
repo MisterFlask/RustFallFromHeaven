@@ -12,8 +12,9 @@
 //!   the House take a grievance while a cut arrives. So the AI's Houses rarely reach an ultimatum,
 //!   and a loyal House is dearer to court (the requirement counts its loyalty). Never above a
 //!   contract's bound (the third build, rule 6). Set only when it changes.
-//! - **Grants** ([`choose_grant`]): one a turn while the Crown is over its limit (rule 14: 3 cities,
-//!   the capital alone for the Kuriotates; settlements never count), the least populous first,
+//! - **Grants** ([`choose_grant`]): one a turn while the Crown is over its limit (rule 14: 3 cities;
+//!   a Kuriotate House takes only settlements, which come after the full cities), the least
+//!   populous first among the cities the rules let it grant to that House,
 //!   never the capital nor the best production city ([`kept_city`]), to the House whose capital is
 //!   nearest the city ([`nearest_house`]); with no House, the grant founds one (rule 3; none when
 //!   no leader is free). A grant whose preview makes a House Furious is passed over for the next
@@ -160,10 +161,11 @@ pub fn choose_grant(g: &Game, p: PlayerId) -> Option<(CityId, GrantTo)> {
     let houses = houses_of(g, p);
     if houses.is_empty() {
         // The first grant founds a House (rule 3), when a leader is free.
-        return cities.first().filter(|_| g.player_check_found_house(p).is_ok()).map(|&c| (c, GrantTo::NewHouse));
+        return cities.into_iter().find(|&c| g.player_check_grant(p, c, GrantTo::NewHouse).is_ok()).map(|c| (c, GrantTo::NewHouse));
     }
     for c in cities {
-        let Some(h) = nearest_house(g, &houses, c) else { continue };
+        let open: Vec<HouseId> = houses.iter().copied().filter(|&h| g.player_check_grant(p, c, GrantTo::House(h)).is_ok()).collect();
+        let Some(h) = nearest_house(g, &open, c) else { continue };
         let to = GrantTo::House(h);
         // A grant that makes a House Furious waits: the Crown keeping the city snubs nobody.
         if g.grant_preview(p, c, to).iter().any(|l| l.state_after == Some(LoyaltyState::Furious)) {

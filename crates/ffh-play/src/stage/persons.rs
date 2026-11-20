@@ -336,7 +336,7 @@ fn stage_ultimatums(g: &mut Game, h: PlayerId, house_c: HouseId, house_v: HouseI
     g.player_set_house_tribute_default(h, default).map_err(|e| format!("tribute: {e}"))?;
     let all: Vec<CityId> = g.house_cities(house_l);
     for c in all {
-        if g.city_is_governed(c) && g.cities[c].order_queue.is_empty() && !g.cities[c].settlement {
+        if g.city_is_governed(c) && g.cities[c].order_queue.is_empty() {
             g.city_choose_production(c, None, None, None, false, false);
         }
     }
@@ -353,8 +353,8 @@ fn stage_ultimatums(g: &mut Game, h: PlayerId, house_c: HouseId, house_v: HouseI
         }
         hand_set.push("House large: two `Request refused` (Furious: its ultimatum at the next turn)".into());
     }
-    if g.house_great_cities(house_l) != 5 {
-        return Err(format!("House large holds {} great cities", g.house_great_cities(house_l)));
+    if g.house_split_cities(house_l) != 5 {
+        return Err(format!("House large holds {} cities", g.house_split_cities(house_l)));
     }
     if g.house_contract(house_v).is_none() || g.house_state(house_v) != LoyaltyState::Annoyed {
         return Err("House annoyed is not under a contract, Annoyed".into());
@@ -636,7 +636,7 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         // (a governed city never stands without one).
         let all: Vec<CityId> = g.cities.iter().map(|(c, _)| c).collect();
         for c in all {
-            if g.city_is_governed(c) && g.cities[c].order_queue.is_empty() && !g.cities[c].settlement {
+            if g.city_is_governed(c) && g.cities[c].order_queue.is_empty() {
                 g.city_choose_production(c, None, None, None, false, false);
             }
         }

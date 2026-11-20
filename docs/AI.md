@@ -221,8 +221,8 @@ counters, war success, war plans) that the diplomacy below reads.
    transport; while growing toward a settler the city builds only short items (warriors
    that explore and escort); a settler 3 turns from done (or waiting in the city) with no
    fighter to spare gets the cheapest adequate escort queued behind it (`expansion.rs`);
-   then civilization-specific items (Kuriotates settlers for settlements and full cities and
-   settlement garrisons, Lanun cove boats; see Civilization-specific below);
+   then civilization-specific items (Kuriotates settlers for settlements and full cities, Lanun
+   cove boats; see Civilization-specific below);
 6. FfH tier-2 units need a building in the training city (Archery Range for archers,
    Training Yard for axemen, ...): when one would open a defender or attacker a third
    stronger, about half the cities build it;
@@ -1985,7 +1985,8 @@ Persons of Note.)
   civilization whose team has more power than ours (`team_get_power`, vassals included). A
   reasonable first rule, not a measured one (CLAUDE.md: a rules change is not gated on the AI).
 - **Grants** (`choose_grant`), one a turn: only while the Crown is over its limit (rule 14: 3
-  cities under a governing civic, the capital alone for the Kuriotates; settlements never count),
+  cities under a governing civic; settlements count, after the full cities; a Kuriotate House
+  takes only settlements, 2026-11-20),
   never the capital nor the best production city (`kept_city`), the least populous first, so the
   Crown comes down to its limit (an earlier version also kept the Crown's six most populous
   cities, which kept AI realms at 2-6 Houses a game across all civilizations; removed 2026-11-18
@@ -2559,6 +2560,12 @@ buildings among them whose effects are in the rules' code are valued (`code_effe
   5.1%, share@300 +69 (t 1.07); seeds 41-80 win 2.5% -> 12.5% (4 / 0). Their late decline is not
   fixed (5-7 cities lost by turn 450-500 with or without it). Legends keeps the default timing
   (5 cities, settlements counted; about turn 200).
+  **Since 2026-11-20** (a rules change: docs/PORTING.md, "Kuriotates settlements are cities of
+  radius 1"; not measured) a settlement is a city of radius 1 that builds and pays like any, and
+  a Kuriotate House holds only settlements. The defender step went (a settlement trains its
+  own); the spacing is 4 plots (a radius-1 settlement 5 plots out shares no plot with a full
+  city); a House builds no settler for a full city; the liege grants its settlements beyond the
+  Crown's 3 to its Houses (`persons::choose_grant`, only cities the rules let it grant).
 - **Luchuirp** (round 4, unchanged): Gifts of Nantosuelta leaves a Golden Hammer in each city,
   which can become a free Engineer there (`SPELL_GIVE_HAMMER_TO_CRAFTSMAN`) or +1 strength on a
   unit that takes it (`SPELL_TAKE_GOLDEN_HAMMER_UNIT`). FfH's end-of-turn spell choice valued the

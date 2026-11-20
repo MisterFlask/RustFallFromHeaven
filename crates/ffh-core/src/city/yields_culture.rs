@@ -483,7 +483,7 @@ impl Game {
         }
     }
 
-    /// C++ `CvCity::getBaseYieldRateModifier` (CvCity.cpp:8053-8091). FFH: settlements -75%.
+    /// C++ `CvCity::getBaseYieldRateModifier` (CvCity.cpp:8053-8091). (FFH's settlements' -75% is gone: docs/PORTING.md.)
     /// C++ default `iExtra = 0`.
     pub fn city_base_yield_rate_modifier(&self, c: CityId, yield_type: YieldType, extra: i32) -> i32 {
         let y = yield_type.idx();
@@ -512,12 +512,6 @@ impl Game {
 
         // note: player->invalidateYieldRankCache() must be called for anything that is checked here
         // so if any extra checked things are added here, the cache needs to be invalidated
-
-        // FfH: Added by Kael 11/08/2007
-        if city.settlement {
-            modifier -= 75;
-        }
-        // FfH: End Add
 
         max(0, modifier + 100)
     }

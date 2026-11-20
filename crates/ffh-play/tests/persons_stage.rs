@@ -74,7 +74,7 @@ fn the_staged_persons_scenes_hold_every_state() {
         assert!(g.houses[house("annoyed")].contract.is_some_and(|c| c.kind == ffh_core::persons::UltimatumKind::Tribute(10)), "under a contract");
         assert_eq!(g.houses[house("annoyed")].ultimatums, 1);
         assert_eq!(g.house_state(house("large")) == LoyaltyState::Furious, !direct);
-        assert_eq!(g.house_great_cities(house("large")), 5, "one grant from the split's threshold");
+        assert_eq!(g.house_split_cities(house("large")), 5, "one grant from the split's threshold");
         assert!(g.houses[house("large")].contract.is_none());
         assert_eq!(g.house_cities(house("furious")).len(), 2);
         assert_eq!(g.house_cities_held(house("furious")).1.len(), 1, "one of its cities is held by an army");
