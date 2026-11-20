@@ -5,14 +5,14 @@
 //! view's count of what needs attention; the tribute command and its preview; a grant whose preview
 //! is what then happens, and the founding of a realm's first House; the levy list's statuses on the
 //! Armies screen; a Crown city's Governance line; each refusal with the rules' reason; freeing; an
-//! offer to a House; the command set; and the purity of the queries.
+//! gift to a House; the civilization's cultural channel; the command set; and the purity of the queries.
 
 mod common;
 
 use std::sync::Arc;
 
 use ffh_core::ids::*;
-use ffh_core::persons::{BribeKind, GrantTo, LoyaltyState, DEMAND_REFUSED, LEVIED, TRIBUTE_LAG_TURNS};
+use ffh_core::persons::{GrantTo, LoyaltyState, DEMAND_REFUSED, LEVIED, TRIBUTE_LAG_TURNS};
 use ffh_core::structs::TradeData;
 use ffh_data::*;
 use ffh_play::command::{CmdErr, CmdOk, Command, COMMAND_NAMES};
@@ -153,9 +153,6 @@ fn the_court_shows_the_realm() {
     assert!(a.get("size").is_none(), "no size part (the third build, rule 1)");
     assert!(strs(&a, "parts").iter().any(|p| p == "Tribute 0%: +1"), "{:?}", strs(&a, "parts"));
     assert!(s(&a, "total").starts_with("Loyalty: +"));
-    // A Friendly House refuses any offer: said under Record; no price in the card's body.
-    assert!(a.get("price").unwrap().is_null());
-    assert_eq!(s(&a, "price_refusal"), "Refuses any offer to secede.");
     // Its leader: its player's (portrait, name, title), and the ambition its first trait gives.
     assert!(a.get("head").is_none(), "no head: the House carries what its head carried");
     let ah = house_id(&st, "friendly");
@@ -189,8 +186,6 @@ fn the_court_shows_the_realm() {
     assert!(s(&v, "since").starts_with("Capitulated on turn "), "{}", s(&v, "since"));
     assert_eq!(s(v.get("levy").unwrap(), "text"), format!("{} is Annoyed. It takes no levy.", s(&v, "label")));
     assert!(strs(&v, "parts").iter().any(|p| p.starts_with("Capitulated: -4 (")), "{:?}", strs(&v, "parts"));
-    assert_eq!(s(&v, "price"), format!("Price to secede: {} gold.", g.house_bribe_price(house_id(&st, "annoyed")).unwrap()));
-    assert!(v.get("price_refusal").unwrap().is_null());
     // The contract (the third build, rule 6): its line, its floor among the parts, the rates its
     // bound refuses barred in the tribute list.
     let until = g.houses[house_id(&st, "annoyed")].contract.expect("a contract").until;
@@ -569,49 +564,52 @@ fn freeing_a_house() {
     common::check::check(&ses.g);
 }
 
-/// An offer to the neighbour's House: refused before the human's courtship of it has been open 10
-/// turns (the third build, rule 7: the stage's gifts do not open it; a gift that does is accepted,
-/// and its 10 turns are set by hand); then below its price refused (and not noted: a refused offer
-/// leaves no trace), at its price it secedes, at war with its old liege.
+/// A gift to the neighbour's House through the session: accepted (a House takes any gift) and
+/// recorded as a gift on it (the fourth build, rule 3); anything asked back is refused.
 #[test]
-fn an_offer_to_a_house() {
-    let (_dir, st, mut ses) = staged("persons-offer");
+fn a_gift_to_a_house() {
+    let (_dir, st, mut ses) = staged("persons-gift");
     let h = ses.human;
     let n = house_id(&st, "neighbour");
     let hp = ses.g.houses[n].player;
     let gold = |data: i32| TradeData { item_type: TradeableItem::TRADE_GOLD, data, offering: false, hidden: false };
-    let secede = TradeData { item_type: TradeableItem::TRADE_SECEDE, data: 0, offering: false, hidden: false };
-    // Not open yet: the offer is not even in the House's table.
-    assert!(ses.g.house_bribe_refusal(n, h, BribeKind::Secede).is_some_and(|r| r.starts_with("Court ")));
-    let need = ses.g.courtship_requirement() - ses.g.house_courtship_value(n, h);
-    assert!(need > 0);
-    ses.g.players[h].gold += need;
-    let out = ses.execute(&Command::ProposeDeal { to: hp, give: vec![gold(need)], get: vec![] }).unwrap();
+    ses.g.players[h].gold += 100;
+    let before = ses.g.gifts_value(hp, h);
+    let out = ses.execute(&Command::ProposeDeal { to: hp, give: vec![gold(100)], get: vec![] }).unwrap();
     assert!(matches!(out, CmdOk::Applied { accepted: Some(true), .. }), "a gift: {out:?}");
-    let opened = ses.g.house_courtship_opened(n, h).expect("the gift opens the courtship");
-    assert_eq!(ses.g.house_bribe_refusal(n, h, BribeKind::Secede), Some(format!("Offers possible from turn {}.", opened + ses.g.d.defines.person_courtship_turns)));
-    for c in ses.g.houses[n].courtships.iter_mut() {
-        c.opened -= ses.g.d.defines.person_courtship_turns;
+    assert!(ses.g.gifts_value(hp, h) > before, "recorded as a gift");
+    common::check::check(&ses.g);
+}
+
+/// The civilization's channel through the session (`culture_channel {action?, target?,
+/// religion?}`, the fourth build, rule 1): Court names a House by its player, a player who is no
+/// House is refused; a refused order carries the rules' reason; no action stops it.
+#[test]
+fn the_culture_channel_command() {
+    let (_dir, st, mut ses) = staged("persons-channel");
+    let h = ses.human;
+    let d = ses.g.d;
+    let court = d.t::<CulturalActionType>("CULTURALACTION_COURT_HOUSE");
+    let n = house_id(&st, "neighbour");
+    let hp = ses.g.houses[n].player;
+    let j = Json::parse(&format!(r#"{{"c":"culture_channel","action":"CULTURALACTION_COURT_HOUSE","target":{}}}"#, hp.0)).unwrap();
+    assert_eq!(Command::from_json(d, &j).unwrap(), Command::CultureChannel { action: Some(court), target: Some(hp), religion: None });
+    let civ = Command::CultureChannel { action: Some(court), target: Some(st.neighbour), religion: None };
+    assert!(matches!(ses.execute(&civ), Err(CmdErr::Invalid(_))), "Court takes a House");
+    let order = ffh_core::culture::ChannelOrder { action: court, target: ffh_core::culture::ChannelTarget::House(n), religion: None };
+    let cmd = Command::CultureChannel { action: Some(court), target: Some(hp), religion: None };
+    match ses.g.culture_channel_check(h, &order) {
+        Ok(()) => {
+            ses.execute(&cmd).unwrap();
+            assert_eq!(ses.g.players[h].culture_channel.as_ref().map(|ch| ch.order()), Some(order));
+        }
+        Err(why) => match ses.execute(&cmd) {
+            Err(CmdErr::Cannot(m)) => assert!(m.contains(&why), "{m}"),
+            other => panic!("refused with the rules' reason: {other:?}"),
+        },
     }
-    assert_eq!(ses.g.house_bribe_refusal(n, h, BribeKind::Secede), None);
-    let price = ses.g.house_bribe_price(n).expect("a price");
-    ses.g.players[h].gold = price + 100;
-    if price > 1 {
-        let mods_before = ses.g.houses[n].standing.mods.len();
-        let out = ses.execute(&Command::ProposeDeal { to: hp, give: vec![gold(price - 1)], get: vec![secede.clone()] }).unwrap();
-        assert!(matches!(out, CmdOk::Applied { accepted: Some(false), .. }), "{out:?}");
-        assert_eq!(ses.g.houses[n].standing.mods.len(), mods_before, "a refused offer is not noted");
-        assert_eq!(ses.g.players[h].gold, price + 100, "nothing paid");
-    }
-    let price = ses.g.house_bribe_price(n).expect("a price");
-    let out = ses.execute(&Command::ProposeDeal { to: hp, give: vec![gold(price.max(1))], get: vec![secede] }).unwrap();
-    assert!(matches!(out, CmdOk::Applied { accepted: Some(true), .. }), "{out:?}");
-    let g = &ses.g;
-    assert!(!g.houses.contains(n), "the House broke away");
-    let (ht, nt) = (g.players[hp].team, g.players[st.neighbour].team);
-    assert!(g.at_war(ht, nt), "at war with its old liege");
-    assert!(!g.teams[ht].vassal[nt]);
-    common::check::check(g);
+    ses.execute(&Command::CultureChannel { action: None, target: None, religion: None }).unwrap();
+    assert!(ses.g.players[h].culture_channel.is_none(), "stopped");
 }
 
 /// The commands are in the protocol, decode from their JSON and refuse an ambiguous grantee.

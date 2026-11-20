@@ -1326,17 +1326,19 @@ this game, docs/ENTITIES.md). The terms (`relation_parts`, in its order; the hum
 screen shows each as a reason of the attitude): `different alignment` (-2 a step apart) or `same
 alignment` +1; `same state religion` +2 or `different state religion` -1; `war between us` -1
 (the team's war counter; nothing counts it up now); the remembered wrongs (the owner's decision,
-2026-11-18; docs/PERSONS.md rule 15): `declared war on us`, `took our cities` and `bought our
-House`, and `courted our House` (the third build, rule 7, 2026-11-19: a rival's courtship of one
-of our Houses opened), each `count x` the leader's `memory_attitude_percent / 100` halved (2 a
-step here, 4 on FfH's scale; rounded half away from zero), capped at -3 (a declared war -2, two
--3; a city taken -1, two -2, four -3; a House bought -2; a House courted -1, two -2, three -3),
+2026-11-18; docs/PERSONS.md rule 15): `declared war on us`, `took our cities`, `split our House`
+(the fourth build, rule 4, 2026-11-20: a rival's courtship split one of our Houses; the second
+build's `bought our House`, renamed in place) and `courted our House` (the fourth build, rule 7: a
+point every 5 turns of a rival's Court channel at one of our Houses, up to 8), each `count x` the
+leader's `memory_attitude_percent / 100` halved (2 a step here, 4 on FfH's scale; rounded half
+away from zero), capped at -3 (a declared war -2, two -3; a city taken -1, two -2, four -3; a
+House split -2; a House courted -1 a point, two -2, three -3),
 fading as the rules decay the memories (1 in 50 a turn); `open borders` +1; `the
 Trust spell` +2; `attitude modifier` (the rules' `ai_attitude_extra`, halved); `alignment
 leaning`; `cultural hostility` / `cultural friendship`; `gifts` and `demands paid`; and in the
 attitude, `at war` -2 while the war lasts. FFH2's other memories are recorded by the rules but
 not read. `memory_part` and `memory_added` are what the screens use to say what an act will
-cost (the war question, a House's trade table). One war at a
+cost (the war question). One war at a
 time; war is **greedy expansion**, not a dice roll: when free to start one (checked every 5
 turns from turn 50, with 2+ cities), a civ prepares war on the met, land-reachable (within 16
 plots) rival whose weakest known city its best trainable attacker can take (siege engines
@@ -1649,107 +1651,74 @@ are rare by then, and a building nearly always outscores a gold a turn.
 
 ## Cultural actions (`culture.rs`)
 
-This game's own system (docs/CULTURE.md): a city may channel half
-its culture into one standing order aimed at a civilization, Foment Revolt or Spread Religion,
-until its owner changes it. Once a turn, after the diplomacy (so the war state is current) and the
-governors' production, what an expert does with the channels:
+This game's own system (docs/CULTURE.md; docs/PERSONS.md, "The fourth build", rule 9, 2026-11-20):
+a civilization channels half its culture into one standing order, Court a rival's House, Guard
+one of its own Houses, or Spread Religion. A rules change, so not gated on the AI (CLAUDE.md):
+reasonable choices, not measured ones. Once a turn, after the diplomacy (so the war state is
+current) and the governors' production, the civilization's one channel (`choose`):
 
-- **Hold off revolt pressure.** Each defender resists 2 a turn, so the garrison is the answer.
-  From the channels aimed at us now (they are public), `defenders_needed` is how many keep the
-  pressure, as it would settle (net inflow over the fade), short of disorder, at most six: past it
-  the city makes no culture (disorder stops its commerce), only its garrison resists, and the
-  pressure runs on to the flip. A directly ruled city short of them (unless it is already training
-  a defender that stays) trains one first; a governed city's governor chooses again
-  (`governor::decide` puts them first, for a human's governed cities too). A rival whose pressure is
-  two thirds of the way to taking one of our cities provokes the war logic (`flips_against`, read by
-  `territory_check`: no friend spared, 85% of the usual power edge, +40 to the target's score).
-- **Foment revolt where it pays.** Cities whose culture is worth spending channel revolt at a
-  rival: the cities carrying a cultural victory we pursue spend none, and a point of culture counts
-  in full while the city's borders still grow to its working radius (below `CULTURELEVEL_FLEDGLING`),
-  half after. Per target city, the pressure our channels would build is simulated over 40 turns as
-  the rules run it (our inflow, `ChannelReach.amount`, less the city's resistance, faded 5%; the
-  other casters' pressure as it is; from the turn after disorder only the garrison resists). The
-  resistance counts the city's culture and its *stationed* defenders, those that did not move last
-  turn: in the first traced games a city whose stack came
-  and went every turn (12 defenders, then 4) had a channel set and ended in turn. Outcomes: a city
-  taken (never a capital) is worth `150 + 50·pop + 20·buildings + 150·wonders + 200·holy cities`
-  points, amortized over the turns it takes and five more; disorder costs the city its production
-  and commerce a turn; unrest half a commerce a point. Only what our channels change counts (a
-  city another caster already holds in revolt gains nothing from us). The rival's lost output counts
-  in full at war, while we prepare one, against the barbarians or the civilization racing us to a
-  victory; at peace 60% if we are Annoyed or Furious with them, 40% if Cautious; a city taken at
-  peace three quarters (it invites war). Against that, the culture spent and, at peace, a
-  diplomatic cost a turn for each channel (the target remembers a point every 5 turns of it), by
-  what they think of us: 2.5 commerce while they are Cautious or better, 1 Annoyed, 0.5 Furious or
-  while we prepare war, none at war. A city that channels nothing this turn (in disorder, in
-  anarchy) costs nothing and keeps its channel. Spared: civilizations we are Pleased or Friendly with, vassals and masters, defensive pact
-  partners, and at peace any whose defensive power exceeds 125% of ours (150% for a channel that
-  stands). The leader's lean scales a revolt's value: halfway from 100% to its `iCulturalAggression`
-  (40-180, derived from war eagerness and the culture flavor where the XML has none), a quarter
-  more for a conqueror (Aggressive leaders, the Clan of Embers, the Doviello, the Bannor). Our
-  channels at one civilization add up, so each target is weighed with the group of our cities that
-  would channel at it, the strongest first, at most `CULTURE_AI_MAX_HOSTILE_PER_TARGET` (2), twice
-  that at war or against the barbarians; groups are chosen greedily, the best net first.
-- **Spread our religion.** A city spreads our state religion, or a religion whose shrine we hold,
-  into a civilization whose cities lack it, worth the rules' chance a turn times what a spread is
-  worth, against the culture spent: in our own city our state religion's happiness and buildings
-  (`40 + 6·pop`), a shrine's gold a turn (25); abroad, a civilization without a state religion
-  drawn toward ours (the AI adopts the religion most of its cities have: the first city of ours
-  there 50, later ones 20), a co-religionist pleased (15: it remembers the spread as friendship);
-  into a civilization with another state religion only where we dislike it, and then the spread is
-  remembered as hostile (only a shrine pays for it). Our own cities come first by these numbers;
-  the chance's cap (25%) makes a smaller city the better spreader.
-- **Stability.** Stopping a revolt lets the pressure it built fade, so a channel that stands is
-  kept while it is worth 70% of what it costs (the weakest member of a group dropped first, the rest
-  weighed again), and a new channel must be worth a quarter more than its cost (at least a
-  commerce); a city spreading a religion moves to another channel only when that is better by half
-  its cost.
-- **Governors never channel** (the owner's decision, 2026-10-30): a channel is the civilization's
-  own decision, so the AI plans every one of its cities, governed or not, and a human's governors
-  (`govern`, through `Controller::govern_cities`) set none; they only train defenders against
-  revolt pressure (above).
+- **Nothing** while it pursues a cultural victory (`victory::plan`'s goal): its cities keep their
+  culture; a standing channel stops.
+- **Guard first** (`guard_choice`): a House of ours whose strongest rival favour is past half its
+  requirement, or would reach it within `GUARD_HORIZON` (20) turns at the inflows now without our
+  guard (the rules' `favour_turns`), the soonest first (then the nearest its requirement); a
+  standing guard is kept while its House is still pressed.
+- **Court** (`court_value`): every House of another realm we have met and reach, its liege not
+  spared (`spared`, the revolt AI's rules: a liege we are Pleased or Friendly with, vassals and
+  masters, defensive pact partners, and at peace a liege whose defensive power is above 125% of
+  ours, 150% for a channel that stands). Its value: the cities its split would take now (the rules'
+  `house_split_toward`: the half nearest us, the capital never, those the hold contest keeps left
+  out), each at `city_worth` (the revolt AI's `150 + 50·pop + 20·buildings + 150·wonders + 200·holy
+  cities`), over the turns to the requirement plus five (the rules' prediction,
+  `house_courtship_at`, at our inflow now times our reach: favour gains, fades, the guard and the
+  requirement as the rules run them), at most `COURT_HORIZON` (60) turns; scaled by the leader's
+  lean (halfway from 100% to its `iCulturalAggression`, a quarter more for a conqueror).
+- **Spread Religion** (`religion_value`) as the per-city channels did, at the civilization's
+  inflow: our state religion, or one whose shrine we hold, into a civilization whose cities lack
+  it, the rules' chance a turn times what a spread is worth (in our own city our state religion's
+  happiness and buildings `40 + 6·pop`, a shrine's gold a turn 25; abroad, a civilization without a
+  state religion drawn toward ours, 50 the first city then 20; a co-religionist pleased, 15); into a
+  civilization with another state religion only where we dislike it, and then only a shrine pays.
+- **Against it** the culture spent (`cost`: each city's half, all of a commerce while its borders
+  still grow to its working radius, below `CULTURELEVEL_FLEDGLING`, half after). The same for
+  every option (the inflow is the civilization's), so it decides only whether any channel pays: a
+  new one must beat it by a quarter (at least a commerce).
+- **Stability.** A channel that stands is kept while it is worth 70% of the best and 70% of its
+  cost; a new one must beat the standing one by a quarter. A channel stands its first `MIN_TURNS`
+  (5) turns while the rules allow it (a guard of a pressed House overrides it), and a guard is
+  kept while its House is still pressed by a looser measure (`still_pressed`: a rival favour past a
+  quarter of the requirement, or reaching it within 40 turns).
+- **As liege**, a House of ours whose strongest rival favour is past half its requirement is held
+  by an idle army (`persons::courted_to_hold`, the hold-march). **As a House**, it accepts any gift
+  and nothing else (`diplomacy::judge_offer`). The AI gives no gifts to court (left out).
 - **Memory.** Their cultural acts against us are in the attitude (`relation_parts`): "cultural
   hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
-  point every 10 turns.
+  point every 10 turns (a spread into a civilization with a state religion); "courted our House"
+  (a point every 5 turns of a Court channel at one of our Houses) and "split our House".
+- **Governors never channel** (the owner's decision, 2026-10-30): the channel is the
+  civilization's own decision.
 
-Telemetry: the decisions of kind `culture` (the action, or `stop`
-or `garrison`; why: `revolt_flip`, `revolt_disorder`, `revolt_unrest`, `religion_home`,
-`religion_abroad`, `religion_hostile`; `worthless`, `friend`, `stronger`, `keep_culture`...;
-`defend`), with the rules' counts `culture_channel`, `culture_channel_end`,
-`culture_spread` and `culture_revolt`; `FFH_AI_TRACE` lines `culture:` name the city, the target
-civilization and, for a revolt, each target city's resistance, stationed defenders, pressure,
-inflow and simulated outcome.
+Retired with Foment Revolt and the per-city channels (2026-11-20): the revolt simulation, the
+defenders against revolt pressure (`defenders_needed`, the governor's `culture_grave` and its
+`governor_culture_defense`, the armies' `can_spare` check, the human governors' `govern`), and
+the provocation of a city close to flipping (`flips_against` in `territory_check`).
 
-First games (8 civs, standard map, 350 turns, `GAMEOPTION_CULTURE_ACTIONS`, `GAMEOPTION_ARMIES`
-and `GAMEOPTION_GOVERNORS`, seeds 1-4, telemetry): revolt channels set 11 / 31 / 28 / 7 a game,
-religion channels 17 / 14 / 19 / 27; the religion spread 12 / 8 / 16 / 20 times, nearly all into
-our own cities (0-2 channels a game abroad: a spread abroad seldom beats half a city's culture
-without a shrine); cities driven into revolt (disorder) 1 / 6 / 7 / 2, cities taken 0 / 3 / 4 / 0,
-all but one after turn 300 (revolt channels start around turns 200-290, when cities make 20
-culture and more); defenders trained first against revolt pressure 0 / 11 / 11 / 2 times. With
-the switch off on the same seeds nothing is channelled. Wars between civilizations declared from
-turn 250: 42 with the AI's channels, 25 without, but only 6 of the 42 between a civilization
-fomenting revolt and its target (the games diverge from the first channel: not a measurement of
-the channels' diplomatic cost). Turn times unchanged within the noise. Checked-build stress games
-(`ffh-stress`, 400 turns, seeds 1-3, the three options): no invariant failure.
+Telemetry: the decisions of kind `culture` (the action, or `stop`; why: `guard`, `court`,
+`religion_home`, `religion_abroad`, `religion_hostile`, `worthless`; the alternatives weighed),
+with the rules' counts `culture_channel`, `culture_channel_end`, `culture_spread` and
+`house_split` `courted...`; `FFH_AI_TRACE` lines `culture:` name the channel and its net value.
 
-Measured as one civilization's edge (`civ_ab.py --base-env FFH_AI_CULTURE_OFF={civ}`, the three
-options, full games; Elohim, Bannor, Kuriotates, Sheaim forced into slot 0). Development seeds 1-12
-(48 pairs, before the review fixes of 2026-10-30): win 10.4% -> 12.5% (3 / 2 seeds won by one side
-only), share@end +139 (t 1.18), legacy@end +357 (t 2.69), alive at the end +0.1 (t 2.45); the
-Bannor the most (share@end +786, t 2.73). Fresh seeds 7001-7012 (48 pairs, the final code): win
-8.3% -> 6.2% (0 / 1), share@end +86 (t 0.83), legacy@end +132 (t 1.10); Elohim +322 (t 2.63),
-Bannor +398 (t 1.52), Kuriotates +13, Sheaim -390 (t -2.00; +26 on the development seeds): to look
-into. Revolt flips, 12 games of 400 turns (8 civs): 60 cities in all, 0-14 a game, nearly all by
-one strong cultural civilization a game (the Hippus 13 in one, the Amurites 10 in another), its
-weak neighbours losing most of their cities at peace although they trained the defenders asked
-for (docs/CULTURE.md, "Open points for the owner").
-
-Seen in the traces and not fixed here: channels end and start again when the cultural-victory plan
-flickers (its carrier cities keep their culture; seed 3, turns 321-322: the culture a group of
-channels poured into one city fell from 48 a turn to 18 and the group was dropped). And a city in
-revolt makes no culture, so a civilization that foments revolt against one fomenting back loses
-its channels' strength in the cities it throws into revolt.
+First games (2026-11-20; 4 AI games, seeds 1-4, 7 civilizations, standard map, 300 turns,
+telemetry): channels set 66 / 87 / 83 / 66 a game (Court 36 / 44 / 41 / 35, Guard 22 / 33 / 29 /
+24, Spread Religion 8 / 10 / 13 / 7), the first between turns 110 and 145 (when the realms have
+Houses), 1 to 5 standing at any of turns 150, 200, 250, 300; 5 to 9 religions spread a game.
+Courtships that reached the requirement 8 / 6 / 12 / 2 a game, from turn 143: a split
+(`house_split` `courted`) 5 / 6 / 8 / 2, a House gone whole (`courted_whole`) 2 / 0 / 2 / 0,
+every city held (`courted_held`) 1 / 0 / 2 / 0; the third build's own splits 4 / 1 / 0 / 8. The world culture unit W at turns 100, 150, 200, 250, 300: 4 / 3-7 / 9-21 / 6-26 / 18-49
+(the four games). Before the stability rules (`still_pressed`, `MIN_TURNS`) the same games set
+74 to 323 channels a game: a liege dropped its guard as soon as the courter, finding the House
+guarded, went elsewhere, and both turned back the next turn (Guard and Court, or two Courts,
+alternating every turn, a message to the liege each time).
 
 ## Armies (`armies.rs`)
 
@@ -1994,8 +1963,9 @@ between seeds).
 This game's own system (docs/PERSONS.md; the second build: Houses as vassal civilizations, rule
 12; the third build, rule 11: no persons, the first grant founds a House). A rules change, so not
 gated on the AI (CLAUDE.md): reasonable choices, unmeasured. AI players only (`persons::turn`,
-once a turn after the turn's diplomacy, before the governors' empire orders): a human's grants,
-tribute and offers are the human's. (The module keeps the name of the system it began as,
+once a turn after the turn's diplomacy, before the governors' empire orders): a human's grants
+and tribute are the human's. Courting is a cultural channel since the fourth build (2026-11-20):
+the civilization's channel is `culture.rs`'s ("Cultural actions"). (The module keeps the name of the system it began as,
 Persons of Note.)
 
 - **Tribute** (`tribute_for`; the owner's decision of 2026-11-18, replacing "20% Pleased, 10%
@@ -2005,8 +1975,8 @@ Persons of Note.)
   spare (2 or more, `TRIBUTE_KEEP_LOYALTY`), else 0%; lowered as soon as the projection at the
   rate set falls below that. A cut no longer helps at once: the point to spare is what lets the
   House take a grievance (a levy, a refused request) while the cut arrives. The aim: the AI's
-  Houses cannot be bought (a House Cautious or worse takes a price to secede) and rarely reach an
-  ultimatum. Never a rate a contract's bound refuses (the third build, rule 6:
+  Houses rarely reach an ultimatum, and a loyal House is dearer to court (the requirement counts
+  its loyalty). Never a rate a contract's bound refuses (the third build, rule 6:
   `player_check_house_tribute`). Set through the rules' command, only when it changes.
 - **Ultimatums** (the third build, rules 5 and 11; `consider_ultimatum`, ffh-ai's
   `Controller::consider_ultimatum`): a Furious House's ultimatum is accepted (its demand done, a
@@ -2030,24 +2000,10 @@ Persons of Note.)
   more) as candidates beside its own (the House's garrison judges whether the city can spare its
   production); an order already under way stays when the House turns Cautious, as an order in
   our own city does.
-- **Offers** (`choose_offer`; the owner's decision of 2026-11-18): at war with a civilization,
-  an offer to one of its Houses that is Cautious or worse at the rules' price
-  (`house_bribe_price`), in gold only (a House takes gold only): **Become your vassal** when the
-  price is at most half our treasury (the gold the Khazad keep left out) and the House would give
-  it (we can take a vassal) -- we get the cities, their units and a House, and the war is already
-  on -- else **Secede** when it is at most a third; the cheapest House first, one offer a turn,
-  the same House again only ten turns after our last offer to it (the House's noted offers,
-  `Offered N gold by the X`). Through `player_offer_house`, the deal path the human uses. Asked,
-  an AI House answers by the price alone (`diplomacy::judge_offer`), and accepts any gift.
-- **Courtship** (`choose_courtship`; the third build, rule 7 and 11, 2026-11-19): an offer waits
-  for a courtship open 10 turns, so the AI courts first, with gold, the House it means to buy:
-  the Houses `choose_offer` takes (at war with their liege, Cautious or worse, not offered
-  lately), where the gold the courtship lacks and the price together fit the offer's budget (half
-  the treasury for Become your vassal, a third for Secede); one courtship at a time (a House our
-  gifts already count toward is kept while it is still one of these, else the cheapest by gift and
-  price together); the gift is what the courtship lacks (it opens at once), nothing while it
-  waits its 10 turns, a top-up if it closes (gold ages 20 turns, the requirement follows the world
-  unit); then `choose_offer` as above. Unmeasured: a rules change.
+- **No buyer** (the fourth build, rule 9, 2026-11-20): the second build's offers (`choose_offer`:
+  Secede and Become your vassal at the House's price) and the third build's courtship by gold
+  (`choose_courtship`) went with the side deals. A House accepts any gift and nothing else
+  (`diplomacy::judge_offer`); the AI gives no gifts to court.
 - **A House's own turn** (`persons::is_house`). A House cannot declare war or make peace (its
   liege does), so its turn skips the diplomacy (`diplomacy::manage`: peace, vassalage, trades,
   war planning), the offers to humans, the loans asked of others, the field army targets and the
@@ -2071,9 +2027,9 @@ Persons of Note.)
   the House's land combat units (rule 7, `city_hold`), within 8 turns; a stack standing in such a
   city stays when the city is held only with it. A stack that is no army counts for nothing and
   does not go. (A Furious commander's haven went with the commanders, the third build.) Since the
-  third build (rule 11, 2026-11-19), the same march holds a House of ours that a rival courts (a
-  courtship open, or gifts that count toward one) while it is Cautious or worse
-  (`courted_to_hold`): it would take the rival's offer once the courtship allows.
+  fourth build (rule 9, 2026-11-20), the same march holds a House of ours whose strongest rival
+  favour is past half its requirement (`courted_to_hold`): a split takes the cities its liege's
+  armies do not hold.
 - A war a House of ours requests adds a tenth to that civilization's score in the war planning
   (`diplomacy::manage`, `war_demanded`), never a war of its own. It never frees a House.
 

@@ -102,12 +102,14 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
 }
 
 /// The memories [`relation_parts`] weighs, with their labels: the wrongs of the owner's decision
-/// of 2026-11-18 (docs/PERSONS.md, "The second build"; FFH2's other memories are not read), and a
-/// House courted (the third build, rule 7: -200 on FfH's scale, -1 here).
+/// of 2026-11-18 (docs/PERSONS.md, "The second build"; FFH2's other memories are not read), a
+/// House split by a rival's courtship (the fourth build, rule 4: -300 on FfH's scale, -2 here) and
+/// a House courted (rule 7: a point every 5 turns of a Court channel, -200 on FfH's scale, -1
+/// here).
 pub const MEMORY_TERMS: [(MemoryType, &str); 4] = [
     (MemoryType::MEMORY_DECLARED_WAR, "declared war on us"),
     (MemoryType::MEMORY_TOOK_CITY, "took our cities"),
-    (MemoryType::MEMORY_BOUGHT_HOUSE, "bought our House"),
+    (MemoryType::MEMORY_SPLIT_HOUSE, "split our House"),
     (MemoryType::MEMORY_COURTED_HOUSE, "courted our House"),
 ];
 
@@ -560,17 +562,14 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
         return Err("treaty");
     }
     let rel = relation(g, p, other);
-    // A civ channelling Flip City against one of our cities provokes us (docs/CULTURE.md): no
-    // friend is spared, and a smaller edge will do.
-    let provoked = crate::culture::flips_against(g, p, other);
     // A cautious leader does not attack a civ it likes; a war-eager one takes any opening.
-    if bar.spare_friends && rel > 1 && !provoked {
+    if bar.spare_friends && rel > 1 {
         return Err("friend");
     }
     let theirs = g.team_get_defensive_power(ot).max(1) as i64;
     let allies = dogpile_power(g, team, ot);
     let ratio = (bar.ours + allies) * 100 / theirs;
-    let need = if provoked { bar.need_ratio * 85 / 100 } else { bar.need_ratio };
+    let need = bar.need_ratio;
     if ratio < if recheck { need * 9 / 10 } else { need } {
         return Err("power");
     }
@@ -601,7 +600,7 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
     };
     // Greedy gain: a bigger edge, more and closer cities; minus how much we like them; a
     // flavor nudge toward alignment-opposites.
-    let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor + if provoked { 40 } else { 0 };
+    let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor;
     Ok(Target { score, ratio, allies })
 }
 
@@ -1502,29 +1501,13 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let because = |accept: bool, why: &str| OfferVerdict { accept, margin: None, why: Some(why.to_string()) };
     let on_value = |margin: i64| OfferVerdict { accept: margin >= 0, margin: Some(margin as i32), why: None };
     let has = |items: &[TradeData], kind: TradeableItem| items.iter().any(|t| t.item_type == kind);
-    // ---- Houses (docs/PERSONS.md, "The second build", rule 9): a House answers offers to secede
-    // or become `from`'s vassal by the rules' price alone (`house_bribe_price`), takes gold only,
-    // and trades nothing else (persons.rs makes the AI's own offers). A gift (nothing asked back:
-    // gold or a resource, a courtship's, the third build's rule 7) it accepts, any.
-    if let Some(h) = g.player_house(p) {
+    // ---- Houses (docs/PERSONS.md, "The fourth build", rule 9): a House accepts any gift (nothing
+    // asked back: gold or a resource) and trades nothing else.
+    if g.player_house(p).is_some() {
         if we_give.is_empty() && !they_give.is_empty() {
             return rule(true, "");
         }
-        if !we_give.iter().any(|t| ffh_core::persons::house_item(t.item_type).is_some()) {
-            return no("a House trades only Secede and Become your vassal");
-        }
-        if they_give.iter().any(|t| t.item_type != TradeableItem::TRADE_GOLD) {
-            return no("a House takes gold only");
-        }
-        let kind = we_give.iter().find_map(|t| ffh_core::persons::house_item(t.item_type)).expect("a House item");
-        if let Some(why) = g.house_bribe_refusal(h, from, kind) {
-            return OfferVerdict { accept: false, margin: None, why: Some(why) };
-        }
-        let offered = ffh_core::persons::house_offer_value(they_give);
-        return match g.house_bribe_price(h) {
-            Some(price) => OfferVerdict { accept: offered >= price, margin: Some(offered - price), why: (offered < price).then(|| format!("{} asks {price} gold", g.house_label(h))) },
-            None => no("it refuses any offer"),
-        };
+        return no("a House takes gifts only");
     }
     // Vassal states come with strings attached (vassals.rs): asked to become `from`'s vassal, or
     // offered `from` as ours.
@@ -1925,13 +1908,13 @@ mod tests {
             g.players[us].ai_memory_count[them][m] = count;
             assert_eq!(term(&g, "took our cities"), want, "{count} cities");
         }
-        // MEMORY_BOUGHT_HOUSE -300, as a declared war.
-        g.players[us].ai_memory_count[them][MemoryType::MEMORY_BOUGHT_HOUSE] = 1;
-        assert_eq!(term(&g, "bought our House"), Some(-2));
-        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), -1, "the second: -2 to -3");
-        g.players[us].ai_memory_count[them][MemoryType::MEMORY_BOUGHT_HOUSE] = 2;
-        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_BOUGHT_HOUSE), 0, "at the cap");
-        // MEMORY_COURTED_HOUSE -200: -1 a courtship (the third build, rule 7), the cap at three.
+        // MEMORY_SPLIT_HOUSE -300, as a declared war.
+        g.players[us].ai_memory_count[them][MemoryType::MEMORY_SPLIT_HOUSE] = 1;
+        assert_eq!(term(&g, "split our House"), Some(-2));
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_SPLIT_HOUSE), -1, "the second: -2 to -3");
+        g.players[us].ai_memory_count[them][MemoryType::MEMORY_SPLIT_HOUSE] = 2;
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_SPLIT_HOUSE), 0, "at the cap");
+        // MEMORY_COURTED_HOUSE -200: -1 a point (the fourth build, rule 7), the cap at three.
         assert_eq!(term(&g, "courted our House"), None);
         for (count, want) in [(1, Some(-1)), (2, Some(-2)), (3, Some(-3)), (9, Some(-3))] {
             g.players[us].ai_memory_count[them][MemoryType::MEMORY_COURTED_HOUSE] = count;

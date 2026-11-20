@@ -5,7 +5,7 @@ use super::InfoBase;
 use crate::define_idx;
 use crate::registry::Rd;
 
-define_idx!(/// What a city may channel its culture into (`CULTURALACTION_*`, cultural_actions.jsonc).
+define_idx!(/// What a civilization may channel its culture into (`CULTURALACTION_*`, cultural_actions.jsonc).
 CulturalActionType);
 
 /// When a channel counts as hostile to its target (XML `Hostile`).
@@ -21,12 +21,14 @@ pub enum CultureHostility {
 /// What a channel does (XML `Effect`); the magnitudes are `CULTURE_*` defines.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CultureEffect {
-    /// Revolt pressure on the target's cities: unhappiness, disorder, then the city joins the
-    /// caster.
+    /// A House of another realm: its favour toward the caster, which splits it at the requirement
+    /// (docs/PERSONS.md, "The fourth build", rules 2 to 4).
     #[default]
-    FomentRevolt,
-    /// A chance a turn that a religion of the channelling city spreads to one of the target's
-    /// cities.
+    Court,
+    /// One of the caster's own Houses: every courter's favour at it falls (rule 5).
+    Guard,
+    /// A chance a turn that a religion of the caster's cities spreads to one of the target's
+    /// cities (rule 6).
     SpreadReligion,
 }
 
@@ -50,11 +52,12 @@ pub fn read_cultural_action(rd: &Rd) -> CulturalActionInfo {
         }
     };
     let effect = match rd.string("effect").as_str() {
-        "FOMENT_REVOLT" => CultureEffect::FomentRevolt,
+        "COURT" => CultureEffect::Court,
+        "GUARD" => CultureEffect::Guard,
         "SPREAD_RELIGION" => CultureEffect::SpreadReligion,
         other => {
             rd.cx.warn(format!("{}: unknown Effect {other:?}", base.type_));
-            CultureEffect::FomentRevolt
+            CultureEffect::Court
         }
     };
     CulturalActionInfo { base, hostile, effect }

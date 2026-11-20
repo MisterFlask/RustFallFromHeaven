@@ -46,8 +46,7 @@ pub trait Controller: Send + Sync {
     }
 
     /// This game's governors (docs/GOVERNORS.md): what the governors of player `p`'s governed
-    /// cities do on their own besides production (a human's: their cultural actions), in its
-    /// turn processing.
+    /// cities do on their own besides production, in its turn processing.
     fn govern_cities(&self, _g: &mut Game, _p: PlayerId) {}
 
     /// The research choice of `CvPlayer::chooseTech(0)`: for a human the BUTTONPOPUP_CHOOSETECH

@@ -175,14 +175,14 @@ fn ordered_cities(g: &Game, a: ArmyId) -> Vec<CityId> {
 
 /// Whether city `c` can spare its production for an army: it holds against what threatens its
 /// owner there (a defender at least, and the defense `production::emergency` would not switch to
-/// a defender for), it is not short of the defenders that keep revolt pressure off, and it is not
+/// a defender for), and it is not
 /// training a defender for itself. (A levied city of a House: the House's garrison.)
 fn can_spare(g: &Game, c: CityId) -> bool {
     let p = g.cities[c].owner;
     let plot = g.city_plot(c);
     let (defenders, defense) = crate::production::garrison(g, p, plot);
     let threat = crate::production::local_threat(g, p, plot, 2);
-    if defenders == 0 || defense * 3 / 2 < threat || crate::governor::culture_grave(g, c) {
+    if defenders == 0 || defense * 3 / 2 < threat {
         return false;
     }
     !prod::own_order(g, c).is_some_and(|o| {

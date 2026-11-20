@@ -219,8 +219,8 @@ impl Controller for Ai {
             if !house {
                 crusade::ask_for_loans(g, p);
             }
-            // Houses (docs/PERSONS.md): tribute, a grant, an offer to an enemy's House. A
-            // grant moves a city to a House and an accepted offer makes peace with one: before the
+            // Houses (docs/PERSONS.md): tribute, a grant. A
+            // grant moves a city to a House: before the
             // view of the turn is built.
             persons::turn(g, p);
             // War declarations change the picture.
@@ -234,7 +234,7 @@ impl Controller for Ai {
             governor::turn(self, g, p); // governed cities: priorities, empire orders (docs/GOVERNORS.md)
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)
-            culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
+            culture::turn(g, p); // the civilization's cultural channel (docs/CULTURE.md: Court, Guard, Spread Religion)
             cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
             world_rituals::turn(g, &v); // the civilization's world ritual (docs/CARDS.md)
             lanun_khazad::turn(g, &v); // the Lanun's storm, the Khazad's tunnels (docs/CARDS.md)
@@ -273,13 +273,6 @@ impl Controller for Ai {
     /// What a city's work crews build next (docs/WORKS.md): `workers::choose_crew_build`.
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
         workers::choose_crew_build(g, c)
-    }
-
-    fn govern_cities(&self, g: &mut Game, p: PlayerId) {
-        // The AI's own cities are its play (`play_turn`); a human's governors act here.
-        if g.players[p].human {
-            culture::govern(g, p);
-        }
     }
 
     fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {

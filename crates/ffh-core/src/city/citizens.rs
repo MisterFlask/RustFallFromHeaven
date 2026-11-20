@@ -445,8 +445,6 @@ impl Game {
             unhappiness -= (city.extra_happiness + player.extra_happiness).min(0);
             unhappiness -= self.d.handicaps[self.city_handicap_type(c)].happy_bonus.min(0);
             unhappiness += self.city_vassal_unhappiness(c).max(0);
-            // This game's Incite Unrest (docs/CULTURE.md).
-            unhappiness += self.city_culture_unhappiness(c);
         }
 
         unhappiness.max(0)

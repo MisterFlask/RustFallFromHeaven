@@ -2,16 +2,14 @@
 //! build": Houses as vassal civilizations): the first grant founds a House (its leader drawn from
 //! the free minor leaders, the fallback to the liege's alignment, none free), grants, requests and
 //! loyalty on the attitude scale, every vassal a House, tribute, the levy, breaking away, freeing,
-//! side deals, previews, saves, the Crown's limit and the world unit. Every situation is built by
+//! previews, saves, the Crown's limit and the world unit. Every situation is built by
 //! hand.
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::log::Audience;
 use ffh_core::map::{Map, MapInitData};
 use ffh_core::persons::*;
 use ffh_core::setup::GameSetup;
-use ffh_core::structs::TradeData;
 use ffh_data::*;
 
 const P0: PlayerId = PlayerId(0);
@@ -174,28 +172,6 @@ fn set_house_loyalty(g: &mut Game, h: HouseId, amount: i32) {
 fn in_force(g: &mut Game, h: HouseId, pct: i32) {
     g.houses[h].tribute = pct;
     g.houses[h].tribute_now = pct;
-}
-
-fn gold(data: i32) -> TradeData {
-    TradeData { item_type: TradeableItem::TRADE_GOLD, data, offering: false, hidden: false }
-}
-
-fn item(t: TradeableItem) -> TradeData {
-    TradeData { item_type: t, data: 0, offering: false, hidden: false }
-}
-
-/// `buyer` courts House `h` (the third build, rule 7): a gift of the gold its courtship still
-/// lacks, through a deal (gold given to it), then `PERSON_COURTSHIP_TURNS` game turns pass: its
-/// offers are possible.
-fn court(g: &mut Game, buyer: PlayerId, h: HouseId) {
-    let hp = g.houses[h].player;
-    let need = (g.courtship_requirement() - g.house_courtship_value(h, buyer)).max(1);
-    g.players[buyer].gold += need;
-    g.implement_deal(buyer, hp, &[gold(need)], &[], false);
-    assert!(g.house_courtship_opened(h, buyer).is_some(), "the gift opens the courtship");
-    let t = g.game_turn();
-    g.set_game_turn(t + g.d.defines.person_courtship_turns);
-    assert_eq!(g.house_courtship_refusal(h, buyer), None);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -854,114 +830,6 @@ fn freeing_a_house_ends_the_vassalage_at_peace() {
     let h2 = g.player_house(hp).expect("a House again");
     assert_eq!(g.houses[h2].origin, HouseOrigin::Vassal);
     assert!(mods(&g, h2).contains(&("Sought protection".into(), 2)));
-}
-
-// ---------------------------------------------------------------------------------------------
-// Side deals
-// ---------------------------------------------------------------------------------------------
-
-/// Player 1 under Aristocracy, with House `h` of player 0's at loyalty `amount`.
-fn bribe_world(amount: i32) -> (Game, HouseId) {
-    let World { mut g, a, .. } = world();
-    government(&mut g, "CIVIC_ARISTOCRACY");
-    government_of(&mut g, P1, "CIVIC_ARISTOCRACY");
-    let h = land_house(&mut g, a);
-    set_house_loyalty(&mut g, h, amount);
-    (g, h)
-}
-
-#[test]
-fn a_houses_price_and_its_refusals() {
-    let (mut g, h) = bribe_world(2);
-    let hp = g.houses[h].player;
-    assert_eq!(g.house_state(h), LoyaltyState::Pleased);
-    assert_eq!(g.house_bribe_price(h), None);
-    assert_eq!(g.house_bribe_refusal(h, P1, BribeKind::Secede), Some(format!("{} is Pleased with the Bannor.", g.house_label(h))));
-    assert!(!g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_SECEDE), false));
-    assert_eq!(g.house_bribe_refusal(h, P0, BribeKind::Secede), Some(format!("{} pays its liege by tribute.", g.house_label(h))));
-    // Cautious: (loyalty + 6) x P x its cities (P a share of the world unit, the third build's rule
-    // 8); offers wait for a courtship open 10 turns (rule 7).
-    set_house_loyalty(&mut g, h, -1);
-    assert_eq!(g.house_state(h), LoyaltyState::Cautious);
-    let step = g.house_price_step();
-    assert_eq!(g.house_bribe_price(h), Some(5 * step));
-    assert_eq!(g.house_bribe_terms_refusal(h, P1, BribeKind::Secede), None);
-    assert!(g.house_bribe_refusal(h, P1, BribeKind::Secede).is_some_and(|r| r.starts_with(&format!("Court {} first: ", g.house_label(h)))));
-    assert!(!g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_SECEDE), false), "not before the courtship");
-    court(&mut g, P1, h);
-    assert_eq!(g.house_bribe_refusal(h, P1, BribeKind::Secede), None);
-    assert!(g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_SECEDE), false));
-    // Furious: one step at least (never free: the countdown is the liege's window).
-    set_house_loyalty(&mut g, h, -7);
-    assert_eq!(g.house_bribe_price(h), Some(step));
-    // A House trades nothing else; only gold (and resources, by the ordinary rules) comes to it,
-    // and not from its liege.
-    assert!(!g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_MAPS), false));
-    assert!(!g.player_can_trade_item(P1, hp, &item(TradeableItem::TRADE_OPEN_BORDERS), false));
-    assert!(g.player_can_trade_item(P1, hp, &gold(0), false));
-    assert!(!g.player_can_trade_item(P0, hp, &gold(0), false));
-    assert!(!g.player_can_trade_item(P1, P0, &item(TradeableItem::TRADE_SECEDE), false), "only a House gives it");
-    assert_eq!(house_offer_value(&[gold(100), TradeData { item_type: TradeableItem::TRADE_GOLD_PER_TURN, data: 5, offering: false, hidden: false }]), 100, "gold only");
-}
-
-/// A refused offer leaves no trace (the owner's decision, 2026-11-18): no grudge of the liege, no
-/// `Offered` entry in the House's loyalty, no message.
-#[test]
-fn an_offer_refused_leaves_no_trace() {
-    let (mut g, h) = bribe_world(-1);
-    let hp = g.houses[h].player;
-    g.players[P1].gold = 500;
-    let price = g.house_bribe_price(h).unwrap();
-    let extra = g.players[P0].ai_attitude_extra[P1];
-    let before = mods(&g, h);
-    let messages = g.log.entries.len();
-    // Below the price (and the null controller of this world refuses any offer).
-    assert!(!g.player_offer_house(P1, hp, &[gold(price - 1)], &[item(TradeableItem::TRADE_SECEDE)]));
-    assert!(g.houses.contains(h));
-    assert_eq!(mods(&g, h), before, "no Offered entry");
-    assert_eq!(g.players[P0].ai_attitude_extra[P1], extra, "the liege bears no grudge");
-    assert_eq!(g.log.entries.len(), messages, "no message");
-    assert_eq!(g.players[P1].gold, 500);
-}
-
-#[test]
-fn secede_breaks_away_for_the_buyer() {
-    let (mut g, h) = bribe_world(-1);
-    let hp = g.houses[h].player;
-    court(&mut g, P1, h);
-    g.players[P1].gold = 500;
-    let price = g.house_bribe_price(h).unwrap();
-    let extra = g.players[P0].ai_attitude_extra[P1];
-    g.implement_deal(P1, hp, &[gold(price)], &[item(TradeableItem::TRADE_SECEDE)], false);
-    assert!(!g.houses.contains(h), "broke away");
-    let (t0, t1, ht) = (g.players[P0].team, g.players[P1].team, g.players[hp].team);
-    assert!(g.at_war(t0, ht), "at war with its old liege");
-    assert!(!g.at_war(t1, ht));
-    assert_eq!(g.players[P1].gold, 500 - price);
-    // An accepted offer is noted: the liege is told, an AI liege remembers.
-    assert!(logged(&g, "The Elohim offered "));
-    assert_eq!(g.players[P0].ai_memory_count[P1][MemoryType::MEMORY_BOUGHT_HOUSE], 1, "the liege remembers");
-    assert_eq!(g.players[P0].ai_attitude_extra[P1], extra, "as a memory, not a modifier");
-    // The news names the cities after "taking"; the buyer reads "you".
-    let told = |p: PlayerId, s: &str| g.log.entries.iter().any(|e| e.text.contains(s) && matches!(&e.audience, Audience::Players(l) if l.contains(&p)));
-    assert!(told(P0, ", taking ") && told(P0, ". Bought by the Elohim: war."), "the liege's news");
-    assert!(told(P1, ". Bought by you: war.") && !told(P1, "Bought by the Elohim"), "the buyer's news");
-}
-
-#[test]
-fn become_your_vassal_makes_it_the_buyers_house_and_the_buyer_shares_its_war() {
-    let (mut g, h) = bribe_world(-1);
-    let hp = g.houses[h].player;
-    court(&mut g, P1, h);
-    g.players[P1].gold = 500;
-    let price = g.house_bribe_price(h).unwrap();
-    g.implement_deal(P1, hp, &[gold(price)], &[item(TradeableItem::TRADE_HOUSE_VASSAL)], false);
-    assert!(!g.houses.contains(h));
-    let nh = g.player_house(hp).expect("the buyer's House now");
-    assert_eq!(g.houses[nh].owner, P1);
-    let (t0, t1, ht) = (g.players[P0].team, g.players[P1].team, g.players[hp].team);
-    assert!(g.teams[ht].vassal[t1]);
-    assert!(g.at_war(t0, ht) && g.at_war(t0, t1), "the buyer shares its war with the old liege");
 }
 
 // ---------------------------------------------------------------------------------------------

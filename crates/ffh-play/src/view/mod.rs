@@ -399,14 +399,6 @@ pub fn cities(v: &Viewer) -> Json {
             j.set("automated_production", city.production_automated);
             j.set("food_turns", g.city_food_turns_left(c));
             j.set("disorder", g.city_is_disorder(c));
-            // This game's cultural channel: what the city channels (docs/CULTURE.md).
-            if let Some(ch) = &city.culture_channel {
-                j.set("channel", crate::jobj! {
-                    "action" => Json::idx(ch.action),
-                    "target" => ch.target,
-                    "religion" => Json::opt_idx(ch.religion),
-                });
-            }
         }
         // Houses (docs/PERSONS.md, "UI", parts E and G; rules 1 and 13): a House's city
         // carries its House (`{id, label, colour, liege, state, turns}`, the state and turns for its
@@ -415,15 +407,6 @@ pub fn cities(v: &Viewer) -> Json {
         // Houses.
         if let Some(house) = house_marks::city_map_mark(v, c).or_else(|| house_marks::city_house_field(v, c)) {
             j.set("house", house);
-        }
-        // Revolt pressure on a city the human sees (its banner's mark): its level
-        // (`culture::REVOLT_*`) and the unhappiness it causes.
-        if visible || own {
-            let level = g.cities[c].culture_revolt_level;
-            if level > 0 || g.city_revolt_pressure(c) > 0 {
-                j.set("revolt", level);
-                j.set("unrest", g.city_culture_unhappiness(c));
-            }
         }
         out.push(j);
     }

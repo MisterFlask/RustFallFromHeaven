@@ -1,8 +1,8 @@
 //! The memory of wrongs (the owner's decisions of 2026-11-18; docs/PORTING.md, "Changes from
-//! FFH2"; docs/PERSONS.md, "The second build"): a city taken in battle and a House bought are
-//! remembered, an act against a House by its liege too, a refused offer by no one; a declared war
-//! is remembered once by each player declared on, a House pulled in included; a House takes gold
-//! only. Every situation is built by hand.
+//! FFH2"; docs/PERSONS.md, "The second build" and "The fourth build"): a city taken in battle and a
+//! House split by a rival's courtship are remembered, an act against a House by its liege too; a
+//! declared war is remembered once by each player declared on, a House pulled in included; a House
+//! takes gold, never gold per turn. Every situation is built by hand.
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -17,13 +17,13 @@ const P1: PlayerId = PlayerId(1);
 const P2: PlayerId = PlayerId(2);
 
 const TOOK: MemoryType = MemoryType::MEMORY_TOOK_CITY;
-const BOUGHT: MemoryType = MemoryType::MEMORY_BOUGHT_HOUSE;
+const SPLIT: MemoryType = MemoryType::MEMORY_SPLIT_HOUSE;
 const WAR: MemoryType = MemoryType::MEMORY_DECLARED_WAR;
 
 /// Three civilizations on one block of grassland, all met, no barbarians: the Bannor (player 0)
 /// with its capital at (3, 4) and city `own` at (3, 7); the Elohim (player 1), the Bannor's House
 /// (a vassal by a deal) with cities `a` (9, 4) and `b` (9, 7); the Ljosalfar (player 2) with a
-/// city at (15, 7). The House is Cautious toward its liege: it takes offers.
+/// city at (15, 7). The House is Cautious toward its liege.
 struct World {
     g: Game,
     own: CityId,
@@ -125,44 +125,24 @@ fn a_declared_war_is_remembered_once_by_each_player_declared_on() {
 }
 
 #[test]
-fn a_bought_house_is_remembered_by_its_liege_only() {
+fn a_split_house_is_remembered_by_its_liege_only() {
     let World { mut g, h, .. } = world();
     let hp = g.houses[h].player;
-    // Courted first (docs/PERSONS.md, "The third build", rule 7): a gift that opens the courtship,
-    // then its 10 turns; the liege remembers the courtship too.
-    let need = g.courtship_requirement();
-    g.players[P2].gold = need;
-    g.implement_deal(P2, hp, &[trade(TradeableItem::TRADE_GOLD, need)], &[], false);
-    assert_eq!(memory(&g, P0, P2, MemoryType::MEMORY_COURTED_HOUSE), 1, "the liege remembers the courtship");
-    assert_eq!(memory(&g, hp, P2, MemoryType::MEMORY_COURTED_HOUSE), 0, "the House, given gifts, does not");
+    // The Ljosalfar's favour at the House past its requirement (docs/PERSONS.md, "The fourth
+    // build", rule 4): in its liege's turn, the House splits toward them.
+    let need = 100 * g.house_requirement(h, P2).total;
+    g.houses[h].favour = vec![Favour { courter: P2, amount: 2 * need, warned: false }];
     let t = g.game_turn();
-    g.set_game_turn(t + g.d.defines.person_courtship_turns);
-    let price = g.house_bribe_price(h).expect("Cautious: it takes offers");
-    g.players[P2].gold = price;
-    g.implement_deal(P2, hp, &[trade(TradeableItem::TRADE_GOLD, price)], &[trade(TradeableItem::TRADE_SECEDE, 0)], false);
-    assert!(!g.houses.contains(h), "it seceded");
-    assert_eq!(memory(&g, P0, P2, BOUGHT), 1, "the liege remembers the buyer");
-    assert_eq!(memory(&g, hp, P2, BOUGHT), 0, "the House was paid");
+    g.set_game_turn(t + 1);
+    g.player_persons_turn(P0);
+    assert_eq!(g.house_cities(h).len(), 1, "it split");
+    assert_eq!(memory(&g, P0, P2, SPLIT), 1, "the liege remembers the courter");
+    assert_eq!(memory(&g, hp, P2, SPLIT), 0, "the House does not");
     assert_eq!(g.players[P0].ai_attitude_extra[P2], 0, "no attitude modifier");
 }
 
-/// A refused offer leaves no trace (the owner's decision, 2026-11-18): nothing remembered.
-#[test]
-fn a_refused_offer_is_remembered_by_no_one() {
-    let World { mut g, h, .. } = world();
-    let hp = g.houses[h].player;
-    let price = g.house_bribe_price(h).unwrap();
-    g.players[P2].gold = price;
-    // Below its price (and this world's null controller refuses any offer).
-    assert!(!g.player_offer_house(P2, hp, &[trade(TradeableItem::TRADE_GOLD, price - 1)], &[trade(TradeableItem::TRADE_SECEDE, 0)]));
-    assert!(g.houses.contains(h));
-    for p in [P0, P1] {
-        assert_eq!(memory(&g, p, P2, BOUGHT), 0);
-    }
-}
-
-/// A House takes gold, never gold per turn (the owner's decision, 2026-11-18): it could be paid
-/// for a turn and ended by a war on the seceded House.
+/// A House takes gold, never gold per turn (the owner's decision, 2026-11-18), and nothing but
+/// gifts.
 #[test]
 fn a_house_takes_no_gold_per_turn() {
     let World { mut g, h, .. } = world();
@@ -171,10 +151,8 @@ fn a_house_takes_no_gold_per_turn() {
     let gpt = trade(TradeableItem::TRADE_GOLD_PER_TURN, 5);
     assert!(!g.player_can_trade_item(P2, hp, &gpt, false), "not tradeable with a House");
     assert!(g.player_can_trade_item(P2, hp, &trade(TradeableItem::TRADE_GOLD, 100), false));
-    assert_eq!(house_offer_value(&[trade(TradeableItem::TRADE_GOLD, 100), gpt.clone()]), 100, "worth its gold only");
-    // Offered gold per turn alone at any rate: refused, nothing moves.
-    let get = [trade(TradeableItem::TRADE_SECEDE, 0)];
-    assert!(!g.player_offer_house(P2, hp, &[trade(TradeableItem::TRADE_GOLD_PER_TURN, 1000)], &get));
+    // Offered gold per turn: refused, nothing moves.
+    assert!(!g.player_offer_house(P2, hp, &[trade(TradeableItem::TRADE_GOLD_PER_TURN, 1000)], &[]));
     assert!(g.houses.contains(h));
-    assert_eq!(memory(&g, P0, P2, BOUGHT), 0);
+    assert_eq!(g.players[P2].gold, 1000);
 }

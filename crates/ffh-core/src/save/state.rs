@@ -61,27 +61,26 @@ persist_newtype!(
 
 // ---- Houses (docs/PERSONS.md) ----
 
-use crate::persons::{Courtship, Deed, Demand, DemandKind, Gift, House, HouseOrigin, LoyaltyCause, LoyaltyMod, LoyaltyState, Standing};
-persist_enum!(HouseOrigin { 0 => Founded, 1 => Capitulated, 2 => Vassal, 3 => Split });
+use crate::persons::{Deed, Demand, DemandKind, Favour, House, HouseOrigin, LoyaltyCause, LoyaltyMod, LoyaltyState, Standing};
+persist_enum!(HouseOrigin { 0 => Founded, 1 => Capitulated, 2 => Vassal, 3 => Split, 4 => Courted });
 persist_enum!(LoyaltyState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
 persist_enum!(LoyaltyCause {
     0 => DemandMet, 1 => DemandRefused, 2 => Granted { city }, 3 => GrantedElsewhere { city, house }, 4 => Levied,
-    5 => Capitulated, 6 => SoughtProtection, 7 => Offered { gold, by },
+    5 => Capitulated, 6 => SoughtProtection,
 });
 persist_struct!(LoyaltyMod { cause, amount, until });
 persist_struct!(Standing { mods, state });
 persist_enum!(DemandKind { 0 => GrantCity(plot), 1 => TakeCity(plot), 2 => War(player), 3 => AdoptReligion, 4 => SpreadReligion(plot) });
 persist_struct!(Demand { kind, issued, deadline });
 persist_struct!(Deed { turn, text });
-persist_struct!(Gift { giver, gold, turn });
-persist_struct!(Courtship { giver, opened });
+persist_struct!(Favour { courter, amount, warned });
 persist_struct!(House {
     id, owner, player, origin, name, standing, demand, demand_rest_until, deeds, founded_turn, color, tribute, tribute_now,
     tribute_since, last_gold, last_turn,
     // the third build, part 2A
     refused, contract, ultimatums,
-    // the third build, rule 7
-    gifts, courtships,
+    // the fourth build, rule 2
+    favour,
 });
 // ---- the third build, part 2A: ultimatums and contracts (docs/PERSONS.md, rules 5 and 6) ----
 use crate::persons::{Contract, UltimatumKind};
@@ -92,7 +91,8 @@ persist_enum!(UltimatumKind {
 persist_struct!(Contract { kind, until, deal });
 
 
-use crate::culture::CultureChannel;
+use crate::culture::{ChannelTarget, CultureChannel};
+persist_enum!(ChannelTarget { 0 => House(house), 1 => Player(player) });
 use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Station};
 persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, tactic, tactic_next, unsupplied_turns, domain, station, carried });
 impl Persist for ArmyDomain {
@@ -478,8 +478,7 @@ persist_struct!(City {
     building_happy_change, building_health_change, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
-    ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
-    culture_revolt_level, recruit_default, direct_rule, role, role_overridden,
+    ai_emphasize_avoid_unhealthy_citizens_count, recruit_default, direct_rule, role, role_overridden,
     specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
     garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane,
@@ -537,7 +536,8 @@ persist_struct!(Player {
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
-    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
+    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, culture_channel, culture_inflow,
+    tributes, armies, army_count,
     governor_priorities, once_spells, card_traits, alignment_attitude, research_path,
     world_ritual_completions, world_ritual_refunds, world_spell_casts, tithe_target,
     world_ritual_pending, houses, house_names, house, house_tribute,

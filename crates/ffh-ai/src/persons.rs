@@ -1,64 +1,52 @@
 //! Houses (docs/PERSONS.md; docs/AI.md, "Houses"): the AI of the second build (Houses as vassal
 //! civilizations, rule 12) as the third build left it (rule 11: no persons; the first grant
-//! founds a House). A rules change is not gated on the AI (CLAUDE.md): reasonable first choices,
-//! not measured ones. AI players only: a human's grants, tribute and offers are the human's.
+//! founds a House) and the fourth changed it (rule 9: courting is a cultural channel,
+//! `culture.rs`; no buyer). A rules change is not gated on the AI (CLAUDE.md): reasonable first
+//! choices, not measured ones. AI players only: a human's grants and tribute are the human's.
 //!
 //! Once a turn ([`turn`], after the empire's civics and religion and the turn's diplomacy):
 //! - **Tribute** ([`tribute_for`]): each House's rate set to the highest whose loyalty once in
 //!   force is Pleased with a point to spare (2 or more, [`TRIBUTE_KEEP_LOYALTY`]); lowered as soon
 //!   as the projection at the rate set falls below that. The rate in force lags the rate set (rule
 //!   4: a step every 5 turns), so a cut no longer helps at once: the point to spare is what lets
-//!   the House take a grievance while a cut arrives. So the AI's Houses are not for sale (a House
-//!   Cautious or worse takes a price) and rarely reach an ultimatum. Never above a contract's
-//!   bound (the third build, rule 6). Set only when it changes.
+//!   the House take a grievance while a cut arrives. So the AI's Houses rarely reach an ultimatum,
+//!   and a loyal House is dearer to court (the requirement counts its loyalty). Never above a
+//!   contract's bound (the third build, rule 6). Set only when it changes.
 //! - **Grants** ([`choose_grant`]): one a turn while the Crown is over its limit (rule 14: 3 cities,
 //!   the capital alone for the Kuriotates; settlements never count), the least populous first,
 //!   never the capital nor the best production city ([`kept_city`]), to the House whose capital is
 //!   nearest the city ([`nearest_house`]); with no House, the grant founds one (rule 3; none when
 //!   no leader is free). A grant whose preview makes a House Furious is passed over for the next
 //!   city.
-//! - **Offers** ([`choose_offer`]): at war with a civilization, an offer to one of its Houses that
-//!   is Cautious or worse, at its price ([`Game::house_bribe_price`]), in gold: Become your vassal
-//!   (the cities, their units and a House, the war already on) when the price is at most half the
-//!   treasury, else Secede when it is at most a third; the cheapest House first, one offer a turn,
-//!   the same House again only after [`OFFER_PERIOD`] turns. Through `player_offer_house`, the
-//!   deal path the human's offers take. An offer waits for a courtship open 10 turns (the third
-//!   build, rule 7): without one, the AI courts ([`choose_courtship`]) the House it means to buy,
-//!   one at a time, with a gift of the gold its courtship lacks, within the same budget (the gift
-//!   and the price together at most half its treasury for Become your vassal, a third for Secede).
 //!
 //! Elsewhere: the levy ([`levy_city`]: `armies::requisition_cities` adds the cities of a House
 //! that stays Pleased or better after the levy's `Levied -1`); a direct-rule civic is never
 //! adopted while a House stands ([`civic_barred`], `empire.rs`); an idle army goes to hold the
 //! most valuable city it can hold of a House Annoyed or worse, one step from an ultimatum or under
-//! a contract ([`house_to_hold`]), or of a House Cautious or worse that a rival courts
-//! ([`courted_to_hold`]); [`disloyal_house_post`], `military.rs`, the march [`hold_post`]: a city
+//! a contract ([`house_to_hold`]), or of a House whose strongest rival favour is past half its
+//! requirement ([`courted_to_hold`]: the fourth build, rule 9); [`disloyal_house_post`], `military.rs`, the march [`hold_post`]: a city
 //! where the liege's army units outnumber the House's goes back to the liege when it breaks away,
 //! and holding every city lets the AI refuse an ultimatum); its answer to an ultimatum
 //! ([`consider_ultimatum`]: accept, unless every city of the House would be held or the demand is
 //! war on a civilization of more power than its own: the third build, rule 11); a requested war
 //! weighs on the war planning ([`war_demanded`]); a House's own turn skips what a vassal cannot do
-//! ([`is_house`], `lib.rs`). A House answers offers by the rules' price and accepts any gift
-//! (`diplomacy::judge_offer`). The AI never frees a House.
+//! ([`is_house`], `lib.rs`). A House accepts any gift and nothing else (`diplomacy::judge_offer`).
+//! The AI gives no gifts to court, and never frees a House.
 
 use std::cmp::Reverse;
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::persons::{BribeKind, DemandKind, GrantTo, LoyaltyCause, LoyaltyState, Ultimatum, UltimatumKind, LEVIED, OFFER_NOTED_TURNS, PLEASED_AT, TRIBUTE_MAX, TRIBUTE_STEP};
-use ffh_core::structs::TradeData;
+use ffh_core::persons::{DemandKind, GrantTo, LoyaltyState, Ultimatum, UltimatumKind, LEVIED, PLEASED_AT, TRIBUTE_MAX, TRIBUTE_STEP};
 use ffh_data::*;
 
 use crate::view::View;
-
-/// The turns before the AI offers the same House again.
-pub const OFFER_PERIOD: i32 = 10;
 
 /// The loyalty the AI liege keeps a House at once its tribute is in force: Pleased with a point
 /// to spare (the rate in force lags a cut, rule 4).
 pub const TRIBUTE_KEEP_LOYALTY: i32 = PLEASED_AT + 1;
 
-/// The Houses' turn of AI player `p`: their tribute, one grant, one offer to an enemy's House.
+/// The Houses' turn of AI player `p`: their tribute, one grant.
 pub fn turn(g: &mut Game, p: PlayerId) {
     if g.players[p].human || !g.player_has_houses(p) {
         return;
@@ -70,18 +58,6 @@ pub fn turn(g: &mut Game, p: PlayerId) {
             Ok(h) => crate::trace!(g, p, "houses: {city} granted to {}", g.house_label(h)),
             Err(e) => crate::trace!(g, p, "houses: no grant of {city}: {e}"),
         }
-    }
-    if let Some(offer) = choose_offer(g, p) {
-        let label = g.player_house(offer.house_player).map(|h| g.house_label(h)).unwrap_or_default();
-        let get = [TradeData { item_type: offer.kind.item(), data: 0, offering: false, hidden: false }];
-        let accepted = g.player_offer_house(p, offer.house_player, &offer.give, &get);
-        crate::trace!(g, p, "houses: {} offered to {label} for {} ({})", offer.kind.name(), ffh_core::persons::house_offer_value(&offer.give), if accepted { "accepted" } else { "refused" });
-    } else if let Some((hp, gold)) = choose_courtship(g, p) {
-        // The third build, rule 7: court the House first (a gift of gold, nothing asked back).
-        let label = g.player_house(hp).map(|h| g.house_label(h)).unwrap_or_default();
-        let give = [TradeData { item_type: TradeableItem::TRADE_GOLD, data: gold, offering: false, hidden: false }];
-        let accepted = g.player_offer_house(p, hp, &give, &[]);
-        crate::trace!(g, p, "houses: {label} courted with {gold} gold ({})", if accepted { "accepted" } else { "refused" });
     }
 }
 
@@ -206,136 +182,6 @@ pub(crate) fn war_demanded(g: &Game, p: PlayerId, other: PlayerId) -> bool {
 }
 
 // -------------------------------------------------------------------------------------------
-// Offers to an enemy's Houses
-// -------------------------------------------------------------------------------------------
-
-/// Whether a civilization named `by` offered House `h` a deal in the last [`OFFER_PERIOD`] turns
-/// (the House's loyalty list notes every offer for `OFFER_NOTED_TURNS`).
-fn offered_lately(g: &Game, h: HouseId, by: &str) -> bool {
-    let turn = g.game_turn();
-    g.houses[h].standing.mods.iter().any(|m| matches!(&m.cause, LoyaltyCause::Offered { by: b, .. } if b == by) && m.until.is_some_and(|u| u - OFFER_NOTED_TURNS > turn - OFFER_PERIOD))
-}
-
-/// An offer the AI makes to an enemy's House ([`choose_offer`]).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Offer {
-    /// The House's player.
-    pub house_player: PlayerId,
-    /// What it asks: Become your vassal or Secede.
-    pub kind: BribeKind,
-    /// What `p` gives: gold, the House's price.
-    pub give: Vec<TradeData>,
-}
-
-/// What `p` offers House `h` (of a civilization it is at war with) at its price, if it can pay it
-/// in gold (a House takes gold only): Become your vassal when the price is at most half its
-/// treasury (the gold it keeps left out) and the House would give it, else Secede when it is at
-/// most a third and the House would give it.
-fn offer_for(g: &Game, p: PlayerId, h: HouseId) -> Option<(BribeKind, Vec<TradeData>)> {
-    let price = g.house_bribe_price(h)?;
-    let hp = g.houses[h].player;
-    let item = |item_type: TradeableItem, data: i32| TradeData { item_type, data, offering: false, hidden: false };
-    let treasury = g.players[p].gold - crate::civs::gold_floor(g, p);
-    let gold = item(TradeableItem::TRADE_GOLD, price);
-    let give = if price <= 0 { Vec::new() } else { vec![gold.clone()] };
-    if price > 0 && !g.player_can_trade_item(p, hp, &gold, false) {
-        return None;
-    }
-    let gives = |kind: BribeKind| g.house_bribe_refusal(h, p, kind).is_none() && g.player_can_trade_item(hp, p, &item(kind.item(), 0), false);
-    if price <= treasury / 2 && gives(BribeKind::Vassal) {
-        return Some((BribeKind::Vassal, give));
-    }
-    (price <= treasury / 3 && gives(BribeKind::Secede)).then_some((BribeKind::Secede, give))
-}
-
-/// The offer `p` makes this turn, if any. See the module comment.
-pub fn choose_offer(g: &Game, p: PlayerId) -> Option<Offer> {
-    if g.players[p].human || !g.player_has_houses(p) {
-        return None;
-    }
-    let team = g.players[p].team;
-    let by = g.player_get_civilization_short_description(p);
-    let mut best: Option<((i32, HouseId), Offer)> = None;
-    for q in g.player_ids() {
-        let pl = &g.players[q];
-        if !pl.alive || pl.houses.is_empty() || !g.at_war(team, pl.team) {
-            continue;
-        }
-        for h in houses_of(g, q) {
-            if offered_lately(g, h, &by) {
-                continue;
-            }
-            let Some(price) = g.house_bribe_price(h) else { continue };
-            let Some((kind, give)) = offer_for(g, p, h) else { continue };
-            let key = (price, h);
-            if best.as_ref().map_or(true, |(k, _)| key < *k) {
-                best = Some((key, Offer { house_player: g.houses[h].player, kind, give }));
-            }
-        }
-    }
-    best.map(|(_, offer)| offer)
-}
-
-// ---- The third build, rule 7: courting the House it means to buy -----------------------------
-
-/// The gold `p` still has to give House `h` to open its courtship (0 when it is open): the
-/// requirement less what its gifts count now.
-fn courtship_need(g: &Game, p: PlayerId, h: HouseId) -> i32 {
-    if g.house_courtship_opened(h, p).is_some() {
-        0
-    } else {
-        (g.courtship_requirement() - g.house_courtship_value(h, p)).max(0)
-    }
-}
-
-/// The gift `p` gives this turn to court an enemy's House (its House player and the gold), if any:
-/// the House it means to buy (at war with its liege, Cautious or worse, not offered lately, as
-/// [`choose_offer`] takes them), where the gold its courtship lacks and the House's price together
-/// fit the offer's budget (at most half the treasury when it would give Become your vassal, a third
-/// for Secede); one courtship at a time (a House its gifts already count toward, while it is still
-/// one it would buy; else the cheapest, gift and price together); none while its courtship is open
-/// (the offer waits for its 10 turns, [`choose_offer`]).
-pub fn choose_courtship(g: &Game, p: PlayerId) -> Option<(PlayerId, i32)> {
-    if g.players[p].human || !g.player_has_houses(p) {
-        return None;
-    }
-    let team = g.players[p].team;
-    let by = g.player_get_civilization_short_description(p);
-    let treasury = g.players[p].gold - crate::civs::gold_floor(g, p);
-    let gold = |data: i32| TradeData { item_type: TradeableItem::TRADE_GOLD, data, offering: false, hidden: false };
-    // (key: (not already courted, gift + price, House id), the House, its gift).
-    let mut best: Option<((bool, i32, HouseId), HouseId, i32)> = None;
-    for q in g.player_ids() {
-        let pl = &g.players[q];
-        if !pl.alive || pl.houses.is_empty() || !g.at_war(team, pl.team) {
-            continue;
-        }
-        for h in houses_of(g, q) {
-            if offered_lately(g, h, &by) {
-                continue;
-            }
-            let Some(price) = g.house_bribe_price(h) else { continue };
-            let need = courtship_need(g, p, h);
-            let total = need + price;
-            let terms = |kind: BribeKind| g.house_bribe_terms_refusal(h, p, kind).is_none();
-            if !((total <= treasury / 2 && terms(BribeKind::Vassal)) || (total <= treasury / 3 && terms(BribeKind::Secede))) {
-                continue;
-            }
-            if need > 0 && !g.player_can_trade_item(p, g.houses[h].player, &gold(need), false) {
-                continue;
-            }
-            let courted = g.house_courtship_value(h, p) > 0 || g.house_courtship_opened(h, p).is_some();
-            let key = (!courted, total, h);
-            if best.as_ref().map_or(true, |(k, _, _)| key < *k) {
-                best = Some((key, h, need));
-            }
-        }
-    }
-    let (_, h, need) = best?;
-    (need > 0).then(|| (g.houses[h].player, need))
-}
-
-// -------------------------------------------------------------------------------------------
 // Civics
 // -------------------------------------------------------------------------------------------
 
@@ -385,13 +231,13 @@ pub fn house_to_hold(g: &Game, h: HouseId) -> bool {
     g.houses.contains(h) && g.house_state(h).withholds()
 }
 
-// ---- The third build, rule 11: a courted House held ------------------------------------------
+// ---- The fourth build, rule 9: a courted House held -------------------------------------------
 
-/// Whether the liege of House `h` holds its cities against a rival's courtship (the third build,
-/// rule 11): a rival courts it (its courtship open, or gifts that count toward one) and it is
-/// Cautious or worse (it would take the rival's offer once the courtship allows).
+/// Whether the liege of House `h` holds its cities against a rival's courtship (the fourth build,
+/// rule 9): the strongest rival favour at it is past half its requirement (a split takes the
+/// cities its liege's armies do not hold).
 pub fn courted_to_hold(g: &Game, h: HouseId) -> bool {
-    g.house_state(h) >= LoyaltyState::Cautious && !g.house_courtships(h).is_empty()
+    g.houses.contains(h) && g.house_courtships(h).iter().any(|cv| 2 * cv.favour as i64 > 100 * cv.requirement.total as i64)
 }
 
 /// Where an idle army stack (`grp`, led by `u`) of `v.p` goes to hold the cities of its Houses to
@@ -445,7 +291,7 @@ pub fn hold_post(g: &Game, v: &mut View, grp: GroupId, u: UnitId, mut cities: Ve
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ffh_core::persons::LoyaltyMod;
+    use ffh_core::persons::{LoyaltyCause, LoyaltyMod};
 
     const P0: PlayerId = PlayerId(0);
     const P1: PlayerId = PlayerId(1);
@@ -499,12 +345,8 @@ mod tests {
         }
     }
 
-    fn gold(data: i32) -> TradeData {
-        TradeData { item_type: TradeableItem::TRADE_GOLD, data, offering: false, hidden: false }
-    }
-
-    fn secede() -> TradeData {
-        TradeData { item_type: TradeableItem::TRADE_SECEDE, data: 0, offering: false, hidden: false }
+    fn gold(data: i32) -> ffh_core::structs::TradeData {
+        ffh_core::structs::TradeData { item_type: TradeableItem::TRADE_GOLD, data, offering: false, hidden: false }
     }
 
     /// The city on the plot city `c` stood on (a city changing hands has a new id).
@@ -750,157 +592,60 @@ mod tests {
         assert!(lines.iter().all(|l| l.state_after != Some(LoyaltyState::Furious)), "{k:?} {to:?}: {lines:?}");
     }
 
-    // ---- Offers ----
+    // ---- A courted House ----
 
-    /// `buyer` courts House `h` (the third build, rule 7): a gift of the gold its courtship lacks,
-    /// through the rules' path (the House's AI accepts any gift), then `PERSON_COURTSHIP_TURNS` game
-    /// turns pass: its offers are possible.
-    fn court(g: &mut Game, buyer: PlayerId, h: HouseId) {
-        let hp = g.houses[h].player;
-        let need = courtship_need(g, buyer, h).max(1);
-        g.players[buyer].gold += need;
-        assert!(g.player_offer_house(buyer, hp, &[gold(need)], &[]), "a gift is accepted");
-        assert!(g.house_courtship_opened(h, buyer).is_some());
-        let t = g.game_turn();
-        g.set_game_turn(t + g.d.defines.person_courtship_turns);
-        assert_eq!(g.house_courtship_refusal(h, buyer), None);
-    }
-
-    /// An AI House accepts any gift; it accepts an offer to secede that covers its price (the
-    /// courtship open 10 turns) and refuses one below it.
+    /// The liege holds a House whose strongest rival favour is past half its requirement (the
+    /// fourth build, rule 9); not one courted less.
     #[test]
-    fn an_ai_house_takes_its_price_and_refuses_less() {
+    fn a_courted_house_is_held_past_half_its_requirement() {
         let (mut g, c) = world(&SPOTS[..2]);
         g.player_init_city(P1, 15, 7, true, true);
         let h = house(&mut g, c[1]);
-        let hp = g.houses[h].player;
-        set_loyalty(&mut g, h, 2);
-        assert_eq!(g.house_bribe_price(h), None, "Pleased: no price");
-        g.players[P1].gold = 1000;
-        assert!(!g.player_offer_house(P1, hp, &[gold(900)], &[secede()]));
-        set_loyalty(&mut g, h, -1);
-        let price = g.house_bribe_price(h).expect("Cautious: a price");
-        assert_eq!(price, 5 * g.house_price_step());
-        assert!(!g.player_offer_house(P1, hp, &[gold(price)], &[secede()]), "not before the courtship");
-        court(&mut g, P1, h);
-        set_loyalty(&mut g, h, -1);
-        g.players[P1].gold = 1000;
-        let price = g.house_bribe_price(h).expect("Cautious: a price");
-        assert!(!g.player_offer_house(P1, hp, &[gold(price - 1)], &[secede()]), "below the price");
-        assert!(g.houses.contains(h));
-        assert!(g.player_offer_house(P1, hp, &[gold(price)], &[secede()]), "the price");
-        assert!(!g.houses.contains(h), "broke away");
-        assert_eq!(g.players[P1].gold, 1000 - price);
-        assert!(g.at_war(g.players[P0].team, g.players[hp].team));
-    }
-
-    fn offer(house_player: PlayerId, kind: BribeKind, price: i32) -> Option<Offer> {
-        Some(Offer { house_player, kind, give: vec![gold(price)] })
-    }
-
-    /// At war, the buyer courts the cheapest House it can court and pay (gift and price within its
-    /// budget), not a Pleased one; at peace, none. It gives the gold the courtship lacks, offers
-    /// nothing while the courtship has been open less than 10 turns, keeps to that House (one
-    /// courtship at a time), then offers: Become your vassal with half its treasury, and the House
-    /// breaks away as its House, at war with the old liege.
-    #[test]
-    fn the_buyer_courts_then_offers() {
-        let (mut g, c) = world(&SPOTS[..4]);
-        g.player_init_city(P1, 15, 7, true, true);
-        let h1 = house(&mut g, c[1]);
-        let h2 = house(&mut g, c[2]);
-        let h3 = house(&mut g, c[3]);
-        set_loyalty(&mut g, h1, 0);
-        set_loyalty(&mut g, h2, -3);
-        set_loyalty(&mut g, h3, 2);
-        let step = g.house_price_step();
-        assert_eq!((g.house_bribe_price(h1), g.house_bribe_price(h2), g.house_bribe_price(h3)), (Some(6 * step), Some(3 * step), None));
-        let hp2 = g.houses[h2].player;
-        let need = g.courtship_requirement();
-        let floor = crate::civs::gold_floor(&g, P1);
-        g.players[P1].gold = floor + 2 * (need + 6 * step);
-        assert_eq!((choose_offer(&g, P1), choose_courtship(&g, P1)), (None, None), "at peace");
-        let (t0, t1) = (g.players[P0].team, g.players[P1].team);
-        g.team_declare_war(t1, t0, false, None);
-        assert_eq!(choose_offer(&g, P1), None, "no courtship yet");
-        assert_eq!(choose_courtship(&g, P1), Some((hp2, need)), "the cheapest: gift and price");
-        // Its turn: the gift, accepted; the courtship opens; no offer while it waits.
-        super::turn(&mut g, P1);
-        assert!(g.house_courtship_opened(h2, P1).is_some());
-        assert_eq!(g.players[P0].ai_memory_count[P1][MemoryType::MEMORY_COURTED_HOUSE], 1, "the liege remembers it");
-        assert_eq!((choose_offer(&g, P1), choose_courtship(&g, P1)), (None, None), "it waits 10 turns");
-        // A cheaper House now: it keeps to the one it courts.
-        set_loyalty(&mut g, h1, -5);
-        assert!(g.house_bribe_price(h1) < g.house_bribe_price(h2));
-        assert_eq!(choose_courtship(&g, P1), None, "one courtship at a time");
-        set_loyalty(&mut g, h1, 0);
-        let t = g.game_turn();
-        g.set_game_turn(t + g.d.defines.person_courtship_turns);
-        set_loyalty(&mut g, h2, -3);
-        let price = g.house_bribe_price(h2).unwrap();
-        g.players[P1].gold = floor + 2 * price;
-        assert_eq!(choose_offer(&g, P1), offer(hp2, BribeKind::Vassal, price), "its courtship allows it");
-        super::turn(&mut g, P1);
-        assert!(!g.houses.contains(h2), "its record with the old liege ended");
-        let nt = g.players[hp2].team;
-        assert!(g.teams[nt].vassal[t1], "the buyer's vassal");
-        assert_eq!(g.player_house(hp2).map(|h| g.houses[h].owner), Some(P1), "a House of the buyer's");
-        assert!(g.at_war(t0, nt) && !g.at_war(t1, nt));
-        assert_eq!(g.players[P1].gold, floor + price);
-    }
-
-    /// The buyer asks Become your vassal when the price is at most half its treasury, else Secede
-    /// when it is at most a third; when it cannot take a vassal, Secede at a third. The courtship's
-    /// gift counts in the same budget.
-    #[test]
-    fn the_buyer_asks_become_your_vassal_with_half_its_treasury() {
-        let (mut g, c) = world(&SPOTS[..2]);
-        g.player_init_city(P1, 15, 7, true, true);
-        let h = house(&mut g, c[1]);
-        set_loyalty(&mut g, h, -3);
-        let hp = g.houses[h].player;
-        let price = 3 * g.house_price_step();
-        assert_eq!(g.house_bribe_price(h), Some(price));
-        let (t0, t1) = (g.players[P0].team, g.players[P1].team);
-        g.team_declare_war(t1, t0, false, None);
-        let floor = crate::civs::gold_floor(&g, P1);
-        // Courting: the gift and the price within half the treasury (or a third for Secede).
-        let need = g.courtship_requirement();
-        g.players[P1].gold = floor + 2 * (need + price);
-        assert_eq!(choose_courtship(&g, P1), Some((hp, need)));
-        g.players[P1].gold = floor + 2 * (need + price) - 1;
-        assert_eq!(choose_courtship(&g, P1), None, "half of it does not, nor a third");
-        court(&mut g, P1, h);
-        set_loyalty(&mut g, h, -3);
-        let price = g.house_bribe_price(h).unwrap();
-        g.players[P1].gold = floor + 2 * price;
-        assert_eq!(choose_offer(&g, P1), offer(hp, BribeKind::Vassal, price), "half of the treasury pays it");
-        g.players[P1].gold = floor + 2 * price - 1;
-        assert_eq!(choose_offer(&g, P1), None, "half of it does not, nor a third");
-        // A buyer that cannot take a vassal (no vassal states): Secede, with a third.
-        g.setup.options[GameOptionType::GAMEOPTION_NO_VASSAL_STATES] = true;
-        assert!(g.house_bribe_refusal(h, P1, BribeKind::Vassal).is_some());
-        g.players[P1].gold = floor + 3 * price;
-        assert_eq!(choose_offer(&g, P1), offer(hp, BribeKind::Secede, price), "a third of the treasury pays it");
-        g.players[P1].gold = floor + 3 * price - 1;
-        assert_eq!(choose_offer(&g, P1), None);
-    }
-
-    /// The liege holds a House a rival courts (its courtship open or building) while it is Cautious
-    /// or worse; not a Pleased one, nor one no one courts.
-    #[test]
-    fn a_courted_house_is_held_when_cautious_or_worse() {
-        let (mut g, c) = world(&SPOTS[..2]);
-        g.player_init_city(P1, 15, 7, true, true);
-        let h = house(&mut g, c[1]);
-        let hp = g.houses[h].player;
-        set_loyalty(&mut g, h, -1);
         assert!(!courted_to_hold(&g, h), "no one courts it");
-        g.players[P1].gold += 5;
-        assert!(g.player_offer_house(P1, hp, &[gold(5)], &[]));
-        assert!(courted_to_hold(&g, h), "a courtship building");
-        set_loyalty(&mut g, h, 1);
-        assert!(!courted_to_hold(&g, h), "Pleased");
+        let need = 100 * g.house_requirement(h, P1).total;
+        g.houses[h].favour = vec![ffh_core::persons::Favour { courter: P1, amount: need / 2, warned: false }];
+        assert!(!courted_to_hold(&g, h), "half: not yet");
+        g.houses[h].favour[0].amount = need / 2 + 1;
+        assert!(courted_to_hold(&g, h), "past half");
+    }
+
+    /// A gift to a House is an ordinary gift (the fourth build, rule 3): its leader's relation
+    /// toward the giver gains the `gifts` term, and the attitude it raises lowers the requirement
+    /// of the giver's courtship.
+    #[test]
+    fn a_gift_raises_the_house_leaders_attitude() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        g.player_init_city(P1, 15, 7, true, true);
+        let h = house(&mut g, c[1]);
+        let hp = g.houses[h].player;
+        let before = g.house_requirement(h, P1);
+        let relation = crate::diplomacy::relation(&g, hp, P1);
+        g.players[P1].gold = 5000;
+        for _ in 0..3 {
+            assert!(g.player_offer_house(P1, hp, &[gold(1000)], &[]), "a gift");
+        }
+        let parts = crate::diplomacy::relation_parts(&g, hp, P1);
+        assert!(parts.iter().any(|&(why, n)| why == "gifts" && n > 0), "{parts:?}");
+        assert!(crate::diplomacy::relation(&g, hp, P1) > relation);
+        let after = g.house_requirement(h, P1);
+        assert!(after.attitude >= before.attitude, "{before:?} {after:?}");
+        assert_eq!(after.total, (after.loyalty + 6 - 2 * after.attitude).max(1) * after.unit);
+        if after.attitude > before.attitude {
+            assert!(after.total < before.total, "a better attitude, a lower requirement");
+        }
+    }
+
+    /// A House accepts any gift (and nothing else: it trades only gifts).
+    #[test]
+    fn an_ai_house_accepts_any_gift() {
+        let (mut g, c) = world(&SPOTS[..2]);
+        g.player_init_city(P1, 15, 7, true, true);
+        let h = house(&mut g, c[1]);
+        let hp = g.houses[h].player;
+        g.players[P1].gold = 100;
+        assert!(g.player_offer_house(P1, hp, &[gold(5)], &[]), "a gift");
+        assert_eq!((g.players[P1].gold, g.players[hp].gold >= 5), (95, true));
+        assert!(!g.player_offer_house(P1, hp, &[gold(5)], &[gold(1)]), "not a gift");
     }
 
     // ---- Civics ----

@@ -11,7 +11,8 @@ rule 11's answer to an ultimatum and the hold-march's trigger) and part 2B (rule
 courtship, the price on the world unit, shared knowledge, gold tribute, with rule 11's buyer and
 courted House): the third build is built.** **The fourth build (2026-11-20) makes courting a
 cultural channel: a civilization channels its culture to court a rival's House, and a courtship
-that succeeds splits it; it is being built.** The owner's concept and decisions of 2026-11-18 to
+that succeeds splits it; part 1 (rules 1 to 9: the rules, the AI, the read API) is built, part 2
+(rule 10: the screens) is being built.** The owner's concept and decisions of 2026-11-18 to
 2026-11-20; the numbers are
 first guesses. "Open points" says which rules are the owner's decisions and which are proposals
 still to be confirmed.
@@ -26,7 +27,7 @@ still to be confirmed.
 | 5 | the annals: what each character did in the player's earlier games | not built |
 | second build | Houses as vassal civilizations, rules 1 to 14 below | built (2026-11-18): the rules (ffh-core), the AI (rule 12, `crates/ffh-ai/src/persons.rs`) and the screens (rule 13: the Court, the grant list, the levy, diplomacy, the map's plates) |
 | third build | Houses without Persons of Note: the first grant founds, splits, ultimatums and contracts, courtship, the world unit, shared knowledge, gold tribute (rules 1 to 12 below) | built (2026-11-19). Part 1: the persons removed, the first grant founds, requests, the world unit (rules 1 to 3 and 9, and rule 11's grants; "The third build as built, part 1" below). Part 2A: splits, ultimatums and contracts (rules 4 to 6, and rule 11's answer and hold-march; "... part 2A" below). Part 2B: courtship, the price on the world unit, shared knowledge, gold tribute (rules 7, 8 and 10, and rule 11's buyer and courted House; "... part 2B" below) |
-| fourth build | Courting is a cultural channel: a civilization's channel (Court, Guard, Spread Religion), favour and its sliding requirement, the split toward the courter; revolt and side deals retired (rules 1 to 10 below) | being built (2026-11-20) |
+| fourth build | Courting is a cultural channel: a civilization's channel (Court, Guard, Spread Religion), favour and its sliding requirement, the split toward the courter; revolt and side deals retired (rules 1 to 10 below) | part 1 built (2026-11-20: rules 1 to 9, "The fourth build as built, part 1" below); part 2 (rule 10, the screens) being built |
 
 **"The fourth build" (2026-11-20, below) is the contract in force where it reaches (courting,
 culture); "The third build" (2026-11-19) for the rest, its parts 1, 2A and 2B built (their "as
@@ -166,6 +167,184 @@ build stands.**
       courtship of it.
     - Keywords `Court` and `Guard` (their reminders: what favour is, what the requirement reads,
       what a split takes; what a guard does).
+
+### The fourth build as built, part 1 (2026-11-20)
+
+Rules 1 to 9 are built, with the read API the screens of rule 10 (part 2) take
+(`crates/ffh-core/src/culture.rs`, `persons/favour.rs`, `persons/gifts.rs`,
+`persons/world_unit.rs`; tests `crates/ffh-core/tests/culture.rs`, `persons_courtship.rs`,
+`memory.rs`; the AI `crates/ffh-ai/src/culture.rs`, `persons.rs`). Save format 56. Where the build
+settles what the rules left open:
+
+1. *As built (the channel):* `Player::culture_channel: Option<CultureChannel { action, target:
+   ChannelTarget, religion, since_turn }>`, `ChannelTarget::House(HouseId)` (Court, Guard) or
+   `ChannelTarget::Player(PlayerId)` (Spread Religion). One check (`culture_channel_check(p,
+   &ChannelOrder) -> Result<(), String>`, the refusal in the screen's words: `Court and Guard take
+   a House.`, `House Aldric is of your realm.`, `You have not met House Aldric.`, `A vassal cannot
+   have vassals.`, `House Aldric is not your House.`, `House Aldric is out of reach: 23 plots from
+   your nearest city, 20 at most.`, `Choose a religion.`, `None of your cities has that
+   religion.`, `None of their cities is within reach.`, `None of their cities in reach can take
+   it: ...`, `Only a civilization that can have Houses channels its culture.`) and one setter
+   (`player_set_culture_channel(p, Option<ChannelOrder>)`; the same order again keeps its start
+   turn). The diversion: `city_culture_diverted_times100(c)` = `CULTURE_CHANNEL_PERCENT` of
+   `city_commerce_rate_times100(c, culture)` while its owner has a channel, 0 in disorder; read in
+   `city_do_culture` (the city's culture misses it) and in `city_do_turn` (the plots get
+   `(rate − diverted) / 100` whole culture). The inflow (`Player::culture_inflow`, hundredths) is
+   counted from 0 at the start of the player's city turns (`player_culture_channel_turn_start`,
+   which also ends a channel the check now refuses, `Channel ended: Court House Aldric. House
+   Aldric is gone.` to the caster) and added to by each city (`city_divert_culture`); the turn's
+   last step (`player_do_culture_channel`, after the cities) rolls a spread and leaves the grudge.
+   A switch of channel is free and keeps no inflow of its own: the next liege turn credits the
+   new channel with what the cities diverted last (one turn's overlap at most). The screens and
+   the predictions read the inflow at the cities' culture now (`player_culture_inflow_now`); the
+   rules read the stored one. Reach: `culture_city_distance(from, city)` (from the nearest city of
+   `from`), `culture_reach_to(from, cities)` and `culture_house_reach(from, h)` (nearest to
+   nearest), `Reach { distance, effect }`. Messages: to the target on start and stop (`The Sheaim
+   court House Aldric.`, `The Sheaim no longer court House Aldric.`; Spread Religion into a foreign
+   civilization `The Sheaim channel their culture into Spread Religion (Octopus Overlords) at
+   us.`); a Guard's liege is its caster, told nothing but an ending's reason. Telemetry
+   `culture_channel` / `culture_channel_end` by action (the target: a House's player).
+2. *As built (favour):* `House::favour: Vec<Favour { courter, amount (hundredths), warned }>`, in
+   courter order, stepped last in the liege's House turn (`player_persons_favour` in place of the
+   courtships): the courters are those it keeps a favour toward and every civilization whose Court
+   channel runs at it; each gains `inflow × reach / 100` (its stored inflow, while its Court runs at
+   the House), loses the guard's, fades (`favour_step`: `CULTURE_FAVOUR_FADE_PERCENT`, at least a
+   hundredth, at least 0). An entry goes when its courter is dead or of the House's or its liege's
+   team, and when it is 0 with no Court running. The notice at two thirds (`House Aldric: the
+   Sheaim's favour is 130 of 188.` to the liege, `House Aldric: your favour is 130 of 188.` to the
+   courter) is told when it is first reached; `warned` clears below half, so a favour hovering at
+   two thirds is told once.
+3. *As built (the requirement):* `house_requirement(h, courter) -> Requirement { total, loyalty,
+   attitude, unit }` (pure; total in culture), A by `attitude_step(player_ai_get_attitude(House's
+   player, courter, true))`. `world_culture_unit()` (`world_unit.rs`): the median of
+   `player_get_commerce_rate(p, culture)` (it counts what a channel diverts) over
+   `player_has_houses`, the lower middle of an even count, at least 1. Gifts: `player_offer_house`
+   takes only a gift now (nothing asked back) and implements it as a proposed deal
+   (`implement_proposal`): the gift is recorded on the House (`Player::tributes`), so the AI's
+   `gifts` relation raises the House leader's attitude toward the giver, and A follows. Nothing
+   else counts it.
+4. *As built (the split):* the first courter in order at the requirement, one split a House a
+   turn (`house_courted_split`). The cities (`house_split_toward(h, courter) -> SplitView { whole,
+   going, held }`, pure): all but the House's seat, by (distance to the courter's nearest city,
+   city id), the first `max(1, n / 2)` of its `n` cities; a House of one city whole; the hold
+   contest (`city_held_by_army`) sorts them into going and held. Every one held: nothing goes, the
+   favour is 0 (`The Sheaim's courtship of House Aldric fails: your armies hold Corona.` / `Your
+   courtship of House Aldric fails: the Bannor's armies hold Corona.`; `house_split` `courted_held`).
+   The new House: `player_found_house_as(courter, the House's civilization, house_leader_draw(that
+   civilization, courter), going (the most populous first), HouseOrigin::Courted)`; its name the
+   courter's next House name, its techs the courter's (the birth's parent), the realm shares the
+   rest; `world::birth` releases the House's cities as a grant's (its garrison with them). No
+   leader free: no split, the liege and the courter told on the turn the favour reached the
+   requirement (`House Aldric would split toward the Sheaim: no leader is free.`), the favour kept;
+   `house_split` `courted_no_leader`. A House of one city whole (`house_join_whole`): its vassalage
+   ends at peace (the record ends), it makes peace with the wars it had as its liege's House that
+   the courter does not share (else the vassal rules would drag the courter into them), and it
+   becomes the courter's vassal: a new record, origin `Courted`, its name kept, no modifier, the
+   courter's default tribute; `house_split` `courted_whole`. A House's label is now its player's
+   name (`player_house_name`), so a House that went whole keeps it whatever its origin. After a
+   split: `MEMORY_SPLIT_HOUSE` (the liege toward the courter), the courter's favour 0, units left in
+   a city that changed hands moved where they may stand (`map_verify_unit_valid_plot`). The hold
+   lines: `Corona stays with House Aldric: your army's 4 units outnumber its 2.`, `Ventry goes to
+   the Sheaim: its 3 units against your army's 2.` The record: the new House `Split from House
+   Aldric of the Bannor, led by Tovin Cinderwright, with Ventry and Corona.`, the old `Split: Ventry
+   and Corona went to the Sheaim as House Bertram.` The House card's origin line `Courted away on
+   turn 140.` Telemetry `house_split` `courted`.
+5. *As built (Guard):* `house_guard_loss(h, live)`: the liege's Guard channel at the House, its
+   inflow times its reach (the liege's nearest city to the House's), taken from every courtship in
+   the step before the fade.
+6. *As built (Spread Religion):* `culture_spread_reach(caster, target, religion, inflow)`: each of
+   the target's cities in reach, its distance from the caster's nearest city (a city of the caster
+   itself is 0: in full), its chance `inflow × CULTURE_SPREAD_PER_CULTURE × effect / 10000 / (1 +
+   religions there)`; `culture_spread_chance` caps the sum. The roll, the pick by the cities'
+   chances, the spread as a missionary's and the memories as before, in the caster's turn after its
+   cities (with that turn's inflow). The channel ends at the next turn's start when no city in
+   reach can take the religion.
+7. *As built (the grudge):* in the caster's turn (`player_do_culture_channel`): a point of
+   `MEMORY_COURTED_HOUSE` toward the caster when `turn − since_turn` is a positive multiple of
+   `CULTURE_COURT_MEMORY_TURNS`, while the liege's count is below `CULTURE_MEMORY_MAX` (8).
+8. *As built (what goes):* `CULTURALACTION_FOMENT_REVOLT` and its text, the effect
+   `FOMENT_REVOLT`, the `CULTURE_REVOLT_*` defines and `CULTURE_AI_MAX_HOSTILE_PER_TARGET`, the
+   city fields `culture_channel`, `culture_diverted`, `culture_pressure`, `culture_revolt_level`,
+   the revolt pressure, its unhappiness (and its step on the city screen's unhappiness list), the
+   revolt levels, the flip and their news, `city_revolt_resistance` / `_pressure` / `_leader`,
+   `culture_garrison_count`, `city_culture_lost`, telemetry `culture_revolt`; the courtship by
+   gifts (`courtship.rs`, `House::gifts`, `House::courtships`, `Gift`, `Courtship`,
+   `PERSON_COURTSHIP_TURNS`, `COURTSHIP_*`), the price (`PRICE_PERCENT_OF_UNIT`,
+   `house_price_step`, `house_bribe_price`), the side deals (`bribes.rs`: `BribeKind`,
+   `house_item`, `house_offer_value`, `house_bribe_refusal` / `_terms_refusal`, `house_trade`,
+   `house_note_offer`, `LoyaltyCause::Offered`, `OFFER_NOTED_TURNS`, `Why::Bribe`), telemetry
+   `house_bribe` and `house_courtship`. The trade items `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL`
+   are removed from the enum (they were the last members: `tools/gen_enums.py`'s
+   `EXTRA_MEMBERS`, `TradeableItem::NUM` 17). `MEMORY_BOUGHT_HOUSE` is renamed `MEMORY_SPLIT_HOUSE`
+   in place (`memories.jsonc`, `TXT_KEY_MEMORY_SPLIT_HOUSE` "You split our House!", every leader's
+   memory data, the two generated minor-leader files, the generated `MemoryType`). `bribes.rs` is
+   `gifts.rs`: `house_gift_refusal` (the former `house_courter_refusal`), the trade rule (a House
+   gives nothing; takes gold, not per turn, and resources, from one who may give it gifts) and
+   `player_offer_house` (a gift only).
+9. *As built (the AI):* `ffh-ai/src/culture.rs` is the civilization's one channel (`turn`,
+   `choose`): nothing while it pursues a cultural victory; else Guard (`guard_choice`: a House of
+   ours whose strongest rival favour is past half its requirement or would reach it within 20
+   turns at the inflows now without our guard, the soonest first; a standing guard of a House still
+   pressed is kept); else the best of Court (`court_value`: the split's going cities at the revolt
+   AI's `city_worth`, `100 × worth / (turns + 5)` hundredths of a commerce a turn, turns from the
+   rules' prediction `house_courtship_at` at our inflow now, at most 60; scaled by the leader's
+   aggression; `spared` as the revolt AI's) and Spread Religion (the per-city channels' values at
+   the civilization's inflow); against the cost of the culture (`cost`: each city's half, all of a
+   commerce while its borders grow, half after). A standing channel is kept while worth 70% of the
+   best and of its cost; a new one must beat the standing one by a quarter, and its cost by a
+   quarter. Beyond the contract, two dampers the first games asked for: a channel stands its first
+   5 turns (`MIN_TURNS`; a guard of a pressed House overrides it), and a guard is kept while its
+   House is still pressed by a looser measure (`still_pressed`: a rival favour past a quarter of the
+   requirement, or reaching it within 40 turns); without them the lieges and the courters chased
+   each other every turn (74 to 323 channels set a game, against 66 to 87 with them; docs/AI.md,
+   "Cultural actions"). Gone: the revolt simulation, the defenders against revolt (`defenders_needed`, the
+   governor's `culture_grave`, `armies::can_spare`'s check), `flips_against` and its provocation in
+   `territory_check`, the human governors' `govern` hook. `ffh-ai/src/persons.rs`: the buyer
+   (`choose_offer`, `choose_courtship`, `offer_for`, `Offer`, `OFFER_PERIOD`) is gone;
+   `courted_to_hold` reads favour (the strongest rival favour past half its requirement); a House
+   accepts any gift and nothing else (`diplomacy::judge_offer`: `a House takes gifts only`). The
+   relation term of `MEMORY_SPLIT_HOUSE` is `split our House` (-2 a split, FfH's -300).
+
+The read API (pure; for part 2's screens):
+- `culture_channel_preview(p, &ChannelOrder) -> ChannelPreview { order, refusal, inflow, reach,
+  effect, line }`, `effect` one of `ChannelEffect::Court(CourtshipView)` (the courtship as the order
+  would run it), `Guard(GuardView)`, `Spread { chance, cities: Vec<ChannelReach> }`, `None`; `line`
+  `Favour 0 of 188, a split in ~31 turns (Ventry, Corona).`, `Guarded: −6 a turn to each
+  courtship.`, `12% a turn (3 cities in reach can take it).`
+- `culture_channel_options(p, action, religion) -> Vec<ChannelOption { target, label, line,
+  refusal }>`: Court, every House of another realm the caster has met; Guard, its Houses; Spread
+  Religion, every civilization it has met with a city, its own included.
+- `house_courtships(h) -> Vec<CourtshipView>` (also `HouseView::courtships`): `{ house, courter,
+  favour, gain, reach, guard, requirement: Requirement { total, loyalty, attitude, unit }, settles,
+  turns: Option<i32>, split: Option<SplitView { whole, going, held }>, attention, summary, line }`,
+  `line` `Courted by the Sheaim: favour 80 of 188, a split in ~12 turns (Ventry, Corona).`
+  (`settling near 120` when it never splits, `fading` with no Court running; `(Ventry; held:
+  Corona)`). `house_courtship_view(h, courter)`, `house_courtship_at(h, courter, gain)`,
+  `house_courters(h)`, `house_favour(h, courter)`.
+- `house_guard_view(h) -> Option<GuardView>` (also `HouseView::guard`) and `house_guard_with(h,
+  inflow)`: `{ house, guard, reach, inflow, loss, courtships: Vec<GuardedCourtship { courter,
+  favour, gain, settles_with, settles_without, turns_with, turns_without }>, line }`.
+- `house_courting_line(h, giver)`: the courter's own line (`Your courtship of House Aldric: favour
+  80 of 188, a split in ~12 turns (Ventry, Corona).`), in the trade table and the diplomacy list.
+- `culture_channels()`, `culture_channel_visible(team, caster)`, `culture_channels_between_others
+  (team)`; `culture_channel_name(&order)` (`Court House Aldric`, `Spread Religion (Octopus
+  Overlords) to the Sheaim`); `world_culture_unit()`; `favour_step`, `favour_turns`,
+  `favour_settles` (the one arithmetic the rules and the predictions share).
+- The command `culture_channel {action?, target?, religion?}` (ffh-play): `target` the House's
+  player for Court and Guard (refused as invalid when that player is no House), a player for Spread
+  Religion; no action stops; a refusal is the rules' reason.
+
+ffh-play, part 1's share (part 2 rebuilds the rest): the `culture` query is a plain reading
+(`{ours, aimed, others, inflow, memories, memory_max}`, each channel `{caster, action, religion,
+target, since_turn, name, hostile}` and for the human's own and those aimed at it `inflow`,
+`inflow_last`, `line`); the city query's `cultural` is `{rate, diverted, channel}`; the view's
+cities lost `channel`, `revolt` and `unrest`; the static data's cultural actions carry `effect`
+`court`, `guard`, `spread_religion`; a House's trade table has no `they_give`, the `house` part
+`{id, label, liege, liege_name, colour, own, trades_through, liege_contact, line, courting}`; the
+diplomacy list's `house_offer` is `{state, courting}`; the House card has no `price` or
+`price_refusal`, and a `guard`; the stage's courtships are the rules' Court channels (the
+neighbour's favour at House `pleased` set past two thirds by hand) and a gift. The tests reading
+the retired screens are gone (`culture_predictions.rs`, the offers' and the price's).
 
 ## The third build (2026-11-19): Houses without Persons of Note
 

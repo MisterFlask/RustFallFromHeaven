@@ -183,7 +183,13 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 55: courtship and gold tribute (docs/PERSONS.md, "The third build", rules 7 and 10):
 ///   `House::gifts`, `courtships`; no `House::last_research`; `MEMORY_COURTED_HOUSE` lengthens each
 ///   `Player::ai_memory_count` row (`MemoryType::NUM` 39).
-pub const FORMAT_VERSION: u32 = 55;
+/// - 56: courting is a cultural channel (docs/PERSONS.md, "The fourth build"): the civilization's
+///   channel (`Player::culture_channel`, `culture_inflow`; `CultureChannel::target` a
+///   `ChannelTarget`), `House::favour` in place of `gifts` and `courtships`,
+///   `HouseOrigin::Courted`; no `City::culture_channel`, `culture_diverted`, `culture_pressure`,
+///   `culture_revolt_level`, no `LoyaltyCause::Offered`; `MEMORY_BOUGHT_HOUSE` renamed
+///   `MEMORY_SPLIT_HOUSE`; `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL` gone (`TradeableItem::NUM` 17).
+pub const FORMAT_VERSION: u32 = 56;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

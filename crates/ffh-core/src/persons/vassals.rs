@@ -152,7 +152,7 @@ impl Game {
         let start = match origin {
             HouseOrigin::Capitulated => Some((LoyaltyCause::Capitulated, CAPITULATED)),
             HouseOrigin::Vassal => Some((LoyaltyCause::SoughtProtection, SOUGHT_PROTECTION)),
-            HouseOrigin::Founded | HouseOrigin::Split => None,
+            HouseOrigin::Founded | HouseOrigin::Split | HouseOrigin::Courted => None,
         };
         if let Some((cause, (amount, turns))) = start {
             standing.mods.push(LoyaltyMod { cause, amount, until: Some(turn + turns) });
@@ -177,15 +177,14 @@ impl Game {
             refused: None,
             contract: None,
             ultimatums: 0,
-            gifts: Vec::new(),
-            courtships: Vec::new(),
+            favour: Vec::new(),
         });
         self.players[owner].houses.push(h);
         self.players[hp].house = Some(h);
         let label = self.house_label(h);
         let civ = self.player_get_civilization_short_description(owner);
         let deed = match origin {
-            HouseOrigin::Founded | HouseOrigin::Split => format!("A House of the {civ}."),
+            HouseOrigin::Founded | HouseOrigin::Split | HouseOrigin::Courted => format!("A House of the {civ}."),
             HouseOrigin::Capitulated => format!("Capitulated to the {civ}."),
             HouseOrigin::Vassal => format!("Became a vassal of the {civ}."),
         };
@@ -195,7 +194,7 @@ impl Game {
         self.houses[h].standing.state = state;
         let what = match origin {
             HouseOrigin::Capitulated => "capitulated",
-            HouseOrigin::Vassal | HouseOrigin::Founded | HouseOrigin::Split => "vassal",
+            HouseOrigin::Vassal | HouseOrigin::Founded | HouseOrigin::Split | HouseOrigin::Courted => "vassal",
         };
         if !origin.founded() {
             self.house_msg(h, || format!("{label} is your House: {}.", if origin == HouseOrigin::Capitulated { "it capitulated" } else { "it became your vassal" }));

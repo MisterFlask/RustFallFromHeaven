@@ -40,10 +40,11 @@ pub enum Command {
     PushOrder { city: CityId, order: OrderType, data: i32, alt: bool, shift: bool, ctrl: bool },
     PopOrder { city: CityId, index: i32 },
     DoTask { city: CityId, task: TaskType, data1: i32, data2: i32, option: bool, alt: bool, shift: bool, ctrl: bool },
-    /// This game's cultural channel (docs/CULTURE.md): city `city` channels `action` (with
-    /// `religion` for Spread Religion) into civilization `target` from now on; no `action`: it
-    /// channels nothing.
-    CultureChannel { city: CityId, action: Option<CulturalActionType>, target: Option<PlayerId>, religion: Option<ReligionType> },
+    /// This game's cultural channel (docs/CULTURE.md; docs/PERSONS.md, "The fourth build", rule 1):
+    /// the civilization channels `action` from now on, into `target` (the House's player for Court
+    /// and Guard, a civilization for Spread Religion, with `religion`); no `action`: it channels
+    /// nothing.
+    CultureChannel { action: Option<CulturalActionType>, target: Option<PlayerId>, religion: Option<ReligionType> },
     /// This game's armies (docs/ARMIES.md): form a new army of the units (on one plot).
     ArmyForm { units: Vec<UnitId> },
     /// Split the units off their army into a new one.
@@ -515,7 +516,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("push_order", &["city", "order", "data", "alt", "shift", "ctrl"]),
     ("pop_order", &["city", "index"]),
     ("do_task", &["city", "task", "data1", "data2", "option", "alt", "shift", "ctrl"]),
-    ("culture_channel", &["city", "action", "target", "religion"]),
+    ("culture_channel", &["action", "target", "religion"]),
     ("army_form", &["units"]),
     ("army_split", &["units"]),
     ("army_join", &["units", "army"]),
@@ -828,7 +829,6 @@ impl Command {
                 }
             }
             "culture_channel" => Command::CultureChannel {
-                city: j.req("city")?,
                 action: names::opt_field(d, j, "action")?,
                 target: j.opt("target")?,
                 religion: names::opt_field(d, j, "religion")?,
@@ -959,9 +959,7 @@ impl Command {
                 .with("alt", *alt)
                 .with("shift", *shift)
                 .with("ctrl", *ctrl),
-            Command::CultureChannel { city, action, target, religion } => {
-                j.with("city", *city).with("action", Json::opt_idx(*action)).with("target", *target).with("religion", Json::opt_idx(*religion))
-            }
+            Command::CultureChannel { action, target, religion } => j.with("action", Json::opt_idx(*action)).with("target", *target).with("religion", Json::opt_idx(*religion)),
             Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => j.with("units", ids(units)),
             Command::ArmyJoin { units, army } => j.with("units", ids(units)).with("army", *army),
             Command::ArmyRename { army, name } => j.with("army", *army).with("name", name.as_str()),
@@ -1049,15 +1047,9 @@ impl Command {
             }
             Command::PushOrder { city, order, data, .. } => format!("city {} {} {}", city.0, names::name(d, *order), data),
             Command::DoTask { city, task, data1, data2, option, .. } => format!("city {} {} ({data1}, {data2}, {option})", city.0, names::name(d, *task)),
-            Command::CultureChannel { city, action, target, religion } => match (action, target) {
-                (Some(a), Some(t)) => format!(
-                    "city {} channels {} into player {}{}",
-                    city.0,
-                    names::name(d, *a),
-                    t.0,
-                    religion.map_or(String::new(), |r| format!(" ({})", names::name(d, r)))
-                ),
-                _ => format!("city {} channels nothing", city.0),
+            Command::CultureChannel { action, target, religion } => match (action, target) {
+                (Some(a), Some(t)) => format!("channel {} into player {}{}", names::name(d, *a), t.0, religion.map_or(String::new(), |r| format!(" ({})", names::name(d, r)))),
+                _ => "channel nothing".to_string(),
             },
             Command::Research { tech, shift } => {
                 format!("research {}{}", tech.map_or("none".to_string(), |t| names::name(d, t).to_string()), if *shift { " (queue)" } else { "" })
@@ -1162,7 +1154,7 @@ pub enum Action {
     PushOrder { city: CityId, order: OrderType, data: i32, save: bool, pop: bool, append: bool },
     PopOrder { city: CityId, index: i32 },
     DoTask { city: CityId, task: TaskType, data1: i32, data2: i32, option: bool, alt: bool, shift: bool, ctrl: bool },
-    CultureChannel { city: CityId, order: Option<(CulturalActionType, PlayerId, Option<ReligionType>)> },
+    CultureChannel { order: Option<ffh_core::culture::ChannelOrder> },
     /// An army or governor command, checked by the rules call itself (they change nothing when
     /// they refuse).
     Army(Command),
@@ -1177,8 +1169,8 @@ pub enum Action {
     DeclareWar { team: TeamId },
     /// The AI accepted: `implementDeal(h, to, give, get)`.
     ImplementDeal { to: PlayerId, give: Vec<TradeData>, get: Vec<TradeData> },
-    /// An offer to a House (docs/PERSONS.md, rule 9): `Game::player_offer_house`, which notes it
-    /// and implements it when the House accepts (`accept`: its answer, for the reply).
+    /// A gift to a House (docs/PERSONS.md, "The fourth build", rule 3): `Game::player_offer_house`,
+    /// which implements it when the House accepts (`accept`: its answer, for the reply).
     OfferHouse { to: PlayerId, give: Vec<TradeData>, get: Vec<TradeData>, accept: bool },
     /// `CvDeal::kill` of a deal the human cancelled.
     CancelDeal { deal: DealId },
@@ -1593,22 +1585,31 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::PopOrder { city: *city, index: *index })
         }
 
-        Command::CultureChannel { city, action, target, religion } => {
-            city_of(g, h, *city)?;
+        Command::CultureChannel { action, target, religion } => {
+            use ffh_core::culture::{ChannelOrder, ChannelTarget};
             let order = match (action, target) {
                 (None, _) => None,
-                (Some(_), None) => return Err(invalid("field `target`: a channel needs a civilization")),
+                (Some(_), None) => return Err(invalid("field `target`: a channel needs a target (a House's player, or a civilization)")),
                 (Some(a), Some(t)) => {
                     in_range("cultural action", a.idx() as i32, d.cultural_actions.len())?;
                     in_range("player", t.0 as i32, g.num_players())?;
                     if let Some(r) = religion {
                         in_range("religion", r.idx() as i32, d.religions.len())?;
                     }
-                    g.culture_channel_check(*city, *a, *t, *religion).map_err(|r| cannot(r.describe()))?;
-                    Some((*a, *t, *religion))
+                    // Court and Guard name a House by its player.
+                    let target = match d.cultural_actions[*a].effect {
+                        CultureEffect::Court | CultureEffect::Guard => match g.player_house(*t) {
+                            Some(house) => ChannelTarget::House(house),
+                            None => return Err(invalid(format!("field `target`: player {} is not a House", t.0))),
+                        },
+                        CultureEffect::SpreadReligion => ChannelTarget::Player(*t),
+                    };
+                    let o = ChannelOrder { action: *a, target, religion: *religion };
+                    g.culture_channel_check(h, &o).map_err(cannot)?;
+                    Some(o)
                 }
             };
-            Plan::Apply(Action::CultureChannel { city: *city, order })
+            Plan::Apply(Action::CultureChannel { order })
         }
 
         Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => {
@@ -2033,8 +2034,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             // the exe asks before it sends the implementDeal message.
             crate::view::diplo::check_deal(g, h, *to, give, get)?;
             let accept = g.controller(*to).consider_offer(g, *to, h, give, get);
-            // A side deal with a House (docs/PERSONS.md, rule 9): its liege learns of the offer
-            // whatever the answer (`Game::player_offer_house`).
+            // A gift to a House (docs/PERSONS.md, "The fourth build", rule 3): the rules' one path
+            // (`Game::player_offer_house`).
             if g.player_house(*to).is_some() {
                 return Ok(Plan::Apply(Action::OfferHouse { to: *to, give: give.clone(), get: get.clone(), accept }));
             }
@@ -2518,9 +2519,9 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             g.city_push_order(*city, *order, *data, -1, *save, *pop, *append, false);
         }
         Action::PopOrder { city, index } => g.city_pop_order(*city, *index, false, false),
-        Action::CultureChannel { city, order } => {
+        Action::CultureChannel { order } => {
             // Validated just before: the check passed.
-            let _ = g.city_set_culture_channel(*city, *order);
+            let _ = g.player_set_culture_channel(h, *order);
         }
         // Validated just before (`validate`); a refusal in the rules would change nothing.
         Action::Army(c) => {
@@ -2626,9 +2627,9 @@ mod tests {
             Command::PushOrder { city: CityId(1), order: OrderType::ORDER_TRAIN, data: 4, alt: false, shift: true, ctrl: false },
             Command::PopOrder { city: CityId(1), index: 0 },
             Command::DoTask { city: CityId(1), task: TaskType::TASK_HURRY, data1: 0, data2: -1, option: false, alt: false, shift: false, ctrl: false },
-            Command::CultureChannel { city: CityId(1), action: Some(CulturalActionType(1)), target: Some(PlayerId(2)), religion: Some(ReligionType(1)) },
-            Command::CultureChannel { city: CityId(1), action: Some(CulturalActionType(0)), target: Some(PlayerId(3)), religion: None },
-            Command::CultureChannel { city: CityId(1), action: None, target: None, religion: None },
+            Command::CultureChannel { action: Some(CulturalActionType(2)), target: Some(PlayerId(2)), religion: Some(ReligionType(1)) },
+            Command::CultureChannel { action: Some(CulturalActionType(0)), target: Some(PlayerId(3)), religion: None },
+            Command::CultureChannel { action: None, target: None, religion: None },
             Command::ArmyForm { units: vec![UnitId(3), UnitId(4)] },
             Command::ArmySplit { units: vec![UnitId(3)] },
             Command::ArmyJoin { units: vec![UnitId(3)], army: ArmyId(2) },

@@ -114,9 +114,9 @@ fn every_leader_remembers_the_wrongs_and_forgets_them() {
         let t = &info.base.type_;
         assert_eq!(pct[MemoryType::MEMORY_DECLARED_WAR], -300, "{t}");
         assert_eq!(pct[MemoryType::MEMORY_TOOK_CITY], -150, "{t}");
-        assert_eq!(pct[MemoryType::MEMORY_BOUGHT_HOUSE], -300, "{t}");
+        assert_eq!(pct[MemoryType::MEMORY_SPLIT_HOUSE], -300, "{t}");
         assert_eq!(pct[MemoryType::MEMORY_COURTED_HOUSE], -200, "{t}");
-        for m in [MemoryType::MEMORY_DECLARED_WAR, MemoryType::MEMORY_TOOK_CITY, MemoryType::MEMORY_BOUGHT_HOUSE, MemoryType::MEMORY_COURTED_HOUSE] {
+        for m in [MemoryType::MEMORY_DECLARED_WAR, MemoryType::MEMORY_TOOK_CITY, MemoryType::MEMORY_SPLIT_HOUSE, MemoryType::MEMORY_COURTED_HOUSE] {
             assert_eq!(decay[m], 50, "{t}");
         }
     }

@@ -595,9 +595,6 @@ fn trade_item_text(g: &Game, t: &TradeData) -> String {
         TradeableItem::TRADE_MAPS => "the world map".into(),
         TradeableItem::TRADE_VASSAL => "vassal status".into(),
         TradeableItem::TRADE_SURRENDER => "capitulation (vassal status)".into(),
-        // A House's side deals (docs/PERSONS.md, rule 9).
-        TradeableItem::TRADE_SECEDE => "Secede".into(),
-        TradeableItem::TRADE_HOUSE_VASSAL => "Become your vassal".into(),
         _ => {
             let name = TradeableItem::NAMES.get(t.item_type.0 as usize).copied().unwrap_or("TRADE_?");
             format!("{} {}", name.trim_start_matches("TRADE_").to_lowercase().replace('_', " "), t.data)

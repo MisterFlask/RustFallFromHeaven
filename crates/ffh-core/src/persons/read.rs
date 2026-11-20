@@ -4,7 +4,7 @@
 //!
 //! - [`Game::house_view`]: one House: its player, leader, civilization, cities, attitude and its
 //!   parts, request, record, tribute, levy, the outcome of its ultimatum when Furious, its contract,
-//!   its split line, freeing, its price to secede.
+//!   its split line, freeing, its courtships and its guard.
 //! - [`Game::court_view`]: a player's Houses, grantable cities, the founding of a first House and
 //!   the default tribute.
 //! - [`Game::city_house_mark`]: a city's House colour and state for the map and the lists (cheap).
@@ -15,9 +15,10 @@
 //! - Tribute: [`Game::house_tribute_at`], [`Game::house_loyalty_at_tribute`],
 //!   [`Game::house_tribute_turns`], [`Game::house_tribute_in_force_after`] (`vassals.rs`).
 //! - Levy: [`Game::house_levy_refusal`], [`Game::city_levy_refusal`], [`Game::player_levy_cities`].
-//! - Side deals: [`Game::house_bribe_price`], [`Game::house_bribe_refusal`] (`bribes.rs`);
-//!   courtship: [`Game::house_courtships`], [`Game::house_courting_line`],
-//!   [`Game::house_courtship_refusal`] (`courtship.rs`).
+//! - Courting (the fourth build, `favour.rs`): [`Game::house_courtships`],
+//!   [`Game::house_courtship_at`], [`Game::house_guard_view`], [`Game::house_guard_with`],
+//!   [`Game::house_requirement`], [`Game::house_split_toward`], [`Game::house_courting_line`];
+//!   gifts: [`Game::house_gift_refusal`] (`gifts.rs`); the channels themselves: `culture.rs`.
 //! - Previews: [`Game::grant_candidates`], [`Game::persons_preview`] (`preview.rs`).
 
 use ffh_data::*;
@@ -139,10 +140,11 @@ pub struct HouseView {
     pub levy: LevyStatus,
     /// Whether its liege may free it (else why not).
     pub free: Result<(), &'static str>,
-    /// Its price to secede (`None`: it refuses any offer: Pleased or Friendly).
-    pub bribe_price: Option<i32>,
-    /// Every courtship of it, open or not yet (the third build, rule 7), in player order.
+    /// Every courtship of it (the fourth build, rule 2: the civilizations it keeps a favour toward
+    /// and those whose Court channel runs at it), in player order.
     pub courtships: Vec<CourtshipView>,
+    /// Its guard, while its liege's Guard channel runs at it (rule 5).
+    pub guard: Option<GuardView>,
 }
 
 /// A player's court.
@@ -282,8 +284,8 @@ impl Game {
             tribute: self.house_tribute_view(h),
             levy: LevyStatus { takes: refusal.is_none(), reason: refusal },
             free: self.player_check_free_house(house.owner, h),
-            bribe_price: self.house_bribe_price(h),
             courtships: self.house_courtships(h),
+            guard: self.house_guard_view(h),
         })
     }
 

@@ -120,7 +120,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -146,7 +146,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -292,7 +292,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -318,7 +318,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -467,7 +467,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -502,7 +502,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -658,7 +658,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -684,7 +684,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -829,7 +829,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -864,7 +864,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -1026,7 +1026,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -1061,7 +1061,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -1217,7 +1217,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -1252,7 +1252,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -1399,7 +1399,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -1425,7 +1425,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -1568,7 +1568,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -1594,7 +1594,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -1742,7 +1742,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -1777,7 +1777,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -1934,7 +1934,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -1969,7 +1969,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -2120,7 +2120,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -2155,7 +2155,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -2308,7 +2308,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -2343,7 +2343,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -2505,7 +2505,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -2540,7 +2540,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -2703,7 +2703,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -2738,7 +2738,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -2887,7 +2887,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -2922,7 +2922,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -3066,7 +3066,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -3101,7 +3101,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -3245,7 +3245,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -3280,7 +3280,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -3424,7 +3424,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -3459,7 +3459,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -3602,7 +3602,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -3637,7 +3637,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -3783,7 +3783,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -3818,7 +3818,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -3978,7 +3978,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -4013,7 +4013,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -4163,7 +4163,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -4198,7 +4198,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -4358,7 +4358,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -4393,7 +4393,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -4542,7 +4542,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -4577,7 +4577,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -4734,7 +4734,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -4769,7 +4769,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -4915,7 +4915,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -4950,7 +4950,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -5105,7 +5105,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -5140,7 +5140,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -5287,7 +5287,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -5322,7 +5322,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -5468,7 +5468,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -5503,7 +5503,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -5653,7 +5653,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -5688,7 +5688,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -5844,7 +5844,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -5879,7 +5879,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -6035,7 +6035,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -6070,7 +6070,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -6221,7 +6221,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -6256,7 +6256,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -6409,7 +6409,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -6444,7 +6444,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -6595,7 +6595,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -6630,7 +6630,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -6776,7 +6776,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -6811,7 +6811,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -6959,7 +6959,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -6994,7 +6994,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -7151,7 +7151,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -7186,7 +7186,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -7342,7 +7342,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -7377,7 +7377,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -7525,7 +7525,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -7560,7 +7560,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -7708,7 +7708,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -7743,7 +7743,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -7894,7 +7894,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -7929,7 +7929,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -8076,7 +8076,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -8111,7 +8111,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -8258,7 +8258,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -8293,7 +8293,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -8443,7 +8443,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -8478,7 +8478,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -8622,7 +8622,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -8657,7 +8657,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -8807,7 +8807,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -8842,7 +8842,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -8993,7 +8993,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -9028,7 +9028,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -9173,7 +9173,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -9208,7 +9208,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -9357,7 +9357,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -9392,7 +9392,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -9549,7 +9549,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -9584,7 +9584,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -9740,7 +9740,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -9775,7 +9775,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -9931,7 +9931,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -9966,7 +9966,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -10123,7 +10123,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -10158,7 +10158,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -10312,7 +10312,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -10347,7 +10347,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -10498,7 +10498,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -10533,7 +10533,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -10682,7 +10682,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -10717,7 +10717,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -10866,7 +10866,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -10901,7 +10901,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -11049,7 +11049,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -11084,7 +11084,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -11230,7 +11230,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -11265,7 +11265,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -11412,7 +11412,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -11447,7 +11447,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -11598,7 +11598,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -11624,7 +11624,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -11770,7 +11770,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -11805,7 +11805,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -11952,7 +11952,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -11987,7 +11987,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -12134,7 +12134,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -12169,7 +12169,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -12314,7 +12314,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -12349,7 +12349,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -12500,7 +12500,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -12535,7 +12535,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -12681,7 +12681,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -12716,7 +12716,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -12860,7 +12860,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -12895,7 +12895,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -13044,7 +13044,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -13079,7 +13079,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 400,
         "MEMORY_SOMNIUM_NEGATIVE": -400,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -13226,7 +13226,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -13261,7 +13261,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 400,
         "MEMORY_SOMNIUM_NEGATIVE": -400,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -13405,7 +13405,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -13440,7 +13440,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 300,
         "MEMORY_SOMNIUM_NEGATIVE": -300,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -13602,7 +13602,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -13637,7 +13637,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 400,
         "MEMORY_SOMNIUM_NEGATIVE": -400,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -13784,7 +13784,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -13819,7 +13819,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 400,
         "MEMORY_SOMNIUM_NEGATIVE": -400,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -13967,7 +13967,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -14002,7 +14002,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -14151,7 +14151,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -14186,7 +14186,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -14336,7 +14336,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -14371,7 +14371,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -14529,7 +14529,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -14564,7 +14564,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -14714,7 +14714,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -14749,7 +14749,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -14908,7 +14908,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -14943,7 +14943,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -15087,7 +15087,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -15122,7 +15122,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -15266,7 +15266,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -15301,7 +15301,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -15451,7 +15451,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -15486,7 +15486,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -15636,7 +15636,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -15671,7 +15671,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -15813,7 +15813,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -15848,7 +15848,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -15994,7 +15994,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -16020,7 +16020,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -16165,7 +16165,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -16200,7 +16200,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -16358,7 +16358,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -16393,7 +16393,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -16546,7 +16546,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -16581,7 +16581,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 200,
         "MEMORY_SOMNIUM_NEGATIVE": -200,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -16740,7 +16740,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -16775,7 +16775,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -16925,7 +16925,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -16960,7 +16960,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -17110,7 +17110,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -17145,7 +17145,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -17298,7 +17298,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -17333,7 +17333,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -17487,7 +17487,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -17522,7 +17522,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -17671,7 +17671,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -17705,7 +17705,7 @@
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -17856,7 +17856,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -17890,7 +17890,7 @@
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -18033,7 +18033,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -18067,7 +18067,7 @@
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -18218,7 +18218,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -18252,7 +18252,7 @@
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -18404,7 +18404,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -18438,7 +18438,7 @@
         "MEMORY_LIBERATED_CITIES": 150,
         "MEMORY_SOMNIUM_POSITIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -18591,7 +18591,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -18626,7 +18626,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -18782,7 +18782,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -18817,7 +18817,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -18973,7 +18973,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -19008,7 +19008,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -19163,7 +19163,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -19198,7 +19198,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {
@@ -19354,7 +19354,7 @@
         "MEMORY_EVENT_BAD_TO_US": 50,
         "MEMORY_SOMNIUM_DELAY": 1,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
@@ -19389,7 +19389,7 @@
         "MEMORY_SOMNIUM_POSITIVE": 100,
         "MEMORY_SOMNIUM_NEGATIVE": -100,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "no_war_attitude_probs": {

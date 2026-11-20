@@ -102,11 +102,11 @@ fn the_screens_show_houses() {
     assert!(nb.get("war_preview").and_then(Json::as_arr).is_some(), "{nb}");
     let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, st.neighbour.0));
     assert_eq!(tr.get("peace_preview").and_then(Json::as_arr).map(|a| a.len()), Some(0));
-    // A House is a party on the diplomacy screen: it gives Secede and Become your vassal.
+    // A House is a party on the diplomacy screen: it gives nothing (it takes gifts).
     let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, g.houses[n.id].player.0));
     let theirs = arr(&tr, "they_give");
     let names: Vec<&str> = theirs.iter().filter_map(|x| x.get("item").and_then(Json::as_i64)).map(|i| TradeableItem::NAMES[i as usize]).collect();
-    assert!(names.contains(&"TRADE_SECEDE") && names.contains(&"TRADE_HOUSE_VASSAL"), "{names:?}");
+    assert!(names.is_empty(), "{names:?}");
     // A religion's preview list is there for every religion.
     let rl = q(&s, r#"{"q":"religions"}"#);
     for x in arr(&rl, "religions") {
@@ -187,88 +187,34 @@ fn a_house_is_drawn_in_its_lieges_colour_with_its_shield() {
     assert_eq!(s_of(&find(&brief, "id", f.id.0 as i64), "label"), f.label);
 }
 
-/// A House on the diplomacy screen (docs/PERSONS.md, "The second build", rules 7, 9 and 13; "The
-/// third build", rule 7): it gives Secede and Become your vassal at its price and takes gold and
-/// resources; the rest is its liege's (`Trades through the X.`); the human's courtship of it says
-/// where it stands and a gift opens it; the answer is the rules' (the courtship, its price, its
-/// refusal by its state); accepting is war (said before); the human's own House trades nothing
-/// (tribute).
+/// A House on the diplomacy screen (docs/PERSONS.md, "The second build", rule 13; "The fourth
+/// build", rule 3): it takes gifts, gold and resources, and gives nothing; the rest is its liege's
+/// (`Trades through the X.`); a gift is accepted and anything asked back refused, in the rules'
+/// words; the human's own House trades nothing (tribute).
 #[test]
 fn a_houses_trade_table_and_its_answers() {
-    let (_dir, st, mut s) = load("persons-trade", false);
+    let (_dir, st, s) = load("persons-trade", false);
     let n = st.houses.iter().find(|x| x.role == "neighbour").unwrap();
-    let (hp, nid) = (n.player, n.id);
-    let price = s.g.house_bribe_price(nid).expect("the neighbour's House takes offers");
+    let hp = n.player;
     let liege = s.g.player_get_civilization_short_description(st.neighbour);
     let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, hp.0));
     assert_eq!(tr.get("contact").and_then(Json::as_bool), Some(true));
     let house = tr.get("house").unwrap();
-    assert_eq!(house.get("price").and_then(Json::as_i64), Some(price as i64));
     assert_eq!(house.get("own").and_then(Json::as_bool), Some(false));
     assert_eq!(s_of(house, "trades_through"), format!("Trades through the {liege}."));
-    assert_eq!(s_of(house, "secede_war"), format!("{} will break away from the {liege}: war between them.", n.label));
-    assert_eq!(s_of(house, "vassal_war"), format!("You become its liege: war with the {liege}."));
     assert!(tr.get("troops").unwrap().is_null());
     let names = |side: &str| -> Vec<&'static str> { arr(&tr, side).iter().filter_map(|x| x.get("item").and_then(Json::as_i64)).map(|i| TradeableItem::NAMES[i as usize]).collect() };
-    assert_eq!(names("they_give"), vec!["TRADE_SECEDE", "TRADE_HOUSE_VASSAL"]);
+    assert!(names("they_give").is_empty(), "it gives nothing");
     assert!(names("we_give").iter().all(|x| ["TRADE_GOLD", "TRADE_RESOURCES"].contains(x)), "{:?}", names("we_give"));
-    let secede = arr(&tr, "they_give")[0].clone();
-    // The human's courtship of it (the third build, rule 7): the stage's gifts do not open it, so
-    // the offer's refusal is the courtship's; its price shows.
-    let why = s.g.house_courtship_refusal(nid, st.human).expect("not open");
-    assert!(why.starts_with(&format!("Court {} first: gifts worth ", n.label)), "{why}");
-    assert_eq!(s_of(&secede, "refusal"), why);
-    assert_eq!(secede.get("value").and_then(Json::as_i64), Some(-(price as i64)));
-    let gold = arr(&tr, "we_give").into_iter().find(|x| x.get("item").and_then(Json::as_i64) == Some(TradeableItem::TRADE_GOLD.idx() as i64)).unwrap();
-    assert_eq!(gold.get("value").and_then(Json::as_i64), Some(1));
-    let courting = house.get("courting").unwrap();
-    let (value, requirement) = (s.g.house_courtship_value(nid, st.human), s.g.courtship_requirement());
-    assert_eq!(s_of(courting, "line"), format!("Courting {}: {value} of {requirement} given.", n.label));
-    assert_eq!((courting.get("value").and_then(Json::as_i64), courting.get("requirement").and_then(Json::as_i64)), (Some(value as i64), Some(requirement as i64)));
-    assert!(courting.get("opened").unwrap().is_null());
-    let answer = |s: &ffh_play::Session, gold: i32, item: &str| q(s, &format!(r#"{{"q":"trade_answer","with":{},"give":[{{"item":"TRADE_GOLD","data":{gold}}}],"get":[{{"item":"{item}"}}]}}"#, hp.0));
-    let a = answer(&s, price.max(1), "TRADE_SECEDE");
-    assert_eq!(a.get("accept").and_then(Json::as_bool), Some(false));
-    assert_eq!(s_of(&a, "why"), why.trim_end_matches('.'));
-    // A gift (nothing asked back) is accepted, and the one that reaches the requirement opens it.
-    let need = requirement - value;
-    let gift = q(&s, &format!(r#"{{"q":"trade_answer","with":{},"give":[{{"item":"TRADE_GOLD","data":{need}}}],"get":[]}}"#, hp.0));
+    // The human's courtship of it: the rules' line (null while it courts it not).
+    assert_eq!(house.get("courting").and_then(Json::as_str).map(str::to_string), s.g.house_courting_line(n.id, st.human));
+    // A gift is accepted; anything asked back is refused.
+    let gift = q(&s, &format!(r#"{{"q":"trade_answer","with":{},"give":[{{"item":"TRADE_GOLD","data":1}}],"get":[]}}"#, hp.0));
     assert_eq!(gift.get("accept").and_then(Json::as_bool), Some(true), "{gift}");
-    let out = s.execute(&ffh_play::command::Command::ProposeDeal { to: hp, give: vec![ffh_core::utils::set_trade_item(TradeableItem::TRADE_GOLD, need)], get: vec![] }).unwrap();
-    assert!(matches!(out, ffh_play::command::CmdOk::Applied { accepted: Some(true), .. }), "{out:?}");
-    let opened = s.g.house_courtship_opened(nid, st.human).expect("open");
-    let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, hp.0));
-    let from = opened + s.g.d.defines.person_courtship_turns;
-    assert_eq!(s_of(&arr(&tr, "they_give")[0], "refusal"), format!("Offers possible from turn {from}."));
-    assert_eq!(tr.get("house").unwrap().get("courting").unwrap().get("offers_from").and_then(Json::as_i64), Some(from as i64));
-    // Its 10 turns (set by hand: no call makes turns pass); then the answers: below the price
-    // refused (its price the reason), at it accepted.
-    for c in s.g.houses[nid].courtships.iter_mut() {
-        c.opened -= s.g.d.defines.person_courtship_turns;
-    }
-    let price = s.g.house_bribe_price(nid).expect("its price");
-    if price > 1 {
-        let a = answer(&s, price - 1, "TRADE_SECEDE");
-        assert_eq!(a.get("accept").and_then(Json::as_bool), Some(false));
-        assert_eq!(s_of(&a, "why"), format!("{} asks {price} gold", n.label));
-    }
-    let a = answer(&s, price.max(1), "TRADE_SECEDE");
-    assert_eq!(a.get("accept").and_then(Json::as_bool), Some(true), "{a}");
-    // Pleased with its liege: it refuses, in the rules' words (no closing stop: the screen adds it).
-    s.g.houses[nid].standing.mods.push(ffh_core::persons::LoyaltyMod { cause: ffh_core::persons::LoyaltyCause::DemandMet, amount: 8, until: None });
-    let state = s.g.house_state(nid);
-    assert!(state < ffh_core::persons::LoyaltyState::Cautious, "{state:?}");
-    let why = format!("{} is {} with the {liege}.", n.label, state.name());
-    let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, hp.0));
-    assert!(tr.get("house").unwrap().get("price").unwrap().is_null());
-    for x in arr(&tr, "they_give") {
-        assert_eq!(s_of(&x, "refusal"), why);
-        assert!(x.get("value").unwrap().is_null());
-    }
-    let a = answer(&s, price.max(1), "TRADE_HOUSE_VASSAL");
-    assert_eq!(a.get("accept").and_then(Json::as_bool), Some(false));
-    assert_eq!(s_of(&a, "why"), why.trim_end_matches('.'));
-    // The human's own House: no side deal, it pays tribute.
+    let ask = q(&s, &format!(r#"{{"q":"trade_answer","with":{},"give":[{{"item":"TRADE_GOLD","data":1}}],"get":[{{"item":"TRADE_GOLD","data":1}}]}}"#, hp.0));
+    assert_eq!(ask.get("accept").and_then(Json::as_bool), Some(false));
+    assert_eq!(s_of(&ask, "why"), format!("{} takes gifts only", n.label));
+    // The human's own House: no gift, it pays tribute.
     let own = st.houses.iter().find(|x| x.role == "friendly").unwrap();
     let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, own.player.0));
     let house = tr.get("house").unwrap();

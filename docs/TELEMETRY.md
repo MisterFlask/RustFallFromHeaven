@@ -57,21 +57,18 @@ described in docs/AUTOPSY.md.
 | `revolution` | `n` | anarchy turns |
 | `civic` | civic adopted | – |
 | `convert` | religion | – |
-| `culture_channel` / `culture_channel_end` / `culture_spread` | cultural action (docs/CULTURE.md): a channel set, ended, a religion spread through one | – |
-| `culture_revolt` | `unrest`, `revolt`, `near_flip`, `calm`, `flip` (a city's revolt level changed by the caster's pressure; counted for the caster) | – |
+| `culture_channel` / `culture_channel_end` / `culture_spread` | cultural action (docs/CULTURE.md; the civilization's channel since 2026-11-20: `CULTURALACTION_COURT_HOUSE`, `CULTURALACTION_GUARD_HOUSE`, `CULTURALACTION_SPREAD_RELIGION`): a channel set, ended, a religion spread through one | – |
 | `march` | `sent`, `arrived`, `diverted`, `stopped`, `killed` (marching recruits: docs/ARMIES.md; `stopped`: no city it could reach, an ordinary unit again; `killed`: died on the way) | `sent`: the estimated march in turns; the others: turns since it set out |
 | `requisition` | `placed`, `withdrawn` (an army's requisition orders: docs/ARMIES.md) | – |
 | `house_granted` | `house` (a city granted to a House), `founded` (a realm's first grant, which founds one) | – |
 | `house_request` | `issued`, `met`, `refused` (a House's request; docs/PERSONS.md) | – |
 | `house_state` | `Friendly`, `Pleased`, `Cautious`, `Annoyed`, `Furious` (a House's change of state) | – |
 | `house_record` | `vassal`, `capitulated` (a vassal became a House: a vassal deal, a card's birth, a colony or a founding; a capitulation), `ended` (a House record ended: its vassalage or its player ended), `freed` (its liege freed it); counted for the liege | – |
-| `house_seceded` | `ultimatum`, `civil_war`, `bribe`, `bribe_vassal` (a House broke away: its ultimatum refused, direct rule, an offer to Secede or to Become your vassal), `held` (every city of it held: it ended) | – |
+| `house_seceded` | `ultimatum`, `civil_war` (a House broke away: its ultimatum refused, direct rule), `held` (every city of it held: it ended) | – |
 | `house_ultimatum` | `accepted`, `refused` (a Furious House's ultimatum answered by its liege; docs/PERSONS.md, "The third build", rule 5) | – |
-| `house_split` | `split`, `no_leader` (a House at the split's threshold rolled a split: done, or no leader free) | – |
+| `house_split` | `split`, `no_leader` (a House at the split's threshold rolled a split: done, or no leader free); `courted` (a rival's courtship reached the requirement: the half nearest it went to a new House of its realm), `courted_whole` (a House of one city went whole to the courter), `courted_held` (every city of the half held: nothing went, the favour spent), `courted_no_leader` (no leader free: no split that turn); counted for the liege (docs/PERSONS.md, "The fourth build", rule 4) | – |
 | `house_levy` | `placed` (a levy order in a House's city, counted for the liege) | – |
-| `house_bribe` | `offered` (an accepted offer to one of the player's Houses, counted for the liege) | – |
 | `house_tribute` | `gold` (a House's tribute, counted for the liege; gold only since the third build, rule 10) | the gold paid |
-| `house_courtship` | `opened` (a rival's courtship of a House of the liege opened, the third build's rule 7) | 1 each |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -163,13 +160,11 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `tech`, `civics`, `religion` and `project`;
 - `vassal` and `vote` (a council result: the vote type, its text and whether it passed);
 - `culture` (a cultural channel: `how` culture_channel / culture_channel_end / culture_spread,
-  the action, the target civilization; docs/CULTURE.md);
-- `revolt` (a city's revolt level changed: `how` unrest / revolt / near_flip / calm / flip, the
-  city, its owner; the event's player is the caster);
+  the action, the target player: a House's player for Court and Guard; docs/CULTURE.md);
 - `march` (a marching recruit: `how` sent / arrived / diverted / stopped / killed, `to_army`,
   `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
 - `house` (the Houses, docs/PERSONS.md: `how` granted / request / state / record / seceded / levy /
-  bribe and `what`, as the counts above; `person` before the third build) and `tribute` (a House's
+  ultimatum / split and `what`, as the counts above; `person` before the third build) and `tribute` (a House's
   tribute paid: `gold`; the event's player is the liege);
 - `intent` and `decision`;
 - `prediction`: an AI estimate resolved by the rules (the prediction ledger, docs/CALIBRATION.md).

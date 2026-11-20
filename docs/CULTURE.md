@@ -12,7 +12,7 @@ religion among a civilization's cities (Spread Religion).**
 | 1 Baseline | AI autoplay turn times before the sprint | done (below); the owner then ruled turn time out of the acceptance criteria (2026-10-30: "no perf optimization until it impedes testing") |
 | 2-3 Culture core and escalation | built as a cultural queue of timed actions (Festival, Trade Fair, Spread Religion, Incite Unrest, Siphon Knowledge, Foment Revolt, Flip City), then replaced (below) | replaced 2026-10-30 |
 | Redesign (owner, 2026-10-30) | standing channels of a city: Foment Revolt (unrest, disorder, the city) and Spread Religion, aimed at a civilization; effect by the square of the distance; no festivals, fairs, siphoning | replaced 2026-11-20 |
-| Redesign (owner, 2026-11-20) | one standing channel of the civilization: Court and Guard a House (docs/PERSONS.md, "The fourth build"), Spread Religion; Foment Revolt and per-city channels retired | being built |
+| Redesign (owner, 2026-11-20) | one standing channel of the civilization: Court and Guard a House (docs/PERSONS.md, "The fourth build"), Spread Religion; Foment Revolt and per-city channels retired | part 1 built (the rules, the AI, the read API: "Rules as built" below); part 2 (the screens) being built |
 | 7 FfH layer | Incite Mutiny (needs armies) | later |
 
 Code: rules `crates/ffh-core/src/culture.rs` and `crates/ffh-core/src/persons/` (favour and the
@@ -67,49 +67,75 @@ flip, a city's resistance and garrison, the revolt levels and marks). They had t
 a game in 12 AI games of 400 turns, nearly all after turn 300 and by one strong cultural
 civilization a game; a city alone made too little culture to channel before turn 250.
 
-## AI (summary; docs/AI.md "Cultural actions") -- the per-city build of 2026-10-30, to be rewritten by the fourth build
+### Rules as built (2026-11-20, the fourth build's part 1)
 
-Once a turn (`ffh-ai/src/culture.rs`), after the diplomacy and the governors:
+docs/PERSONS.md, "The fourth build as built, part 1", has every detail; in short:
 
-- **Defence.** Each defender resists 2 a turn, so the garrison answers revolt pressure.
-  - A city needs enough defenders that the pressure from the channels aimed at us, as it would settle, stays short of disorder (at most six).
-  - Past disorder the city makes no culture, only its garrison resists, and the pressure runs on to the flip.
-  - A directly ruled city trains a defender first; in a governed city, the governor chooses again.
-  - A rival whose pressure is two thirds of the way to taking one of our cities (not a capital) provokes the war logic: no friend is spared, 85% of the usual power edge is enough, and the target gets +40 to its score.
-- **Foment Revolt** comes from cities whose culture is worth spending.
-  - Cities carrying a cultural victory spend none. A point of culture counts in full while the city's borders still grow, half after.
-  - For each target city, the pressure is simulated over 40 turns as the rules run it. Resistance counts the city's culture and only its stationed defenders (an army passing through does not stay); once the city is in revolt, only the garrison.
-  - A city taken (never a capital) is worth 150 + 50 per population + 20 per building + 150 per wonder + 200 per holy city, spread over the turns it takes plus five. Disorder is worth the city's production and commerce a turn; unrest, half a commerce a point. Only what our channels change counts.
-  - The rival's losses count in full at war, while preparing one, against the barbarians, or against a victory rival. At peace they count 60% (Annoyed or Furious) or 40% (Cautious), and a city taken counts 75%.
-  - Against that stands the culture spent and, at peace, a memory cost per channel a turn, by what the target thinks of us: 2.5 while it is Cautious or better, 1 when Annoyed, 0.5 when Furious or while we prepare war.
-  - Spared: Pleased or Friendly civilizations, vassals and masters, defensive pact partners, and, at peace, any civilization above 125% of our power (150% for a channel that stands).
-  - The leader's `iCulturalAggression` scales the value halfway from 100%; a conqueror's goes a quarter higher.
-  - Our cities aimed at one civilization are weighed as a group of at most `CULTURE_AI_MAX_HOSTILE_PER_TARGET`, twice that at war.
-- **Spread Religion.** The state religion, or one whose shrine we hold, goes first into our own cities, then to friends and neutrals.
-  - A civilization without a state religion is drawn toward ours, and a co-religionist remembers the spread as friendship.
-  - It goes into a civilization with another state religion only where we dislike it and a shrine pays.
-- **Stability.**
-  - A channel that stands is kept while it is worth 70% of its cost.
-  - A new one must be worth a quarter more than its cost.
-  - A religion channel moves only for one better by half its cost.
-- **Governed cities** channel as the civilization decides, like directly ruled ones. A human's governors set no channel; they only train defenders against revolt pressure.
+- **The channel** is `Player::culture_channel` (`CultureChannel { action, target: ChannelTarget,
+  religion, since_turn }`; `ChannelTarget::House` for Court and Guard, `ChannelTarget::Player` for
+  Spread Religion), checked by `culture_channel_check` (the refusal in the screen's words) and set
+  by `player_set_culture_channel`. Each city diverts `city_culture_diverted_times100` (half its
+  culture rate in hundredths, 0 in disorder) in its turn; the turn's sum is
+  `Player::culture_inflow`, counted from 0 at the start of the player's city turns, where a channel
+  that can no longer go on ends (its caster told why). The previews read the inflow at the cities'
+  culture now (`player_culture_inflow_now`).
+- **Court, Guard, the requirement, the split** are `persons/favour.rs` (the liege's House turn);
+  the grudge (`MEMORY_COURTED_HOUSE` every `CULTURE_COURT_MEMORY_TURNS` turns, up to 8) and Spread
+  Religion's roll are the caster's turn, after its cities (`player_do_culture_channel`).
+- **Spread Religion** measures each of the target's cities from the caster's nearest city
+  (`culture_spread_reach`; a city of the caster itself is at 0, in full).
+- **Defines**: `CULTURE_CHANNEL_PERCENT` (50), `CULTURE_CHANNEL_FULL_RANGE` (5),
+  `CULTURE_CHANNEL_RANGE` (20), `CULTURE_FAVOUR_FADE_PERCENT` (5), `CULTURE_COURT_MEMORY_TURNS` (5),
+  `CULTURE_SPREAD_PER_CULTURE` (100), `CULTURE_SPREAD_MAX` (2500), `CULTURE_MEMORY_DECAY_TURNS`
+  (10), `CULTURE_MEMORY_MAX` (8); the `CULTURE_REVOLT_*` defines and
+  `CULTURE_AI_MAX_HOSTILE_PER_TARGET` are gone.
+- **Data**: `cultural_actions.jsonc` holds `CULTURALACTION_COURT_HOUSE` (effect `COURT`, hostile
+  `ALWAYS`), `CULTURALACTION_GUARD_HOUSE` (`GUARD`, `NEVER`) and `CULTURALACTION_SPREAD_RELIGION`
+  (`SPREAD_RELIGION`, `DIFFERENT_STATE_RELIGION`); `CULTURALACTION_FOMENT_REVOLT` is gone.
+- **Read API**: `culture_channel_preview`, `culture_channel_options`, `culture_channels`,
+  `culture_channels_between_others`, `culture_channel_visible`; the courtships and guards
+  `house_courtships`, `house_guard_view`, `house_courting_line`.
+- **Telemetry**: `culture_channel` / `culture_channel_end` / `culture_spread` by action,
+  `house_split` `courted` / `courted_whole` / `courted_held` / `courted_no_leader`; the AI's
+  decisions of kind `culture`.
 
-Measured on 8 civs, a standard map and 350 turns, with `GAMEOPTION_CULTURE_ACTIONS`, `GAMEOPTION_ARMIES` and `GAMEOPTION_GOVERNORS`, seeds 1–4:
+## AI (summary; docs/AI.md "Cultural actions")
 
-| Seed | Revolt channels | Religion channels | Spreads | Cities in revolt | Cities taken | Defenders trained first |
-|---|---|---|---|---|---|---|
-| 1 | 11 | 17 | 12 | 1 | 0 | 0 |
-| 2 | 31 | 14 | 8 | 6 | 3 | 11 |
-| 3 | 28 | 19 | 16 | 7 | 4 | 11 |
-| 4 | 7 | 27 | 20 | 2 | 0 | 2 |
+Once a turn (`ffh-ai/src/culture.rs`), after the diplomacy and the governors, the civilization's
+one channel (the fourth build, rule 9; a rules change: reasonable, not measured):
 
-- Nearly all spreads went into the casters' own cities, and all but one city taken fell after turn 300.
-- Checked stress games (400 turns, seeds 1–3) had no invariant failure.
-- Revolt channels begin around turns 200–290, once cities make 20 culture and more. A city in revolt makes no culture, which speeds its fall and weakens its own channels.
-- The AI's cultural play as one civilization's edge (docs/AI.md): on fresh seeds, share at the end +86 (t 0.83), legacy +132 (t 1.10), win rate unchanged within the noise; the Sheaim lose by it there (−390, t −2.00).
-- Flips, 12 games of 400 turns: 60 in all, 0–14 a game, nearly all by one strong cultural civilization a game.
+- **Nothing** while it pursues a cultural victory: its cities keep their culture.
+- **Guard** a House of its own whose strongest rival favour is past half its requirement, or would
+  reach it within 20 turns at the inflows now (without our guard): the most pressed one. A guard
+  of a House still pressed is kept.
+- **Court** the House whose cities it would gain are worth most for the time: each city of the
+  split (the half nearest us, the cities the hold contest keeps left out) at `150 + 50 a
+  population + 20 a building + 150 a wonder + 200 a holy city`, over the turns to the requirement
+  (the rules' prediction at our inflow now) plus five, at most 60 turns; scaled by the leader's
+  `iCulturalAggression` (halfway from 100%, a conqueror's a quarter higher). Spared: a liege we are
+  Pleased or Friendly with, vassals and masters, defensive pact partners, and at peace a liege whose
+  defensive power is above 125% of ours (150% for a channel that stands).
+- **Spread Religion** as the per-city channels did: the state religion (or one whose shrine we
+  hold) into our own cities first, then to friends and neutrals; into a civilization with another
+  state religion only where we dislike it and a shrine pays.
+- **Against it** the culture spent (each city's half: all of a commerce while its borders still
+  grow, half after). A channel that stands is kept while it is worth 70% of the best and of its
+  cost; a new one must beat the standing one by a quarter, and its cost by a quarter. A channel
+  stands its first 5 turns (a guard of a pressed House overrides it), and a guard is kept while a
+  rival favour is past a quarter of the requirement or would reach it within 40 turns: without
+  these the lieges and the courters chased each other every turn in the first games.
+- **As liege**, a House whose strongest rival favour is past half its requirement is held (the
+  hold-march, `courted_to_hold`). **As a House**, it accepts any gift. The AI gives no gifts to
+  court.
 
-## UI (ffh-play) -- the per-city build of 2026-10-30, to be rewritten by the fourth build
+Retired with Foment Revolt: the revolt simulation, the defenders against revolt pressure (the
+governors' and the directly ruled cities'), the provocation of a city close to flipping.
+
+## UI (ffh-play) -- the per-city build of 2026-10-30, retired by the fourth build
+
+The fourth build's part 1 left the client a plain reading of the new channel (docs/PERSONS.md, "The
+fourth build as built, part 1", the last paragraph); part 2 builds the screens of rule 10. What
+follows is the retired per-city interface, kept for the record.
 
 - **City screen, "Culture"** sits in the left column, under the city's numbers. It shows the culture rate and, under a channel, the half it takes and what is left to the city.
   - **The channel:** action, civilization (and religion), since when, the culture it takes a turn, "Stop", and what it does now.

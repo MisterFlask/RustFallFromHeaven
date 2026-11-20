@@ -5742,10 +5742,12 @@ TXT_KEY_CROSSROADS_INI	Carve your fortune from the Crossroads of the World!
 TXT_KEY_CROSSROADS_WB_DESC	The year is 1300. European traders have caught the sweet waft of spices from the East, and the craving for the goods of the Orient has become an epidemic. China, for the first time in their history, has sent out trading vessels to establish contact with the West. Indian storehouses spill over with finery. It is a trader's age and you stand at the Crossroads of the World.[NEWLINE][NEWLINE]Features:[NEWLINE]Commerce Victory[NEWLINE]This new victory requires players to accumulate wealth through any means necessary. Taxes, pillaging, conquest or trade - the means matter not, only that in the end, you have the deepest coffers. Ten new Corporations are among the many features that will let players engage in unprecedented economic warfare.[NEWLINE][NEWLINE]Raiders[NEWLINE]These lightning-quick cavalry bear no markings of nationality, allowing players to pillage the lands of friends and foes alike. 
 TXT_KEY_CS_5_1_3	Bravado and luck, buddy.  Bravado and luck.
 TXT_KEY_CTRL	Ctrl+
-TXT_KEY_CULTURALACTION_FOMENT_REVOLT	Foment Revolt
-TXT_KEY_CULTURALACTION_FOMENT_REVOLT_HELP	Channels half the city's culture into revolt among a civilization's people: each of its cities within reach gains revolt pressure, the nearer the more (the effect falls with the square of the distance beyond 5 plots; nothing beyond 20). A city resists with half its own culture and its garrison, and the pressure fades when the channel stops. Pressure brings unhappiness, then disorder; a city under enough of your pressure joins you (never a capital). Not an act of war, but their leader remembers it.
+TXT_KEY_CULTURALACTION_COURT_HOUSE	Court
+TXT_KEY_CULTURALACTION_COURT_HOUSE_HELP	Channels half of every city's culture into a House of another realm. Each turn the House's favour toward you gains the channel's culture, less with distance (in full within 5 plots, then falling with the square of the distance; nothing beyond 20), and fades 5%. At the requirement, the half of its cities nearest you join you as a House of your realm (never its capital; a House of one city joins whole). Its liege remembers the channel.
+TXT_KEY_CULTURALACTION_GUARD_HOUSE	Guard
+TXT_KEY_CULTURALACTION_GUARD_HOUSE_HELP	Channels half of every city's culture into one of your Houses. Each turn every rival's favour at it loses the channel's culture, less with distance.
 TXT_KEY_CULTURALACTION_SPREAD_RELIGION	Spread Religion
-TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	Channels half the city's culture into spreading one of its religions among a civilization's cities that lack it (your own included). Each turn there is a chance that it spreads to one of them: more culture, nearer cities and fewer religions already there make it likelier. Their leader minds it only when it has another state religion.
+TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	Channels half of every city's culture into spreading one of your cities' religions among a civilization's cities that lack it (your own included). Each turn there is a chance that it spreads to one of them: more culture, nearer cities and fewer religions already there make it likelier. Their leader minds it only when it has another state religion.
 TXT_KEY_RESEARCHPATH_ARCANE	Arcane
 TXT_KEY_RESEARCHPATH_FAITH	Faith
 TXT_KEY_RESEARCHPATH_STEEL	Steel
@@ -9382,7 +9384,7 @@ TXT_KEY_MEMORY_ACCEPTED_JOIN_WAR	"You agreed to come to our aid in war-time."
 TXT_KEY_MEMORY_ACCEPTED_RELIGION	"You accepted our state religion."
 TXT_KEY_MEMORY_ACCEPTED_STOP_TRADING	"You agreed to stop trading with our worst enemy."
 TXT_KEY_MEMORY_ACCEPT_DEMAND	"You gave us tribute."
-TXT_KEY_MEMORY_BOUGHT_HOUSE	"You bought our House!"
+TXT_KEY_MEMORY_SPLIT_HOUSE	"You split our House!"
 TXT_KEY_MEMORY_COURTED_HOUSE	"You courted our House!"
 TXT_KEY_MEMORY_CANCELLED_OPEN_BORDERS	"You cancelled our open border agreement!"
 TXT_KEY_MEMORY_DECLARED_WAR	"You declared war on us!"

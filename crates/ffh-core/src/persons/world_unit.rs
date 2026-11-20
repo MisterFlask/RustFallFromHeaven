@@ -1,9 +1,12 @@
-//! The world unit (docs/PERSONS.md, "The third build", rule 9): the mean total commerce a turn,
-//! every commerce type, of the living civilizations that are not Houses, barbarians, minor
-//! civilizations or crusade Hosts. It scales what passes in gold between a realm and the world
-//! (the courtship's requirement, a House's price, an ultimatum's gold: part 2). Total commerce,
-//! not gold: the gold slider is a choice, and a civilization at full research shows little gold
-//! however rich.
+//! The world units: the scales of what passes between a realm and the world.
+//!
+//! - The world commerce unit (docs/PERSONS.md, "The third build", rule 9): the mean total
+//!   commerce a turn, every commerce type, of the living civilizations that are not Houses,
+//!   barbarians, minor civilizations or crusade Hosts. It scales an ultimatum's gold. Total
+//!   commerce, not gold: the gold slider is a choice, and a civilization at full research shows
+//!   little gold however rich.
+//! - The world culture unit (docs/PERSONS.md, "The fourth build", rule 3): the median culture a
+//!   turn of the same civilizations. It scales a courtship's requirement.
 
 use ffh_data::*;
 
@@ -30,5 +33,19 @@ impl Game {
             return 1;
         }
         ((sum / n) as i32).max(1)
+    }
+
+    /// The world culture unit W (docs/PERSONS.md, "The fourth build", rule 3; pure, integer): the
+    /// median of the total culture a turn (the culture rate of its cities, summed:
+    /// `player_get_commerce_rate` of culture, which counts what a channel diverts) of the
+    /// civilizations that can have Houses ([`Game::player_has_houses`]), the lower middle value of
+    /// an even count; at least 1. It scales a courtship's requirement.
+    pub fn world_culture_unit(&self) -> i32 {
+        let mut rates: Vec<i32> = self.player_ids().filter(|&p| self.player_has_houses(p)).map(|p| self.player_get_commerce_rate(p, CommerceType::COMMERCE_CULTURE)).collect();
+        if rates.is_empty() {
+            return 1;
+        }
+        rates.sort();
+        rates[(rates.len() - 1) / 2].max(1)
     }
 }

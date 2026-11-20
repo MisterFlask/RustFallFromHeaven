@@ -207,8 +207,6 @@ impl Game {
 
         // Interface: clear the city selection.
 
-        // This game's cultural actions: the city's channel and those aimed at it end.
-        self.city_culture_lost(c);
         // This game's armies: it leaves every requisition; recruits marching to it go elsewhere.
         self.city_army_lost(c);
 
@@ -417,11 +415,12 @@ impl Game {
         }
         // FfH: End Add
 
-        // This game's cultural channels (docs/CULTURE.md): the channel takes its share first;
-        // what it diverts reaches neither the city's culture nor its plots.
-        self.city_do_culture_channel(c);
+        // This game's cultural channels (docs/CULTURE.md): the civilization's channel takes the
+        // city's share first (its owner's inflow); what it diverts reaches neither the city's
+        // culture nor its plots.
+        let diverted = self.city_divert_culture(c);
         self.city_do_culture(c);
-        let culture_rate = self.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE) - self.cities[c].culture_diverted;
+        let culture_rate = (self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE) - diverted) / 100;
         let owner = self.cities[c].owner;
         self.city_do_plot_culture(c, false, owner, culture_rate);
         self.city_do_production(c, allow_no_production);
@@ -451,13 +450,6 @@ impl Game {
 
         if self.cities[c].culture_update_timer > 0 {
             self.cities[c].culture_update_timer -= 1;
-        }
-
-        // This game's revolt pressure (docs/CULTURE.md): resisted, faded; disorder, a flip. Before
-        // the occupation timer counts down, so that a revolt's disorder holds through the turn.
-        self.city_do_revolt_pressure(c);
-        if !self.cities.contains(c) {
-            return;
         }
 
         if self.cities[c].occupation_timer > 0 {

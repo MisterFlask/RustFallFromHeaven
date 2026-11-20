@@ -108,13 +108,10 @@ WANT = {
 # Members this game adds after a C++ enum's own (rules of its own, not FFH2's; docs/PORTING.md
 # "Changes from FFH2"). They follow the C++ members in this order, so the XML lists them last.
 EXTRA_MEMBERS = {
-    # A House's side deals (docs/PERSONS.md, "The second build", rule 9): it gives Secede or
-    # Become your vassal.
-    "TradeableItems": ["TRADE_SECEDE", "TRADE_HOUSE_VASSAL"],
     # The AI's memory of wrongs (docs/PERSONS.md, the owner's decision of 2026-11-18): a city
-    # taken in battle, a House bought away by a side deal; a House courted (the third build, rule
-    # 7).
-    "MemoryTypes": ["MEMORY_TOOK_CITY", "MEMORY_BOUGHT_HOUSE", "MEMORY_COURTED_HOUSE"],
+    # taken in battle; a House split by a rival's courtship (the fourth build, rule 4: the second
+    # build's House bought away, renamed in place); a House courted (the fourth build, rule 7).
+    "MemoryTypes": ["MEMORY_TOOK_CITY", "MEMORY_SPLIT_HOUSE", "MEMORY_COURTED_HOUSE"],
 }
 
 # C++ members this game removed (docs/PORTING.md "Changes from FFH2"). The members after one move

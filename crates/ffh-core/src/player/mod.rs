@@ -364,6 +364,12 @@ pub struct Player {
     /// What this player remembers of each player's cultural actions against it
     /// (docs/CULTURE.md): `[hostility, friendship]` points, capped and decaying.
     pub culture_memory: IdxVec<PlayerId, [i32; 2]>,
+    /// Its standing cultural channel (docs/CULTURE.md; docs/PERSONS.md, "The fourth build", rule
+    /// 1): Court, Guard or Spread Religion. Set it through `Game::player_set_culture_channel`.
+    pub culture_channel: Option<crate::culture::CultureChannel>,
+    /// What its cities diverted to the channel in their last turn, hundredths of culture: the
+    /// channel's inflow.
+    pub culture_inflow: i32,
     /// The gifts this player received and the demands it paid through proposed deals in the
     /// last `tribute::TRIBUTE_TURNS` turns (`crate::tribute`), oldest first.
     pub tributes: Vec<Tribute>,
@@ -661,6 +667,8 @@ impl Player {
             ai_first_contact: IdxVec::from_elem(false, num_players),
             ai_memory_count: IdxVec::from_fn(num_players, |_| IdxVec::from_elem(0, MemoryType::NUM)),
             culture_memory: IdxVec::from_elem([0, 0], num_players),
+            culture_channel: None,
+            culture_inflow: 0,
             tributes: Vec::new(),
             armies: Vec::new(),
             army_count: 0,
@@ -889,6 +897,8 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
             memory.fill(0);
         }
         pl.culture_memory.fill([0, 0]);
+        pl.culture_channel = None;
+        pl.culture_inflow = 0;
         pl.tributes.clear();
     }
     for other in g.player_ids() {

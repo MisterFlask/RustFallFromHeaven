@@ -63,10 +63,7 @@ impl Deal {
 
     /// C++ static `CvDeal::hasData`.
     pub fn has_data(item: TradeableItem) -> bool {
-        // (Not in C++: a House's Secede and Become your vassal name nothing; docs/PERSONS.md.)
-        item != TradeableItem::TRADE_SECEDE
-            && item != TradeableItem::TRADE_HOUSE_VASSAL
-            && item != TradeableItem::TRADE_MAPS
+        item != TradeableItem::TRADE_MAPS
             && item != TradeableItem::TRADE_VASSAL
             && item != TradeableItem::TRADE_SURRENDER
             && item != TradeableItem::TRADE_OPEN_BORDERS
@@ -153,9 +150,6 @@ impl Game {
 
         // CvGame::deleteDeal
         self.deals.remove(d);
-        // Not in C++: a resource no longer given to a House may close a courtship (docs/PERSONS.md,
-        // "The third build", rule 7).
-        self.house_deal_done(first, second);
     }
 
     /// C++ `CvDeal::addTrades`: start the trades (`first` given by `first_player`), making peace
@@ -182,8 +176,8 @@ impl Game {
 
         let first_team = self.players[first_player].team;
         let second_team = self.players[second_player].team;
-        // Not in C++: a gift to a House (docs/PERSONS.md, "The third build", rule 7: the House gives
-        // nothing) makes no peace; a House's war is its liege's.
+        // Not in C++: a gift to a House (docs/PERSONS.md, "The fourth build", rule 3: the House
+        // gives nothing) makes no peace; a House's war is its liege's.
         let house_gift = (second.is_empty() && self.players[second_player].house.is_some()) || (first.is_empty() && self.players[first_player].house.is_some());
 
         if self.at_war(first_team, second_team) && !house_gift {
@@ -220,30 +214,16 @@ impl Game {
         }
 
         for trade in first {
-            // A House's Secede or Become your vassal (docs/PERSONS.md): the other side's offer is
-            // what its liege learns of.
-            if let Some(kind) = crate::persons::house_item(trade.item_type) {
-                self.house_trade(first_player, second_player, kind, second);
-                continue;
-            }
             if self.deal_start_trade(d, trade.clone(), first_player, second_player) && self.deals.contains(d) {
                 self.deals[d].first_trades.push(trade.clone());
             }
         }
 
         for trade in second {
-            if let Some(kind) = crate::persons::house_item(trade.item_type) {
-                self.house_trade(second_player, first_player, kind, first);
-                continue;
-            }
             if self.deal_start_trade(d, trade.clone(), second_player, first_player) && self.deals.contains(d) {
                 self.deals[d].second_trades.push(trade.clone());
             }
         }
-
-        // Not in C++: a gift of gold or a resource reaching a House may open a courtship
-        // (docs/PERSONS.md, "The third build", rule 7).
-        self.house_deal_done(first_player, second_player);
 
         let alliance = first.iter().chain(second.iter()).any(|t| t.item_type == TradeableItem::TRADE_PERMANENT_ALLIANCE);
 
@@ -432,9 +412,6 @@ impl Game {
             TradeableItem::TRADE_GOLD => {
                 self.players[from_player].gold -= trade.data;
                 self.players[to_player].gold += trade.data;
-                // Not in C++: gold given to a House counts toward a courtship (docs/PERSONS.md, "The
-                // third build", rule 7).
-                self.house_gift_received(from_player, to_player, trade.data);
                 // AI_changeGoldTradedTo (AI bookkeeping)
                 self.players[from_player].ai_gold_traded_to[to_player] += trade.data;
 
@@ -546,11 +523,6 @@ impl Game {
                 self.team_set_force_peace(from_team, to_team, true);
                 save = true;
             }
-
-            // Not in C++: a House's side deal (docs/PERSONS.md; `deal_add_trades` passes the
-            // offer).
-            TradeableItem::TRADE_SECEDE => self.house_trade(from_player, to_player, crate::persons::BribeKind::Secede, &[]),
-            TradeableItem::TRADE_HOUSE_VASSAL => self.house_trade(from_player, to_player, crate::persons::BribeKind::Vassal, &[]),
 
             _ => debug_assert!(false, "CvDeal::startTrade: unexpected item {:?}", trade.item_type),
         }
@@ -703,9 +675,6 @@ mod tests {
             ("TRADE_EMBARGO", f, f, f, t, f, f, f),
             ("TRADE_CIVIC", f, f, f, t, f, f, f),
             ("TRADE_RELIGION", f, f, f, t, f, f, f),
-            // Not in C++: a House's side deal (docs/PERSONS.md).
-            ("TRADE_SECEDE", f, f, f, f, f, f, f),
-            ("TRADE_HOUSE_VASSAL", f, f, f, f, f, f, f),
         ];
         assert_eq!(expect.len(), TradeableItem::NUM);
         for (i, e) in expect.iter().enumerate() {

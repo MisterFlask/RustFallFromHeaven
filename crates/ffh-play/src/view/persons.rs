@@ -279,6 +279,7 @@ fn since_text(hv: &HouseView) -> String {
         HouseOrigin::Capitulated => format!("Capitulated on turn {}.", hv.founded_turn),
         HouseOrigin::Vassal => format!("Vassal since turn {}.", hv.founded_turn),
         HouseOrigin::Split => format!("Split off on turn {}.", hv.founded_turn),
+        HouseOrigin::Courted => format!("Courted away on turn {}.", hv.founded_turn),
     }
 }
 
@@ -377,10 +378,10 @@ fn levy_status(reason: Option<&str>, loyalty: i32) -> Json {
 /// its leader (portrait, name, title), its attitude and, Furious, the outcome of its ultimatum
 /// (rule 5), its contract (rule 6: `Contract until turn 160: no tribute above 10%.`), its split
 /// line (rule 4: `Holds 7 cities: 5% a turn to split.`), its request, its loyalty parts, its
-/// tribute and the selector, its levy, its cities, its price to secede, the rivals' courtships of
-/// it (the third build, rule 7: `courtships`, a line each: `Courted by the Bannor (gifts: 120 gold,
-/// Wine). Offers possible from turn 140.`), Free; and opened, its record, its leader's ambition and
-/// backstory.
+/// tribute and the selector, its levy, its cities, the rivals' courtships of it (the fourth build,
+/// rule 10: `courtships`, a line each: `Courted by the Sheaim: favour 80 of 188, a split in ~12
+/// turns (Ventry, Corona).`) and its guard (`guard`: `Guarded: −6 a turn to each courtship.`),
+/// Free; and opened, its record, its leader's ambition and backstory.
 fn house_json(v: &Viewer, hv: &HouseView) -> Json {
     let g = v.g;
     let (parts, total) = parts_json(&hv.parts, hv.loyalty);
@@ -393,10 +394,6 @@ fn house_json(v: &Viewer, hv: &HouseView) -> Json {
         .map(|&c| city_ref(g, c).with("held", held.contains(&c)).with("hold", g.city_hold_line(c, "it").map(|l| core(g, &l))).with("seat", hv.seat == Some(c)))
         .collect();
     let contests = g.house_hold_text(hv.id);
-    // Its price when it would accept an offer (Cautious or worse) is in the card's body; a House
-    // that refuses any says so under Record.
-    let price = hv.bribe_price.map(|p| format!("Price to secede: {p} gold."));
-    let price_refusal = hv.bribe_price.is_none().then_some("Refuses any offer to secede.");
     let record: Vec<Json> = hv.deeds.iter().rev().map(|dd| Json::from(format!("Turn {}: {}", dd.turn, core(g, &dd.text)))).collect();
     crate::jobj! {
         "id" => hv.id,
@@ -418,9 +415,8 @@ fn house_json(v: &Viewer, hv: &HouseView) -> Json {
         "cities" => Json::Arr(cities),
         "tribute" => tribute_json(g, hv),
         "levy" => levy_status(hv.levy.reason.as_deref(), hv.loyalty),
-        "price" => price,
-        "price_refusal" => price_refusal,
         "courtships" => Json::Arr(hv.courtships.iter().map(|c| Json::from(core(g, &c.line))).collect()),
+        "guard" => hv.guard.as_ref().map(|gv| gv.line.clone()),
         "free" => crate::jobj! { "ok" => hv.free.is_ok(), "refusal" => hv.free.err(), "confirm" => format!("Free {}? It is no longer your vassal, at peace with you. This cannot be undone.", hv.label) },
         "parts" => parts,
         "total" => total,

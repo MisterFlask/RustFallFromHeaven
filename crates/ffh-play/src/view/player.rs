@@ -467,17 +467,13 @@ fn and_list(items: &[String]) -> String {
 }
 
 /// House `hh` (not the human's) as the diplomacy list's second line states it (docs/PERSONS.md,
-/// "The second build", rules 5 and 9): `{state, price, refusal}`, its state toward its own liege,
-/// its price to secede when it would take the human's offer (else null), and the rules' reason it
-/// would not when that reason is not its state (null otherwise: the state's mark says it).
+/// "The second build", rule 5; "The fourth build"): `{state, courting}`, its state toward its own
+/// liege and the human's courtship of it (`Game::house_courting_line`; null while it courts it
+/// not).
 fn house_offer(v: &Viewer, hh: HouseId) -> Json {
-    use ffh_core::persons::{BribeKind, LoyaltyState};
     let g = v.g;
-    let state = g.house_state(hh);
-    let refusal = g.house_bribe_refusal(hh, v.h, BribeKind::Secede);
     crate::jobj! {
-        "state" => state.name(),
-        "price" => if refusal.is_none() { g.house_bribe_price(hh) } else { None },
-        "refusal" => refusal.filter(|_| state >= LoyaltyState::Cautious),
+        "state" => g.house_state(hh).name(),
+        "courting" => g.house_courting_line(hh, v.h),
     }
 }

@@ -4,35 +4,22 @@
   //     its values: docs/CULTURE.md for the CULTURE_* defines, docs/ARMIES.md for the ARMY_* ones, docs/GOVERNORS.md for the
   //     GOVERNOR_* ones; the ENGAGEMENT_* ones are engagement combat's (phase 6). Percentages are integers
   //     (100 = 1.0).
-  // ==== Cultural channels (GAMEOPTION_CULTURE_ACTIONS, docs/CULTURE.md) ====
-  // percent of a channelling city's culture rate diverted to its channel
+  // ==== Cultural channels (docs/CULTURE.md; docs/PERSONS.md, "The fourth build") ====
+  // percent of each city's culture rate a civilization's channel diverts (counted in hundredths)
   "CULTURE_CHANNEL_PERCENT": 50,
   // plots within which a channel works in full; beyond, it falls with the square of the distance
   "CULTURE_CHANNEL_FULL_RANGE": 5,
   // plots beyond which a channel does nothing
   "CULTURE_CHANNEL_RANGE": 20,
-  // percent of a city's own culture rate that resists revolt pressure each turn
-  "CULTURE_REVOLT_RESIST_PERCENT": 50,
-  // revolt pressure resisted each turn per defender of the city's team
-  "CULTURE_REVOLT_GARRISON": 2,
-  // percent of its revolt pressure a city sheds each turn
-  "CULTURE_REVOLT_FADE_PERCENT": 5,
-  // revolt pressure per point of unhappiness
-  "CULTURE_REVOLT_UNHAPPY_STEP": 25,
-  // most unhappiness revolt pressure causes
-  "CULTURE_REVOLT_UNHAPPY_MAX": 4,
-  // revolt pressure at which a city falls into revolt (disorder)
-  "CULTURE_REVOLT_DISORDER": 100,
-  // one caster's revolt pressure at which a city joins it
-  "CULTURE_REVOLT_FLIP": 300,
-  // turns of a hostile channel per point of the target leader's memory of it
-  "CULTURE_REVOLT_MEMORY_TURNS": 5,
+  // Court: percent of its favour a House's favour toward a courter fades each turn (at least a
+  //      hundredth of a culture)
+  "CULTURE_FAVOUR_FADE_PERCENT": 5,
+  // Court: the turns of a Court channel per point of the liege's memory of it (MEMORY_COURTED_HOUSE)
+  "CULTURE_COURT_MEMORY_TURNS": 5,
   // Spread Religion: chance a turn per culture channelled, in hundredths of a percent, before distance and the religions present
   "CULTURE_SPREAD_PER_CULTURE": 100,
   // Spread Religion: most chance a turn, in hundredths of a percent
   "CULTURE_SPREAD_MAX": 2500,
-  // the AI: most of its cities channelling revolt against one civilization
-  "CULTURE_AI_MAX_HOSTILE_PER_TARGET": 2,
   // turns per point a leader's memory of cultural hostility or friendship fades
   "CULTURE_MEMORY_DECAY_TURNS": 10,
   // most points of cultural hostility or friendship a leader remembers
@@ -127,10 +114,6 @@
   "PERSON_HOUSE_SPLIT_PERCENT": 5,
   // the turns an accepted ultimatum's contract binds the liege and floors the House at Annoyed
   "PERSON_ULTIMATUM_TURNS": 20,
-  // ---- Courtship (docs/PERSONS.md, "The third build", rule 7) ----
-  // the turns a civilization's courtship of a House is open before the House takes its offer
-  //      (Secede, Become your vassal)
-  "PERSON_COURTSHIP_TURNS": 10,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
   //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
   //      engage_row_order in units.jsonc; plot

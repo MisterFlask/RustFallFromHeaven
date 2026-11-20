@@ -1,9 +1,15 @@
-//! Houses, the third build's part 2B (docs/PERSONS.md, "The third build", rules 7, 8 and 10):
-//! courtship (gifts of gold and resources, the requirement, the 20 turns of gold, the opening and
-//! the 10 turns before an offer, the liege's memory), the price on the world unit, a realm's shared
-//! knowledge (both ways, not as first discoverer, a team joining a realm), gold tribute, and a House
-//! trading no tech. Every situation is built by hand.
+//! Houses courted by culture (docs/PERSONS.md, "The fourth build", rules 2 to 5 and 7; the third
+//! build's rule 10): favour (its gain, fade and settling), the requirement and its parts (L, A, W),
+//! the world culture unit, the split toward the courter (the half nearest it, never the capital, a
+//! House of one city whole, the new House the courter's with a drawn leader, no war, the memory,
+//! the favour reset), the hold contest, no split without a free leader, the guard, the Crown's
+//! grudge, gifts (an ordinary gift; the side deals gone); and a realm's shared knowledge, gold
+//! tribute, a House trading no tech. Every situation is built by hand.
 
+use std::sync::Arc;
+
+use ffh_core::controller::Controller;
+use ffh_core::culture::{ChannelOrder, ChannelTarget};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::map::{Map, MapInitData};
@@ -14,27 +20,38 @@ use ffh_data::*;
 
 const P0: PlayerId = PlayerId(0);
 const P1: PlayerId = PlayerId(1);
+const P2: PlayerId = PlayerId(2);
 const COURTED: MemoryType = MemoryType::MEMORY_COURTED_HOUSE;
+const SPLIT: MemoryType = MemoryType::MEMORY_SPLIT_HOUSE;
+const CULTURE: usize = 2;
 
-/// A duel (the Bannor against the Elohim, no barbarians) on one flat block of grassland (x 2..=17,
-/// y 3..=8) revealed to both, the starting units gone, the two teams met, player 0 under
-/// Aristocracy (it may grant cities). Player 0 holds its capital at (3, 4) and cities A (7, 4), B
-/// (11, 4) and C (7, 7); player 1 a city at (15, 7). Each civilization's commerce is 50 a turn
-/// (the world unit 50).
+/// A duel (the Bannor against the Elohim, no barbarians; with `three`, the Ljosalfar as player 2)
+/// on one flat block of grassland (x 2..=17, y 3..=8) revealed to all, the starting units gone, the
+/// teams met, player 0 under Aristocracy (it may grant cities). Player 0 holds its capital at (3,
+/// 4) and cities A (7, 4), B (11, 4) and C (7, 7); player 1 a city at (15, 7); player 2 a city at
+/// (15, 4). Each civilization's commerce is 50 gold a turn (the world commerce unit 50) and 20
+/// culture (the world culture unit 20).
 struct World {
     g: Game,
     a: CityId,
     b: CityId,
+    c: CityId,
 }
 
 fn world() -> World {
+    world_of(false)
+}
+
+fn world_of(three: bool) -> World {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
+    let n = if three { 3 } else { 2 };
+    let mut setup = GameSetup::standard(d, n, "WORLDSIZE_DUEL", 5);
     setup.options[GameOptionType::GAMEOPTION_NO_BARBARIANS] = true;
-    setup.players[0].civ = Some(d.t::<CivilizationType>("CIVILIZATION_BANNOR"));
-    setup.players[1].civ = Some(d.t::<CivilizationType>("CIVILIZATION_ELOHIM"));
-    setup.players[0].leader = Some(d.t::<LeaderHeadType>("LEADER_SABATHIEL"));
-    setup.players[1].leader = Some(d.t::<LeaderHeadType>("LEADER_EINION"));
+    let civs = [("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), ("CIVILIZATION_ELOHIM", "LEADER_EINION"), ("CIVILIZATION_LJOSALFAR", "LEADER_ARENDEL")];
+    for (slot, (civ, leader)) in civs.into_iter().take(n).enumerate() {
+        setup.players[slot].civ = Some(d.t::<CivilizationType>(civ));
+        setup.players[slot].leader = Some(d.t::<LeaderHeadType>(leader));
+    }
     let mut g = Game::new(d, setup);
     g.game_init();
     g.log.enabled = true;
@@ -60,47 +77,75 @@ fn world() -> World {
         }
     }
     g.update_plot_groups();
-    let (t0, t1) = (g.players[P0].team, g.players[P1].team);
-    g.team_meet(t0, t1, false);
+    let players: Vec<PlayerId> = (0..n).map(|i| PlayerId(i as _)).collect();
+    for &p in &players {
+        for &o in &players {
+            let (tp, to) = (g.players[p].team, g.players[o].team);
+            if tp != to && !g.teams[tp].has_met[to] {
+                g.team_meet(tp, to, false);
+            }
+        }
+    }
     g.player_init_city(P0, 3, 4, true, true);
     let a = g.player_init_city(P0, 7, 4, true, true);
     let b = g.player_init_city(P0, 11, 4, true, true);
-    g.player_init_city(P0, 7, 7, true, true);
+    let c = g.player_init_city(P0, 7, 7, true, true);
     g.player_init_city(P1, 15, 7, true, true);
-    let c = g.d.t::<CivicType>("CIVIC_ARISTOCRACY");
-    let option = g.d.civics[c].civic_option_type.expect("a civic option");
-    g.player_set_civics(P0, option, Some(c));
-    for p in [P0, P1] {
+    if three {
+        g.player_init_city(P2, 15, 4, true, true);
+    }
+    let civic = g.d.t::<CivicType>("CIVIC_ARISTOCRACY");
+    let option = g.d.civics[civic].civic_option_type.expect("a civic option");
+    g.player_set_civics(P0, option, Some(civic));
+    for &p in &players {
         commerce(&mut g, p, 50);
     }
-    World { g, a, b }
+    World { g, a, b, c }
 }
 
-/// Player `p`'s total commerce a turn set to `n` (all of it gold; the rules keep it x100).
+/// Player `p`'s total commerce a turn set to `n` gold and 20 culture (the rules keep it x100).
 fn commerce(g: &mut Game, p: PlayerId, n: i32) {
-    g.players[p].commerce_rate = [n * 100, 0, 0, 0];
+    g.players[p].commerce_rate = [n * 100, 0, 2000, 0];
 }
 
-/// A House of player 0 founded at city `seat` (a leader drawn as a founding draws it), without a
-/// request, Cautious toward its liege (a modifier of -1 for 100 turns at a tribute of 10%): it
-/// takes offers.
-fn house(g: &mut Game, seat: CityId) -> HouseId {
+/// Player `p`'s culture a turn set to `n` (the world culture unit reads it).
+fn culture(g: &mut Game, p: PlayerId, n: i32) {
+    g.players[p].commerce_rate[CULTURE] = n * 100;
+}
+
+/// House `h`'s loyalty set to `amount` (one modifier for 100 turns, tribute 10%: its part 0).
+fn loyalty(g: &mut Game, h: HouseId, amount: i32) {
+    let t = g.game_turn();
+    let house = &mut g.houses[h];
+    house.tribute = 10;
+    house.tribute_now = 10;
+    house.standing.mods = vec![LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount, until: Some(t + 100) }];
+}
+
+/// A House of player 0 founded at city `seat` and granted `more` (a leader drawn as a founding
+/// draws it), without a request, Cautious toward its liege (loyalty -1 at a tribute of 10%).
+fn house_with(g: &mut Game, seat: CityId, more: &[CityId]) -> HouseId {
     let civ = g.player_get_civilization_type(P0).expect("a civilization");
     let leader = g.house_leader_draw(civ, P0).expect("a free leader");
     let (h, _) = g.player_found_house(P0, leader, &[seat]).expect("founded");
+    for &c in more {
+        g.player_grant_city(P0, c, GrantTo::House(h)).expect("granted");
+    }
     let t = g.game_turn();
     let house = &mut g.houses[h];
     house.demand = None;
     house.demand_rest_until = t + 1000;
-    house.tribute = 10;
-    house.tribute_now = 10;
-    house.standing.mods = vec![LoyaltyMod { cause: LoyaltyCause::DemandRefused, amount: -1, until: Some(t + 100) }];
+    loyalty(g, h, -1);
     assert_eq!(g.house_state(h), LoyaltyState::Cautious);
-    // (The founding recounted the liege's commerce from its cities: the world unit back to 50.)
-    for p in [P0, P1] {
+    // (The founding and the grants recounted the liege's commerce from its cities.)
+    for p in g.player_ids().filter(|&p| g.player_has_houses(p)).collect::<Vec<_>>() {
         commerce(g, p, 50);
     }
     h
+}
+
+fn house(g: &mut Game, seat: CityId) -> HouseId {
+    house_with(g, seat, &[])
 }
 
 fn gold(data: i32) -> TradeData {
@@ -111,14 +156,25 @@ fn item(t: TradeableItem, data: i32) -> TradeData {
     TradeData { item_type: t, data, offering: false, hidden: false }
 }
 
-/// Player 1 gives House `h` `n` gold (a gift: nothing asked back), through a deal.
-fn gift(g: &mut Game, h: HouseId, n: i32) {
-    let hp = g.houses[h].player;
-    g.players[P1].gold += n;
-    g.implement_deal(P1, hp, &[gold(n)], &[], false);
+/// `courter`'s Court order at House `h`.
+fn court(g: &Game, h: HouseId) -> ChannelOrder {
+    ChannelOrder { action: g.d.t::<CulturalActionType>("CULTURALACTION_COURT_HOUSE"), target: ChannelTarget::House(h), religion: None }
 }
 
-/// The next game turn of player 0's Houses (its courtships checked).
+/// `p`'s Guard order at House `h`.
+fn guard(g: &Game, h: HouseId) -> ChannelOrder {
+    ChannelOrder { action: g.d.t::<CulturalActionType>("CULTURALACTION_GUARD_HOUSE"), target: ChannelTarget::House(h), religion: None }
+}
+
+/// House `h`'s favour toward `courter` set to `amount` hundredths.
+fn set_favour(g: &mut Game, h: HouseId, courter: PlayerId, amount: i32) {
+    let list = &mut g.houses[h].favour;
+    list.retain(|f| f.courter != courter);
+    list.push(Favour { courter, amount, warned: false });
+    list.sort_by_key(|f| f.courter);
+}
+
+/// The next game turn of player 0's Houses (their favour stepped).
 fn turn(g: &mut Game) {
     let t = g.game_turn();
     g.set_game_turn(t + 1);
@@ -129,144 +185,135 @@ fn logged(g: &Game, s: &str) -> bool {
     g.log.entries.iter().any(|e| e.text.contains(s))
 }
 
+/// The city on the plot of `c` now (a city changing hands has a new id).
+fn at(g: &Game, plot: PlotIdx) -> CityId {
+    g.map.plots[plot].plot_city.expect("a city")
+}
+
+/// A controller whose leader has a set attitude toward everyone, and accepts any gift.
+struct Attitude(AttitudeType);
+impl Controller for Attitude {
+    fn attitude(&self, _g: &Game, _p: PlayerId, _towards: PlayerId) -> AttitudeType {
+        self.0
+    }
+    fn consider_offer(&self, _g: &Game, _p: PlayerId, _from: PlayerId, _they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+        we_give.is_empty()
+    }
+}
+
+/// A controller whose leader is Pleased with whoever gave it a gift that still counts, else
+/// Cautious (the AI's `gifts` relation in short), and accepts any gift, valuing gold at its sum.
+struct GiftsPlease;
+impl Controller for GiftsPlease {
+    fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
+        if g.gifts_value(p, towards) > 0 {
+            AttitudeType::ATTITUDE_PLEASED
+        } else {
+            AttitudeType::ATTITUDE_CAUTIOUS
+        }
+    }
+    fn consider_offer(&self, _g: &Game, _p: PlayerId, _from: PlayerId, _they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+        we_give.is_empty()
+    }
+    fn trade_value(&self, _g: &Game, _p: PlayerId, _other: PlayerId, item: &TradeData, _p_gets: bool) -> Option<i32> {
+        Some(item.data)
+    }
+}
+
 // ---------------------------------------------------------------------------------------------
-// Courtship (rule 7)
+// The world culture unit, the requirement (rule 3)
 // ---------------------------------------------------------------------------------------------
 
-/// The requirement is 3 turns of the world unit; gold given counts at once, and the courtship
-/// opens the turn its value reaches the requirement: the liege is told and remembers the giver;
-/// the House is not angered. The House card's line and the courter's line say where it stands.
+/// W is the median culture a turn of the civilizations that can have Houses (the lower middle of
+/// an even count), at least 1; a House's culture does not count.
 #[test]
-fn a_gift_opens_a_courtship_at_the_requirement() {
+fn the_world_culture_unit_is_the_median() {
+    let World { mut g, a, .. } = world_of(true);
+    let h = house(&mut g, a);
+    for (p, n) in [(P0, 10), (P1, 30), (P2, 20)] {
+        culture(&mut g, p, n);
+    }
+    let hp = g.houses[h].player;
+    culture(&mut g, hp, 1000);
+    assert_eq!(g.world_culture_unit(), 20, "the middle of 10, 20 and 30");
+    culture(&mut g, P2, 0);
+    assert_eq!(g.world_culture_unit(), 10, "the middle of 0, 10 and 30");
+    let World { mut g, .. } = world();
+    culture(&mut g, P0, 10);
+    culture(&mut g, P1, 30);
+    assert_eq!(g.world_culture_unit(), 10, "the lower middle of two");
+    culture(&mut g, P0, 0);
+    culture(&mut g, P1, 0);
+    assert_eq!(g.world_culture_unit(), 1, "at least 1");
+}
+
+/// The requirement is `(L + 6 − 2A, at least 1) × W`: the House's loyalty to its liege, its
+/// leader's attitude toward the courter (−2 to +2), the world culture unit.
+#[test]
+fn the_requirement_reads_loyalty_attitude_and_the_world_unit() {
     let World { mut g, a, .. } = world();
     let h = house(&mut g, a);
     let hp = g.houses[h].player;
-    assert_eq!(g.world_commerce_unit(), 50);
-    assert_eq!(g.courtship_requirement(), 150);
-    assert_eq!(g.courtship_resource_worth(), 50);
-    let loyalty = g.house_loyalty(h);
-    // A gift is a deal the House accepts with nothing asked back: gold from its treasury to the
-    // House's.
-    g.players[P1].gold = 10;
+    assert_eq!(g.house_requirement(h, P1), Requirement { total: 100, loyalty: -1, attitude: 0, unit: 20 }, "Cautious, A 0, W 20: 5 W");
+    loyalty(&mut g, h, 3);
+    assert_eq!(g.house_requirement(h, P1).total, 9 * 20, "Friendly toward its liege: 9 W");
+    culture(&mut g, P0, 30);
+    culture(&mut g, P1, 40);
+    assert_eq!(g.house_requirement(h, P1).total, 9 * 30, "W follows the world");
+    g.controllers[hp] = Arc::new(Attitude(AttitudeType::ATTITUDE_FRIENDLY));
+    assert_eq!(g.house_requirement(h, P1), Requirement { total: 5 * 30, loyalty: 3, attitude: 2, unit: 30 }, "its leader Friendly with the courter: 4 less");
+    g.controllers[hp] = Arc::new(Attitude(AttitudeType::ATTITUDE_FURIOUS));
+    assert_eq!(g.house_requirement(h, P1).total, 13 * 30, "Furious with the courter: 4 more");
+    g.controllers[hp] = Arc::new(Attitude(AttitudeType::ATTITUDE_FRIENDLY));
+    loyalty(&mut g, h, -6);
+    assert_eq!(g.house_requirement(h, P1).total, 30, "at least 1 × W");
+}
+
+/// A gift to a House is an ordinary gift: recorded on the House (`implement_proposal`), it raises
+/// its leader's attitude toward the giver (here a controller that reads it as the AI's `gifts`
+/// relation does), which lowers the requirement. Its liege gives it none.
+#[test]
+fn a_gift_lowers_the_requirement_through_the_attitude() {
+    let World { mut g, a, .. } = world();
+    let h = house(&mut g, a);
+    let hp = g.houses[h].player;
+    g.controllers[hp] = Arc::new(GiftsPlease);
+    let before = g.house_requirement(h, P1);
+    g.players[P1].gold = 100;
+    let treasury = g.players[hp].gold;
+    assert!(g.player_offer_house(P1, hp, &[gold(100)], &[]), "a gift");
+    assert_eq!(g.players[hp].gold, treasury + 100);
+    assert!(g.gifts_value(hp, P1) > 0, "recorded as a gift");
+    let after = g.house_requirement(h, P1);
+    assert_eq!((before.attitude, after.attitude), (0, 1));
+    assert_eq!(after.total, before.total - 2 * before.unit);
+    // Nothing but a gift: a House gives nothing.
+    g.players[P1].gold = 100;
+    assert!(!g.player_offer_house(P1, hp, &[gold(10)], &[gold(1)]));
+    assert_eq!(g.house_gift_refusal(h, P0), Some(format!("{} pays its liege by tribute.", g.house_label(h))));
+}
+
+/// The side deals are gone: no Secede, no Become your vassal; a House gives nothing and takes only
+/// gold (no gold per turn) and resources, not from its liege.
+#[test]
+fn a_house_trades_only_gifts() {
+    let World { mut g, a, .. } = world();
+    let h = house(&mut g, a);
+    let hp = g.houses[h].player;
+    assert!(!TradeableItem::NAMES.iter().any(|n| *n == "TRADE_SECEDE" || *n == "TRADE_HOUSE_VASSAL"), "the side deals are gone");
+    g.players[hp].gold = 100;
+    g.players[P1].gold = 100;
+    assert!(!g.player_can_trade_item(hp, P1, &gold(10), false), "it gives nothing");
+    assert!(!g.player_can_trade_item(hp, P1, &item(TradeableItem::TRADE_MAPS, 0), false));
     assert!(g.player_can_trade_item(P1, hp, &gold(10), false));
-    assert!(!g.player_can_trade_item(P1, hp, &gold(11), false), "no more than its treasury");
-    let before = g.players[hp].gold;
-    gift(&mut g, h, 140);
-    assert_eq!(g.players[hp].gold, before + 140);
-    assert_eq!(g.house_courtship_value(h, P1), 140);
-    assert_eq!(g.house_courtship_opened(h, P1), None, "below the requirement");
-    let label = g.house_label(h);
-    assert_eq!(g.house_courtship_refusal(h, P1), Some(format!("Court {label} first: gifts worth 150 (you have given 140).")));
-    let cv = g.house_courtships(h);
-    assert_eq!(cv.len(), 1);
-    assert_eq!(cv[0].line, "Courted by the Elohim (gifts: 140 gold). Not open: 140 of 150.");
-    assert_eq!(g.house_courting_line(h, P1), Some(format!("Courting {label}: 140 of 150 given.")));
-    assert_eq!(g.players[P0].ai_memory_count[P1][COURTED], 0);
-    // The gift that reaches it opens it this turn.
-    let t = g.game_turn();
-    gift(&mut g, h, 10);
-    assert_eq!(g.house_courtship_opened(h, P1), Some(t));
-    let from = t + g.d.defines.person_courtship_turns;
-    assert!(logged(&g, &format!("The Elohim court {label}: offers possible from turn {from}.")), "the liege is told");
-    assert_eq!(g.players[P0].ai_memory_count[P1][COURTED], 1, "the liege remembers it");
-    assert_eq!(g.players[hp].ai_memory_count[P1][COURTED], 0, "the House, given gifts, does not");
-    assert_eq!(g.house_loyalty(h), loyalty, "the House is not angered");
-    assert_eq!(g.house_courtships(h)[0].line, format!("Courted by the Elohim (gifts: 150 gold). Offers possible from turn {from}."));
-    assert_eq!(g.house_courtship_refusal(h, P1), Some(format!("Offers possible from turn {from}.")));
-    // Its liege never courts it: no gift from its own team.
-    g.players[P0].gold = 10;
-    assert!(!g.player_can_trade_item(P0, hp, &gold(10), false));
-    assert!(g.house_courter_refusal(h, P0).is_some());
+    assert!(!g.player_can_trade_item(P1, hp, &gold(101), false), "no more than its treasury");
+    assert!(!g.player_can_trade_item(P1, hp, &item(TradeableItem::TRADE_GOLD_PER_TURN, 5), false), "no gold per turn");
+    assert!(!g.player_can_trade_item(P1, hp, &item(TradeableItem::TRADE_OPEN_BORDERS, 0), false));
+    g.players[P0].gold = 100;
+    assert!(!g.player_can_trade_item(P0, hp, &gold(10), false), "not from its liege");
 }
 
-/// A resource given counts a third of the requirement while it is given, and stops counting when
-/// its trade ends: the courtship it held open closes. (The trade is made by force: this map has no
-/// trade network between the two.)
-#[test]
-fn a_resource_counts_a_third_while_given() {
-    let World { mut g, a, .. } = world();
-    let h = house(&mut g, a);
-    let hp = g.houses[h].player;
-    let wine = g.d.t::<BonusType>("BONUS_WINE");
-    g.implement_deal(P1, hp, &[item(TradeableItem::TRADE_RESOURCES, wine.idx() as i32)], &[], true);
-    assert_eq!(g.house_gift_resources(h, P1), vec![wine]);
-    assert_eq!(g.house_courtship_value(h, P1), 50, "a third of 150");
-    let label = g.house_label(h);
-    assert_eq!(g.house_courting_line(h, P1), Some(format!("Courting {label}: 50 of 150 given (Wine counts 50).")));
-    gift(&mut g, h, 100);
-    assert!(g.house_courtship_opened(h, P1).is_some(), "100 gold and the Wine reach 150");
-    assert_eq!(g.house_courtships(h)[0].line.split(". ").next(), Some("Courted by the Elohim (gifts: 100 gold, Wine)"));
-    // The trade cancelled: the Wine no longer counts and the courtship closes.
-    let deal = g.deals.iter().find(|(_, d)| d.first_player == P1 && d.second_player == hp).map(|(id, _)| id).expect("the resource's deal");
-    g.deal_kill(deal, true);
-    assert_eq!(g.house_courtship_value(h, P1), 100);
-    assert_eq!(g.house_courtship_opened(h, P1), None);
-    assert!(g.houses[h].courtships.is_empty(), "closed");
-}
-
-/// Gold counts for 20 turns: a gift of turn t is gone at turn t + 20, and the courtship it held
-/// open closes in the liege's turn; the requirement follows the world unit.
-#[test]
-fn gold_older_than_twenty_turns_drops_out() {
-    let World { mut g, a, .. } = world();
-    let h = house(&mut g, a);
-    let t = g.game_turn();
-    gift(&mut g, h, 150);
-    assert_eq!(g.house_courtship_opened(h, P1), Some(t));
-    for _ in 0..19 {
-        turn(&mut g);
-    }
-    assert_eq!(g.game_turn(), t + 19);
-    assert_eq!(g.house_courtship_opened(h, P1), Some(t), "still counted at turn t + 19");
-    turn(&mut g);
-    assert_eq!(g.house_gift_gold(h, P1), 0);
-    assert!(g.houses[h].gifts.is_empty(), "pruned");
-    assert!(g.houses[h].courtships.is_empty(), "closed");
-    // A richer world raises the requirement: a courtship open at 150 closes when the unit is 60.
-    gift(&mut g, h, 150);
-    assert!(g.house_courtship_opened(h, P1).is_some());
-    for p in [P0, P1] {
-        commerce(&mut g, p, 60);
-    }
-    assert_eq!(g.courtship_requirement(), 180);
-    assert_eq!(g.house_courtship_opened(h, P1), None, "below the requirement now");
-    turn(&mut g);
-    assert!(g.houses[h].courtships.is_empty());
-}
-
-/// An offer (Cautious, its price covered) is refused before the courtship has been open 10 turns
-/// and accepted after.
-#[test]
-fn an_offer_waits_for_ten_turns_of_courtship() {
-    let World { mut g, a, .. } = world();
-    let h = house(&mut g, a);
-    let hp = g.houses[h].player;
-    let label = g.house_label(h);
-    let secede = item(TradeableItem::TRADE_SECEDE, 0);
-    assert_eq!(g.house_bribe_terms_refusal(h, P1, BribeKind::Secede), None, "Cautious: its terms are met");
-    assert_eq!(g.house_bribe_refusal(h, P1, BribeKind::Secede), Some(format!("Court {label} first: gifts worth 150 (you have given 0).")));
-    assert!(!g.player_can_trade_item(hp, P1, &secede, false));
-    let t = g.game_turn();
-    gift(&mut g, h, 150);
-    let from = t + 10;
-    for k in 0..10 {
-        assert_eq!(g.house_bribe_refusal(h, P1, BribeKind::Secede), Some(format!("Offers possible from turn {from}.")), "turn t + {k}");
-        let price = g.house_bribe_price(h).unwrap();
-        g.players[P1].gold = price;
-        g.implement_deal(P1, hp, &[gold(price)], &[secede.clone()], false);
-        assert!(g.houses.contains(h), "refused at turn t + {k}");
-        turn(&mut g);
-    }
-    assert_eq!(g.game_turn(), from);
-    assert_eq!(g.house_bribe_refusal(h, P1, BribeKind::Secede), None);
-    let price = g.house_bribe_price(h).unwrap();
-    g.players[P1].gold = price;
-    g.implement_deal(P1, hp, &[gold(price)], &[secede], false);
-    assert!(!g.houses.contains(h), "accepted: it broke away");
-}
-
-/// At war with the House's liege, a gift to the House makes no peace (its war is its liege's), and
-/// it counts.
+/// At war with the House's liege, a gift to the House makes no peace (its war is its liege's).
 #[test]
 fn a_gift_at_war_makes_no_peace() {
     let World { mut g, a, .. } = world();
@@ -276,32 +323,234 @@ fn a_gift_at_war_makes_no_peace() {
     g.team_declare_war(t1, t0, false, None);
     let ht = g.players[hp].team;
     assert!(g.at_war(t1, ht));
-    gift(&mut g, h, 150);
+    g.players[P1].gold = 150;
+    g.implement_deal(P1, hp, &[gold(150)], &[], false);
     assert!(g.at_war(t1, ht) && g.at_war(t1, t0), "still at war");
-    assert!(g.house_courtship_opened(h, P1).is_some());
+    assert_eq!(g.players[hp].gold, 150);
 }
 
 // ---------------------------------------------------------------------------------------------
-// The price (rule 8)
+// Favour (rule 2)
 // ---------------------------------------------------------------------------------------------
 
-/// A House's price is `(loyalty + 6) x P x its cities`, P 54% of the world unit (at least 1).
+/// Favour gains the courter's inflow times its reach in the liege's turn, then fades 5% (at least a
+/// hundredth), and settles near nineteen times the inflow; a channel stopped, it fades away. The
+/// liege and the courter are told once it passes two thirds of the requirement.
 #[test]
-fn the_price_follows_the_world_unit() {
+fn favour_gains_fades_and_settles() {
     let World { mut g, a, b, .. } = world();
-    let h = house(&mut g, a);
-    g.player_grant_city(P0, b, GrantTo::House(h)).expect("granted");
-    let h_loyalty = g.house_loyalty(h);
-    let cities = g.house_cities(h).len() as i32;
-    assert_eq!(cities, 2);
-    for (unit, step) in [(50, 27), (47, 25), (14, 7), (153, 82), (1, 1)] {
-        for p in [P0, P1] {
-            commerce(&mut g, p, unit);
-        }
-        assert_eq!(g.world_commerce_unit(), unit);
-        assert_eq!(g.house_price_step(), step, "P at a world unit of {unit}");
-        assert_eq!(g.house_bribe_price(h), Some((h_loyalty + 6).max(1) * step * cities));
+    let h = house_with(&mut g, a, &[b]);
+    g.player_set_culture_channel(P1, Some(court(&g, h))).expect("P1 courts the House");
+    assert_eq!(g.culture_house_reach(P1, h).map(|r| (r.distance, r.effect)), Some((5, 100)), "B 5 plots from P1's city: in full");
+    g.players[P1].culture_inflow = 1000;
+    turn(&mut g);
+    assert_eq!(g.house_favour(h, P1), 950, "1000 less 5%");
+    turn(&mut g);
+    assert_eq!(g.house_favour(h, P1), 1950 - 97);
+    let settles = g.favour_settles(1000, 0);
+    assert!((18_900..=19_000).contains(&settles), "settles near 19 × the inflow: {settles}");
+    // The courtship's line.
+    let cv = &g.house_courtships(h)[0];
+    assert_eq!((cv.courter, cv.requirement.total), (P1, 100));
+    assert_eq!(cv.gain, g.player_culture_inflow_now(P1), "the gain at the inflow now (in full: 5 plots)");
+    assert!(cv.line.starts_with("Courted by the Elohim: favour 18 of 100"), "{}", cv.line);
+    // Two thirds: told once.
+    let label = g.house_label(h);
+    set_favour(&mut g, h, P1, 7000);
+    turn(&mut g);
+    assert!(logged(&g, &format!("{label}: the Elohim's favour is ")), "the liege is told");
+    assert!(g.houses[h].favour[0].warned);
+    // The channel stops: the favour fades to nothing, and goes.
+    g.player_set_culture_channel(P1, None).unwrap();
+    let f = g.house_favour(h, P1);
+    turn(&mut g);
+    assert_eq!(g.house_favour(h, P1), f - f * 5 / 100, "it keeps its favour while it fades");
+    for _ in 0..400 {
+        turn(&mut g);
     }
+    assert!(g.houses[h].favour.is_empty(), "faded away");
+}
+
+/// A guard counts against every courter of the House: each one's favour loses the guard's inflow
+/// times its reach, before it fades.
+#[test]
+fn guard_subtracts_from_every_courter() {
+    let World { mut g, a, b, .. } = world_of(true);
+    let h = house_with(&mut g, a, &[b]);
+    for p in [P1, P2] {
+        g.player_set_culture_channel(p, Some(court(&g, h))).expect("courts");
+        g.players[p].culture_inflow = 1000;
+    }
+    g.player_set_culture_channel(P0, Some(guard(&g, h))).expect("the liege guards it");
+    let reach = g.culture_house_reach(P0, h).expect("a reach").effect;
+    g.players[P0].culture_inflow = 400;
+    let loss = 400 * reach / 100;
+    turn(&mut g);
+    for p in [P1, P2] {
+        let f = 1000 - loss;
+        assert_eq!(g.house_favour(h, p), f - (f * 5 / 100).max(1), "player {p:?}");
+    }
+    let gv = g.house_guard_view(h).expect("a guard");
+    assert_eq!(gv.courtships.len(), 2);
+    assert!(gv.line.starts_with("Guarded: "), "{}", gv.line);
+    // A guard that outweighs a courtship leaves nothing of it.
+    g.players[P0].culture_inflow = 100_000;
+    turn(&mut g);
+    assert!(g.houses[h].favour.iter().all(|f| f.amount == 0) || g.houses[h].favour.is_empty());
+}
+
+/// While a Court channel runs at one of its Houses, the liege remembers its caster: a point of
+/// `MEMORY_COURTED_HOUSE` every 5 turns, while the count is below 8.
+#[test]
+fn the_grudge_accrues_every_five_turns_up_to_eight() {
+    let World { mut g, a, .. } = world();
+    let h = house(&mut g, a);
+    g.player_set_culture_channel(P1, Some(court(&g, h))).expect("courts");
+    let since = g.game_turn();
+    for t in 1..=60 {
+        g.set_game_turn(since + t);
+        g.player_do_culture_channel(P1);
+        assert_eq!(g.players[P0].ai_memory_count[P1][COURTED], (t / 5).min(8), "turn {t}");
+    }
+    let hp = g.houses[h].player;
+    assert_eq!(g.players[hp].ai_memory_count[P1][COURTED], 0, "the House does not");
+}
+
+// ---------------------------------------------------------------------------------------------
+// The split (rule 4)
+// ---------------------------------------------------------------------------------------------
+
+/// At the requirement the House splits toward the courter: the half of its cities nearest it
+/// (rounded down, never the capital) go to a new House of the courter's realm, of the House's
+/// civilization, its leader drawn; in peace; the liege remembers it; the courter's favour is 0.
+#[test]
+fn a_split_at_the_requirement_takes_the_half_nearest_the_courter() {
+    let World { mut g, a, b, c } = world();
+    let d = g.player_init_city(P0, 12, 7, true, true);
+    let (pa, pb, pc, pd) = (g.city_plot(a), g.city_plot(b), g.city_plot(c), g.city_plot(d));
+    let h = house_with(&mut g, a, &[b, c, d]);
+    let hp = g.houses[h].player;
+    assert_eq!(g.house_seat(h).map(|s| g.city_plot(s)), Some(pa));
+    // D is 3 plots from P1's city, B 5, C 8; the seat stays.
+    let split = g.house_split_toward(h, P1).expect("a split");
+    assert!(!split.whole);
+    assert_eq!(split.going.iter().map(|&x| g.city_plot(x)).collect::<Vec<_>>(), vec![pd, pb]);
+    assert!(split.held.is_empty());
+    let need = 100 * g.house_requirement(h, P1).total;
+    set_favour(&mut g, h, P1, 2 * need);
+    let label = g.house_label(h);
+    turn(&mut g);
+    // The old House keeps its seat and C.
+    assert!(g.houses.contains(h));
+    assert_eq!(g.house_cities(h).iter().map(|&x| g.city_plot(x)).collect::<Vec<_>>().len(), 2);
+    assert_eq!(g.cities[at(&g, pa)].owner, hp);
+    assert_eq!(g.cities[at(&g, pc)].owner, hp);
+    // The new House: the courter's, of the Bannor, its leader a Bannor minor leader.
+    let np = g.cities[at(&g, pd)].owner;
+    assert_eq!(g.cities[at(&g, pb)].owner, np);
+    let nh = g.player_house(np).expect("a House");
+    assert_eq!((g.houses[nh].owner, g.houses[nh].origin), (P1, HouseOrigin::Courted));
+    assert_eq!(g.player_get_civilization_type(np), g.player_get_civilization_type(hp));
+    let leader = g.house_leader(nh).expect("a leader");
+    assert!(g.d.leader_heads[leader].minor_leader_of.is_some());
+    assert!(g.house_label(nh).starts_with("House "));
+    // In peace.
+    let (t0, t1, ht, nt) = (g.players[P0].team, g.players[P1].team, g.players[hp].team, g.players[np].team);
+    assert!(!g.at_war(t0, t1) && !g.at_war(t0, nt) && !g.at_war(ht, nt) && !g.at_war(t1, nt));
+    assert!(g.teams[nt].vassal[t1]);
+    // Remembered; the favour spent; told.
+    assert_eq!(g.players[P0].ai_memory_count[P1][SPLIT], 1);
+    assert_eq!(g.house_favour(h, P1), 0);
+    assert!(logged(&g, &format!("The Elohim's courtship splits {label}: ")));
+    assert!(logged(&g, &format!("{label} splits toward you: ")));
+}
+
+/// A House of one city goes whole: it becomes the courter's House (its record ends with its liege
+/// and begins with the courter, origin `Courted`), in peace.
+#[test]
+fn a_house_of_one_city_goes_whole() {
+    let World { mut g, a, .. } = world();
+    let h = house(&mut g, a);
+    let hp = g.houses[h].player;
+    let label = g.house_label(h);
+    let split = g.house_split_toward(h, P1).expect("a split");
+    assert!(split.whole && split.going.len() == 1);
+    let need = 100 * g.house_requirement(h, P1).total;
+    set_favour(&mut g, h, P1, 2 * need);
+    turn(&mut g);
+    assert!(!g.houses.contains(h), "its record with the old liege ended");
+    let nh = g.player_house(hp).expect("a House of the courter");
+    assert_eq!((g.houses[nh].owner, g.houses[nh].origin), (P1, HouseOrigin::Courted));
+    assert_eq!(g.house_label(nh), label, "it keeps its name");
+    let (t0, t1, ht) = (g.players[P0].team, g.players[P1].team, g.players[hp].team);
+    assert!(g.teams[ht].vassal[t1] && !g.teams[ht].vassal[t0]);
+    assert!(!g.at_war(t0, ht) && !g.at_war(t0, t1));
+    assert_eq!(g.players[P0].ai_memory_count[P1][SPLIT], 1);
+    assert!(g.houses[nh].standing.mods.is_empty(), "no modifier");
+}
+
+/// The hold contest keeps a city of the half where the liege's army units outnumber the House's;
+/// when it keeps every one, nothing goes and the favour is spent all the same.
+#[test]
+fn the_hold_contest_keeps_a_held_city() {
+    let World { mut g, a, b, c } = world();
+    let d = g.player_init_city(P0, 12, 7, true, true);
+    let (pb, pd) = (g.city_plot(b), g.city_plot(d));
+    let h = house_with(&mut g, a, &[b, c, d]);
+    let hp = g.houses[h].player;
+    let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let (dx, dy) = g.map.xy(pd);
+    let u = g.player_init_unit(P0, warrior, dx, dy, None, None);
+    g.army_form(P0, &[u]).expect("an army");
+    assert!(g.city_held_by_army(at(&g, pd)));
+    let split = g.house_split_toward(h, P1).unwrap();
+    assert_eq!((split.going.iter().map(|&x| g.city_plot(x)).collect::<Vec<_>>(), split.held.iter().map(|&x| g.city_plot(x)).collect::<Vec<_>>()), (vec![pb], vec![pd]));
+    let need = 100 * g.house_requirement(h, P1).total;
+    set_favour(&mut g, h, P1, 2 * need);
+    turn(&mut g);
+    assert_eq!(g.cities[at(&g, pd)].owner, hp, "D held: it stays with the House");
+    assert_ne!(g.cities[at(&g, pb)].owner, hp, "B went");
+    // Every city of the half held: nothing goes, the favour is spent.
+    let World { mut g, a, b, .. } = world();
+    let (bx, by) = (g.cities[b].x, g.cities[b].y);
+    let pb = g.city_plot(b);
+    let h = house_with(&mut g, a, &[b]);
+    let hp = g.houses[h].player;
+    let u = g.player_init_unit(P0, warrior, bx, by, None, None);
+    g.army_form(P0, &[u]).expect("an army");
+    let need = 100 * g.house_requirement(h, P1).total;
+    set_favour(&mut g, h, P1, 2 * need);
+    turn(&mut g);
+    assert_eq!(g.cities[at(&g, pb)].owner, hp, "held");
+    assert_eq!(g.house_favour(h, P1), 0, "spent all the same");
+    assert_eq!(g.players[P0].ai_memory_count[P1][SPLIT], 0, "nothing split");
+}
+
+/// No leader free: no split this turn (each party told once), the favour kept.
+#[test]
+fn no_free_leader_no_split() {
+    let World { mut g, a, b, .. } = world();
+    let h = house_with(&mut g, a, &[b]);
+    let hp = g.houses[h].player;
+    // A civilization without minor leaders, and a courter of no alignment (no fallback).
+    g.setup.players[hp.idx()].civ = Some(g.d.t::<CivilizationType>("CIVILIZATION_BARBARIAN"));
+    g.players[P1].alignment = None;
+    let civ = g.player_get_civilization_type(hp).unwrap();
+    assert!(g.house_leader_pool(civ, P1).leaders.is_empty());
+    // The favour crosses the requirement this turn (its Court channel's gain).
+    let need = 100 * g.house_requirement(h, P1).total;
+    g.player_set_culture_channel(P1, Some(court(&g, h))).expect("courts");
+    assert_eq!(g.culture_house_reach(P1, h).map(|r| r.effect), Some(100));
+    g.players[P1].culture_inflow = need / 4;
+    set_favour(&mut g, h, P1, need - 1);
+    let label = g.house_label(h);
+    let told = |g: &Game| g.log.entries.iter().filter(|e| e.text == format!("{label} would split toward the Elohim: no leader is free.")).count();
+    turn(&mut g);
+    assert_eq!(g.house_cities(h).len(), 2, "no split");
+    assert!(g.house_favour(h, P1) >= need, "the favour kept");
+    assert_eq!(told(&g), 1);
+    turn(&mut g);
+    assert_eq!(told(&g), 1, "told once");
 }
 
 // ---------------------------------------------------------------------------------------------

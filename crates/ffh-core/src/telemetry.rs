@@ -353,7 +353,8 @@ impl Game {
     }
 
     /// A cultural channel event (docs/CULTURE.md), counted per action under `cat`:
-    /// `culture_channel` (set), `culture_channel_end`, `culture_spread` (a religion spread).
+    /// `culture_channel` (set), `culture_channel_end`, `culture_spread` (a religion spread). The
+    /// target is a player (a House's player for Court and Guard).
     pub(crate) fn tel_culture(&self, p: PlayerId, cat: &'static str, action: CulturalActionType, target: PlayerId, value: i64) {
         if !self.telemetry.on() {
             return;
@@ -363,19 +364,6 @@ impl Game {
         self.telemetry.with(|t| {
             t.count(p, cat, name, value);
             t.event(|| ev(turn, "culture", p).s("how", cat).s("action", name).i("target", target.0 as i64).end());
-        });
-    }
-
-    /// Revolt pressure of caster `p` changed city `c`'s state (docs/CULTURE.md): counted as
-    /// `culture_revolt` by `tag` (`unrest`, `revolt`, `near_flip`, `calm`, `flip`).
-    pub(crate) fn tel_revolt(&self, p: PlayerId, owner: PlayerId, c: CityId, tag: &'static str) {
-        if !self.telemetry.on() {
-            return;
-        }
-        let turn = self.game_turn();
-        self.telemetry.with(|t| {
-            t.count(p, "culture_revolt", tag, 1);
-            t.event(|| ev(turn, "revolt", p).s("how", tag).i("city", c.0 as i64).i("owner", owner.0 as i64).end());
         });
     }
 
@@ -408,9 +396,10 @@ impl Game {
     /// Houses (docs/PERSONS.md): `kind` `granted` (house / founded), `request` (issued / met /
     /// refused), `state` (Friendly / Pleased / Cautious / Annoyed / Furious), `record` (vassal /
     /// capitulated: a vassal became a House; ended; freed), `seceded` (ultimatum / civil_war /
-    /// bribe / bribe_vassal / held), `levy` (placed), `bribe` (offered), `ultimatum` (accepted /
-    /// refused), `split` (split / no_leader), `courtship` (opened: a rival's courtship of a House
-    /// opened, the third build's rule 7); counted as `house_<kind>` by what, for the liege.
+    /// held), `levy` (placed), `ultimatum` (accepted / refused), `split` (split / no_leader: the
+    /// third build's split; courted / courted_whole / courted_held / courted_no_leader: a rival's
+    /// courtship reached the requirement, the fourth build's rule 4); counted as `house_<kind>` by
+    /// what, for the liege.
     pub(crate) fn tel_house(&self, p: PlayerId, kind: &'static str, what: &'static str) {
         if !self.telemetry.on() {
             return;
@@ -423,11 +412,9 @@ impl Game {
                 "state" => "house_state",
                 "seceded" => "house_seceded",
                 "levy" => "house_levy",
-                "bribe" => "house_bribe",
                 // the third build, part 2A
                 "ultimatum" => "house_ultimatum",
                 "split" => "house_split",
-                "courtship" => "house_courtship",
                 _ => "house_record",
             };
             t.count(p, key, what, 1);

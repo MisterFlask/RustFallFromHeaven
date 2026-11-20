@@ -11,16 +11,13 @@
 //! capitulates (`team_assign_vassal`), the tributes are the realm's default at each founding
 //! (`player_set_house_tribute_default`: in force at once), states are told by the Houses' turn.
 //! Set by hand only what no call reaches: a request's term and a House's rest (so a refusal falls
-//! due now, as a lapse would 40 turns later), and the human's treasury (at least [`STAGE_GOLD`] and
-//! twice the neighbour's House's price: the trade screen's offer can be accepted). The third
-//! build's part 2A ([`stage_ultimatums`]) sets by hand what it lists in `hand_set`: the last
+//! due now, as a lapse would 40 turns later), and the human's treasury (at least [`STAGE_GOLD`]).
+//! The third build's part 2A ([`stage_ultimatums`]) sets by hand what it lists in `hand_set`: the last
 //! refusals that leave two Houses Furious with their ultimatums due at the human's next turn (the
 //! rules issue one at once), and the demand of the ultimatum the capitulated House's contract came
-//! from (the rules' own acceptance carries it out). The courtships (the third build, rule 7:
-//! [`stage_courtships`]) are the rules' gifts; set by hand there: the gold given (added to the
-//! giver's treasury first), a resource's trade made by force when no trade network joins the two,
-//! and in `persons-direct` the human's courtship opened 10 turns earlier (each listed in
-//! `hand_set`).
+//! from (the rules' own acceptance carries it out). The courtships (the fourth build:
+//! [`stage_courtships`]) are the rules' Court channels; set by hand there: the neighbour's favour
+//! at House `pleased` and the gold of the human's gift (each listed in `hand_set`).
 
 use std::path::{Path, PathBuf};
 
@@ -43,7 +40,7 @@ pub struct StagedHouse {
     /// due at the human's next turn; two cities: one held by an army of the human, its seat
     /// contested by a smaller one and lost), `large` (five cities, one grant from the split's
     /// threshold; tribute 10%, Furious: its ultimatum due at the human's next turn too); the
-    /// neighbour's: `neighbour` (Cautious or worse: a bribe can be offered).
+    /// neighbour's: `neighbour` (Cautious or worse; the human courts it when the rules allow).
     pub role: &'static str,
     pub id: HouseId,
     /// Its label (`House Arne`, `Hippus`).
@@ -358,66 +355,32 @@ fn free_civ(g: &Game) -> Option<(CivilizationType, LeaderHeadType)> {
     })
 }
 
-/// The third build's part 2B (docs/PERSONS.md, rule 7): the courtships of the scene. The neighbour
-/// `ai` courts the human's House `pleased` with a resource and gold, an open courtship (the human
-/// is told; it remembers nothing, a human); the human has given the neighbour's House `neighbour`
-/// two thirds of a courtship's requirement in gold: not open, so the trade screen says why an
-/// offer waits. In `persons-direct` the human's courtship of it is open, and opened
-/// `PERSON_COURTSHIP_TURNS` turns ago (set by hand: no call makes the turns pass), so an offer is
-/// accepted. Each gift goes the rules' way (`player_offer_house`: the House's AI accepts it); the
-/// resource's trade by force when no trade network joins the two (set by hand, listed).
-fn stage_courtships(g: &mut Game, h: PlayerId, ai: PlayerId, pleased: HouseId, neighbour: HouseId, direct: bool, hand_set: &mut Vec<String>) -> Result<(), String> {
+/// The fourth build (docs/PERSONS.md, rules 1 to 5): the courtships of the scene. The neighbour
+/// `ai` courts the human's House `pleased` with its Court channel (the rules' own call), its
+/// favour set by hand to two thirds of the requirement (a courtship that needs attention); the
+/// human courts the neighbour's House `neighbour` with its own Court channel when the rules allow
+/// it, and gives that House a gift of gold (an ordinary gift: its leader's attitude toward the
+/// human). Set by hand, and listed in `hand_set`: the favour, and the gold of the gift.
+fn stage_courtships(g: &mut Game, h: PlayerId, ai: PlayerId, pleased: HouseId, neighbour: HouseId, _direct: bool, hand_set: &mut Vec<String>) -> Result<(), String> {
+    use ffh_core::culture::{ChannelOrder, ChannelTarget};
     use ffh_core::structs::TradeData;
-    let d = g.d;
-    let trade = |item_type: TradeableItem, data: i32| TradeData { item_type, data, offering: false, hidden: false };
-    let gift = |g: &mut Game, from: PlayerId, hp: PlayerId, gold: i32, hand_set: &mut Vec<String>| -> Result<(), String> {
-        if gold <= 0 {
-            return Ok(());
-        }
-        g.players[from].gold += gold;
-        hand_set.push(format!("{gold} gold added to player {}'s treasury for a gift", from.0));
-        if g.player_offer_house(from, hp, &[trade(TradeableItem::TRADE_GOLD, gold)], &[]) {
-            Ok(())
-        } else {
-            Err(format!("a gift of {gold} gold from player {} refused", from.0))
-        }
-    };
-    // The neighbour courts House `pleased`: a resource, then the gold the courtship lacks.
-    let hp = g.houses[pleased].player;
-    let rules = d.bonuses.keys().find(|&b| g.player_can_trade_item(ai, hp, &trade(TradeableItem::TRADE_RESOURCES, b.idx() as i32), false));
-    match rules {
-        Some(b) => {
-            if !g.player_offer_house(ai, hp, &[trade(TradeableItem::TRADE_RESOURCES, b.idx() as i32)], &[]) {
-                return Err("the neighbour's resource refused".into());
-            }
-        }
-        None => {
-            let b = d.bonuses.keys().find(|&b| g.player_get_num_available_bonuses(ai, b) > 0).unwrap_or_else(|| d.t::<BonusType>("BONUS_WINE"));
-            g.implement_deal(ai, hp, &[trade(TradeableItem::TRADE_RESOURCES, b.idx() as i32)], &[], true);
-            hand_set.push(format!("the neighbour's {} given to House pleased by force (no trade network)", d.text.name(&d.bonuses[b].base.description)));
-        }
+    let court = g.culture_action(CultureEffect::Court).ok_or("no Court action in the data")?;
+    let order = |h: HouseId| ChannelOrder { action: court, target: ChannelTarget::House(h), religion: None };
+    // The neighbour courts House `pleased`.
+    g.player_set_culture_channel(ai, Some(order(pleased))).map_err(|e| format!("the neighbour cannot court House pleased: {e}"))?;
+    let need = 100 * g.house_requirement(pleased, ai).total;
+    g.houses[pleased].favour = vec![ffh_core::persons::Favour { courter: ai, amount: need * 2 / 3 + 1, warned: false }];
+    hand_set.push("House pleased: the neighbour's favour at two thirds of its requirement".into());
+    // The human courts the neighbour's House, when the rules allow it, and gives it gold.
+    if let Err(e) = g.player_set_culture_channel(h, Some(order(neighbour))) {
+        hand_set.push(format!("the human's Court of the neighbour's House refused: {e}"));
     }
-    let need = g.courtship_requirement() - g.house_courtship_value(pleased, ai);
-    gift(g, ai, hp, need, hand_set)?;
-    if g.house_courtship_opened(pleased, ai).is_none() {
-        return Err("the neighbour's courtship did not open".into());
-    }
-    // The human's gifts to the neighbour's House: two thirds of the requirement.
-    let nhp = g.houses[neighbour].player;
-    let part = (g.courtship_requirement() * 2 / 3).max(1);
-    gift(g, h, nhp, part, hand_set)?;
-    if direct {
-        let rest = g.courtship_requirement() - g.house_courtship_value(neighbour, h);
-        gift(g, h, nhp, rest, hand_set)?;
-        let turns = d.defines.person_courtship_turns;
-        let house = &mut g.houses[neighbour];
-        for c in house.courtships.iter_mut().filter(|c| c.giver == h) {
-            c.opened -= turns;
-        }
-        for x in house.gifts.iter_mut().filter(|x| x.giver == h) {
-            x.turn -= turns;
-        }
-        hand_set.push(format!("the human's courtship of the neighbour's House opened {turns} turns earlier"));
+    let gold = 50;
+    g.players[h].gold += gold;
+    hand_set.push(format!("{gold} gold added to the human's treasury for a gift"));
+    let hp = g.houses[neighbour].player;
+    if !g.player_offer_house(h, hp, &[TradeData { item_type: TradeableItem::TRADE_GOLD, data: gold, offering: false, hidden: false }], &[]) {
+        return Err("the human's gift to the neighbour's House refused".into());
     }
     Ok(())
 }
@@ -625,18 +588,14 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         a
     };
 
-    // The human's treasury: enough for the neighbour's House's price (the trade screen's accepted
-    // offer, docs/PERSONS.md rule 9), set by hand.
-    if let Some(price) = s.g.house_bribe_price(house_n) {
-        let want = (price * 2).max(STAGE_GOLD);
-        if s.g.players[h].gold < want {
-            s.g.players[h].gold = want;
-        }
+    // The human's treasury: at least STAGE_GOLD, set by hand.
+    if s.g.players[h].gold < STAGE_GOLD {
+        s.g.players[h].gold = STAGE_GOLD;
     }
 
     // The third build, part 2A: the ultimatums due, a contract, a House one grant from a split.
     let house_l = stage_ultimatums(&mut s.g, h, house_c, house_v, taken, &mut hand_set)?;
-    // The third build's part 2B: the courtships (rule 7).
+    // The fourth build: the courtships (rules 1 to 5).
     stage_courtships(&mut s.g, h, ai, house_b, house_n, direct, &mut hand_set)?;
 
     // Checks: what the scene promises.
@@ -662,21 +621,9 @@ fn persons_seed(dir: &Path, seed: u32, direct: bool) -> Result<StagedPersons, St
         if seat_hold.is_none_or(|hold| hold.held() || hold.liege == 0) {
             return Err(format!("House C's seat is not contested and lost: {seat_hold:?}"));
         }
-        // Its terms met; the human's courtship of it not open (`persons`: the trade screen says why
-        // an offer waits), or open 10 turns (`persons-direct`: an offer is accepted).
-        let secede = ffh_core::persons::BribeKind::Secede;
-        if g.house_bribe_price(house_n).is_none() || g.house_bribe_terms_refusal(house_n, h, secede).is_some() {
-            return Err(format!("the neighbour's House takes no offer: {:?}", g.house_bribe_terms_refusal(house_n, h, secede)));
-        }
-        let courtship = g.house_courtship_refusal(house_n, h);
-        if direct != courtship.is_none() || g.house_courtship_value(house_n, h) <= 0 {
-            return Err(format!("the human's courtship of the neighbour's House: {courtship:?}"));
-        }
-        if g.house_courtship_opened(house_b, ai).is_none() || g.house_gift_resources(house_b, ai).is_empty() {
-            return Err("the neighbour's courtship of House pleased is not open with a resource".into());
-        }
-        if g.house_bribe_price(house_n).is_some_and(|p| g.players[h].gold < p) {
-            return Err("the human cannot pay the neighbour's House's price".into());
+        // The neighbour's courtship of House pleased, past two thirds.
+        if !g.house_courtships(house_b).iter().any(|cv| cv.courter == ai && cv.attention) {
+            return Err("the neighbour's courtship of House pleased is not past two thirds".into());
         }
         if direct {
             let god_king = d.t::<CivicType>("CIVIC_GOD_KING");

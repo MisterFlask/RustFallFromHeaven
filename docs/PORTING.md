@@ -262,6 +262,8 @@ flag.
   Every channel is public to the civilizations that have met the caster. Save format 8 (it replaced the cultural
   queue of timed actions of formats 4-5: Festival, Trade Fair, Incite Unrest, Siphon Knowledge,
   Foment Revolt, Flip City, Spread Religion, removed on the owner's direction of 2026-10-30).
+  Replaced on 2026-11-20 by the civilization's channel (below: Foment Revolt and the per-city
+  channels retired).
 - **Armies** (docs/ARMIES.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): land combat units (not mages, recon units,
   heroes, summons or animals: animals since 2026-11-10, docs/SUPPLY.md "Second pass" B) serve in named armies, kept one selection group each, or in a city's
   garrison. An army requisitions soldiers from the cities its owner picks for it (any city,
@@ -406,6 +408,34 @@ flag.
   - *Tribute is gold only* (the research part went: with knowledge shared it counted a House's
     beakers twice). Techs stay the liege's to trade: a House trades none.
   Save format 55.
+- **Courting is a cultural channel; revolt and the side deals retired** (docs/PERSONS.md, "The
+  fourth build", part 1; docs/CULTURE.md; the owner's decisions of 2026-11-20; replaces the
+  per-city channels above, the courtship and the price of the entry above and the second build's
+  side deals):
+  - *The civilization's channel*: a civilization that can have Houses has at most one channel, a
+    standing order: Court a rival's House, Guard one of its own, or Spread Religion. Every city
+    diverts half its culture (in hundredths; nothing in disorder), which reaches neither its
+    culture nor its plots; the effect falls with the square of the distance between the nearest
+    cities. Public to whoever met the caster; its target (a House's liege) is told.
+  - *Favour and the split*: a Court channel builds the House's favour toward the courter (the
+    inflow times the reach, a 5% fade a turn); at `(L + 6 − 2A, at least 1) × W` (the House's
+    loyalty, its leader's attitude toward the courter, the median culture of the world's
+    civilizations) the half of the House's cities nearest the courter (never its capital; a House
+    of one city whole) go to the courter as a new House of its realm, in peace, the hold contest
+    keeping what the liege's armies outnumber. A liege's Guard channel takes its inflow from every
+    courter's favour. The liege remembers a running Court channel (`MEMORY_COURTED_HOUSE`, a point
+    every 5 turns, up to 8) and a split (`MEMORY_SPLIT_HOUSE`, the former `MEMORY_BOUGHT_HOUSE`
+    renamed, "split our House").
+  - *Gifts* to a House (gold or resources) are ordinary gifts: they raise its leader's attitude
+    toward the giver, which lowers the requirement.
+  - *Retired*: Foment Revolt (revolt pressure, unrest, revolt, the flip, a city's resistance and
+    garrison, the `CULTURE_REVOLT_*` defines, cultural hostility from revolt), the per-city
+    channels, the courtship by gifts and its 10 turns, the price, the side deals (`TRADE_SECEDE`,
+    `TRADE_HOUSE_VASSAL`, removed from the trade items), the AI's buyer and its defenders against
+    revolt.
+  Why: "revolts are meh generally", a city alone makes too little culture to channel, courting a
+  House was all or nothing; the owner merged them into one sliding system (docs/PERSONS.md).
+  Save format 56.
 - **The memory of wrongs** (the owner's decisions of 2026-11-18; docs/PERSONS.md, "The second
   build"; docs/AI.md, "Relations"):
   - *A declared war fades*: every leader forgets a `MEMORY_DECLARED_WAR` at 1 in 50 a turn
@@ -413,7 +443,8 @@ flag.
   - *Two new memories*: `MEMORY_TOOK_CITY` ("took our cities": a city taken in battle, recorded
     by its former owner in `player_acquire_city` with conquest; not a trade, a card, a grant, a
     break-away or a held city returning) at -150, and `MEMORY_BOUGHT_HOUSE` ("bought our House":
-    an accepted side deal, recorded by the House's liege toward the buyer; the House was paid) at
+    an accepted side deal, recorded by the House's liege toward the buyer; the House was paid; since
+    2026-11-20 `MEMORY_SPLIT_HOUSE`, "split our House": a split by a rival's courtship) at
     -300, both fading at 1 in 50, in every leader but the barbarians' (the cards' leaders and the
     Houses' minor leaders included; those without memory data got these three weights alone).
     An act against a House angers the House and its liege: `player_add_memory` records it for

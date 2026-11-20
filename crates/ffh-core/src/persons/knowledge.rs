@@ -7,7 +7,7 @@
 //! House of a realm (the vassal rules) and the realm share what they know at once, both ways
 //! ([`Game::realm_share_knowledge`]). Not shared: a card of the deck (a tech of the data, one of a
 //! kind: `TechInfo::card`) and a repeatable tech (it is never had, only counted). Techs, like war,
-//! are the liege's to trade: a House trades none (`player_can_trade_item`, `bribes.rs`).
+//! are the liege's to trade: a House trades none (`player_can_trade_item`, `gifts.rs`).
 
 use ffh_data::*;
 

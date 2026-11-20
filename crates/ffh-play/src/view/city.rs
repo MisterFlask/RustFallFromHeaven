@@ -250,7 +250,6 @@ pub fn unhappy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     step(&mut out, "defied resolution", Some(g.city_defy_resolution_percent_anger(c, 0)), 0);
     step(&mut out, "war weariness", Some(g.city_war_weariness_percent_anger(c)), 0);
     step(&mut out, "being a vassal", None, g.city_vassal_unhappiness(c).max(0));
-    step(&mut out, "revolt pressure", None, g.city_culture_unhappiness(c));
     for civic in d.civics.keys() {
         let label = format!("wants {}", crate::names::display(d, civic));
         step(&mut out, &label, Some(g.player_get_civic_percent_anger(owner, civic, false)), 0);
@@ -568,55 +567,23 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     Ok(out)
 }
 
-/// The city's cultural channel and what it could channel (docs/CULTURE.md): `null` when the
-/// game has no cultural actions. `options`: every channel it could set, one per civilization the
-/// human has met (and the barbarians) and action (and religion of the city), with whether it may,
-/// its reach and a spread's chance; `pressure`: the revolt pressure on the city.
+/// The city's part in its owner's cultural channel (docs/CULTURE.md; docs/PERSONS.md, "The
+/// fourth build", rule 1): its culture rate, the culture it diverts a turn under the
+/// civilization's channel (`diverted`, hundredths; 0 without one or in disorder) and the
+/// civilization's channel (null: none). The channel is chosen at the civilization's level
+/// (the `culture` query; part 2's Culture screen).
 fn cultural(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
-    let d = g.d;
-    let city = &g.cities[c];
-    let team = g.players[v.h].team;
-    let channel = g
-        .culture_channels()
-        .into_iter()
-        .find(|ch| ch.city == c)
-        .map_or(Json::Null, |ch| crate::view::culture::channel_json(v, &ch));
-    let mut options = Vec::new();
-    if city.owner == v.h {
-        let targets: Vec<PlayerId> = g
-            .player_ids()
-            .filter(|&t| g.players[t].alive && !g.players[t].cities.is_empty())
-            .filter(|&t| t == g.barbarian_player() || g.players[t].team == team || g.teams[team].has_met[g.players[t].team])
-            .collect();
-        for a in d.cultural_actions.keys() {
-            let religions: Vec<Option<ReligionType>> = match d.cultural_actions[a].effect {
-                CultureEffect::SpreadReligion => d.religions.keys().filter(|&r| city.has_religion[r]).map(Some).collect(),
-                CultureEffect::FomentRevolt => vec![None],
-            };
-            for &t in &targets {
-                if d.cultural_actions[a].effect == CultureEffect::FomentRevolt && g.players[t].team == g.players[city.owner].team {
-                    continue;
-                }
-                for &r in &religions {
-                    let o = crate::view::culture::option_json(v, c, a, t, r);
-                    // Nothing in reach at all: not an option worth listing.
-                    if o.get("reach").and_then(|r| r.as_arr()).is_some_and(|r| r.is_empty()) && o.get("unseen").and_then(|u| u.as_i64()) == Some(0) {
-                        continue;
-                    }
-                    options.push(o);
-                }
-            }
-        }
-    }
+    let owner = g.cities[c].owner;
+    let channel = g.players[owner]
+        .culture_channel
+        .clone()
+        .filter(|_| owner == v.h || v.reveal || g.culture_channel_visible(v.team, owner))
+        .map_or(Json::Null, |channel| crate::view::culture::channel_json(v, &ffh_core::culture::Channel { caster: owner, channel }));
     crate::jobj! {
         "rate" => g.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE),
-        "amount" => g.city_channel_amount(c),
-        "diverted" => city.culture_diverted,
+        "diverted" => crate::view::culture::city_diverted(v, c),
         "channel" => channel,
-        "options" => Json::Arr(options),
-        "pressure" => crate::view::culture::pressure_json(v, c),
-        "thresholds" => crate::view::culture::thresholds_json(v),
     }
 }
 

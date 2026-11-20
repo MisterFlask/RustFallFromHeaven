@@ -273,15 +273,6 @@ pub struct City {
     /// FFH2 GrowthControl (`m_iEmphasizeAvoidUnhealthyCitizensCount`).
     pub ai_emphasize_avoid_unhealthy_citizens_count: i32,
     // ---- This game's own rules (not FFH2's) ----
-    /// The city's standing cultural channel (docs/CULTURE.md); change it through
-    /// `Game::city_set_culture_channel`.
-    pub culture_channel: Option<crate::culture::CultureChannel>,
-    /// Culture the channel diverted in the city's last turn (0 when nothing channelled).
-    pub culture_diverted: i32,
-    /// Revolt pressure on this city from each caster's Foment Revolt, in hundredths of culture.
-    pub culture_pressure: IdxVec<PlayerId, i32>,
-    /// How far the revolt pressure has gone (`culture::REVOLT_*`), for the news of its changes.
-    pub culture_revolt_level: i32,
     /// Where the city's trained land combat units go when their order names no destination
     /// (docs/ARMIES.md); `None`: its own garrison.
     pub recruit_default: Option<crate::army::RecruitDest>,
@@ -534,10 +525,6 @@ impl City {
             ai_emphasize_commerce_count: [0; CommerceType::NUM],
             ai_emphasize_avoid_angry_citizens_count: 0,
             ai_emphasize_avoid_unhealthy_citizens_count: 0,
-            culture_channel: None,
-            culture_diverted: 0,
-            culture_pressure: IdxVec::from_elem(0, num_players),
-            culture_revolt_level: 0,
             recruit_default: None,
             direct_rule: true,
             role: None,

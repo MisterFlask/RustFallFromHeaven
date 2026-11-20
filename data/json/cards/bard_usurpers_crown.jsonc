@@ -68,13 +68,13 @@
       "memory_decays": {
         "MEMORY_DECLARED_WAR": 50,
         "MEMORY_TOOK_CITY": 50,
-        "MEMORY_BOUGHT_HOUSE": 50,
+        "MEMORY_SPLIT_HOUSE": 50,
         "MEMORY_COURTED_HOUSE": 50
       },
       "memory_attitude_percents": {
         "MEMORY_DECLARED_WAR": -300,
         "MEMORY_TOOK_CITY": -150,
-        "MEMORY_BOUGHT_HOUSE": -300,
+        "MEMORY_SPLIT_HOUSE": -300,
         "MEMORY_COURTED_HOUSE": -200
       },
       "demand_tribute_attitude_threshold": "ATTITUDE_ANNOYED",

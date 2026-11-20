@@ -253,10 +253,17 @@ impl Game {
             self.player_do_research(p);
         }
 
+        // This game's cultural channel (docs/CULTURE.md): ended when it can no longer go on; its
+        // inflow counts the cities' turns.
+        self.player_culture_channel_turn_start(p);
         for c in self.players[p].cities.clone() {
             if self.cities.contains(c) {
                 self.city_do_turn(c);
             }
+        }
+        // Spread Religion rolls with the turn's inflow; Court leaves its memory.
+        if self.players[p].alive {
+            self.player_do_culture_channel(p);
         }
 
         // Xienwolf Tweak 12/27/08 (Stasis Pauses Golden Ages)

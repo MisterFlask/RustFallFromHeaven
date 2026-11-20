@@ -1,10 +1,9 @@
-//! Houses on the diplomacy screen (docs/PERSONS.md, "The second build", rules 7, 9 and
-//! 13; "UI"): the war a declaration brings in for certain by the vassal rules (the war dialog's
-//! `war_against` and `war_join`, checked against the war the rules then make), the same for
-//! Become your vassal in a House's trade table, what a declaration (`war_memory`) and an accepted
-//! offer (`vassal_grudge`) cost with them, checked against their attitude parts after it (the
-//! memory of wrongs, the owner's decision of 2026-11-18), and a House's state and price
-//! on its line in the list. On the staged scene (`ffh-play stage persons`), with the neighbour
+//! Houses on the diplomacy screen (docs/PERSONS.md, "The second build", rules 7 and 13; "UI"; "The
+//! fourth build"): the war a declaration brings in for certain by the vassal rules (the war
+//! dialog's `war_against` and `war_join`, checked against the war the rules then make), what a
+//! declaration (`war_memory`) costs with them, checked against their attitude parts after it (the
+//! memory of wrongs, the owner's decision of 2026-11-18), and a House's state and the human's
+//! courtship of it on its line in the list. On the staged scene (`ffh-play stage persons`), with the neighbour
 //! given a second House by the rules' own calls (one of the human's freed, then the neighbour's
 //! vassal by a deal).
 
@@ -14,7 +13,6 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use ffh_core::ids::*;
-use ffh_data::*;
 use ffh_play::json::Json;
 use ffh_play::stage::StagedPersons;
 
@@ -25,23 +23,6 @@ fn load(name: &str) -> (common::TempDir, StagedPersons, ffh_play::Session) {
     let opts = ffh_play::SessionOptions { journal: false, ..ffh_play::SessionOptions::default() };
     let s = ffh_play::Session::load(&bytes, sidecar.as_ref(), Arc::new(ffh_play::human::AdvisorAnswerer), opts).unwrap();
     (dir, st, s)
-}
-
-/// The human `h`'s courtship of House `hh` opened (a gift of the gold it lacks, the rules' way) and
-/// 10 turns old (its opening turn set back by hand: no call makes turns pass): its offers are
-/// possible (docs/PERSONS.md, "The third build", rule 7).
-fn court(s: &mut ffh_play::Session, h: ffh_core::ids::PlayerId, hh: ffh_core::ids::HouseId) {
-    let need = s.g.courtship_requirement() - s.g.house_courtship_value(hh, h);
-    if need > 0 {
-        s.g.players[h].gold += need;
-        let hp = s.g.houses[hh].player;
-        assert!(s.g.player_offer_house(h, hp, &[ffh_core::utils::set_trade_item(TradeableItem::TRADE_GOLD, need)], &[]), "a gift");
-    }
-    let turns = s.g.d.defines.person_courtship_turns;
-    for c in s.g.houses[hh].courtships.iter_mut().filter(|c| c.giver == h) {
-        c.opened -= turns;
-    }
-    assert_eq!(s.g.house_courtship_refusal(hh, h), None);
 }
 
 fn q(s: &ffh_play::Session, text: &str) -> Json {
@@ -137,92 +118,20 @@ fn the_war_dialog_names_the_houses_that_join() {
     assert_eq!(war_term(g) - term_before, n, "{line}");
 }
 
-/// A House's trade table: Become your vassal names the liege's other Houses at war with the
-/// human and the human's Houses that join (as the rules then make the war), and an accepted offer
-/// states its cost with the liege (`vassal_grudge`: the House bought and the war declared, both
-/// remembered), which the liege's attitude parts then show.
+/// The diplomacy list's line of a House not the human's: its state toward its liege and the human's
+/// courtship of it (`courting`: the rules' `house_courting_line`; the fourth build), and every
+/// courtship of it, in the open (`courted`).
 #[test]
-fn become_your_vassal_names_the_war_and_an_offer_its_cost() {
-    let (_dir, st, mut s) = load("persons-diplo-vassal");
-    let xt = second_house(&mut s, &st, "friendly");
+fn a_rival_houses_line_states_its_state_and_courtship() {
+    let (_dir, st, s) = load("persons-diplo-line");
     let nh = st.houses.iter().find(|x| x.role == "neighbour").unwrap();
-    let (ht, nt) = (s.g.players[st.human].team, s.g.players[st.neighbour].team);
-    let ours: BTreeSet<TeamId> = s.g.team_ids().filter(|&o| s.g.teams[o].vassal[ht]).collect();
-    let liege = s.g.player_get_civilization_short_description(st.neighbour);
-    let tr = q(&s, &format!(r#"{{"q":"trade","with":{}}}"#, nh.player.0));
-    let house = tr.get("house").unwrap().clone();
-    assert_eq!(strs(&house, "vassal_war_against"), labels(&s.g, &[xt].into()), "{house}");
-    assert_eq!(strs(&house, "vassal_war_join"), labels(&s.g, &ours), "{house}");
-    let prefix = format!("The {liege}'s attitude toward you ");
-    let amount = |key: &str| -> i32 {
-        let grudge = house.get(key).and_then(Json::as_str).unwrap_or_else(|| panic!("an AI liege's {key}")).to_string();
-        grudge.strip_prefix(&prefix).and_then(|r| r.strip_suffix(" (fades).")).unwrap_or_else(|| panic!("{grudge}")).parse().unwrap()
-    };
-    // Secede: the House bought. Become your vassal: and the war the human then declares on it.
-    assert!(amount("grudge") < 0);
-    let grudge = amount("vassal_grudge");
-    assert!(grudge < amount("grudge"), "{grudge}");
-    let memories = ["bought our House", "declared war on us"];
-    let modifier = |s: &ffh_play::Session| ffh_ai::diplomacy::attitude_parts(&s.g, st.neighbour, st.human).iter().filter(|x| memories.contains(&x.0)).map(|x| x.1).sum::<i32>();
-
-    // Proposed at its price, accepted: the war is the one the table named. (The human's courtship
-    // of it opened by a gift and its 10 turns set by hand: the third build, rule 7.)
-    court(&mut s, st.human, nh.id);
-    let before = modifier(&s);
-    let price = s.g.house_bribe_price(nh.id).expect("it takes offers");
-    assert!(s.g.players[st.human].gold >= price, "the stage pays its price");
-    let (before_h, before_n) = (at_war(&s.g, ht), at_war(&s.g, nt));
-    let give = [ffh_core::utils::set_trade_item(TradeableItem::TRADE_GOLD, price)];
-    let get = [ffh_core::utils::set_trade_item(TradeableItem::TRADE_HOUSE_VASSAL, 0)];
-    assert!(s.g.player_offer_house(st.human, nh.player, &give, &get), "accepted");
-    let g = &s.g;
-    let nht = g.players[nh.player].team;
-    assert!(g.teams[nht].vassal[ht], "the House is the human's");
-    let pacts: BTreeSet<TeamId> = g.team_ids().filter(|&o| g.teams[o].defensive_pact[nt]).collect();
-    let against: BTreeSet<TeamId> = at_war(g, ht).difference(&before_h).copied().filter(|&o| o != nt && !pacts.contains(&o)).collect();
-    let joined: BTreeSet<TeamId> = at_war(g, nt).difference(&before_n).copied().filter(|&o| o != ht && o != nht).collect();
-    assert!(g.teams[ht].at_war[nt], "war with the liege");
-    assert_eq!(against, BTreeSet::from([xt]));
-    assert_eq!(joined, ours);
-    // Its cost with the liege, as its attitude's parts count it.
-    assert_eq!(modifier(&s) - before, grudge);
-}
-
-/// The diplomacy list's line of a House not the human's: its state toward its liege, its price to
-/// secede when it would take the human's offer, else the reason it would not when that is not its
-/// state (the courtship's: the third build, rule 7), and every courtship of it (in the open).
-#[test]
-fn a_rival_houses_line_states_its_state_and_price() {
-    let (_dir, st, mut s) = load("persons-diplo-line");
-    let nh = st.houses.iter().find(|x| x.role == "neighbour").unwrap();
-    let row = |s: &ffh_play::Session| find(&arr(&q(s, r#"{"q":"players"}"#), "players"), "id", nh.player.0 as i64);
-    let r = row(&s);
-    let o = r.get("house_offer").expect("a rival's House states its offer");
+    let r = find(&arr(&q(&s, r#"{"q":"players"}"#), "players"), "id", nh.player.0 as i64);
+    let o = r.get("house_offer").expect("a rival's House states its line");
     assert_eq!(o.get("state").and_then(Json::as_str), Some(s.g.house_state(nh.id).name()));
-    // The stage's gifts do not open the human's courtship: the reason, no price yet.
-    let why = s.g.house_courtship_refusal(nh.id, st.human).expect("not open");
-    assert!(why.starts_with(&format!("Court {} first: gifts worth ", nh.label)), "{why}");
-    assert_eq!(o.get("refusal").and_then(Json::as_str), Some(why.as_str()));
-    assert!(o.get("price").unwrap().is_null(), "{o}");
+    assert_eq!(o.get("courting").and_then(Json::as_str).map(str::to_string), s.g.house_courting_line(nh.id, st.human));
     let courted = strs(r.get("house").unwrap(), "courted");
-    let civ = s.g.player_get_civilization_short_description(st.human);
-    assert_eq!(courted.len(), 1, "{courted:?}");
-    assert!(courted.iter().all(|l| l.starts_with(&format!("Courted by the {civ} (gifts: ")) && l.contains(". Not open: ")), "{courted:?}");
-    // Courted 10 turns: its price, no reason.
-    court(&mut s, st.human, nh.id);
-    let r = row(&s);
-    let o = r.get("house_offer").unwrap();
-    assert_eq!(o.get("price").and_then(Json::as_i64), s.g.house_bribe_price(nh.id).map(i64::from));
-    assert!(o.get("refusal").unwrap().is_null(), "{o}");
-    assert!(strs(r.get("house").unwrap(), "courted").iter().all(|l| l.contains(". Offers possible from turn ")));
-    // Pleased with its liege: no price, and no other reason than its state.
-    s.g.houses[nh.id].standing.mods.push(ffh_core::persons::LoyaltyMod { cause: ffh_core::persons::LoyaltyCause::DemandMet, amount: 8, until: None });
-    let r = row(&s);
-    let o = r.get("house_offer").unwrap();
-    assert!(s.g.house_state(nh.id) < ffh_core::persons::LoyaltyState::Cautious);
-    assert_eq!(o.get("state").and_then(Json::as_str), Some(s.g.house_state(nh.id).name()));
-    assert!(o.get("price").unwrap().is_null() && o.get("refusal").unwrap().is_null(), "{o}");
-    // The human's own Houses carry no offer (their state is the record's, for the liege).
+    assert_eq!(courted.len(), s.g.house_courtships(nh.id).len(), "{courted:?}");
+    // The human's own Houses carry no line (their state is the record's, for the liege).
     let own = st.houses.iter().find(|x| x.role == "furious").unwrap();
     let r = find(&arr(&q(&s, r#"{"q":"players"}"#), "players"), "id", own.player.0 as i64);
     assert!(r.get("house_offer").is_none(), "{r}");

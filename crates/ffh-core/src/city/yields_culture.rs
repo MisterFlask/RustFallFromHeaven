@@ -1311,8 +1311,8 @@ impl Game {
         }
 
         let owner = self.cities[c].owner;
-        // This game's cultural channel diverts part of the rate (`city_do_culture_channel`).
-        let culture_rate = self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE) - 100 * self.cities[c].culture_diverted;
+        // This game's cultural channel diverts part of the rate (`city_culture_diverted_times100`).
+        let culture_rate = self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE) - self.city_culture_diverted_times100(c);
         self.city_change_culture_times100(c, owner, culture_rate, false, true);
     }
 

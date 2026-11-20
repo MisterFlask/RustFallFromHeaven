@@ -84,7 +84,8 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             });
             j.set("effect", match a.effect {
                 CultureEffect::SpreadReligion => "spread_religion",
-                CultureEffect::FomentRevolt => "foment_revolt",
+                CultureEffect::Court => "court",
+                CultureEffect::Guard => "guard",
             });
         }
         "BattleTacticType" => {

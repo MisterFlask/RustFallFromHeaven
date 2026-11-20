@@ -1,6 +1,7 @@
-//! Houses (this game's own rules, not FFH2's; docs/PERSONS.md, "The third build": Houses without
-//! Persons of Note, on "The second build": Houses as vassal civilizations). The module keeps the
-//! name of the system it began as; it holds no person since the third build.
+//! Houses (this game's own rules, not FFH2's; docs/PERSONS.md, "The fourth build": courting is a
+//! cultural channel, on "The third build": Houses without Persons of Note, on "The second build":
+//! Houses as vassal civilizations). The module keeps the name of the system it began as; it holds
+//! no person since the third build.
 //!
 //! **Houses are vassal civilizations** (`houses.rs`, `vassals.rs`). A House is a player of its own
 //! (`House::player`, `Player::house`), the vassal of its liege (`House::owner`). Its leader is its
@@ -9,8 +10,8 @@
 //! House: the vassal rules (`team_set_vassal`) make and end the records. A realm without a House
 //! founds one with its first grant of a Crown city (a new player born of the liege, its leader drawn
 //! from the free minor leaders: `leaders.rs`); a realm with Houses grants to one of them (the city
-//! moves to its player). A House pays tribute, can be levied by its liege's armies, and answers
-//! offers to secede.
+//! moves to its player). A House pays tribute, can be levied by its liege's armies, and takes
+//! gifts.
 //!
 //! **Requests and loyalty** (`demands.rs`, `loyalty.rs`). Each House makes one request at a time
 //! (`House::demand`; the code keeps the word "demand", every text the player reads says
@@ -23,15 +24,17 @@
 //! **Splits** (`splits.rs`): a House holding 6 great cities or more may split, its farther half
 //! going to a cadet House.
 //!
-//! **Side deals** (`bribes.rs`): a House gives Secede or Become your vassal (trade items) for gold,
-//! at a price that follows the world unit, to a civilization whose courtship has been open long
-//! enough (`courtship.rs`: gifts of gold and resources, in the open).
+//! **Courting** (`favour.rs`; the fourth build): a civilization's Court channel (`culture.rs`)
+//! builds a House's favour toward it; at the requirement, which slides with the House's loyalty
+//! and its leader's attitude toward the courter, the House splits toward the courter. A liege's
+//! Guard channel wears every courter's favour down. **Gifts** (`gifts.rs`): a House takes gold and
+//! resources, nothing asked back; they are ordinary gifts (its leader's attitude toward the giver).
 //!
 //! **A realm shares its knowledge** (`knowledge.rs`): a tech one team of a realm (a liege's team
 //! and its Houses' teams) gains, every other team of the realm gains too.
 //!
-//! **The world unit** (`world_unit.rs`): the mean commerce of the world's civilizations, the scale
-//! of what passes in gold between a realm and the world.
+//! **The world units** (`world_unit.rs`): the mean commerce of the world's civilizations (an
+//! ultimatum's gold) and their median culture (a courtship's requirement).
 //!
 //! **Read API** (`read.rs`) and **previews** (`preview.rs`) are what the client and the AI see.
 
@@ -43,10 +46,10 @@ use crate::game::Game;
 use crate::ids::*;
 use crate::log::{LogMark, LogTag};
 
-mod bribes;
-mod courtship;
 mod crown;
 mod demands;
+mod favour;
+mod gifts;
 mod houses;
 mod knowledge;
 mod leaders;
@@ -60,9 +63,8 @@ mod ultimatums;
 mod vassals;
 mod world_unit;
 
-pub use bribes::{house_item, house_offer_value, BribeKind};
-pub use courtship::CourtshipView;
 pub use crown::CROWN_OVER_FACTOR;
+pub use favour::{attitude_step, CourtshipView, Favour, GuardView, GuardedCourtship, Requirement, SplitView};
 pub use houses::CityHold;
 pub use leaders::{leader_name, leader_title, LeaderPool};
 pub use loyalty::tribute_part;
@@ -88,8 +90,6 @@ pub const LEVIED: (i32, i32) = (-1, 20);
 pub const CAPITULATED: (i32, i32) = (-4, 100);
 /// `Sought protection: +2 (60 turns)`: a House that became a vassal by a deal.
 pub const SOUGHT_PROTECTION: (i32, i32) = (2, 60);
-/// `Offered 300 gold by the Hippus`: an offer to secede, shown (no amount) for this many turns.
-pub const OFFER_NOTED_TURNS: i32 = 20;
 /// `State religion opposed: -2`, standing (not stored).
 pub const RELIGION_OPPOSED: i32 = -2;
 /// Friendly at this loyalty or more.
@@ -131,18 +131,6 @@ pub const ULTIMATUM_TRIBUTE_LOYALTY: i32 = -4;
 pub const ULTIMATUM_GOLD_ROUND: i32 = 12;
 /// Rule 5 (f): see [`ULTIMATUM_GOLD_ROUND`].
 pub const ULTIMATUM_GOLD_DIVISOR: i32 = 24;
-// ---- The third build, rules 7 and 8 (courtship, the price; `courtship.rs`) ----
-
-/// A House's price is `(loyalty + 6) x P x` its cities, P this percent of the world unit (at
-/// least 1): P is 25 at turn 150's world unit of 47 (docs/PERSONS.md, "The third build as built,
-/// part 1", rule 9), the second build's flat 25.
-pub const PRICE_PERCENT_OF_UNIT: i32 = 54;
-/// A courtship's requirement: this many turns of the world unit.
-pub const COURTSHIP_UNITS: i32 = 3;
-/// A resource given counts the requirement divided by this (a third).
-pub const COURTSHIP_RESOURCE_SHARE: i32 = 3;
-/// Gold given to a House counts toward a courtship for this many turns.
-pub const COURTSHIP_GIFT_TURNS: i32 = 20;
 
 // ---------------------------------------------------------------------------------------------
 // Types
@@ -243,9 +231,6 @@ pub enum LoyaltyCause {
     Capitulated,
     /// The House became a vassal by a deal.
     SoughtProtection,
-    /// An offer to secede (`gold`: its worth, gold only; `by`: the
-    /// civilization, `Hippus`).
-    Offered { gold: i32, by: String },
 }
 
 impl LoyaltyCause {
@@ -259,7 +244,6 @@ impl LoyaltyCause {
             LoyaltyCause::Levied => "Levied".into(),
             LoyaltyCause::Capitulated => "Capitulated".into(),
             LoyaltyCause::SoughtProtection => "Sought protection".into(),
-            LoyaltyCause::Offered { gold, by } => format!("Offered {gold} gold by the {by}"),
         }
     }
 }
@@ -326,13 +310,18 @@ pub enum HouseOrigin {
     /// A cadet House, born of a House's split (`House <name>`, its parent's civilization; the third
     /// build, rule 4).
     Split,
+    /// A House a rival's courtship took (the fourth build, rule 4): born of the split toward the
+    /// courter (`House <name>`, the courted House's civilization), or a House of one city that went
+    /// whole (its name kept).
+    Courted,
 }
 
 impl HouseOrigin {
-    /// A House the realm made (a founding, a split): named `House <name>`; the others are vassal
-    /// civilizations that keep their names.
+    /// A House a realm made (a founding, a split, a courted House): named `House <name>`; the
+    /// others are vassal civilizations that keep their names. (A House is labelled by its
+    /// player's name: [`Game::house_label`].)
     pub fn founded(self) -> bool {
-        matches!(self, HouseOrigin::Founded | HouseOrigin::Split)
+        matches!(self, HouseOrigin::Founded | HouseOrigin::Split | HouseOrigin::Courted)
     }
 }
 
@@ -381,11 +370,9 @@ pub struct House {
     pub contract: Option<Contract>,
     /// The ultimatums it has issued (rule 5 (f): each raises the gold of the next).
     pub ultimatums: i32,
-    // ---- The third build, rule 7 (courtship; `courtship.rs`) ----
-    /// The gold given to it, oldest first, kept [`COURTSHIP_GIFT_TURNS`] turns.
-    pub gifts: Vec<Gift>,
-    /// The courtships open, by giver: the game turn each opened (in giver order).
-    pub courtships: Vec<Courtship>,
+    // ---- The fourth build, rule 2 (courting by culture; `favour.rs`) ----
+    /// Its favour toward each civilization that courts it, in courter order.
+    pub favour: Vec<Favour>,
 }
 
 // ---- The third build, part 2A: ultimatums and contracts (rules 5 and 6) ----
@@ -431,24 +418,6 @@ pub struct Contract {
     pub until: i32,
     /// The deal of a resource given (rule 5 (e)).
     pub deal: Option<DealId>,
-}
-
-// ---- The third build, rule 7 (courtship; `courtship.rs`) ----
-
-/// A gift of gold to a House (the third build, rule 7): who gave it, how much, on which game turn.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Gift {
-    pub giver: PlayerId,
-    pub gold: i32,
-    pub turn: i32,
-}
-
-/// A courtship of a House that is open (the third build, rule 7): its giver and the game turn it
-/// opened.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Courtship {
-    pub giver: PlayerId,
-    pub opened: i32,
 }
 
 /// Whom a city is granted to ([`Game::player_grant_city`]).
@@ -500,7 +469,7 @@ pub fn ambition_of_leader(d: &GameData, leader: LeaderHeadType) -> Ambition {
 }
 
 /// English ordinal-free list: "A", "A and B", "A, B and C".
-pub(crate) fn and_list(items: &[String]) -> String {
+pub fn and_list(items: &[String]) -> String {
     match items.len() {
         0 => String::new(),
         1 => items[0].clone(),
@@ -519,14 +488,11 @@ impl Game {
         self.players[p].alive && self.players[p].house.is_none() && !self.player_is_barbarian(p) && !self.player_is_minor_civ(p) && !self.player_is_crusade_host(p)
     }
 
-    /// A House's label: `House Arne` (a founded House), `Hippus` (a vassal civilization).
+    /// A House's label: `House Arne` (a founded House), `Hippus` (a vassal civilization): its
+    /// player's name ([`Game::player_house_name`]: a founded House's player is described `House
+    /// <name>`; a House that went whole to a courter keeps it).
     pub fn house_label(&self, h: HouseId) -> String {
-        let house = &self.houses[h];
-        if house.origin.founded() {
-            format!("House {}", house.name)
-        } else {
-            house.name.clone()
-        }
+        self.player_house_name(self.houses[h].player)
     }
 
     /// The House player `p` is, if it is one.

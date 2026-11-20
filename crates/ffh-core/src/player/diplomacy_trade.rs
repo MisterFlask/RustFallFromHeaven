@@ -106,7 +106,7 @@ impl Game {
                 //FfH: End Add
 
                 // C++ default `bAllowVassal = false`. Not in C++: a House is a party for anyone
-                // who has met it, at war too (its side deals; docs/PERSONS.md, rule 9): what it
+                // who has met it, at war too (its gifts; docs/PERSONS.md, "The fourth build"): what it
                 // may trade is `player_can_trade_item`'s.
                 let house = self.players[p].house.is_some() || self.players[other].house.is_some();
                 if !house && !self.team_can_change_war_peace(team, other_team, false) {
@@ -311,8 +311,8 @@ impl Game {
             return false;
         }
 
-        // Not in C++: a House trades only its side deals (docs/PERSONS.md, rule 9): it gives
-        // Secede or Become your vassal, and takes gold (no gold per turn) from a civilization that
+        // Not in C++: a House trades only gifts (docs/PERSONS.md, "The fourth build", rule 3): it
+        // gives nothing and takes gold (no gold per turn) and resources from a civilization that
         // is not its liege; war, peace and the rest are its liege's.
         if let Some(allowed) = self.house_trade_item_allowed(p, who_to, item) {
             return allowed;

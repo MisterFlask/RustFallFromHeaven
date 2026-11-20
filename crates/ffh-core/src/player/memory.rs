@@ -7,7 +7,7 @@
 //! - The decay is a rule: [`Game::player_do_memory_decay`] runs in every player's turn (C++ ran
 //!   it in `CvPlayerAI::AI_doCounter`, the AI's half of the turn).
 //! - [`Game::player_add_memory`] records a wrong of this game's own (`MEMORY_TOOK_CITY`,
-//!   `MEMORY_BOUGHT_HOUSE`). An act against a House angers the House and its liege
+//!   `MEMORY_SPLIT_HOUSE`, `MEMORY_COURTED_HOUSE`). An act against a House angers the House and its liege
 //!   (docs/PERSONS.md, "The second build"): the liege remembers it too. The ported increments
 //!   of FFH2's memories stay where they were (a declared war is remembered by every player of the
 //!   side declared on, a House pulled in included, by `team_declare_war` itself).
