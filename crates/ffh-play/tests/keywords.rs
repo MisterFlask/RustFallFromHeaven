@@ -29,6 +29,10 @@ const FRAGMENTS: &[(&str, &[&str])] = &[
     ("KEYWORD_TRIBUTE", &["a share of its cities' gold and research", "the research added to the liege's", "1 less for each 10% more", "toward the rate set every", "follow the rate in force"]),
     ("KEYWORD_LEVY", &["an army's requisition in a city of its owner's house", "costs the house -1 loyalty", "annoyed or furious takes no levy"]),
     ("KEYWORD_CLAIMANT", &["a house with a city within", "granting the city to another house costs"]),
+    // Culture ("The fourth build", rules 1 to 5).
+    ("KEYWORD_CHANNEL", &["one cultural order at a time", "diverts half its culture", "in full within 5 plots", "nothing beyond 20"]),
+    ("KEYWORD_COURT", &["a channel at a house of another realm", "then fades 5%", "join the courter's realm", "a house of one city joins whole", "the median civilization's culture"]),
+    ("KEYWORD_GUARD", &["a liege's channel at one of its own houses", "taken from every civilization's favour"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.

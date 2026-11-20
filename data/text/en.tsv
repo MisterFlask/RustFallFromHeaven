@@ -5743,11 +5743,11 @@ TXT_KEY_CROSSROADS_WB_DESC	The year is 1300. European traders have caught the sw
 TXT_KEY_CS_5_1_3	Bravado and luck, buddy.  Bravado and luck.
 TXT_KEY_CTRL	Ctrl+
 TXT_KEY_CULTURALACTION_COURT_HOUSE	Court
-TXT_KEY_CULTURALACTION_COURT_HOUSE_HELP	Channels half of every city's culture into a House of another realm. Each turn the House's favour toward you gains the channel's culture, less with distance (in full within 5 plots, then falling with the square of the distance; nothing beyond 20), and fades 5%. At the requirement, the half of its cities nearest you join you as a House of your realm (never its capital; a House of one city joins whole). Its liege remembers the channel.
+TXT_KEY_CULTURALACTION_COURT_HOUSE_HELP	[KW=KEYWORD_COURT]Court[\KW] a House of another realm that you have met.
 TXT_KEY_CULTURALACTION_GUARD_HOUSE	Guard
-TXT_KEY_CULTURALACTION_GUARD_HOUSE_HELP	Channels half of every city's culture into one of your Houses. Each turn every rival's favour at it loses the channel's culture, less with distance.
+TXT_KEY_CULTURALACTION_GUARD_HOUSE_HELP	[KW=KEYWORD_GUARD]Guard[\KW] one of your Houses.
 TXT_KEY_CULTURALACTION_SPREAD_RELIGION	Spread Religion
-TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	Channels half of every city's culture into spreading one of your cities' religions among a civilization's cities that lack it (your own included). Each turn there is a chance that it spreads to one of them: more culture, nearer cities and fewer religions already there make it likelier. Their leader minds it only when it has another state religion.
+TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	A [KW=KEYWORD_CHANNEL]channel[\KW] that spreads one of your cities' religions among a civilization's cities that lack it (your own included). Each turn there is a chance it spreads to one of them: more culture, nearer cities and fewer religions already there make it likelier. Their leader minds it only when it has another state religion.
 TXT_KEY_RESEARCHPATH_ARCANE	Arcane
 TXT_KEY_RESEARCHPATH_FAITH	Faith
 TXT_KEY_RESEARCHPATH_STEEL	Steel
@@ -14988,3 +14988,9 @@ TXT_KEY_KEYWORD_LEVY	Levy
 TXT_KEY_KEYWORD_LEVY_REMINDER	An army's requisition in a city of its owner's House: the city trains a unit for the army, the liege's unit. Each levy placed costs the House -1 loyalty for 20 turns. A House Annoyed or Furious takes no levy.
 TXT_KEY_KEYWORD_CLAIMANT	Claimant
 TXT_KEY_KEYWORD_CLAIMANT_REMINDER	A House with a city within 6 plots. Granting the city to another House costs a claimant House -1 (30 turns).
+TXT_KEY_KEYWORD_CHANNEL	Channel
+TXT_KEY_KEYWORD_CHANNEL_REMINDER	A civilization's one cultural order at a time, set on the Culture screen. While it runs, each of its cities diverts half its culture to it, none in disorder; the diverted culture adds nothing to the city's own culture or borders. Its effect falls with the distance from the caster's nearest city to the target's nearest city: in full within 5 plots, then with the square of the distance, nothing beyond 20. Every civilization that has met the caster sees it.
+TXT_KEY_KEYWORD_COURT	Court
+TXT_KEY_KEYWORD_COURT_REMINDER	A channel at a House of another realm. In each of the liege's turns the House's favour toward the courter gains the channel's culture, loses any guard's, then fades 5%. Requirement: (the House's loyalty + 6 − 2 × its leader's attitude toward the courter, from −2 Furious to +2 Friendly, at least 1) × the median civilization's culture a turn. At the requirement the half of the House's cities nearest the courter join the courter's realm as a new House, without war, and that favour starts again from 0; never the House's capital, and a House of one city joins whole. A city where the liege's army units outnumber the House's stays. Every 5 turns of the channel the liege remembers it, up to 8 times; it remembers a split as well.
+TXT_KEY_KEYWORD_GUARD	Guard
+TXT_KEY_KEYWORD_GUARD_REMINDER	A liege's channel at one of its own Houses. In each of the liege's turns the channel's culture is taken from every civilization's favour at the House, before the fade.

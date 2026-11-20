@@ -57,5 +57,25 @@
     "type": "KEYWORD_CLAIMANT",
     "description": "TXT_KEY_KEYWORD_CLAIMANT",
     "reminder": "TXT_KEY_KEYWORD_CLAIMANT_REMINDER"
+  },
+  // Culture (docs/PERSONS.md, "The fourth build", rules 1, 2, 3, 4, 5 and 10; docs/CULTURE.md):
+  //     the Culture screen, the city screen's Culture section, a House's card and its trade table
+  //     carry these; the cultural actions' help names them.
+  {
+    "type": "KEYWORD_CHANNEL",
+    "description": "TXT_KEY_KEYWORD_CHANNEL",
+    "reminder": "TXT_KEY_KEYWORD_CHANNEL_REMINDER"
+  },
+  {
+    "type": "KEYWORD_COURT",
+    "description": "TXT_KEY_KEYWORD_COURT",
+    "reminder": "TXT_KEY_KEYWORD_COURT_REMINDER",
+    "implies": ["KEYWORD_CHANNEL"]
+  },
+  {
+    "type": "KEYWORD_GUARD",
+    "description": "TXT_KEY_KEYWORD_GUARD",
+    "reminder": "TXT_KEY_KEYWORD_GUARD_REMINDER",
+    "implies": ["KEYWORD_CHANNEL", "KEYWORD_COURT"]
   }
 ]
