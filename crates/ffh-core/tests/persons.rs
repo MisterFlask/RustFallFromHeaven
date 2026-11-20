@@ -1060,6 +1060,10 @@ fn the_kuriotates_houses_hold_only_settlements() {
     assert_eq!(g.players[P0].total_maintenance, cached_maintenance(&g, P0));
     assert_eq!(g.player_check_grant(P0, a, GrantTo::House(h)), Err(FULL_CITY_TO_CAPPED_HOUSE));
     assert_eq!(g.player_check_grant(P0, b, GrantTo::House(h)), Ok(()));
+    // Its request for land names only a city it can be granted: no full city.
+    if let Some(DemandKind::GrantCity(q)) = g.house_next_demand(h) {
+        assert_ne!(q, plot(&g, a), "a full city is never asked for");
+    }
     // A city the House founds is a settlement, though it holds no full city.
     let new = g.player_init_city(hp, 11, 7, true, true);
     assert!(g.cities[new].settlement && g.cities[new].plot_radius == 1, "a capped House founds settlements");
