@@ -62,19 +62,17 @@ Garrison promotions).
 
 ## Slots and the grid
 
-**The city's defence no longer costs the attacker slots.** Instead, in a city with standing
-Sentinels both sides lose one slot per Sentinel (the owner's rule), and the Sentinels fill the
-defender's: it fields its soldiers in `S - n` slots plus its `n` Sentinels, the attacker `S - n`
-(`S` the plot's slots, `ENGAGEMENT_SLOTS_MIN` applied to the soldiers' slots;
-`SlotSource::Sentinels`). Open flat land with Walls: 8 attackers against 8 soldiers and 2 Sentinels.
+**Squads** (the owner's decision, 2026-11-21; docs/ENGAGEMENTS.md, "Squads"): every battle is one
+squad against one squad, 6 places a side on 3 lanes, and the Sentinels cost no place on either side
+(until then each Sentinel cost both sides a slot). They hold the defender's front cells, the lanes
+nearest the centre first (`engage_sentinel_cells`), on top of its squad; a unit of the defending
+squad whose cell they hold stands in the nearest free cell (its row, then the rows behind, then
+before; `Game::engage_squad_places`), and one with no free cell left does not fight. Walls are
+stronger than they were (a full squad and the wall): sieges are to be measured, and the Sentinel's
+numbers trimmed if they last too long (docs/ENGAGEMENTS.md, "Open").
 
-- `ENGAGEMENT_SLOTS_DEFENSE_DIVISOR` and the city-defence and bombarded slot sources are gone. A city
-  without walls has no slot change: its culture defence does nothing in an engagement (in a walled
-  city it grows the Sentinels).
-- Lanes: the defender's count its Sentinels' cells (`engage_lanes`).
-- The defender's auto formation leaves the Sentinels' cells (`engage_sentinel_cells`: the front row,
-  the lanes nearest the centre, then the lower) and places its units as before in the cells left.
-- An ordered formation (the attacker's) is unchanged.
+- A city without walls has no Sentinels: its culture defence does nothing in an engagement (in a
+  walled city it grows the Sentinels).
 
 ## Siege
 

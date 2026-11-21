@@ -117,6 +117,27 @@ Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement c
 no longer playable side by side. Save format 16 removed the last three options and the crusade
 flag.
 
+- **Squads; frontage gone; the ground's own rules** (the owner's decision, 2026-11-21;
+  docs/ENGAGEMENTS.md, "Squads" and "The ground"). Every land fighting unit stands in a squad: a
+  grid of 3 rows by 3 lanes holding `ENGAGEMENT_SQUAD_PLACES` (6) places, a large unit 2, kept
+  between battles. Armies and garrisons are divided into squads, Auto (the auto formation) until
+  the player hand-sets one; a new unit joins the first squad with room and a free cell in its best
+  row, else forms a squad of one; auto-sort deals chosen squads into as few as hold them. One
+  battle is one squad against one squad (it was up to 8 units a side, 10 on open land, 6 in forest,
+  jungle and on hills): the order names the attacking squad (else the strongest); the defenders
+  field, of the squads that fought the fewest battles this turn, the one with the best result over
+  `ENGAGEMENT_DEFENSE_PICK_RUNS` (6) battles on a private RNG. Frontage goes: no slots by terrain,
+  feature or hills (`iEngagementSlotsChange`, `ENGAGEMENT_SLOTS_*` gone), no river slots, no slot
+  cost for a city's Sentinels (they stand in the defender's front cells on top of its squad,
+  displacing its units to the nearest free cell: walls are stronger than before), no Trench slot
+  cut. The ground's lines instead: in a forest or jungle stabs deal 150% and large units 75%; on
+  open flat land large units deal 120%; on hills the attacker's charges lose the first-round bonus;
+  a marsh stops charges and large units deal 75%; an attacker crossing a river deals 50% in round 1
+  with its units that do not cross rivers freely (`bRiver`); the Trench makes the attacker's hits
+  60% in round 1 (`engagement_attacker_first_round_percent`). Battle tactics are retired (squads
+  do their work). The proposal's longer battles on open ground were not built: battles last two
+  rounds everywhere (the owner's decision of the same day). Save format 57.
+
 - **Formation battles last two rounds** (the owner's decision, 2026-11-21; was three):
   `ENGAGEMENT_ROUNDS` 3 -> 2. A battle ends after its second round, or earlier when a side has no
   unit left on the field. Fewer units fall per attack, so a held plot or city takes more attacks.

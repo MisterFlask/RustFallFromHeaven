@@ -1,5 +1,11 @@
 # Battle tactics
 
+**Retired (the owner's decision, 2026-11-21).** Tactics were replaced by squads the player
+arranges by hand (docs/ENGAGEMENTS.md, "Squads"): squad membership and cells do a tactic's two
+jobs (who fights, where each stands), for the defence as for the attack. Line's auto formation
+stays, as the arrangement of Auto squads. This file is kept as the record of what was built and
+measured.
+
 **Status: built (2026-11-10): the rules, data and lab; the AI's rule (section 6, "AI as built");
 the human client (docs/HUMAN.md: the Armies and city screens' selectors, the read-only battle
 plan).** This file was the spec for the implementation. Sections 1 to 6 are decided;
