@@ -952,3 +952,15 @@ html.iso .pstate { font: 700 16px/20px var(--iso-font); }
 html.iso .pstate-turns { font-weight: 400; }
 html.iso #end-turn .end-turn-why { font: 400 16px/18px var(--iso-font); color: #ff8a70; }
 html.iso #iso-corner #end-turn.blocked { row-gap: 0; align-content: center; line-height: 26px; }
+
+/* Squads (units.js): the strip's units grouped by squad, each group under a thin gold rule with
+   its numeral; a group lit while a unit is dragged over it. */
+html.iso .strip-squad { position: relative; display: flex; flex-direction: column; gap: 2px; padding-top: 3px; border-top: 2px solid var(--iso-gold); }
+html.iso .strip-squad.none { border-top-color: transparent; }
+html.iso .strip-squad.drop { background: rgba(128, 183, 227, 0.25); }
+html.iso .strip-num {
+  position: absolute; top: -9px; left: 2px; padding: 0 3px; line-height: 14px; font-size: 12px; font-weight: 700;
+  color: var(--iso-gold); background: rgba(10, 10, 12, 0.92);
+}
+html.iso .strip-units { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 4px; }
+html.iso .iso-strip:has(.strip-squad) { gap: 10px 8px; padding-top: 10px; }

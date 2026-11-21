@@ -25,7 +25,12 @@
 //     rules: [{kind, pct, side, kinds, first_round}]} (each rule's reach from the engine: side 0 or 1, null both; the action kinds, null all; first round only) with kind "CityShots" (the attacker's Shoot deals pct), "ForestRanged" (Shoot and
 //     Bombard deal pct on both sides), "HillsAttacker" (every attacker hit deals pct), "HillsDefenderRanged" (the
 //     defender's Shoot and Bombard deal pct), "ChargeFirstRound" (where flanking works: a Charge in the first round
-//     deals pct on both sides, 100 + ENGAGEMENT_CHARGE_BONUS; absent when that is 100); empty: open ground, no bonus
+//     deals pct on both sides, 100 + ENGAGEMENT_CHARGE_BONUS; absent when that is 100), "Uphill" (hills where flanking
+//     works: only the defender's first-round charges deal pct), "ForestStab" (Stab deals pct on both sides),
+//     "LargeDealt" (a large unit's hits deal pct: open ground more, a forest, jungle or marsh less), "Wading" (across a
+//     river: in round 1 the attacker's units that do not cross rivers freely deal pct), "Trench" (in round 1 the
+//     attacker's hits deal pct); each rule's `units` says whose hits it changes: "all", "large" or "not_river";
+//     the ground's `open`, `marsh` and `crossing` flags too; empty: open ground, no bonus
 //   params: {bolt_pct (the magic bolt's power, ENGAGEMENT_BOLT_PERCENT), splash_pct (a splash on each neighbour, in
 //     percent of the hit on the target, ENGAGEMENT_SPLASH_PERCENT), first_strike_speed (speed a first strike adds,
 //     ENGAGEMENT_FIRST_STRIKE_SPEED), extra_action_tier and extra_actions (a type of that tier or above, and a hero,
@@ -292,7 +297,7 @@ export function specials(f, ground, params = null) {
   if (f.large) notes.push("Large: fills two cells side by side and counts two slots; it is the front or back unit of both its lanes.");
   if (f.anti_flank) notes.push("Anti-flanking: enemy flankers attack it first whenever it is in their reach.");
   if (f.actions?.some((a) => kindKey(a?.kind) === "Charge")) {
-    const c = chargeRule(ground);
+    const c = chargeRule(ground, f.side);
     const how =
       ground?.flanking === false
         ? "No flanking in a city, forest or jungle: its charges hit the front unit of a lane."
@@ -335,21 +340,25 @@ export function specials(f, ground, params = null) {
  *  percents multiplied); `firstRound`: a hit of the first round (the charge's rule counts). Each
  *  rule carries its reach from the engine: `side` (null: both), `kinds` (null: all) and
  *  `first_round`. */
-export function groundPct(ground, side, kind, { firstRound = false } = {}) {
+export function groundPct(ground, side, kind, { firstRound = false, large = false, river = false } = {}) {
   let pct = 100;
   const k = kindKey(kind);
   for (const r of ground?.rules ?? []) {
     if ((r.first_round && !firstRound) || (r.side !== null && r.side !== undefined && r.side !== side) || (Array.isArray(r.kinds) && !r.kinds.includes(k))) continue;
+    // Whose hits (`units`): every unit's, a large unit's, those of units that do not cross rivers.
+    if ((r.units === "large" && !large) || (r.units === "not_river" && river)) continue;
     pct = (pct * r.pct) / 100;
   }
   return Math.round(pct);
 }
 
-/** The ground's charge rule (`ChargeFirstRound`) where flanking works and it changes anything,
- *  or null. */
-export function chargeRule(ground) {
+/** The ground's charge rule where flanking works and it changes anything, or null:
+ *  `ChargeFirstRound` (both sides), or on hills `Uphill` (the defender's charges only: pass
+ *  `side`). */
+export function chargeRule(ground, side = null) {
   if (ground?.flanking === false) return null;
-  return (ground?.rules ?? []).find((r) => r.kind === "ChargeFirstRound" && r.pct !== 100) ?? null;
+  const rules = ground?.rules ?? [];
+  return rules.find((r) => r.kind === "ChargeFirstRound" && r.pct !== 100) ?? (side === 1 ? rules.find((r) => r.kind === "Uphill" && r.pct !== 100) : null) ?? null;
 }
 
 /** A hit's damage in percent, in words: "double damage", "150% damage". */
@@ -364,9 +373,9 @@ export function groundNote(f, ground) {
   const kinds = [...new Set([0, 1, 2].map((r) => actionAt(f, r).kind))].filter((k) => k !== "None" && k !== "Heal");
   const parts = [];
   for (const k of kinds) {
-    const p = groundPct(ground, f.side, k);
+    const p = groundPct(ground, f.side, k, { large: !!f.large });
     if (p === 100) continue;
-    const first = k === "Charge" ? groundPct(ground, f.side, k, { firstRound: true }) : p;
+    const first = k === "Charge" ? groundPct(ground, f.side, k, { firstRound: true, large: !!f.large }) : p;
     parts.push(`${KINDS[k].nouns} deal ${p}%${first !== p ? ` (${first}% in the first round)` : ""}`);
   }
   return parts.length ? `Here its ${parts.join(", ")} of normal damage.` : "";
@@ -374,10 +383,14 @@ export function groundNote(f, ground) {
 
 const half = (p) => (p === 50 ? "half damage" : `${p}%`);
 const less = (p) => (p < 100 ? `${100 - p}% less` : `${p - 100}% more`);
-/** Flanking where it works, in words, with the charge's first-round damage. */
+/** Flanking where it works, in words, with the charge's first-round damage (on hills: the
+ *  defender's only, `Uphill`). */
 function flankText(ground) {
   const c = chargeRule(ground);
-  return c ? `cavalry flanks, and its first-round charges deal ${damageText(c.pct)}` : "cavalry flanks";
+  if (c) return `cavalry flanks, and its first-round charges deal ${damageText(c.pct)}`;
+  const up = (ground?.rules ?? []).find((r) => r.kind === "Uphill");
+  if (up) return `cavalry flanks; no charge bonus for the attacker${up.pct !== 100 ? `; the defenders' first-round charges deal ${damageText(up.pct)}` : ""}`;
+  return "cavalry flanks";
 }
 
 /** The ground's rules in words: a sentence each (the plan and the report show them). `plot`:
@@ -385,12 +398,26 @@ function flankText(ground) {
 export function groundRules(ground, plot) {
   const rule = (k) => (ground?.rules ?? []).find((r) => r.kind === k);
   const out = [];
+  // A large unit's damage: said once, with the ground it comes from.
+  const lg = rule("LargeDealt");
+  const largeText = lg ? `large units deal ${lg.pct}%` : null;
+  let largeSaid = false;
   const c = rule("CityShots");
   if (ground?.city || c) out.push(`City: ${c ? `the attackers' arrows deal ${half(c.pct)}` : "no change to damage"}; no flanking.`);
   const f = rule("ForestRanged");
-  if (ground?.forest || f) {
+  const fs = rule("ForestStab");
+  if (ground?.forest || f || fs) {
     const name = plot?.feature !== null && plot?.feature !== undefined ? tyLabel("FeatureType", plot.feature) : "Forest";
-    out.push(`${name}: ${f ? `arrows and stones deal ${half(f.pct)} on both sides` : "no change to damage"}; no flanking.`);
+    const parts = [];
+    if (f) parts.push(`arrows and stones deal ${half(f.pct)} on both sides`);
+    if (fs) parts.push(`stabs deal ${fs.pct}%`);
+    if (largeText) parts.push(largeText);
+    largeSaid = !!largeText;
+    out.push(`${name}: ${parts.length ? parts.join("; ") : "no change to damage"}; no flanking.`);
+  }
+  if (ground?.marsh && !largeSaid) {
+    out.push(`Marsh: ${largeText ?? "no change to damage"}; no flanking.`);
+    largeSaid = !!largeText;
   }
   const ha = rule("HillsAttacker");
   const hd = rule("HillsDefenderRanged");
@@ -404,9 +431,16 @@ export function groundRules(ground, plot) {
     out.push(`Hills: ${parts.join("; ")}.`);
   }
   if (!out.length) {
-    if (ground?.flanking === false) out.push("Open ground: no damage changes; no flanking.");
-    else out.push(chargeRule(ground) ? `Open ground: ${flankText(ground)}.` : "Open ground: no damage changes; cavalry flanks.");
+    const lead = largeText ? `${largeText}; ` : "";
+    largeSaid = !!largeText;
+    if (ground?.flanking === false) out.push(`Open ground: ${lead || "no damage changes; "}no flanking.`);
+    else out.push(chargeRule(ground) ? `Open ground: ${lead}${flankText(ground)}.` : `Open ground: ${lead || "no damage changes; "}cavalry flanks.`);
   }
+  if (largeText && !largeSaid) out.push(`Large units: ${largeText.slice("large units ".length)}.`);
+  const w = rule("Wading");
+  if (w) out.push(`Wading: the attackers' units without river crossing deal ${w.pct}% in round 1.`);
+  const t = rule("Trench");
+  if (t) out.push(`Trench: the attackers deal ${t.pct}% in round 1.`);
   return out;
 }
 

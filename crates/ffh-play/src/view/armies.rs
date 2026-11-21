@@ -285,6 +285,8 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         // This game's governors (docs/GOVERNORS.md): the empire orders for the army in the human's
         // governed cities (`city`, `name`, `unit`, `index`, `turns`).
         j.set("on_order", crate::view::governors::army_empire_orders(v, a));
+        // Squads (docs/ENGAGEMENTS.md, "Squads"): the army's squads, for the squad board.
+        j.set("squads", plot.map_or(Json::Arr(Vec::new()), |p| crate::view::squads::plot_squads(v, p, Some(ffh_core::army::SquadBody::Army(a)))));
     }
     j
 }

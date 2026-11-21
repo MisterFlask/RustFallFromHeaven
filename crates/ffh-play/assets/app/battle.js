@@ -192,10 +192,12 @@ export function apiSource({ army, units, from, to }) {
     const out = { ...where, to };
     // The plan said "Attacking declares war" and the player attacked: the confirmation.
     if (r?.declare_war) out.declare_war = true;
+    // The attacking squad the plan shows (docs/ENGAGEMENTS.md, "Squads"; none: the strongest).
+    if (r?.squad !== null && r?.squad !== undefined) out.squad = r.squad;
     return out;
   };
   return {
-    preview: () => api.query("engage_preview", req({})),
+    preview: (squad = null) => api.query("engage_preview", req({ squad })),
     attack: async (r) => {
       const reply = await run({ c: "engage", ...req(r) });
       const id = reply?.r?.report;

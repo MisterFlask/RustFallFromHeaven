@@ -21,6 +21,7 @@ import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
 import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
+import { squadBoard, squadName, roman, stripGroups, setSquadUnitTip } from "./squads.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -154,6 +155,8 @@ function reply() {
 export function initUnits(view, panelEl) {
   mapView = view;
   panel = panelEl;
+  // The squad board's units show the strip's tooltip.
+  setSquadUnitTip((u) => chipTip({ ...u, ...(reply()?.units?.find((d) => d.id === u.id) ?? {}) }));
   on("applied", (c, reply) => {
     if (c?.units && S.sel && c.units.some((u) => S.sel.units.includes(u))) advance = { x: S.sel.x, y: S.sel.y };
     // Engagement combat: the battle the command launched (several units may fall at once, and
@@ -1427,6 +1430,95 @@ function armyBadge(u) {
   return null;
 }
 
+/** Squads (docs/ENGAGEMENTS.md, "Squads"): the unit's squad as a badge ("II"), or null. */
+function squadBadge(u) {
+  if (!u.squad) return null;
+  return h("span.badge.squad", { title: `${squadName(u.squad)}: ${u.squad.auto ? "Auto" : "Hand-set"}` }, roman(u.squad.num));
+}
+
+/** Squads: the squad board of the selection's plot in a dialog (the `group` query's `squads`),
+ *  re-read after each change. */
+export async function openSquads() {
+  if (!S.sel) return;
+  const units = [...S.sel.units];
+  const { x, y } = S.sel;
+  const m = openModal({ title: `Squads at (${x}, ${y})`, tag: "squads", wide: true, body: [h("p.dim", "…")], buttons: [{ label: "Close", value: null }], help: "squads" });
+  const load = async () => {
+    let r;
+    try {
+      r = await api.query("group", { units });
+    } catch (e) {
+      if (!m.closed) m.setBody(h("p.warn", errorText(e)));
+      return;
+    }
+    if (m.closed) return;
+    const details = new Map((r.units ?? []).map((u) => [u.id, u]));
+    const unitOf = (id) => (S.units.get(id) || details.get(id) ? { ...(S.units.get(id) ?? {}), ...(details.get(id) ?? {}) } : null);
+    m.setBody(r.squads?.length ? squadBoard(r.squads, { unitOf, changed: load }) : h("p.dim", "No squads here."));
+  };
+  await load();
+  return m;
+}
+
+/** Squads: dragging a unit of the strip onto another squad's group moves it there
+ *  (`squad_move`, the first free cell of its best row); a press that moves less than 6 px stays a
+ *  click. */
+function wireStripDrag(strip) {
+  let drag = null;
+  let swallow = false;
+  const groupAt = (x, y) => document.elementFromPoint(x, y)?.closest?.(".strip-squad[data-squad]") ?? null;
+  strip.addEventListener("pointerdown", (e) => {
+    const chip = e.target.closest(".unit-chip[data-unit]");
+    const from = chip?.closest(".strip-squad[data-squad]");
+    if (!chip || !from || e.button > 0) return;
+    drag = { unit: Number(chip.dataset.unit), from: from.dataset.squad, x: e.clientX, y: e.clientY, on: false, ghost: null, chip, over: null };
+  });
+  strip.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    if (!drag.on && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
+      drag.on = true;
+      drag.chip.setPointerCapture?.(e.pointerId);
+      const fig = drag.chip.querySelector(".figure");
+      drag.ghost = h("div.sq-ghost", fig ? fig.cloneNode(true) : null);
+      document.body.append(drag.ghost);
+    }
+    if (!drag.on) return;
+    drag.ghost.style.left = `${e.clientX}px`;
+    drag.ghost.style.top = `${e.clientY}px`;
+    const g = groupAt(e.clientX, e.clientY);
+    const over = g && g.dataset.squad !== drag.from ? g : null;
+    if (over !== drag.over) {
+      drag.over?.classList.remove("drop");
+      drag.over = over;
+      over?.classList.add("drop");
+    }
+  });
+  const end = async (e, cancel) => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    d.ghost?.remove();
+    d.over?.classList.remove("drop");
+    if (!d.on) return;
+    swallow = true;
+    setTimeout(() => (swallow = false), 0);
+    if (cancel || !d.over) return;
+    if (await run({ c: "squad_move", unit: d.unit, squad: Number(d.over.dataset.squad), cell: null })) refreshGroup();
+  };
+  strip.addEventListener("pointerup", (e) => end(e, false));
+  strip.addEventListener("pointercancel", (e) => end(e, true));
+  strip.addEventListener(
+    "click",
+    (e) => {
+      if (!swallow) return;
+      swallow = false;
+      e.stopPropagation();
+      e.preventDefault();
+    },
+    true,
+  );
+}
+
 /** Engagement combat (docs/ENGAGEMENTS.md): the row the unit prefers and what it does there as a
  *  badge, its A, Dv and battle HP in the tooltip; null without engagements (or a sea or air unit). */
 function roleBadge(u) {
@@ -1650,6 +1742,7 @@ function unitRow(u, selected) {
       u.promo_ready ? h("span.badge.promo", "promote") : null,
       automationBadge(u),
       armyBadge(u),
+      squadBadge(u),
       roleBadge(u),
       u.summon_turns ? h("span.badge", { title: "A summoned unit: turns left" }, `${u.summon_turns}t`) : null,
       u.cargo?.length ? h("span.badge", { title: "Units on board" }, `${u.cargo.length} aboard`) : null,
@@ -1743,6 +1836,11 @@ export function renderPanel() {
   if (r?.actions?.some((a) => a.kind === "promotion" && a.enabled)) {
     tools.append(h("button.promote", { onclick: () => openPromotions(), title: "Choose a promotion" }, "Promote…"));
   }
+  // Squads (docs/ENGAGEMENTS.md, "Squads"): the board of your squads here.
+  if (r?.squads?.length && !observing()) {
+    const n = r.squads.length;
+    tools.append(h("button.squads-open", { onclick: () => openSquads(), title: `Your ${n === 1 ? "squad" : `${n} squads`} here: move units between cells and squads` }, "Squads…"));
+  }
   const city = cityAt(x, y);
   if (city && city.owner === me()?.player) {
     tools.append(h("button", { onclick: () => emit("open-city", city.id), title: "Open the city (or double-click it)" }, `Open ${city.name}`));
@@ -1832,14 +1930,28 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
   // The lead unit's promotions as their seals (docs/ART.md 11.5).
   const seals = look.art && promotions?.length ? h("div.seals", promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: 2 })))) : null;
   // The plot's units, transports with their cargo after them.
+  // Squads (docs/ENGAGEMENTS.md, "Squads"): grouped by squad, each group under its numeral.
+  const chip = (u) => unitChip({ ...u, ...(details.get(u.id) ?? {}) }, S.sel.units.includes(u.id), u.id === S.sel.units[0]);
+  const groups = r?.squads?.length ? stripGroups(ordered, r.squads) : null;
+  const several = new Set((r?.squads ?? []).map((s) => s.body)).size > 1;
   const strip =
     own.length > 1
       ? h(
           "div.iso-strip",
           { role: "group", "aria-label": "The units here" },
-          ordered.map((u) => unitChip({ ...u, ...(details.get(u.id) ?? {}) }, S.sel.units.includes(u.id), u.id === S.sel.units[0])),
+          groups
+            ? groups.map((g) =>
+                h(
+                  "div.strip-squad",
+                  { "data-squad": g.squad?.id ?? undefined, class: g.squad ? "" : "none" },
+                  g.squad ? h("span.strip-num", { title: `${squadName(g.squad)}${several ? ` (${g.squad.body})` : ""}: ${g.squad.auto ? "Auto" : "Hand-set"}. Drag a unit onto another squad to move it there.` }, roman(g.squad.num)) : null,
+                  h("div.strip-units", g.units.map(chip)),
+                ),
+              )
+            : ordered.map(chip),
         )
       : null;
+  if (strip && groups) wireStripDrag(strip);
   const tiles = [];
   const listed = [];
   descs.clear();

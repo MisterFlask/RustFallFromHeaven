@@ -10,17 +10,25 @@ import { uname, ROWS, actionAt, actionText, reachText, specials, slotSum, rowsLi
 import { info } from "./state.js";
 import { plain } from "./markup.js";
 import { loadArt, unitXY, figBox, pic, faceFlip, headChip, uiIcon, btn, add, groundLine, FRAME_W, FRAME_H } from "./battle_stage.js";
+import { roman } from "./squads.js";
 
 export const NAME = "plan";
 
 // `fc`: the forecast of the plan (null: none); `busy`: the attack is on its way (the plan stays
 // open until its battle's screens take over); `visit`: counts the plan's openings and leavings (an
 // answer that comes after the plan was left is dropped).
-const P = { ctx: null, pv: null, F: null, place: null, def: null, hover: null, fc: null, errors: [], declare: null, busy: false, visit: 0, figs: [], tip: null, summons: [], clicks: 0 };
+// `squad`: the attacking squad picked (an id; null: the engine's choice, the strongest).
+const P = { ctx: null, pv: null, F: null, place: null, def: null, hover: null, fc: null, errors: [], declare: null, busy: false, visit: 0, figs: [], tip: null, summons: [], clicks: 0, squad: null };
 
 const me = 0;
 
 export async function enter(ctx) {
+  P.squad = null;
+  return plan(ctx);
+}
+
+/** Reads the plan (with the squad picked, `P.squad`) and draws it. */
+async function plan(ctx) {
   const visit = ++P.visit;
   P.ctx = ctx;
   P.hover = null;
@@ -28,7 +36,7 @@ export async function enter(ctx) {
   P.pv = null;
   P.clicks = 0;
   render(ctx);
-  const pv = await ctx.source.preview();
+  const pv = await ctx.source.preview(P.squad);
   if (visit !== P.visit) return;
   // No plan (the engine answers a plot the player does not see, or one not next to the attackers,
   // with its errors alone): say why and close.
@@ -76,7 +84,7 @@ async function attack(ctx) {
   render(ctx);
   let r = null;
   try {
-    r = await ctx.source.attack({ declare_war: P.declare !== null });
+    r = await ctx.source.attack({ declare_war: P.declare !== null, squad: planSquad()?.squad ?? null });
   } catch (e) {
     console.warn("battle plan: the attack:", e);
   } finally {
@@ -88,6 +96,61 @@ async function attack(ctx) {
   if (!r?.log) return render(ctx);
   if (ctx.prefs.get("watch", "watch") === "report") ctx.toReport(r.log);
   else ctx.toWatch(r.log);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Squads (docs/ENGAGEMENTS.md, "Squads"): one battle is one squad against one squad
+
+/** The attacking squad the plan fights with (the preview's `squads[squad]`), or null. */
+function planSquad() {
+  return P.pv?.squads?.[P.pv.squad] ?? null;
+}
+
+/** A squad's name in the plan: "Squad II" (and its body, when the squads are of several). */
+function squadLabel(s, several) {
+  const name = s.number ? `Squad ${roman(s.number)}` : "Unassigned";
+  return several && s.body ? `${name} (${s.body})` : name;
+}
+
+/** Picks attacking squad `s` (an entry of the preview's `squads`): the plan is read again. */
+function pickSquad(ctx, s) {
+  if (P.busy || s.squad === null || s.squad === undefined || s.squad === planSquad()?.squad) return;
+  P.squad = s.squad;
+  plan(ctx);
+}
+
+/** "Attacking: Squad I / Squad II" (the one the plan fights with lit; a click picks another) and
+ *  "Defending: their Squad N". */
+function squadLines(ctx) {
+  const pv = P.pv;
+  const list = pv.squads ?? [];
+  const several = new Set(list.map((s) => s.body)).size > 1;
+  const out = [];
+  if (list.length) {
+    out.push(
+      h(
+        "div.bt-row.small.bt-squads",
+        h("span.dim", "Attacking: "),
+        list.map((s, i) =>
+          btn(squadLabel(s, several), {
+            cls: "sm",
+            on: i === pv.squad,
+            key: `squad-${s.squad ?? "none"}`,
+            title: i === pv.squad ? "The squad this plan attacks with" : "Attack with this squad",
+            disabled: P.busy || list.length < 2,
+            onclick: () => pickSquad(ctx, s),
+          }),
+        ),
+      ),
+    );
+  }
+  return out;
+}
+
+/** "Defending: their Squad N" (the squad that answers the attack, as the real fight picks it). */
+function defSquadLine() {
+  const n = P.pv?.def_squad?.number;
+  return n ? h("div.bt-row.small.bt-def-squad", { title: "Of their squads that fought the fewest battles this turn, the one with the best result against yours." }, h("span.dim", "Defending: "), h("b", `their Squad ${roman(n)}`)) : null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -264,6 +327,7 @@ function render(ctx) {
       h("div.bt-row", uiIcon("attack", 16), h("span.bt-h3", `Attack ${where}`)),
       h("div.bt-row", h("span.bt-h3.you", pv.sides?.[me]?.label ?? "Your army"), h("span.dim", `${used} of ${pv.slots[me].total}${pv.slots[me].river_only ? ` (+${pv.slots[me].river_only} river)` : ""} slots · ${pv.lanes[me]} lanes`)),
       h("div.small.dim", { title: "Why this many slots" }, slotSum(pv.slots[me])),
+      squadLines(ctx),
       tacticLine(me),
       h(
         "div.bt-row",
@@ -280,6 +344,7 @@ function render(ctx) {
     pnl(
       { right: "6px", top: "4px", width: "470px" },
       h("div.bt-row", h("span.bt-h3.them", pv.sides?.[1 - me]?.label ?? where), h("span.dim", `${slotsUsed(P.def, F)} of ${pv.slots[1 - me].total} slots · ${pv.lanes[1 - me]} lanes`)),
+      defSquadLine(),
       tacticLine(1 - me),
       theirsOut.length
         ? h("div.bt-row.small", { title: "Defenders stay in place until annihilated: the plot falls only when none is left" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
@@ -306,7 +371,7 @@ function render(ctx) {
       h("div.bt-row", h("span.bt-h4", "Not in the line"), h("span.dim.small", `${mineIn.length} of ${mineIn.length + mineOut.length} in the line`)),
       benchRows.length ? h("div.bt-benchlist", benchRows) : h("div.dim.small", "Every unit is in the line."),
       h("div.bt-rule"),
-      h("div.small.dim", "Each side stands as its tactic arranges it. An army's tactic is set on the Armies screen [F5], a garrison's on its city's screen; a change applies from your next turn."),
+      h("div.small.dim", "One squad attacks, one squad defends. Your squad stands as its squad board sets it (Squads… in the unit panel, the Armies screen [F5])."),
     ),
   );
   // ---- bottom right: the forecast, Attack
@@ -423,6 +488,18 @@ export const dev = {
   /** The formation shown: your side's `[{unit, lane, row}]`. */
   get formation() {
     return P.pv ? [...P.place.entries()].sort((a, b) => a[0] - b[0]).map(([b, p]) => ({ unit: P.F[b].unit, lane: p.lane, row: p.row })) : null;
+  },
+  /** The attacking squads as the plan lists them (`{squad, number, on}`), and the defenders'. */
+  get squads() {
+    return P.pv ? (P.pv.squads ?? []).map((s, i) => ({ squad: s.squad, number: s.number, on: i === P.pv.squad })) : null;
+  },
+  get defSquad() {
+    return P.pv?.def_squad ?? null;
+  },
+  /** Picks the attacking squad of id `id` (the plan is read again). */
+  pickSquad(id) {
+    const s = (P.pv?.squads ?? []).find((x) => x.squad === id);
+    if (s && P.ctx) pickSquad(P.ctx, s);
   },
   /** Both sides' tactics as named on the board. */
   get tactics() {

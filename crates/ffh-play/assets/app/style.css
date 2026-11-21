@@ -1491,3 +1491,49 @@ tr.empire-city.refused { opacity: 0.75; cursor: not-allowed; }
 .toast.house-alert.secession { border-left-color: var(--warn); }
 .toast.house-alert .leader-portrait { flex: none; border-radius: 4px; }
 .toast.house-alert .house-alert-mark { color: var(--accent); }
+
+/* Squads (squads.js; docs/ENGAGEMENTS.md, "Squads"): the squad board, one card per squad with its
+   3 by 3 grid (front row at the top, toward the enemy), a unit's figure in its cell (a large unit
+   over two), a red ! on a unit outside its best row; the New squad drop zone; the ghost under the
+   pointer while a unit is dragged. */
+.sq-board { display: flex; flex-direction: column; gap: 8px; }
+.sq-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sq-list { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+.sq-card { width: 196px; padding: 6px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.22); }
+.sq-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.sq-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.sq-name { display: flex; align-items: center; gap: 4px; margin-right: auto; font-weight: 700; color: var(--em, var(--fg)); cursor: pointer; }
+.sq-name input { accent-color: var(--accent); margin: 0; }
+.sq-badge { font-size: 11px; padding: 0 4px; border: 1px solid; line-height: 16px; }
+.sq-badge.auto { color: var(--c-glint); border-color: var(--c-tide); }
+.sq-badge.hand { color: var(--accent); border-color: var(--c-khaki); }
+.sq-count { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.sq-body { font-size: 11px; margin: -2px 0 4px; }
+.sq-grid { display: grid; grid-template-columns: 40px repeat(3, 1fr); grid-template-rows: repeat(3, 48px); gap: 3px; }
+.sq-rlab { align-self: center; font-size: 11px; color: var(--dim); }
+.sq-cell { border: 1px dashed var(--line); background: rgba(255, 255, 255, 0.03); }
+.sq-cell.front { background: rgba(255, 255, 255, 0.07); }
+.sq-cell.target { border-style: solid; border-color: var(--accent); }
+.sq-cell.drop, .sq-unit.drop { outline: 2px solid var(--c-glint); outline-offset: -2px; background: rgba(63, 140, 210, 0.3); }
+.sq-unit {
+  position: relative; z-index: 1; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  border: 1px solid var(--line); background: rgba(10, 18, 34, 0.86); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.sq-unit:focus-visible { outline: 2px solid var(--c-glint); outline-offset: 1px; }
+.sq-unit.picked { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.sq-unit.dragging { opacity: 0.4; }
+.sq-unit .figure { pointer-events: none; margin-bottom: 2px; }
+.sq-abbr { margin: auto; color: var(--fg); }
+.sq-lv { position: absolute; left: 2px; top: 0; font: 10px var(--mono); color: var(--fg); text-shadow: 0 1px 0 #000; }
+.sq-off { position: absolute; right: 3px; top: 0; color: var(--c-scarlet); font-weight: 800; font-size: 14px; line-height: 16px; text-shadow: 0 1px 0 #000; }
+.sq-foot { display: flex; justify-content: flex-end; margin-top: 4px; }
+.sq-new {
+  width: 120px; min-height: 120px; display: grid; place-items: center; padding: 6px; text-align: center;
+  border: 1px dashed var(--accent); color: var(--accent);
+}
+.sq-new.target { border-style: solid; }
+.sq-new.drop { background: rgba(63, 140, 210, 0.3); }
+.sq-ghost { position: fixed; z-index: 1000; pointer-events: none; transform: translate(-50%, -60%); opacity: 0.9; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6)); }
+.badge.squad { color: var(--accent); border-color: var(--c-khaki); }
+.army-squads > summary { cursor: pointer; }
+.army-squads .sq-board { margin-top: 6px; }
