@@ -414,9 +414,13 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]In battle: attacks {} units first", names.join(", ")));
     }
-    if *round_percent != [100; ROWS] {
+    // The rounds a battle has (`ENGAGEMENT_ROUNDS`); a value past them never applies.
+    let rounds = (d.defines.engagement_rounds.max(1) as usize).min(ROWS);
+    if round_percent[..rounds].iter().any(|&p| p != 100) {
+        let pcts: Vec<String> = round_percent[..rounds].iter().map(|p| format!("{p}%")).collect();
+        let nums: Vec<String> = (1..=rounds).map(|r| r.to_string()).collect();
         b.push_str(NEWLINE);
-        b.push_str(&format!("[ICON_BULLET]In battle: damage {}% / {}% / {}% in rounds 1 / 2 / 3", round_percent[0], round_percent[1], round_percent[2]));
+        b.push_str(&format!("[ICON_BULLET]In battle: damage {} in rounds {}", pcts.join(" / "), nums.join(" / ")));
     }
 
     // ---- setUnitHelp: unique unit, limited unit ----

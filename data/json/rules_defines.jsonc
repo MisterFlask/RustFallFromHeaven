@@ -140,7 +140,7 @@
   "ENGAGEMENT_DAMAGE_RAND_MAX": 120,
   // ROUNDS: rounds of a formation battle; in each, every unit acts once per action it has from
   //      its row, one pass per action
-  "ENGAGEMENT_ROUNDS": 3,
+  "ENGAGEMENT_ROUNDS": 2,
   // FIRST_STRIKE_SPEED: speed a first strike adds (a chance first strike, when rolled at the
   //      battle's start)
   "ENGAGEMENT_FIRST_STRIKE_SPEED": 2,
