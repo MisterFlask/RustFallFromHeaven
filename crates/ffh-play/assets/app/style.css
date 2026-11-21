@@ -1380,3 +1380,64 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 .badge.squad { color: var(--accent); border-color: var(--c-khaki); }
 .army-squads > summary { cursor: pointer; }
 .army-squads .sq-board { margin-top: 6px; }
+
+/* This game's Houses (docs/HOUSES.md, rule 15; houses.js): a House's or a candidate's card (the
+   Houses screen, the pick), side by side where there is room and one column on a phone; a state
+   is its word in its colour; the city screen's House block, the previews under a question, the
+   diplomacy rows, the alerts. */
+.modal.wide.house-pick { width: min(1080px, 100%); }
+.hpick-head p { margin: 2px 0; }
+.hpick-head .hpick-forms { font-weight: 700; color: var(--em); }
+.hpick-head .hpick-culture { color: var(--dim); }
+.hcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 8px; align-items: stretch; margin: 6px 0; }
+.hcards.pick { grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.hcard { display: flex; flex-direction: column; gap: 3px; border: 1px solid var(--c-iron); background: rgba(38, 51, 79, 0.45); padding: 6px 8px; min-width: 0; overflow-wrap: anywhere; font-size: 14px; line-height: 1.3; }
+.hcard.advised { border-color: var(--c-ochre); box-shadow: inset 0 3px 0 var(--c-ochre); }
+.hcard.outsider { border-style: dashed; }
+.hcard.alarm { border-color: var(--c-crimson); }
+.hcard.hfocus { outline: 2px solid var(--accent); }
+.hhead { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.hportrait { flex: none; line-height: 0; }
+.hportrait img { border: 1px solid var(--c-iron); }
+.hportrait.none { display: inline-flex; align-items: center; justify-content: center; background: var(--c-coal); color: var(--dim); font-weight: 700; line-height: 1; }
+.hname { flex: 1 1 auto; min-width: 0; line-height: 1.2; }
+.hlabel { display: flex; align-items: center; gap: 5px; }
+.hleader.big { font-weight: 700; color: var(--em); font-size: 15px; }
+.hepithet { font-size: 12px; font-style: italic; color: var(--dim); }
+.hadvice { margin: 3px 0 0; color: var(--c-ochre); border-color: var(--c-ochre); }
+.hline.houtsider { color: var(--caution); }
+.hperk { border-top: 1px solid var(--c-iron); padding-top: 3px; margin-top: 2px; }
+.hperk-name { font-weight: 700; color: var(--c-sand); }
+.hperk.off .hperk-name, .hperk.off .hperk-lines { color: var(--dim); text-decoration: line-through; text-decoration-color: rgba(241, 91, 71, 0.6); }
+ul.hperk-lines { margin: 1px 0 0; padding-left: 18px; font-size: 13px; }
+.hperk-off { font-weight: 600; }
+.hopinion { font-weight: 700; border-top: 1px solid var(--c-iron); padding-top: 3px; margin-top: 2px; }
+.hopinion.calc { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
+.hs-friendly, .hs-pleased { color: var(--good); }
+.hs-cautious { color: var(--c-stone); }
+.hs-annoyed { color: var(--caution); }
+.hs-furious { color: var(--warn); }
+.hstate { font-weight: 700; }
+.hhappy { color: var(--fg); }
+.hcities { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.hcities .city-chip.seat { border-color: var(--c-ochre); }
+.hchoose { margin-top: auto; align-self: stretch; }
+.hunhoused h4 { margin: 10px 0 2px; }
+.hunhoused ul { margin: 2px 0; padding-left: 18px; }
+.house-shield { display: inline-block; vertical-align: -2px; flex: none; }
+.house-preview { margin: 6px 0; padding: 4px 8px; border-left: 3px solid var(--c-ochre); background: rgba(219, 166, 59, 0.08); }
+.house-preview-title { color: var(--dim); font-size: 13px; }
+.house-preview-line.warn { color: var(--warn); }
+tr.house-preview-row td { padding-top: 0; }
+.section.city-house .city-house-line { margin: 2px 0; }
+.section.city-house .city-house-line.calc, ul.city-house-parts li.calc { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
+ul.city-house-parts { margin: 2px 0 4px; padding-left: 18px; }
+.diplo-houses { margin-top: 3px; font-size: 13px; white-space: normal; max-width: 22em; }
+.diplo-house { cursor: help; }
+.culture-level { margin-left: 4px; }
+.toast.house-alert { display: flex; align-items: center; gap: 8px; border-left: 3px solid var(--c-ochre); cursor: pointer; }
+.toast.house-alert .house-alert-face { line-height: 0; flex: none; }
+.toast.house-alert .house-alert-mark { color: var(--c-ochre); flex: none; }
+@media (max-width: 520px) {
+  .hcard { font-size: 13px; }
+}

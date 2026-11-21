@@ -28,5 +28,24 @@
     "type": "KEYWORD_ARMAGEDDON_CARD",
     "description": "TXT_KEY_KEYWORD_ARMAGEDDON_CARD",
     "reminder": "TXT_KEY_KEYWORD_ARMAGEDDON_CARD_REMINDER"
+  },
+  // This game's Houses (docs/HOUSES.md, rule 15): the Houses screen, the pick, the city screen
+  // and the plates carry these.
+  {
+    "type": "KEYWORD_HOUSE",
+    "description": "TXT_KEY_KEYWORD_HOUSE",
+    "reminder": "TXT_KEY_KEYWORD_HOUSE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_SYMPATHY",
+    "description": "TXT_KEY_KEYWORD_SYMPATHY",
+    "reminder": "TXT_KEY_KEYWORD_SYMPATHY_REMINDER",
+    "implies": ["KEYWORD_HOUSE"]
+  },
+  {
+    "type": "KEYWORD_OUTSIDER",
+    "description": "TXT_KEY_KEYWORD_OUTSIDER",
+    "reminder": "TXT_KEY_KEYWORD_OUTSIDER_REMINDER",
+    "implies": ["KEYWORD_HOUSE"]
   }
 ]

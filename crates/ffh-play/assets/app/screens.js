@@ -610,7 +610,7 @@ export function stuckScreen(st) {
  *  tooltip shows); ffh-play adds W A S D held to scroll (Civ4's W, A, S and D orders are on their
  *  buttons), Q / E to zoom (Civ4's Q quarry and E explore are on their buttons), Tab / Shift+Tab to
  *  cycle the units (Civ4's W; in Civ4 Tab is chat), F to flag a plot while watching the AI, F5,
- *  F9, Ctrl+1/2/3/4 and ?. The on-screen list says what each key does, not where it came from. */
+ *  F9, Shift+F9, Ctrl+1/2/3/4 and ?. The on-screen list says what each key does, not where it came from. */
 function keysTable() {
   const touch = [
     ["Touch", ""],
@@ -667,6 +667,7 @@ function keysTable() {
     ["F5", "armies: your armies, their supply and the units on their way"],
     ["F6 / F7", "the tech tree / religion"],
     ["F9", "governors: who runs your cities, their roles, priorities and empire orders"],
+    ["Shift+F9", "Houses: your Houses, their leaders, opinion of you, perks and cities"],
     ["Ctrl+S / Ctrl+L", "save / load"],
     ["Ctrl+1 / 2 / 3 / 4", "map layer: terrain / political / yields / sea"],
     ["?", "this help"],
@@ -689,7 +690,7 @@ function howToPlay() {
     "Choose research when asked; the research button in the top bar changes it.",
     "Choose what each city builds when asked; click a city to open its screen.",
     touch ? "End turn ends the turn. A unit waiting for orders is selected first." : "End turn (Enter) ends the turn. While a unit waits for orders, Enter selects it instead.",
-    "The advisors are on the rail at the left of the map (on a phone: in the ☰ menu): research, techs, cities, civics, religion, armies, governors, diplomacy.",
+    "The advisors are on the rail at the left of the map (on a phone: in the ☰ menu): research, techs, cities, civics, religion, armies, governors, Houses, diplomacy.",
     "The top bar: the turn; gold and its change a turn; research, its progress and the turns left; the doctrine; the commerce rates; the Armageddon counter; mana; the score, your share of the world.",
     touch ? "Every number and button has a tooltip." : "Point at a number, a button or a plot for its tooltip.",
     "A dialog's (i) button opens the help at its topic.",

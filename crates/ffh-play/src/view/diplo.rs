@@ -217,7 +217,26 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
         "they_give" => Json::Arr(they_give),
         "troops" => troops,
         "tribute" => tribute_json(g, with, v.h),
+        // This game's Houses (docs/HOUSES.md, rule 12): what the deal's acts would do to the
+        // human's Houses, for the lines under the trade: making peace (at war only), signing open
+        // borders, signing a defensive pact (where not in force). Each a list, empty when nothing.
+        "house_preview" => house_trade_preview(v, with),
     })
+}
+
+/// `{peace, open_borders, defensive_pact}`: the Houses' previews of the acts a deal with `with`
+/// can hold (`view::houses::preview`).
+fn house_trade_preview(v: &Viewer, with: PlayerId) -> Json {
+    use ffh_core::houses::HouseAct;
+    let g = v.g;
+    let t = g.players[with].team;
+    let empty = || Json::Arr(Vec::new());
+    let war = g.at_war(v.team, t);
+    crate::jobj! {
+        "peace" => if war { crate::view::houses::preview(v, HouseAct::MakePeace(t)) } else { empty() },
+        "open_borders" => if war || g.teams[v.team].open_borders[t] { empty() } else { crate::view::houses::preview(v, HouseAct::OpenBorders(t, true)) },
+        "defensive_pact" => if war || g.teams[v.team].defensive_pact[t] { empty() } else { crate::view::houses::preview(v, HouseAct::DefensivePact(t, true)) },
+    }
 }
 
 fn tribute_json(g: &Game, ai: PlayerId, h: PlayerId) -> Json {

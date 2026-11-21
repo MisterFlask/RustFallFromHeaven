@@ -35,6 +35,9 @@ import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { ritualAlerts } from "./rituals.js";
+// This game's Houses (docs/HOUSES.md, rule 15): the Houses screen (Shift+F9, the menu's Houses), the
+// pick dialog (registered with the decisions), the alerts.
+import * as houses from "./houses.js";
 import { endTurn, sending } from "./commands.js";
 import { h, $, toast, compactScreen, setErrorHook, errorText } from "./dom.js";
 import { dname, turns, me, tname, info } from "./state.js";
@@ -189,7 +192,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas", "houses"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -278,6 +281,8 @@ async function refreshLog() {
     // World rituals (docs/CARDS.md): their news as alerts (a game's log read the first time: this
     // turn's only).
     ritualAlerts(r.entries, { fresh });
+    // Houses (docs/HOUSES.md, rule 11): their news as alerts; a tap opens the Houses screen.
+    houses.houseAlerts(r.entries, { fresh });
   } catch {
     /* busy inside a decision */
   }
@@ -438,6 +443,8 @@ function openScreen(name) {
       return crusade.openCrusades();
     case "seas":
       return seas.openSeasScreen();
+    case "houses":
+      return houses.openHouses();
   }
 }
 
@@ -547,6 +554,11 @@ function onKey(ev) {
     if (lower === "l" && !ev.shiftKey) return handled(), screens.loadScreen();
     const layer = { 1: "terrain", 2: "political", 3: "yield", 4: "sea" }[k];
     if (layer) return handled(), setLayer(layer);
+  }
+  // Shift+F9: the Houses, beside F9's Governors.
+  if (k === "F9" && ev.shiftKey && !ctrl && !ev.altKey) {
+    handled();
+    return openScreen("houses");
   }
   if (F_KEYS[k] && !ctrl && !ev.altKey) {
     handled();
@@ -673,6 +685,7 @@ function wire() {
   click("btn-religion", () => openScreen("religion"));
   click("btn-armies", () => openScreen("armies"));
   click("btn-governors", () => openScreen("governors"));
+  click("btn-houses", () => openScreen("houses"));
   click("btn-diplo", () => openScreen("diplomacy"));
   click("btn-crusades", () => openScreen("crusades"));
   crusade.init({ centerOn: (x, y) => mapView.centerOn(x, y) });
@@ -1003,5 +1016,5 @@ window.addEventListener("ffh:r3d-slow", (ev) => {
   toast(`The HD-2D map draws slowly on this GPU${gpu}, so it is drawn at half resolution. If this computer has a faster graphics card, set your browser to use it (Windows: Settings → System → Display → Graphics → your browser → High performance), or pick the isometric map in Options.`, "info", 20000);
 });
 
-window.ffh = { S, get mapView() { return mapView; }, orient: orientState, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer, battlesPending };
+window.ffh = { S, get mapView() { return mapView; }, orient: orientState, units, screens, empire, tools, api, houses, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer, battlesPending };
 boot();

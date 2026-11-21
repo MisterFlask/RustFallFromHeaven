@@ -515,6 +515,11 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "culture_level" => Json::opt_idx(city.culture_level),
         "culture" => g.city_culture(c, city.owner),
         "culture_threshold" => g.city_culture_threshold(c),
+        // The culture the city adds a turn (its culture commerce, as the turn counts it).
+        "culture_rate" => g.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE) / 100,
+        // This game's Houses (docs/HOUSES.md, rule 15): why an own city is in no House (null
+        // in one, or for another's city).
+        "house_reason" => if city.owner == v.h && city.house.is_none() { g.player_unhoused_cities(v.h).into_iter().find(|u| u.city == c).map(|u| u.reason) } else { None },
         "defense" => g.city_defense_modifier(c, false),
         "defense_damage" => city.defense_damage,
         // Sieges (docs/SIEGES.md): besieged (by how many units), and each Sentinel's HP left in

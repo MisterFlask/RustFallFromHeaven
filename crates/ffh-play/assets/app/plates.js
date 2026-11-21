@@ -1,10 +1,12 @@
-// The marks on the cities' name plates and their tooltips (docs/HUMAN.md): a capital's star. The
-// marks stay compact on the map; pointing at one (a tap on a touch screen) gives its explainer in
+// The marks on the cities' name plates and their tooltips (docs/HUMAN.md): a capital's star and,
+// on the human's own cities, its House's shield (docs/HOUSES.md, rule 15). The marks stay compact on the map; pointing at one (a tap on a touch screen) gives its explainer in
 // the map's tooltip, with the keywords' reminders, as a sea's name does on the Sea layer. Each
 // renderer records the boxes of the marks it drew (`plateHits`: the HD-2D map in r3d/hud.js, the
 // isometric map in iso.js, the flat map in map.js); map.js finds the mark under the pointer
 // ({@link plateHitAt}) and shows {@link plateTip}'s lines. Pure: no DOM and no state, so the node
 // tests read the same texts.
+
+import { shieldTip } from "./houses_lines.js";
 
 /** The box of a capital's star of radius `r` centred at (`cx`, `cy`). */
 export function starHit(city, cx, cy, r) {
@@ -21,15 +23,18 @@ export function plateHitAt(hits, x, y, pad = 0) {
   return null;
 }
 
-/** The tooltip of plate mark `kind` (`star`) on `city` (the view's city), as `{title, lines:
+/** The tooltip of plate mark `kind` (`star`, `house`) on `city` (the view's city), as `{title, lines:
  *  [{text, colour?}], reminders: [{keyword} | {attitude}]}` (the keywords' and the attitudes'
  *  reminders to show with it); null when there is nothing to say. `ctx`: `civ` (the owner's
  *  civilization).
- *  - star: `Capital of the Svartalfar.` */
+ *  - star: `Capital of the Svartalfar.`
+ *  - house: `House Aldric: Pleased` (the view's `city.house`), with the House keyword. */
 export function plateTip(kind, city, { civ = null } = {}) {
   switch (kind) {
     case "star":
       return city && civ ? { title: `Capital of the ${civ}.`, lines: [], reminders: [] } : null;
+    case "house":
+      return shieldTip(city);
   }
   return null;
 }

@@ -16,6 +16,7 @@ import { stackWear, drawWearPip, drawHarbourMark } from "../sea.js";
 import { outpostTag } from "../lanes.js";
 import { drawMarksR3d } from "../marks.js";
 import { starHit } from "../plates.js";
+import { drawPlateShield, shieldHit, SHIELD } from "../houses_lines.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -188,6 +189,14 @@ function drawHudParts(r3d, cam) {
     // stand as small towers under it (filled by their HP left; hollow when breached).
     // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plate's left end.
     drawHarbourMark(g, city, x - h * 0.45, p.y, h * 0.42, 1);
+    // This game's Houses (docs/HOUSES.md, rule 15): an own city's House shield at the plate's
+    // right end, in the House's colour (houses_lines.js).
+    if (city.house) {
+      const sh = h * 1.1;
+      const sx = x + w + 2 + (sh * SHIELD.w) / SHIELD.h / 2;
+      drawPlateShield(g, city, sx, p.y, sh);
+      plateHits.push(shieldHit(city, sx, p.y, sh));
+    }
     if (city.besieged) {
       g.lineWidth = 2.5;
       g.strokeStyle = "#e0442c";

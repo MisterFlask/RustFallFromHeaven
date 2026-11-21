@@ -101,7 +101,7 @@ pub struct DecisionContext {
 }
 
 /// A blocking question (design §3).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Decision {
     /// Session-local id (answers name it; not stable across save/load).
     pub id: u32,
@@ -116,7 +116,13 @@ pub struct Decision {
     /// The keywords the decision names, whose reminder text the client shows as chips beside it
     /// (docs/PLAY_DESIGN.md, "Keywords and reminder text"; empty for most).
     pub keywords: Vec<KeywordType>,
+    /// What a designed dialog draws, structured (null for most): a House's pick
+    /// (`view::houses::offer_json`). The options stay the plain answer for every client.
+    pub offer: Json,
 }
+
+// (The offer holds no float: integers, strings and lists only.)
+impl Eq for Decision {}
 
 impl Decision {
     /// Is `i` an enabled option?
@@ -150,7 +156,7 @@ impl Decision {
 
     pub fn to_json(&self) -> Json {
         let c = &self.context;
-        crate::jobj! {
+        let mut j = crate::jobj! {
             "id" => self.id,
             "player" => self.player,
             "kind" => self.kind.name(),
@@ -167,7 +173,12 @@ impl Decision {
                 "unit" => c.unit,
                 "other_player" => c.other_player,
             },
+        };
+        // A designed dialog's structured contents (a House's pick), only where there are some.
+        if self.offer != Json::Null {
+            j.set("offer", self.offer.clone());
         }
+        j
     }
 }
 
@@ -199,6 +210,7 @@ pub fn free_tech(g: &Game, p: PlayerId, techs: &[TechType], advisor: Option<Tech
         advisor: advisor.and_then(|a| techs.iter().position(|&t| t == a)),
         context: DecisionContext::default(),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -252,6 +264,7 @@ pub fn keep_city(g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Opti
         options,
         context: city_context(g, c, city.previous_owner),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -299,6 +312,7 @@ pub fn disband_city(g: &Game, p: PlayerId, c: CityId, advisor_disbands: bool) ->
         advisor: Some(advisor_disbands as usize),
         context: city_context(g, c, city.previous_owner),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -325,6 +339,7 @@ pub fn take_control(g: &Game, p: PlayerId, new: PlayerId, advisor_takes: bool) -
         advisor: Some(if advisor_takes { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(new), ..Default::default() },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -341,6 +356,7 @@ pub fn offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(from), ..Default::default() },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -370,6 +386,7 @@ pub fn draft(g: &Game, p: PlayerId, crusade: u32, budget: i32, offered: &[(CityI
         options,
         context: DecisionContext::default(),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -404,6 +421,7 @@ pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanPropo
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(proposal.from), ..Default::default() },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -429,6 +447,7 @@ pub fn free_promotion(g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType
         advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
         context: DecisionContext { plot: Some((unit.x, unit.y)), city: None, unit: Some(u), other_player: None },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -453,6 +472,7 @@ pub fn free_bonus(g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[
         advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
         context: city_context(g, c, None),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -497,6 +517,7 @@ pub fn lair_outcome(g: &Game, p: PlayerId, u: UnitId, tier: ffh_core::ffh::lairs
         advisor: Some(advisor).filter(|&i| i < options.len()),
         context: DecisionContext { plot: Some((unit.x, unit.y)), city: None, unit: Some(u), other_player: None },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -1034,6 +1055,7 @@ pub fn house_leader(g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer,
             o
         })
         .collect();
+    let advisor = Some(advisor).filter(|&i| i < offer.cards.len());
     Decision {
         id: 0,
         player: p,
@@ -1041,8 +1063,10 @@ pub fn house_leader(g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer,
         title: format!("House {} forms", offer.name),
         text: offer.head(g).join("[NEWLINE]"),
         options,
-        advisor: Some(advisor).filter(|&i| i < offer.cards.len()),
+        advisor,
         context: city_context(g, seat, None),
-        keywords: Vec::new(),
+        keywords: crate::view::houses::keywords(g.d),
+        // The cards as the pick dialog draws them (docs/HOUSES.md, rule 15).
+        offer: crate::view::houses::offer_json(g, offer, advisor),
     }
 }

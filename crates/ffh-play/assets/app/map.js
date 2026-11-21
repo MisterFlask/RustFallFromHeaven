@@ -18,6 +18,7 @@ import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { starHit, plateHitAt, plateTip } from "./plates.js";
+import { drawPlateShield, shieldHit, SHIELD } from "./houses_lines.js";
 import { remindersNode } from "./keywords.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
 import { drawLanesFlat, outpostTag } from "./lanes.js";
@@ -1486,6 +1487,13 @@ export class MapView {
           }
           // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the label's left end.
           drawHarbourMark(g, c, sx + ts / 2 - tw / 2 - 5, sy - 2, 7, 1);
+          // This game's Houses (docs/HOUSES.md, rule 15): an own city's House shield at the label's
+          // right end (houses_lines.js).
+          if (c.house) {
+            const shx = sx + ts / 2 + tw / 2 + 2 + (16 * SHIELD.w) / SHIELD.h / 2;
+            drawPlateShield(g, c, shx, sy - 2, 16);
+            this.plateHits.push(shieldHit(c, shx, sy - 2, 16));
+          }
           if (c.owner === mine && ts >= 32) {
             const prod = c.production ? `${dname(ORDER_KINDS[c.production.order], c.production.type)}${c.production.turns !== null ? ` ${c.production.turns}` : ""}` : c.idle ? "idle!" : "";
             if (prod) {

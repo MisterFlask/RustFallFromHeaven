@@ -290,11 +290,14 @@ pub fn religions(v: &Viewer) -> Json {
             "our_holy_city" => g.player_has_holy_city(h, r),
             "our_cities" => pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count(),
             "can_convert" => g.player_can_convert(h, Some(r)),
+            // Houses (docs/HOUSES.md, rule 12): what adopting it does to the Houses.
+            "house_preview" => if g.player_can_convert(h, Some(r)) { crate::view::houses::preview(v, ffh_core::houses::HouseAct::Convert(Some(r))) } else { Json::Arr(Vec::new()) },
         }
     });
     crate::jobj! {
         "state_religion" => Json::opt_idx(g.player_get_state_religion(h)),
         "can_convert_none" => g.player_can_convert(h, None),
+        "house_preview_none" => if g.player_can_convert(h, None) { crate::view::houses::preview(v, ffh_core::houses::HouseAct::Convert(None)) } else { Json::Arr(Vec::new()) },
         "conversion_timer" => pl.conversion_timer,
         "anarchy" => g.player_get_religion_anarchy_length(h),
         "religions" => Json::Arr(out.collect()),
@@ -330,7 +333,23 @@ pub fn players(v: &Viewer) -> Json {
                 // a vassal deal the rules hold (a capitulation), so no count runs for it.
                 let cancelable = g.deal_is_cancelable(id, Some(v.h));
                 let cancel_in = if cancelable || g.deal_is_uncancelable_vassal_deal(id, Some(v.h)) { 0 } else { g.deal_turns_to_cancel(id, Some(v.h)).max(0) };
-                Some(crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn, "cancelable" => cancelable, "cancel_in" => cancel_in })
+                let mut dj = crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn, "cancelable" => cancelable, "cancel_in" => cancel_in };
+                // Houses (docs/HOUSES.md, rule 12): what ending its defensive pact or open borders
+                // does to the human's Houses (the cancel question's lines; only where it has one).
+                if cancelable {
+                    let has = |kind: TradeableItem| ours.iter().chain(theirs.iter()).any(|x| x.item_type == kind);
+                    let act = if has(TradeableItem::TRADE_DEFENSIVE_PACT) {
+                        Some(ffh_core::houses::HouseAct::DefensivePact(t, false))
+                    } else if has(TradeableItem::TRADE_OPEN_BORDERS) {
+                        Some(ffh_core::houses::HouseAct::OpenBorders(t, false))
+                    } else {
+                        None
+                    };
+                    if let Some(act) = act {
+                        dj.set("house_preview", crate::view::houses::preview(v, act));
+                    }
+                }
+                Some(dj)
             })
             .collect();
         j.set("deals", Json::Arr(deals));
@@ -348,6 +367,11 @@ pub fn players(v: &Viewer) -> Json {
         j.set("war_memory", if can_war { war_memory(g, v.h, t, &against) } else { None });
         // A crusade's Host (docs/CRUSADE.md): an army, not a civilization to talk to.
         j.set("crusade_host", g.player_is_crusade_host(p));
+        // This game's Houses (docs/HOUSES.md, rule 15): its Houses (leader, alignment, religion,
+        // sympathy, perk, state; the list holds only players met), and what declaring war on it
+        // would do to the human's Houses (the war question's lines; empty when nothing).
+        j.set("houses", crate::view::houses::player_houses(v, p));
+        j.set("war_house_preview", if can_war { crate::view::houses::preview(v, ffh_core::houses::HouseAct::DeclareWar(t)) } else { Json::Arr(Vec::new()) });
     }
     crate::jobj! { "me" => v.h, "players" => Json::Arr(list) }
 }

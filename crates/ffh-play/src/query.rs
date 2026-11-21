@@ -111,6 +111,9 @@ pub enum Query {
     /// A world spell the player places (docs/CARDS.md, "World rituals": Wellspring): its menu on
     /// plot `(x, y)` (`view::place::menu`).
     PlaceMenu { spell: ffh_data::SpellType, x: i32, y: i32 },
+    /// The Houses screen (docs/HOUSES.md, rule 15): the human's Houses as cards and its cities in
+    /// no House with the reason (`view::houses::screen`).
+    Houses,
 }
 
 /// The layers of the ASCII map.
@@ -144,7 +147,7 @@ pub const QUERY_NAMES: &[&str] = &[
     "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "armies", "governors", "empire_items", "empire_cities", "engage_preview",
     "battle_log", "battle_reports", "trade", "trade_answer", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
-    "sea", "seas", "place_menu",
+    "sea", "seas", "place_menu", "houses",
 ];
 
 /// The members of each query besides `q` (in the order of [`QUERY_NAMES`]). A request object may
@@ -188,6 +191,7 @@ pub const QUERY_FIELDS: &[(&str, &[&str])] = &[
     ("sea", &["units"]),
     ("seas", &[]),
     ("place_menu", &["spell", "x", "y"]),
+    ("houses", &[]),
 ];
 
 /// Why a query was refused.
@@ -280,6 +284,7 @@ impl Query {
             Query::Sea { .. } => "sea",
             Query::Seas => "seas",
             Query::PlaceMenu { .. } => "place_menu",
+            Query::Houses => "houses",
         }
     }
 
@@ -353,6 +358,7 @@ impl Query {
             "sea" => Query::Sea { id: SeaId(j.req::<u32>("id")?), units: j.get_or("units", Vec::new())? },
             "seas" => Query::Seas,
             "place_menu" => Query::PlaceMenu { spell: crate::names::field(ffh_data::global(), j, "spell")?, x: j.req("x")?, y: j.req("y")? },
+            "houses" => Query::Houses,
             other => return Err(invalid(format!("unknown query {other:?}"))),
         })
     }
@@ -524,6 +530,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         }
         Query::Seas => view::seas::seas_screen(&v),
         Query::PlaceMenu { spell, x, y } => view::place::menu(&v, *spell, *x, *y)?,
+        Query::Houses => view::houses::screen(&v),
     };
     Ok(out)
 }
@@ -586,6 +593,7 @@ mod tests {
             Query::Sea { id: SeaId(2), units: vec![UnitId(1)] },
             Query::Seas,
             Query::PlaceMenu { spell: ffh_data::SpellType::from_usize(4), x: 3, y: 2 },
+            Query::Houses,
         ];
         let mut seen: Vec<&str> = Vec::new();
         for q in &qs {
