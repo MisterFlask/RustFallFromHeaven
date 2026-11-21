@@ -41,8 +41,6 @@ pub enum LogMark {
     Kill,
     /// A unit fled or withdrew.
     Retreat,
-    /// About a House (docs/PERSONS.md): the client shows it as an alert.
-    House,
 }
 
 /// What became of a world ritual, in its news.
@@ -73,8 +71,6 @@ pub enum LogTag {
     Battle(u32),
     /// A world ritual's news.
     Ritual(RitualNews),
-    /// About this House (docs/PERSONS.md).
-    House(crate::ids::HouseId),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

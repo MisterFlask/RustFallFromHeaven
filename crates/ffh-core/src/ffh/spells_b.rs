@@ -324,9 +324,8 @@ fn req_promote_settlement(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         return false;
     }
     let p = g.units[caster].owner;
-    // This game's Houses (docs/PERSONS.md, rule 14): a House with a cap holds only settlements;
-    // the cap counts the player's own full cities.
-    if g.player_house(p).is_some() || g.player_full_cities(p, None) >= g.players[p].max_cities {
+    // The cap counts the player's own full cities.
+    if g.player_full_cities(p, None) >= g.players[p].max_cities {
         return false;
     }
     true
@@ -339,9 +338,6 @@ fn spell_promote_settlement(g: &mut Game, caster: UnitId, _call: &PyCall) {
     if let Some(city) = g.map.plots[plot].plot_city {
         g.cities[city].settlement = false;
         g.city_set_plot_radius(city, 3);
-        // Not in FfH: it counts in its Crown now (docs/PERSONS.md, rule 14).
-        let owner = g.cities[city].owner;
-        g.player_update_maintenance(owner);
     }
 }
 

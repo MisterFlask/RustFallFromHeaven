@@ -429,8 +429,7 @@ fn spell_usurpers_crown(g: &mut Game, caster: UnitId, _call: &PyCall) {
 /// No Vassal States, or while `p`'s team is a vassal.
 pub fn oath_targets(g: &Game, p: PlayerId) -> Vec<PlayerId> {
     let team = g.players[p].team;
-    // (`team_vassal_refusal`: No Vassal States, a vassal.)
-    if g.team_vassal_refusal(team).is_some() {
+    if g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) || g.team_is_a_vassal(team) {
         return Vec::new();
     }
     let power = g.team_get_power(team, false);

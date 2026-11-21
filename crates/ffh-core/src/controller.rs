@@ -196,13 +196,6 @@ pub trait Controller: Send + Sync {
         crate::crusade::loan::LoanAnswer::Refuse
     }
 
-    /// Not in C++ (docs/PERSONS.md, "The third build", rule 5): liege `p` answers its House's
-    /// ultimatum `u`: true accepts (the demand is carried out, a contract binds for its turns),
-    /// false refuses (the House breaks away now). Default: accept.
-    fn consider_ultimatum(&self, _g: &Game, _p: PlayerId, _u: &crate::persons::Ultimatum) -> bool {
-        true
-    }
-
     /// Not in C++: lender `p` picks the units of an agreed loan (at least `terms.strength`;
     /// short of it the rules pick strongest-first). Default: strongest first.
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &crate::crusade::loan::LoanTerms) -> Vec<UnitId> {
@@ -325,13 +318,6 @@ impl Game {
     /// (a teammate, or the master of our non-capitulated vassal team, is FRIENDLY; anything
     /// involving the barbarians is FURIOUS); otherwise the controller's attitude.
     pub fn player_ai_get_attitude(&self, p: PlayerId, towards: PlayerId, forced: bool) -> AttitudeType {
-        // This game's Houses (docs/PERSONS.md, rule 5): a House's attitude toward its liege is
-        // its loyalty's state.
-        if let Some(h) = self.player_house(p) {
-            if self.houses[h].owner == towards {
-                return self.house_state(h).attitude();
-            }
-        }
         if forced {
             let team = self.players[p].team;
             let their_team = self.players[towards].team;

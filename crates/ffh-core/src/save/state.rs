@@ -45,7 +45,7 @@ persist_newtype!(
     SpecialBuildingType, SpecialUnitType, SpecialistType, SpellType, TaskType, TechType,
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
-    WorldSizeType, YieldType, CulturalActionType, CityRoleType,
+    WorldSizeType, YieldType, CityRoleType,
     BuildingTierType, ResearchPathType,
 );
 
@@ -54,45 +54,9 @@ persist_struct!(RowActions { kind, count });
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote, ArmyId, SeaId, HouseId, SquadId,
+    PlayerVote, ArmyId, SeaId, SquadId,
 );
 
-// ---- this game's own rules (docs/CULTURE.md) ----
-
-// ---- Houses (docs/PERSONS.md) ----
-
-use crate::persons::{Deed, Demand, DemandKind, Favour, House, HouseOrigin, LoyaltyCause, LoyaltyMod, LoyaltyState, Standing};
-persist_enum!(HouseOrigin { 0 => Founded, 1 => Capitulated, 2 => Vassal, 3 => Split, 4 => Courted });
-persist_enum!(LoyaltyState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
-persist_enum!(LoyaltyCause {
-    0 => DemandMet, 1 => DemandRefused, 2 => Granted { city }, 3 => GrantedElsewhere { city, house }, 4 => Levied,
-    5 => Capitulated, 6 => SoughtProtection,
-});
-persist_struct!(LoyaltyMod { cause, amount, until });
-persist_struct!(Standing { mods, state });
-persist_enum!(DemandKind { 0 => GrantCity(plot), 1 => TakeCity(plot), 2 => War(player), 3 => AdoptReligion, 4 => SpreadReligion(plot) });
-persist_struct!(Demand { kind, issued, deadline });
-persist_struct!(Deed { turn, text });
-persist_struct!(Favour { courter, amount, warned });
-persist_struct!(House {
-    id, owner, player, origin, name, standing, demand, demand_rest_until, deeds, founded_turn, color, tribute, tribute_now,
-    tribute_since, last_gold, last_turn,
-    // the third build, part 2A
-    refused, contract, ultimatums,
-    // the fourth build, rule 2
-    favour,
-});
-// ---- the third build, part 2A: ultimatums and contracts (docs/PERSONS.md, rules 5 and 6) ----
-use crate::persons::{Contract, UltimatumKind};
-persist_enum!(UltimatumKind {
-    0 => GrantCity(plot), 1 => War(player), 2 => AdoptReligion(religion), 3 => Tribute(pct), 4 => Peace(player),
-    5 => Resource(bonus), 6 => Gold(gold),
-});
-persist_struct!(Contract { kind, until, deal });
-
-
-use crate::culture::{ChannelTarget, CultureChannel};
-persist_enum!(ChannelTarget { 0 => House(house), 1 => Player(player) });
 use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Squad, SquadBody, Station};
 persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, unsupplied_turns, domain, station, carried });
 persist_struct!(Squad { id, owner, body, hand_set, fought_turn, fought });
@@ -185,7 +149,6 @@ impl Persist for RecruitDest {
         }
     }
 }
-persist_struct!(CultureChannel { action, target, religion, since_turn });
 
 // ---- CvStructs.h ----
 
@@ -379,9 +342,9 @@ persist_struct!(CrusadeReport {
     id, kind, target, start_turn, end_turn, reason, pool, wealth, delivered, engaged, refusals, lenders,
 });
 persist_enum!(Audience { 0 => Tools, 1 => Everyone, 2 => Players(players) });
-persist_enum!(LogMark { 0 => Event, 1 => City, 2 => Loss, 3 => Kill, 4 => Retreat, 5 => House });
+persist_enum!(LogMark { 0 => Event, 1 => City, 2 => Loss, 3 => Kill, 4 => Retreat });
 persist_enum!(RitualNews { 0 => Began, 1 => Abandoned, 2 => Completed });
-persist_enum!(LogTag { 0 => None, 1 => Battle(report), 2 => Ritual(news), 3 => House(house) });
+persist_enum!(LogTag { 0 => None, 1 => Battle(report), 2 => Ritual(news) });
 // `LogEntry::at` is presentation only and not saved (it reads back as `None`), so the entry is
 // written by hand rather than with `persist_struct!`.
 impl Persist for LogEntry {
@@ -563,11 +526,11 @@ persist_struct!(Player {
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
-    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, culture_channel, culture_inflow,
+    ai_attitude_extra, ai_first_contact, ai_memory_count,
     tributes, armies, army_count,
     governor_priorities, once_spells, card_traits, alignment_attitude, research_path,
     world_ritual_completions, world_ritual_refunds, world_spell_casts, tithe_target,
-    world_ritual_pending, houses, house_names, house, house_tribute, recovering, fallen,
+    world_ritual_pending, recovering, fallen,
 });
 
 persist_struct!(Team {

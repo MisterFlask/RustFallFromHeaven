@@ -98,9 +98,8 @@ fn table_sizes() {
 }
 
 /// The memory of wrongs (the owner's decision, 2026-11-18): every leader but the barbarians'
-/// (the cards' leaders and the Houses' minor leaders included) weighs a declared war -300, a city
-/// taken -150, a House bought -300 and a House courted -200 (docs/PERSONS.md, "The third build",
-/// rule 7), and forgets each at 1 in 50 a turn.
+/// (the cards' leaders and the minor leaders included) weighs a declared war -300 and a city taken
+/// -150, and forgets each at 1 in 50 a turn.
 #[test]
 fn every_leader_remembers_the_wrongs_and_forgets_them() {
     let barbarian = d().t::<LeaderHeadType>("LEADER_BARBARIAN");
@@ -115,9 +114,7 @@ fn every_leader_remembers_the_wrongs_and_forgets_them() {
         let t = &info.base.type_;
         assert_eq!(pct[MemoryType::MEMORY_DECLARED_WAR], -300, "{t}");
         assert_eq!(pct[MemoryType::MEMORY_TOOK_CITY], -150, "{t}");
-        assert_eq!(pct[MemoryType::MEMORY_SPLIT_HOUSE], -300, "{t}");
-        assert_eq!(pct[MemoryType::MEMORY_COURTED_HOUSE], -200, "{t}");
-        for m in [MemoryType::MEMORY_DECLARED_WAR, MemoryType::MEMORY_TOOK_CITY, MemoryType::MEMORY_SPLIT_HOUSE, MemoryType::MEMORY_COURTED_HOUSE] {
+        for m in [MemoryType::MEMORY_DECLARED_WAR, MemoryType::MEMORY_TOOK_CITY] {
             assert_eq!(decay[m], 50, "{t}");
         }
     }

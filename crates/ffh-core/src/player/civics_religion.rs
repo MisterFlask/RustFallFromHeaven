@@ -212,7 +212,6 @@ impl Game {
         let old_civic = self.players[p].civics[civic_option];
 
         if old_civic != civic {
-            let was_direct = self.player_rules_directly(p);
             self.players[p].civics[civic_option] = civic;
 
             if let Some(old_civic) = old_civic {
@@ -226,17 +225,9 @@ impl Game {
 
             game_ai_make_assign_work_dirty(self);
 
-            // Houses (docs/PERSONS.md, rule 11): adopting direct rule is civil war (every
-            // House breaks away).
-            if !was_direct && self.player_rules_directly(p) {
-                self.player_persons_civil_war(p);
-            }
             // This game's governors (docs/GOVERNORS.md): the government decides who runs the
             // cities.
             self.player_governance_sync(p);
-            // The Crown's limit (docs/PERSONS.md, rule 14) is the government's: the cities'
-            // maintenance follows it.
-            self.player_update_maintenance(p);
 
             if self.final_initialized {
                 // gDLL->isDiplomacy() / updateDiplomacyAttitude: diplomacy screen (UI).
@@ -865,12 +856,6 @@ impl Game {
         }
 
         if pl.conversion_timer > 0 {
-            return false;
-        }
-
-        // Not in C++: a House's contract binds its liege to no change of state religion
-        // (docs/PERSONS.md, "The third build", rule 6).
-        if self.player_contract_refusal(p, crate::persons::ContractAct::ChangeReligion).is_some() {
             return false;
         }
 

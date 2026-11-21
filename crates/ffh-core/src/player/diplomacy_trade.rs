@@ -105,11 +105,8 @@ impl Game {
                 }
                 //FfH: End Add
 
-                // C++ default `bAllowVassal = false`. Not in C++: a House is a party for anyone
-                // who has met it, at war too (its gifts; docs/PERSONS.md, "The fourth build"): what it
-                // may trade is `player_can_trade_item`'s.
-                let house = self.players[p].house.is_some() || self.players[other].house.is_some();
-                if !house && !self.team_can_change_war_peace(team, other_team, false) {
+                // C++ default `bAllowVassal = false`.
+                if !self.team_can_change_war_peace(team, other_team, false) {
                     return false;
                 }
             }
@@ -311,13 +308,6 @@ impl Game {
             return false;
         }
 
-        // Not in C++: a House trades only gifts (docs/PERSONS.md, "The fourth build", rule 3): it
-        // gives nothing and takes gold (no gold per turn) and resources from a civilization that
-        // is not its liege; war, peace and the rest are its liege's.
-        if let Some(allowed) = self.house_trade_item_allowed(p, who_to, item) {
-            return allowed;
-        }
-
         let team = self.players[p].team;
         let to_team = self.players[who_to].team;
 
@@ -412,11 +402,6 @@ impl Game {
                     // human can't be vassal of AI
                     let vassal_team = team;
                     let master_team = to_team;
-                    // (`team_vassal_refusal`: No Vassal States, a master that is a vassal; the
-                    // rules for every vassal, docs/PERSONS.md.)
-                    if self.team_vassal_refusal(master_team).is_some() {
-                        return false;
-                    }
                     if self.team_is_vassal_state_trading(master_team) {
                         // the master must possess the tech
                         if !self.team_is_a_vassal(vassal_team) && !self.team_is_a_vassal(master_team) && team != to_team {
@@ -529,12 +514,6 @@ impl Game {
                 // Not in C++: no separate peace while one's units serve a Host against the other
                 // (docs/CRUSADE.md).
                 if !self.crusades.is_empty() && (self.crusade_serving_against(p, to_team) || self.crusade_serving_against(who_to, team)) {
-                    return false;
-                }
-                // Not in C++: a House's contract binds its liege to no peace with the civilization
-                // war was declared on (docs/PERSONS.md, "The third build", rule 6).
-                use crate::persons::ContractAct;
-                if self.player_contract_refusal(p, ContractAct::MakePeace(to_team)).is_some() || self.player_contract_refusal(who_to, ContractAct::MakePeace(team)).is_some() {
                     return false;
                 }
                 return true;

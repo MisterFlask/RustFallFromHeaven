@@ -81,15 +81,6 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
             out.push(("alignment leaning", lean));
         }
     }
-    // What `other` did to us with cultural actions (docs/CULTURE.md): a point of memory per
-    // completed unrest-sized act, fading a point every few turns; two points are a step.
-    let [hostility, friendship] = a.culture_memory[other];
-    if hostility > 0 {
-        out.push(("cultural hostility", -((hostility + 1) / 2).min(3)));
-    }
-    if friendship > 0 {
-        out.push(("cultural friendship", ((friendship + 1) / 2).min(2)));
-    }
     // Gifts received and demands paid in the last turns (ffh-core `tribute`).
     let (gifts, demands) = g.tribute_relations(p, other);
     if gifts > 0 {
@@ -102,16 +93,8 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
 }
 
 /// The memories [`relation_parts`] weighs, with their labels: the wrongs of the owner's decision
-/// of 2026-11-18 (docs/PERSONS.md, "The second build"; FFH2's other memories are not read), a
-/// House split by a rival's courtship (the fourth build, rule 4: -300 on FfH's scale, -2 here) and
-/// a House courted (rule 7: a point every 5 turns of a Court channel, -200 on FfH's scale, -1
-/// here).
-pub const MEMORY_TERMS: [(MemoryType, &str); 4] = [
-    (MemoryType::MEMORY_DECLARED_WAR, "declared war on us"),
-    (MemoryType::MEMORY_TOOK_CITY, "took our cities"),
-    (MemoryType::MEMORY_SPLIT_HOUSE, "split our House"),
-    (MemoryType::MEMORY_COURTED_HOUSE, "courted our House"),
-];
+/// of 2026-11-18 (FFH2's other memories are not read).
+pub const MEMORY_TERMS: [(MemoryType, &str); 2] = [(MemoryType::MEMORY_DECLARED_WAR, "declared war on us"), (MemoryType::MEMORY_TOOK_CITY, "took our cities")];
 
 /// A memory term of [`relation_parts`] is at most this many points either way.
 pub const MEMORY_TERM_CAP: i32 = 3;
@@ -458,11 +441,7 @@ pub fn manage(g: &mut Game, v: &View) {
     // Telemetry: every target that passed the gates, with its score.
     let mut scored: Vec<(TeamId, i64)> = Vec::new();
     for other in g.player_ids() {
-        let Some(mut t) = territory_target(g, p, &bar, other, false) else { continue };
-        // A war a House of ours requests (docs/PERSONS.md): a tenth more.
-        if crate::persons::war_demanded(g, p, other) {
-            t.score += t.score.abs() / 10 + 1;
-        }
+        let Some(t) = territory_target(g, p, &bar, other, false) else { continue };
         let ot = g.players[other].team;
         scored.push((ot, t.score));
         if best.as_ref().map_or(true, |(_, b)| t.score > b.score) {
@@ -1501,14 +1480,6 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let because = |accept: bool, why: &str| OfferVerdict { accept, margin: None, why: Some(why.to_string()) };
     let on_value = |margin: i64| OfferVerdict { accept: margin >= 0, margin: Some(margin as i32), why: None };
     let has = |items: &[TradeData], kind: TradeableItem| items.iter().any(|t| t.item_type == kind);
-    // ---- Houses (docs/PERSONS.md, "The fourth build", rule 9): a House accepts any gift (nothing
-    // asked back: gold or a resource) and trades nothing else.
-    if g.player_house(p).is_some() {
-        if we_give.is_empty() && !they_give.is_empty() {
-            return rule(true, "");
-        }
-        return no("a House takes gifts only");
-    }
     // Vassal states come with strings attached (vassals.rs): asked to become `from`'s vassal, or
     // offered `from` as ours.
     if let Some(yes) = crate::vassals::agree(g, p, from, we_give, tel) {
@@ -1887,7 +1858,7 @@ mod tests {
         assert_eq!(relation(&g, them, us), theirs, "the caster's own attitude is unchanged");
     }
 
-    /// The three remembered wrongs are terms of their own: `count x percent / 100`, halved (rounded
+    /// The remembered wrongs are terms of their own: `count x percent / 100`, halved (rounded
     /// half away from zero), capped at -3; a declared war is remembered by the side declared on,
     /// and fades.
     #[test]
@@ -1908,18 +1879,11 @@ mod tests {
             g.players[us].ai_memory_count[them][m] = count;
             assert_eq!(term(&g, "took our cities"), want, "{count} cities");
         }
-        // MEMORY_SPLIT_HOUSE -300, as a declared war.
-        g.players[us].ai_memory_count[them][MemoryType::MEMORY_SPLIT_HOUSE] = 1;
-        assert_eq!(term(&g, "split our House"), Some(-2));
-        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_SPLIT_HOUSE), -1, "the second: -2 to -3");
-        g.players[us].ai_memory_count[them][MemoryType::MEMORY_SPLIT_HOUSE] = 2;
-        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_SPLIT_HOUSE), 0, "at the cap");
-        // MEMORY_COURTED_HOUSE -200: -1 a point (the fourth build, rule 7), the cap at three.
-        assert_eq!(term(&g, "courted our House"), None);
-        for (count, want) in [(1, Some(-1)), (2, Some(-2)), (3, Some(-3)), (9, Some(-3))] {
-            g.players[us].ai_memory_count[them][MemoryType::MEMORY_COURTED_HOUSE] = count;
-            assert_eq!(term(&g, "courted our House"), want, "{count} courtships");
-        }
+        // A second declaration: -2 to -3; then the cap.
+        g.players[us].ai_memory_count[them][MemoryType::MEMORY_DECLARED_WAR] = 1;
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_DECLARED_WAR), -1, "the second: -2 to -3");
+        g.players[us].ai_memory_count[them][MemoryType::MEMORY_DECLARED_WAR] = 2;
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_DECLARED_WAR), 0, "at the cap");
         assert_eq!(memory_part(&g, us, MemoryType::MEMORY_TOOK_CITY, 100), -MEMORY_TERM_CAP);
         // A declaration is remembered by the side declared on, through these terms.
         let mut g = one_landmass_game(19);

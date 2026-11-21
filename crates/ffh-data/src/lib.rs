@@ -212,7 +212,6 @@ game_data! {
     events: EventType => EventInfo, event::read_event;
     event_triggers: EventTriggerType => EventTriggerInfo, event::read_event_trigger;
     // ---- This game's own rules (not FFH2's) ----
-    cultural_actions: CulturalActionType => CulturalActionInfo, culture::read_cultural_action;
     city_roles: CityRoleType => CityRoleInfo, governor::read_city_role;
     governor_names: GovernorNameType => GovernorNameInfo, governor::read_governor_names;
     building_tiers: BuildingTierType => BuildingTierInfo, building::read_building_tier;
@@ -439,15 +438,6 @@ impl GameData {
         self.magic_promotions = self.promotions.keys().filter(|&p| self.promotions[p].magic.any()).collect();
         self.kit_promotions = self.promotions.keys().filter(|&p| self.promotions[p].kit.any()).collect();
         self.derive_house_perks();
-        // A leader without `iCulturalAggression`: 100, more for a war-eager leader (FfH's
-        // iLimitedWarRand runs from 60, eager, to 300, peaceful) and for a culture lover.
-        let culture_flavor = self.reg.lookup::<FlavorType>("FLAVOR_CULTURE");
-        for info in self.leader_heads.iter_mut() {
-            if info.cultural_aggression < 0 {
-                let flavor = culture_flavor.map_or(0, |f| info.flavor_value.get(f).copied().unwrap_or(0));
-                info.cultural_aggression = (100 + (150 - info.limited_war_rand) / 3 + 2 * flavor).clamp(40, 180);
-            }
-        }
         self.derive_engagements();
         self.tech_research_bonuses = IdxVec::from_elem(Vec::new(), self.techs.len());
         for i in self.improvements.keys() {

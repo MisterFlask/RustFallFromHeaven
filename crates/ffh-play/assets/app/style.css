@@ -115,8 +115,7 @@ h3 { font-size: 16px; letter-spacing: 0.03em; }
 h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin: 10px 0 4px; }
 .dim { color: var(--dim); }
 .warn { color: var(--warn); }
-/* Houses: the colour of Annoyed (docs/PERSONS.md, "UI", principle 2): a limit that is
-   not yet Furious. Scarlet (`.warn`) is Furious's alone. */
+/* A limit that is not yet a warning (`.warn`). */
 .caution { color: var(--caution); }
 .good { color: var(--good); }
 .error { color: var(--warn); min-height: 0; margin: 4px 0; }
@@ -468,56 +467,7 @@ ol.queue button { margin-left: 8px; }
 .build-prompt ol.queue:has(> li.dim:only-child) { list-style: none; padding-left: 0; }
 .tap-mode.always { display: flex; }
 button.build .cost { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
-/* The Culture screen (F8) and the city screen's Culture section (culture.js; docs/CULTURE.md, "UI"):
-   the head, your channel's preview (the favour bar with its mark at two thirds, the requirement's
-   table, the courtship's numbers), the chooser, the courtships aimed at you (past two thirds:
-   `.attention`), the channels between others, the memories. */
-.culture-head p { margin: 2px 0; }
-.culture-head .culture-channel-line { font-weight: bold; }
-.culture-ours, .culture-aimed-house { border: 1px solid var(--c-iron); padding: 4px 8px; margin: 4px 0; }
-.culture-ours-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-.favour { margin: 4px 0 8px; }
-.favour-label { font-size: 13px; }
-.favour.attention .favour-label { color: var(--caution); }
-.favour-bar { position: relative; height: 8px; margin: 3px 0; max-width: 360px; background: var(--c-void); border: 1px solid var(--c-iron); }
-.favour-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--c-ochre); opacity: 0.85; }
-.favour.attention .favour-fill { background: var(--caution); }
-.favour-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--c-vellum); }
-table.culture-req, table.culture-facts, table.culture-guarded, table.culture-reach, table.culture-memories { border-collapse: collapse; margin: 4px 0; }
-table.culture-req th, table.culture-facts th, table.culture-guarded th, table.culture-reach th, table.culture-memories th { text-align: left; font-weight: normal; color: var(--dim); padding: 1px 12px 1px 0; vertical-align: top; }
-table.culture-req td, table.culture-facts td, table.culture-guarded td, table.culture-reach td, table.culture-memories td { padding: 1px 12px 1px 0; vertical-align: top; }
-table.culture-req tr.total td { border-top: 1px solid var(--c-iron); padding-top: 3px; }
-table.culture-req td { white-space: nowrap; }
-table.culture-req tr.total td { white-space: normal; }
-.req-label { color: var(--dim); }
-.req-formula { display: inline-block; }
-table.culture-guarded .nowrap { display: inline-block; white-space: nowrap; }
-table.culture-guarded td:first-child, table.culture-guarded td:nth-child(2) { white-space: nowrap; }
-.culture-split, .culture-held, .culture-loss, .culture-chance, .culture-current { margin: 3px 0; }
-.culture-choose { margin: 2px 0 6px; }
-.culture-actions, .culture-religions { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
-.culture-actions button.on, .culture-religions button.on { border-color: var(--c-bone); color: var(--c-vellum); background: var(--c-navy); box-shadow: inset 3px 0 0 var(--c-gold); }
-.culture-targets { display: grid; gap: 3px; margin: 4px 0; }
-button.culture-target { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 0 4px; text-align: left; padding: 3px 6px; }
-button.culture-target.on { border-color: var(--c-bone); background: var(--c-navy); color: var(--c-vellum); box-shadow: inset 3px 0 0 var(--c-gold); }
-button.culture-target.refused .target-name { color: var(--dim); }
-button.culture-target .target-line { flex: 1 1 100%; font-size: 12px; }
-.culture-pick { border-left: 2px solid var(--c-ochre); padding-left: 6px; margin: 4px 0; }
-.culture-commit { margin: 4px 0; }
-ul.culture-courtships { margin: 2px 0; padding-left: 0; list-style: none; }
-li.courtship.attention { color: var(--caution); }
-.attention-mark { font-weight: bold; }
-.culture-guard-offer { margin: 4px 0 2px; }
-.culture-guard-preview, .culture-guarded-line { margin: 2px 0; font-size: 12px; }
-ul.culture-others, ul.culture-aimed-spread { margin: 2px 0; padding-left: 20px; }
-ul.culture-others li.hostile, ul.culture-aimed-spread li.hostile { color: #f0c8b8; }
-.culture-keywords { margin-top: 12px; }
-.section.culture .culture-line { margin: 2px 0 4px; }
-.section.culture .culture-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .swatch { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border: 1px solid var(--c-void); vertical-align: 0; }
-html.art .culture-actions button.on:not([disabled]), html.art .culture-religions button.on:not([disabled]), html.art button.culture-target.on:not([disabled]) {
-  border-image: var(--nine-frame-card-selected); border-width: var(--nine-frame-card-selected-w);
-}
 /* This game's armies (armies.js): the unit row's army badge, the Armies screen's cards with
    their requisition, the production queue's destination and requisition orders, a marching
    recruit's line in the unit panel. */
@@ -867,43 +817,7 @@ table.scores.diplo td { vertical-align: top; }
 .trade-value.none { color: var(--dim); font-size: 13px; }
 .trade-summary { margin-top: 10px; padding: 6px 10px; background: var(--panel-2); border-left: 3px solid var(--frame); }
 input.amount { width: 80px; }
-/* Houses as parties (docs/PERSONS.md, "The second build", rule 13): a House's row under its liege's,
-   indented, with its shield and `House Arne, vassal of the Bannor`; on its trade screen the line of
-   what is its liege's to trade. */
-table.scores.diplo tr.house-row > td:first-child { padding-left: 26px; }
-table.scores.diplo tr.house-row > td:first-child .leader-cell { border-left: 2px solid var(--frame); padding-left: 8px; }
-.house-of { white-space: nowrap; }
-.house-of .house-shield { vertical-align: -2px; }
-.trades-through { margin: 8px 0 0; }
-.own-house p { margin: 6px 0; }
-/* A House's line in the list carries its state, where a phone sees
-   it: each part a line of its own under the House's (within the portrait's height), so the table
-   keeps to the dialog's width; the separators read only as text. */
-.leader-cell .house-who, .leader-cell .house-who .house-of { white-space: normal; }
-.house-who .house-chunk { display: block; white-space: nowrap; }
-.house-who .house-chunk > .sep { display: none; }
-/* Courting (docs/PERSONS.md, "The fourth build", rule 10): who courts a House, under its line in
-   the list (yours first) and on its card, a courtship past two thirds marked; its guard; the
-   button that sets your channel (Court, Guard) with what it would do; on a House's trade screen,
-   your courtship of it and the requirement against its leader's attitude. */
-.house-courted, .house-courting-row { font-size: 13px; white-space: normal; margin-top: 2px; max-width: 18em; }
-.house-courted { color: var(--caution); }
-.house-courting-row { color: var(--c-sand); }
-.pline.pcourted { color: var(--caution); display: flex; align-items: baseline; gap: 6px; }
-.pline.pcourted.own { color: var(--c-sand); }
-.pline.pcourted.attention { color: var(--warn); font-weight: 600; }
-.pcourted-mark { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; border-radius: 50%; background: var(--warn); color: var(--c-soot); font-weight: 800; font-size: 12px; line-height: 1; }
-.pline.pguard { color: var(--c-sand); }
-.pline.prequirement { color: var(--dim); font-size: 13px; }
-.pchannel { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 2px; }
-.pchannel > .pchannel-line, .pchannel > .pchannel-refusal { flex: 1 1 14em; min-width: 0; font-size: 13px; }
-.house-courting { margin: 8px 0 0; color: var(--c-sand); }
-.house-requirement { margin: 2px 0 8px; color: var(--dim); font-size: 13px; }
 .trade-none { font-size: 13px; }
-@media (max-width: 520px) {
-  table.scores.diplo tr.house-row > td:first-child { padding-left: 10px; }
-  .house-of { white-space: normal; }
-}
 /* A leader speaking (diplo.js `leaderHead`): the portrait, then the name, civilization and mood
    over the line they say. */
 .leader-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 10px; }
@@ -1414,137 +1328,7 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
 }
 .kw-chip:hover, .kw-chip:focus-visible { border-color: var(--kw); outline: none; }
 
-/* Houses (docs/PERSONS.md, "UI", principle 2): one mark for a loyalty state on every screen,
-   drawn by persons.js stateMark: a shape and a word in the state's colour (never colour alone), the
-   turns of a countdown after them. Screens place it; they do not restyle it. A House's shield is an
-   inline SVG in its colour (persons.js houseShield). */
-.pstate { display: inline-flex; align-items: baseline; gap: 3px; font-weight: 700; white-space: nowrap; }
-.pstate-glyph { font-family: var(--serif); font-size: 0.9em; line-height: 1; }
-.pstate-turns { font-weight: 400; margin-left: 2px; }
-.pstate.ps-friendly, .pstate.ps-pleased { color: var(--good); }
-.pstate.ps-loyal { color: var(--dim); }
-.pstate.ps-annoyed { color: var(--caution); }
-.pstate.ps-furious { color: var(--warn); }
-.house-shield { display: inline-block; vertical-align: -2px; flex: none; }
-
-/* The Court screen and the grant list (persons.js; docs/PERSONS.md, "UI", parts A and B): cards,
-   one column on a phone (principle 7), two or more side by side when there is room. */
-.court-header { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
-.court-header .kw-chips { margin-top: 4px; }
-.court-empty p { margin: 6px 0; }
-.court-attention { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; padding: 6px 8px; border: 1px solid var(--c-ochre); background: rgba(219, 166, 59, 0.08); }
-.pattn { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-.pattn > span:first-child { flex: 1 1 14em; min-width: 0; }
-.pattn > button { margin-left: auto; }
-.pattn.urgent > span:first-child { color: var(--caution); }
-.pattn[data-kind="furious"] > span:first-child { color: var(--warn); }
-.pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 8px; align-items: start; }
-.pcards.one { grid-template-columns: minmax(0, 1fr); }
-.pcard { border: 1px solid var(--c-iron); background: rgba(38, 51, 79, 0.45); padding: 6px 8px; min-width: 0; overflow-wrap: anywhere; }
-.pcard.alarm { border-color: var(--c-crimson); }
-.pcard.pfocus { outline: 2px solid var(--accent); }
-.phead { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.phead .pname { flex: 1 1 auto; min-width: 0; line-height: 1.2; }
-.phead .ptitle { font-size: 12px; font-style: italic; }
-.pportrait { flex: none; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--c-ochre); background: var(--c-soot); overflow: hidden; }
-.pportrait img, .pportrait canvas { display: block; max-width: 40px; max-height: 40px; }
-.pportrait.none { font-weight: 700; color: var(--dim); font-size: 13px; }
-.pline { margin: 2px 0; }
-.pline.warn { color: var(--warn); }
-.pline.caution { color: var(--caution); }
-.court-keywords { margin-top: 12px; }
-.pchips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
-.city-chip.seat { font-weight: 700; }
-.pdemand { margin: 4px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
-.pdemand-text { flex: 1 1 14em; min-width: 0; }
-.pdemand-turns.urgent { color: var(--caution); font-weight: 700; }
-.pfoot { margin-top: 6px; }
-.pconfirm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px; border: 1px solid var(--c-crimson); background: rgba(86, 20, 23, 0.35); }
-.pconfirm p { flex: 1 1 100%; margin: 0 0 2px; font-weight: 700; }
-.pconfirm p.pconfirm-garrison { font-weight: 400; }
-details.pmore { margin-top: 4px; }
-details.pmore > summary { cursor: pointer; color: var(--link); padding: 2px 0; }
-ul.pparts, ul.precord, ul.plines, .peffect ul { margin: 2px 0; padding-left: 18px; }
-.ptotal { font-weight: 700; margin: 2px 0 4px; }
-.psub { margin-top: 4px; color: var(--dim); }
-.pbackstory { margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(132, 139, 152, 0.35); font-style: italic; color: var(--dim); font-size: 12px; }
-.crown-glyph { font-size: 20px; line-height: 1; color: var(--accent); }
-ul.crown-cities { list-style: none; margin: 2px 0; padding: 0; }
-li.crown-city { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 3px 0; }
-li.crown-city > .link { margin-right: auto; text-align: left; justify-content: flex-start; }
-.grant-head p { margin: 2px 0; }
-.grant-list { margin-top: 6px; }
-.modal.grant .modal-body { max-height: 70vh; overflow-y: auto; }
-.peffect { margin: 4px 0; padding-left: 6px; border-left: 2px solid rgba(132, 139, 152, 0.45); }
-.pbecomes { font-weight: 700; }
-.pbecomes.ps-friendly, .pbecomes.ps-pleased { color: var(--good); }
-.pbecomes.ps-annoyed { color: var(--caution); }
-.pbecomes.ps-furious { color: var(--warn); }
-#btn-court { position: relative; }
-.court-badge { display: inline-block; min-width: 16px; margin-left: 4px; padding: 0 4px; border-radius: 8px; background: var(--c-crimson); color: var(--c-rime); font: 700 11px/16px var(--font); text-align: center; vertical-align: 1px; }
-/* The second build (docs/PERSONS.md, rule 13): the Crown's limit and the realm's default
-   tribute in the Court's header; a House card's leader line, its tribute list (one row a rate,
-   two lines on a phone: the rate, what it pays this turn, its tribute part and loyalty, the state
-   mark), its levy line; the Crown's cities over the limit and, with no House, the founding line. */
-.court-header .caution, .grant-head .caution { color: var(--caution); }
-.pattn[data-kind="levy"] > span:first-child, .pattn[data-kind="crown_over"] > span:first-child { color: var(--caution); }
-.ptribute-default { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 4px; }
-.ptribute-default select { min-height: 30px; }
-.phouse-name { display: flex; align-items: center; gap: 5px; }
-.pleader { font-size: 13px; margin-top: 1px; }
-.psince { font-size: 12px; }
-.pparts-block { margin: 2px 0 4px; font-size: 14px; }
-.pparts-block .ptotal { font-size: 15px; }
-details.ptribute { margin: 6px 0 4px; padding-top: 4px; border-top: 1px solid rgba(132, 139, 152, 0.35); }
-details.ptribute > summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; list-style: none; padding: 2px 0; }
-details.ptribute > summary::-webkit-details-marker { display: none; }
-.ptribute-line { flex: 1 1 14em; min-width: 0; }
-.ptribute-change { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
-.ptribute-change::after { content: " \25BE"; text-decoration: none; display: inline-block; margin-left: 2px; }
-details.ptribute[open] .ptribute-change::after { content: " \25B4"; }
-.trates-head { margin: 4px 0 3px; font-size: 12px; }
-.trates { display: flex; flex-direction: column; gap: 3px; }
-button.trate { display: grid; grid-template-columns: 3.4em minmax(0, 1fr) auto; grid-template-areas: "pct est est" "pct part state"; gap: 1px 8px; align-items: center; justify-items: start; width: 100%; min-height: 40px; padding: 3px 8px; text-align: left; line-height: 1.25; }
-button.trate .trate-pct { grid-area: pct; font-weight: 700; font-size: 15px; }
-button.trate .trate-est { grid-area: est; font-size: 14px; line-height: 1.3; }
-button.trate .trate-part { grid-area: part; font-size: 12px; line-height: 1.3; color: var(--dim); }
-button.trate .trate-state { grid-area: state; justify-self: end; line-height: 1.3; }
-button.trate.current { background: rgba(242, 199, 75, 0.1); border-color: var(--accent); cursor: default; }
-/* A rate a House's contract forbids (docs/PERSONS.md, "The third build", rule 6): barred, its reason below. */
-button.trate.barred { opacity: 0.55; cursor: not-allowed; grid-template-areas: "pct est est" "pct part state" "pct barred barred"; }
-button.trate .trate-barred { grid-area: barred; font-size: 12px; line-height: 1.3; color: var(--caution); }
-.pline.pcontract { color: var(--caution); }
 .decision-keywords { margin: 4px 0 8px; }
-html.iso.hd2d button.trate.current { border-image: var(--iso-tile-hover); background: var(--hd-band), var(--hd-fill); background-clip: padding-box; color: #fff; box-shadow: inset 3px 0 0 var(--hd-ink); }
-button.trate .trate-now { display: block; color: var(--accent); font-size: 11px; font-weight: 700; }
-.plevy { margin-top: 4px; }
-.pfounding { margin: 2px 0 4px; }
-li.crown-city .crown-note { font-size: 12px; }
-.city-chip.held { border-style: dashed; }
-.peffect.self { border-left-color: var(--accent); }
-/* Houses in the existing screens (docs/PERSONS.md, "UI", parts C to I; persons_lines.js): the
-   House tag of the lists, the holder line of the city screen, the preview lines under an act, the
-   civics screen's warning, the alerts. The state is always the one mark above. */
-.house-tag { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-.house-tag.crown { color: var(--dim); }
-button.link.house-tag { padding: 0; }
-.holder-line { margin: 4px 0 6px; line-height: 1.5; }
-.holder-line .holder-house-name { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; padding: 0; }
-.holder-outcome { margin-top: 2px; }
-.build-refusal { margin: 4px 0; }
-.requisition-house { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 0 0 2px 22px; font-size: 0.92em; }
-.requisition-house .levy-text { min-width: 0; }
-.persons-preview { margin: 6px 0; padding: 4px 8px; border-left: 3px solid var(--caution); background: rgba(255, 182, 59, 0.07); }
-.persons-preview-title { font-weight: 700; }
-.persons-preview-line { line-height: 1.45; }
-.persons-warning { margin: 6px 0; padding: 6px 10px; border: 1px solid var(--warn); border-left-width: 4px; background: #2c1412; color: var(--em); font-weight: 700; }
-.persons-warning-houses { margin: 4px 0 0; padding-left: 18px; font-weight: 400; }
-.persons-warning-houses li { margin: 1px 0; }
-tr.empire-city.refused { opacity: 0.75; cursor: not-allowed; }
-.toast.house-alert { display: flex; align-items: center; gap: 8px; border-left: 3px solid var(--accent); cursor: pointer; }
-.toast.house-alert.secession { border-left-color: var(--warn); }
-.toast.house-alert .leader-portrait { flex: none; border-radius: 4px; }
-.toast.house-alert .house-alert-mark { color: var(--accent); }
 
 /* Squads (squads.js; docs/ENGAGEMENTS.md, "Squads"): the squad board, one card per squad with its
    3 by 3 grid (front row at the top, toward the enemy), a unit's figure in its cell (a large unit

@@ -232,9 +232,6 @@ html.iso #iso-rail button.attention::after, html.iso #menu button.attention::aft
   background: var(--iso-bad); border: 2px solid var(--iso-gold); outline: 2px solid #0c0703;
 }
 
-/* The Court's count (persons.js, the Houses): a number on the rail icon's corner. */
-html.iso #btn-court { position: relative; }
-html.iso #btn-court .court-badge { position: absolute; top: 1px; right: 1px; margin: 0; font: 700 12px/16px var(--iso-font); border: 1px solid #0c0703; }
 
 /* --- the turn report (collapsed to its tabs unless opened) --------------------------------- */
 
@@ -610,24 +607,7 @@ html.iso .unlock.more { width: auto; min-width: 32px; padding: 0 4px; color: var
 html.iso .h1 { font-size: 20px; }
 html.iso .ccity { font-size: 20px; }
 
-/* --- the Culture screen (culture.js): F8, the city screen's Culture section ----------------- */
-
-html.iso .culture-head p, html.iso button.culture-target .target-line, html.iso .culture-guard-preview, html.iso .culture-guarded-line,
-html.iso .favour-label { font-size: 20px; line-height: 24px; }
-html.iso .culture-ours, html.iso .culture-aimed-house { border: 2px solid #3a4a74; background: rgba(1, 8, 30, 0.35); }
-html.iso .favour-bar { height: 10px; border: 2px solid #8a6420; background: var(--iso-deep); }
-html.iso .favour-fill { background: var(--iso-gold); }
-html.iso .favour.attention .favour-fill { background: var(--iso-warn); }
-html.iso .favour-mark { background: #fff8e4; }
-html.iso table.culture-req tr.total td { border-top-color: #3a4a74; }
 html.iso .swatch { width: 12px; height: 12px; border: 2px solid #0c0703; vertical-align: -1px; }
-html.iso .culture-actions button.on, html.iso .culture-religions button.on, html.iso button.culture-target.on {
-  border-image: var(--iso-tile-hover); background: linear-gradient(180deg, var(--iso-tile-lit), #163f96); background-clip: padding-box; color: #fff;
-  box-shadow: inset 4px 0 0 var(--iso-gold);
-}
-html.iso button.culture-target { padding: 2px 8px; }
-html.iso button.culture-target.refused .target-name { color: var(--iso-dim); }
-html.iso .culture-pick { border-left: 4px solid #8a6420; padding-left: 8px; }
 
 /* --- the city screen over the map (Civ4's: city.js `overlay`, map.js `cityOverlay`) --------- */
 /* The dialog lets the map through: its title, summary and buttons are plaques at the top and
@@ -997,8 +977,6 @@ html.iso .tip-side { width: 300px; }
 html.iso .reminder { font: 400 16px/20px var(--iso-font); padding: 4px 10px 6px; }
 html.iso .reminder-name { font: 700 16px/20px var(--iso-font); letter-spacing: 0.04em; }
 html.iso .kw-chip { font: 700 16px/20px var(--iso-font); padding: 0 8px; }
-html.iso .pstate { font: 700 16px/20px var(--iso-font); }
-html.iso .pstate-turns { font-weight: 400; }
 html.iso #end-turn .end-turn-why { font: 400 16px/18px var(--iso-font); color: #ff8a70; }
 html.iso #iso-corner #end-turn.blocked { row-gap: 0; align-content: center; line-height: 26px; }
 

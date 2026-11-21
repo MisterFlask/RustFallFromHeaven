@@ -47,9 +47,6 @@ pub enum DecisionKind {
     FreeBonus { city: CityId },
     /// Two random results from the exploration's rolled tier.
     LairOutcome { unit: UnitId },
-    /// Not in C++ (docs/PERSONS.md, "The third build", rule 5): a House's ultimatum to the human,
-    /// its liege: option 0 accepts (a contract), 1 refuses (the House breaks away now).
-    Ultimatum { house: HouseId },
 }
 
 impl DecisionKind {
@@ -66,7 +63,6 @@ impl DecisionKind {
             DecisionKind::FreePromotion { .. } => "free_promotion",
             DecisionKind::FreeBonus { .. } => "free_bonus",
             DecisionKind::LairOutcome { .. } => "lair_outcome",
-            DecisionKind::Ultimatum { .. } => "ultimatum",
         }
     }
 }
@@ -247,30 +243,12 @@ pub fn keep_city(g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Opti
         player: p,
         kind: DecisionKind::KeepCity { city: c, can_raze, gift_to },
         title: if can_raze { "Raze or keep?".into() } else { "Keep the city?".into() },
-        text: format!("You have captured {} (size {}).{}{}", city.name, city.population, city_contents(g, c), if can_raze { raze_preview(g, p, c) } else { String::new() }),
+        text: format!("You have captured {} (size {}).{}", city.name, city.population, city_contents(g, c)),
         advisor: options.iter().position(|o| o.key == key),
         options,
         context: city_context(g, c, city.previous_owner),
         keywords: Vec::new(),
     }
-}
-
-/// Houses (docs/PERSONS.md, "UI", part I): what razing city `c` does to player `p`'s Houses,
-/// `[NEWLINE]`-led lines under `If razed:` (empty when nothing).
-fn raze_preview(g: &Game, p: PlayerId, c: CityId) -> String {
-    if !g.player_has_houses(p) || g.players[p].houses.is_empty() {
-        return String::new();
-    }
-    let lines = g.persons_preview(p, &ffh_core::persons::PersonsAct::Raze(c));
-    if lines.is_empty() {
-        return String::new();
-    }
-    let mut out = "[NEWLINE][NEWLINE]If razed:".to_string();
-    for l in &lines {
-        out.push_str("[NEWLINE]");
-        out.push_str(&crate::view::house_marks::preview_sentence(l));
-    }
-    out
 }
 
 /// What a captured or joining city holds, for the keep/raze question: its buildings (wonders
@@ -422,40 +400,6 @@ pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanPropo
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(proposal.from), ..Default::default() },
         keywords: Vec::new(),
-    }
-}
-
-/// A House's ultimatum to its liege `p` (docs/PERSONS.md, "The third build", rules 5 and 6): what
-/// it demands, what accepting binds (a contract of `PERSON_ULTIMATUM_TURNS` turns, the House at
-/// least Annoyed) and what refusing does (the break-away now, the hold contest included). Option 0
-/// accepts, 1 refuses; the rules' lines, from the rules' read API.
-pub fn ultimatum(g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum, advisor_accepts: bool) -> Decision {
-    let h = u.house;
-    let label = g.house_label(h);
-    let turns = g.d.defines.person_ultimatum_turns;
-    let demand = g.ultimatum_demand_text(h, u.kind);
-    let again = if u.request { " Its refused request again." } else { "" };
-    let bound = match g.contract_bound_text(h, u.kind, true) {
-        Some(b) => format!("For {turns} turns: {b}."),
-        None => format!("For {turns} turns: a contract, with no other bound."),
-    };
-    let floor = format!("{label} stays at least Annoyed until turn {}.", u.until);
-    let refusal = g.house_refusal_outcome(h);
-    let mut accept = DecisionOption::new("accept", "Accept");
-    accept.help = format!("{bound} {floor}");
-    let mut refuse = DecisionOption::new("refuse", "Refuse");
-    refuse.help = refusal;
-    let seat = g.house_seat(h);
-    Decision {
-        id: 0,
-        player: p,
-        kind: DecisionKind::Ultimatum { house: h },
-        title: format!("Ultimatum: {label}"),
-        text: format!("{label} demands: {demand}{again}"),
-        options: vec![accept, refuse],
-        advisor: Some(if advisor_accepts { 0 } else { 1 }),
-        context: DecisionContext { plot: seat.map(|c| (g.cities[c].x, g.cities[c].y)), city: seat, unit: None, other_player: Some(g.houses[h].player) },
-        keywords: g.d.ty::<KeywordType>("KEYWORD_ULTIMATUM").into_iter().collect(),
     }
 }
 

@@ -7,35 +7,30 @@
 import { h } from "./dom.js";
 import { tip, showTip } from "./tips.js";
 
-/** The parts of a courtship's calculation, in the order its tooltip shows them. */
-const COURTSHIP_PARTS = ["requirement", "inflow", "reach", "gain", "guard", "turn"];
-
-/** A calculation's lines, flat: a list of lines, or a courtship's `{requirement, inflow, reach,
- *  gain, guard, turn}` in that order (`parts`: only those); [] for none. */
-export function calcLines(calc, parts = COURTSHIP_PARTS) {
-  if (!calc) return [];
-  if (Array.isArray(calc)) return calc.filter(Boolean);
-  return parts.flatMap((k) => calc[k] ?? []).filter(Boolean);
+/** A calculation's lines, flat (a list of lines; empty ones left out); [] for none. */
+export function calcLines(calc) {
+  if (!Array.isArray(calc)) return [];
+  return calc.filter(Boolean);
 }
 
 /** A calculation's tooltip: a line a row; null for none. */
-export function calcTip(calc, parts) {
-  const lines = calcLines(calc, parts);
+export function calcTip(calc) {
+  const lines = calcLines(calc);
   return lines.length ? h("div.tip-calc", lines.map((l) => h("div.tip-calc-line", l))) : null;
 }
 
-/** Element `el` with calculation `calc` (`parts` of a courtship's) as its tooltip, shown on hover,
- *  focus or a tap, and marked as a calculated number. Returns `el`, unchanged without one. */
-export function withCalc(el, calc, parts) {
-  if (!calcLines(calc, parts).length) return el;
+/** Element `el` with calculation `calc` as its tooltip, shown on hover, focus or a tap, and marked
+ *  as a calculated number. Returns `el`, unchanged without one. */
+export function withCalc(el, calc) {
+  if (!calcLines(calc).length) return el;
   el.classList.add("calc");
   if (!el.hasAttribute("tabindex") && !/^(BUTTON|A|INPUT|SELECT)$/.test(el.tagName)) el.tabIndex = 0;
-  tip(el, () => calcTip(calc, parts));
+  tip(el, () => calcTip(calc));
   el.addEventListener("click", () => showTip(el));
   return el;
 }
 
 /** A `tag` element (an `h` selector) holding `text`, with calculation `calc` as its tooltip. */
-export function calcText(tag, text, calc, parts) {
-  return withCalc(h(tag, text), calc, parts);
+export function calcText(tag, text, calc) {
+  return withCalc(h(tag, text), calc);
 }
