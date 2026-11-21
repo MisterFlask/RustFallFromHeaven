@@ -22,6 +22,11 @@ const FRAGMENTS: &[(&str, &[&str])] = &[
     // The Armageddon counter (docs/CARDS.md, section 4).
     ("KEYWORD_ARMAGEDDON_COUNTER", &["100 over 300 turns", "raise or lower it"]),
     ("KEYWORD_ARMAGEDDON_CARD", &["one card or none at each slot", "within 5 of its slot", "reaches its slot"]),
+    // This game's Houses (docs/HOUSES.md, rule 15; the cards' lines are checked in
+    // tests/houses_screens.rs).
+    ("KEYWORD_HOUSE", &["up to 4 of a civilization's cities", "whose seat is nearest"]),
+    ("KEYWORD_SYMPATHY", &["the civilization a house's leader favours", "kept for good"]),
+    ("KEYWORD_OUTSIDER", &["offered for a foreign house", "counts alignment and religion only"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.

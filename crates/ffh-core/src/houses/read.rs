@@ -148,12 +148,32 @@ impl Game {
     /// (outsider) = -3 in each of its 3 cities.`
     pub fn house_opinion_calc(&self, h: HouseId) -> Vec<String> {
         let house = &self.houses[h];
-        let parts = self.house_opinion_parts(h);
+        self.house_calc_lines(&self.house_opinion_parts(h), house.outsider, house.cities.len())
+    }
+
+    /// How a candidate's opinion and happiness would be worked out now (as
+    /// [`Game::house_opinion_calc`] for a House), for `cities` forming cities.
+    pub fn house_card_calc(&self, owner: PlayerId, card: &HouseCard, cities: usize) -> Vec<String> {
+        let parts = self.house_opinion_part_list(owner, &card.candidate.leaning(), &card.opinion);
+        self.house_calc_lines(&parts, card.candidate.outsider, cities)
+    }
+
+    /// The calculation's lines from labelled parts: each part, the sum and its state, the states'
+    /// bounds, the happiness in `n` cities (the outsider's apart).
+    fn house_calc_lines(&self, parts: &[OpinionPart], outsider: bool, n: usize) -> Vec<String> {
         let total: i32 = parts.iter().map(|p| p.value).sum();
         let state = HouseState::of(self.d, total);
         let mut lines: Vec<String> = parts.iter().map(|p| p.label.clone()).collect();
-        let sum: Vec<String> = parts.iter().map(|p| signed(p.value)).collect();
-        lines.push(format!("Opinion: {} = {total}: {}.", sum.join(" "), state.name()));
+        // `+1 + 2 - 3 + 0`: the first signed, then each with its operator.
+        let mut sum = String::new();
+        for (i, p) in parts.iter().enumerate() {
+            match i {
+                0 => sum.push_str(&signed(p.value)),
+                _ if p.value < 0 => sum.push_str(&format!(" - {}", -p.value)),
+                _ => sum.push_str(&format!(" + {}", p.value)),
+            }
+        }
+        lines.push(format!("Opinion: {sum} = {total}: {}.", state.name()));
         lines.push(format!(
             "States: Friendly {} or more, Pleased {} to {}, Cautious {} to {}, Annoyed {} to {}, Furious {} or less.",
             self.d.defines.house_opinion_friendly,
@@ -165,10 +185,9 @@ impl Game {
             self.d.defines.house_opinion_cautious - 1,
             self.d.defines.house_opinion_annoyed - 1,
         ));
-        let n = house.cities.len();
         let cities = if n == 1 { "its city".to_string() } else { format!("each of its {n} cities") };
         let st = state.happiness(self.d);
-        if house.outsider {
+        if outsider {
             let o = self.d.defines.house_outsider_happy;
             lines.push(format!("Happiness: {} ({}) {} (outsider) = {} in {cities}.", signed(st), state.name(), signed(o), signed(st + o)));
         } else {
@@ -223,58 +242,7 @@ impl Game {
 
     /// A perk's effects, bare, one line each, from its `TraitInfo` keys (rule 9).
     pub fn house_perk_lines(&self, t: TraitType) -> Vec<String> {
-        let d = self.d;
-        let info = &d.traits[t];
-        let name = |key: &str| d.text.name(key).to_string();
-        let pct = |n: i32| if n > 0 { format!("+{n}%") } else { format!("{n}%") };
-        let mut out = Vec::new();
-        for y in d.yields.keys() {
-            let n = info.house_yield_modifier[y.idx()];
-            if n != 0 {
-                out.push(format!("{} {}.", name(&d.yields[y].base.description), pct(n)));
-            }
-        }
-        for k in d.commerces.keys() {
-            let n = info.house_commerce_modifier[k.idx()];
-            if n != 0 {
-                out.push(format!("{} {}.", name(&d.commerces[k].base.description), pct(n)));
-            }
-        }
-        if info.house_great_people_rate_modifier != 0 {
-            out.push(format!("Great people rate {}.", pct(info.house_great_people_rate_modifier)));
-        }
-        if info.house_distance_maintenance_modifier != 0 {
-            out.push(format!("Distance maintenance {}.", pct(info.house_distance_maintenance_modifier)));
-        }
-        if info.house_num_cities_maintenance_modifier != 0 {
-            out.push(format!("City-count maintenance {}.", pct(info.house_num_cities_maintenance_modifier)));
-        }
-        if info.house_free_experience != 0 {
-            out.push(format!("Units trained: {} experience.", signed(info.house_free_experience)));
-        }
-        for c in d.unit_combats.keys() {
-            let combat = name(&d.unit_combats[c].base.description);
-            let promotions = &info.house_unit_combat_free_promotions[c];
-            if !promotions.is_empty() {
-                let names: Vec<String> = promotions.iter().map(|&p| name(&d.promotions[p].base.description)).collect();
-                out.push(format!("{combat} trained: {}.", names.join(", ")));
-            }
-            let xp = info.house_unit_combat_free_experience[c];
-            if xp != 0 {
-                out.push(format!("{combat} trained: {} experience.", signed(xp)));
-            }
-            let prod = info.house_unit_combat_production_modifier[c];
-            if prod != 0 {
-                out.push(format!("{combat}: production {}.", pct(prod)));
-            }
-        }
-        if info.house_wonder_production_modifier != 0 {
-            out.push(format!("Wonder production {}.", pct(info.house_wonder_production_modifier)));
-        }
-        if info.house_ritual_production_modifier != 0 {
-            out.push(format!("Ritual production {}.", pct(info.house_ritual_production_modifier)));
-        }
-        out
+        perk_lines(self.d, t)
     }
 
     /// Everything a screen shows of House `h`.
@@ -377,4 +345,60 @@ impl Game {
         }
         out
     }
+}
+
+/// A perk's effects, bare, one line each, from its `TraitInfo` keys (rule 9); pure (the data
+/// only), for the help's trait text as for the screens.
+pub fn perk_lines(d: &GameData, t: TraitType) -> Vec<String> {
+    let info = &d.traits[t];
+    let name = |key: &str| d.text.name(key).to_string();
+    let pct = |n: i32| if n > 0 { format!("+{n}%") } else { format!("{n}%") };
+    let mut out = Vec::new();
+    for y in d.yields.keys() {
+        let n = info.house_yield_modifier[y.idx()];
+        if n != 0 {
+            out.push(format!("{} {}.", name(&d.yields[y].base.description), pct(n)));
+        }
+    }
+    for k in d.commerces.keys() {
+        let n = info.house_commerce_modifier[k.idx()];
+        if n != 0 {
+            out.push(format!("{} {}.", name(&d.commerces[k].base.description), pct(n)));
+        }
+    }
+    if info.house_great_people_rate_modifier != 0 {
+        out.push(format!("Great people rate {}.", pct(info.house_great_people_rate_modifier)));
+    }
+    if info.house_distance_maintenance_modifier != 0 {
+        out.push(format!("Distance maintenance {}.", pct(info.house_distance_maintenance_modifier)));
+    }
+    if info.house_num_cities_maintenance_modifier != 0 {
+        out.push(format!("City-count maintenance {}.", pct(info.house_num_cities_maintenance_modifier)));
+    }
+    if info.house_free_experience != 0 {
+        out.push(format!("Units trained: {} experience.", signed(info.house_free_experience)));
+    }
+    for c in d.unit_combats.keys() {
+        let combat = name(&d.unit_combats[c].base.description);
+        let promotions = &info.house_unit_combat_free_promotions[c];
+        if !promotions.is_empty() {
+            let names: Vec<String> = promotions.iter().map(|&p| name(&d.promotions[p].base.description)).collect();
+            out.push(format!("{combat} trained: {}.", names.join(", ")));
+        }
+        let xp = info.house_unit_combat_free_experience[c];
+        if xp != 0 {
+            out.push(format!("{combat} trained: {} experience.", signed(xp)));
+        }
+        let prod = info.house_unit_combat_production_modifier[c];
+        if prod != 0 {
+            out.push(format!("{combat}: production {}.", pct(prod)));
+        }
+    }
+    if info.house_wonder_production_modifier != 0 {
+        out.push(format!("Wonder production {}.", pct(info.house_wonder_production_modifier)));
+    }
+    if info.house_ritual_production_modifier != 0 {
+        out.push(format!("Ritual production {}.", pct(info.house_ritual_production_modifier)));
+    }
+    out
 }

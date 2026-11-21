@@ -28,6 +28,7 @@ import { MANA_SPRITES, improvementContainsMana, manaSpriteKey } from "./mana-art
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { starHit } from "./plates.js";
+import { drawPlateShield, shieldHit, SHIELD } from "./houses_lines.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
 import { drawLanesIso, outpostTag } from "./lanes.js";
 import { drawMarksIso } from "./marks.js";
@@ -1610,6 +1611,14 @@ export class IsoMap {
       }
       // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plaque's left end.
       drawHarbourMark(g, city, x0 - Math.max(5, 6 * u) + u, y0 + h / 2, Math.max(5, 6 * u), u);
+      // This game's Houses (docs/HOUSES.md, rule 15): an own city's House shield at the plaque's
+      // right end (houses_lines.js).
+      if (city.house) {
+        const sh = h + 4 * u;
+        const sx = x0 + w + 2 * u + (sh * SHIELD.w) / SHIELD.h / 2;
+        drawPlateShield(g, city, sx, y0 + h / 2, sh);
+        this.plateHits.push(shieldHit(city, sx, y0 + h / 2, sh));
+      }
     }
   }
 

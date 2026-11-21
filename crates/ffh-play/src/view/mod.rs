@@ -27,6 +27,7 @@ pub mod diplo;
 pub mod explore;
 pub mod fog;
 pub mod help;
+pub mod houses;
 pub mod hotkeys;
 pub mod improvement_help;
 pub mod keywords;
@@ -382,6 +383,11 @@ pub fn cities(v: &Viewer) -> Json {
             j.set("food_turns", g.city_food_turns_left(c));
             j.set("disorder", g.city_is_disorder(c));
         }
+        // This game's Houses (docs/HOUSES.md, rule 15): an own city's House, for its plate's
+        // shield and the lists (`{id, label, state}`); left out for others and the unhoused.
+        if city.owner == v.h && city.house.is_some() {
+            j.set("house", houses::city_mark(v, c));
+        }
         out.push(j);
     }
     Json::Arr(out)
@@ -543,6 +549,9 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // World rituals (docs/CARDS.md, "World rituals"): every civilization's ritual as the human
         // may know it (the HUD's rituals element and its full list).
         "rituals" => rituals::rituals(v),
+        // This game's Houses (docs/HOUSES.md, rule 15): the human's Houses in brief (`{id, label,
+        // leader, leader_name, state}`), for the alerts' portraits.
+        "houses" => houses::brief(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

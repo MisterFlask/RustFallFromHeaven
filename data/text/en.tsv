@@ -15002,3 +15002,9 @@ TXT_KEY_KEYWORD_ARMAGEDDON_COUNTER	Armageddon counter
 TXT_KEY_KEYWORD_ARMAGEDDON_COUNTER_REMINDER	0 to 100. Rises by 100 over 300 turns at Normal speed (201 at Quick, 450 at Epic, 900 at Marathon). Razed cities, the Ashen Veil, the Octopus Overlords, demon units and some rituals and spells raise or lower it.
 TXT_KEY_KEYWORD_ARMAGEDDON_CARD	Armageddon card
 TXT_KEY_KEYWORD_ARMAGEDDON_CARD_REMINDER	Dealt face down at the end of turn 1: one card or none at each slot (10, 20, ... 100). Revealed to every player when the counter is within 5 of its slot. Plays when the counter reaches its slot.
+TXT_KEY_KEYWORD_HOUSE	House
+TXT_KEY_KEYWORD_HOUSE_REMINDER	Up to 4 of a civilization's cities under a leader. The leader's opinion of you is happiness in each of its cities: Friendly +2, Pleased +1, Cautious 0, Annoyed -2, Furious -4. While a House is Furious its perk is off. A city joins the House of its origin whose seat is nearest, within 8 plots; your first House forms at 3 cities.
+TXT_KEY_KEYWORD_SYMPATHY	Sympathy
+TXT_KEY_KEYWORD_SYMPATHY_REMINDER	The civilization a House's leader favours, rolled when the leader is offered and kept for good; a civilization's culture around the House's cities draws it. Opinion: at war with it -3; a defensive pact or a permanent alliance with it, or it is your vassal or master, +2; else open borders with it +1.
+TXT_KEY_KEYWORD_OUTSIDER	Outsider
+TXT_KEY_KEYWORD_OUTSIDER_REMINDER	A leader of your own civilization offered for a foreign House. Its opinion counts alignment and religion only, and it has no sympathy. Its cities have -3 happiness while it leads.

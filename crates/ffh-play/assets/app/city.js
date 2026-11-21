@@ -23,6 +23,7 @@ import { plotState } from "./citywork.js";
 import { infoTip, moodTip, roomText } from "./infotips.js";
 import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
 import { governanceView } from "./governors.js";
+import { houseCityView } from "./houses.js";
 import { addHelp } from "./help.js";
 import { keywordChips } from "./keywords.js";
 import { perkView } from "./perks.js";
@@ -531,10 +532,12 @@ function growthView(c) {
     "div.section.city-growth",
     h(
       "div.meter",
-      { tip: `Culture ${c.culture}/${ct}${c.culture_level !== null ? ` (${dname("CultureLevelType", c.culture_level)})` : ""}: it grows the city's borders.` },
+      { tip: `Culture ${c.culture}/${ct}${c.culture_level !== null ? ` (${dname("CultureLevelType", c.culture_level)})` : ""}, ${signed(c.culture_rate ?? 0)} a turn: it grows the city's borders.` },
       ic("culture"),
       ct > 0 ? barEl(c.culture / ct, "culture", { w: 60 }) : null,
       h("span", `${c.culture}/${ct}`),
+      // The culture level and the culture a turn, readable without the tooltip.
+      h("span.dim.culture-level", `${c.culture_level !== null && c.culture_level !== undefined ? ` ${dname("CultureLevelType", c.culture_level)} ·` : ""} ${signed(c.culture_rate ?? 0)} a turn`),
     ),
     h(
       "div.meter",
@@ -940,6 +943,9 @@ function screen(c, { task, choose, remove, overlay, tap, reload }) {
   if (c.outpost) return [summaryView(c, reload, overlay), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];
   const garrison = c.governance?.governed ? null : recruitView(c, reload);
   const right = h("div.city-col", productionView(c, choose, remove, tap, reload), manageView(c, task), garrison ? h("div.section.recruit", garrison) : null, governanceView(c, reload));
+  // This game's Houses (docs/HOUSES.md, rule 15): the city's House under its governance (houses.js).
+  const house = c.owner === me()?.player ? houseCityView(c) : null;
+  if (house) right.append(house);
   return [summaryView(c, reload, overlay), h("div.city-cols", left, right)];
 }
 

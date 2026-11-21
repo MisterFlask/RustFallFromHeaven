@@ -11,6 +11,7 @@ import { run } from "./commands.js";
 import { render as markup } from "./markup.js";
 import { isoSkin, isoIcon, unlockIcon } from "./isoui.js";
 import { infoTip } from "./infotips.js";
+import { previewNode } from "./houses.js";
 
 /** A multiplier in percent (200) as the screens write it: "x2", "x2.7", "x1.35". */
 export function times(pct) {
@@ -837,10 +838,18 @@ export async function openReligion() {
         h("td", x.can_convert ? h("button.small", { onclick: () => convert(x.religion) }, "Convert") : null),
       ),
     );
+    // This game's Houses (docs/HOUSES.md, rule 12): what converting does to the Houses, under the
+    // religion's row (nothing when nothing).
+    const withPreview = rows.flatMap((row, i) => {
+      const x = r.religions[i];
+      const pv = x.can_convert ? previewNode(x.house_preview, { title: "Your Houses:" }) : null;
+      return pv ? [row, h("tr.house-preview-row", { "data-religion": x.religion }, h("td", { colspan: 5 }, pv))] : [row];
+    });
     m.setBody(
       h("p.dim", `${r.state_religion !== null ? `State religion: ${dname("ReligionType", r.state_religion)}. ` : "No state religion. "}Converting costs ${turns(r.anarchy)} of anarchy${r.conversion_timer ? `; the next conversion is possible in ${turns(r.conversion_timer)}` : ""}.`),
-      h("table.scores", h("tr", h("th", "Religion"), h("th", "Founded"), h("th", "Holy city"), h("th", "Your cities"), h("th", "")), rows),
+      h("table.scores", h("tr", h("th", "Religion"), h("th", "Founded"), h("th", "Holy city"), h("th", "Your cities"), h("th", "")), withPreview),
       r.can_convert_none ? h("button", { onclick: () => convert(null) }, "No state religion") : null,
+      r.can_convert_none ? previewNode(r.house_preview_none, { title: "Your Houses:" }) : null,
     );
   };
   load();

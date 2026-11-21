@@ -8,6 +8,7 @@ import { h } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { S, info, dname } from "./state.js";
 import { remindersNode } from "./keywords.js";
+import { calcTip } from "./calc.js";
 
 /** A unit type's numbers as markup: ATK and DEF (a ship: its strength, and defence when it
  *  differs), moves, its class of combat (`UnitType` entry `e` of the data). */
@@ -103,6 +104,8 @@ export function moodTip(c, happy, icon, notes = []) {
   return [
     h("div.tip-title", happy ? "Mood" : "Health"),
     partsList(groups) ?? h("div.dim", "Nothing either way."),
+    // This game's Houses (docs/HOUSES.md, rule 8): how the city's House's lines are worked out.
+    happy && c.happiness?.house?.calc?.length ? calcTip(c.happiness.house.calc) : null,
     h("div.tip-hint", roomText(c, happy)),
     notes.filter(Boolean).map((n) => h("div.tip-hint", n)),
   ];

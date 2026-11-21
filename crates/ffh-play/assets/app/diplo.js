@@ -25,6 +25,8 @@ import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
 import { openTroops, troopsLabel } from "./crusade.js";
 import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
+import { diploHouses, previewNode } from "./houses.js";
+import { dealPreview } from "./houses_lines.js";
 
 /** The players screen. */
 export async function openDiplomacy() {
@@ -48,7 +50,7 @@ export async function openDiplomacy() {
           const text = `${d.we_give.map(tradeItemLabel).join(", ") || "nothing"} ⇄ ${d.they_give.map(tradeItemLabel).join(", ") || "nothing"} (since turn ${d.turn})`;
           const peace = [...d.we_give, ...d.they_give].some((it) => tname("TradeableItem", it.item) === "TRADE_PEACE_TREATY");
           const action = d.cancelable
-            ? h("button.link.small", { "data-cancel-deal": d.deal, onclick: () => cancelDeal(text, d.deal).then(load) }, "Cancel")
+            ? h("button.link.small", { "data-cancel-deal": d.deal, onclick: () => cancelDeal(text, d.deal, d.house_preview).then(load) }, "Cancel")
             : d.cancel_in > 0
               ? h("span", peace ? ` (ends in ${d.cancel_in} turns)` : ` (cancel in ${d.cancel_in} turns)`)
               : null;
@@ -57,7 +59,7 @@ export async function openDiplomacy() {
         return h(
           "tr",
           { class: p.alive ? "" : "dead", "data-player": p.id },
-          h("td", { tip: infoTip("LeaderHeadType", p.leader, { title: p.name }) }, h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", who)))),
+          h("td", { tip: infoTip("LeaderHeadType", p.leader, { title: p.name }) }, h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", who), diploHouses(p)))),
           h("td", relation.flatMap((x, i) => (i ? [", ", x] : [x]))),
           attitude,
           h("td", p.alignment !== null && p.alignment !== undefined ? dname("AlignmentType", p.alignment) : h("span.dim", "-"), h("div.dim", p.state_religion !== null && p.state_religion !== undefined ? dname("ReligionType", p.state_religion) : "no state religion")),
@@ -265,7 +267,9 @@ async function declareWar(p) {
   // vassals that remember it too).
   const parties = warPartyLines(p.war_against, p.war_join).map((t) => h("p.war-parties", t));
   const memory = p.war_memory ? h("p.caution.war-memory", p.war_memory) : null;
-  const body = [h("p", `Declare war on ${teamName(p.team)}?`), ...parties, h("p", "Their defensive pact partners may join them."), memory].filter(Boolean);
+  // This game's Houses (docs/HOUSES.md, rule 12): the Houses whose state the war would change.
+  const houses = previewNode(p.war_house_preview, { title: "Your Houses:" });
+  const body = [h("p", `Declare war on ${teamName(p.team)}?`), ...parties, h("p", "Their defensive pact partners may join them."), memory, houses].filter(Boolean);
   const v = await ask("Declare war?", body, [
     { label: "Declare war", value: true, primary: true, danger: true },
     { label: "Cancel", value: null },
@@ -274,8 +278,10 @@ async function declareWar(p) {
 }
 
 /** Cancels a standing deal (`cancel_deal`), after asking. */
-async function cancelDeal(text, deal) {
-  const v = await ask("Cancel deal?", `${text}. Cancelling ends every item of the deal now.`, [
+async function cancelDeal(text, deal, housePreview = null) {
+  // This game's Houses (docs/HOUSES.md, rule 12): ending its open borders or pact.
+  const houses = previewNode(housePreview, { title: "Your Houses:" });
+  const v = await ask("Cancel deal?", [`${text}. Cancelling ends every item of the deal now.`, houses].filter(Boolean), [
     { label: "Cancel deal", value: true, primary: true },
     { label: "Keep", value: null },
   ]);
@@ -382,6 +388,10 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
         : mode === "demand"
           ? [h("div", `This would ask for: ${requested}.`)]
           : [h("div", `Total offered: ${offered}`), h("div", `Total requested: ${requested}`)];
+    // This game's Houses (docs/HOUSES.md, rule 12): what the deal's peace, open borders or pact
+    // would do to your Houses.
+    const houseLines = dealPreview(t.house_preview, [...give, ...get].map((it) => tname("TradeableItem", it.item)));
+    if (houseLines.length) lines.push(h("div.house-preview", h("div.house-preview-title", "Your Houses:"), houseLines.map((l) => h("div.house-preview-line", l))));
     summary.dataset.mode = mode;
     summary.replaceChildren(...lines);
     summary.hidden = false;

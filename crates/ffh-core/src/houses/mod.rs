@@ -26,7 +26,7 @@ mod read;
 
 pub use opinion::{HouseAct, Leaning, OpinionParts};
 pub use pick::{house_pick_default, house_pick_score, HouseCandidate, HouseCard, HouseOffer};
-pub use read::{HousePreview, HouseSummary, OpinionPart, Unhoused};
+pub use read::{perk_lines, HousePreview, HouseSummary, OpinionPart, Unhoused};
 
 /// A House (rule 2): a record of its owner, never a player.
 #[derive(Clone, Debug, PartialEq, Eq)]
