@@ -150,23 +150,18 @@ impl Game {
         self.change_global_counter(add);
     }
 
-    /// The clock's lines for the counter's tooltip: its rate and when it alone fills the
-    /// counter. Empty with GAMEOPTION_NO_GLOBAL_COUNTER.
+    /// The clock's calculation for the counter's tooltip: its change a turn, worked out. Empty
+    /// with GAMEOPTION_NO_GLOBAL_COUNTER.
     pub fn doom_clock_calc(&self) -> Vec<String> {
         if self.is_option(GameOptionType::GAMEOPTION_NO_GLOBAL_COUNTER) {
             return Vec::new();
         }
         let double = self.is_option(GameOptionType::GAMEOPTION_DOUBLE_GLOBAL_COUNTER);
         let turns = self.doom_clock_turns();
-        let full = if double { (turns + 1) / 2 } else { turns };
-        // The rate in hundredths of a point a turn.
+        // The change in hundredths of a point a turn.
         let rate = 10000 * if double { 2 } else { 1 } / turns;
-        let mut lines = vec![format!("Clock: +{}.{:02} a turn; 100 at turn {full} from the clock alone.", rate / 100, rate % 100)];
-        if double {
-            lines.push("Double Armageddon counter: every change x2.".to_string());
-        }
-        lines.push("Also changed by: razing cities, the Ashen Veil and the Octopus Overlords, demon units, some rituals and spells.".to_string());
-        lines
+        let times = if double { " × 2" } else { "" };
+        vec![format!("Per turn: 100 ÷ {turns} turns{times} = +{}.{:02}.", rate / 100, rate % 100)]
     }
 
     /// The keys of the cards dealt to some slot.

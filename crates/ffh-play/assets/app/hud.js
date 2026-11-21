@@ -484,12 +484,12 @@ function placeButton(a, name, yours) {
 
 /** The Armageddon counter's tooltip: the counter, and the Armageddon deck's slots as the player
  *  knows them (`me.doom`, docs/CARDS.md): a slot's card once revealed (or seen ahead), with its
- *  effect; fired slots marked; the others hidden. Under the title, the doom clock's lines
- *  (`doom.calc`). */
+ *  effect; fired slots marked; the others hidden. Under the title, the counter's change a turn
+ *  (`doom.calc`); beside it, the reminder boxes of the counter and the cards (`doom.reminders`). */
 export function doomTip(m) {
   const d = m.doom;
-  const head = h("div.tip-title", `Armageddon counter ${m.armageddon}`);
-  if (!d?.slots?.length) return [head, h("div.dim", "No Armageddon card is dealt yet: the deck is dealt at the end of the first turn.")];
+  const head = h("div.tip-title", `Armageddon counter: ${m.armageddon}`);
+  if (!d?.slots?.length) return [head, h("div.dim", "Cards: not dealt yet.")];
   const STATES = { fired: "fired", revealed: "revealed", seen: "seen ahead", hidden: "hidden" };
   const rows = d.slots.map((s) => {
     const known = s.state !== "hidden";
@@ -502,7 +502,7 @@ export function doomTip(m) {
       known && s.card && s.help ? h("div.doom-help", markup(s.help)) : null,
     );
   });
-  return [head, calcTip(d.calc), h("div.doom-slots", rows), h("div.tip-hint", "A card is revealed to every player when the counter is within 5 of its slot, and plays when the counter reaches it.")];
+  return [head, calcTip(d.calc), h("div.doom-slots", rows), remindersNode(d.reminders)];
 }
 
 /** The top bar's gold tooltip: the treasury and where the gold rate comes from. */
