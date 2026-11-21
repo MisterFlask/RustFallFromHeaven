@@ -102,11 +102,11 @@ fn moves_swaps_and_auto() {
     let (one, two) = (sq[0].0, sq[1].0);
     let lone = sq[1].1[0].0;
     // The squad of six is full.
-    assert!(w.g.squad_move(p0, lone, SquadDest::Squad(one), 7).is_err(), "squad I has no free place");
+    assert!(w.g.squad_move(p0, lone, SquadDest::Squad(one), Some(7)).is_err(), "squad I has no free place");
     // A swap: the lone archer takes an axeman's front cell; the axeman goes to squad II.
     let ax = axemen[0];
     let cell = w.g.units[ax].squad_cell;
-    w.g.squad_move(p0, lone, SquadDest::Squad(one), cell).expect("a swap");
+    w.g.squad_move(p0, lone, SquadDest::Squad(one), Some(cell)).expect("a swap");
     assert_eq!((w.g.units[lone].squad, w.g.units[lone].squad_cell), (Some(one), cell));
     assert_eq!(w.g.units[ax].squad, Some(two));
     assert!(w.g.squads[one].hand_set && w.g.squads[two].hand_set);
@@ -120,10 +120,13 @@ fn moves_swaps_and_auto() {
     assert!(!w.g.squads[one].hand_set);
     assert!(w.g.units[lone].squad_cell / 3 > 0, "the auto formation puts the archer behind");
     // A new squad of its own.
-    w.g.squad_move(p0, axemen[1], SquadDest::New, 1).expect("a new squad");
+    w.g.squad_move(p0, axemen[1], SquadDest::New, Some(1)).expect("a new squad");
     let s = w.g.units[axemen[1]].squad.unwrap();
     assert!(s != one && s != two);
     assert_eq!(w.g.units[axemen[1]].squad_cell, 1);
+    // No cell given: the first free cell of its best row (an archer: the middle row).
+    w.g.squad_move(p0, archers[0], SquadDest::Squad(s), None).expect("a move");
+    assert_eq!((w.g.units[archers[0]].squad, w.g.units[archers[0]].squad_cell / 3), (Some(s), 1));
 }
 
 /// Auto-sort deals the chosen squads' units into as few squads as hold them, guards first in

@@ -405,12 +405,25 @@ impl Game {
     }
 
     /// Moves player `p`'s unit `u` to `cell` (`row * 3 + lane`; a large unit's first) of `dest`
-    /// (module comment, "Commands"). Both squads become hand-set.
-    pub fn squad_move(&mut self, p: PlayerId, u: UnitId, dest: SquadDest, cell: u8) -> Result<(), &'static str> {
+    /// (module comment, "Commands"); `None`: the first free cell of its best row there (the
+    /// centre lane first), else of its other rows in its rank order. Both squads become hand-set.
+    pub fn squad_move(&mut self, p: PlayerId, u: UnitId, dest: SquadDest, cell: Option<u8>) -> Result<(), &'static str> {
         if !self.units.contains(u) || self.units[u].owner != p || !self.unit_in_squads(u) {
             return Err("that unit stands in no squad");
         }
         let size = self.squad_size(u);
+        let cell = match (cell, dest) {
+            (Some(c), _) => c,
+            (None, SquadDest::New) => {
+                let best = self.unit_engage_row_order(u)[0].min(ROWS - 1);
+                SquadLayout::new(p, None, SquadBody::Loose, true).free_in_row(best, size).unwrap_or(0)
+            }
+            (None, SquadDest::Squad(s)) => {
+                let (_, layouts, i) = self.squad_find(p, s)?;
+                let order = self.unit_engage_row_order(u);
+                order.iter().find_map(|&r| layouts[i].free_in_row(r.min(ROWS - 1), size)).ok_or("that squad is full")?
+            }
+        };
         if cell as usize >= SQUAD_CELLS || (cell % SQUAD_LANES) as i32 + size > SQUAD_LANES as i32 {
             return Err("that cell is outside the squad");
         }
