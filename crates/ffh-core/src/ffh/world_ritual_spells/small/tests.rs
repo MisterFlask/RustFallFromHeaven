@@ -188,7 +188,10 @@ fn the_cull_kills_the_weaker_half_and_shares_their_experience() {
         .iter()
         .map(|&(st, xp)| {
             let u = unit(&mut g, US, "UNIT_WARRIOR", 8, 5);
-            g.units[u].base_combat = st;
+            // A rating of st x 10 (attack and defence).
+            let (a, d) = (g.unit_attack_rating(u), g.unit_defense_rating(u));
+            g.unit_change_attack_points(u, st * 10 - a);
+            g.unit_change_defense_points(u, st * 10 - d);
             g.units[u].experience = xp;
             u
         })
@@ -215,7 +218,10 @@ fn the_cull_gives_the_remainder_to_the_strongest() {
         .iter()
         .map(|&(st, xp)| {
             let u = unit(&mut g, US, "UNIT_WARRIOR", 9, 6);
-            g.units[u].base_combat = st;
+            // A rating of st x 10 (attack and defence).
+            let (a, d) = (g.unit_attack_rating(u), g.unit_defense_rating(u));
+            g.unit_change_attack_points(u, st * 10 - a);
+            g.unit_change_defense_points(u, st * 10 - d);
             g.units[u].experience = xp;
             u
         })

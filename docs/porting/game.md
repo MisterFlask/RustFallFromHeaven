@@ -160,7 +160,7 @@ used in the C++. `m_bScoreDirty` is kept (rank update timing feeds the FfH chall
 | `setAIAutoPlay` | 4075-4095 | 21 | `set_ai_auto_play` | ported |
 | `changeAIAutoPlay` | 4098-4106 | 9 | `change_ai_auto_play` | ported |
 | `circumnavigationAvailable` | 4144-4169 | 26 | `circumnavigation_available` | ported |
-| `getBestLandUnitCombat` | 4829-4837 | 9 | `best_land_unit_combat` | ported |
+| `getBestLandUnitCombat` | 4829-4837 | 9 | `best_land_unit_rating` | ported (a rating since 2026-11-21, docs/UNIT_STATS.md section 10) |
 | `setWinner` | 4863-4894 | 32 | `set_winner` | ported |
 | `setGameState` | 4903-4934 | 32 | `set_game_state` | ported |
 | `isInAdvancedStart` | 5493-5504 | 12 | `is_in_advanced_start` | ported |

@@ -34,27 +34,28 @@ export function headUnit(units, me, selected = [], strength = () => 0) {
   return best;
 }
 
-/** A unit's strength for choosing a stack's head (`headUnit`): its type's combat strength in the
- *  client's data JSON (`data`: `S.data`). Every map that draws stacks rates units with it. */
-export function unitStrength(data, u) {
-  return data?.tables?.UnitType?.[u?.type]?.combat ?? 0;
+/** A unit's rating for choosing a stack's head (`headUnit`): its type's rating (the higher of
+ *  its attack and defence; docs/UNIT_STATS.md, "Ratings") in the client's data JSON (`data`:
+ *  `S.data`). Every map that draws stacks rates units with it. */
+export function unitRating(data, u) {
+  return data?.tables?.UnitType?.[u?.type]?.rating ?? 0;
 }
 
-/** The unit drawn for a stack on the maps: `headUnit` with `unitStrength`, so a foreign stack
+/** The unit drawn for a stack on the maps: `headUnit` with `unitRating`, so a foreign stack
  *  shows its strongest unit (a worker does not hide the armed unit behind it). */
 export function stackHead(units, me, selected, data) {
-  return headUnit(units, me, selected, (u) => unitStrength(data, u));
+  return headUnit(units, me, selected, (u) => unitRating(data, u));
 }
 
 /**
  * The stack on one tile as the art draws it: `{head, state}` with state `{own, moves, selected,
  * hp, mark, hero, count, facing}` (web/art/units/stack.js). `units`: the view's units on the tile;
- * `ctx`: { me, selected (unit ids), activity(i) -> name, unitInfo(type) -> {hero, combat},
+ * `ctx`: { me, selected (unit ids), activity(i) -> name, unitInfo(type) -> {hero, combat, rating},
  * automated(group) -> bool, facing(id) -> 'left'|'right' }.
  */
 export function stackState(units, ctx) {
   const info = (u) => ctx.unitInfo?.(u.type) ?? {};
-  const head = headUnit(units, ctx.me, ctx.selected ?? [], (u) => info(u).strength ?? 0);
+  const head = headUnit(units, ctx.me, ctx.selected ?? [], (u) => info(u).rating ?? 0);
   if (!head) return null;
   const own = head.owner === ctx.me;
   const state = {
@@ -69,7 +70,7 @@ export function stackState(units, ctx) {
     state.moves = (head.moves ?? 0) > 0;
     const promote = units.some((u) => u.owner === ctx.me && u.promo_ready);
     const a = head.activity === null || head.activity === undefined ? null : ctx.activity?.(head.activity);
-    const fights = (info(head).combat ?? "NONE") !== "NONE" && (info(head).strength ?? 1) > 0;
+    const fights = (info(head).combat ?? "NONE") !== "NONE" && (info(head).rating ?? 1) > 0;
     // This game's armies: a marching recruit (the rules move it, it takes no orders) shows the
     // march mark whatever else it is.
     state.mark = head.march ? "march" : markOf(a, { canFight: fights, automated: !!ctx.automated?.(head.group), promote });

@@ -198,8 +198,9 @@ fn archer_in_a_walled_hill_city_fortified() {
     // A has its fortification, city and hills defense, and the axeman's Dv its city attack.
     assert_eq!(ad(back), (apply(300, 25 + 25 + 25), apply(400, 10)));
 
-    // The duel puts all of it on the archer's one strength.
-    assert_eq!(w.g.unit_max_combat_str(archer, Some(to), Some(axeman), None), apply(500, plot_defense + 25 + 25 + 25 - 10));
+    // The duel puts all of it on the archer's defence rating (its sheet's DEF 30, ten a strength
+    // point: docs/UNIT_STATS.md, "Ratings").
+    assert_eq!(w.g.unit_max_combat_str(archer, Some(to), Some(axeman), None), apply(300, plot_defense + 25 + 25 + 25 - 10));
 
     // The breakdown lists the parts and they sum to the modifier.
     let stat = w.g.engage_stat(archer, Some(axeman), Side::Defender, false, &w.ctx());

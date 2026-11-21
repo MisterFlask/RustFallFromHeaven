@@ -200,8 +200,6 @@ pub struct DefenderCombatValues {
 /// none in C++ when `eUnit == NO_UNIT`).
 #[derive(Clone, Debug, Default)]
 pub struct UnitResetInfo {
-    /// `getCombat()` -> `m_iBaseCombat`.
-    pub combat: i32,
     /// `getCargoSpace()` -> `m_iCargoCapacity`.
     pub cargo_space: i32,
     /// `getDefensiveStrikeChance()` -> `m_iDefensiveStrikeChance`.
@@ -216,8 +214,6 @@ pub struct UnitResetInfo {
     pub immortal: bool,
     /// `isImmuneToDefensiveStrike()` -> `m_iImmuneToDefensiveStrike` (0/1).
     pub immune_to_defensive_strike: bool,
-    /// `getCombatDefense()` -> `m_iBaseCombatDefense`.
-    pub combat_defense: i32,
     /// `getCombatLimit()` -> `m_iCombatLimit`.
     pub combat_limit: i32,
     /// `getGoldFromCombat()` -> `m_iGoldFromCombat`.
@@ -225,7 +221,7 @@ pub struct UnitResetInfo {
     /// `getInvisibleType()` -> `m_iInvisibleType`.
     pub invisible_type: Option<InvisibleType>,
     /// `getDamageTypeCombat(i)` -> `m_paiDamageTypeCombat[i]` (entries missing here read as 0).
-    pub damage_type_combat: IdxVec<DamageType, i32>,
+    pub damage_type_attack: IdxVec<DamageType, i32>,
 }
 
 impl UnitResetInfo {
@@ -234,7 +230,6 @@ impl UnitResetInfo {
     /// size) is graphics and not ported.
     pub fn from_info(info: &UnitInfo) -> UnitResetInfo {
         UnitResetInfo {
-            combat: info.combat,
             cargo_space: info.cargo_space,
             defensive_strike_chance: info.defensive_strike_chance,
             defensive_strike_damage: info.defensive_strike_damage,
@@ -242,11 +237,10 @@ impl UnitResetInfo {
             ignore_building_defense: info.ignore_building_defense,
             immortal: info.immortal,
             immune_to_defensive_strike: info.immune_to_defensive_strike,
-            combat_defense: info.combat_defense,
             combat_limit: info.combat_limit,
             gold_from_combat: info.gold_from_combat,
             invisible_type: info.invisible_type,
-            damage_type_combat: info.damage_type_combat.clone(),
+            damage_type_attack: info.damage_type_attack.clone(),
         }
     }
 }
@@ -366,8 +360,6 @@ pub struct Unit {
     pub experience_percent: i32,
     /// C++ `m_iKamikazePercent` (`getKamikazePercent`).
     pub kamikaze_percent: i32,
-    /// C++ `m_iBaseCombat` (`setBaseCombatStr`; FfH `baseCombatStr()` adds damage-type strength).
-    pub base_combat: i32,
     /// C++ `m_iImmobileTimer` (FfH `getImmobileTimer()` is 999 while held: `unit_get_immobile_timer`).
     pub immobile_timer: i32,
     /// C++ `m_bMadeAttack` (`isMadeAttack`, `setMadeAttack`).
@@ -442,8 +434,6 @@ pub struct Unit {
     pub twincast: i32,
     /// C++ `m_iWaterWalking` (`isWaterWalking`).
     pub water_walking: i32,
-    /// C++ `m_iBaseCombatDefense` (`setBaseCombatStrDefense`; see `unit_base_combat_str_defense`).
-    pub base_combat_defense: i32,
     /// C++ `m_iBetterDefenderThanPercent` (`getBetterDefenderThanPercent`).
     pub better_defender_than_percent: i32,
     /// C++ `m_iCombatHealPercent` (`getCombatHealPercent`).
@@ -483,8 +473,8 @@ pub struct Unit {
     pub spell_caster_xp: i32,
     /// C++ `m_iSpellDamageModify` (`getSpellDamageModify`).
     pub spell_damage_modify: i32,
-    /// C++ `m_iTotalDamageTypeCombat` (`getTotalDamageTypeCombat`): sum of `damage_type_combat`.
-    pub total_damage_type_combat: i32,
+    /// C++ `m_iTotalDamageTypeCombat` (`getTotalDamageTypeCombat`): sum of `damage_type_attack`.
+    pub total_damage_type_attack: i32,
     /// C++ `m_iWorkRateModify` (`getWorkRateModify`).
     pub work_rate_modify: i32,
     /// C++ `m_paiBonusAffinity` (`getBonusAffinity`).
@@ -492,7 +482,7 @@ pub struct Unit {
     /// C++ `m_paiBonusAffinityAmount`: strength currently granted by each bonus affinity.
     pub bonus_affinity_amount: IdxVec<BonusType, i32>,
     /// C++ `m_paiDamageTypeCombat` (`getDamageTypeCombat`).
-    pub damage_type_combat: IdxVec<DamageType, i32>,
+    pub damage_type_attack: IdxVec<DamageType, i32>,
     /// C++ `m_paiDamageTypeResist` (raw; `getDamageTypeResist` clamps: `unit_get_damage_type_resist`).
     pub damage_type_resist: IdxVec<DamageType, i32>,
 
@@ -569,8 +559,10 @@ pub struct Unit {
     // ---- This game's own: engagement combat (docs/ENGAGEMENTS.md) ----
     /// Its own changes to its battle stats (docs/UNIT_STATS.md), by `StatType::idx`: points
     /// (`stat_flat`) and percentages (`stat_pct`), from its promotions' `stat_changes` and every
-    /// change of its strength (`unit_change_base_combat_str`, `unit_change_extra_combat_percent`,
-    /// `unit_change_spell_damage_modify`: Python effects, affinities).
+    /// other change of its attack and defence (`unit_change_attack_points`,
+    /// `unit_change_defense_points`, `unit_change_extra_combat_percent`,
+    /// `unit_change_spell_damage_modify`: Python effects, affinities). A ship's points add to its
+    /// strength (ten a strength point) in the naval duel.
     pub stat_flat: [i32; StatType::NUM],
     pub stat_pct: [i32; StatType::NUM],
     /// Attacks made this turn (engagements, bombards, missile strikes); reset with `made_attack`
@@ -617,10 +609,10 @@ impl Unit {
     pub fn new(id: UnitId, unit_type: UnitType, owner: PlayerId, d: &GameData, info: &UnitResetInfo) -> Unit {
         let mut unit = Unit::reset_members(id, unit_type, owner, info);
         // C++ `if (!bConstructorCall)`: allocate and fill the per-type arrays.
-        unit.damage_type_combat =
-            IdxVec::from_fn(d.damages.len(), |i| info.damage_type_combat.get(i).copied().unwrap_or(0));
+        unit.damage_type_attack =
+            IdxVec::from_fn(d.damages.len(), |i| info.damage_type_attack.get(i).copied().unwrap_or(0));
         unit.damage_type_resist = IdxVec::from_elem(0, d.damages.len());
-        unit.total_damage_type_combat = unit.damage_type_combat.iter().sum();
+        unit.total_damage_type_attack = unit.damage_type_attack.iter().sum();
         unit.bonus_affinity = IdxVec::from_elem(0, d.bonuses.len());
         unit.bonus_affinity_amount = IdxVec::from_elem(0, d.bonuses.len());
         unit.has_promotion = IdxVec::from_elem(false, d.promotions.len());
@@ -692,7 +684,6 @@ impl Unit {
             upgrade_discount: 0,
             experience_percent: 0,
             kamikaze_percent: 0,
-            base_combat: info.combat,
             immobile_timer: 0,
             made_attack: false,
             made_interception: false,
@@ -728,7 +719,6 @@ impl Unit {
             target_weakest_unit_counter: 0,
             twincast: 0,
             water_walking: 0,
-            base_combat_defense: info.combat_defense,
             better_defender_than_percent: 100,
             combat_heal_percent: 0,
             combat_limit: info.combat_limit,
@@ -747,11 +737,11 @@ impl Unit {
             scenario_counter: -1,
             spell_caster_xp: 0,
             spell_damage_modify: 0,
-            total_damage_type_combat: 0,
+            total_damage_type_attack: 0,
             work_rate_modify: 0,
             bonus_affinity: IdxVec::new(),
             bonus_affinity_amount: IdxVec::new(),
-            damage_type_combat: IdxVec::new(),
+            damage_type_attack: IdxVec::new(),
             damage_type_resist: IdxVec::new(),
             auto_spell_cast: None,
             owner,
@@ -822,26 +812,22 @@ mod tests {
     fn reset_defaults() {
         let d = ffh_data::global();
         let mut info = UnitResetInfo {
-            combat: 5,
             cargo_space: 2,
-            combat_defense: 4,
             combat_limit: 100,
             immortal: true,
             ..Default::default()
         };
-        info.damage_type_combat = IdxVec::from_elem(0, d.damages.len());
-        info.damage_type_combat[DamageType::DAMAGE_FIRE] = 2;
+        info.damage_type_attack = IdxVec::from_elem(0, d.damages.len());
+        info.damage_type_attack[DamageType::DAMAGE_FIRE] = 20;
         let unit = Unit::new(UnitId(7), UnitType(3), PlayerId(1), d, &info);
         assert_eq!(unit.id, UnitId(7));
         assert_eq!((unit.x, unit.y), (INVALID_PLOT_COORD, INVALID_PLOT_COORD));
         assert_eq!(unit.level, 1);
-        assert_eq!(unit.base_combat, 5);
-        assert_eq!(unit.base_combat_defense, 4);
         assert_eq!(unit.cargo_capacity, 2);
         assert_eq!(unit.immortal, 1);
         assert_eq!(unit.better_defender_than_percent, 100);
         assert_eq!(unit.scenario_counter, -1);
-        assert_eq!(unit.total_damage_type_combat, 2);
+        assert_eq!(unit.total_damage_type_attack, 20);
         assert_eq!(unit.has_promotion.len(), d.promotions.len());
         assert_eq!(unit.terrain_double_move_count.len(), d.terrains.len());
         assert_eq!(unit.extra_feature_defense_percent.len(), d.features.len());
@@ -854,7 +840,6 @@ mod tests {
 
         let blank = Unit::default();
         assert!(blank.has_promotion.is_empty());
-        assert_eq!(blank.base_combat, 0);
         assert_eq!(blank.invisible_type, Some(InvisibleType(0)));
     }
 
@@ -865,26 +850,26 @@ mod tests {
 
         // units.jsonc values.
         let archer = info("UNIT_ARCHER_SCORPION_CLAN");
-        assert_eq!((archer.combat, archer.combat_defense, archer.combat_limit), (3, 5, 100));
+        assert_eq!(archer.combat_limit, 100);
         assert_eq!((archer.defensive_strike_chance, archer.defensive_strike_damage), (20, 10));
         assert_eq!(archer.invisible_type, None);
         assert!(!archer.immortal && !archer.hidden_nationality);
-        assert_eq!(archer.damage_type_combat[DamageType::DAMAGE_POISON], 1);
-        assert_eq!(archer.damage_type_combat.iter().sum::<i32>(), 1);
+        assert_eq!(archer.damage_type_attack[DamageType::DAMAGE_POISON], 10);
+        assert_eq!(archer.damage_type_attack.iter().sum::<i32>(), 10);
 
         let pirate = info("UNIT_PIRATE");
-        assert_eq!((pirate.cargo_space, pirate.gold_from_combat, pirate.combat), (1, 3, 8));
+        assert_eq!((pirate.cargo_space, pirate.gold_from_combat), (1, 3));
 
         let shadowrider = info("UNIT_SHADOWRIDER");
         assert!(shadowrider.ignore_building_defense && shadowrider.immune_to_defensive_strike);
 
         let brigit = info("UNIT_BRIGIT");
         assert!(brigit.immortal);
-        assert_eq!(brigit.damage_type_combat[DamageType::DAMAGE_HOLY], 3);
+        assert_eq!(brigit.damage_type_attack[DamageType::DAMAGE_HOLY], 30);
 
         // `reset` copies them into the new unit.
         let t = d.t::<UnitType>("UNIT_BRIGIT");
         let unit = Unit::new(UnitId(1), t, PlayerId(0), d, &brigit);
-        assert_eq!((unit.immortal, unit.base_combat, unit.total_damage_type_combat), (1, 6, 3));
+        assert_eq!((unit.immortal, unit.total_damage_type_attack), (1, 30));
     }
 }

@@ -398,27 +398,28 @@ impl Game {
     }
 
     /// The base of the unit's A (`attack`) or Dv, x100 (plan 4.2; docs/UNIT_STATS.md): its sheet's
-    /// attack (defence) plus its own points, x10; plus its typed strength, each type's points
+    /// attack (defence) plus its own points, x10; plus its typed attack points, x10, each type's
     /// scaled by the opponent's resistance to it (Q2). A type without a sheet (it never fights a
-    /// land battle): its strength, x100.
+    /// land battle): its rating's own part (strength x10, plus its points), x10.
     fn engage_base_x100(&self, u: UnitId, opponent: Option<UnitId>, attack: bool) -> i32 {
         let unit = &self.units[u];
         let s = if attack { StatType::Attack } else { StatType::Defense };
         let own = match self.d.units[unit.unit_type].stats {
             Some(sheet) => (sheet[s.idx()] + unit.stat_flat[s.idx()]) * 10,
-            None => (if attack { unit.base_combat } else { unit.base_combat_defense }) * 100,
+            None => self.unit_own_rating(u, s) * 10,
         };
         // Card: Elemental Forge (docs/CARDS.md): an attack of a damage type is cut by its resistance.
         let own = if attack { self.engage_arms_attack(u, opponent, own) } else { own };
         let mut typed = 0;
         for damage_type in self.d.damages.keys() {
-            let points = unit.damage_type_combat[damage_type];
+            let points = unit.damage_type_attack[damage_type];
             if points != 0 {
                 let resist = opponent.map_or(0, |o| self.unit_get_damage_type_resist(o, damage_type));
                 typed += points * (100 - resist);
             }
         }
-        own + typed
+        // Typed points are on the sheet's scale (ten a strength point): x100 / 10.
+        own + typed / 10
     }
 
     /// [`StrMode::EngageAttack`] (`attack`) and [`StrMode::EngageDefense`]: the terms of `u`'s

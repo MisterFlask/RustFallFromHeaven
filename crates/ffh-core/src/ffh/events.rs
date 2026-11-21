@@ -1929,7 +1929,8 @@ impl Game {
                         let unit = self.map.plots[loop_plot].units[i];
                         let unit_team = self.unit_get_team(unit);
                         if self.teams[team].at_war[unit_team] {
-                            value += 5 * self.unit_base_combat_str(unit);
+                            // FfH: 5 x strength; half its rating (docs/PORTING.md).
+                            value += self.unit_rating(unit) / 2;
                         } else {
                             neutral = true;
                         }

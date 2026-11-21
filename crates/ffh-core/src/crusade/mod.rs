@@ -31,7 +31,7 @@ pub struct CrusadeId(pub u32);
 
 /// Ruleset parameters of crusades and loans.
 /// Turn counts are at normal speed (scaled by the game speed's growth percent); strengths are
-/// in [`Game::crusade_unit_strength`] units (combat strength x 100).
+/// in [`Game::crusade_unit_force`] units (force: an Axeman's 400).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrusadeRules {
     /// Most turns a council crusade runs.
@@ -258,14 +258,10 @@ pub struct CrusadeReport {
     pub lenders: Vec<LenderReport>,
 }
 
-/// A strength for messages: the combat strength it stands for (strengths are x100).
-pub fn strength_text(s: i32) -> String {
-    let s = s.max(0);
-    if s % 100 == 0 {
-        format!("{}", s / 100)
-    } else {
-        format!("{}.{}", s / 100, (s % 100) / 10)
-    }
+/// A force for messages ([`Game::crusade_unit_force`] units, x10): on the stat sheet's scale, a
+/// healthy Axeman's 40.
+pub fn force_text(s: i32) -> String {
+    format!("{}", (s.max(0) + 5) / 10)
 }
 
 /// Scale a normal-speed turn count to the game speed.
@@ -323,18 +319,19 @@ impl Game {
         self.setup.players.get(p.idx()).is_some_and(|s| s.host)
     }
 
-    /// A unit's contribution value: its combat strength (the better of attack and defense, with
-    /// its general combat bonus) x 100, scaled by its health. Promotions earned later do not
-    /// change what was recorded at handover.
-    pub fn crusade_unit_strength(&self, u: UnitId) -> i32 {
-        let base = self.unit_base_combat_str(u).max(self.unit_base_combat_str_defense(u));
+    /// A unit's force, its contribution value: its rating (the better of its attack and defence,
+    /// docs/UNIT_STATS.md "Ratings") with its general combat bonus, x 10, scaled by its health
+    /// (an Axeman at full health: 400). Promotions earned later do not change what was recorded
+    /// at handover.
+    pub fn crusade_unit_force(&self, u: UnitId) -> i32 {
+        let base = self.unit_rating(u);
         if base <= 0 {
             return 0;
         }
         let unit = &self.units[u];
         let max_hp = self.d.defines.max_hit_points.max(1);
         let hp = (max_hp - unit.damage).clamp(0, max_hp);
-        base * (100 + unit.extra_combat_percent).max(10) * hp / max_hp
+        base * (100 + unit.extra_combat_percent).max(10) / 10 * hp / max_hp
     }
 
     /// Can unit `u` be lent at all (a combat land unit of its own, not temporary, not aboard or
@@ -348,14 +345,14 @@ impl Game {
             && self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
             && unit.transport_unit.is_none()
             && unit.cargo == 0
-            && self.crusade_unit_strength(u) > 0
+            && self.crusade_unit_force(u) > 0
             && !self.player_is_crusade_host(unit.owner)
             && self.unit_plot_opt(u).is_some()
     }
 
     /// Military strength of `p`: the strength of every unit it could lend.
     pub fn crusade_military_strength(&self, p: PlayerId) -> i32 {
-        self.players[p].units.iter().filter(|&&u| self.units.contains(u) && self.crusade_unit_lendable(u)).map(|&u| self.crusade_unit_strength(u)).sum()
+        self.players[p].units.iter().filter(|&&u| self.units.contains(u) && self.crusade_unit_lendable(u)).map(|&u| self.crusade_unit_force(u)).sum()
     }
 
     /// The teams the Host of crusade `idx` fights: the target and its vassals.

@@ -19,7 +19,7 @@ fn a_settler_that_takes_the_godslayer_defends_and_has_rows() {
     let (x, y) = (g.units[first].x, g.units[first].y);
     let worker_type = d.t::<UnitType>("UNIT_SETTLER");
     let info = &d.units[worker_type];
-    assert_eq!((info.combat, info.combat_defense, info.damage_type_combat.iter().sum::<i32>()), (0, 0, 0));
+    assert_eq!((info.attack_rating(), info.defense_rating()), (0, 0));
     let worker = g.player_init_unit(p0, worker_type, x, y, None, None);
     assert!(!g.unit_can_fight(worker) && !g.unit_can_defend(worker, None));
 
@@ -29,7 +29,7 @@ fn a_settler_that_takes_the_godslayer_defends_and_has_rows() {
     assert!(g.unit_can_cast(worker, take, false), "a settler can take the Godslayer");
     g.unit_cast(worker, take);
     assert!(g.units[worker].has_promotion[d.t::<PromotionType>("PROMOTION_GODSLAYER")]);
-    assert_eq!((g.unit_base_combat_str(worker), g.unit_base_combat_str_defense(worker)), (3, 3));
+    assert_eq!((g.unit_attack_rating(worker), g.unit_defense_rating(worker)), (30, 30));
     assert!(g.unit_can_fight(worker) && g.unit_can_defend(worker, None));
 
     // Its type has rows and a rank preference (it strikes, from the front first), so the

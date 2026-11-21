@@ -125,7 +125,7 @@ impl Game {
     /// [`Game::unit_is_army_unit`] refuses every hero).
     pub fn unit_type_is_army_unit(&self, unit_type: UnitType) -> bool {
         let info = &self.d.units[unit_type];
-        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 || info.animal {
+        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.attack_rating() <= 0 || info.animal {
             return false;
         }
         if hero_promotion(self.d).is_some_and(|h| info.free_promotions[h]) {
@@ -620,10 +620,10 @@ impl Game {
         Ok(())
     }
 
-    /// Unit `u`'s best upgrade (the strongest, then the dearest): one it can afford now, or with
+    /// Unit `u`'s best upgrade (the highest rating, then the dearest): one it can afford now, or with
     /// `test_visible` one it could upgrade to with the gold.
     pub fn unit_best_upgrade(&self, u: UnitId, test_visible: bool) -> Option<UnitType> {
-        self.d.units.keys().filter(|&t| self.unit_can_upgrade(u, Some(t), test_visible)).max_by_key(|&t| (self.d.units[t].combat, self.d.units[t].production_cost, Reverse(t)))
+        self.d.units.keys().filter(|&t| self.unit_can_upgrade(u, Some(t), test_visible)).max_by_key(|&t| (self.d.units[t].rating(), self.d.units[t].production_cost, Reverse(t)))
     }
 
     /// Army `a`'s units in the order Upgrade all takes them: the most experienced first.

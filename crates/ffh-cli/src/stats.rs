@@ -115,7 +115,7 @@ fn arcane_units(g: &Game) -> BTreeMap<UnitId, Arcane> {
             let escort = g.map.plots[plot].units.iter().any(|&o| {
                 o != u && g.units[o].owner == p && !arcane(o) && g.units[o].duration == 0 && {
                     let info = &d.units[g.units[o].unit_type];
-                    info.combat > 0 || info.combat_defense > 0
+                    info.fights()
                 }
             });
             out.insert(u, Arcane { owner: p, unit_type: g.units[u].unit_type, plot, xp: g.units[u].experience, level: g.units[u].level, guarded: in_city || escort });
@@ -200,7 +200,7 @@ impl Obj {
 /// Combat power of one unit: max(attack, defence) base strength (with damage-type strength) x
 /// (100 + promotion combat percent) / 100 x current hit-point fraction.
 fn unit_power(g: &Game, u: UnitId) -> f64 {
-    let base = g.unit_base_combat_str(u).max(g.unit_base_combat_str_defense(u)) as f64;
+    let base = g.unit_rating(u) as f64 / 10.0;
     let pct = (100 + g.units[u].extra_combat_percent).max(0) as f64 / 100.0;
     let hp = g.unit_curr_hit_points(u).max(0) as f64 / g.unit_max_hit_points(u).max(1) as f64;
     base * pct * hp
@@ -268,9 +268,9 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             }
             if info.found {
                 settlers += 1;
-            } else if info.builds.iter().any(|&b| b) && info.combat == 0 {
+            } else if info.builds.iter().any(|&b| b) && info.attack_rating() == 0 {
                 workers += 1;
-            } else if info.combat > 0 {
+            } else if info.attack_rating() > 0 {
                 mil += 1;
             }
             if hero.is_some_and(|h| unit.has_promotion[h]) {

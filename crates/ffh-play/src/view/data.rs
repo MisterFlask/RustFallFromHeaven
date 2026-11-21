@@ -126,8 +126,15 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
         "UnitType" => {
             let u = &d.units[UnitType::from_usize(i)];
             j.set("class", Json::opt_idx(u.unit_class_type));
-            j.set("combat", u.combat);
-            j.set("combat_defense", u.combat_defense);
+            // Its attack and defence on the stat sheet's scale (docs/UNIT_STATS.md, "Ratings"), its
+            // rating (the higher), and a ship's strength (land units have none).
+            j.set("attack", u.attack_rating());
+            j.set("defense", u.defense_rating());
+            j.set("rating", u.rating());
+            if u.stats.is_none() {
+                j.set("strength", u.strength);
+                j.set("strength_defense", u.strength_defense);
+            }
             j.set("moves", u.moves);
             j.set("cost", u.production_cost);
             j.set("domain", Json::opt_idx(u.domain_type));

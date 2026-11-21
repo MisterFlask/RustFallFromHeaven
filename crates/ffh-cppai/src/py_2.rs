@@ -1578,10 +1578,8 @@ impl Cai {
                         }
                     }
                     if enemy {
-                        let mut temp_value = d.units[create_unit].combat;
-                        for dt in d.damages.keys() {
-                            temp_value += d.units[create_unit].damage_type_combat[dt];
-                        }
+                        // `attack_rating` includes the typed attack points.
+                        let mut temp_value = d.units[create_unit].attack_rating() / 10;
                         temp_value *= 100;
                         temp_value *= si.create_unit_num;
                         value += temp_value;

@@ -1048,7 +1048,7 @@ impl Game {
                                     };
                                     let unit = &d.units[loop_unit];
 
-                                    let mut valid = unit.combat > 0 && !unit.only_defensive;
+                                    let mut valid = unit.attack_rating() > 0 && !unit.only_defensive;
 
                                     // FfH: Added by Kael 08/14/2007
                                     if d.unit_classes[unit_class].max_global_instances == 1 {

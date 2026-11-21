@@ -256,7 +256,7 @@ impl Game {
                 .iter()
                 .copied()
                 .filter(|&t| pred(t))
-                .max_by_key(|&t| (d.units[t].combat * (100 + d.units[t].city_attack_modifier), Reverse(d.units[t].production_cost), Reverse(t)))
+                .max_by_key(|&t| (d.units[t].rating() * (100 + d.units[t].city_attack_modifier), Reverse(d.units[t].production_cost), Reverse(t)))
         };
         if siege * 3 < total {
             if let Some(t) = best(&|t| self.unit_type_is_siege(t)) {

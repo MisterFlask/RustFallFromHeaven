@@ -262,7 +262,7 @@ fn expected_damage(g: &Game, caster: UnitId, t: UnitId, dmg: i32, limit: i32, dt
 /// [`expected_damage`] on `t` hurt by `damage` hit points.
 fn expected_damage_at(g: &Game, caster: UnitId, t: UnitId, dmg: i32, limit: i32, dt: Option<DamageType>, damage: i32) -> i32 {
     let unit = &g.units[t];
-    let mut resist = g.unit_base_combat_str_defense(t) * 2 + unit.level * 2;
+    let mut resist = g.unit_defense_rating(t) / 5 + unit.level * 2;
     if let Some(c) = g.map.plots[g.unit_plot(t)].plot_city {
         resist += g.city_defense_modifier(c, false) / 4;
     }
@@ -281,18 +281,18 @@ fn expected_damage_at(g: &Game, caster: UnitId, t: UnitId, dmg: i32, limit: i32,
 
 /// Strength change, in percent, that promotion `pr` makes to `t` attacking (`attack`) or
 /// defending; `city`: the fight is for a city (its attack or defense bonus counts, and a unit
-/// ignoring building defense gains those walls). Extra and damage-type strength count against
-/// the unit's base strength, a first strike about 10%; a unit that may only defend loses its
+/// ignoring building defense gains those walls). Its attack (defence) and typed points count
+/// against the unit's rating, a first strike about 10%; a unit that may only defend loses its
 /// whole attack.
 fn promo_pct(g: &Game, t: UnitId, pr: PromotionType, attack: bool, city: Option<CityId>) -> i32 {
     let info = &g.d.promotions[pr];
     if attack && info.only_defensive {
         return -100;
     }
-    let base = if attack { g.unit_base_combat_str(t) } else { g.unit_base_combat_str_defense(t) }.max(1);
+    let base = if attack { g.unit_attack_rating(t) } else { g.unit_defense_rating(t) }.max(1);
     let mut pct = if attack { info.combat_percent() } else { info.combat_percent_defense() };
-    let extra = if attack { info.extra_combat_str() } else { info.extra_combat_defense() };
-    pct += (extra + info.damage_type_combat.iter().sum::<i32>()) * 100 / base;
+    let extra = info.stat_changes[if attack { StatType::Attack } else { StatType::Defense }.idx()].flat;
+    pct += (extra + info.damage_type_attack.iter().sum::<i32>()) * 100 / base;
     if let Some(c) = city {
         pct += if attack { info.city_attack_percent } else { info.city_defense_percent };
         if attack && info.ignore_building_defense {
@@ -563,7 +563,7 @@ fn py_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> Option<i32>
                     if resist > 20 {
                         continue;
                     }
-                    let value = g.unit_base_combat_str(t) * 10 + (100 - resist);
+                    let value = g.unit_rating(t) + (100 - resist);
                     if best.map_or(true, |(b, _)| value > b) {
                         best = Some((value, t));
                     }
@@ -719,7 +719,7 @@ fn summon_fight_at(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx, health: &dy
     let d = g.d;
     let hp = |_: &Game, e: UnitId| health(e);
     let info = &d.units[ut];
-    if info.combat + info.damage_type_combat.iter().sum::<i32>() <= 0 || info.only_defensive {
+    if info.attack_rating() <= 0 || info.only_defensive {
         return None;
     }
     let team = g.players[p].team;
@@ -738,7 +738,8 @@ fn summon_fight_at(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx, health: &dy
     // The summon's damage types count as far as the defender does not resist them (C++
     // `maxCombatStr`): a Fireball, all fire, does nothing to a Fire Elemental.
     let resist = |dt: DamageType| g.unit_get_damage_type_resist(best, dt);
-    let a = info.combat * 100 + d.damages.keys().map(|dt| info.damage_type_combat[dt] * (100 - resist(dt))).sum::<i32>();
+    let typed: i32 = info.damage_type_attack.iter().sum();
+    let a = (info.attack_rating() - typed) * 10 + d.damages.keys().map(|dt| info.damage_type_attack[dt] * (100 - resist(dt))).sum::<i32>() / 10;
     if a <= 0 {
         return None;
     }
@@ -782,7 +783,7 @@ fn summon_fight_at(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx, health: &dy
         let mut others: Vec<UnitId> = defs.iter().copied().filter(|&o| o != best).collect();
         others.sort_by_key(|&o| (std::cmp::Reverse(hp(g, o)), o));
         for &o in others.iter().take(info.collateral_damage_max_units.max(0) as usize) {
-            let ts = g.unit_base_combat_str(o);
+            let ts = g.unit_attack_rating(o) / 10;
             let s2 = (cs + ts + 1) / 2;
             if ts + s2 <= 0 {
                 continue;
@@ -865,7 +866,7 @@ fn summon_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> i32 {
     let p = g.units[caster].owner;
     let n = info.create_unit_num * if g.unit_is_twincast(caster) { 2 } else { 1 };
     let uinfo = &d.units[ut];
-    let strength = uinfo.combat + uinfo.damage_type_combat.iter().sum::<i32>();
+    let strength = uinfo.attack_rating() / 10;
     let here = g.unit_plot(caster);
     let (x, y) = g.map.xy(here);
     match ctx {
@@ -1560,7 +1561,7 @@ pub fn sheltered(g: &Game, v: &View, u: UnitId, q: PlotIdx) -> bool {
     }
     let strength = |t: UnitId| {
         let info = &d.units[g.units[t].unit_type];
-        info.combat.max(info.combat_defense)
+        info.rating() / 10
     };
     let caster_combat = d.units[g.units[u].unit_type].unit_combat_type;
     plot.units.iter().any(|&o| {
@@ -1684,7 +1685,7 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
     };
     if let Some(ut) = info.create_unit_type {
         let u = &d.units[ut];
-        let strength = u.combat + u.damage_type_combat.iter().sum::<i32>();
+        let strength = u.attack_rating() / 10;
         let mut sw = strength * if info.permanent_unit_create { 15 } else { 20 };
         if u.collateral_damage > 0 {
             sw = sw * 3 / 2;
@@ -1696,13 +1697,13 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
         let p = &d.promotions[pr];
         if p.ai_weight < 0 {
             let curse = (-p.combat_percent_defense()).max(0)
-                + (-p.extra_combat_defense()).max(0) * 20
+                + (-p.stat_changes[StatType::Defense.idx()].flat).max(0) * 2
                 + if p.only_defensive { 40 } else { 0 }
                 + if p.moves_change < 0 { 30 } else { 0 };
             w += curse * reach;
         } else {
             let gain = p.combat_percent().max(p.combat_percent_defense())
-                + (p.extra_combat_str().max(p.extra_combat_defense()) + p.damage_type_combat.iter().sum::<i32>()) * 20
+                + (p.stat_changes[StatType::Attack.idx()].flat.max(p.stat_changes[StatType::Defense.idx()].flat) + p.damage_type_attack.iter().sum::<i32>()) * 2
                 + p.first_strikes_change * 10;
             let stack = if info.buff_caster_only { 1 } else { 3 };
             let lasting = if p.expire_chance == 0 && !p.removed_by_combat { 3 } else { 2 };
@@ -1712,7 +1713,7 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
     if info.immune_team {
         // Weapons and blessings taken from the enemy (Rust): a unit carries one tier of weapons,
         // so the best of them, at half (not every defender has them).
-        let taken = removes(info).map(|pr| (d.promotions[pr].extra_combat_defense() * 20 + d.promotions[pr].combat_percent_defense()).max(0)).max().unwrap_or(0);
+        let taken = removes(info).map(|pr| (d.promotions[pr].stat_changes[StatType::Defense.idx()].flat * 2 + d.promotions[pr].combat_percent_defense()).max(0)).max().unwrap_or(0);
         w += taken * reach / 2;
     }
     w += info.immobile_turns * 20 * reach;
@@ -1841,7 +1842,7 @@ pub fn damage_caster(g: &Game, u: UnitId) -> bool {
     if g.unit_engage_spell(u).is_some() {
         return true;
     }
-    let fights = |t: UnitType| d.units[t].combat + d.units[t].damage_type_combat.iter().sum::<i32>() > 0;
+    let fights = |t: UnitType| d.units[t].attack_rating() > 0;
     known(g, u).into_iter().any(|s| {
         let i = &d.spells[s];
         i.ai_weight <= 0 && (i.damage > 0 || i.create_unit_type.is_some_and(fights) && !i.permanent_unit_create || damage_spell(d, s))

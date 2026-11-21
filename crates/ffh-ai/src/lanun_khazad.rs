@@ -62,7 +62,7 @@ fn enemy_strength(g: &Game, p: PlayerId) -> Option<Vec<i32>> {
         for &u in &g.map.plots[t].units {
             let other = g.unit_get_team(u);
             if other != team && g.at_war(team, other) && !g.unit_is_invisible(u, team, false) {
-                out[t.idx()] += g.unit_base_combat_str(u).max(1);
+                out[t.idx()] += (g.unit_attack_rating(u) / 10).max(1);
                 any = true;
             }
         }

@@ -345,8 +345,8 @@ pub fn passive_parts(v: &Viewer, b: BonusType) -> PassiveParts {
             city.push(format!("{n:+}% {what} in each of your cities that has it."));
         }
     }
-    // Affinity (`unit_update_bonus_affinity`): per one owned, to strength, or to the damage of the
-    // resource's damage type.
+    // Affinity (`unit_update_bonus_affinity`): per one owned, to attack and defence, or to the
+    // attack of the resource's damage type.
     let mut by_n: Vec<(i32, Vec<String>)> = Vec::new();
     let mut add = |n: i32, who: String| match by_n.iter_mut().find(|(m, _)| *m == n) {
         Some((_, l)) if !l.contains(&who) => l.push(who),
@@ -360,8 +360,8 @@ pub fn passive_parts(v: &Viewer, b: BonusType) -> PassiveParts {
         add(d.promotions[p].bonus_affinity[b], format!("units with {}", display(d, p)));
     }
     let kind = match info.damage_type {
-        Some(t) => format!(" {} damage", display(d, t)),
-        None => " strength".to_string(),
+        Some(t) => format!(" {} attack", display(d, t)),
+        None => " attack and defense".to_string(),
     };
     let affinity = by_n.iter().map(|(n, who)| format!("Affinity: {n:+}{kind} per {name} you own, for {}.", and_list(who, false))).collect();
     let mut buildings = Vec::new();

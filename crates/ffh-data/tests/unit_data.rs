@@ -82,7 +82,7 @@ fn dense_arrays_are_sized_by_their_key_table() {
         assert_eq!(u.terrain_passable_tech.len(), d.terrains.len());
         assert_eq!(u.feature_impassable.len(), d.features.len());
         assert_eq!(u.flavor_value.len(), d.reg.count::<FlavorType>());
-        assert_eq!(u.damage_type_combat.len(), DamageType::NUM);
+        assert_eq!(u.damage_type_attack.len(), DamageType::NUM);
         // C++ fixed arrays of NUM_UNIT_AND_TECH_PREREQS / NUM_UNIT_PREREQ_OR_BONUSES slots.
         assert!(u.prereq_and_techs.len() <= d.defines.num_unit_and_tech_prereqs as usize);
         assert!(u.prereq_or_bonuses.len() <= d.defines.num_unit_prereq_or_bonuses as usize);
@@ -117,8 +117,9 @@ fn warrior() {
     assert_eq!(u.unit_combat_type, Some(d.t::<UnitCombatType>("UNITCOMBAT_MELEE")));
     assert_eq!(u.domain_type, Some(DomainType::DOMAIN_LAND));
     assert_eq!(u.default_unit_ai_type, Some(UnitAIType::UNITAI_ATTACK));
-    assert_eq!(u.combat, 3);
-    assert_eq!(u.combat_defense, 3);
+    // A land unit has no strength: it fights with its stat sheet (docs/UNIT_STATS.md).
+    assert_eq!((u.strength, u.strength_defense), (0, 0));
+    assert_eq!(u.attack_rating(), u.stats.unwrap()[StatType::Attack.idx()]);
     assert_eq!(u.production_cost, 25);
     assert_eq!(u.moves, 1);
     assert_eq!(u.city_defense_modifier, 25);
@@ -151,7 +152,6 @@ fn chariot_prereqs_and_modifiers() {
     assert_eq!(u.prereq_and_bonus, None);
     assert_eq!(u.prereq_building, Some(d.t::<BuildingType>("BUILDING_SIEGE_WORKSHOP")));
     assert_eq!(u.production_cost, 100); // FFH2: 120 (this game's, docs/UNIT_ROLES.md)
-    assert_eq!(u.combat, 5);
     assert_eq!(u.moves, 3);
     assert_eq!(u.withdrawal_probability, 25);
     assert!(u.no_defensive_bonus);
@@ -173,10 +173,8 @@ fn angel_of_death_ffh_fields() {
         set_names(&u.free_promotions),
         ["PROMOTION_ANGEL", "PROMOTION_INVISIBLE", "PROMOTION_MARKSMAN", "PROMOTION_VILE_TOUCH"]
     );
-    assert_eq!(u.damage_type_combat[DamageType::DAMAGE_HOLY], 3);
-    assert_eq!(u.damage_type_combat[DamageType::DAMAGE_FIRE], 0);
-    assert_eq!(u.combat, 8);
-    assert_eq!(u.combat_defense, 6);
+    assert_eq!(u.damage_type_attack[DamageType::DAMAGE_HOLY], 30);
+    assert_eq!(u.damage_type_attack[DamageType::DAMAGE_FIRE], 0);
     assert_eq!(u.min_level, 4);
     assert_eq!(u.first_strikes, 1);
     assert!(u.first_strike_immune && u.investigate && u.rival_territory);
@@ -189,8 +187,8 @@ fn air_elemental_create_from_combat() {
     assert_eq!(u.unit_create_from_combat, Some(d.t::<UnitType>("UNIT_LIGHTNING_ELEMENTAL")));
     assert_eq!(u.unit_create_from_combat_chance, 100);
     assert_eq!(u.unit_convert_from_combat, None);
-    assert_eq!(u.bonus_affinity[d.t::<BonusType>("BONUS_MANA_AIR")], 1);
-    assert_eq!(u.damage_type_combat[DamageType::DAMAGE_LIGHTNING], 2);
+    assert_eq!(u.bonus_affinity[d.t::<BonusType>("BONUS_MANA_AIR")], 10);
+    assert_eq!(u.damage_type_attack[DamageType::DAMAGE_LIGHTNING], 20);
     assert_eq!(u.production_cost, -1);
     assert_eq!(u.culture_garrison_value, 6);
     assert_eq!(u.power_value, 20);

@@ -192,10 +192,12 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 57: an engagement is lost by the side whose units lost more HP (docs/ENGAGEMENTS.md, "The
 ///   result"): `Outcome::hp_lost`, `loser`, `pushed`; the log's `PushBack`.
 /// - 58: the loser by all fallen, then more fallen, then more HP lost: `Outcome::decided_by`.
-/// - 59: squads (docs/ENGAGEMENTS.md, "Squads"): `Game::squads`, `Unit::squad`, `squad_cell`;
+/// - 59: land units have no strength (docs/UNIT_STATS.md, section 10): no `Unit::base_combat`,
+///   `base_combat_defense`; typed and affinity amounts in attack points (ten a strength point).
+/// - 60: squads (docs/ENGAGEMENTS.md, "Squads"): `Game::squads`, `Unit::squad`, `squad_cell`;
 ///   engagement slots no longer vary by ground; battle tactics retired (no `Army::tactic`,
 ///   `tactic_next`, `City::garrison_tactic`, `garrison_tactic_next`, no battle log `tactics`).
-pub const FORMAT_VERSION: u32 = 59;
+pub const FORMAT_VERSION: u32 = 60;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

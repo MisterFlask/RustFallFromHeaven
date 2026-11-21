@@ -60,8 +60,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 12,
-      "combat_defense": 9,
       "combat_limit": 100,
       "xp_value_attack": 8,
       "xp_value_defense": 4,
@@ -75,7 +73,7 @@
       },
       "tier": 4,
       "weapon_tier": 3,
-      "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+      "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
     }
   ],
   "text": {

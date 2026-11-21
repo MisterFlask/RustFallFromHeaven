@@ -101,7 +101,6 @@
       "moves": 2,
       "nuke_range": -1,
       "work_rate": 400,
-      "combat": 5,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -115,7 +114,6 @@
         "PROMOTION_HERO": true
       },
       "free_xp": true,
-      "combat_defense": 5,
       "free_promotion_pick": 1,
       "tier": 4
     }

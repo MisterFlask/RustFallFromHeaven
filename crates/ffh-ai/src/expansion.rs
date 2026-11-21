@@ -176,7 +176,7 @@ pub fn prepare_escorts(g: &mut Game, p: PlayerId) {
         if escort_on_plot(g, p, plot, None).is_some() {
             continue;
         }
-        let queued = g.cities[c].order_queue.iter().any(|o| o.order_type == OrderType::ORDER_TRAIN && g.d.units[UnitType::from_usize(o.data1 as usize)].combat > 0);
+        let queued = g.cities[c].order_queue.iter().any(|o| o.order_type == OrderType::ORDER_TRAIN && g.d.units[UnitType::from_usize(o.data1 as usize)].attack_rating() > 0);
         if queued {
             continue;
         }
@@ -194,7 +194,7 @@ fn escort_unit(g: &Game, c: CityId) -> Option<UnitType> {
     let mut cands: Vec<(UnitType, i64, i32)> = Vec::new();
     for u in d.units.keys() {
         let info = &d.units[u];
-        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 || info.found {
+        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.attack_rating() <= 0 || info.found {
             continue;
         }
         if matches!(info.default_unit_ai_type, Some(UnitAIType::UNITAI_HERO) | Some(UnitAIType::UNITAI_MAGE) | Some(UnitAIType::UNITAI_EXPLORE)) {
@@ -240,7 +240,7 @@ fn escort_on_plot(g: &Game, p: PlayerId, plot: PlotIdx, grp: Option<GroupId>) ->
             continue;
         }
         let info = &g.d.units[unit.unit_type];
-        if info.combat <= 0 || info.found || g.unit_moves_left(o) <= 0 || g.unit_is_cargo(o) {
+        if info.attack_rating() <= 0 || info.found || g.unit_moves_left(o) <= 0 || g.unit_is_cargo(o) {
             continue;
         }
         let def = defense_power(g, o);

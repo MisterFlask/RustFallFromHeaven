@@ -93,7 +93,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 11,
       "combat_limit": 100,
       "xp_value_attack": 8,
       "xp_value_defense": 4,
@@ -106,10 +105,9 @@
         "PROMOTION_DEMON_SLAYING": true,
         "PROMOTION_MEDIC1": true
       },
-      "combat_defense": 11,
       "tier": 4,
       "prereq_alignment": "ALIGNMENT_GOOD",
-      "damage_type_combats": {"DAMAGE_HOLY": 3}
+      "damage_type_attacks": {"DAMAGE_HOLY": 30}
     },
     {
       "type": "UNIT_GRAND_MASTER",
@@ -153,7 +151,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 11,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -167,9 +164,8 @@
         "PROMOTION_MEDIC1": true,
         "PROMOTION_HERO": true
       },
-      "combat_defense": 11,
       "tier": 4,
-      "damage_type_combats": {"DAMAGE_HOLY": 3}
+      "damage_type_attacks": {"DAMAGE_HOLY": 30}
     }
   ],
   "buildings": [

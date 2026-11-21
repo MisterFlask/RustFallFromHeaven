@@ -122,7 +122,7 @@ fn meteor(g: &mut Game, p: PlayerId) {
 pub fn champion_target(g: &Game, p: PlayerId) -> Option<UnitId> {
     champion_candidates(g, p)
         .into_iter()
-        .max_by_key(|&u| (g.units[u].level, g.units[u].experience, g.unit_base_combat_str(u), std::cmp::Reverse(u)))
+        .max_by_key(|&u| (g.units[u].level, g.units[u].experience, g.unit_rating(u), std::cmp::Reverse(u)))
         .filter(|&u| g.units[u].level >= CHAMPION_MIN_LEVEL)
 }
 

@@ -261,7 +261,7 @@ fn value(g: &Game, p: PlayerId, t: &EventTriggeredData, e: EventType, depth: u32
         let Some(pr) = *pr else { continue };
         for &u in &g.players[p].units {
             if g.units.contains(u) && g.unit_get_unit_combat_type(u) == Some(uc) && !g.units[u].has_promotion[pr] {
-                promo += 4 * g.unit_base_combat_str(u).max(1) as i64;
+                promo += 4 * (g.unit_attack_rating(u) / 10).max(1) as i64;
             }
         }
         promo += num_cities * 20;
@@ -270,7 +270,7 @@ fn value(g: &Game, p: PlayerId, t: &EventTriggeredData, e: EventType, depth: u32
         let Some(pr) = *pr else { continue };
         for &u in &g.players[p].units {
             if g.units.contains(u) && d.units[g.units[u].unit_type].unit_class_type == Some(class) && !g.units[u].has_promotion[pr] {
-                promo += 4 * g.unit_base_combat_str(u).max(1) as i64;
+                promo += 4 * (g.unit_attack_rating(u) / 10).max(1) as i64;
             }
         }
     }
@@ -450,7 +450,7 @@ mod tests {
         g.map_script = std::sync::Arc::new(ffh_core::mapscript::FractalMapScript::default());
         g.game_init();
         let p = g.player_ids().find(|&p| g.players[p].alive && !g.player_is_barbarian(p)).unwrap();
-        let u = g.players[p].units.iter().copied().find(|&u| d.units[g.units[u].unit_type].combat > 0).expect("a starting fighter");
+        let u = g.players[p].units.iter().copied().find(|&u| d.units[g.units[u].unit_type].attack_rating() > 0).expect("a starting fighter");
         let ev = |n: &str| d.t::<EventType>(n);
 
         let t = triggered(&g, p, "EVENTTRIGGER_WAR_GAMES", Some(u));

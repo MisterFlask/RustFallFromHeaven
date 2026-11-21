@@ -2343,9 +2343,9 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     return Err(invalid("field `units`: only when you lend"));
                 }
                 lendable_units(g, h, units)?;
-                let sum: i32 = units.iter().map(|&u| g.crusade_unit_strength(u)).sum();
+                let sum: i32 = units.iter().map(|&u| g.crusade_unit_force(u)).sum();
                 if sum < *strength {
-                    return Err(cannot(format!("the units' strength is {sum}, short of the {strength} agreed")));
+                    return Err(cannot(format!("the units' force is {}, short of the {} agreed", ffh_core::crusade::force_text(sum), ffh_core::crusade::force_text(*strength))));
                 }
             }
             let (lender_gives, borrower_gives) = if *lend { (give.clone(), get.clone()) } else { (get.clone(), give.clone()) };
@@ -2357,7 +2357,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     let human_lends = c.terms.lender == h;
                     let (give, get) = if human_lends { (c.lender_gives, c.borrower_gives) } else { (c.borrower_gives, c.lender_gives) };
                     // The units the human picked, while they still cover the strength asked.
-                    let picked: i32 = units.iter().map(|&u| g.crusade_unit_strength(u)).sum();
+                    let picked: i32 = units.iter().map(|&u| g.crusade_unit_force(u)).sum();
                     let units = if human_lends && picked >= c.terms.strength { units.clone() } else { Vec::new() };
                     Plan::Confirm(Confirm::LoanCounter {
                         to: *to,
@@ -2417,9 +2417,9 @@ pub(crate) fn loan_error(e: LoanError) -> String {
     match e {
         LoanError::NotAllowed => "no loan between these two (same team, a Host, no contact, or at war with each other)".into(),
         LoanError::NotAtWar => "the borrower is not at war with that team".into(),
-        LoanError::BadTerms => "terms out of range (strength, duration or target)".into(),
+        LoanError::BadTerms => "terms out of range (force, duration or target)".into(),
         LoanError::CannotLend(l) => format!("the lender cannot lend against that team: {}", lend_error(l)),
-        LoanError::NotEnoughUnits => "the lender has not that much strength to spare".into(),
+        LoanError::NotEnoughUnits => "the lender has not that much force to spare".into(),
         LoanError::BadPayment => "a payment item cannot be traded".into(),
         LoanError::NoGeneral => "no general can be called against that team".into(),
     }

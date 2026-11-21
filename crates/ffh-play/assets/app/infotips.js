@@ -9,12 +9,13 @@ import { render as markup } from "./markup.js";
 import { S, info, dname } from "./state.js";
 import { remindersNode } from "./keywords.js";
 
-/** A unit type's numbers as markup: strength (and defence when it differs), moves, its class of
- *  combat (`UnitType` entry `e` of the data). */
+/** A unit type's numbers as markup: ATK and DEF (a ship: its strength, and defence when it
+ *  differs), moves, its class of combat (`UnitType` entry `e` of the data). */
 export function unitStats(e) {
   if (!e) return "";
   const parts = [];
-  if (e.combat || e.combat_defense) parts.push(e.combat_defense && e.combat_defense !== e.combat ? `${e.combat}/${e.combat_defense}[ICON_STRENGTH]` : `${e.combat}[ICON_STRENGTH]`);
+  if (e.strength || e.strength_defense) parts.push(e.strength_defense && e.strength_defense !== e.strength ? `${e.strength}/${e.strength_defense}[ICON_STRENGTH]` : `${e.strength}[ICON_STRENGTH]`);
+  else if (e.attack || e.defense) parts.push(`ATK ${e.attack} · DEF ${e.defense}`);
   parts.push(`${e.moves}[ICON_MOVES]`);
   if (e.unit_combat !== null && e.unit_combat !== undefined) parts.push(dname("UnitCombatType", e.unit_combat));
   return parts.join("  ");

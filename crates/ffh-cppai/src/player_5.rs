@@ -1445,7 +1445,7 @@ impl Cai {
         }
 
         if let Some(u) = unit {
-            value += (2 * g.unit_base_combat_str(u) * kev.unit_experience * speed.train_percent) / 100;
+            value += (2 * (g.unit_attack_rating(u) / 10) * kev.unit_experience * speed.train_percent) / 100;
 
             value -= 10 * kev.unit_immobile_turns;
         }
@@ -1458,7 +1458,7 @@ impl Cai {
                     for &u in &g.players[p].units {
                         if g.unit_get_unit_combat_type(u) == Some(uc) {
                             if !g.units[u].has_promotion[promotion] {
-                                promotion_value += 5 * g.unit_base_combat_str(u);
+                                promotion_value += 5 * (g.unit_attack_rating(u) / 10);
                             }
                         }
                     }
@@ -1886,7 +1886,7 @@ impl Cai {
         for class in d.unit_classes.keys() {
             if let Some(eunit) = civ_unit(g, p, class) {
                 if is_tech_required_for_unit(d, tech, eunit) {
-                    let mut temp_value = (d.units[eunit].combat * 100) / g.best_land_unit_combat().max(1);
+                    let mut temp_value = ((d.units[eunit].attack_rating() / 10) * 100) / (g.best_land_unit_rating() / 10).max(1);
                     temp_value *= if any_warplan { 2 } else { 1 };
 
                     value += temp_value / 3;
@@ -2262,7 +2262,7 @@ impl Cai {
             for class in d.unit_classes.keys() {
                 let eunit = civ_unit(g, p, class);
                 if let Some(eunit) = eunit {
-                    if d.units[eunit].combat > 0 {
+                    if d.units[eunit].attack_rating() > 0 {
                         let default_unit = d.unit_classes[class].default_unit_index;
                         if default_unit != Some(eunit) {
                             let is_defensive = d.units[eunit].unit_ai_type[UnitAIType::UNITAI_CITY_DEFENSE]

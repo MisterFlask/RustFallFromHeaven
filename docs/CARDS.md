@@ -503,7 +503,7 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   **The candidates** are the parent's units that `crusade_unit_lendable` (land combat units, not
   lent, temporary, aboard or carrying) and are not heroes, ordered by plot distance from the
   unit to the faction's capital (ties: the lower unit id). **Each in turn** defects when all hold
-  at that moment: its strength `s` (`crusade_unit_strength`) is above 0 and the strength defected
+  at that moment: its strength `s` (`crusade_unit_force`) is above 0 and the strength defected
   so far plus `s` stays within the budget; the faction's strength plus `s` stays at most the
   parent's minus `s` (both measured anew after each defection); and it is not the only lendable
   unit of the parent on the plot of one of the parent's cities. A candidate that fails is passed

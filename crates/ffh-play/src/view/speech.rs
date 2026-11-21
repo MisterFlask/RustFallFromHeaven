@@ -276,7 +276,7 @@ pub fn speech(v: &Viewer, with: PlayerId, comment: Option<DiploCommentType>, sal
 /// `[OUR_BEST_UNIT]`.
 fn best_unit(g: &Game, ai: PlayerId) -> Option<UnitType> {
     let d = g.d;
-    g.players[ai].units.iter().filter(|&&u| g.units.contains(u)).map(|&u| g.units[u].unit_type).filter(|&t| d.units[t].combat > 0).max_by_key(|&t| (d.units[t].combat, d.units[t].production_cost, std::cmp::Reverse(t)))
+    g.players[ai].units.iter().filter(|&&u| g.units.contains(u)).map(|&u| g.units[u].unit_type).filter(|&t| d.units[t].attack_rating() > 0).max_by_key(|&t| (d.units[t].rating(), d.units[t].production_cost, std::cmp::Reverse(t)))
 }
 
 /// A line's placeholders: `[OUR_*]` are the speaking AI's, `[CT_*]` (the contact) the human's;

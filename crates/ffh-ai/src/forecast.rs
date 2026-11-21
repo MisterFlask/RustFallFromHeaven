@@ -434,7 +434,7 @@ pub fn holds(g: &Game, cache: Option<&Cache>, flood: &mut Flood, city: CityId) -
                 return None;
             }
             let info = &g.d.units[unit.unit_type];
-            if info.combat_defense <= 0 && info.combat <= 0 {
+            if !info.fights() {
                 return None;
             }
             let (x, y) = g.map.xy(at);

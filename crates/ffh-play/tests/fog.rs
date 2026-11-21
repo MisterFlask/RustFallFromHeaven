@@ -189,7 +189,7 @@ fn hidden_units_stay_hidden() {
     let team = s.g.players[h].team;
     let ai = s.g.civ_player_ids().find(|&p| p != h && s.g.players[p].alive).unwrap();
     let warrior = d.t::<UnitType>("UNIT_WARRIOR");
-    let ours = s.g.players[h].units.iter().copied().find(|&u| d.units[s.g.units[u].unit_type].combat > 0).expect("a combat unit");
+    let ours = s.g.players[h].units.iter().copied().find(|&u| d.units[s.g.units[u].unit_type].attack_rating() > 0).expect("a combat unit");
     let (ox, oy) = (s.g.units[ours].x, s.g.units[ours].y);
 
     // A stack of three in fog: revealed, not visible.

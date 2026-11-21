@@ -10,8 +10,8 @@
 // - allied loans: troops are an item of the trade screen (diplo.js), priced by the rest of the
 //   deal; adding them opens the troops screen, where you pick the units you lend.
 //
-// Strengths are the rules' (combat strength x100, scaled by health), shown as combat strength: a
-// healthy warrior is 2.
+// Force is the rules' (`crusade_unit_force`: a unit's rating with its combat bonus, x10, scaled by
+// health), shown on the stat sheet's scale: a healthy Axeman is 40, as its ATK.
 
 import * as api from "./api.js";
 import { S, dname, teamName } from "./state.js";
@@ -30,10 +30,9 @@ export function init({ centerOn } = {}) {
   hooks.centerOn = centerOn ?? null;
 }
 
-/** A strength for people (the rules count x100). */
-export function strengthLabel(s) {
-  const v = s / 100;
-  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+/** A force for people (the rules count x10). */
+export function forceLabel(s) {
+  return String(Math.round(s / 10));
 }
 
 /** Who called crusade `kind` (`crusades` query `kind` object, or a pending call's `source`). */
@@ -109,7 +108,7 @@ addHelp({
     h("h4", "Credit and the spoils"),
     h(
       "ul",
-      li("A lent unit earns its strength (at handover) as your credit when it first kills an enemy of the crusade, or when it dies. Units that never fight earn nothing."),
+      li("A lent unit earns its force (at handover) as your credit when it first kills an enemy of the crusade, or when it dies. Units that never fight earn nothing."),
       li("When the crusade ends, its spoils (the cities the Host took and the gold it gathered) are shared by credit: each lender drafts cities up to its share, or takes it as gold."),
     ),
   ],
@@ -129,8 +128,8 @@ addHelp({
     h("h4", "The Crusades advisor"),
     h(
       "ul",
-      li("Delivered: the strength you lent, and how many of your units still serve."),
-      li("Credit: the strength of your lent units that have fought, by which the spoils are shared."),
+      li("Delivered: the force you lent, and how many of your units still serve."),
+      li("Credit: the force of your lent units that have fought, by which the spoils are shared."),
       li("Show the Host / Show the target: close the screen and bring the camera to the Host's largest stack you can see, or to the target's city nearest your capital."),
     ),
   ],
@@ -153,12 +152,12 @@ addHelp({
   ],
 });
 
-/** A crusade call (`pending.crusade_calls[]`): pledge a strength or refuse. Resolves "chosen",
+/** A crusade call (`pending.crusade_calls[]`): pledge a force or refuse. Resolves "chosen",
  *  "later" or null. */
 export async function openCall(call) {
   let result = null;
   const suggested = Math.min(call.obligation, call.lendable) || call.obligation || 100;
-  const input = h("input", { type: "number", id: "crusade-pledge", min: 0.5, step: 0.5, value: strengthLabel(suggested) });
+  const input = h("input", { type: "number", id: "crusade-pledge", min: 5, step: 5, value: forceLabel(suggested) });
   const send = async (strength) => {
     const reply = await run({ c: "crusade_answer", crusade: call.crusade, strength });
     if (!reply) return;
@@ -187,14 +186,14 @@ export async function openCall(call) {
         portrait ? h("figure.crusade-enemy", portrait, h("figcaption.dim", enemy.name)) : null,
         h(
           "div.crusade-call-text",
-          h("p.page-text", `${callerName(call.source)} calls you to send strength ${strengthLabel(call.obligation)} against ${t} by turn ${call.deadline}, to serve until turn ${call.end}.`),
-          h("p.dim", `You can lend up to ${strengthLabel(call.lendable)}.`),
+          h("p.page-text", `${callerName(call.source)} calls you to send force ${forceLabel(call.obligation)} against ${t} by turn ${call.deadline}, to serve until turn ${call.end}.`),
+          h("p.dim", `You can lend up to ${forceLabel(call.lendable)}.`),
         ),
       ),
-      h("label.field", h("span", "Pledge strength"), input),
+      h("label.field", h("span", "Pledge force"), input),
       h(
         "div.options",
-        h("button.option", { "data-pledge": "yes", onclick: () => send(Math.max(1, Math.round(Number(input.value) * 100))) }, "Pledge"),
+        h("button.option", { "data-pledge": "yes", onclick: () => send(Math.max(1, Math.round(Number(input.value) * 10))) }, "Pledge"),
         h("button.option", { "data-pledge": "refuse", title: "Defies the council: unhappiness in your cities, and your loyal membership lost", onclick: () => send(null) }, "Refuse"),
       ),
     ],
@@ -230,7 +229,7 @@ export async function openLend(id) {
   const update = () => {
     const s = boxes.filter((b) => b.checked).reduce((a, b) => a + Number(b.dataset.strength), 0);
     const owed = Math.max(0, pledged - c.delivered);
-    total.textContent = `Selected: strength ${strengthLabel(s)}${pledged ? ` (still owed: ${strengthLabel(owed)})` : ""}.`;
+    total.textContent = `Selected: force ${forceLabel(s)}${pledged ? ` (still owed: ${forceLabel(owed)})` : ""}.`;
   };
   for (const b of boxes) b.addEventListener("change", update);
   const lend = h(
@@ -256,7 +255,7 @@ export async function openLend(id) {
     units.length
       ? h(
           "div.checks.lend-units",
-          units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], figure(u), ` ${dname("UnitType", u.type)} · strength ${strengthLabel(u.strength)} · at (${u.x}, ${u.y})`)),
+          units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], figure(u), ` ${dname("UnitType", u.type)} · force ${forceLabel(u.strength)} · at (${u.x}, ${u.y})`)),
         )
       : h("p.dim", "None of your units can be lent now."),
     total,
@@ -293,7 +292,7 @@ export async function openCrusades() {
     if (m.closed) return;
     const rows = q.crusades.map((c) => {
       const call = c.call;
-      const answer = !call ? "not called" : call.answer === null ? (call.settled ? "no answer" : "waiting for your answer") : call.answer === "refuse" ? "refused" : `pledged ${strengthLabel(call.answer)}`;
+      const answer = !call ? "not called" : call.answer === null ? (call.settled ? "no answer" : "waiting for your answer") : call.answer === "refuse" ? "refused" : `pledged ${forceLabel(call.answer)}`;
       const actions = [];
       if (call && call.answer === null && !call.settled) {
         actions.push(
@@ -324,12 +323,12 @@ export async function openCrusades() {
           ),
           actions.length ? h("div.actions.crusade-actions", actions) : null,
         ),
-        h("td", call ? [h("div", `obligation ${strengthLabel(call.obligation)} by turn ${c.deadline}`), h("div.dim", answer)] : h("span.dim", answer)),
-        h("td.num", h("div", `${strengthLabel(c.delivered)} · ${c.serving} serving`), h("div.dim", `credit ${strengthLabel(c.credit)}`)),
+        h("td", call ? [h("div", `obligation ${forceLabel(call.obligation)} by turn ${c.deadline}`), h("div.dim", answer)] : h("span.dim", answer)),
+        h("td.num", h("div", `${forceLabel(c.delivered)} · ${c.serving} serving`), h("div.dim", `credit ${forceLabel(c.credit)}`)),
       );
     });
     const past = q.reports.map((r) =>
-      h("li", `${kindLabel(r.kind)} against ${teamName(r.target)}, turns ${r.start}–${r.end} (${r.reason}): delivered ${strengthLabel(r.delivered)}, credit ${strengthLabel(r.credit)}, spoils ${r.spoils} gold-equivalent${r.cities ? `, ${r.cities} cities` : ""}${r.refused ? " (you refused)" : ""}`),
+      h("li", `${kindLabel(r.kind)} against ${teamName(r.target)}, turns ${r.start}–${r.end} (${r.reason}): delivered ${forceLabel(r.delivered)}, credit ${forceLabel(r.credit)}, spoils ${r.spoils} gold-equivalent${r.cities ? `, ${r.cities} cities` : ""}${r.refused ? " (you refused)" : ""}`),
     );
     m.setBody(
       rows.length
@@ -345,7 +344,7 @@ export async function openCrusades() {
 /** A loan of troops as the trade screen shows it in the deal. */
 export function troopsLabel(k) {
   const who = k.lend ? `${k.units.length} of your units` : "their troops";
-  return `Troops: ${who}, strength ${strengthLabel(k.strength)}, ${k.mission === "defend" ? "defending the borrower against" : "attacking"} ${teamName(k.target)} for ${k.duration} turns`;
+  return `Troops: ${who}, force ${forceLabel(k.strength)}, ${k.mission === "defend" ? "defending the borrower against" : "attacking"} ${teamName(k.target)} for ${k.duration} turns`;
 }
 
 /** The troops screen, opened from the trade screen's Troops item: the terms of a loan of troops
@@ -374,12 +373,12 @@ export async function openTroops({ lend, other, way, maxTurns, current = null })
     boxes = units.map((u) => h("input", { type: "checkbox", value: String(u.unit), "data-strength": String(u.strength), checked: !!current?.units?.includes(u.unit) }));
     const update = () => {
       const s = boxes.filter((b) => b.checked).reduce((a, b) => a + Number(b.dataset.strength), 0);
-      total.textContent = `Selected: strength ${strengthLabel(s)}.`;
+      total.textContent = `Selected: force ${forceLabel(s)}.`;
     };
     for (const b of boxes) b.addEventListener("change", update);
     update();
   } else {
-    strength = h("input", { type: "number", id: "troops-strength", min: 0.5, step: 0.5, value: current ? strengthLabel(current.strength) : "4" });
+    strength = h("input", { type: "number", id: "troops-strength", min: 5, step: 5, value: current ? forceLabel(current.strength) : "40" });
   }
   const figure = (u) => (isoSkin() ? unlockIcon("units", u.type) : null);
   const m = openModal({
@@ -387,12 +386,12 @@ export async function openTroops({ lend, other, way, maxTurns, current = null })
     help: "loans",
     body: [
       lend ? null : h("p.dim", `${name} picks the units it sends.`),
-      h("div.fields", field("Against", target), field("Mission", mission), field(`Turns (up to ${maxTurns})`, duration), lend ? null : field("Strength", strength)),
+      h("div.fields", field("Against", target), field("Mission", mission), field(`Turns (up to ${maxTurns})`, duration), lend ? null : field("Force", strength)),
       lend
         ? units.length
           ? h(
               "div.checks.lend-units",
-              units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], figure(u), ` ${dname("UnitType", u.type)} · strength ${strengthLabel(u.strength)} · at (${u.x}, ${u.y})`)),
+              units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], figure(u), ` ${dname("UnitType", u.type)} · force ${forceLabel(u.strength)} · at (${u.x}, ${u.y})`)),
             )
           : h("p.dim", "None of your units can be lent now.")
         : null,
@@ -415,7 +414,7 @@ export async function openTroops({ lend, other, way, maxTurns, current = null })
             }
             terms = { lend, target: Number(target.value), mission: mission.value, duration: turns, units: chosen.map((b) => Number(b.value)), strength: chosen.reduce((a, b) => a + Number(b.dataset.strength), 0) };
           } else {
-            terms = { lend, target: Number(target.value), mission: mission.value, duration: turns, units: [], strength: Math.max(1, Math.round(Number(strength.value) * 100)) };
+            terms = { lend, target: Number(target.value), mission: mission.value, duration: turns, units: [], strength: Math.max(1, Math.round(Number(strength.value) * 10)) };
           }
           dialog.close(terms);
         },

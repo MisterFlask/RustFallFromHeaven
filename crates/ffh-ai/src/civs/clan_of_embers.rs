@@ -80,7 +80,7 @@ fn rantine(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     if !v.civ_enemies.is_empty() || g.at_war(v.team, g.players[barb].team) || g.units[u].damage > 20 {
         return false;
     }
-    let strength = g.unit_base_combat_str(u);
+    let strength = g.unit_rating(u);
     let reach = v.flood.run(g, u, 15, false);
     let target = reach.iter().find(|r| {
         let q = r.plot;
@@ -88,7 +88,7 @@ fn rantine(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         g.plot_is_city(q, false, None)
             && pl.owner == Some(barb)
             && pl.revealed[v.team]
-            && pl.units.iter().all(|&o| g.units[o].owner != barb || !g.plot_is_visible(q, v.team) || g.unit_base_combat_str(o) <= strength)
+            && pl.units.iter().all(|&o| g.units[o].owner != barb || !g.plot_is_visible(q, v.team) || g.unit_rating(o) <= strength)
     });
     let Some(r) = target.copied() else { return false };
     crate::trace!(g, p, "rantine at {:?}: to barbarian city {:?} ({} turns)", g.map.xy(g.unit_plot(u)), g.map.xy(r.plot), r.turns);

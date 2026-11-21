@@ -520,7 +520,7 @@ fn army_aboard(g: &Game, t: UnitId) -> i32 {
         .iter()
         .filter(|&&c| {
             let info = &g.d.units[g.units[c].unit_type];
-            !info.found && info.combat > 0 && g.unit_get_domain_type(c) == DomainType::DOMAIN_LAND
+            !info.found && info.attack_rating() > 0 && g.unit_get_domain_type(c) == DomainType::DOMAIN_LAND
         })
         .count() as i32
 }
@@ -562,7 +562,7 @@ fn fleet_waits(g: &mut Game, v: &View, grp: GroupId, u: UnitId, amph: &Amph) -> 
         let ships_coming = g.players[p].ai_num_train_ai_units[UnitAIType::UNITAI_ASSAULT_SEA]
             + g.players[p].units.iter().filter(|&&t| is_transport_type(&g.d.units[g.units[t].unit_type]) && g.units[t].ai_type == Some(UnitAIType::UNITAI_ASSAULT_SEA) && g.unit_plot(t) != here && g.unit_get_cargo_units(t).is_empty()).count() as i32;
         let walking: i32 = committed_groups(g, p, amph).iter().map(|&gr| g.groups[gr].units.iter().filter(|&&o| !g.unit_is_cargo(o)).count() as i32).sum();
-        let training = g.map.plots[here].plot_city.is_some_and(|c| g.city_production_unit(c).is_some_and(|ut| g.d.units[ut].combat > 0 && g.d.units[ut].domain_type == Some(DomainType::DOMAIN_LAND)));
+        let training = g.map.plots[here].plot_city.is_some_and(|c| g.city_production_unit(c).is_some_and(|ut| g.d.units[ut].attack_rating() > 0 && g.d.units[ut].domain_type == Some(DomainType::DOMAIN_LAND)));
         let more = (walking > 0 || training) && (room > 0 || ships_coming > 0);
         // Nothing more can board (no room, no ship coming): waiting cannot grow the load, so the
         // transports ferry what they carry and the landings pile up beside the target
@@ -704,7 +704,7 @@ fn fleet_sail(g: &mut Game, p: PlayerId, grp: GroupId, here: PlotIdx, ships: &[U
         }
         let info = &g.d.units[g.units[o].unit_type];
         let loaded = ships.contains(&o) && army_aboard(g, o) > 0;
-        let warship = !is_transport_type(info) && info.combat > 0 && g.units[o].ai_type != Some(UnitAIType::UNITAI_EXPLORE_SEA) && g.unit_moves_left(o) == g.unit_max_moves(o);
+        let warship = !is_transport_type(info) && info.attack_rating() > 0 && g.units[o].ai_type != Some(UnitAIType::UNITAI_EXPLORE_SEA) && g.unit_moves_left(o) == g.unit_max_moves(o);
         if !(loaded || warship) || !g.unit_can_join_group(o, here, grp) {
             continue;
         }
@@ -1008,7 +1008,7 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let carries_army = !carries_settler
         && cargo.iter().any(|&c| {
             let info = &g.d.units[g.units[c].unit_type];
-            !info.found && info.combat > 0 && g.unit_get_domain_type(c) == DomainType::DOMAIN_LAND
+            !info.found && info.attack_rating() > 0 && g.unit_get_domain_type(c) == DomainType::DOMAIN_LAND
         });
     crate::trace!(g, p, "transport {:?} at {:?}: cargo {} (settler {}, army {}), moves {}", u, g.map.xy(here), cargo.len(), carries_settler, carries_army, g.unit_moves_left(u));
     if carries_army {

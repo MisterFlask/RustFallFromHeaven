@@ -18,7 +18,7 @@ text the entries name by `TXT_KEY_*`.
     "type": "UNIT_AXEMAN",
     "class": "UNITCLASS_AXEMAN",
     "unit_combat": "UNITCOMBAT_MELEE",
-    "combat": 4,
+    "stats": {"hp": 120, "attack": 40, "defense": 40, ...},
     "unit_class_upgrades": {"UNITCLASS_CHAMPION": true, "UNITCLASS_CHARIOT": true},
     "prereq_tech": "TECH_BRONZE_WORKING",
     // only what differs from the defaults
@@ -56,7 +56,7 @@ the keyword's reminder). Loading warns about a mark that names no keyword.
 
 **Keys from the old XML.** The data began as FFH2 0.41's Civ4 XML, converted in November 2026
 (the loaded game data identical before and after). A key is its XML tag without the `i`/`b`/`f`
-prefix, in snake_case (`iCombatDefense` -> `combat_defense`, `UnitClassUpgrades` ->
+prefix, in snake_case (`iCombatLimit` -> `combat_limit`, `UnitClassUpgrades` ->
 `unit_class_upgrades`, `UnitAIs` -> `unit_ais`), so a C++ getter or a Civ4 tag named in a comment
 maps to its key; where two tags of one entry made the same key, one was renamed: `Combat` ->
 `unit_combat`, a unit's `Invisible` -> `invisible_type` and `PrereqBonuses` ->

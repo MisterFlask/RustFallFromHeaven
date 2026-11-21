@@ -339,7 +339,7 @@ impl Controller for Ai {
         // A simple preference for smaller threats and lasting rewards; the two offers are
         // already rolled, so choosing consumes no randomness and cannot redraw the category.
         let value = |outcome: &LairOutcome| match *outcome {
-            LairOutcome::Monster { monster, henchman, count, .. } => -(g.d.units[monster].combat * 100 + g.d.units[henchman].combat * count * 30),
+            LairOutcome::Monster { monster, henchman, count, .. } => -(g.d.units[monster].attack_rating() * 10 + g.d.units[henchman].attack_rating() * count * 3),
             LairOutcome::Result(key) => match key {
                 "DEATH" => -10_000,
                 "DEMONIC_POSSESSION" | "CRAZED" | "CAGE" => -900,

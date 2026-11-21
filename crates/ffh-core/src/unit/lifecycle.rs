@@ -136,7 +136,7 @@ impl Game {
         }
 
         if self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
-            && self.unit_base_combat_str(u) > 0 && (self.best_land_unit.is_none() || self.unit_base_combat_str(u) > self.best_land_unit_combat())
+            && self.unit_can_fight(u) && (self.best_land_unit.is_none() || self.unit_rating(u) > self.best_land_unit_rating())
         {
             // `setBestLandUnit` (its only other effect is an interface dirty bit).
             self.best_land_unit = Some(unit_type);

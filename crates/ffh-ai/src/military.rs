@@ -40,7 +40,7 @@ pub fn is_army_unit(g: &Game, u: UnitId) -> bool {
     let unit = &g.units[u];
     let info = &g.d.units[unit.unit_type];
     unit.march.is_none()
-        && info.combat > 0
+        && info.attack_rating() > 0
         && !info.found
         && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
         && matches!(

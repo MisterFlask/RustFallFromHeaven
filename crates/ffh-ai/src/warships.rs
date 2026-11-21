@@ -141,7 +141,7 @@ fn armed(g: &Game, u: UnitId) -> bool {
 
 /// Is `u` a warship by its type: a sea unit with strength and no room for land units?
 pub fn is_warship_type(info: &UnitInfo) -> bool {
-    info.domain_type == Some(DomainType::DOMAIN_SEA) && info.combat > 0 && !crate::naval::is_transport_type(info)
+    info.domain_type == Some(DomainType::DOMAIN_SEA) && info.strength > 0 && !crate::naval::is_transport_type(info)
 }
 
 /// A ship of ours this module would play: armed, at sea or in port, carrying nothing.
@@ -1255,7 +1255,7 @@ fn warships_had(g: &Game, p: PlayerId) -> i32 {
         .filter(|&&u| {
             let info = &g.d.units[g.units[u].unit_type];
             info.domain_type == Some(DomainType::DOMAIN_SEA)
-                && info.combat > 0
+                && info.strength > 0
                 && (is_warship_type(info) || matches!(g.units[u].ai_type, Some(UnitAIType::UNITAI_ATTACK_SEA) | Some(UnitAIType::UNITAI_ESCORT_SEA)))
         })
         .count() as i32;
@@ -1268,7 +1268,7 @@ fn military_hammers(g: &Game, p: PlayerId) -> (i64, i64) {
     let mut all = 0i64;
     for &u in &g.players[p].units {
         let info = &g.d.units[g.units[u].unit_type];
-        if info.combat <= 0 || info.production_cost <= 0 {
+        if info.strength <= 0 || info.production_cost <= 0 {
             continue;
         }
         all += info.production_cost as i64;
@@ -1312,10 +1312,10 @@ fn wanted(g: &Game, p: PlayerId) -> i32 {
             }
         }
     }
-    let ours_best = ports.iter().filter_map(|&c| best_warship(g, c)).map(|u| g.d.units[u].combat).max().unwrap_or(0);
+    let ours_best = ports.iter().filter_map(|&c| best_warship(g, c)).map(|u| g.d.units[u].strength).max().unwrap_or(0);
     // Guards only against ships ours can fight (an animal or monster far beyond our ships is
     // waited out in port: rule 7).
-    let beatable = seen.iter().filter(|&&e| g.d.units[g.units[e].unit_type].combat * 2 <= ours_best * 3).count() as i32;
+    let beatable = seen.iter().filter(|&&e| g.d.units[g.units[e].unit_type].strength * 2 <= ours_best * 3).count() as i32;
     // ... and two for each sea of our ports an enemy holds or contests, by what we see.
     let mut contested: Vec<SeaId> = Vec::new();
     for &c in &ports {
@@ -1337,7 +1337,7 @@ fn wanted(g: &Game, p: PlayerId) -> i32 {
         for &u in &g.players[o].units {
             let info = &g.d.units[g.units[u].unit_type];
             if info.domain_type == Some(DomainType::DOMAIN_SEA) && g.plot_is_visible(g.unit_plot(u), team) {
-                best_enemy = best_enemy.max(info.combat);
+                best_enemy = best_enemy.max(info.strength);
             }
         }
         for &oc in &g.players[o].cities {
@@ -1371,7 +1371,7 @@ fn seafaring(g: &Game, p: PlayerId) -> bool {
     let Some(civ) = g.player_get_civilization_type(p) else { return false };
     g.d.unit_classes.iter_enumerated().any(|(class, ci)| {
         let own = g.d.civ_unit(civ, class);
-        own.is_some() && own != ci.default_unit_index && own.is_some_and(|u| g.d.units[u].domain_type == Some(DomainType::DOMAIN_SEA) && g.d.units[u].combat > 0)
+        own.is_some() && own != ci.default_unit_index && own.is_some_and(|u| g.d.units[u].domain_type == Some(DomainType::DOMAIN_SEA) && g.d.units[u].strength > 0)
     })
 }
 
@@ -1382,7 +1382,7 @@ fn best_warship(g: &Game, c: CityId) -> Option<UnitType> {
     let mut best: Option<(UnitType, i64)> = None;
     for u in d.units.keys() {
         let info = &d.units[u];
-        if info.domain_type != Some(DomainType::DOMAIN_SEA) || info.combat <= 0 || crate::production::is_hero(d, info) {
+        if info.domain_type != Some(DomainType::DOMAIN_SEA) || info.strength <= 0 || crate::production::is_hero(d, info) {
             continue;
         }
         if !(info.unit_ai_type[UnitAIType::UNITAI_ATTACK_SEA] || info.unit_ai_type[UnitAIType::UNITAI_ESCORT_SEA]) {

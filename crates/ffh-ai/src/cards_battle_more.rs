@@ -223,7 +223,7 @@ fn legion_units(g: &Game, p: PlayerId, o: PlayerId) -> i32 {
         .keys()
         .filter(|&k| !ffh_core::utils::is_world_unit_class(d, k))
         .filter_map(|k| d.civ_unit(civ, k).filter(|&u| d.civ_unit(own, k) != Some(u)))
-        .filter(|&u| d.units[u].combat > 0 && g.player_can_train(p, u, false, false, false))
+        .filter(|&u| d.units[u].attack_rating() > 0 && g.player_can_train(p, u, false, false, false))
         .count() as i32
 }
 

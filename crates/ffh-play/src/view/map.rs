@@ -357,8 +357,7 @@ pub fn plot(v: &Viewer, x: i32, y: i32, units: &[UnitId]) -> Result<Json, QueryE
             .filter(|&&u| v.unit_visible(u))
             .map(|&u| {
                 let mut uj = unit_json(v, u);
-                uj.set("strength", g.unit_base_combat_str(u));
-                uj.set("defense_strength", g.unit_base_combat_str_defense(u));
+                crate::view::units::unit_ratings(g, u, &mut uj);
                 // C++ plot help lists a visible unit's promotions.
                 uj.set("promotions", Json::Arr(d.promotions.keys().filter(|&pr| g.units[u].has_promotion[pr]).map(Json::idx).collect()));
                 // Under debug reveal (an observer's view): what the AI has the unit do.

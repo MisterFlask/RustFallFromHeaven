@@ -459,7 +459,7 @@ impl Cai {
                 // if building a combat unit, and we have no defenders, keep building it
                 if let Some(production_unit) = g.city_production_unit(c) {
                     if g.plot_get_num_defenders(g.city_plot(c), p) == 0 {
-                        if g.d.units[production_unit].combat > 0 {
+                        if g.d.units[production_unit].attack_rating() > 0 {
                             keep(g);
                             return;
                         }
@@ -1256,7 +1256,7 @@ impl Cai {
             if best_air_value + best_missile_value > 0 {
                 aircraft_have = self.player_ai_get_num_ai_units(g, p, UnitAIType::UNITAI_ATTACK_AIR) + self.player_ai_get_num_ai_units(g, p, UnitAIType::UNITAI_DEFENSE_AIR) + self.player_ai_get_num_ai_units(g, p, UnitAIType::UNITAI_MISSILE_AIR);
                 if let Some(u) = best_attack_aircraft {
-                    aircraft_need = (2 + num_cities * (3 * g.d.units[u].air_combat)) / (2 * g.best_land_unit_combat().max(1));
+                    aircraft_need = (2 + num_cities * (3 * g.d.units[u].air_combat)) / (2 * (g.best_land_unit_rating() / 10).max(1));
                     let best_defense_value = self.player_ai_best_city_unit_ai_value(g, p, UnitAIType::UNITAI_DEFENSE_AIR, c, &mut None);
                     if best_defense_value > 0 && best_air_value > best_defense_value {
                         aircraft_need *= 3;

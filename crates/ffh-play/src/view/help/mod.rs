@@ -76,7 +76,7 @@ pub fn engagement_notes(d: &GameData, kind: &str, i: usize) -> Option<String> {
     let (first_strikes, withdrawal, collateral, blitz, limit) = match kind {
         "UnitType" => {
             let u = &d.units[UnitType::from_usize(i)];
-            let limited = u.combat_limit < d.defines.max_hit_points && u.combat > 0 && !u.only_defensive;
+            let limited = u.combat_limit < d.defines.max_hit_points && u.attack_rating() > 0 && !u.only_defensive;
             let blitz = u.free_promotions.iter_enumerated().any(|(p, &free)| free && d.promotions[p].blitz);
             (u.first_strikes + u.chance_first_strikes > 0, u.withdrawal_probability > 0, u.collateral_damage > 0, blitz, limited)
         }

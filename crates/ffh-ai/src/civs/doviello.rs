@@ -57,7 +57,7 @@ fn lowest_buildable_tier(g: &Game, p: PlayerId) -> Option<i32> {
         .keys()
         .filter(|&ut| {
             let i = &d.units[ut];
-            i.combat > 0 && i.domain_type == Some(DomainType::DOMAIN_LAND) && i.production_cost > 0 && g.player_can_train(p, ut, false, false, false)
+            i.attack_rating() > 0 && i.domain_type == Some(DomainType::DOMAIN_LAND) && i.production_cost > 0 && g.player_can_train(p, ut, false, false, false)
         })
         .map(|ut| d.units[ut].tier)
         .min()

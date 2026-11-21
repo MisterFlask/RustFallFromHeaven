@@ -10,7 +10,7 @@
 //! squad), and holds its cell only while it is on that plot.
 //!
 //! **Auto and hand-set.** A squad is Auto until the player moves a unit in or out of it: an Auto
-//! squad is arranged by the rules' auto formation (its strength order by each unit's strength)
+//! squad is arranged by the rules' auto formation (its strength order by each unit's attack rating)
 //! whenever it is read. A hand-set squad keeps its
 //! units' cells (`Unit::squad_cell`); a unit that dies leaves its cell empty.
 //!
@@ -224,11 +224,11 @@ impl Game {
     }
 
     /// The auto formation of `units` as a squad (the rules' auto formation, as a defender, its
-    /// strength order by each unit's strength: cheap, and the same on every plot), in cells.
+    /// strength order by each unit's attack rating: cheap, and the same on every plot), in cells.
     fn squad_auto_cells(&self, layout: &mut SquadLayout, units: &[UnitId], _plot: PlotIdx) {
         layout.cells = [None; SQUAD_CELLS];
         let slots = self.engage_squad_slots();
-        let placed = self.engage_auto_formation_by(units, Side::Defender, &slots, |u| self.unit_base_combat_str(u) as i64);
+        let placed = self.engage_auto_formation_by(units, Side::Defender, &slots, |u| self.unit_attack_rating(u) as i64);
         for p in placed {
             let size = self.squad_size(p.unit);
             layout.put(p.unit, p.row * SQUAD_LANES + p.lane, size);

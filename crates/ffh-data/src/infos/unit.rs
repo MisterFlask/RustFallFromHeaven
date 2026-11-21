@@ -277,10 +277,13 @@ pub struct PromotionInfo {
     pub py_per_turn: String,
     pub promotion_combat_type: Option<PromotionType>,
     pub promotion_combat_mod: i32,
-    /// C++ `getBonusAffinity(i)` (`<BonusAffinities>`).
+    /// C++ `getBonusAffinity(i)` (`<BonusAffinities>`): attack and defence points per resource of
+    /// the bonus available to the owner (typed attack points for a bonus with a damage type);
+    /// FfH's values in strength points, here on the stat sheet's scale.
     pub bonus_affinity: IdxVec<BonusType, i32>,
-    /// C++ `getDamageTypeCombat(i)` (`<DamageTypeCombats>`).
-    pub damage_type_combat: IdxVec<DamageType, i32>,
+    /// Its typed attack points by damage type (`damage_type_attacks`; FfH's `<DamageTypeCombats>`
+    /// in strength points, here on the stat sheet's scale, ten a strength point).
+    pub damage_type_attack: IdxVec<DamageType, i32>,
     /// C++ `getDamageTypeResist(i)` (`<DamageTypeResists>`).
     pub damage_type_resist: IdxVec<DamageType, i32>,
     // ---- this game's own: the great-person cards' keys (docs/CARDS.md, section 2) ----
@@ -307,16 +310,6 @@ impl PromotionInfo {
     /// Its defence's percentage (`iCombatPercentDefense`).
     pub fn combat_percent_defense(&self) -> i32 {
         self.stat_changes[StatType::Defense.idx()].percent
-    }
-
-    /// C++ `getExtraCombatStr()`: its attack's points in strength points (tens).
-    pub fn extra_combat_str(&self) -> i32 {
-        self.stat_changes[StatType::Attack.idx()].flat / 10
-    }
-
-    /// C++ `getExtraCombatDefense()`: its defence's points in strength points (tens).
-    pub fn extra_combat_defense(&self) -> i32 {
-        self.stat_changes[StatType::Defense.idx()].flat / 10
     }
 }
 
@@ -450,7 +443,7 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         py_per_turn: rd.string("py_per_turn"),
         promotion_combat_mod: rd.int("promotion_combat_mod"),
         bonus_affinity: rd.pairs_int::<BonusType>("bonus_affinities", 0),
-        damage_type_combat: rd.pairs_int::<DamageType>("damage_type_combats", 0),
+        damage_type_attack: rd.pairs_int::<DamageType>("damage_type_attacks", 0),
         damage_type_resist: rd.pairs_int::<DamageType>("damage_type_resists", 0),
         first_melee_pattern: crate::infos::read_first_melee_pattern(rd, &rd.string("type")),
         heal_behind: rd.int("heal_behind"),
@@ -731,7 +724,10 @@ pub struct UnitInfo {
     pub terrain_impassable: IdxVec<TerrainType, bool>,
     /// C++ `getFeatureImpassable(i)` (`<FeatureImpassables>`).
     pub feature_impassable: IdxVec<FeatureType, bool>,
-    pub combat: i32,
+    /// A ship's (or another type without a stat sheet) strength in the naval duel (`strength`;
+    /// C++ `getCombat()`). Land units have none: they fight with their stat sheet (`stats`;
+    /// docs/UNIT_STATS.md) and have no strength (0); read [`Self::attack_rating`] and its siblings.
+    pub strength: i32,
     pub combat_limit: i32,
     pub air_combat: i32,
     pub air_combat_limit: i32,
@@ -815,7 +811,9 @@ pub struct UnitInfo {
     pub immune_to_defensive_strike: bool,
     pub never_obsolete: bool,
     pub no_war_weariness: bool,
-    pub combat_defense: i32,
+    /// A ship's defence strength (`strength_defense`; C++ `getCombatDefense()`); 0 for land units,
+    /// as [`Self::strength`].
+    pub strength_defense: i32,
     pub defensive_strike_chance: i32,
     pub defensive_strike_damage: i32,
     pub duration_from_combat: i32,
@@ -851,9 +849,12 @@ pub struct UnitInfo {
     pub py_post_combat_lost: String,
     /// Python callback after this unit wins a combat (`<PythonPostCombatWon>`).
     pub py_post_combat_won: String,
-    /// C++ `getDamageTypeCombat(i)` (`<DamageTypeCombats>`).
-    pub damage_type_combat: IdxVec<DamageType, i32>,
-    /// C++ `getBonusAffinity(i)` (`<BonusAffinities>`).
+    /// Its typed attack points by damage type (`damage_type_attacks`; FfH's `<DamageTypeCombats>`
+    /// in strength points, here on the stat sheet's scale, ten a strength point).
+    pub damage_type_attack: IdxVec<DamageType, i32>,
+    /// C++ `getBonusAffinity(i)` (`<BonusAffinities>`): attack and defence points per resource of
+    /// the bonus available to the owner (typed attack points for a bonus with a damage type);
+    /// FfH's values in strength points, here on the stat sheet's scale.
     pub bonus_affinity: IdxVec<BonusType, i32>,
     // ---- Sephi AI addon ----
     /// C++ `isAIblockExplore()`.
@@ -923,6 +924,40 @@ pub struct UnitInfo {
     /// `heal_building_class`: it heals only in a city of its team that has a building of this
     /// class.
     pub heal_building_class: Option<BuildingClassType>,
+}
+
+impl UnitInfo {
+    /// Its type's attack on the stat sheet's scale (docs/UNIT_STATS.md, "Ratings"): the sheet's
+    /// attack (a ship's strength x10), plus its typed attack points. A unit's own is
+    /// `Game::unit_attack_rating`.
+    pub fn attack_rating(&self) -> i32 {
+        let own = match self.stats {
+            Some(sheet) => sheet[StatType::Attack.idx()],
+            None => self.strength * 10,
+        };
+        own + self.damage_type_attack.iter().sum::<i32>()
+    }
+
+    /// Its type's defence on the stat sheet's scale: the sheet's defence (a ship's defence
+    /// strength x10), plus its typed attack points (FfH counts typed strength on defence too).
+    pub fn defense_rating(&self) -> i32 {
+        let own = match self.stats {
+            Some(sheet) => sheet[StatType::Defense.idx()],
+            None => self.strength_defense * 10,
+        };
+        own + self.damage_type_attack.iter().sum::<i32>()
+    }
+
+    /// Its type's rating: the higher of its attack and defence ratings. A number for comparing
+    /// units' might (rules that pick the strongest unit, the AI's estimates); never shown.
+    pub fn rating(&self) -> i32 {
+        self.attack_rating().max(self.defense_rating())
+    }
+
+    /// Whether units of the type fight: an attack or a defence above 0 (FfH: strength above 0).
+    pub fn fights(&self) -> bool {
+        self.rating() > 0
+    }
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -1025,7 +1060,7 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         espionage_points: rd.int("espionage_points"),
         terrain_impassable: rd.pairs_bool::<TerrainType>("terrain_impassables"),
         feature_impassable: rd.pairs_bool::<FeatureType>("feature_impassables"),
-        combat: rd.int("combat"),
+        strength: rd.int("strength"),
         combat_limit: rd.int("combat_limit"),
         air_combat: rd.int("air_combat"),
         air_combat_limit: rd.int("air_combat_limit"),
@@ -1082,7 +1117,7 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         immune_to_defensive_strike: rd.bool("immune_to_defensive_strike"),
         never_obsolete: rd.bool("never_obsolete"),
         no_war_weariness: rd.bool("no_war_weariness"),
-        combat_defense: rd.int("combat_defense"),
+        strength_defense: rd.int("strength_defense"),
         defensive_strike_chance: rd.int("defensive_strike_chance"),
         defensive_strike_damage: rd.int("defensive_strike_damage"),
         duration_from_combat: rd.int("duration_from_combat"),
@@ -1108,7 +1143,7 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         withdrawl_prob_defensive: rd.int("withdrawl_prob_defensive"),
         py_post_combat_lost: rd.string("python_post_combat_lost"),
         py_post_combat_won: rd.string("python_post_combat_won"),
-        damage_type_combat: rd.pairs_int::<DamageType>("damage_type_combats", 0),
+        damage_type_attack: rd.pairs_int::<DamageType>("damage_type_attacks", 0),
         bonus_affinity: rd.pairs_int::<BonusType>("bonus_affinities", 0),
         // ---- Sephi AI addon ----
         ai_block_explore: rd.bool("ai_block_explore"),

@@ -217,8 +217,8 @@ pub fn effects(d: &GameData, bonus: BonusType) -> String {
     // the strength of the units (and of the holders of the promotions) with one, or to their
     // combat of its damage type.
     let strength = match damage_type {
-        Some(t) => format!(" {} combat", display(d, *t)),
-        None => "[ICON_STRENGTH]".to_string(),
+        Some(t) => format!(" {} attack", display(d, *t)),
+        None => " attack and defense".to_string(),
     };
     // One line, without the units' names: the least and the most a unit or a promotion has.
     let affinity: Vec<i32> = d.units.keys().map(|u| d.units[u].bonus_affinity[bonus]).chain(d.promotions.keys().map(|p| d.promotions[p].bonus_affinity[bonus])).filter(|&n| n != 0).collect();
@@ -359,10 +359,10 @@ mod tests {
         let mana = bonus("BONUS_MANA");
         assert!(mana.contains("[ICON_BULLET]Cannot be connected as it is") && !mana.contains("turns it into"), "{mana}");
         let fire = bonus("BONUS_MANA_FIRE");
-        for part in ["[ICON_BULLET]Units with an affinity for it: +1 Fire combat for each one you have", "[ICON_BULLET]Connected by [COLOR_HIGHLIGHT_TEXT]Fire Node[COLOR_REVERT]"] {
+        for part in ["[ICON_BULLET]Units with an affinity for it: +10 Fire attack for each one you have", "[ICON_BULLET]Connected by [COLOR_HIGHLIGHT_TEXT]Fire Node[COLOR_REVERT]"] {
             assert!(fire.contains(part), "{part}: {fire}");
         }
-        assert!(bonus("BONUS_MANA_SUN").contains("Units with an affinity for it: +1 to +2 Fire combat for each one you have"));
+        assert!(bonus("BONUS_MANA_SUN").contains("Units with an affinity for it: +10 to +20 Fire attack for each one you have"));
         assert!(bonus("BONUS_MANA_NATURE").contains("Double Production Speed of [COLOR_PROJECT_TEXT]Genesis[COLOR_REVERT]"));
         let body = bonus("BONUS_MANA_BODY");
         assert!(body.contains("[ICON_BULLET]+5% to heal rate of friendly units within your borders") && body.contains("Benefits of this resource are cumulative"), "{body}");

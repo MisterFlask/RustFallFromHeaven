@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import * as St from "../app/stacks.js";
 
 test("the head of a stack and its state", () => {
-  const info = { 1: { hero: false, combat: "MELEE", strength: 3 }, 2: { hero: true, combat: "MELEE", strength: 6 }, 3: { hero: false, combat: "NONE", strength: 0 } };
+  const info = { 1: { hero: false, combat: "MELEE", rating: 30 }, 2: { hero: true, combat: "MELEE", rating: 60 }, 3: { hero: false, combat: "NONE", rating: 0 } };
   const acts = ["ACTIVITY_AWAKE", "ACTIVITY_HOLD", "ACTIVITY_SLEEP", "ACTIVITY_HEAL", "ACTIVITY_SENTRY"];
   const ctx = (extra = {}) => ({ me: 0, selected: [], activity: (i) => acts[i], unitInfo: (t) => info[t], automated: () => false, facing: (id) => (id === 11 ? "left" : "right"), ...extra });
   // Own units: the first that can move; moves, mark, hero, count.
@@ -46,11 +46,11 @@ test("the head of a stack and its state", () => {
   assert.equal(St.stackState([], ctx()), null);
 });
 
-test("the unit every map draws for a stack: stackHead rates units by their type's combat", () => {
-  const data = { tables: { UnitType: [{ type: "UNIT_WORKER", combat: 0 }, { type: "UNIT_AXEMAN", combat: 5 }] } };
-  assert.equal(St.unitStrength(data, { type: 1 }), 5);
-  assert.equal(St.unitStrength(data, { type: 9 }), 0, "an unknown type");
-  assert.equal(St.unitStrength(null, { type: 1 }), 0, "no data yet");
+test("the unit every map draws for a stack: stackHead rates units by their type's rating", () => {
+  const data = { tables: { UnitType: [{ type: "UNIT_WORKER", rating: 0 }, { type: "UNIT_AXEMAN", rating: 50 }] } };
+  assert.equal(St.unitRating(data, { type: 1 }), 50);
+  assert.equal(St.unitRating(data, { type: 9 }), 0, "an unknown type");
+  assert.equal(St.unitRating(null, { type: 1 }), 0, "no data yet");
   const units = [
     { id: 1, owner: 2, type: 0, moves: 60 },
     { id: 4, owner: 2, type: 1, moves: 60 },

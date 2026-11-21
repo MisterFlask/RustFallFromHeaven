@@ -113,7 +113,7 @@ fn show(g: &Game, w: &Watch) -> String {
             let Some(c) = g.map.plot_xy(x, y).and_then(|q| g.map.plots[q].plot_city) else { return format!("city {x},{y}: none") };
             let city = &g.cities[c];
             let plot = g.city_plot(c);
-            let def: Vec<UnitId> = g.map.plots[plot].units.iter().copied().filter(|&u| g.units[u].owner == city.owner && g.d.units[g.units[u].unit_type].combat > 0).collect();
+            let def: Vec<UnitId> = g.map.plots[plot].units.iter().copied().filter(|&u| g.units[u].owner == city.owner && g.d.units[g.units[u].unit_type].attack_rating() > 0).collect();
             let health = if def.is_empty() { 0 } else { def.iter().map(|&u| hp(g, u)).sum::<i32>() / def.len() as i32 };
             format!("city {x},{y}: {} size {} defenders {} (health {}%) defense damage {}", civ(g, city.owner), city.population, def.len(), health, city.defense_damage)
         }
@@ -125,7 +125,7 @@ fn show(g: &Game, w: &Watch) -> String {
             if !pl.alive {
                 return format!("{}: dead", civ(g, p));
             }
-            let army = pl.units.iter().filter(|&&u| g.d.units[g.units[u].unit_type].combat > 0).count();
+            let army = pl.units.iter().filter(|&&u| g.d.units[g.units[u].unit_type].attack_rating() > 0).count();
             let team = pl.team;
             let wars: Vec<String> = g.team_ids().into_iter().filter(|&t| t != team && g.team_is_alive(t) && !g.team_is_barbarian(t) && g.at_war(team, t)).map(|t| format!("t{}", t.0)).collect();
             format!(
@@ -240,7 +240,7 @@ fn facts(g: &Game, w: &Watch, area_players: &[PlayerId]) -> Vec<(String, Val)> {
             if let Some(c) = c {
                 let city = &g.cities[c];
                 let plot = g.city_plot(c);
-                let def: Vec<UnitId> = g.map.plots[plot].units.iter().copied().filter(|&u| g.units[u].owner == city.owner && g.d.units[g.units[u].unit_type].combat > 0).collect();
+                let def: Vec<UnitId> = g.map.plots[plot].units.iter().copied().filter(|&u| g.units[u].owner == city.owner && g.d.units[g.units[u].unit_type].attack_rating() > 0).collect();
                 v.push(("owner".into(), Str(format!("p{}", city.owner.0))));
                 v.push(("owner_civ".into(), Str(civ_name(g, city.owner))));
                 v.push(("size".into(), Num(city.population as i64)));
@@ -260,7 +260,7 @@ fn facts(g: &Game, w: &Watch, area_players: &[PlayerId]) -> Vec<(String, Val)> {
             }
             let pl = &g.players[p];
             let alive = pl.alive;
-            let army = pl.units.iter().filter(|&&u| g.d.units[g.units[u].unit_type].combat > 0).count();
+            let army = pl.units.iter().filter(|&&u| g.d.units[g.units[u].unit_type].attack_rating() > 0).count();
             let team = pl.team;
             let wars = if alive { g.team_ids().filter(|&t| t != team && g.team_is_alive(t) && !g.team_is_barbarian(t) && g.at_war(team, t)).count() } else { 0 };
             v.push(("alive".into(), Bool(alive)));

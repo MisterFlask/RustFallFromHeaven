@@ -38,7 +38,7 @@ impl Game {
         self.units.contains(u)
             && self.units[u].owner == p
             && self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
-            && self.d.units[self.units[u].unit_type].combat > 0
+            && self.d.units[self.units[u].unit_type].attack_rating() > 0
             && !self.unit_is_hero(u)
     }
 
