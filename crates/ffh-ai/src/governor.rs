@@ -21,9 +21,6 @@
 //! ships...); the ladder's fillers wait for the governor's next choice, and there an ordinary
 //! building the ladder names gives way to a wonder it ranks nearly as high. A city whose garrison
 //! is missing or overwhelmed drops its empire orders for the governor's defender.
-//!
-//! Cultural channels are the civilization's, not its governors' (culture.rs plans them in
-//! governed cities too).
 
 use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;

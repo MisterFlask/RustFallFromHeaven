@@ -41,8 +41,9 @@
   {"type": "MEMORY_SOMNIUM_NEGATIVE", "description": "TXT_KEY_MEMORY_SOMNIUM_NEGATIVE"},
   {"type": "MEMORY_SOMNIUM_DELAY", "description": "TXT_KEY_MEMORY_SOMNIUM"},
   // This game's own (docs/PORTING.md, "Changes from FFH2"; tools/gen_enums.py EXTRA_MEMBERS): a
-  // city taken in battle, a House split by a rival's courtship (docs/PERSONS.md, "The fourth
-  // build", rule 4), and a House courted by a rival's Court channel (rule 7).
+  // city taken in battle. MEMORY_SPLIT_HOUSE and MEMORY_COURTED_HOUSE belonged to the retired
+  // Houses and cultural channels: no rule records them; they stay while the leaders' data
+  // (leader_heads.jsonc, cards/zz*_minor_leaders.jsonc) lists them.
   {"type": "MEMORY_TOOK_CITY", "description": "TXT_KEY_MEMORY_TOOK_CITY"},
   {"type": "MEMORY_SPLIT_HOUSE", "description": "TXT_KEY_MEMORY_SPLIT_HOUSE"},
   {"type": "MEMORY_COURTED_HOUSE", "description": "TXT_KEY_MEMORY_COURTED_HOUSE"}

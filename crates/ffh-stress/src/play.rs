@@ -198,9 +198,8 @@ pub fn run_caught(s: &Settings) -> Outcome {
         play(s, &mut g);
         if let Some(j) = g.telemetry_json() {
             println!("TELEMETRY\t{}", j.replace('\n', " "));
-            // Player slots at the end (a House founded is a player of its own) and the Houses.
-            let houses = g.player_ids().filter(|&p| g.players[p].alive && g.players[p].house.is_some()).count();
-            println!("SLOTS\t{}\thouses={houses}", g.player_ids().count());
+            // Player slots at the end (a card's new civilization is a player of its own).
+            println!("SLOTS\t{}", g.player_ids().count());
         }
         Ok((end_state(&g), g.calculate_sync_checksum()))
     });

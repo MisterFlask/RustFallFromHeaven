@@ -352,21 +352,6 @@ impl Game {
         }
     }
 
-    /// A cultural channel event (docs/CULTURE.md), counted per action under `cat`:
-    /// `culture_channel` (set), `culture_channel_end`, `culture_spread` (a religion spread). The
-    /// target is a player (a House's player for Court and Guard).
-    pub(crate) fn tel_culture(&self, p: PlayerId, cat: &'static str, action: CulturalActionType, target: PlayerId, value: i64) {
-        if !self.telemetry.on() {
-            return;
-        }
-        let name = self.d.cultural_actions[action].base.type_.as_str();
-        let turn = self.game_turn();
-        self.telemetry.with(|t| {
-            t.count(p, cat, name, value);
-            t.event(|| ev(turn, "culture", p).s("how", cat).s("action", name).i("target", target.0 as i64).end());
-        });
-    }
-
     /// A marching recruit (docs/ARMIES.md): `sent` (to an army or a garrison; turns: the estimated
     /// march), `arrived`, `diverted`, `stopped` (no city it can reach), `killed` (turns: since it
     /// set out); counted as `march` by kind, the sum the turns.
@@ -390,48 +375,6 @@ impl Game {
         self.telemetry.with(|t| {
             t.count(p, "requisition", kind, 1);
             t.event(|| ev(turn, "requisition", p).s("how", kind).end());
-        });
-    }
-
-    /// Houses (docs/PERSONS.md): `kind` `granted` (house / founded), `request` (issued / met /
-    /// refused), `state` (Friendly / Pleased / Cautious / Annoyed / Furious), `record` (vassal /
-    /// capitulated: a vassal became a House; ended; freed), `seceded` (ultimatum / civil_war /
-    /// held), `levy` (placed), `ultimatum` (accepted / refused), `split` (split / no_leader: the
-    /// third build's split; courted / courted_whole / courted_held / courted_no_leader: a rival's
-    /// courtship reached the requirement, the fourth build's rule 4); counted as `house_<kind>` by
-    /// what, for the liege.
-    pub(crate) fn tel_house(&self, p: PlayerId, kind: &'static str, what: &'static str) {
-        if !self.telemetry.on() {
-            return;
-        }
-        let turn = self.game_turn();
-        self.telemetry.with(|t| {
-            let key = match kind {
-                "granted" => "house_granted",
-                "request" => "house_request",
-                "state" => "house_state",
-                "seceded" => "house_seceded",
-                "levy" => "house_levy",
-                // the third build, part 2A
-                "ultimatum" => "house_ultimatum",
-                "split" => "house_split",
-                _ => "house_record",
-            };
-            t.count(p, key, what, 1);
-            t.event(|| ev(turn, "house", p).s("how", kind).s("what", what).end());
-        });
-    }
-
-    /// A House's tribute paid to its liege `p` (docs/PERSONS.md; gold only since the third build,
-    /// rule 10): counted as `house_tribute` `gold` (the amount); the event `tribute` with it.
-    pub(crate) fn tel_tribute(&self, p: PlayerId, gold: i32) {
-        if !self.telemetry.on() {
-            return;
-        }
-        let turn = self.game_turn();
-        self.telemetry.with(|t| {
-            t.count(p, "house_tribute", "gold", gold as i64);
-            t.event(|| ev(turn, "tribute", p).i("gold", gold as i64).end());
         });
     }
 

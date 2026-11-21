@@ -526,9 +526,6 @@ impl Session {
                 if let (Action::ImplementDeal { .. } | Action::AgreeLoan { .. }, CmdOk::Applied { accepted, .. }) = (&action, &mut ok) {
                     *accepted = Some(true);
                 }
-                if let (Action::OfferHouse { accept, .. }, CmdOk::Applied { accepted, .. }) = (&action, &mut ok) {
-                    *accepted = Some(*accept);
-                }
                 Ok(ok)
             }
         }

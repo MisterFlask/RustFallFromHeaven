@@ -79,8 +79,6 @@ pub struct Game {
     pub armies: Slab<ArmyId, crate::army::Army>,
     /// This game's squads (docs/ENGAGEMENTS.md, "Squads"; `army/squad.rs`).
     pub squads: Slab<SquadId, crate::army::Squad>,
-    /// This game's Houses (docs/PERSONS.md). Owner lists: `Player::houses`.
-    pub houses: Slab<HouseId, crate::persons::House>,
     /// Engagement combat's battle reports, oldest first: those of the current and the previous
     /// turn and the last `ENGAGEMENT_REPORTS_KEPT` (`engagement/report.rs`; add with
     /// `battle_report_add`).
@@ -381,7 +379,6 @@ impl Game {
             deals: Slab::new(),
             armies: Slab::new(),
             squads: Slab::new(),
-            houses: Slab::new(),
             battle_reports: Vec::new(),
             battle_report_next: 0,
             map_rand: Rng::new(0),

@@ -199,7 +199,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `tactic_next`, `City::garrison_tactic`, `garrison_tactic_next`, no battle log `tactics`).
 /// - 61: heroes return after they die and Resurrection brings back other units (unit/fallen.rs):
 ///   `Unit::wounds`, `Player::recovering`, `Player::fallen`; `PROMOTION_WOUNDED`.
-pub const FORMAT_VERSION: u32 = 61;
+/// - 62: cultural channels and Houses removed: no `Game::houses`, `Player::culture_memory`,
+///   `culture_channel`, `culture_inflow`, `houses`, `house_names`, `house`, `house_tribute`;
+///   `LogMark::House` and `LogTag::House` gone.
+pub const FORMAT_VERSION: u32 = 62;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -354,7 +357,6 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         deals,
         armies,
         squads,
-        houses,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -479,7 +481,6 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     deals.grow(slots);
     armies.grow(slots);
     squads.grow(slots);
-    houses.grow(slots);
     battle_reports.grow(slots);
     battle_report_next.grow(slots);
     map_rand.grow(slots);
@@ -603,7 +604,6 @@ fn write_game(g: &Game, w: &mut Writer) {
         deals,
         armies,
         squads,
-        houses,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -727,7 +727,6 @@ fn write_game(g: &Game, w: &mut Writer) {
     deals.write(w);
     armies.write(w);
     squads.write(w);
-    houses.write(w);
     battle_reports.write(w);
     battle_report_next.write(w);
     map_rand.write(w);
@@ -848,7 +847,6 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         deals: Persist::read(r)?,
         armies: Persist::read(r)?,
         squads: Persist::read(r)?,
-        houses: Persist::read(r)?,
         battle_reports: Persist::read(r)?,
         battle_report_next: Persist::read(r)?,
         map_rand: Persist::read(r)?,

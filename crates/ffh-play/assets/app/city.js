@@ -21,13 +21,11 @@ import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, isoIcon, queueIcon, refreshCityPanel } from "./isoui.js";
 import { plotState } from "./citywork.js";
 import { infoTip, moodTip, roomText } from "./infotips.js";
-import { cultureView } from "./culture.js";
 import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
 import { governanceView } from "./governors.js";
 import { addHelp } from "./help.js";
 import { keywordChips } from "./keywords.js";
 import { perkView } from "./perks.js";
-import { stateKey } from "./persons_mark.js";
 import { render as markup } from "./markup.js";
 
 // ---- Outposts in the help display (docs/NAVAL.md, section 9) -----------------------------------
@@ -856,9 +854,6 @@ function chooseModes([tapMode, setTapMode], always = false) {
 function buildLists(c, choose) {
   // A governed city lists what may be an empire order (the server's list); a click places one.
   const locked = !!c.governance?.governed;
-  // Houses (docs/PERSONS.md, "UI", part C): a House that takes no order now: its reason
-  // once over the lists (each entry disabled, the reason in its tooltip too).
-  const houseWhy = locked ? c.buildable.find((b) => b.why)?.why : null;
   const lists = GROUPS.map(([order, label]) => {
     const items = c.buildable.filter((b) => b.order === order);
     if (!items.length) return null;
@@ -873,7 +868,6 @@ function buildLists(c, choose) {
           // chip's hover or tap); a world ritual's rules line (its own facts: what it leaves, the
           // next cost), its own state (The Tithe's named rival), and why it cannot be chosen now.
           const ritual = b.ritual ?? null;
-          // (Houses: a House that takes no order now gives its reason, `b.why`.)
           const why = !b.enabled ? (ritual?.why ?? b.why ?? "Not possible now.") : null;
           return h(
             `button.build${ritual ? ".ritual-build" : ""}`,
@@ -896,8 +890,7 @@ function buildLists(c, choose) {
       ),
     );
   });
-  const whyCls = stateKey(c.governance?.house?.state) === "furious" ? "p.warn.build-refusal" : "p.caution.build-refusal";
-  return houseWhy ? [h(whyCls, houseWhy), ...lists] : lists;
+  return lists;
 }
 
 /** The full screen's production: the current build's progress, the queue, what a tap does, then
@@ -941,9 +934,7 @@ function screen(c, { task, choose, remove, overlay, tap, reload }) {
   // On the map (the isometric interface) the plots are worked there: citywork.js draws the
   // citizens on them; the dialog shows them as a grid.
   const plots = overlay ? null : plotGrid(c, task);
-  // This game's cultural channel after the city's numbers (its culture among them), above the
-  // buildings.
-  const left = h("div.city-col", siegeView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
+  const left = h("div.city-col", siegeView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), buildingsView(c, reload));
   // What to build first; then the orders, where trained units go (armies.js) and the governance.
   // An outpost builds nothing and has no governor: its lane and Raise to city instead.
   if (c.outpost) return [summaryView(c, reload, overlay), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];

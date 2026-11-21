@@ -50,8 +50,6 @@ pub enum Query {
     Civics { with: Vec<CivicType> },
     Religions,
     Players,
-    /// The Cultural Pressure panel (docs/CULTURE.md): the public cultural channels.
-    Culture,
     /// The Armies screen (docs/ARMIES.md): the human's armies and garrisons, with the units on
     /// their way to each.
     Armies,
@@ -64,13 +62,6 @@ pub enum Query {
     /// An empire order's second step: the governed cities able to build `order` `data`, with a
     /// suggestion (with `army`: the nearest).
     EmpireCities { order: ffh_data::OrderType, data: i32, army: Option<ArmyId> },
-    /// Houses (docs/PERSONS.md, "UI", part A): the Court screen.
-    Court,
-    /// Part B: the grant list of one of the human's cities.
-    Grant { city: CityId },
-    /// One House's card (docs/PERSONS.md, "The fourth build", rule 10): one of the human's, or a
-    /// House of another realm it has met (with its Court button).
-    House { house: HouseId },
     /// Engagement combat (docs/ENGAGEMENTS.md): the plan of an attack on `to` by `by` in
     /// `squad` (else the strongest squad that can attack; docs/ENGAGEMENTS.md, "Squads"): the pool, both formations, the slots and
     /// lanes, the ground, the defenders seen and their formation, and the forecast
@@ -150,7 +141,7 @@ impl Layer {
 
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
-    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "empire_items", "empire_cities", "court", "grant", "house", "engage_preview",
+    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "armies", "governors", "empire_items", "empire_cities", "engage_preview",
     "battle_log", "battle_reports", "trade", "trade_answer", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
     "sea", "seas", "place_menu",
@@ -174,14 +165,10 @@ pub const QUERY_FIELDS: &[(&str, &[&str])] = &[
     ("civics", &["with"]),
     ("religions", &[]),
     ("players", &[]),
-    ("culture", &[]),
     ("armies", &[]),
     ("governors", &[]),
     ("empire_items", &["army"]),
     ("empire_cities", &["order", "data", "army"]),
-    ("court", &[]),
-    ("grant", &["city"]),
-    ("house", &["house"]),
     ("engage_preview", &["army", "units", "from", "to", "squad"]),
     ("battle_log", &["report"]),
     ("battle_reports", &[]),
@@ -270,14 +257,10 @@ impl Query {
             Query::Civics { .. } => "civics",
             Query::Religions => "religions",
             Query::Players => "players",
-            Query::Culture => "culture",
             Query::Armies => "armies",
             Query::Governors => "governors",
             Query::EmpireItems { .. } => "empire_items",
             Query::EmpireCities { .. } => "empire_cities",
-            Query::Court => "court",
-            Query::Grant { .. } => "grant",
-            Query::House { .. } => "house",
             Query::EngagePreview { .. } => "engage_preview",
             Query::BattleLog { .. } => "battle_log",
             Query::BattleReports => "battle_reports",
@@ -324,7 +307,6 @@ impl Query {
             },
             "religions" => Query::Religions,
             "players" => Query::Players,
-            "culture" => Query::Culture,
             "armies" => Query::Armies,
             "governors" => Query::Governors,
             "empire_items" => Query::EmpireItems { army: j.opt("army")? },
@@ -333,9 +315,6 @@ impl Query {
                 let order = crate::names::field::<ffh_data::OrderType>(d, j, "order")?;
                 Query::EmpireCities { order, data: crate::command::order_data(d, j, order)?, army: j.opt("army")? }
             }
-            "court" => Query::Court,
-            "grant" => Query::Grant { city: j.req("city")? },
-            "house" => Query::House { house: j.req("house")? },
             "engage_preview" => Query::EngagePreview {
                 by: crate::command::EngageBy::from_json(j)?,
                 to: crate::command::plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
@@ -397,8 +376,6 @@ impl Query {
             Query::City { city } => j.with("city", *city),
             Query::EmpireItems { army } => j.with("army", *army),
             Query::EmpireCities { order, data, army } => j.with("order", Json::idx(*order)).with("data", *data).with("army", *army),
-            Query::Grant { city } => j.with("city", *city),
-            Query::House { house } => j.with("house", *house),
             Query::EngagePreview { by, to, squad } => {
                 by.put(j).with("to", crate::command::plot_json(to.0, to.1)).with("squad", *squad)
             }
@@ -502,14 +479,10 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::Civics { with } => view::player::civics(&v, with),
         Query::Religions => view::player::religions(&v),
         Query::Players => view::player::players(&v),
-        Query::Culture => view::culture::culture(&v),
         Query::Armies => view::armies::screen(&v),
         Query::Governors => view::governors::screen(&v),
         Query::EmpireItems { army } => view::governors::empire_items(&v, *army)?,
         Query::EmpireCities { order, data, army } => view::governors::empire_cities(&v, *order, *data, *army)?,
-        Query::Court => view::persons::court(&v),
-        Query::Grant { city } => view::persons::grant(&v, *city)?,
-        Query::House { house } => view::persons::house(&v, *house)?,
         Query::EngagePreview { by, to, squad } => view::battles::engage_preview(&v, by, *to, *squad)?,
         Query::BattleLog { report } => view::battles::battle_log(&v, *report)?,
         Query::BattleReports => view::battles::battle_reports(&v),
@@ -580,16 +553,12 @@ mod tests {
             Query::Civics { with: vec![CivicType::from_usize(2)] },
             Query::Religions,
             Query::Players,
-            Query::Culture,
             Query::Armies,
             Query::Governors,
             Query::EmpireItems { army: None },
             Query::EmpireItems { army: Some(ArmyId(2)) },
             Query::EmpireCities { order: ffh_data::OrderType::ORDER_TRAIN, data: 4, army: Some(ArmyId(1)) },
             Query::EmpireCities { order: ffh_data::OrderType::ORDER_CONSTRUCT, data: 7, army: None },
-            Query::Court,
-            Query::Grant { city: CityId(4) },
-            Query::House { house: HouseId(2) },
             Query::EngagePreview { by: crate::command::EngageBy::Army(ArmyId(2)), to: (3, 4), squad: None },
             Query::EngagePreview { by: crate::command::EngageBy::Units(vec![UnitId(1)]), to: (3, 4), squad: Some(ffh_core::ids::SquadId(3)) },
             Query::EngagePreview { by: crate::command::EngageBy::From(2, 4), to: (3, 4), squad: None },

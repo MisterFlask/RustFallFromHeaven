@@ -176,11 +176,8 @@ impl Game {
 
         let first_team = self.players[first_player].team;
         let second_team = self.players[second_player].team;
-        // Not in C++: a gift to a House (docs/PERSONS.md, "The fourth build", rule 3: the House
-        // gives nothing) makes no peace; a House's war is its liege's.
-        let house_gift = (second.is_empty() && self.players[second_player].house.is_some()) || (first.is_empty() && self.players[first_player].house.is_some());
 
-        if self.at_war(first_team, second_team) && !house_gift {
+        if self.at_war(first_team, second_team) {
             // free vassals of capitulating team before peace is signed
             if Deal::is_vassal_trade(second) {
                 for loop_team in self.team_ids() {
@@ -300,16 +297,10 @@ impl Game {
         Deal::is_vassal_trade(&deal.first_trades) || Deal::is_vassal_trade(&deal.second_trades)
     }
 
-    /// C++ `CvDeal::isUncancelableVassalDeal` (`by_player = None` is NO_PLAYER). Not in C++: a
-    /// House's vassal deal is cancelled by no one (docs/PERSONS.md, rule 7: the House leaves by
-    /// its ultimatum refused or an offer, its liege frees it with `player_free_house`).
+    /// C++ `CvDeal::isUncancelableVassalDeal` (`by_player = None` is NO_PLAYER).
     pub fn deal_is_uncancelable_vassal_deal(&self, d: DealId, by_player: Option<PlayerId>) -> bool {
         let deal = &self.deals[d];
         let (first, second) = (deal.first_player, deal.second_player);
-
-        if self.deal_is_vassal_deal(d) && (self.players[first].house.is_some() || self.players[second].house.is_some()) {
-            return true;
-        }
 
         for trade in &deal.first_trades {
             if Deal::is_vassal(trade.item_type) && by_player == Some(second) {
@@ -344,12 +335,6 @@ impl Game {
     /// read-only).
     pub fn deal_is_cancelable(&self, d: DealId, by_player: Option<PlayerId>) -> bool {
         if self.deal_is_uncancelable_vassal_deal(d, by_player) {
-            return false;
-        }
-
-        // Not in C++: a House's contract holds the resource its liege gives it (docs/PERSONS.md,
-        // "The third build", rule 6).
-        if self.deal_contract_refusal(d).is_some() {
             return false;
         }
 

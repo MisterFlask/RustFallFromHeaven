@@ -2,7 +2,7 @@
 // DOM). The server computes everything: this holds what it sent (status, view, map, static
 // data) with lookups, the selection, and what the player has set aside this turn.
 
-import { humanize, plotIndex, setColourPlayers } from "./tiles.js";
+import { humanize, plotIndex } from "./tiles.js";
 
 export const S = {
   /** `/api/data`: `{kinds, tables: {Kind: [{type, name, ...}]}}`. */
@@ -114,10 +114,7 @@ export function setView(view) {
   S.cities = new Map();
   S.players = new Map();
   S.unitsAt = new Map();
-  if (!view) {
-    setColourPlayers([]);
-    return;
-  }
+  if (!view) return;
   for (const u of view.units) {
     S.units.set(u.id, u);
     const k = plotKey(u.x, u.y);
@@ -127,12 +124,6 @@ export function setView(view) {
   for (const g of view.groups) S.groups.set(g.id, g);
   for (const c of view.cities) S.cities.set(c.id, c);
   for (const p of view.players) S.players.set(p.id, p);
-  // A House is drawn in its liege's colour (docs/PERSONS.md, "The second build", rule 1): from the
-  // players met, and from the Houses' cities (whose owner may not be met).
-  const pairs = [];
-  for (const c of view.cities) if (c.owner !== undefined && Number.isInteger(c.house?.liege)) pairs.push([c.owner, c.house.liege]);
-  for (const p of view.players) if (Number.isInteger(p.color_player)) pairs.push([p.id, p.color_player]);
-  setColourPlayers(pairs);
 }
 
 export function setMap(map) {
@@ -525,8 +516,6 @@ export function goldBreakdown(gp) {
   if (gp.maintenance) costs.push(["city maintenance", gp.maintenance]);
   if (gp.civics) costs.push(["civic upkeep", gp.civics]);
   if (gp.deals < 0) costs.push(["deals", -gp.deals]);
-  // A House's contract's gold a turn (docs/PERSONS.md, "The third build", rule 5 (f)).
-  for (const [what, gold] of gp.contracts ?? []) costs.push([what, gold]);
   if (gp.inflation) costs.push([`inflation (+${gp.inflation_rate}% on the costs)`, gp.inflation]);
   const sum = (l) => l.reduce((n, [, g]) => n + g, 0);
   return { income, costs, net: sum(income) - sum(costs) };

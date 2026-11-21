@@ -555,7 +555,6 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "hurries" => Json::Arr(hurries),
         "can_conscript" => g.city_can_conscript(c),
         "buildable" => buildable(v, c),
-        "cultural" => cultural(v, c),
         "recruit" => crate::view::armies::recruit(v, c),
         "governance" => crate::view::governors::city(v, c),
         // This game's outposts (docs/NAVAL.md, 9 and 10): the lane, starving, raising; null for a city.
@@ -565,13 +564,6 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     // taken off).
     crate::view::rituals::city_fields(g, c, &mut out);
     Ok(out)
-}
-
-/// The city's part in its owner's cultural channel (docs/CULTURE.md; docs/PERSONS.md, "The
-/// fourth build", rules 1 and 10): `view::culture::city_cultural`. The channel is chosen at the
-/// civilization's level, on the Culture screen.
-fn cultural(v: &Viewer, c: CityId) -> Json {
-    crate::view::culture::city_cultural(v, c)
 }
 
 /// City `c`'s Sentinels (docs/SIEGES.md): each one's HP left in percent (0: breached).

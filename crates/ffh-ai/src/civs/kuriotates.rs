@@ -1,8 +1,6 @@
 //! Kuriotates (`CvCity::init`): the Sprawling trait limits them to 3 full cities on a standard
 //! map (radius 3); past the limit a new city is a *settlement*: a city of radius 1 under every
-//! other rule (changed from FFH2 2026-11-20: docs/PORTING.md). A Kuriotate House holds only
-//! settlements (docs/PERSONS.md, rule 14), so the Crown's settlements beyond its limit of 3 go to
-//! Houses (`persons::choose_grant`). The ported C++ `AI_foundValue` already scores
+//! other rule (changed from FFH2 2026-11-20: docs/PORTING.md). The ported C++ `AI_foundValue` already scores
 //! settlement-sized sites (9 plots) for a sprawling player at its limit. What the AI does:
 //! - [`Kuriotates::production`] builds one settler at a time for a settlement site on the city's
 //!   landmass, from a full city of size 5+ (or at its happy cap) at peace;
@@ -13,8 +11,7 @@
 //!   without settlements, commerce 117 against 159); 5 plots out, a radius-1 settlement shares
 //!   none;
 //! - after losing a full city, the next city founded is a full one, but the generic settler step
-//!   counts settlements towards the limit and stops: a settler for a full city then (not for a
-//!   House: a House founds only settlements).
+//!   counts settlements towards the limit and stops: a settler for a full city then.
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -58,7 +55,7 @@ impl CivPlay for Kuriotates {
 fn full_city_settler(ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choice> {
     let p = g.cities[c].owner;
     let pl = &g.players[p];
-    if pl.max_cities <= 0 || threat > 0 || g.cities[c].settlement || g.city_is_occupation(c) || crate::persons::is_house(g, p) {
+    if pl.max_cities <= 0 || threat > 0 || g.cities[c].settlement || g.city_is_occupation(c) {
         return None;
     }
     let settlements = g.player_get_num_settlements(p);

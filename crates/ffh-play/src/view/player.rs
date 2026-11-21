@@ -5,7 +5,6 @@ use std::collections::BTreeSet;
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::persons::PersonsAct;
 use ffh_data::*;
 
 use crate::json::Json;
@@ -185,7 +184,7 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
             (false, true) => Json::from("direct"),
             _ => Json::Null,
         };
-        let mut proposed = crate::jobj! {
+        let proposed = crate::jobj! {
             "civics" => Json::Arr(set.iter().map(|&c| Json::opt_idx(c)).collect()),
             "changed" => changed,
             "valid" => valid,
@@ -195,12 +194,6 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
             // ruled directly; null: no change of who runs them.
             "rule_change" => rule_change,
         };
-        // Houses (docs/PERSONS.md, "UI", part I): what the set does to the Houses (`persons`),
-        // and the warning of a direct-rule civic while Houses stand.
-        if changed {
-            let civics: Vec<Option<CivicType>> = set.iter().copied().collect();
-            crate::view::house_marks::civics_preview(v, &civics, &mut proposed);
-        }
         j.set("proposed", proposed);
     }
     j
@@ -297,17 +290,11 @@ pub fn religions(v: &Viewer) -> Json {
             "our_holy_city" => g.player_has_holy_city(h, r),
             "our_cities" => pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count(),
             "can_convert" => g.player_can_convert(h, Some(r)),
-            // Houses (docs/PERSONS.md, "UI", part I): what converting does to the Houses.
-            "persons" => if g.player_can_convert(h, Some(r)) { crate::view::house_marks::act_preview(v, &PersonsAct::Convert(Some(r))) } else { Json::Arr(Vec::new()) },
         }
     });
     crate::jobj! {
         "state_religion" => Json::opt_idx(g.player_get_state_religion(h)),
         "can_convert_none" => g.player_can_convert(h, None),
-        // A House's contract that forbids a change of state religion (docs/PERSONS.md, "The third
-        // build", rule 6).
-        "convert_refusal" => g.player_contract_refusal(h, ffh_core::persons::ContractAct::ChangeReligion),
-        "persons_none" => if g.player_can_convert(h, None) { crate::view::house_marks::act_preview(v, &PersonsAct::Convert(None)) } else { Json::Arr(Vec::new()) },
         "conversion_timer" => pl.conversion_timer,
         "anarchy" => g.player_get_religion_anarchy_length(h),
         "religions" => Json::Arr(out.collect()),
@@ -340,39 +327,25 @@ pub fn players(v: &Viewer) -> Json {
                     return None;
                 };
                 // When the human may cancel it (Civ4: after `PEACE_TREATY_LENGTH` turns); never for
-                // a vassal deal the rules hold (a House's: docs/PERSONS.md, "The second build", rule
-                // 9; a capitulation), so no count runs for it.
+                // a vassal deal the rules hold (a capitulation), so no count runs for it.
                 let cancelable = g.deal_is_cancelable(id, Some(v.h));
                 let cancel_in = if cancelable || g.deal_is_uncancelable_vassal_deal(id, Some(v.h)) { 0 } else { g.deal_turns_to_cancel(id, Some(v.h)).max(0) };
-                // A House's contract holds a resource given (docs/PERSONS.md, "The third build",
-                // rule 6): why it cannot be cancelled.
-                let cancel_refusal = g.deal_contract_refusal(id);
-                Some(crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn, "cancelable" => cancelable, "cancel_in" => cancel_in, "cancel_refusal" => cancel_refusal })
+                Some(crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn, "cancelable" => cancelable, "cancel_in" => cancel_in })
             })
             .collect();
         j.set("deals", Json::Arr(deals));
         let can_war = t != v.team && g.team_can_declare_war(v.team, t);
         j.set("can_declare_war", can_war);
-        // A House's contract that forbids the war (docs/PERSONS.md, "The third build", rule 6).
-        j.set("war_refusal", if can_war || t == v.team { None } else { g.team_contract_refusal(v.team, ffh_core::persons::ContractAct::DeclareWar(t)) });
-        // Houses (docs/PERSONS.md, "UI", part I): what declaring war on it does to the Houses
-        // (the war dialog's lines; empty when nothing).
-        j.set("war_preview", if can_war { crate::view::house_marks::act_preview(v, &PersonsAct::DeclareWar(t)) } else { Json::Arr(Vec::new()) });
-        // Who the war brings in for certain, by the vassal rules (docs/PERSONS.md, "The second
-        // build", rule 7; the war dialog's `At war with you as well: ..` and `Your Houses join:
-        // ..`): its vassals (a House's: its liege and the liege's other vassals) and the human's,
-        // labels in player order; empty when it cannot be declared.
+        // Who the war brings in for certain, by the vassal rules (the war dialog's `At war with
+        // you as well: ..` and `Your vassals join: ..`): its vassals (a vassal's: its master and
+        // the master's other vassals) and the human's, labels in player order; empty when it
+        // cannot be declared.
         let (against, join) = if can_war { war_parties(g, v.team, t, None) } else { (Vec::new(), Vec::new()) };
         j.set("war_against", party_labels(g, &against));
         j.set("war_join", party_labels(g, &join));
         // What the declaration costs with them (the owner's decision, 2026-11-18): the war dialog's
         // `They remember it: attitude toward you -1 (fades).` (null when nothing).
         j.set("war_memory", if can_war { war_memory(g, v.h, t, &against) } else { None });
-        // A House not the human's (rule 9; the diplomacy list's second line): its state toward
-        // its own liege and its price to secede.
-        if let Some(hh) = g.player_house(p).filter(|&hh| g.players[g.houses[hh].owner].team != v.team) {
-            j.set("house_offer", house_offer(v, hh));
-        }
         // A crusade's Host (docs/CRUSADE.md): an army, not a civilization to talk to.
         j.set("crusade_host", g.player_is_crusade_host(p));
     }
@@ -380,12 +353,12 @@ pub fn players(v: &Viewer) -> Json {
 }
 
 /// The teams a war between teams `t` and `other` brings in, as `team_declare_war` propagates it
-/// by the vassal rules (docs/PERSONS.md, "The second build", rule 7: a vassal is at war with its
-/// master's enemies, and a war on a vassal is a war on its master): `(against, join)`, the teams
+/// by the vassal rules (a vassal is at war with its master's enemies, and a war on a vassal is a
+/// war on its master): `(against, join)`, the teams
 /// newly at war with `t` other than `other` (the target's vassals), and those newly at war with
 /// `other` other than `t` (`t`'s own vassals), by team id. As the rules: no war reaches a crusade's
-/// Host nor crosses a truce. `gone`: a vassal team that has left its master before the war (a
-/// House breaking away to become `t`'s: it is in neither list). Defensive pacts are left out:
+/// Host nor crosses a truce. `gone`: a vassal team that has left its master before the war (it
+/// is in neither list). Defensive pacts are left out:
 /// the human does not see the others' pacts (the war dialog says they may bring others in).
 pub fn war_parties(g: &Game, t: TeamId, other: TeamId, gone: Option<TeamId>) -> (Vec<TeamId>, Vec<TeamId>) {
     let is_vassal = |v: TeamId, m: TeamId| Some(v) != gone && g.teams[v].vassal[m];
@@ -412,25 +385,20 @@ pub fn war_parties(g: &Game, t: TeamId, other: TeamId, gone: Option<TeamId>) -> 
     (against, join)
 }
 
-/// The players of `teams` as the screens name a party (a House by its label, `House Arne`,
-/// `Malakim`; another by its civilization, `the Svartalfar`: a House's liege, when war is declared
-/// on the House), alive, in player order.
+/// The players of `teams` as the screens name a party (by its civilization, `the Svartalfar`, or
+/// the name it took, `Malakim`), alive, in player order.
 pub fn party_labels(g: &Game, teams: &[TeamId]) -> Json {
     Json::Arr(g.player_ids().into_iter().filter(|&p| g.players[p].alive && teams.contains(&g.players[p].team)).map(|p| Json::from(party_label(g, p))).collect())
 }
 
-/// Player `p` as the screens name a party: `House Arne`, `Malakim`, `the Svartalfar`.
+/// Player `p` as the screens name a party: `Malakim` (a name of its own), `the Svartalfar`.
 fn party_label(g: &Game, p: PlayerId) -> String {
-    match g.player_house(p) {
-        Some(h) => g.house_label(h),
-        None => {
-            let name = g.player_house_name(p);
-            if name == g.player_get_civilization_short_description(p) {
-                format!("the {name}")
-            } else {
-                name
-            }
-        }
+    let short = g.player_get_civilization_short_description(p);
+    let own = &g.setup.players[p.idx()].civ_description;
+    if own.is_empty() || *own == short {
+        format!("the {short}")
+    } else {
+        own.clone()
     }
 }
 
@@ -438,7 +406,7 @@ fn party_label(g: &Game, p: PlayerId) -> String {
 /// 2026-11-18): its leader remembers it (`MEMORY_DECLARED_WAR`, which fades) and its attitude
 /// toward the human `h` moves by ffh-ai's `memory_added`: `They remember it: attitude toward you
 /// -1 (fades).`; the parties the vassal rules bring in (`against`, [`war_parties`]) each remember
-/// it too, and those it moves are named: ` So do House Arne and House Vel.` Null when it moves
+/// it too, and those it moves are named: ` So do the Svartalfar and Malakim.` Null when it moves
 /// nothing (a human leader, the cap).
 pub fn war_memory(g: &Game, h: PlayerId, t: TeamId, against: &[TeamId]) -> Option<String> {
     use ffh_ai::diplomacy::memory_added;
@@ -463,18 +431,5 @@ fn and_list(items: &[String]) -> String {
         0 => String::new(),
         1 => items[0].clone(),
         n => format!("{} and {}", items[..n - 1].join(", "), items[n - 1]),
-    }
-}
-
-/// House `hh` (not the human's) as the diplomacy list's second line states it (docs/PERSONS.md,
-/// "The second build", rule 5; "The fourth build"): `{state, courting, courting_calc}`, its state
-/// toward its own liege and the human's courtship of it (`Game::house_courting_line`; null while it
-/// courts it not) with how its numbers are made (docs/PLAY_DESIGN.md, "Calculated numbers").
-fn house_offer(v: &Viewer, hh: HouseId) -> Json {
-    let g = v.g;
-    crate::jobj! {
-        "state" => g.house_state(hh).name(),
-        "courting" => g.house_courting_line(hh, v.h),
-        "courting_calc" => if g.house_courting_line(hh, v.h).is_some() { crate::view::culture::courtship_calc_json(v, &g.house_courtship_view(hh, v.h)) } else { Json::Null },
     }
 }

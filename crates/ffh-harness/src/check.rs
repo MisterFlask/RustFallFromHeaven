@@ -352,49 +352,4 @@ pub fn check(g: &Game) {
             }
         }
     }
-
-    // This game's Houses (docs/PERSONS.md, "The second build" and "The third build"): a House is
-    // a player of its own, the vassal of its liege: every House record's player is alive, no
-    // human, a vassal of its owner's team, and names the record (`Player::house`); every living
-    // vassal that is no human, whose master's leading player can have Houses, is a House.
-    for (h, house) in g.houses.iter() {
-        let hp = house.player;
-        if !g.players[hp].alive || g.players[hp].human {
-            fail(format!("House {h:?} of player {}: its player {} is dead or human", house.owner.0, hp.0));
-        }
-        if g.players[hp].house != Some(h) {
-            fail(format!("House {h:?}: its player {} names {:?}", hp.0, g.players[hp].house));
-        }
-        let (ht, ot) = (g.players[hp].team, g.players[house.owner].team);
-        if !g.teams[ht].vassal[ot] {
-            fail(format!("House {h:?}: player {} is not a vassal of player {}'s team", hp.0, house.owner.0));
-        }
-        if !g.players[house.owner].houses.contains(&h) {
-            fail(format!("House {h:?}: its liege {} does not list it", house.owner.0));
-        }
-    }
-    for p in g.player_ids() {
-        let pl = &g.players[p];
-        if let Some(h) = pl.house {
-            if g.houses.get(h).map_or(true, |house| house.player != p) {
-                fail(format!("player {} names House {h:?}, which is not its", p.0));
-            }
-        }
-        if pl.alive && !pl.human && pl.house.is_none() && g.team_is_a_vassal(pl.team) {
-            let master = g.team_ids().find(|&m| g.team_is_alive(m) && g.teams[pl.team].vassal[m]);
-            if let Some(owner) = master.and_then(|m| g.team_get_leader_id(m)) {
-                if g.player_has_houses(owner) {
-                    fail(format!("player {} is a vassal of player {} without a House", p.0, owner.0));
-                }
-            }
-        }
-    }
-    for p in g.player_ids() {
-        for &h in &g.players[p].houses {
-            let Some(house) = g.houses.get(h) else { fail(format!("player {} lists dead House {h:?}", p.0)) };
-            if house.owner != p {
-                fail(format!("player {} lists House {h:?} of player {}", p.0, house.owner.0));
-            }
-        }
-    }
 }

@@ -391,10 +391,6 @@ pub struct LeaderHeadInfo {
     pub freedom_appreciation: i32,
     pub favorite_civic: Option<CivicType>,
     pub favorite_religion: Option<ReligionType>,
-    /// This game's own (docs/CULTURE.md): how readily the AI turns culture against rivals, in
-    /// percent (100 = normal). XML `iCulturalAggression`; when absent, derived at load from
-    /// the leader's war eagerness and culture flavor (`GameData::derive`).
-    pub cultural_aggression: i32,
     /// This game's own (The Sundering, docs/CARDS.md section 4): a minor leader of this
     /// civilization, which no civilization lists and no game starts with. The Sundering may
     /// give a new faction of this civilization its minor leader.
@@ -406,8 +402,7 @@ pub struct LeaderHeadInfo {
     /// C++ `hasTrait(i)`.
     pub has_trait: IdxVec<TraitType, bool>,
     /// The leader's own traits in their authored order (the `traits` object's keys set to true, in
-    /// file order; a civilization's traits are not listed). A House's ambition reads the first one
-    /// (docs/PERSONS.md: ambition, a head's trait).
+    /// file order; a civilization's traits are not listed).
     pub traits: Vec<TraitType>,
     pub flavor_value: IdxVec<FlavorType, i32>,
     pub contact_rand: IdxVec<ContactType, i32>,
@@ -541,7 +536,6 @@ pub fn read_leader_head(rd: &Rd) -> LeaderHeadInfo {
         vassal_refuse_attitude_threshold: rd.rf("vassal_refuse_attitude_threshold"),
         favorite_civic: rd.rf("favorite_civic"),
         favorite_religion: rd.rf("favorite_religion"),
-        cultural_aggression: rd.int_or("cultural_aggression", -1),
         minor_leader_of: rd.rf("minor_leader_of"),
         preferred_breakaway: rd.bool("preferred_breakaway"),
         has_trait: rd.pairs_bool("traits"),

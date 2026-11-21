@@ -237,9 +237,8 @@ impl Game {
                 self.tel_autopsy_city_fell(p, old_city);
             }
         }
-        // Not in C++: a city taken in battle is remembered by its owner (and, the owner a House,
-        // by its liege: `player_add_memory`). A trade, a card, a grant or a break-away is no
-        // conquest (docs/PORTING.md, "Changes from FFH2").
+        // Not in C++: a city taken in battle is remembered by its owner (`player_add_memory`). A
+        // trade or a card is no conquest (docs/PORTING.md, "Changes from FFH2").
         if conquest {
             self.player_add_memory(old_owner, p, MemoryType::MEMORY_TOOK_CITY);
         }
@@ -841,10 +840,6 @@ impl Game {
         if self.telemetry.on() {
             self.tel_raze(p, city);
         }
-        // This game's Houses (docs/PERSONS.md): requests naming it are refused.
-        let plot = self.city_plot(city);
-        self.persons_city_razed(p, plot);
-
         let team = self.players[p].team;
 
         if let Some(highest_culture_player) = self.city_find_highest_culture(city) {
@@ -1223,6 +1218,19 @@ impl Game {
     /// C++ `CvPlayer::getNumSettlements` (FFH: cities that are settlements).
     pub fn player_get_num_settlements(&self, p: PlayerId) -> i32 {
         self.players[p].cities.iter().filter(|&&c| self.cities[c].settlement).count() as i32
+    }
+
+    /// Player `p`'s full cities (neither a settlement nor an outpost), `without` left out. A city
+    /// cap (`max_cities`, the Kuriotates) counts them.
+    pub fn player_full_cities(&self, p: PlayerId, without: Option<CityId>) -> i32 {
+        self.players[p].cities.iter().filter(|&&c| Some(c) != without && self.cities.get(c).is_some_and(|k| !k.settlement && !k.outpost)).count() as i32
+    }
+
+    /// Whether city `c`, coming to player `p` now (founded, captured, raised from an outpost), is
+    /// a settlement: `p` has a city cap and its other full cities reach it.
+    pub fn player_new_city_is_settlement(&self, p: PlayerId, c: CityId) -> bool {
+        let max_cities = self.players[p].max_cities;
+        max_cities != -1 && self.player_full_cities(p, Some(c)) >= max_cities
     }
 
     // ------------------------------------------------------------------ goody huts

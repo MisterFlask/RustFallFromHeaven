@@ -106,11 +106,6 @@ fn city_json(v: &Viewer, c: CityId, card: bool) -> Json {
     if card && governed {
         j.set("card", role_card(v, c));
     }
-    // Houses (docs/PERSONS.md, "UI", part E): the city's House (`{id, label, colour,
-    // state, turns}`; null: the Crown's). Left out for a human without Houses.
-    if let Some(house) = crate::view::house_marks::city_house_field(v, c) {
-        j.set("house", house);
-    }
     j
 }
 
@@ -121,8 +116,6 @@ pub fn city(v: &Viewer, c: CityId) -> Json {
     }
     let mut j = city_json(v, c, false);
     j.set("government", government(v.g, v.h).map(Json::idx));
-    // Houses (rule 13, part C): the Crown's: its grant, or why it cannot be granted.
-    crate::view::persons::governance_fields(v, c, &mut j);
     j
 }
 

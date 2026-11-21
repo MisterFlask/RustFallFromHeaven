@@ -108,9 +108,9 @@ WANT = {
 # Members this game adds after a C++ enum's own (rules of its own, not FFH2's; docs/PORTING.md
 # "Changes from FFH2"). They follow the C++ members in this order, so the XML lists them last.
 EXTRA_MEMBERS = {
-    # The AI's memory of wrongs (docs/PERSONS.md, the owner's decision of 2026-11-18): a city
-    # taken in battle; a House split by a rival's courtship (the fourth build, rule 4: the second
-    # build's House bought away, renamed in place); a House courted (the fourth build, rule 7).
+    # The AI's memory of wrongs (the owner's decision of 2026-11-18): a city taken in battle. The
+    # two House memories belonged to the retired Houses and cultural channels: nothing records
+    # them; they stay while the leaders' data lists them.
     "MemoryTypes": ["MEMORY_TOOK_CITY", "MEMORY_SPLIT_HOUSE", "MEMORY_COURTED_HOUSE"],
 }
 

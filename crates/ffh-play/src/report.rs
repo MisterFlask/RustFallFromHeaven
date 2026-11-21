@@ -156,15 +156,12 @@ impl MessageStore {
 /// A message's JSON with what ffh-core says it is, so that a client marks and links it without
 /// reading its wording: `kind: "engagement"` and its `report` (a battle's message), `kind:
 /// "ritual"` and its `verb` (a world ritual's news, docs/CARDS.md), and `mark: "city" | "loss" |
-/// "kill" | "retreat" | "house"` (a located message's map marker; absent: an event); `kind:
-/// "house"` and its `house` (a House's message, docs/PERSONS.md).
+/// "kill" | "retreat"` (a located message's map marker; absent: an event).
 pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
     let j = match e.tag {
-        LogTag::None if is_secession_text(&e.text) => j.with("kind", "secession"),
         LogTag::None => j,
         LogTag::Battle(id) => j.with("kind", "engagement").with("report", id),
         LogTag::Ritual(news) => j.with("kind", "ritual").with("verb", news.verb()),
-        LogTag::House(x) => j.with("kind", "house").with("house", x.0),
     };
     match e.mark {
         LogMark::Event => j,
@@ -172,19 +169,7 @@ pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
         LogMark::Loss => j.with("mark", "loss"),
         LogMark::Kill => j.with("mark", "kill"),
         LogMark::Retreat => j.with("mark", "retreat"),
-        LogMark::House => j.with("mark", "house"),
     }
-}
-
-/// Whether an untagged message is the news of a House breaking away or freed (docs/PERSONS.md,
-/// "The second build", rules 7 and 8), told to everyone who met the liege: the rules log them
-/// untagged (`Game::log.msg_to`), so the client's alerts know them by the rules' wording (`kind:
-/// "secession"`).
-pub fn is_secession_text(text: &str) -> bool {
-    text.starts_with("Civil war: ")
-        || (text.contains(" breaks away from the ") && text.ends_with(": war."))
-        || text.contains(" is freed by the ")
-        || text.contains(" ends: every city of it stands held by an army of the ")
 }
 
 /// The mark and the tag [`entry_fields`] wrote, read back (absent or unknown: the defaults).
@@ -195,11 +180,9 @@ pub fn entry_fields_from(j: &Json, e: &mut LogEntry) {
         Some("loss") => LogMark::Loss,
         Some("kill") => LogMark::Kill,
         Some("retreat") => LogMark::Retreat,
-        Some("house") => LogMark::House,
         _ => LogMark::Event,
     };
     e.tag = match s("kind").as_deref() {
-        Some("house") => j.get("house").and_then(Json::as_i64).and_then(|id| u32::try_from(id).ok()).map_or(LogTag::None, |id| LogTag::House(ffh_core::ids::HouseId(id))),
         Some("engagement") => j.get("report").and_then(Json::as_i64).and_then(|id| u32::try_from(id).ok()).map_or(LogTag::None, LogTag::Battle),
         Some("ritual") => match s("verb").as_deref() {
             Some("began") => LogTag::Ritual(RitualNews::Began),

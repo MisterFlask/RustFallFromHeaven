@@ -167,10 +167,9 @@ export function webglRenderer(page) {
 }
 
 /** A calculation's lines, flat, as the page's calc.js shows them in a tooltip (docs/PLAY_DESIGN.md
- *  4.9): a list of lines, or a courtship's parts in their order (`parts`: only those). */
-export function calcLines(calc, parts = ["requirement", "inflow", "reach", "gain", "guard", "turn"]) {
-  if (!calc) return [];
-  return Array.isArray(calc) ? calc.filter(Boolean) : parts.flatMap((k) => calc[k] ?? []).filter(Boolean);
+ *  4.9): a list of lines. */
+export function calcLines(calc) {
+  return Array.isArray(calc) ? calc.filter(Boolean) : [];
 }
 
 /** The calculation lines the page's tooltip shows now (null: no tooltip shown), then hides it. */

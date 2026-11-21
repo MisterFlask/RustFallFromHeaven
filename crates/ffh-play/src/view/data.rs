@@ -75,19 +75,6 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
                 j.set("effects", effects.join("[NEWLINE]"));
             }
         }
-        "CulturalActionType" => {
-            let a = &d.cultural_actions[CulturalActionType::from_usize(i)];
-            j.set("hostile", match a.hostile {
-                CultureHostility::Never => "never",
-                CultureHostility::Always => "always",
-                CultureHostility::DifferentStateReligion => "different_state_religion",
-            });
-            j.set("effect", match a.effect {
-                CultureEffect::SpreadReligion => "spread_religion",
-                CultureEffect::Court => "court",
-                CultureEffect::Guard => "guard",
-            });
-        }
         "FeatureType" => {
             let f = &d.features[FeatureType::from_usize(i)];
             j.set("yields", yields(&f.yield_change));
@@ -211,8 +198,7 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("core_effect_percent", d.building_tiers[BuildingTierType::from_usize(i)].core_effect_percent);
         }
         "KeywordType" => {
-            // A keyword's reminder text (keywords.jsonc), for a mark drawn on many screens (the
-            // loyalty states of the Houses: persons.js `stateMark`).
+            // A keyword's reminder text (keywords.jsonc), for a mark drawn on many screens.
             let k = KeywordType::from_usize(i);
             j.set("reminder", crate::view::keywords::reminder(d, k));
             // The keywords whose reminders show with it (itself first, then what it implies).

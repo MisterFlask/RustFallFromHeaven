@@ -18,66 +18,6 @@
     "reminder": "TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER",
     "implies": ["KEYWORD_RITUAL"]
   },
-  // Houses (docs/PERSONS.md, "The second build", rule 13; "The third build", rule 2; "UI", part
-  //     J): the Court screen, the grant list and the screens that show a House, a request, a
-  //     tribute or a levy carry these. The loyalty states are the game's attitude words, not
-  //     keywords: a state mark's tooltip is the attitude's own help (attitudes.jsonc). Ultimatum
-  //     is reserved for the third build's part 2.
-  {
-    "type": "KEYWORD_HOUSE",
-    "description": "TXT_KEY_KEYWORD_HOUSE",
-    "reminder": "TXT_KEY_KEYWORD_HOUSE_REMINDER"
-  },
-  {
-    "type": "KEYWORD_CROWN",
-    "description": "TXT_KEY_KEYWORD_CROWN",
-    "reminder": "TXT_KEY_KEYWORD_CROWN_REMINDER"
-  },
-  {
-    "type": "KEYWORD_REQUEST",
-    "description": "TXT_KEY_KEYWORD_REQUEST",
-    "reminder": "TXT_KEY_KEYWORD_REQUEST_REMINDER"
-  },
-  {
-    "type": "KEYWORD_ULTIMATUM",
-    "description": "TXT_KEY_KEYWORD_ULTIMATUM",
-    "reminder": "TXT_KEY_KEYWORD_ULTIMATUM_REMINDER"
-  },
-  {
-    "type": "KEYWORD_TRIBUTE",
-    "description": "TXT_KEY_KEYWORD_TRIBUTE",
-    "reminder": "TXT_KEY_KEYWORD_TRIBUTE_REMINDER"
-  },
-  {
-    "type": "KEYWORD_LEVY",
-    "description": "TXT_KEY_KEYWORD_LEVY",
-    "reminder": "TXT_KEY_KEYWORD_LEVY_REMINDER"
-  },
-  {
-    "type": "KEYWORD_CLAIMANT",
-    "description": "TXT_KEY_KEYWORD_CLAIMANT",
-    "reminder": "TXT_KEY_KEYWORD_CLAIMANT_REMINDER"
-  },
-  // Culture (docs/PERSONS.md, "The fourth build", rules 1, 2, 3, 4, 5 and 10; docs/CULTURE.md):
-  //     the Culture screen, the city screen's Culture section, a House's card and its trade table
-  //     carry these; the cultural actions' help names them.
-  {
-    "type": "KEYWORD_CHANNEL",
-    "description": "TXT_KEY_KEYWORD_CHANNEL",
-    "reminder": "TXT_KEY_KEYWORD_CHANNEL_REMINDER"
-  },
-  {
-    "type": "KEYWORD_COURT",
-    "description": "TXT_KEY_KEYWORD_COURT",
-    "reminder": "TXT_KEY_KEYWORD_COURT_REMINDER",
-    "implies": ["KEYWORD_CHANNEL"]
-  },
-  {
-    "type": "KEYWORD_GUARD",
-    "description": "TXT_KEY_KEYWORD_GUARD",
-    "reminder": "TXT_KEY_KEYWORD_GUARD_REMINDER",
-    "implies": ["KEYWORD_CHANNEL", "KEYWORD_COURT"]
-  },
   // The Armageddon counter (docs/CARDS.md, section 4): the top bar's counter tooltip carries these.
   {
     "type": "KEYWORD_ARMAGEDDON_COUNTER",

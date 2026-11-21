@@ -5,9 +5,10 @@
 // Leader Infos and AI Settings
 //
 // This game's own memory weights (docs/PORTING.md, "Changes from FFH2"), in every leader with
-// memory data (all but the barbarians; a House's minor leader too): MEMORY_DECLARED_WAR fades
-// (memory_decays 50; FFH2 kept it for good), MEMORY_TOOK_CITY (-150, decay 50),
-// MEMORY_SPLIT_HOUSE (-300, decay 50) and MEMORY_COURTED_HOUSE (-200, decay 50).
+// memory data (all but the barbarians; the minor leaders too): MEMORY_DECLARED_WAR fades
+// (memory_decays 50; FFH2 kept it for good), MEMORY_TOOK_CITY (-150, decay 50).
+// MEMORY_SPLIT_HOUSE and MEMORY_COURTED_HOUSE (the retired Houses' memories) are listed but no
+// rule records them.
 [
   {
     "type": "LEADER_BARBARIAN",
