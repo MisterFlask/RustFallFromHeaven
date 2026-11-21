@@ -122,7 +122,7 @@ export function buildView(data, { players = [], cities = [], units = [], me = 0 
     reveal: true,
     // As the server's: the viewer's civilization is on `me` (the others' on `players`).
     me: { player: me, team: me, civ: players[me] ? idx("CivilizationType", players[me].civ) : null },
-    players: players.map((p, k) => ({ id: p.id ?? k, name: p.civ, civ: idx("CivilizationType", p.civ), team: p.id ?? k, barbarian: !!p.barbarian, alive: true })),
+    players: players.map((p, k) => ({ id: p.id ?? k, name: p.civ, civ: idx("CivilizationType", p.civ), team: p.id ?? k, barbarian: !!p.barbarian, alive: true, state_religion: p.religion ? idx("ReligionType", p.religion) : null })),
     cities: cities.map((c) => ({ visible: true, walls: false, ...c })),
     units: units.map((u, k) => ({ id: u.id ?? 1000 + k, owner: u.owner ?? 0, type: idx("UnitType", u.type), x: u.x, y: u.y, hp: u.hp ?? 100, max_hp: 100, moves: 1, max_moves: 1, group: k })),
     groups: [],
@@ -344,6 +344,41 @@ export function fromRows(data, rows, { wrap = false, hidden = null, river = null
   const map = buildMap(data, rows, { wrap, hidden: hide, rivers: river ? riverBits(river) : [], routes: routes ?? [] });
   const view = buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }] });
   return { map, view, focus: [rows[0].length / 2, rows.length / 2] };
+}
+
+/** The region moods side by side (hd2d/mood.js, docs/HD2D.md §6): four civilizations' lands in a
+ *  two by two, each with a town, woods, hills and open ground, a coast along the south. `civs`
+ *  (four, north-west, north-east, south-west, south-east) and `religions` (as many, "" for none).
+ *  Best framed with `renderer=hd2d&ts=40` for the whole, or a quarter's centre at `ts=96`
+ *  (north-west 6,8; north-east 18,8; south-west 6,3; south-east 18,3). */
+export function moods(data, civs = ["CIVILIZATION_ILLIANS", "CIVILIZATION_AMURITES", "CIVILIZATION_MERCURIANS", "CIVILIZATION_KHAZAD"], religions = []) {
+  const rows = [
+    "ff.,,.hhff..ff.,,.hhff..",
+    "f..,.f.h.ff.f..,.f.h.ff.",
+    ".f.,..fn,.f..f.,..fn,.f.",
+    "ff..,.,...ff.ff..,.,...f",
+    ".hh..f..,.f..hh..f..,.f.",
+    "fhh.,.f..ff.fhh.,.f..ff.",
+    "ff..,.hhff..ff.,,.hhff..",
+    "f..,.f.h.ff.f..,.f.h.ff.",
+    ".f.,..fn,.f..f.,..fn,.f.",
+    "ff..,.,...ff.ff..,.,...f",
+    ".hh..f..,...-.hh..f..,..",
+    "---------------------~~~",
+  ];
+  // (y from the south, as the map's plots.)
+  const towns = [[5, 8], [17, 8], [5, 3], [17, 3]];
+  const cities = towns.map(([x, y], k) => ({ id: k + 1, owner: k, x, y, name: civs[k]?.replace("CIVILIZATION_", "") ?? "Town", capital: true, size: 7 }));
+  const map = buildMap(data, rows, {
+    owners: [[0, 6, 11, 11, 0], [12, 6, 23, 11, 1], [0, 0, 11, 5, 2], [12, 0, 23, 5, 3]],
+    improvements: [[3, 7, "IMPROVEMENT_FARM"], [15, 7, "IMPROVEMENT_FARM"], [3, 2, "IMPROVEMENT_COTTAGE"], [14, 1, "IMPROVEMENT_MINE"]],
+    cities,
+  });
+  const view = buildView(data, {
+    players: civs.slice(0, 4).map((civ, k) => ({ civ, religion: religions[k] || null })),
+    cities,
+  });
+  return { map, view, focus: [12, 6] };
 }
 
 /** The HD-2D look target (docs/HD2D.md, docs/art/hd2d-reference.png): an elven city on a bend of a

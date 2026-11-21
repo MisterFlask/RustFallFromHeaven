@@ -391,7 +391,13 @@ does for the isometric sprites. No unit art changed.
   the other small props' scale: at full size they read as dark stumps), reeds on marsh, moss tufts
   and pebbles on tundra, pebbles on desert and snow, and the regions' own
   things (lava rocks, bones and vents in hell, crystals, obelisks and altars on corrupted land,
-  lanterns in the elven lands). The lone trees, bushes, boulders, ruins, shrines and standing
+  lanterns in the elven lands; since 2026-11-21 ice shards, frosted shrubs and cairns on frost,
+  rune stones, glyph rings, obelisks, floating crystals and crystal pillars on the arcane, shrines,
+  braziers, angel statues and columns on holy land, soot, slag, coal, ash mounds and vents on ash:
+  `clutterOf`, a mood of at least 0.5), and the civilizations' own (`CIV_PROPS`, by the plot's
+  owner): totems and skull poles (the Clan of Embers, the Doviello), gallows and red lanterns (the
+  Calabim), masks on poles and carnival stalls (the Balseraphs), mine entrances on hills (the
+  Khazad), shipwrecks and anchors on the coast (the Lanun). The lone trees, bushes, boulders, ruins, shrines and standing
   stones that had stood on every open plot are gone: they made open land read as a thin wood. The
   Hills now read through the terrain's turf-capped scarps (docs/R3D.md §4), with a grassy crown,
   short soil-and-stone exposures and broad grassy shoulders; `clutterOf` adds no extra rock or
@@ -407,6 +413,13 @@ does for the isometric sprites. No unit art changed.
   own, by the moods (`clutterOf`); the ruins and shrines that once stood anywhere are gone
   (2026-11-01, above). What carries a light (`GLOWS`: runes,
     lamps, embers, hut windows) feeds the bloom.
+* **The moods' and civilizations' props** (2026-11-21): OpenAI's image model (`tools/hd2d/gen.py`,
+  sheets `frost_arcane`, `holy_ash`, `folk`; two rolls each, both kept as variants `_1`, `_2`), cut
+  by connected parts assigned to their grid cell (the sheets' objects cross the cells' lines, and
+  `art.py split` miscounts a floating crystal's shards), the shrine's cross cut off at the roof's
+  ridge (no Earth faith in Erebus), carded by `art.py prop` at their height in art pixels and stood
+  at `PAINTED` scale (1: an art pixel 0.0031 of a plot). Lab: `scene=moods&renderer=hd2d`
+  (`&civs=A,B,C,D&religions=R1,,R3,`).
 * **The image model's versions** (`tools/hd2d/props.json`, `tools/hd2d/local_props.py`): every
   designed prop as one entry -- the card it replaces (a numbered new name joins its kind's
   variants: `hut_3`, `ruin_3`; a new kind, `cart`, `shrine`, stands once its card exists), what to
@@ -794,22 +807,39 @@ join now); the faces as paving (redrawn).
   Little fill comes from the sky and the ground, and cast shadows are less floored than the
   painterly look's (`stylize` 0.7): shade goes deep, as the look target's near-black woods and
   hollows under bright accents.
-* **Region moods** (`mood.js`): a per-plot RGBA channel in the terrain data
-  (`MapTextures.setMood`), from what the player knows: **r hell** (hell terrain; flames, volcanoes,
-  souls), **g corruption** (the Sheaim; part of the Infernal and Calabim), **b lush** (the
-  Ljosalfar; the Elohim and Mercurians, ancient forests), **a gloom** (the Svartalfar, Calabim,
-  Illians, Doviello, the Clan of Embers). A civilization's own entry first, else its owner's
-  alignment (good: a little lush; evil: a little gloom and corruption). The sea takes half of its
-  owner's mood; hell overrides the others where it holds. Unrevealed plots carry none. Read LINEAR
+* **Region moods** (`mood.js`): eight per-plot moods in two RGBA textures of the terrain data
+  (`MapTextures.setMood`: `mood`, `mood2`), from what the player knows: **hell** (hell terrain;
+  flames, volcanoes, souls), **corruption** (the Sheaim; part of the Infernals, Calabim and
+  Balseraphs), **lush** (the Ljosalfar, ancient forests), **gloom** (the Svartalfar, Calabim, Sidar,
+  Clan of Embers, Doviello); and since 2026-11-21 **frost** (the Illians, the Doviello), **arcane**
+  (the Amurites, the Luchuirp), **holy** (the Mercurians, Elohim, Bannor, Malakim) and **ash** (the
+  Khazad, the Clan of Embers, the Infernals). A civilization's own entry first (`CIV_MOOD`), else
+  its owner's alignment (good: a little holy; evil: a little gloom and corruption). The Kuriotates,
+  Hippus, Grigori and Lanun have an entry of nothing: their land keeps its colours and carries only
+  their accents (below), so the strongly graded lands stand out. Over that, the owner's **state
+  religion** (`RELIGION_MOOD`, screened on at `RELIGION_WEIGHT` 0.65: a mood only adds, a
+  civilization's own never weakens): the Fellowship of Leaves lush, the Order and the Empyrean
+  holy, the Runes of Kilmorph arcane, the Ashen Veil corruption and ash, the Octopus Overlords and
+  the Council of Esus gloom -- so a land's look changes when its faith does, and a faith's spread
+  shows on the map. The sea takes half of its owner's mood; hell overrides the others where it holds
+  (all but its ash). Unrevealed plots carry none. Read LINEAR
   with a noise-warped lookup, so a region's edge is organic, not the plot grid; off the map's
   edges there is none. The **mood pass** grades the display colour under each pixel (found from the
   depth): lush deepens the greens and warms the light; corruption darkens and cools the land toward
   violet and slate by a multiply (its contrast kept), its bright accents pushed to magenta; hell
   chars it to a dark charcoal-brown — its water left dark steel-blue, what glows (the scene's
   emission) left hot — and splits the ground with **glowing cracks** (a world-anchored network,
-  broken into separate fissures, pulsing; on the ground only); gloom cools and dims. Each mood's air
-  tints the distance a little. Violet motes drift over corrupted land and gold-green ones in lush
-  woods.
+  broken into separate fissures, pulsing; on the ground only); gloom cools and dims; frost drains
+  the colour toward a cold blue-grey and lays **snow in drifts** on the ground (a world-anchored
+  noise, thicker as the frost deepens; not on water or cards); the arcane cools and clears the land,
+  pushes its bright accents to cyan and draws **ley lines** on the ground (thin isolines of a noise,
+  broken into lengths, pulsing); holy light warms the land and lifts its highlights; ash makes it
+  sooty and grey, its shade deeper, what glows left hot. Each mood's air tints the distance a little.
+  **Particles** (`moodEmitters`, a mood of at least 0.5): violet motes rise over corrupted land,
+  cyan ones over the arcane, gold-green ones in lush woods; snow, ash and pale holy motes fall (a
+  negative `rise`: the particle shader runs their life backwards); blue-green wisps in gloomy woods.
+  And each civilization's accents, by the plot's owner: pale wisps over the Sidar's land, fireflies
+  on the Kuriotates' grassland, dust puffs on the Hippus' steppe and the Malakim's desert.
 * **The land's palette** (batch 3, in the mood pass, `landGrade`): measured on the look target's
   map area against the mode's shots (medians; saturation and value as HSV):
 
@@ -1247,8 +1277,10 @@ its defaults and do no harm.
   profiled.
 * **Shafts** are partly painted (a screen-space fan turned by the camera's position); the physical
   haze through the cloud gaps barely shows from above.
-* **The region moods** come from a table of civilizations and alignments; a game event (Armageddon,
-  a spreading hell) changes them only through the terrain and the owners.
+* **The region moods** come from tables of civilizations, alignments and state religions; a game
+  event (Armageddon, a spreading hell) changes them only through the terrain and the owners. The
+  Malakim's heat shimmer and the Lanun's coloured sea were suggested and not built (the shimmer needs
+  a screen distortion the mood pass has not; the sea's colour a channel of its own).
 * **Many figures stand still**: 129 of the 373 unit sprites breathe (§5), among them the common
   ones (warriors, axemen, workers, settlers, adepts and horsemen, generic and every
   civilization's). Next: the other riders and centaurs, whose unit files are on `anim-all` and

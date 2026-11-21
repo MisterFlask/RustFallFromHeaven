@@ -3,7 +3,8 @@
 // crates/ffh-play/r3d-lab over HTTP, opens the lab in headless Chromium and saves screenshots.
 // No game server is needed. Rendering is synchronous before each shot (the frame is complete).
 //
-//   node tools/r3d-lab.mjs --out shot.png [--query "scene=showcase&ts=88"] [--w 1280 --h 800]
+//   node tools/r3d-lab.mjs --out shot.png [--query "scene=showcase&ts=88"] [--w 1280 --h 800] [--scale 2]
+//        (--scale: the device scale factor; 2 for a screenshot read on a phone)
 //   node tools/r3d-lab.mjs --out a.png --query "grid=tree.oak,tree.pine&variants=6&ts=144"
 //   node tools/r3d-lab.mjs --shots shots.json      many shots: [{"out": "a.png", "query": "..."}]
 //   node tools/r3d-lab.mjs --serve [--port 8650]   just serve (open /lab/lab.html in a browser)
@@ -31,7 +32,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { ROOT, parseArgs, chromiumLaunch, webglRenderer } from "./web-lib.mjs";
 
-const args = parseArgs(process.argv.slice(2), { gpu: "flag", out: "v", query: "v", w: "v", h: "v", shots: "v", serve: "flag", port: "v", timeout: "v", time: "v", stability: "flag", shift: "v", configs: "v", capture: "v", frames: "v", fps: "v" });
+const args = parseArgs(process.argv.slice(2), { gpu: "flag", scale: "v", out: "v", query: "v", w: "v", h: "v", shots: "v", serve: "flag", port: "v", timeout: "v", time: "v", stability: "flag", shift: "v", configs: "v", capture: "v", frames: "v", fps: "v" });
 const APP = path.join(ROOT, "crates", "ffh-play", "assets", "app");
 const LAB = path.join(ROOT, "crates", "ffh-play", "r3d-lab");
 const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".html": "text/html", ".json": "application/json", ".png": "image/png", ".css": "text/css" };
@@ -84,7 +85,7 @@ if (args.serve) {
   const shots = args.shots ? JSON.parse(fs.readFileSync(args.shots, "utf8")) : [{ out: args.out, query: args.query ?? "", w: args.w, h: args.h }];
   let failed = 0;
   for (const s of shots) {
-    const page = await browser.newPage({ viewport: { width: Number(s.w ?? args.w ?? 1280), height: Number(s.h ?? args.h ?? 800) } });
+    const page = await browser.newPage({ viewport: { width: Number(s.w ?? args.w ?? 1280), height: Number(s.h ?? args.h ?? 800) }, deviceScaleFactor: Number(s.scale ?? args.scale ?? 1) });
     const logs = [];
     page.on("console", (m) => (m.type() === "error" || m.type() === "warning") && logs.push(`[${m.type()}] ${m.text()}`));
     page.on("pageerror", (e) => logs.push(`[pageerror] ${e.message}`));

@@ -10,7 +10,7 @@ import * as St from "../app/state.js";
 
 const data = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../../r3d-lab/data.json", import.meta.url)), "utf8"));
 St.setData(data);
-const { buildMap, buildView, hd2d, settlements, riverBits } = await import("../../r3d-lab/scenes.js");
+const { buildMap, buildView, hd2d, settlements, riverBits, moods: moodScene } = await import("../../r3d-lab/scenes.js");
 const { World, KIND, RIVER_BANK } = await import("../app/r3d/world.js");
 await import("../app/r3d/assets/index.js");
 const { SPRITES } = await import("../app/iso/sprites.js");
@@ -18,7 +18,7 @@ const { CARDS, GROUNDS, IMPROVEMENTS, RESOURCES } = await import("../app/r3d/hd2
 const { unitSpriteKeys } = await import("../app/iso.js");
 const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
 const { IDLE, IDLE_FRAME, idleCard } = await import("../app/r3d/hd2d/sprites.js");
-const { plotMoods } = await import("../app/r3d/hd2d/mood.js");
+const { plotMoods, moodEmitters, M, CIV_MOOD, RELIGION_MOOD, combine } = await import("../app/r3d/hd2d/mood.js");
 const { CLIFF } = await import("../app/r3d/hd2d/config.js");
 const { riverPoints, riverLevel, riverFall } = await import("../app/r3d/scene.js");
 
@@ -446,4 +446,62 @@ test("nothing stands on, and no mood comes from, what the player has not seen", 
   assert.equal(mood[(3 * map.w + 0) * 4 + 1], 255);
   const hell = 1 * map.w + 0;
   assert.equal(mood[hell * 4], 255);
+});
+
+test("the second mood texture: frost, arcane, holy and ash, by the land's owner", () => {
+  const s = moodScene(data);
+  const w = scene(s);
+  const { data: first, data2, moods, civs } = plotMoods(w, s.map);
+  assert.equal(data2.length, first.length);
+  // The scene's four lands (y from the south): Illians north-west, Amurites north-east,
+  // Mercurians south-west, Khazad south-east.
+  const at = (x, y) => y * s.map.w + x;
+  const byte = (x, y, k) => data2[at(x, y) * 4 + k - 4];
+  assert.ok(byte(2, 9, M.frost) > 200, "the Illians' land is frost");
+  assert.ok(byte(20, 9, M.arcane) > 200, "the Amurites' land is arcane");
+  assert.ok(byte(2, 2, M.holy) > 180, "the Mercurians' land is holy");
+  assert.ok(byte(20, 2, M.ash) > 120, "the Khazad's land is ash");
+  assert.equal(byte(20, 2, M.frost), 0);
+  assert.equal(civs[at(2, 9)], "CIVILIZATION_ILLIANS");
+  // Every civilization's table entry and every religion's has the eight moods.
+  for (const m of [...Object.values(CIV_MOOD), ...Object.values(RELIGION_MOOD)]) assert.equal(m.length, 8);
+  // The particles: snow over frost, ley motes over the arcane, falling ash.
+  const em = moodEmitters(w, moods, civs);
+  assert.ok(em.some((e) => e.color === "#eef4ff" && e.rise < 0), "snow falls on the Illians");
+  assert.ok(em.some((e) => e.color === "#57514c" && e.rise < 0), "ash falls on the Khazad");
+  assert.ok(em.some((e) => e.color === "#7fe2ff" && e.rise > 0), "arcane motes rise over the Amurites");
+});
+
+test("a state religion adds its mood to its civilization's, never takes from it", () => {
+  const sheaim = CIV_MOOD.CIVILIZATION_SHEAIM;
+  const order = combine(sheaim, RELIGION_MOOD.RELIGION_THE_ORDER);
+  assert.equal(order[M.corruption], 1, "the Sheaim stay fully corrupted under the Order");
+  assert.ok(order[M.holy] > 0.6, "and take its holy light");
+  const plain = combine(CIV_MOOD.CIVILIZATION_HIPPUS, RELIGION_MOOD.RELIGION_THE_ASHEN_VEIL);
+  assert.ok(plain[M.corruption] >= 0.5, "the Ashen Veil corrupts a plain land enough for its props");
+  for (const m of Object.values(RELIGION_MOOD)) assert.ok(combine(null, m).some((v) => v >= 0.5), "each religion reaches its props' or particles' 0.5 on a plain land");
+  // In a scene: the same civilization, one land under the Veil.
+  const s = moodScene(data, ["CIVILIZATION_HIPPUS", "CIVILIZATION_HIPPUS", "CIVILIZATION_HIPPUS", "CIVILIZATION_HIPPUS"], ["", "RELIGION_THE_ASHEN_VEIL"]);
+  const w = scene(s);
+  const { moods } = plotMoods(w, s.map);
+  assert.equal(moods[9 * s.map.w + 2][M.corruption], 0, "no religion, no mood");
+  assert.ok(moods[9 * s.map.w + 20][M.corruption] > 0.5, "the Veil's land is corrupted");
+});
+
+test("the moods' and the civilizations' props stand on their lands", () => {
+  const count = (civs, kinds) => {
+    const s = moodScene(data, civs);
+    const w = scene(s);
+    const { moods, civs: owners } = plotMoods(w, s.map);
+    const { list } = dressSpriteStatic(w, s.map, atlas, { unitAt: new Set(), cityAt: new Map() }, moods, owners);
+    const out = {};
+    for (const k of kinds) out[k] = list.filter((r) => new RegExp(`^${k}_\\d+$`).test(plain(r.key))).length;
+    return out;
+  };
+  const a = count(undefined, ["ice_shard", "rune_stone", "holy_shrine", "brazier", "soot_rocks", "mine_entrance"]);
+  for (const [k, n] of Object.entries(a)) assert.ok(n >= 1, `${k}: ${n}`);
+  const b = count(["CIVILIZATION_CALABIM", "CIVILIZATION_BALSERAPHS", "CIVILIZATION_CLAN_OF_EMBERS", "CIVILIZATION_LANUN"], ["red_lantern", "mask_pole", "skull_pole", "shipwreck", "anchor", "ice_shard"]);
+  for (const k of ["red_lantern", "mask_pole", "skull_pole"]) assert.ok(b[k] >= 1, `${k}: ${b[k]}`);
+  assert.ok(b.shipwreck + b.anchor >= 1, "the Lanun's coast has its wrecks");
+  assert.equal(b.ice_shard, 0, "no frost without its mood");
 });

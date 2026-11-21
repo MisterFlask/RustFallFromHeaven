@@ -67,6 +67,25 @@ SHEETS = {
     "stone elven archway ruin, a slender silver birch, a round shrub with tiny glowing golden "
     "flowers, a small stone fountain, a patch of glowing white lilies, a mossy carved stone marker, "
     "a small elven garden pavilion, a tall slim pale-green tree.",
+    # The region moods of 2026-11-21 (hd2d/mood.js: frost, arcane, holy, ash) and the civilizations'
+    # own props (dress.js CIV_PROPS).
+    "frost_arcane": "The nine objects: a cluster of pale blue ice shards jutting from the ground, a "
+    "second smaller cluster of ice shards, a small stone cairn rimed with frost and snow, a frozen dead "
+    "shrub coated in white frost, a grey standing stone carved with glowing pale blue runes, a violet-blue "
+    "crystal floating above a small carved stone pedestal, a slim dark stone obelisk with glowing cyan "
+    "runes, a low ring of three small flat stones with glowing cyan glyphs, a short stone pillar topped "
+    "with a glowing blue crystal.",
+    "holy_ash": "The nine objects: a small white stone wayside shrine with a gold roof and a candle, a lit "
+    "bronze brazier on three legs with a small flame, a small white marble statue of a winged angel on a "
+    "plinth, a white marble column with gold trim, a heap of black slag and ore, a squat stone chimney "
+    "vent with glowing embers at its mouth, a pile of soot-blackened rocks, a heap of black coal lumps, a "
+    "low grey ash mound with a few glowing embers.",
+    "folk": "The nine objects: a crude wooden tribal totem pole with a painted face and horns, a tall spear "
+    "pole topped with an animal skull and feathers, a wooden gallows with a hanging rope, an iron lantern "
+    "post with a blood-red glowing glass lamp, a carnival jester mask on a wooden pole with ribbons, a "
+    "small striped carnival stall with a painted awning, a dwarven mine entrance carved in grey rock with "
+    "wooden beams and a hanging lantern, the half-buried wooden hull of a shipwreck, a rusted ship anchor "
+    "beside two wooden barrels.",
     "desert": "The nine objects: a dry desert shrub, a small cactus, a pile of sandstone rocks, a "
     "bleached animal skull, a dry grass tuft, a small palm sapling, a broken sandstone pillar, a "
     "half-buried clay pot, a low dune ridge of rippled sand.",
