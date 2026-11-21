@@ -138,14 +138,15 @@ fn xy(g: &Game, c: CityId) -> (i32, i32) {
 }
 
 /// A free minor leader of `civ` (any civilization when `None`) with alignment `a`, not in `taken`,
-/// in leader order.
+/// the last in leader order (the data's later minor leaders have portraits of their own).
 fn leader(g: &Game, civ: Option<CivilizationType>, a: &str, taken: &[LeaderHeadType]) -> Option<LeaderHeadType> {
     let d = g.d;
     let a = d.ty::<AlignmentType>(a);
-    d.leader_heads.keys().find(|&l| {
+    d.leader_heads.keys().filter(|&l| {
         let info = &d.leader_heads[l];
         info.minor_leader_of.is_some() && civ.map_or(true, |c| info.minor_leader_of == Some(c)) && info.alignment == a && !taken.contains(&l) && g.house_leader_is_free(l)
     })
+    .last()
 }
 
 /// Plays on to the human's next control point.
@@ -328,6 +329,19 @@ fn staged(dir: &Path, seed: u32, foreign: bool) -> Result<StagedHouses, String> 
     if let Some(r) = order {
         g.player_found_religion(h, Some(r), r, false);
         hand_set.push("The Order founded in the human's capital".into());
+    }
+
+    // Research chosen (the first tech the human can research), so no research question opens over
+    // the screens; every city builds something.
+    if let Some(t) = d.techs.keys().find(|&t| g.player_can_research(h, t, false)) {
+        g.player_push_research(h, t, true);
+    }
+    for c in g.players[h].cities.clone() {
+        if g.cities[c].order_queue.is_empty() {
+            if let Some(u) = d.units.keys().find(|&u| g.city_can_train(c, u, false, false, false, false)) {
+                g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), -1, false, false, false, true);
+            }
+        }
     }
 
     // The checks: each House in its state, the city in no House waiting.
