@@ -692,7 +692,7 @@ h4.sub { margin: 8px 0 2px; font-size: 0.9em; }
 .city-summary .cs-gauge div { margin: 0; }
 .cs-top { display: flex; align-items: center; gap: 6px; }
 .cs-big { font-size: 1.35em; line-height: 1; }
-.cs-big.good { color: #8fe07a; } .cs-big.bad { color: #ff8d6e; } .cs-big.prod { color: #e0a050; } .cs-big.com { color: #f2dc5a; }
+.cs-big.good { color: #8fe07a; } .cs-big.bad { color: #ff8d6e; } .cs-big.prod { color: #c4c8cc; } .cs-big.com { color: #f2dc5a; }
 .cs-sub, .when { display: inline-flex; align-items: center; gap: 2px; font-size: 0.8em; opacity: 0.9; }
 .cs-sub img, .when img, .cs-sub canvas, .when canvas { width: 16px; height: 16px; }
 .cs-commerce { border-top: 1px solid rgba(240, 204, 102, 0.25); padding-top: 4px; }
