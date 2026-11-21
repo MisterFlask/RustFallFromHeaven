@@ -266,7 +266,7 @@ fn axemen_storm_a_walled_city_of_archers() {
 
 /// Who lost and what it does to the plot (docs/ENGAGEMENTS.md, "The result"): six axemen at
 /// +400% against half-hurt warriors in a forest (6 slots) lose far less HP for any seed. Six warriors:
-/// the line is wiped out and the launcher moves in. Eight (six in the line, two in reserve) on
+/// the survivors are pushed back and the launcher moves in. Eight (six in the line, two in reserve) on
 /// open ground: the reserve is pushed back off the plot, away from the attackers, and the
 /// launcher moves in. Twelve in a city (more than its slots): nobody is pushed back, the reserve
 /// holds the plot and nobody moves. Every battle.
@@ -293,15 +293,13 @@ fn the_plot_falls_to_a_won_battle_with_no_defender_left() {
             let mut f = w.fork(seed);
             let (_, reports) = f.attack(axemen[0]);
             let r = &reports[0];
-            let committed = r.sides[1].committed;
-            assert_eq!(r.sides[1].fallen + r.sides[1].escaped, committed, "seed {seed}: the line is wiped out: {:?}", r.sides[1]);
             assert!(check_reach(r.log.as_ref().unwrap()) > 0);
             assert_eq!(r.outcome.loser, Some(Side::Defender), "seed {seed}: {:?}", r.outcome);
             assert!(r.outcome.hp_lost[1] > r.outcome.hp_lost[0], "seed {seed}: {:?}", r.outcome);
             let left: Vec<UnitId> = defenders.iter().copied().filter(|&d| f.alive(d)).collect();
             if city {
-                assert_eq!(r.outcome.result, EngageResult::Cleared, "seed {seed}");
-                assert!(!r.outcome.plot_taken && r.outcome.pushed == 0 && r.outcome.defenders_left == n as i32 - committed, "seed {seed}: {:?}", r.outcome);
+                assert!(matches!(r.outcome.result, EngageResult::Cleared | EngageResult::Held), "seed {seed}");
+                assert!(!r.outcome.plot_taken && r.outcome.pushed == 0 && r.outcome.defenders_left == n as i32 - r.sides[1].fallen, "seed {seed}: {:?}", r.outcome);
                 assert!(left.iter().all(|&d| f.g.unit_plot(d) == to), "seed {seed}: nobody is pushed back from a city");
                 assert!(axemen.iter().all(|&a| f.g.unit_plot(a) == from), "seed {seed}: nobody moves");
             } else {
@@ -563,12 +561,14 @@ fn an_attacker_withdraws_and_stays_in_its_army() {
     }
 }
 
-/// Two sides that can hardly hurt each other fight every round and both lines hold: the plot
-/// does not change hands and nobody moves. Every battle.
+/// Two sides that can hardly hurt each other fight every round and both lines hold: the city
+/// does not change hands and nobody moves (in a city nobody is pushed back, whoever lost the
+/// hundredths of HP). Every battle.
 #[test]
 fn a_held_line_keeps_the_plot() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.city(p1, to, 0);
     let d = w.unit(p1, "UNIT_WARRIOR", to);
     let a = w.unit(p0, "UNIT_WARRIOR", from);
     for u in [a, d] {

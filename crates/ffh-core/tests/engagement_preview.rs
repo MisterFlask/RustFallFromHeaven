@@ -400,7 +400,7 @@ fn the_forecast_of_waves_carries_the_battle_on() {
     assert!((one.lost_x100[0] - waves.lost_x100[0]).abs() <= 40, "{:?} vs {:?}", one.lost_x100, waves.lost_x100);
     assert_eq!(waves, w.g.engage_forecast_waves(&[(att.clone(), from)], to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap());
     assert!(state(&w.g) == before, "the forecast changed the game");
-    // Eighteen axemen against a city (where nobody is pushed back): a reserve that attacks once the
+    // Twenty-four strong axemen against a city (where nobody is pushed back): a reserve that attacks once the
     // first formation has fought.
     {
         let mut w = world();
@@ -409,7 +409,10 @@ fn the_forecast_of_waves_carries_the_battle_on() {
         let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
         // One defender more than its side's slots: the first battle leaves a reserve on the plot.
         w.units(p1, "UNIT_WARRIOR", to, 1);
-        let more = w.units(p0, "UNIT_AXEMAN", from, 18);
+        let more = w.units(p0, "UNIT_AXEMAN", from, 24);
+        for &a in &more {
+            w.g.unit_change_extra_combat_percent(a, 200);
+        }
         let def_slots = w.g.engage_preview(&w.input()).unwrap().slots.def();
         w.units(p1, "UNIT_WARRIOR", to, def_slots as usize);
         let first = w.g.engage_forecast_if(&more, from, to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
