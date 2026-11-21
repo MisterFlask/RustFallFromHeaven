@@ -75,6 +75,21 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
         free_promotion_unit_combat,
         summon_promotion,
         unit_rush_gold,
+        // A House perk's (docs/HOUSES.md, rule 9): not shown here yet; a perk is no leader's trait.
+        house_perk_tier: _,
+        house_perk_family: _,
+        house_requires_coastal: _,
+        house_yield_modifier: _,
+        house_commerce_modifier: _,
+        house_great_people_rate_modifier: _,
+        house_distance_maintenance_modifier: _,
+        house_num_cities_maintenance_modifier: _,
+        house_free_experience: _,
+        house_unit_combat_free_experience: _,
+        house_unit_combat_free_promotions: _,
+        house_unit_combat_production_modifier: _,
+        house_wonder_production_modifier: _,
+        house_ritual_production_modifier: _,
     } = &d.traits[t];
     let mut b = String::new();
     b.push_str(NEWLINE);

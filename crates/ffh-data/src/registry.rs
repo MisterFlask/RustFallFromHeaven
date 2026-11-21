@@ -575,6 +575,20 @@ impl<'a> Rd<'a> {
         v
     }
 
+    /// An object from type names to lists of type names (each list in file order).
+    pub fn pairs_ref_list<K: InfoId, V: InfoId>(&self, key: &str) -> IdxVec<K, Vec<V>> {
+        let mut v = IdxVec::from_elem(Vec::new(), self.cx.reg.count::<K>());
+        for (name, x) in self.members(key) {
+            if let Some(k) = self.resolve::<K>(name) {
+                match x {
+                    Value::Arr(items) => v[k] = items.iter().filter_map(|i| self.item_ref::<V>(key, i)).collect(),
+                    other => self.wrong(key, "an object of lists of type names", other),
+                }
+            }
+        }
+        v
+    }
+
     /// An object from type names to integers, as (type, value) in file order.
     pub fn pair_list_int<K: InfoId>(&self, key: &str) -> Vec<(K, i32)> {
         let mut out = Vec::new();

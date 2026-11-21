@@ -71,7 +71,8 @@ fn table_sizes() {
     assert_eq!(d().building_classes.len() - ffh_data::card_entry_count("building_classes"), 131);
     // 170 FFH2 buildings and 276 tier variants (docs/SUITABILITY.md).
     assert_eq!(d().buildings.len() - ffh_data::card_entry_count("buildings"), 446);
-    assert_eq!(d().traits.len() - ffh_data::card_entry_count("traits"), 29);
+    // 29 leader traits and 42 House perks (docs/HOUSES.md, rule 9).
+    assert_eq!(d().traits.len() - ffh_data::card_entry_count("traits"), 29 + 42);
     assert_eq!(d().civilizations.len() - ffh_data::card_entry_count("civilizations"), 23);
     assert_eq!(d().leader_heads.len() - ffh_data::card_entry_count("leader_heads"), 69);
     for b in d().buildings.iter() {
