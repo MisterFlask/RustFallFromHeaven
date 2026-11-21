@@ -181,6 +181,8 @@ pub(crate) struct DefPlan {
     pub walls: Option<(CityId, Vec<usize>)>,
     pub def: Vec<Place>,
     pub squad: Option<SquadId>,
+    /// The squad's number within its body (1-based; 0 for units in no squad).
+    pub number: u32,
 }
 
 impl Setup {
@@ -710,16 +712,16 @@ impl Game {
             return Err("there is nobody to fight there");
         }
         let squads = self.engage_field_squads(ctx.to, candidates, Side::Defender, ctx);
-        let (def, squad) = if squads.is_empty() {
-            (Vec::new(), None)
+        let (def, squad, number) = if squads.is_empty() {
+            (Vec::new(), None, 0)
         } else {
             let i = self.engage_pick_defending_squad(ctx, &slots, &walls, att, candidates, &squads);
-            (self.engage_squad_places(&squads[i], &self.engage_sentinel_cells(&slots)), squads[i].squad)
+            (self.engage_squad_places(&squads[i], &self.engage_sentinel_cells(&slots)), squads[i].squad, squads[i].number)
         };
         if def.is_empty() && walls.is_none() {
             return Err("there is nobody to fight there");
         }
-        Ok(DefPlan { slots, walls, def, squad })
+        Ok(DefPlan { slots, walls, def, squad, number })
     }
 
     /// Phase 7 hook (plan 6.2, 14): the effects on the battle of `setup` before it (its units

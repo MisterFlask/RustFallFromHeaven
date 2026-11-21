@@ -316,7 +316,8 @@ function render(ctx) {
       { left: "6px", top: "4px", width: "380px" },
       h("div.bt-row", uiIcon("attack", 16), h("span.bt-h3", `Attack ${where}`)),
       h("div.bt-row", h("span.bt-h3.you", pv.sides?.[me]?.label ?? "Your army"), h("span.dim", `${used} of ${pv.slots[me].total}${pv.slots[me].river_only ? ` (+${pv.slots[me].river_only} river)` : ""} slots · ${pv.lanes[me]} lanes`)),
-      h("div.small.dim", { title: "Why this many slots" }, slotSum(pv.slots[me])),
+      // A squad's places do not change (frontage is gone); an old plan's changes still read.
+      (pv.slots[me].changes ?? []).some((c) => c.delta) ? h("div.small.dim", { title: "Why this many slots" }, slotSum(pv.slots[me])) : null,
       squadLines(ctx),
       h(
         "div.bt-row",

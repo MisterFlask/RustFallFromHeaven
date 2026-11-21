@@ -197,6 +197,8 @@ fn seed_of(words: &[u32]) -> u32 {
 /// auto formation, the defender's formation, the view of the defense and the battle's set-up;
 /// with summons (summons.rs), the copy of the game they were made in, whose set-up it is.
 struct Plan {
+    /// The defending squad's number within its body (0: units in no squad).
+    def_number: u32,
     squads: Vec<PreviewSquad>,
     squad: usize,
     pool: Vec<UnitId>,
@@ -296,14 +298,7 @@ impl Game {
             squads: plan.squads.clone(),
             squad: plan.squad,
             def_squad: s.squads[Side::Defender.index()],
-            def_squad_number: s.squads[Side::Defender.index()].map_or(0, |id| {
-                let owner = self.squads.get(id).map(|q| q.owner);
-                owner.map_or(0, |o| {
-                    let layouts = self.squad_layouts_at(o, inp.to);
-                    let nums = Game::squad_numbers(&layouts);
-                    layouts.iter().position(|l| l.squad == Some(id)).map_or(0, |i| nums[i])
-                })
-            }),
+            def_squad_number: plan.def_number,
             formation,
             auto: plan.auto.clone(),
             reserve,
@@ -374,17 +369,18 @@ impl Game {
         // The defender's squad against this formation, its cells, the Sentinels (squads.rs).
         let def_plan = self.engage_def_plan(&ctx, slots, &formation, &view.candidates, true)?;
         let def_formation = def_plan.def.clone();
+        let def_number = def_plan.number;
         // The summons (summons.rs) are made for the battle: the plan makes them in a copy of the
         // game, as the real fight will (the same units, the same ids), and is that copy's.
         let summons = self.engage_summon_calls(&ctx, &formation, &def_plan);
         if summons.is_empty() {
             let setup = self.engage_setup_plan(ctx, def_plan, formation.clone(), view.candidates.clone(), &[])?;
-            return Ok(Plan { squads: Vec::new(), squad: 0, pool, formation, auto, def_formation, view, setup, scratch: None, summons });
+            return Ok(Plan { def_number, squads: Vec::new(), squad: 0, pool, formation, auto, def_formation, view, setup, scratch: None, summons });
         }
         let mut scratch = Box::new(Game::load(self.d, &self.save()).expect("a game loads its own save"));
         let made = scratch.engage_call_summons(&summons);
         let setup = scratch.engage_setup_plan(ctx, def_plan, formation.clone(), view.candidates.clone(), &made)?;
-        Ok(Plan { squads: Vec::new(), squad: 0, pool, formation, auto, def_formation, view, setup, scratch: Some(scratch), summons })
+        Ok(Plan { def_number, squads: Vec::new(), squad: 0, pool, formation, auto, def_formation, view, setup, scratch: Some(scratch), summons })
     }
 
     /// The seed of a set-up's forecast: both formations (sorted), the plots, the turn.
