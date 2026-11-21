@@ -24,8 +24,9 @@
 //!
 //! **The sync** ([`Game::player_squad_sync`], run with the army sync after every command and in
 //! each player's turn) writes the layouts back: new squads get ids, every unit its squad and cell,
-//! and squads no unit holds are gone. A squad whose units all left its body for one other body
-//! together (a whole squad split off into a new army) moves to that body. A squad that ends up on
+//! and squads no unit holds are gone. A squad of two or more units, or a hand-set one, whose units
+//! all left its body for one other body together (a whole squad split off into a new army, an
+//! army merged into another) moves to that body; a lone unit of an Auto squad arrives instead. A squad that ends up on
 //! two plots stays on the first (by plot index); the units on the other form a new squad there.
 //!
 //! **Commands** ([`Game::squad_move`], [`Game::squad_set_auto`], [`Game::squad_auto_sort`]): a
@@ -348,6 +349,10 @@ impl Game {
             }
         }
         for (&s, us) in &members {
+            // A lone unit of an Auto squad arrives in its new body like any other unit.
+            if us.len() < 2 && !self.squads[s].hand_set {
+                continue;
+            }
             let body = self.squads[s].body;
             let plot = self.unit_plot_opt(us[0]);
             if us.iter().any(|&u| plot.is_some_and(|pl| self.unit_plot_opt(u) == Some(pl) && self.squad_body_accepts(body, u, pl))) {
