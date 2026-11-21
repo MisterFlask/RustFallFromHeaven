@@ -21,6 +21,7 @@ pub mod armies;
 pub mod governor;
 pub mod automation;
 pub mod campaign;
+pub mod caravans;
 pub mod casters;
 pub mod cards;
 pub mod cards_battle_arms;
@@ -119,6 +120,9 @@ pub struct Ai {
     /// Each player's battle forecasts of its turn (`forecast::Cache`), lent to its view while it
     /// plays.
     forecasts: Mutex<std::collections::BTreeMap<PlayerId, forecast::Cache>>,
+    /// Each player's route offers per city for the turn (`caravans::Memo`: saves path searches,
+    /// changes no decision).
+    pub(crate) caravans: Mutex<caravans::Memo>,
 }
 
 impl Ai {

@@ -50,7 +50,9 @@ fn building_value(b: &BuildingInfo) -> i32 {
     v += b.defense_modifier;
     v += b.free_experience * 10;
     v += b.great_people_rate_change * 15;
-    v += b.trade_routes * 30;
+    // One more route from the city (docs/TRADE.md, 3.1): a route's default worth, 3 commerce at
+    // this scale's 12 a commerce (static: no game to read the routes' pay from).
+    v += b.trade_routes * 36;
     v += b.food_kept / 2;
     v += b.ai_weight;
     v
