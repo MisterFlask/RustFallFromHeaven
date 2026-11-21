@@ -294,6 +294,32 @@
     "gold_from_combat": 2
   },
   {
+    // this game's own (docs/TRADE.md, 4.2): a caravan's guard, held by rule, never chosen
+    "type": "PROMOTION_CARAVAN_GUARD_2",
+    "stat_changes": {"hp": {"percent": 33}, "defense": {"flat": 10}, "magic_defense": {"flat": 10}},
+    "description": "TXT_KEY_PROMOTION_CARAVAN_GUARD_2",
+    "button": "Art/Interface/Buttons/Promotions/Bronzeweapons.dds",
+    "min_level": -1
+  },
+  {
+    // this game's own (docs/TRADE.md, 4.2): a caravan's guard, held by rule, never chosen
+    "type": "PROMOTION_CARAVAN_GUARD_3",
+    "stat_changes": {"hp": {"percent": 33}, "defense": {"flat": 10}, "magic_defense": {"flat": 10}},
+    "description": "TXT_KEY_PROMOTION_CARAVAN_GUARD_3",
+    "promotion_prereq": "PROMOTION_CARAVAN_GUARD_2",
+    "button": "Art/Interface/Buttons/Promotions/Bronzeweapons.dds",
+    "min_level": -1
+  },
+  {
+    // this game's own (docs/TRADE.md, 4.2): a caravan's guard, held by rule, never chosen
+    "type": "PROMOTION_CARAVAN_GUARD_4",
+    "stat_changes": {"hp": {"percent": 33}, "defense": {"flat": 10}, "magic_defense": {"flat": 10}},
+    "description": "TXT_KEY_PROMOTION_CARAVAN_GUARD_4",
+    "promotion_prereq": "PROMOTION_CARAVAN_GUARD_3",
+    "button": "Art/Interface/Buttons/Promotions/Bronzeweapons.dds",
+    "min_level": -1
+  },
+  {
     "type": "PROMOTION_BRONZE_WEAPONS",
     "stat_changes": {"attack": {"flat": 10}, "defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_BRONZE_WEAPONS",

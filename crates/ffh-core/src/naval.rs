@@ -317,8 +317,10 @@ impl Game {
     /// Whether unit `u` would be in boats on `plot`: a unit that may use boats
     /// ([`Game::unit_can_use_boats`]), at sea as a land unit there ([`Game::unit_needs_boats`]) and
     /// not carried by a ship (its current state).
+    /// A caravan of a route is never in boats (docs/TRADE.md, 4.1: it keeps its guard on water).
     pub fn unit_in_boats_at(&self, u: UnitId, plot: PlotIdx) -> bool {
-        self.plot_is_water(plot) && !self.unit_is_cargo(u) && self.unit_needs_boats(u, plot) && self.unit_can_use_boats(u)
+        self.plot_is_water(plot)
+            && self.units[u].route.is_none() && !self.unit_is_cargo(u) && self.unit_needs_boats(u, plot) && self.unit_can_use_boats(u)
     }
 
     /// Whether unit `u` is in boats now (docs/NAVAL.md, 3.2): a land unit on a water plot, not

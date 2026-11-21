@@ -100,3 +100,8 @@ entity_id!(
     /// This game's seas (`Map::seas`, docs/NAVAL.md, 4.1).
     SeaId(u32)
 );
+
+entity_id!(
+    /// This game's trade routes (`Game::routes`, docs/TRADE.md).
+    RouteId(u32)
+);

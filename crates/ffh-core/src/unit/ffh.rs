@@ -1606,7 +1606,8 @@ impl Game {
 
     /// C++ `CvUnit::isImmuneToCapture` (CvUnit.cpp:15454-15457).
     pub fn unit_is_immune_to_capture(&self, u: UnitId) -> bool {
-        self.units[u].immune_to_capture != 0
+        // This game's trade (docs/TRADE.md, 4.3): a caravan of a route is never captured.
+        self.units[u].immune_to_capture != 0 || self.units[u].route.is_some()
     }
 
     /// C++ `CvUnit::changeImmuneToCapture` (CvUnit.cpp:15459-15465).

@@ -201,7 +201,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `Unit::wounds`, `Player::recovering`, `Player::fallen`; `PROMOTION_WOUNDED`.
 /// - 62: raids (docs/RAIDS.md): `Station::Raid`; `City::sally`, `raid_percent`, `raid_turns`,
 ///   `raid_stripped`.
-pub const FORMAT_VERSION: u32 = 62;
+/// - 63: trade (docs/TRADE.md): `Game::routes`, `Unit::route`; the Civ4 trade routes gone (no
+///   `City::trade_route`, `trade_cities`).
+pub const FORMAT_VERSION: u32 = 63;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -357,6 +359,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         armies,
         squads,
         houses,
+        routes,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -482,6 +485,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     armies.grow(slots);
     squads.grow(slots);
     houses.grow(slots);
+    routes.grow(slots);
     battle_reports.grow(slots);
     battle_report_next.grow(slots);
     map_rand.grow(slots);
@@ -606,6 +610,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         armies,
         squads,
         houses,
+        routes,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -730,6 +735,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     armies.write(w);
     squads.write(w);
     houses.write(w);
+    routes.write(w);
     battle_reports.write(w);
     battle_report_next.write(w);
     map_rand.write(w);
@@ -851,6 +857,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         armies: Persist::read(r)?,
         squads: Persist::read(r)?,
         houses: Persist::read(r)?,
+        routes: Persist::read(r)?,
         battle_reports: Persist::read(r)?,
         battle_report_next: Persist::read(r)?,
         map_rand: Persist::read(r)?,

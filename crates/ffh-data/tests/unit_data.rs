@@ -47,13 +47,15 @@ fn table_sizes() {
     let own = |n: usize, table: &str| n - card_entry_count(table);
     // 326 and 248, and this game's Skirmisher (docs/PORTING.md, "Changes from FFH2"), less the
     // Worker, the Mud Golem and the Work Boat and their two classes (docs/WORKS.md), and this
-    // game's Colonist and its class (docs/NAVAL.md, 9.2).
-    assert_eq!(own(d.units.len(), "units"), 325);
-    assert_eq!(own(d.unit_classes.len(), "unit_classes"), 248);
+    // game's Colonist and its class (docs/NAVAL.md, 9.2), and the Caravan and its class
+    // (docs/TRADE.md).
+    assert_eq!(own(d.units.len(), "units"), 326);
+    assert_eq!(own(d.unit_classes.len(), "unit_classes"), 249);
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md) and
     // PROMOTION_SUMMONERS_BOND (the Summoner trait's), less Extension I and II (docs/ENGAGEMENTS.md,
-    // "Summons"), and this game's PROMOTION_WOUNDED (a hero's Wounds, docs/PORTING.md).
-    assert_eq!(own(d.promotions.len(), "promotions"), 262);
+    // "Summons"), and this game's PROMOTION_WOUNDED (a hero's Wounds, docs/PORTING.md), and the
+    // three caravan guards (docs/TRADE.md).
+    assert_eq!(own(d.promotions.len(), "promotions"), 265);
     // 267 and this game's SPELL_FIREBALL_BARGE, 40 sphere spells in battle and Wonder's 10
     // outcomes (docs/ENGAGEMENTS.md, "Battle spells").
     // (Less the Work Boat's Pirate Cove and the Doviello Worker's upgrade, docs/WORKS.md.)

@@ -76,6 +76,12 @@ impl Game {
             return false;
         }
 
+        // This game's trade (docs/TRADE.md, 4.1): a caravan of a route takes no command, not even
+        // delete (dissolving the route removes it).
+        if self.unit_in_route(u) {
+            return false;
+        }
+
         // This game's (docs/NAVAL.md, 3.2): in boats a unit moves, waits, is deleted, loads onto
         // a ship or is promoted; nothing else.
         if self.unit_is_in_boats(u)

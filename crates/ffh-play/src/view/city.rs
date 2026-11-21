@@ -513,7 +513,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "sentinels" => sentinels_json(g, c),
         "sentinel_max_hp" => g.city_sentinel_max_hp(c),
         "maintenance" => g.city_maintenance(c),
-        "trade_routes" => g.city_trade_routes(c),
+        // This game's trade (docs/TRADE.md): the routes from and into the city.
+        "trade_routes" => g.city_routes_from(c).len() + g.city_routes_into(c).len(),
         "disorder" => g.city_is_disorder(c),
         "occupation" => city.occupation_timer,
         "food" => crate::jobj! {

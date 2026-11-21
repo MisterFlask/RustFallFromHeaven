@@ -1692,7 +1692,8 @@ impl Game {
         // (C++ dereferences `plot()` for a NULL `pPlot`)
         let plot = plot.unwrap_or_else(|| self.unit_plot(u));
         // This game's (docs/NAVAL.md, 3.2): a unit in boats defends (with strength 1).
-        if !self.plot_is_valid_domain_for_action(plot, u) && self.d.defines.land_units_can_attack_water_cities == 0 && !self.unit_in_boats_at(u, plot) {
+        // This game's trade (docs/TRADE.md, 4.1): a caravan of a route defends on water too.
+        if !self.plot_is_valid_domain_for_action(plot, u) && self.d.defines.land_units_can_attack_water_cities == 0 && !self.unit_in_boats_at(u, plot) && !self.unit_in_route(u) {
             return false;
         }
 

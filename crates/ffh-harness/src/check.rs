@@ -48,6 +48,12 @@ pub fn check(g: &Game) {
     if !stale.is_empty() {
         fail(format!("the stored control of seas {stale:?} is stale"));
     }
+    // Trade (docs/TRADE.md): each city's trade yield and each route's stored pay equal a fresh
+    // computation; routes and their caravan units refer to each other.
+    let stale = g.trade_stale();
+    if let Some(first) = stale.first() {
+        fail(format!("trade: {first} ({} disagreements)", stale.len()));
+    }
 
     // Cities: owner lists, plots, population, team and area counters.
     let mut team_cities = vec![0i32; g.num_teams()];

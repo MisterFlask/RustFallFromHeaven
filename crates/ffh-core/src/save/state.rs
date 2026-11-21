@@ -54,7 +54,7 @@ persist_struct!(RowActions { kind, count });
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote, ArmyId, SeaId, HouseId, SquadId,
+    PlayerVote, ArmyId, SeaId, HouseId, SquadId, RouteId,
 );
 
 // ---- this game's own rules (docs/CULTURE.md) ----
@@ -94,6 +94,19 @@ persist_struct!(Contract { kind, until, deal });
 use crate::culture::{ChannelTarget, CultureChannel};
 persist_enum!(ChannelTarget { 0 => House(house), 1 => Player(player) });
 use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Squad, SquadBody, Station};
+
+// ---- trade (docs/TRADE.md) ----
+
+use crate::trade::{CaravanSlot, Leg, Route, RouteRefusal};
+persist_enum!(Leg { 0 => Out, 1 => Back });
+persist_enum!(RouteRefusal {
+    0 => NotACaravan, 1 => InRoute, 2 => NotInOwnCity, 3 => OriginOutpost, 4 => NoRouteFree, 5 => CoastalOnly,
+    6 => OriginFull, 7 => SameCity, 8 => DestinationGone, 9 => NotRevealed, 10 => DestinationOutpost,
+    11 => AtWar(p), 12 => NoOpenBorders(p), 13 => NoForeignTrade(p), 14 => NoPath, 15 => AlreadyLinked,
+    16 => CargoNotBuilt,
+});
+persist_struct!(CaravanSlot { unit, reform_turns, bound, cargo, lost_turn, lost_to, pay_x100 });
+persist_struct!(Route { id, owner, origin, destination, established, arrived, growth, slots, closed, path, length, dest_pay_x100 });
 persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, unsupplied_turns, domain, station, carried });
 persist_struct!(Squad { id, owner, body, hand_set, fought_turn, fought });
 impl Persist for SquadBody {
@@ -455,7 +468,7 @@ persist_struct!(Unit {
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
     squad, squad_cell, stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
-    battle_summon, sea_turns, sea_out_of_range, intercepted, shore_fired, reinforced, wounds,
+    battle_summon, sea_turns, sea_out_of_range, intercepted, shore_fired, reinforced, wounds, route,
 });
 
 use crate::ffh::cards::map_rules::{PackedBuilding, PackedCity};
@@ -498,7 +511,7 @@ persist_struct!(City {
     extra_specialist_yield, commerce_rate, production_to_commerce_modifier, building_commerce,
     specialist_commerce, religion_commerce, corporation_commerce, commerce_rate_modifier,
     commerce_happiness_per, domain_free_experience, domain_production_modifier, culture,
-    num_revolts, ever_owned, trade_route, revealed, name, script_data,
+    num_revolts, ever_owned, revealed, name, script_data,
     no_bonus, free_bonus, num_bonuses, num_corp_produced_bonuses, project_production,
     building_production, building_production_time, building_original_owner,
     building_original_time, unit_production, unit_production_time, great_people_unit_rate,
@@ -506,7 +519,7 @@ persist_struct!(City {
     free_specialist_count, improvement_free_specialists, religion_influence,
     state_religion_happiness, unit_combat_free_experience, free_promotion_count,
     num_real_building, num_free_building, working_plot, has_religion, has_corporation,
-    trade_cities, order_queue, events_occured, building_yield_change, building_commerce_change,
+    order_queue, events_occured, building_yield_change, building_commerce_change,
     building_happy_change, building_health_change, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,

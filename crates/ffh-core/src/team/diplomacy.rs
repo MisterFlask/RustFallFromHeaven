@@ -242,6 +242,10 @@ impl Game {
             self.teams[t].at_war[other] = true;
             self.teams[other].at_war[t] = true;
 
+            // This game's trade (docs/TRADE.md, 3.4): seizure, and the routes of both sides
+            // checked (before units are bumped from the land they may no longer stand on).
+            self.routes_on_war(t, other);
+
             for p in self.player_ids() {
                 if self.players[p].team == t || self.players[p].team == other {
                     self.player_update_plunder(p, 1, false);
@@ -337,12 +341,6 @@ impl Game {
             for p in self.player_ids() {
                 if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
                     self.player_update_plot_groups(p);
-                }
-            }
-
-            for p in self.player_ids() {
-                if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
-                    self.player_update_trade_routes(p);
                 }
             }
 
@@ -539,12 +537,6 @@ impl Game {
             for p in self.player_ids() {
                 if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
                     self.player_update_plot_groups(p);
-                }
-            }
-
-            for p in self.player_ids() {
-                if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
-                    self.player_update_trade_routes(p);
                 }
             }
 
@@ -858,8 +850,6 @@ impl Game {
     /// C++ `CvTeam::setOpenBorders`.
     pub fn team_set_open_borders(&mut self, t: TeamId, other: TeamId, value: bool) {
         if self.team_is_open_borders(t, other) != value {
-            let old_free_trade = self.team_is_free_trade(t, other);
-
             self.teams[t].open_borders[other] = value;
 
             // AI_setOpenBordersCounter (AI bookkeeping)
@@ -869,13 +859,7 @@ impl Game {
 
             // UI: Score dirty bit for the active team.
 
-            if old_free_trade != self.team_is_free_trade(t, other) {
-                for p in self.player_ids() {
-                    if self.players[p].alive && self.players[p].team == t {
-                        self.player_update_trade_routes(p);
-                    }
-                }
-            }
+            // (Trade, docs/TRADE.md 3.4: a route this closes closes at its owner's next turn start.)
         }
     }
 

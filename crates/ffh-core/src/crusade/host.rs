@@ -91,6 +91,8 @@ impl Game {
         }
         self.teams[host].at_war[enemy] = true;
         self.teams[enemy].at_war[host] = true;
+        // This game's trade (docs/TRADE.md, 3.4).
+        self.routes_on_war(host, enemy);
         for &p in &both {
             self.player_update_plunder(p, 1, false);
         }
@@ -106,7 +108,6 @@ impl Game {
             if self.players[p].alive {
                 self.player_update_war_weariness_percent_anger(p);
                 self.player_update_plot_groups(p);
-                self.player_update_trade_routes(p);
             }
         }
     }

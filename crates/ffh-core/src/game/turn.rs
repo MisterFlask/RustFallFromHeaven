@@ -455,15 +455,6 @@ impl Game {
         self.update_plot_groups();
     }
 
-    /// C++ `CvGame::updateTradeRoutes`.
-    pub fn update_trade_routes(&mut self) {
-        for p in self.player_ids() {
-            if self.players[p].alive {
-                self.player_update_trade_routes(p);
-            }
-        }
-    }
-
     /// C++ `CvGame::doGlobalWarming`: forests defend; building bad health and nukes warm;
     /// random land plots lose their feature or turn into `GLOBAL_WARMING_TERRAIN`.
     pub fn do_global_warming(&mut self) {
@@ -549,8 +540,6 @@ impl Game {
         if change != 0 {
             self.trade_routes += change;
             debug_assert!(self.trade_routes >= 0);
-
-            self.update_trade_routes();
         }
     }
 
@@ -563,14 +552,9 @@ impl Game {
     /// C++ `CvGame::changeFreeTradeCount(iChange)`.
     pub fn change_free_trade_count(&mut self, change: i32) {
         if change != 0 {
-            let old_free_trade = self.is_free_trade();
-
             self.free_trade_count += change;
             debug_assert!(self.free_trade_count >= 0);
-
-            if old_free_trade != self.is_free_trade() {
-                self.update_trade_routes();
-            }
+            // (Trade, docs/TRADE.md 3.4: routes open or close at their owners' turn starts.)
         }
     }
 

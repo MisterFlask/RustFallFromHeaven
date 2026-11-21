@@ -242,13 +242,12 @@ impl Cai {
         let can_pop_rush = g.player_can_pop_rush(p);
 
         let mut foreign_trade = false;
-        let num_trade_routes = g.city_trade_routes(c);
-        for i in 0..num_trade_routes.max(0) as usize {
-            if let Some(trade_city) = g.city_trade_city(c, i) {
-                if g.players[g.cities[trade_city].owner].team != t || g.city_area(trade_city) != area {
-                    foreign_trade = true;
-                    break;
-                }
+        // (This game's trade routes, docs/TRADE.md: the routes from this city.)
+        for r in g.city_routes_from(c) {
+            let trade_city = g.routes[r].destination;
+            if g.cities.contains(trade_city) && (g.players[g.cities[trade_city].owner].team != t || g.city_area(trade_city) != area) {
+                foreign_trade = true;
+                break;
             }
         }
 
@@ -508,7 +507,7 @@ impl Cai {
 
             if (focus_flags & (BUILDINGFOCUS_GOLD | BUILDINGFOCUS_RESEARCH) != 0) || pass > 0 {
                 // trade routes
-                let mut temp_value = (kb.trade_routes * ((8 * 0.max(g.city_total_trade_modifier(c, None) + 100)) / 100)) * (population / 5 + 1);
+                let mut temp_value = (kb.trade_routes * ((8 * 0.max((100 + g.cities[c].trade_route_modifier) + 100)) / 100)) * (population / 5 + 1);
                 let global_trade_value = ((6 * total_population) / 5) / num_cities_div;
                 temp_value += kb.coastal_trade_routes * g.player_count_num_coastal_cities(p) * global_trade_value;
                 temp_value += kb.global_trade_routes * num_cities * global_trade_value;

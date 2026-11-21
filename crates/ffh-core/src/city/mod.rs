@@ -203,7 +203,6 @@ pub struct City {
     pub culture: IdxVec<PlayerId, i32>,
     pub num_revolts: IdxVec<PlayerId, i32>,
     pub ever_owned: IdxVec<PlayerId, bool>,
-    pub trade_route: IdxVec<PlayerId, bool>,
     pub revealed: IdxVec<TeamId, bool>,
 
     /// C++ `m_szName` (`getNameKey`).
@@ -240,10 +239,6 @@ pub struct City {
     pub working_plot: [bool; NUM_CITY_PLOTS],
     pub has_religion: IdxVec<ReligionType, bool>,
     pub has_corporation: IdxVec<CorporationType, bool>,
-    /// C++ `m_paTradeCities` (`MAX_TRADE_ROUTES` entries). An id may name a city that no
-    /// longer exists; read through `Game::city_trade_city`, which filters those out like C++
-    /// `getCity(IDInfo)`.
-    pub trade_cities: Vec<Option<CityId>>,
 
     /// C++ `m_orderQueue`: the build queue, head first.
     pub order_queue: Vec<OrderData>,
@@ -478,7 +473,6 @@ impl City {
             culture: IdxVec::from_elem(0, num_players),
             num_revolts: IdxVec::from_elem(0, num_players),
             ever_owned: IdxVec::from_elem(false, num_players),
-            trade_route: IdxVec::from_elem(false, num_players),
             revealed: IdxVec::from_elem(false, num_teams),
 
             name: String::new(),
@@ -511,7 +505,6 @@ impl City {
             working_plot: [false; NUM_CITY_PLOTS],
             has_religion: IdxVec::from_elem(false, nr),
             has_corporation: IdxVec::from_elem(false, d.corporations.len()),
-            trade_cities: vec![None; d.defines.max_trade_routes.max(0) as usize],
 
             order_queue: Vec::new(),
 
@@ -661,7 +654,6 @@ mod tests {
         assert_eq!(c.unit_production.len(), d.units.len());
         assert_eq!(c.specialist_count.len(), d.specialists.len());
         assert_eq!(c.ai_emphasize.len(), d.emphasizes.len());
-        assert_eq!(c.trade_cities.len(), d.defines.max_trade_routes as usize);
         assert!(c.order_queue.is_empty() && c.head_order().is_none());
     }
 

@@ -376,6 +376,11 @@ impl Game {
         if self.telemetry.on() {
             self.tel_kill_mark(u, player);
         }
+        // This game's trade (docs/TRADE.md, 4.3): a caravan killed (the rules' own removals unlink
+        // it first). Before the delayed death: the killer is known only here.
+        if let Some(r) = self.units[u].route {
+            self.unit_route_killed(u, r, player);
+        }
 
         // Not in C++: a lent unit's death is credited to its lender (docs/CRUSADE.md).
         if self.units[u].lent.is_some() {
@@ -769,6 +774,11 @@ impl Game {
     /// its first group (`joinGroup` and `CvSelectionGroup::addUnit` both check).
     pub fn unit_can_join_group_opt(&self, u: UnitId, plot: Option<PlotIdx>, group: GroupId) -> bool {
         let g = &self.groups[group];
+
+        // This game's trade (docs/TRADE.md, 4.1): a caravan of a route travels alone.
+        if self.unit_in_route(u) || self.group_has_route_caravan(group) {
+            return false;
+        }
 
         // do not allow someone to join a group that is about to be split apart
         // this prevents a case of a never-ending turn

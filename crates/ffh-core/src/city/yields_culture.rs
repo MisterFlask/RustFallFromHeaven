@@ -311,7 +311,6 @@ impl Game {
     pub fn city_change_extra_trade_routes(&mut self, c: CityId, change: i32) {
         if change != 0 {
             self.cities[c].extra_trade_routes += change;
-            self.city_update_trade_routes(c);
         }
     }
 
@@ -319,7 +318,7 @@ impl Game {
     pub fn city_change_trade_route_modifier(&mut self, c: CityId, change: i32) {
         if change != 0 {
             self.cities[c].trade_route_modifier += change;
-            self.city_update_trade_routes(c);
+            self.trade_refresh_pay();
         }
     }
 
@@ -327,7 +326,7 @@ impl Game {
     pub fn city_change_foreign_trade_route_modifier(&mut self, c: CityId, change: i32) {
         if change != 0 {
             self.cities[c].foreign_trade_route_modifier += change;
-            self.city_update_trade_routes(c);
+            self.trade_refresh_pay();
         }
     }
 
@@ -335,7 +334,6 @@ impl Game {
     pub fn city_set_plundered(&mut self, c: CityId, new_value: bool) {
         if new_value != self.cities[c].plundered {
             self.cities[c].plundered = new_value;
-            self.city_update_trade_routes(c);
         }
     }
 
@@ -581,88 +579,6 @@ impl Game {
     }
 
     // ---- trade ----
-
-    /// C++ `CvCity::totalTradeModifier` (CvCity.cpp:8248-8277). C++ default
-    /// `pOtherCity = NULL`.
-    pub fn city_total_trade_modifier(&self, c: CityId, other: Option<CityId>) -> i32 {
-        let d = self.d;
-        let mut modifier = 100;
-
-        modifier += self.cities[c].trade_route_modifier;
-
-        modifier += self.city_population_trade_modifier(c);
-
-        if self.city_is_connected_to_capital(c, None) {
-            modifier += d.defines.capital_trade_modifier;
-        }
-
-        if let Some(other) = other {
-            // C++ compares the `CvArea` pointers.
-            if self.plot_area(self.city_plot(c)) != self.plot_area(self.city_plot(other)) {
-                modifier += d.defines.overseas_trade_modifier;
-            }
-
-            if self.city_team(c) != self.city_team(other) {
-                modifier += self.cities[c].foreign_trade_route_modifier;
-
-                modifier += self.city_peace_trade_modifier(c, self.city_team(other));
-            }
-        }
-
-        modifier
-    }
-
-    /// C++ `CvCity::getPopulationTradeModifier` (CvCity.cpp:8279-8282).
-    pub fn city_population_trade_modifier(&self, c: CityId) -> i32 {
-        let defines = &self.d.defines;
-        max(0, (self.cities[c].population + defines.our_population_trade_modifier_offset) * defines.our_population_trade_modifier)
-    }
-
-    /// C++ `CvCity::getPeaceTradeModifier` (CvCity.cpp:8284-8302).
-    pub fn city_peace_trade_modifier(&self, c: CityId, team: TeamId) -> i32 {
-        let defines = &self.d.defines;
-        let our_team = self.city_team(c);
-        debug_assert!(team != our_team);
-
-        if self.at_war(team, our_team) {
-            return 0;
-        }
-
-        let peace_turns = min(defines.foreign_trade_full_credit_peace_turns, self.teams[our_team].ai_at_peace_counter[team]);
-
-        if self.elapsed_game_turns <= peace_turns {
-            return defines.foreign_trade_modifier;
-        }
-
-        (defines.foreign_trade_modifier * peace_turns) / max(1, defines.foreign_trade_full_credit_peace_turns)
-    }
-
-    /// C++ `CvCity::getBaseTradeProfit` (CvCity.cpp:8304-8314).
-    pub fn city_base_trade_profit(&self, c: CityId, other: CityId) -> i32 {
-        let d = self.d;
-        let city = &self.cities[c];
-        let other_city = &self.cities[other];
-
-        let mut profit = min(
-            other_city.population * d.defines.their_population_trade_percent,
-            self.plot_distance(city.x, city.y, other_city.x, other_city.y) * d.worlds[self.setup.world_size].trade_profit_percent,
-        );
-
-        profit *= d.defines.trade_profit_percent;
-        profit /= 100;
-
-        profit = max(100, profit);
-
-        profit
-    }
-
-    /// C++ `CvCity::calculateTradeProfit` (CvCity.cpp:8316-8324).
-    pub fn city_calculate_trade_profit(&self, c: CityId, other: CityId) -> i32 {
-        let mut profit = self.city_base_trade_profit(c, other);
-        profit *= self.city_total_trade_modifier(c, Some(other));
-        profit /= 10000;
-        profit
-    }
 
     /// C++ `CvCity::calculateTradeYield` (CvCity.cpp:8327-8337).
     pub fn city_calculate_trade_yield(&self, c: CityId, yield_type: YieldType, trade_profit: i32) -> i32 {
@@ -1208,100 +1124,6 @@ impl Game {
         }
     }
 
-    // ---- trade routes ----
-
-    /// C++ `CvCity::getTradeCity` (CvCity.cpp:10996-11001): `None` if the slot is empty or
-    /// the city no longer exists (C++ `getCity(IDInfo)` returns NULL).
-    pub fn city_trade_city(&self, c: CityId, index: usize) -> Option<CityId> {
-        self.cities[c].trade_cities[index].filter(|&t| self.cities.contains(t))
-    }
-
-    /// C++ `CvCity::getTradeRoutes` (CvCity.cpp:11004-11017).
-    pub fn city_trade_routes(&self, c: CityId) -> i32 {
-        let owner = self.cities[c].owner;
-
-        let mut trade_routes = self.trade_routes;
-        trade_routes += self.players[owner].trade_routes;
-        if self.city_is_coastal(c, self.d.defines.min_water_size_for_ocean) {
-            trade_routes += self.players[owner].coastal_trade_routes;
-        }
-        trade_routes += self.cities[c].extra_trade_routes;
-
-        min(trade_routes, self.d.defines.max_trade_routes)
-    }
-
-    /// C++ `CvCity::clearTradeRoutes` (CvCity.cpp:11020-11036).
-    pub fn city_clear_trade_routes(&mut self, c: CityId) {
-        let owner = self.cities[c].owner;
-        for i in 0..self.cities[c].trade_cities.len() {
-            if let Some(trade_city) = self.city_trade_city(c, i) {
-                self.cities[trade_city].trade_route[owner] = false;
-            }
-            self.cities[c].trade_cities[i] = None;
-        }
-    }
-
-    /// C++ `CvCity::updateTradeRoutes` (CvCity.cpp:11040-11123).
-    pub fn city_update_trade_routes(&mut self, c: CityId) {
-        let max_trade_routes = self.d.defines.max_trade_routes.max(0) as usize;
-        let mut best_value = vec![0; max_trade_routes];
-
-        self.city_clear_trade_routes(c);
-
-        if !self.city_is_disorder(c) && !self.cities[c].plundered {
-            let trade_routes = self.city_trade_routes(c).max(0) as usize;
-            debug_assert!(trade_routes <= max_trade_routes);
-
-            let owner = self.cities[c].owner;
-            for p in self.player_ids() {
-                if self.player_can_have_trade_routes_with(owner, p) {
-                    // (the loop changes no city list: iterate by index)
-                    for n in 0..self.players[p].cities.len() {
-                        let loop_city = self.players[p].cities[n];
-                        if loop_city != c && (!self.cities[loop_city].trade_route[owner] || (self.city_team(c) == self.players[p].team)) {
-                            if self.city_plot_group(loop_city, owner) == self.city_plot_group(c, owner)
-                                || self.d.defines.ignore_plot_group_for_trade_routes != 0
-                            {
-                                let value = self.city_calculate_trade_profit(c, loop_city);
-
-                                for j in 0..trade_routes {
-                                    if value > best_value[j] {
-                                        for k in ((j + 1)..trade_routes).rev() {
-                                            best_value[k] = best_value[k - 1];
-                                            self.cities[c].trade_cities[k] = self.cities[c].trade_cities[k - 1];
-                                        }
-
-                                        best_value[j] = value;
-                                        self.cities[c].trade_cities[j] = Some(loop_city);
-
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        let owner = self.cities[c].owner;
-        let mut trade_profit = 0;
-
-        for i in 0..max_trade_routes {
-            if let Some(loop_city) = self.city_trade_city(c, i) {
-                self.cities[loop_city].trade_route[owner] = true;
-
-                trade_profit += self.city_calculate_trade_profit(c, loop_city);
-            }
-        }
-
-        for i in 0..YieldType::NUM {
-            let yield_type = YieldType::from_usize(i);
-            let trade_yield = self.city_calculate_trade_yield(c, yield_type, trade_profit);
-            self.city_set_trade_yield(c, yield_type, trade_yield); // XXX could take this out if handled when CvPlotGroup changes...
-        }
-    }
-
     // ---- turn processing: culture and religion ----
 
     /// C++ `CvCity::doCulture` (CvCity.cpp:11803-11817). Python `doCulture` callback.
@@ -1672,57 +1494,10 @@ mod tests {
     }
 
     #[test]
-    fn trade_routes_count() {
+    fn trade_yield_modifier() {
         let mut g = test_game();
         let p0 = PlayerId(0);
-        let coastal = add_city(&mut g, p0, 2, 1, 1);
-        let inland = add_city(&mut g, p0, 6, 3, 1);
-        g.trade_routes = 1;
-        g.players[p0].trade_routes = 1;
-        g.players[p0].coastal_trade_routes = 2;
-        g.cities[coastal].extra_trade_routes = 1;
-        g.cities[inland].extra_trade_routes = 1;
-        assert_eq!(g.city_trade_routes(coastal), 5);
-        assert_eq!(g.city_trade_routes(inland), 3);
-        g.cities[inland].extra_trade_routes = 20;
-        assert_eq!(g.city_trade_routes(inland), g.d.defines.max_trade_routes);
-    }
-
-    #[test]
-    fn trade_profit_and_modifiers() {
-        let mut g = test_game();
-        let (p0, p1) = (PlayerId(0), PlayerId(1));
-        let (t0, t1) = (g.players[p0].team, g.players[p1].team);
         let a = add_city(&mut g, p0, 0, 1, 4);
-        let b = add_city(&mut g, p1, 6, 4, 30);
-
-        // OUR_POPULATION_TRADE_MODIFIER 5, _OFFSET -10
-        assert_eq!(g.city_population_trade_modifier(a), 0);
-        assert_eq!(g.city_population_trade_modifier(b), 100);
-
-        // distance 6 + 3/2 = 7: min(30 * 50, 7 * 80 (duel)) * 20% = 112
-        assert_eq!(g.city_base_trade_profit(a, b), 112);
-        // min(4 * 50, 7 * 80) * 20% = 40, at least 100
-        assert_eq!(g.city_base_trade_profit(b, a), 100);
-
-        // FOREIGN_TRADE_MODIFIER 150 over FOREIGN_TRADE_FULL_CREDIT_PEACE_TURNS 50
-        g.teams[t0].ai_at_peace_counter[t1] = 20;
-        g.elapsed_game_turns = 10;
-        assert_eq!(g.city_peace_trade_modifier(a, t1), 150);
-        g.elapsed_game_turns = 100;
-        assert_eq!(g.city_peace_trade_modifier(a, t1), 60);
-        g.teams[t0].ai_at_peace_counter[t1] = 80;
-        assert_eq!(g.city_peace_trade_modifier(a, t1), 150);
-        set_war(&mut g, t0, t1, true);
-        assert_eq!(g.city_peace_trade_modifier(a, t1), 0);
-        set_war(&mut g, t0, t1, false);
-
-        // no capital (not connected), same area: 100 + foreign 10 + peace 150
-        g.cities[a].foreign_trade_route_modifier = 10;
-        assert_eq!(g.city_total_trade_modifier(a, Some(b)), 260);
-        assert_eq!(g.city_total_trade_modifier(a, None), 100);
-        assert_eq!(g.city_calculate_trade_profit(a, b), 112 * 260 / 10000);
-
         let commerce = YieldType::YIELD_COMMERCE;
         assert_eq!(g.city_calculate_trade_yield(a, commerce, 250), 0);
         g.players[p0].trade_yield_modifier[commerce.idx()] = 100;

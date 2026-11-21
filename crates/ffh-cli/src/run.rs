@@ -745,7 +745,7 @@ pub fn report(g: &Game) -> String {
                 g.city_growth_threshold(c),
                 [0, 1, 2].map(|y| g.city_yield_rate(c, YieldType::from_usize(y))),
                 [0, 1, 2, 3].map(|k| g.city_commerce_rate(c, CommerceType::from_usize(k))),
-                city.trade_cities.iter().filter(|t| t.is_some()).count(),
+                g.city_routes_from(c).len() + g.city_routes_into(c).len(),
                 city.trade_yield[2],
                 happy,
                 health,

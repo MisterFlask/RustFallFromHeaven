@@ -183,8 +183,6 @@ impl Game {
         for plot in self.map.plot_ids() {
             self.plot_update_plot_group_player(plot, p, false);
         }
-
-        self.player_update_trade_routes(p);
     }
 
     // ------------------------------------------------------------------ founding / acquiring / razing
@@ -417,7 +415,7 @@ impl Game {
         }
         //FfH: End Add
 
-        self.city_kill(old_city, false);
+        self.city_kill_as(old_city, false, true);
 
         if trade {
             for dx in -1..=1 {
@@ -585,7 +583,8 @@ impl Game {
         // Specialty plot and trade yields must be recomputed after the new city replaces the old.
         self.city_update_yield(new_city);
         self.city_update_commerces(new_city);
-        self.city_update_trade_routes(new_city);
+        // This game's trade (docs/TRADE.md, 3.4): the routes into it go on to the new city.
+        self.routes_city_changed_hands(old_city, new_city);
         if !self.cities[new_city].specialty_options.is_empty() { self.city_offer_specialty(new_city); }
         self.ev_city_acquired(old_owner, p, new_city, conquest, trade);
 
@@ -1085,7 +1084,6 @@ impl Game {
         }
 
         self.player_update_maintenance(p);
-        self.player_update_trade_routes(p);
 
         // `setInfoDirty(true)` is UI.
         if let Some(old) = old_capital_city {

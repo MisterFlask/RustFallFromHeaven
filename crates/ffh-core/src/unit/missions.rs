@@ -1039,7 +1039,8 @@ impl Game {
 
         let info = &self.d.units[self.units[u].unit_type];
         let trade_profit = match capital_city {
-            Some(capital_city) => self.city_calculate_trade_profit(city, capital_city),
+            // This game's trade (docs/TRADE.md, "As built"): one caravan's pay of a route to the capital.
+            Some(capital_city) => self.trade_mission_profit(city, capital_city),
             None => 0,
         };
         let mut gold = info.base_trade + info.trade_multiplier * trade_profit;

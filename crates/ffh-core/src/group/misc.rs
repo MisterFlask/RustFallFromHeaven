@@ -291,8 +291,10 @@ impl Game {
     }
 
     /// C++ `CvSelectionGroup::readyToMove` (C++ default `bAny = false`).
+    /// This game's trade (docs/TRADE.md, 4.1): a caravan of a route never waits for orders.
     pub fn group_ready_to_move(&self, g: GroupId, any: bool) -> bool {
-        (if any { self.group_can_any_move(g) } else { self.group_can_all_move(g) })
+        !self.group_has_route_caravan(g)
+            && (if any { self.group_can_any_move(g) } else { self.group_can_all_move(g) })
             && self.groups[g].mission_queue.is_empty()
             && self.groups[g].activity_type == ActivityType::ACTIVITY_AWAKE
             && !self.group_is_busy(g)

@@ -191,7 +191,17 @@ impl Game {
     /// `deleteCity` removes it from `self.cities`; `c` dangles afterwards). Python event
     /// `cityLost`.
     pub fn city_kill(&mut self, c: CityId, update_plot_groups: bool) {
+        self.city_kill_as(c, update_plot_groups, false);
+    }
+
+    /// [`Game::city_kill`] of a city that changes hands (`player_acquire_city`, `changing_hands`):
+    /// the trade routes into it are kept for the new city (docs/TRADE.md, 3.4).
+    pub(crate) fn city_kill_as(&mut self, c: CityId, update_plot_groups: bool, changing_hands: bool) {
         let d = self.d;
+
+        // This game's trade (docs/TRADE.md, 3.4): the routes from it end; those into it end unless
+        // it changes hands.
+        self.routes_on_city_gone(c, changing_hands);
         let defines = &d.defines;
 
         // Interface: clear the city selection.
@@ -250,10 +260,6 @@ impl Game {
         self.city_assign_working_plots(c);
 
         self.city_clear_order_queue(c);
-
-        // UNOFFICIAL_PATCH 08/04/09 jdog5000: clear the trade routes of the dead city, else they
-        // are claimed for the owner forever.
-        self.city_clear_trade_routes(c);
 
         self.plot_set_plot_city(plot, None);
 
@@ -560,7 +566,6 @@ impl Game {
             if old_occupation != self.city_is_occupation(c) {
                 self.city_update_corporation(c);
                 self.city_update_maintenance(c);
-                self.city_update_trade_routes(c);
                 self.city_update_culture_level(c, true);
                 self.cities[c].ai_assign_work_dirty = true;
             }

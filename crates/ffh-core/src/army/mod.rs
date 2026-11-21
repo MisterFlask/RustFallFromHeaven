@@ -125,7 +125,8 @@ impl Game {
     /// [`Game::unit_is_army_unit`] refuses every hero).
     pub fn unit_type_is_army_unit(&self, unit_type: UnitType) -> bool {
         let info = &self.d.units[unit_type];
-        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.attack_rating() <= 0 || info.animal {
+        // (The Caravan, docs/TRADE.md 3.2, is none: it has no attack, and is named here too.)
+        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.attack_rating() <= 0 || info.animal || Some(unit_type) == self.caravan_unit_type() {
             return false;
         }
         if hero_promotion(self.d).is_some_and(|h| info.free_promotions[h]) {
