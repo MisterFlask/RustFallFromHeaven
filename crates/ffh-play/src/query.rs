@@ -71,7 +71,7 @@ pub enum Query {
     /// House of another realm it has met (with its Court button).
     House { house: HouseId },
     /// Engagement combat (docs/ENGAGEMENTS.md): the plan of an attack on `to` by `by` in
-    /// `formation` (else the rules' auto formation): the pool, both formations, the slots and
+    /// `squad` (else the strongest squad that can attack; docs/ENGAGEMENTS.md, "Squads"): the pool, both formations, the slots and
     /// lanes, the ground, the defenders seen and their formation, and the forecast
     /// (`view::battles::engage_preview`).
     EngagePreview { by: crate::command::EngageBy, to: (i32, i32), squad: Option<ffh_core::ids::SquadId> },
@@ -181,7 +181,7 @@ pub const QUERY_FIELDS: &[(&str, &[&str])] = &[
     ("court", &[]),
     ("grant", &["city"]),
     ("house", &["house"]),
-    ("engage_preview", &["army", "units", "from", "to", "formation"]),
+    ("engage_preview", &["army", "units", "from", "to", "squad"]),
     ("battle_log", &["report"]),
     ("battle_reports", &[]),
     ("trade", &["with"]),
