@@ -320,35 +320,77 @@ export function preferredRow(u) {
   return `${ROW_NAMES[r] ?? "-"}: ${rowActions(acts[r])}`;
 }
 
-/** A unit's actions in its front, middle and rear rows (the view's `engage_actions`):
- *  "2 strikes / 1 strike / 1 strike" ("—" where it has none), or "". */
-export function actionsLine(acts) {
-  if (!Array.isArray(acts) || acts.length !== 3) return "";
-  return acts.map(rowActions).join(" / ");
-}
-
-/** A unit's battle numbers (the view's `engage_*`; docs/UNIT_STATS.md): "ATK 40 · DEF 40 · HP 55/120
- *  · MAG 30 · MDEF 15 · ACC 90 · EVA 0 · CRIT 10 · speed 4 · large" (`hp` / `max_hp` are the health
- *  percent; its battle HP scales it to `engage_max_hp`; MAG only for a caster), then its actions by
- *  row when the view sends them. */
-export function engageNumbers(u) {
-  const parts = [engageBrief(u)];
-  const st = (v) => Math.round((v ?? 0) / 10);
-  if (u.engage_magic >= 10) parts.push(`MAG ${st(u.engage_magic)}`);
-  if (u.engage_magic_defense !== undefined && u.engage_magic_defense !== null) parts.push(`MDEF ${st(u.engage_magic_defense)}`);
-  for (const [k, label] of [["engage_accuracy", "ACC"], ["engage_evasion", "EVA"], ["engage_crit", "CRIT"]]) {
-    if (u[k] !== undefined && u[k] !== null) parts.push(`${label} ${u[k]}`);
-  }
-  if (u.engage_speed !== undefined && u.engage_speed !== null) parts.push(`speed ${u.engage_speed}`);
-  if (u.engage_large) parts.push("large");
-  const acts = actionsLine(u.engage_actions);
-  return `${parts.join(" · ")}${acts ? ` · front / middle / rear: ${acts}` : ""}`;
-}
-
-/** The first of a unit's battle numbers: "ATK 40 · DEF 40 · HP 55/120" (the card's line; the rest is
- *  in its tooltip). */
+/** The first of a unit's battle numbers: "ATK 40 · DEF 40 · HP 55/120" (the panel's line; the rest
+ *  is on the unit card, its tooltip). */
 export function engageBrief(u) {
   const st = (v) => Math.round((v ?? 0) / 10);
-  const hp = Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp);
-  return `ATK ${st(u.engage_attack)} · DEF ${st(u.engage_defense)} · HP ${hp}/${u.engage_max_hp}`;
+  const hp = battleHp(u);
+  return `ATK ${st(u.engage_attack)} · DEF ${st(u.engage_defense)} · HP ${hp?.hp ?? 0}/${hp?.max ?? 0}`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// The unit card's numbers (unit_card.js draws them): pure, tested in test/engagements.test.mjs.
+
+/** A unit's battle HP: the view's health percent (`hp` / `max_hp`) scaled to its `engage_max_hp`
+ *  (`{hp, max}`), or null without engagements. */
+export function battleHp(u) {
+  if (!u?.engage_max_hp) return null;
+  return { hp: Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp), max: u.engage_max_hp };
+}
+
+/** A unit's battle numbers as the unit card's tiles (docs/UNIT_STATS.md), always these eight in
+ *  this order: ATK, DEF, MAG, MDEF, ACC, EVA, CRIT, SPD (`{key, label, value, off}`). ATK, DEF,
+ *  MAG and MDEF are the view's x100 values over 10, rounded; the rest as sent. A number the unit
+ *  does not use (MAG for a non-caster: under 10) or the view does not send is `off`, its value
+ *  "—", so the tiles never shift. Null without engagements (a sea or air unit). */
+export function engageStats(u) {
+  if (u?.engage_attack === undefined || u?.engage_attack === null) return null;
+  const has = (v) => v !== undefined && v !== null;
+  const st = (v) => (has(v) ? Math.round(v / 10) : null);
+  const tile = (key, label, v, use = has(v)) => ({ key, label, value: use ? String(v) : "—", off: !use });
+  return [
+    tile("attack", "ATK", st(u.engage_attack)),
+    tile("defense", "DEF", st(u.engage_defense)),
+    tile("magic", "MAG", st(u.engage_magic), (u.engage_magic ?? 0) >= 10),
+    tile("magic_defense", "MDEF", st(u.engage_magic_defense)),
+    tile("accuracy", "ACC", u.engage_accuracy),
+    tile("evasion", "EVA", u.engage_evasion),
+    tile("crit", "CRIT", u.engage_crit),
+    tile("speed", "SPD", u.engage_speed),
+  ];
+}
+
+/** The word of row `r` (0 front, 1 middle, 2 rear). */
+export const rowName = (r) => ROW_NAMES[r] ?? "-";
+
+/** A unit's rows in a battle for the unit card, from the view's `engage_actions`: `rows`
+ *  (`[{name, actions, n}]`, front to rear), `best` (the row with the most actions, the first on a
+ *  tie; null when it has none), and, when the view places it in a squad (`u.squad`, `cell = row *
+ *  3 + lane`, row 0 the front), `here` (its row, else null) and `warn` (`Front: 1 strike. Best:
+ *  Rear, 2 spells.` when that row has fewer actions than the best one, else null). Null without
+ *  engagements (a sea or air unit). */
+export function rowPlan(u) {
+  const acts = u?.engage_actions;
+  if (!Array.isArray(acts) || acts.length !== 3) return null;
+  const rows = acts.map((a, r) => ({ name: rowName(r), actions: rowActions(a), n: a?.n ?? 0 }));
+  let best = null;
+  rows.forEach((r, i) => {
+    if (r.n > 0 && (best === null || r.n > rows[best].n)) best = i;
+  });
+  const cell = u.squad?.cell;
+  const here = Number.isInteger(cell) && cell >= 0 && cell < 9 ? Math.floor(cell / 3) : null;
+  const said = (r) => (rows[r].n ? rows[r].actions : "no actions");
+  const warn = here !== null && best !== null && rows[here].n < rows[best].n ? `${rows[here].name}: ${said(here)}. Best: ${rows[best].name}, ${said(best)}.` : null;
+  return { rows, best, here, warn };
+}
+
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+
+/** The chip of a unit's place in a squad (`u.squad = {id, num, cell, auto}`, `cell = row * 3 +
+ *  lane`): "Squad II · middle, lane 2"; null outside one. */
+export function squadLine(u) {
+  const s = u?.squad;
+  if (!s || !Number.isInteger(s.cell) || s.cell < 0 || s.cell >= 9) return null;
+  const n = ROMAN[s.num] ?? String(s.num ?? "");
+  return `Squad ${n} · ${rowName(Math.floor(s.cell / 3)).toLowerCase()}, lane ${(s.cell % 3) + 1}`;
 }

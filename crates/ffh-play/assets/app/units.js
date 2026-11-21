@@ -15,7 +15,8 @@ import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn, unitFigure, up
 import { effectsOf, infoTip, partsList } from "./infotips.js";
 import { marchLine } from "./armies.js";
 import { exploreShort, exploreFull } from "./explore.js";
-import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
+import { battleTerrain, openPlan, preferredRow, flashBattle, engageBrief } from "./engagements.js";
+import { unitCard } from "./unit_card.js";
 import { portLine, seaLineWarns } from "./sea.js";
 import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
@@ -1520,26 +1521,45 @@ function wireStripDrag(strip) {
 }
 
 /** Engagement combat (docs/ENGAGEMENTS.md): the row the unit prefers and what it does there as a
- *  badge, its A, Dv and battle HP in the tooltip; null without engagements (or a sea or air unit). */
+ *  badge (the row's tooltip is the unit card); null without engagements (or a sea or air unit). */
 function roleBadge(u) {
   const row = preferredRow(u);
   if (!row) return null;
-  return h("span.badge.role", { title: engageText(u) }, row);
+  return h("span.badge.role", row);
 }
 
-/** "Front: 2 strikes · A 4 · Dv 5 · HP 55/120 · speed 4". */
-const engageText = (u) => `${preferredRow(u)} · ${engageNumbers(u)}`;
-
-const ENGAGE_TITLE =
-  "In a battle: the row it stands in decides what it does and how many times (front, middle, rear: its own rows); the auto formation puts it in the row it prefers first. ATK and DEF: its attack and defence; MAG and MDEF: its magic (spells) and magic defence; ACC: its chance to hit, less the target's EVA (evasion); CRIT: its crit chance; HP: its health in a battle; speed: when it acts (the fastest first)";
-
 /** The lead unit's battle numbers (engagement combat): the row it prefers and what it does there,
- *  A, Dv and HP; null without engagements (or for a sea or air unit). */
+ *  ATK, DEF and battle HP, the unit card as its tooltip; null without engagements (or for a sea or
+ *  air unit). */
 function engageLine(u) {
   const row = u ? preferredRow(u) : "";
   if (!row) return null;
-  return h("div.engage-line", { title: ENGAGE_TITLE }, h("b", row), h("span.dim", ` · ${engageNumbers(u)}`));
+  return h("div.engage-line", { tip: () => cardOf(u) }, h("b", row), h("span.dim", ` · ${engageBrief(u)}`));
 }
+
+/** The unit's state as the card's chips: a promotion waiting, its automation, army, summon's
+ *  turns, cargo, what it is doing, its siege, its great person's card. */
+function stateChips(u) {
+  const act = activityOf(u);
+  return [
+    u.promo_ready ? h("span.badge.promo", "promote") : null,
+    automationBadge(u),
+    armyBadge(u),
+    u.summon_turns ? h("span.badge", `${u.summon_turns} turns left`) : null,
+    u.cargo?.length ? h("span.badge", `${u.cargo.length} aboard`) : null,
+    u.transport !== null && u.transport !== undefined ? h("span.badge", "aboard") : null,
+    act ? h("span.badge", humanize(act)) : null,
+    u.siege?.turn > 0 ? h("span.badge.warn", `${u.siege.label}: no healing`) : u.besieged ? h("span.badge.warn", "besieged: no city healing") : null,
+    cardBadge(u),
+  ].filter(Boolean);
+}
+
+/** Unit `u`'s card (unit_card.js) as a tooltip: its state's chips, `hint` its click's. */
+function cardOf(u, hint = null) {
+  return unitCard(u, { chips: stateChips(u), hint, figure: unitFigure(u.type, u.owner, 56) ?? unitIcon(u.type, ownerLook(u.owner)) });
+}
+
+const CLICK_HINT = "Click: select its group. Ctrl-click: add or remove this unit.";
 
 /** The selection's army in one line: its size (and target), its recruits marching to it and in
  *  training for it, its supply; the Armies screen [F5] has the
@@ -1696,32 +1716,9 @@ function unitChip(u, selected, lead) {
   );
 }
 
-/** A strip unit's tooltip: its name, numbers, state and what a click does. */
+/** A strip unit's tooltip: its card, with what a click does. */
 function chipTip(u) {
-  const act = activityOf(u);
-  const numbers = [
-    u.strength !== undefined ? `${u.strength} strength` : null,
-    `${Math.round((100 * u.hp) / Math.max(1, u.max_hp))}% health${u.siege?.turn > 0 ? ` (${u.siege.label}: no healing)` : u.besieged ? " (besieged: city healing suppressed)" : ""}`,
-    u.moves !== undefined ? `${moves(u.moves)}/${moves(u.max_moves)} moves` : null,
-    u.level !== undefined ? `level ${u.level}${u.xp !== undefined && u.xp_needed ? ` (${u.xp}/${u.xp_needed} xp)` : ""}` : null,
-  ].filter(Boolean);
-  const badges = [
-    u.promo_ready ? h("span.badge.promo", "promote") : null,
-    automationBadge(u),
-    armyBadge(u),
-    u.summon_turns ? h("span.badge", `${u.summon_turns} turns left`) : null,
-    u.cargo?.length ? h("span.badge", `${u.cargo.length} aboard`) : null,
-    u.transport !== null && u.transport !== undefined ? h("span.badge", "aboard") : null,
-    act ? h("span.badge", humanize(act)) : null,
-    cardBadge(u),
-  ].filter(Boolean);
-  return [
-    h("div.tip-title", u.name ?? dname("UnitType", u.type)),
-    h("div.tip-stats", numbers.join(" · ")),
-    preferredRow(u) ? h("div.tip-stats", engageText(u)) : null,
-    badges.length ? h("div.chip-badges", badges) : null,
-    h("div.tip-hint", touchy() ? "Tap: select its group." : "Click: select its group. Ctrl-click: add or remove this unit."),
-  ];
+  return cardOf(u, touchy() ? "Tap: select its group." : CLICK_HINT);
 }
 
 function unitRow(u, selected) {
@@ -1731,7 +1728,7 @@ function unitRow(u, selected) {
     {
       "data-unit": u.id,
       class: [selected ? "selected" : "", u.transport !== null && u.transport !== undefined ? "cargo" : ""].filter(Boolean).join(" "),
-      title: "Click: select its group. Ctrl-click: add or remove this unit.",
+      tip: () => cardOf(u, touchy() ? "Tap: select its group." : CLICK_HINT),
       onclick: (ev) => pickUnit(u, ev),
     },
     h(
@@ -1910,8 +1907,8 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
   const d = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
   // Each number by its icon; the label (shown on a wide screen only where there is room) is the
   // line's tooltip as well.
-  const stat = (icon, label, value, title, cls = "") =>
-    h(`div.iso-statline${cls}`, { title: title ?? label }, isoIcon(icon, { px: 32 }), h("span.label", label), value);
+  const stat = (icon, label, value, title, cls = "", tip = null) =>
+    h(`div.iso-statline${cls}`, tip ? { tip } : { title: title ?? label }, isoIcon(icon, { px: 32 }), h("span.label", label), value);
   const plate = d
     ? h(
         "div.iso-plate",
@@ -1919,10 +1916,10 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
         d.moves !== undefined ? stat("moves", "Movement", h("span.value", `${moves(d.moves)}/${moves(d.max_moves)}`)) : null,
         d.max_hp ? stat("hp", "Health", isoBar(d.hp / Math.max(1, d.max_hp), { w: 64, kind: d.hp * 4 < d.max_hp ? "low" : "hp" }), `Health: ${Math.round((100 * d.hp) / d.max_hp)}%`) : null,
         d.level !== undefined ? stat("xp", "Level", h("span.value", `${d.level}${d.xp !== undefined && d.xp_needed ? ` (${d.xp}/${d.xp_needed})` : ""}`), d.xp !== undefined && d.xp_needed ? `Level ${d.level}: ${d.xp} of the ${d.xp_needed} experience the next promotion needs` : null) : null,
-        // Engagement combat: the row it prefers and what it does there, A, Dv and battle HP (the
-        // rest in the tooltip).
+        // Engagement combat: the row it prefers and what it does there, ATK, DEF and battle HP
+        // (the rest on the unit card, its tooltip).
         preferredRow(d)
-          ? stat("strength", "Battle", h("span.value.engage", `${preferredRow(d)} · ${engageBrief(d)}`), `${engageText(d)}\n\n${ENGAGE_TITLE}`, ".engage-stat")
+          ? stat("strength", "Battle", h("span.value.engage", `${preferredRow(d)} · ${engageBrief(d)}`), null, ".engage-stat", () => cardOf(d))
           : null,
         d.siege?.turn > 0 ? h(`div.siege-status${d.siege.state === "starvation" ? ".bad" : ".warn"}`, { tip: d.siege.text }, `${d.siege.label} · no healing`) : null,
       )

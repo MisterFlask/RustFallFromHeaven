@@ -1142,9 +1142,16 @@ lanes. In the browser:
   repelled; drawn at 32 px tiles and up, inside its plot): a click on it watches it again, a click
   elsewhere on the plot selects as usual. A battle older than the kept logs shows its summary
   only.
-- **Units.** The unit panel shows the row the lead unit prefers in a battle and what it does there ("Front: 2 strikes"), its A, Dv and HP in a battle, its speed,
-  whether it is large and its actions in the front, middle and rear rows (the view's `engage_*`);
-  a unit row's battle badge has the same in its tooltip. The help of first strikes, withdrawal, collateral damage, Blitz and combat
+- **Units.** The unit panel shows the row the lead unit prefers in a battle and what it does there
+  ("Front: 2 strikes"), its ATK, DEF and HP in a battle (the view's `engage_*`). A unit's tooltip
+  (in the unit strip, the unit list, the panel's battle line) is its **unit card** (`app/unit_card.js`,
+  the owner's request, 2026-11-21): its portrait, name, `Level N · M/M moves · strength S`, its
+  battle HP and XP as bars, its eight battle numbers as tiles in a fixed order (ATK, DEF, MAG,
+  MDEF / ACC, EVA, CRIT, SPD; one it does not use greyed with "—"), its actions from the front,
+  middle and rear rows (the row with the most actions gilt as "best"; with a squad place,
+  `u.squad`, the row it stands in outlined, and a red line when it does less there than in its
+  best row), its promotions, its state as chips (army, activity, squad, Large) and the click's
+  hint; its keywords' reminders go in the side boxes. The help of first strikes, withdrawal, collateral damage, Blitz and combat
   limits (units and promotions) adds what they mean in a battle. The Stack attack player option is
   ignored (Options does not list it).
 

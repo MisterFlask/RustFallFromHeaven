@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { S } from "../app/state.js";
-import { outcomeFor, battleLine, battleMarkers, battleById, battleTerrain, engageNumbers, actionsLine, battlesToShow } from "../app/engagements.js";
+import { outcomeFor, battleLine, battleMarkers, battleById, battleTerrain, engageBrief, engageStats, battleHp, rowPlan, squadLine, battlesToShow } from "../app/engagements.js";
 
 const battle = (extra = {}) => ({
   id: 3,
@@ -36,18 +36,49 @@ test("a battle's line names the place, the outcome and both sides' losses as the
   assert.equal(battleLine(battle({ viewer_side: 1, plot_taken: false, place: null })), "(10, 5): held; 3 lost, 0 of theirs");
 });
 
-test("a unit's battle numbers: its stats, HP, speed, large, and its actions by row", () => {
+test("a unit's battle numbers: the panel's line, its HP, the card's eight tiles in a fixed order", () => {
   const u = { hp: 50, max_hp: 100, engage_attack: 440, engage_defense: 500, engage_max_hp: 120 };
-  assert.equal(engageNumbers(u), "ATK 44 · DEF 50 · HP 60/120");
-  const acts = [{ kind: "Charge", n: 2 }, { kind: "Strike", n: 1 }, { kind: "None", n: 0 }];
-  assert.equal(actionsLine(acts), "2 charges / 1 strike / —");
-  assert.equal(
-    engageNumbers({ ...u, engage_magic: 1, engage_magic_defense: 320, engage_accuracy: 90, engage_evasion: 10, engage_crit: 10, engage_speed: 6, engage_large: true, engage_actions: acts }),
-    "ATK 44 · DEF 50 · HP 60/120 · MDEF 32 · ACC 90 · EVA 10 · CRIT 10 · speed 6 · large · front / middle / rear: 2 charges / 1 strike / —",
+  assert.equal(engageBrief(u), "ATK 44 · DEF 50 · HP 60/120");
+  assert.deepEqual(battleHp(u), { hp: 60, max: 120 });
+  assert.equal(battleHp({ hp: 100, max_hp: 100 }), null);
+  const full = { ...u, engage_magic: 1, engage_magic_defense: 320, engage_accuracy: 90, engage_evasion: 10, engage_crit: 10, engage_speed: 6 };
+  // A non-caster's MAG stays in its place, greyed.
+  assert.deepEqual(
+    engageStats(full).map((s) => [s.label, s.value, s.off]),
+    [["ATK", "44", false], ["DEF", "50", false], ["MAG", "—", true], ["MDEF", "32", false], ["ACC", "90", false], ["EVA", "10", false], ["CRIT", "10", false], ["SPD", "6", false]],
   );
-  // A caster's magic.
-  assert.equal(engageNumbers({ ...u, engage_magic: 300 }), "ATK 44 · DEF 50 · HP 60/120 · MAG 30");
-  assert.equal(actionsLine(null), "");
+  // A caster's magic; a number the view does not send is greyed too.
+  const caster = engageStats({ ...u, engage_magic: 300 });
+  assert.deepEqual(caster.map((s) => s.label), ["ATK", "DEF", "MAG", "MDEF", "ACC", "EVA", "CRIT", "SPD"]);
+  assert.deepEqual([caster[2].value, caster[2].off, caster[4].value, caster[4].off], ["30", false, "—", true]);
+  assert.equal(engageStats({ hp: 100, max_hp: 100 }), null);
+});
+
+test("a unit's rows: the actions from each, the best row (most actions, the first on a tie)", () => {
+  const acts = [{ kind: "Charge", n: 2 }, { kind: "Strike", n: 1 }, { kind: "None", n: 0 }];
+  const p = rowPlan({ engage_actions: acts });
+  assert.deepEqual(p.rows.map((r) => [r.name, r.actions]), [["Front", "2 charges"], ["Middle", "1 strike"], ["Rear", "—"]]);
+  assert.equal(p.best, 0);
+  assert.equal(p.here, null);
+  assert.equal(p.warn, null);
+  assert.equal(rowPlan({ engage_actions: [{ kind: "Shoot", n: 2 }, { kind: "Shoot", n: 2 }, { kind: "Shoot", n: 2 }] }).best, 0);
+  assert.equal(rowPlan({ engage_actions: [{ kind: "Strike", n: 1 }, { kind: "Spell", n: 1 }, { kind: "Spell", n: 2 }] }).best, 2);
+  assert.equal(rowPlan({ engage_actions: [{ kind: "None", n: 0 }, { kind: "None", n: 0 }, { kind: "None", n: 0 }] }).best, null);
+  assert.equal(rowPlan({}), null);
+});
+
+test("a unit in a squad: the row it stands in, a line when it does less there, its chip", () => {
+  const acts = [{ kind: "Strike", n: 1 }, { kind: "Spell", n: 1 }, { kind: "Spell", n: 2 }];
+  // cell = row * 3 + lane: 1 is the front row, lane 2.
+  const front = rowPlan({ engage_actions: acts, squad: { id: 4, num: 2, cell: 1, auto: false } });
+  assert.equal(front.here, 0);
+  assert.equal(front.warn, "Front: 1 strike. Best: Rear, 2 spells.");
+  const rear = rowPlan({ engage_actions: acts, squad: { id: 4, num: 2, cell: 7, auto: true } });
+  assert.equal(rear.here, 2);
+  assert.equal(rear.warn, null);
+  assert.equal(squadLine({ squad: { id: 4, num: 2, cell: 4, auto: false } }), "Squad II · middle, lane 2");
+  assert.equal(squadLine({ squad: { id: 1, num: 1, cell: 0 } }), "Squad I · front, lane 1");
+  assert.equal(squadLine({}), null);
 });
 
 test("the map's markers: one per plot, the newest battle there (the view lists newest first)", () => {
