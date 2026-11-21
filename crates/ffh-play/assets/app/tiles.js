@@ -200,8 +200,9 @@ export function applyMapDelta(prev, reply) {
   return { map, changed: tiles };
 }
 
-/** The yield colours (food, production, commerce) of the yield layer. */
-export const YIELD_COLORS = ["#8fe07a", "#e0a050", "#f2dc5a"];
+/** The yield colours (food, production, commerce) of the yield layer: green, grey, yellow, as the
+ *  skin's yield icons (iso/ui_food, ui_production, ui_commerce). */
+export const YIELD_COLORS = ["#8fe07a", "#c4c8cc", "#f2dc5a"];
 
 /** The map's layers (the map's own drawing modes, design §5.1 "Layers"). */
 export const LAYERS = ["terrain", "political", "yield", "sea"];
