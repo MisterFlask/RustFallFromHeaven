@@ -86,6 +86,48 @@ function hilltopFoot(world, x, y, radius = 0.08) {
   return best;
 }
 
+/** Where a standing work's card stands on a hill, [lx, lz, base]. Its art paints a diamond of
+ *  ground half as deep as the card is wide, which an upright card shows as ground reaching back
+ *  from its foot (its corners `halfW` to each side, its back tip `2 * halfW` behind). Standing at
+ *  the summit (`hilltopFoot`), that diamond lay over land falling away behind and beside it: the
+ *  work floated over the hill. So the foot goes where the ground under the whole diamond is
+ *  flattest, on the plot's own level (one crown or the shelf, never across a scarp, off the water
+ *  and out of river channels), and the card stands at the mean height of that ground: its painted
+ *  ground lies on the land, the front tip a little into it rather than over it. */
+function hillWorkFoot(world, x, y, halfW) {
+  const D = 2 * halfW;
+  // (The diamond's outline and middle: the front tip, the corners, the back tip and between.)
+  const pts = [[0, 0], [0, 0.5], [0, 1], [-1, 0.5], [1, 0.5], [-0.5, 0.25], [0.5, 0.25], [-0.5, 0.75], [0.5, 0.75]];
+  let best = null, bestScore = -Infinity;
+  for (let lz = 0.46; lz >= -0.1 + D - 0.5; lz -= 0.04) {
+    for (let lx = -0.12; lx <= 0.121; lx += 0.06) {
+      let lo = Infinity, hi = -Infinity, sum = 0, ok = true;
+      let crown = null;
+      for (const [u, v] of pts) {
+        const sx = x + 0.5 + lx + u * halfW, sy = y + 0.5 - lz + v * D;
+        if (world.riverCells.size && world.riverDist(sx, sy) < RIVER_BANK + 0.02) { ok = false; break; }
+        const h = world.heightAt(sx, sy);
+        if (world.cliff > 0) {
+          // On the land, and all of it on one level: a crown or the shelf below its scarp.
+          const up = world.scarp > 0;
+          if (world.shore <= 0.012 || (crown !== null && up !== crown)) { ok = false; break; }
+          crown = up;
+        }
+        lo = Math.min(lo, h);
+        hi = Math.max(hi, h);
+        sum += h;
+      }
+      if (!ok) continue;
+      // Flattest first; then on a crown rather than the shelf, high, and near the plot's front.
+      const mean = sum / pts.length;
+      const score = -(hi - lo) + (crown ? 0.05 : 0) + mean * 0.02 - Math.abs(lz - 0.3) * 0.02 - Math.abs(lx) * 0.02;
+      if (score > bestScore) { bestScore = score; best = [lx, lz, mean]; }
+    }
+  }
+  // (Nowhere clear on the plot: the summit, as before.)
+  return best ?? hilltopFoot(world, x, y, halfW * 0.5);
+}
+
 /** A spot of land plot (x, y), plot-local [x east, z south], kept on the plot's own level of land
  *  where the ground steps (world.js `cliff`): drawn toward the plot's middle until it is off the
  *  water, back from the rim of the land's face, and off a neighbouring hill's crown. (A plot's
@@ -942,7 +984,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null, c
         const tribal = imp === "IMPROVEMENT_GOODY_HUT";
         const hill = world.kind[i] === KIND.HILLS;
         const [lx, lz, base] = water ? [0, 0.5, SEA - DRAFT]
-          : hill ? hilltopFoot(world, x, y, tribal ? 0.18 : art.w * px * 0.25)
+          : hill ? (tribal ? hilltopFoot(world, x, y, 0.18) : hillWorkFoot(world, x, y, art.w * px * 0.5))
           : tribal ? [0, 0, H(x + 0.5, y + 0.5)] : builtFoot(world, x, y);
         footZ = lz;
         footX = lx;

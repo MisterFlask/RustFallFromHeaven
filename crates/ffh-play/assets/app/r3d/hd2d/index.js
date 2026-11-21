@@ -1,7 +1,7 @@
 // The HD-2D map (docs/HD2D.md): the isometric renderer's pixel-art sprites standing in the 3D
 // renderer's lit world, as in Octopath Traveler or Triangle Strategy -- a perspective camera tilted
 // toward the horizon, figures, towns and props as flat cards facing it, the light painted in the
-// sprites matched by a sun from the upper left, light shafts and glow, a mood for each region,
+// sprites matched by a sun from the upper left, glow, a mood for each region,
 // glowing borders, and a tilt-shift blur. The default map (look.js rendererChoice; the isometric
 // map where it cannot run); this module is loaded on demand (map.js useR3d), so the 3D renderer
 // alone (the r3d lab's own mode) never loads it.
@@ -431,7 +431,6 @@ export class MapHd2d extends Map3D {
       cfg: this.qualityCfg(),
       focus: this.focus,
       tilt: smoothstep(48, 90, this.ts),
-      beamZoom: smoothstep(48, 96, this.ts),
       farDepth: cam.dist * 2.2,
       mood: this.scene.tex.mood,
       mood2: this.scene.tex.mood2,

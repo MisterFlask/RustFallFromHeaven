@@ -139,7 +139,7 @@ last autosave).
 
 **The map** is north up and wraps east-west like the game. It is the **HD-2D map**
 (docs/HD2D.md): the pixel-art sprites of units, towns and props standing as cards in a lit 3D
-world, seen through a camera tilted toward the horizon, with light shafts, glow, a mood for each
+world, seen through a camera tilted toward the horizon, with glow, a mood for each
 region and glowing borders. Where the browser cannot run it (no WebGL2 on a GPU, its shaders too
 slow, a lost graphics context) the page says so and draws the **isometric 2.5D map**
 (docs/ISO.md) instead. Zoom (`+` `-`, `Q` `E`, the wheel) goes through each map's steps.

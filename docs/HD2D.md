@@ -6,7 +6,7 @@
 everything modelled, is retired: no longer offered to players, kept in the r3d lab for the layers
 the two share. It draws the game in the manner of Octopath Traveler and Triangle Strategy: the
 isometric renderer's pixel-art sprites stand as flat cards in the 3D renderer's lit world, seen
-through a perspective camera tilted toward the horizon, with light shafts, glow, a mood for each
+through a perspective camera tilted toward the horizon, with glow, a mood for each
 region, glowing borders and a tilt-shift blur. The look target is the owner's reference image,
 [docs/art/hd2d-reference.png](art/hd2d-reference.png). It reads the game state only: no rule, save
 or protocol changed for it.
@@ -269,8 +269,13 @@ with restrained bloom. The flat renderer keeps the sphere colours and two-letter
   smaller than a city, its painted ground thinned out over its foot by a dither fixed to the art's
   texels (it melts into the 3D land instead of ending in the isometric diamond's edge). Its foot
   stands on the ground at the plot's front edge on level land, stepped back off a river.
-  On hills, `hilltopFoot` searches the crown in both directions for high, supported ground clear
-  of river channels, and puts the card's foot at the actual height there. Tribal villages are
+  On hills (`hillWorkFoot`, 2026-11-21) the foot goes where the ground under the card's whole
+  painted diamond is flattest -- the diamond an upright card shows as ground reaching back from its
+  foot, as deep as the card is wide -- on one level (a crown or the shelf, never across a scarp),
+  off the water and clear of river channels, and the card stands at that ground's mean height. (Until
+  then `hilltopFoot` put the foot on the summit at its height: the diamond lay over the land falling
+  away behind and beside the summit, and the work floated over its hill, against the sky on a hill
+  at the back of the view.) Tribal villages are
   five separate smaller hut cards about a clearing; each hut samples its own ground contact.
   Flat works (farms, pastures, plantations, wineries, quarries) stay the 3D renderer's fields.
   A resource is its family's prop at the plot's front-left; under a standing improvement it lies
@@ -401,9 +406,9 @@ does for the isometric sprites. No unit art changed.
   stones that had stood on every open plot are gone: they made open land read as a thin wood. The
   Hills now read through the terrain's turf-capped scarps (docs/R3D.md §4), with a grassy crown,
   short soil-and-stone exposures and broad grassy shoulders; `clutterOf` adds no extra rock or
-  pebble cards for hills. Hill mines are 0.82 of the usual improvement-card scale and choose a
-  supported patch on the crown, as other standing improvements do, keeping their apron off
-  river banks. Their base follows the turf at the chosen hilltop contact.
+  pebble cards for hills. Hill mines are 0.82 of the usual improvement-card scale and stand where
+  their painted apron lies on the hill, as other standing improvements do (`hillWorkFoot`, §5),
+  keeping it off river banks.
   The meadow's ground (shaders.js `G_GRASS`) no longer mixes the two either: a grassland stays green
   and a plains golden, their patches interleaving only where they meet (they had been a tenth
   and three quarters golden).
@@ -711,8 +716,7 @@ changed):
   its land (`onLand`, hd2d/dress.js): a building's foot, a banner, a resource or a group of figures
   whose spot would fall past the rim of the land's face, or on a neighbouring hill's crown, is
   drawn back toward the plot's middle, and no tree or tuft of a land plot stands in the water. The
-  borders, the grid and the plots' marks are not drawn on a face (`OVERLAY_FS`). The light shafts'
-  haze lies on the lifted land as it lay on the land before (`RAYS_FS` `LAND_UP`).
+  borders, the grid and the plots' marks are not drawn on a face (`OVERLAY_FS`).
 
 Not done: a river's mouth is a chute of white water that reads as a waterfall only where it faces
 the camera; a peak is still the 3D renderer's model (the owner's choice, §5b); a scarp stands only
@@ -889,7 +893,7 @@ join now); the faces as paving (redrawn).
   than the light turns (counter 20: the land 8%, still green; 50: a third; 100: whole). In the mood
   pass (`uDusk` = x, `uDoom` = x^1.6; after the land palette, before the towns' and figures' share
   of the grade): a golden cast at the middle, given way to the red; the foliage withers toward
-  olive-brown; the sea (by its keep mask, mostly 0 -- not by hue, which the shafts' colour moves --
+  olive-brown; the sea (by its keep mask, mostly 0 -- not by hue, which the grade's colour moves --
   minus the unknown's light parchment) dulls to slate, then goes to a dark blood-red, the rivers
   with it; the land darkens under a red cast, the shade to maroon, the distance to an ember haze,
   the corners close in; from about 60 the hell grounds' glowing cracks open on all land (the
@@ -898,13 +902,12 @@ join now); the faces as paving (redrawn).
   under half, as with the region moods. At counter 0 the light is LIGHT itself and the pass adds
   nothing. Screenshots: `docs/hd2d/armageddon-0-50-100.jpg`. Not done: the sprites themselves
   (dead or bare trees, ash in the air) do not change.
-* **Light shafts** (half resolution): the sunlit haze — the sun's light scattered along each view
-  ray near the ground, through the gaps of a high drifting cloud layer and past the props' shadow
-  map (anchored to the world) — and painted **beams**: broad soft beams fanning from the sun beyond
-  the upper left, strongest over the far land, turning slowly with the camera's position (a distant
-  layer, not stuck to the lens), full from 96 px a plot (the gameplay zoom) and gone by 48. Seen from
-  above, a view ray crosses too little air for the physical shafts alone to show, so the beams are
-  painted, as in the target. They lie in the air before the land: over a figure, a third as strong.
+* **No light shafts** (removed, the owner's call, 2026-11-21). The mode had a half-resolution pass
+  (`RAYS_FS`, config `rays` 0.45): a sunlit haze scattered through the gaps of a drifting cloud
+  layer, and broad soft beams painted fanning down from the sun beyond the upper left of the view.
+  The pass, its shader, its two targets, its config key and its panel row are gone; a saved panel
+  tuning's `rays` is ignored. (The light beams over mana and towers, below, are another thing and
+  stay.) The measurements below that name the shafts or the rays predate this.
 * **Wide bloom** (quarter resolution) of the emission and the brightest light, added before the
   filmic curve; non-finite pixels give no light (a lone NaN would otherwise spread into a block).
   Both guards test the bits, not `isnan`/`isinf`, which Direct3D 11's compiler folds to false (there
@@ -975,7 +978,7 @@ animate. The lab shows it with `&ritual=1` (the city nearest the camera's point)
   (`?only=terrain`). docs/R3D.md §11.1, "Measuring", says how to compare the compile-time switches
   (§11) on Direct3D.
 * `tools/r3d-compare.mjs` saves `hd2d.png`, `hd2d-close.png`, `hd2d-far.png` beside the art and
-  isometric shots; `tools/r3d-perf.mjs` measures the mode (configs: hd2d, no-rays, no-tilt,
+  isometric shots; `tools/r3d-perf.mjs` measures the mode (configs: hd2d, no-tilt,
   no-bloom, no-mood, no-hd2d-post, plain). Both drew the 3D renderer's own mode too, until it was
   retired from the client (it was `--renderer hd2d` then).
 * `--gpu` on Windows: `FFH_CHROMIUM_CHANNEL=chrome` (Playwright's own Chromium may be refused:
@@ -1223,8 +1226,7 @@ distance each closes:
    water, a waterfall only where it faces the camera.
 4. **Darker, moodier sprite variants and figures facing left or animated** (unit art; set aside by
    the owner). The anim-sprint idles now play (§5, "Idle figures"), for the 129 sprites that have one.
-5. **The sky and the map's edge** (code): a small map's edge shows the 3D renderer's void under
-   the shafts.
+5. **The sky and the map's edge** (code): a small map's edge shows the 3D renderer's void.
 6. **On a real GPU**: batches 3 and 4 were judged on software renders; the palette's numbers should
    be re-measured on the owner's GPU (§6's table).
 
@@ -1234,8 +1236,7 @@ distance each closes:
 `pitch` 32 and `fov` 30; `grid` 0; the towns' switches, §5d: `townScale` 1.25, `townLight` 0.5,
 `townClearing` 0.5, `townBanners` 0.6; deeper shade, `stylize` 0.7, `ssao` 0.85; `brightness` 1.3,
 `saturation` 1.3 and `contrast` 1.1 (the brighter map, §6), `vignette` 0.18, `haze`
-0.1, `mist` 0.08, `clouds` 0.3, `glow` 1.0) and the mode's own switches: `tiltShift` (0.3), `rays`
-(0.45), `mood` (1), `landGrade` (1, the land's palette, §6), `bloom` (0.8, from a lower threshold),
+0.1, `mist` 0.08, `clouds` 0.3, `glow` 1.0) and the mode's own switches: `tiltShift` (0.3), `mood` (1), `landGrade` (1, the land's palette, §6), `bloom` (0.8, from a lower threshold),
 `beams` (1), `borderGlow` (1), `contact` (1), `lean` (1). `LIGHT` gives little sky and ground fill
 (0.5 and 0.15). The `plain` preset turns the stylisation and the mode's passes off (the cards stay).
 Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.4`, renamed
@@ -1275,8 +1276,6 @@ its defaults and do no harm.
   can pick the plot behind it; the cards' boxes could be picked first, as the isometric map does.
 * **The overlay stage** costs about 3 ms at 1080p against 0.3 in the 3D renderer (§8); not yet
   profiled.
-* **Shafts** are partly painted (a screen-space fan turned by the camera's position); the physical
-  haze through the cloud gaps barely shows from above.
 * **The region moods** come from tables of civilizations, alignments and state religions; a game
   event (Armageddon, a spreading hell) changes them only through the terrain and the owners. The
   Malakim's heat shimmer and the Lanun's coloured sea were suggested and not built (the shimmer needs

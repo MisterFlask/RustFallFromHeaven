@@ -55,14 +55,13 @@ const browser = await pw.chromium.launch(chromiumLaunch(!!args.gpu));
 const W = Number(args.w ?? 1280), H = Number(args.h ?? 800);
 const CONFIGS = [
   ["hd2d", {}],
-  ["no-rays", { rays: 0 }],
   ["no-tilt", { tiltShift: 0 }],
   ["no-bloom", { bloom: 0 }],
   ["no-mood", { mood: 0 }],
   ["no-beams", { beams: 0 }],
   ["no-contact", { contact: 0 }],
   ["no-border-glow", { borderGlow: 0 }],
-  ["no-hd2d-post", { rays: 0, tiltShift: 0, bloom: 0, mood: 0 }],
+  ["no-hd2d-post", { tiltShift: 0, bloom: 0, mood: 0 }],
   ["plain", "plain"],
 ];
 const ZOOMS = args.zooms ? args.zooms.split(",").map(Number) : [40, 96, 168];
