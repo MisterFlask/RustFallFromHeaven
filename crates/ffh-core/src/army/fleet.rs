@@ -6,7 +6,7 @@
 //! such ship outside a city is a one-ship fleet; a ship in a city in no fleet is simply a ship.
 //! What a fleet shares with an army: the sync, form / split / join / merge / rename / disband, a
 //! target size, requisition (from coastal cities: the ship sails to the fleet as a recruit
-//! marches), upgrade all. What it has not: a supply line, a battle tactic, a garrison.
+//! marches), upgrade all. What it has not: a supply line, a garrison.
 //!
 //! **Standing orders** (`Army::station`, 7.2), carried out by the rules:
 //!

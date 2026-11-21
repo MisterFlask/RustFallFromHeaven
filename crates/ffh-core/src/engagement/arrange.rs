@@ -17,22 +17,11 @@
 //! its rank preference (`engage_row_order`) with room, the lanes nearest the centre first. A defended city's Sentinels (docs/SIEGES.md) hold their cells first: the front
 //! row, the lanes nearest the centre ([`Game::engage_sentinel_cells`]), and the defender's units
 //! take the cells left. Deterministic, no RNG, the same for humans and the AI. Heroes are not held
-//! back. The attacker fights it when its order gives no formation; the defender always does
-//! ([`Game::engage_defense_formation`]).
-//!
-//! **Tactics** (docs/TACTICS.md): each side's auto formation is arranged by the side's battle tactic
-//! ([`Game::engage_side_tactic`]: the tactic of the army, or of the city's garrison, most of the
-//! side's units belong to; Line, the auto formation above, for units of no army or garrison and
-//! for the barbarians). A tactic changes the selection and the placement
-//! (`formation::auto_arrange_around`'s knobs, `battle_tactics.jsonc`).
-//!
-//! **An ordered formation** ([`Game::engage_validate_formation`]): every unit in the attacker's
-//! pool once, inside its side's lanes and rows, no two units in one cell (a large unit on two free
-//! cells of one row), at most the attacker's slots, and the units without `bRiver` at most its
-//! ordinary slots.
+//! back. It arranges every Auto squad, auto-sort's squads, a forced attack and units in no squad;
+//! a battle otherwise fights each side's squad in its cells (docs/ENGAGEMENTS.md, "Squads";
+//! `squads.rs`).
 
 use super::formation::{auto_arrange_around, kind_pick_order, sentinel_cells, Candidate, Side};
-use ffh_data::BattleTacticType;
 use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
@@ -76,74 +65,10 @@ impl Game {
         self.engage_a_alone(u, side, ctx)
     }
 
-    /// The battle tactic Line (`TACTIC_LINE`, docs/TACTICS.md): every army and garrison starts with
-    /// it.
-    pub fn tactic_line(&self) -> BattleTacticType {
-        self.d.t::<BattleTacticType>("TACTIC_LINE")
-    }
-
-    /// The tactic a side made of `units` fights in on `plot` (docs/TACTICS.md, section 4): the tactic
-    /// of the body most of them belong to, counting by army, the garrison units of `plot`'s city
-    /// counting for the city; the largest count wins, an army before the garrison on a tie, the
-    /// lower army id on a tie between armies. Units in no army and no garrison count for nobody.
-    /// Line when none of them belongs to an army or the garrison, and for the barbarians.
-    pub fn engage_side_tactic(&self, units: &[UnitId], plot: PlotIdx) -> BattleTacticType {
-        let city = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c));
-        let mut armies: Vec<(ArmyId, i32)> = Vec::new();
-        let mut garrison = 0;
-        for &u in units {
-            if !self.units.contains(u) || self.player_is_barbarian(self.units[u].owner) {
-                continue;
-            }
-            if let Some(a) = self.units[u].army.filter(|&a| self.armies.contains(a)) {
-                match armies.iter_mut().find(|x| x.0 == a) {
-                    Some(x) => x.1 += 1,
-                    None => armies.push((a, 1)),
-                }
-            } else if city.is_some() && self.unit_garrison_city(u) == city {
-                garrison += 1;
-            }
-        }
-        // The largest army count, the lower id on a tie.
-        armies.sort_by_key(|&(a, n)| (std::cmp::Reverse(n), a));
-        match (armies.first(), city) {
-            (Some(&(a, n)), _) if n >= garrison => self.armies[a].tactic,
-            (_, Some(c)) if garrison > 0 => self.cities[c].garrison_tactic,
-            _ => self.tactic_line(),
-        }
-    }
-
-    /// The plot side `side` of `ctx` fights from: the defended plot, or where the attack comes
-    /// from (else where the first of `pool` stands).
-    fn engage_side_plot(&self, pool: &[UnitId], side: Side, ctx: &HitCtx) -> Option<PlotIdx> {
-        match side {
-            Side::Defender => Some(ctx.to),
-            Side::Attacker => ctx.from.or_else(|| pool.first().and_then(|&u| self.unit_plot_opt(u))),
-        }
-    }
-
-    /// The tactic side `side` of `ctx` made of `pool` fights in ([`Game::engage_side_tactic`] on its
-    /// plot).
-    pub fn engage_pool_tactic(&self, pool: &[UnitId], side: Side, ctx: &HitCtx) -> BattleTacticType {
-        match self.engage_side_plot(pool, side, ctx) {
-            Some(plot) => self.engage_side_tactic(pool, plot),
-            None => self.tactic_line(),
-        }
-    }
-
-    /// The rules' auto formation of side `side` from `pool` (module comment), in the pool's order,
-    /// arranged by the side's tactic ([`Game::engage_pool_tactic`]). Units that never fight land
-    /// battles (sea and air units) are left out.
+    /// The rules' auto formation of side `side` from `pool` (module comment), in the pool's order.
+    /// Units that never fight land battles (sea and air units) are left out.
     pub fn engage_auto_formation(&self, pool: &[UnitId], side: Side, slots: &Slots, ctx: &HitCtx) -> Vec<Place> {
-        let tactic = self.engage_pool_tactic(pool, side, ctx);
-        self.engage_tactic_formation(pool, side, slots, ctx, tactic)
-    }
-
-    /// [`Game::engage_auto_formation`] in tactic `tactic`.
-    pub fn engage_tactic_formation(&self, pool: &[UnitId], side: Side, slots: &Slots, ctx: &HitCtx, tactic: BattleTacticType) -> Vec<Place> {
-        let d = self.d;
-        let min_hp = d.defines.engagement_auto_min_hp_percent;
-        let veteran_level = d.defines.tactic_veteran_level;
+        let min_hp = self.d.defines.engagement_auto_min_hp_percent;
         let mut units: Vec<UnitId> = Vec::with_capacity(pool.len());
         let mut cands: Vec<Candidate> = Vec::with_capacity(pool.len());
         for &u in pool {
@@ -158,7 +83,6 @@ impl Game {
                 value: self.engage_strength(u, side, ctx) as i64,
                 healthy: 100 - self.units[u].damage >= min_hp,
                 river: side == Side::Defender || self.unit_is_river(u),
-                veteran: self.unit_is_hero(u) || self.units[u].level >= veteran_level,
             });
             units.push(u);
         }
@@ -169,7 +93,7 @@ impl Game {
         let sorted: Vec<Candidate> = order.iter().map(|&i| cands[i]).collect();
         let lanes = self.engage_lanes(slots)[side.index()];
         let blocked = if side == Side::Defender { self.engage_sentinel_cells(slots) } else { Vec::new() };
-        let placed = auto_arrange_around(&sorted, lanes, slots.max(side), slots.ordinary(side), &blocked, &d.battle_tactics[tactic].knobs);
+        let placed = auto_arrange_around(&sorted, lanes, slots.max(side), slots.ordinary(side), &blocked);
         let mut out: Vec<Place> = placed.into_iter().map(|p| Place { unit: units[order[p.unit]], lane: p.lane, row: p.row }).collect();
         // Card: a familiar stands in its caster's lane (battle_magic.rs).
         self.engage_familiar_places(&mut out, lanes, &blocked);

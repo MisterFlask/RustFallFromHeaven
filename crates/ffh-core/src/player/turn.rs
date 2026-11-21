@@ -165,8 +165,6 @@ impl Game {
         // C++: FAssertMsg(!hasBusyUnit() || simultaneous turns) -- debug-only check (and
         // hasBusyUnit can kill an empty group), not ported.
 
-        // Battle tactics changed since the last turn take effect (docs/TACTICS.md).
-        self.player_apply_tactics(p);
         // World rituals aimed at a rival (The Tithe): cancelled once the rival is dead or at peace.
         crate::ffh::world_ritual_spells::check(self, Some(p));
         // A world spell left pending at its completion (no unit, its requirement unmet) takes

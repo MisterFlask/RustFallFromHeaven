@@ -9,7 +9,7 @@
 //
 // Each fixture: `preview` (the plan's preview: the rules' auto formation for both sides and its
 // forecast), `forecasts` (by formationKey: the auto formation's), `logs` ([{formation, log}]: the
-// auto formation's battle). The board is no longer edited by hand (docs/TACTICS.md): the variants
+// auto formation's battle). The board is no longer edited by hand: the variants
 // one click made and the moved unit's battle are gone.
 import fs from "node:fs";
 import path from "node:path";

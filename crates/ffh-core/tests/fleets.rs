@@ -212,7 +212,6 @@ fn split_merge_rename_upgrade_and_target_size() {
     assert_eq!(w.g.armies[f].name, "Home Squadron");
     w.g.army_set_target_size(w.p0, f, 5).unwrap();
     assert_eq!(w.g.army_shortfall(f), 2);
-    assert!(w.g.army_set_tactic(w.p0, f, w.g.armies[f].tactic).is_err(), "no tactic at sea");
     assert!(w.g.army_upgrade_all(w.p0, f).is_ok());
 }
 

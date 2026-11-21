@@ -811,8 +811,6 @@ impl Game {
         }
         let force: Vec<UnitId> = att.iter().map(|q| q.unit).collect();
         let candidates = self.engage_defenders(to, p, &force, WarTest::AtWar);
-        // Each side's tactic (docs/TACTICS.md), for the log.
-        let tactics = [self.engage_pool_tactic(&pool, Side::Attacker, &ctx), self.engage_pool_tactic(&candidates, Side::Defender, &ctx)];
         if candidates.is_empty() && slots.sentinels == 0 {
             return Err("there is nobody to fight there");
         }
@@ -885,7 +883,7 @@ impl Game {
                 .map(|&u| (u, Side::Attacker))
                 .chain(e.setup.def_reserve().into_iter().map(|u| (u, Side::Defender)))
                 .collect();
-            let mut s = Sink::new(self, &e, &reserves, [ordered, false], tactics);
+            let mut s = Sink::new(self, &e, &reserves, [ordered, false]);
             let forecast = frozen.as_ref().map(|f| f.frozen(|u| s.index_of(u)));
             s.set_forecast(forecast);
             Some(s)

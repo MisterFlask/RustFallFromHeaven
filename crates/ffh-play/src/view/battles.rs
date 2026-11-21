@@ -814,8 +814,6 @@ pub fn battle_log(v: &Viewer, id: u32) -> Result<Json, QueryErr> {
         "params" => params_json(g.d),
         "slots" => Json::Arr(log.slots.iter().map(side_slots_json).collect()),
         "lanes" => crate::jarr![log.lanes[0], log.lanes[1]],
-        // Each side's battle tactic (attacker, defender; docs/TACTICS.md).
-        "tactics" => crate::jarr![Json::idx(log.tactics[0]), Json::idx(log.tactics[1])],
         "sides" => Json::Arr(sides.into_iter().collect()),
         "fighters" => Json::Arr(fighters),
         "pairs" => Json::Arr(log.pairs.iter().map(pair_json).collect()),
@@ -989,9 +987,6 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), squad: Option<S
         "def_formation" => formation_json(&pv.def_formation),
         "def_reserve" => bs(&pv.def_reserve, Side::Defender),
         "summons" => summons,
-        // Each side's battle tactic (attacker, defender; docs/TACTICS.md): what arranges
-        // `formation` and `def_formation`.
-        "tactics" => crate::jarr![Json::idx(pv.tactics[0]), Json::idx(pv.tactics[1])],
         // Supply (docs/SUPPLY.md): the fighters (`b`) of starving armies and the percent change
         // of the damage they deal (the forecast counts it).
         "starving" => Json::Arr(pv.starving.iter().filter_map(|&(u, pct)| {

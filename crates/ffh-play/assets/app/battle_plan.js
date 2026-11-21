@@ -1,14 +1,11 @@
 // The battle plan (the formation-battle prototype's set-up, phase 6 revision 4): before an attack,
-// both lines on the battlefield as each side's battle tactic arranges them (docs/TACTICS.md: an
-// army's tactic, or a garrison's; the grid of one battle is never edited by hand), both tactics
-// named, the ground's scenery and its rules in words, a tooltip of what each unit is, the pool's
-// other units, the forecast, and Attack. Every number here is the engine's (its preview), none is
-// worked out by the client; a tactic is changed on the Armies screen and the city screen.
+// both lines on the battlefield as the rules' auto formation arranges them (the grid of one battle
+// is never edited by hand), the ground's scenery and its rules in words, a tooltip of what each
+// unit is, the pool's other units, the forecast, and Attack. Every number here is the engine's (its
+// preview), none is worked out by the client.
 
 import { h, toast } from "./dom.js";
-import { uname, ROWS, actionAt, actionText, reachText, specials, slotSum, rowsLine, placeOf, slotsUsed, stat, hpOf, tyLabel, tyIdx } from "./battle_log.js";
-import { info } from "./state.js";
-import { plain } from "./markup.js";
+import { uname, ROWS, actionAt, actionText, reachText, specials, slotSum, rowsLine, placeOf, slotsUsed, stat, hpOf, tyLabel } from "./battle_log.js";
 import { loadArt, unitXY, figBox, pic, faceFlip, headChip, uiIcon, btn, add, groundLine, FRAME_W, FRAME_H } from "./battle_stage.js";
 import { roman } from "./squads.js";
 
@@ -65,13 +62,6 @@ export function leave() {
   P.visit++;
   P.tip?.remove();
   P.tip = null;
-}
-
-/** Side `side`'s tactic: `{name, help}` (the data's; a fixture without tactics fights in Line). */
-function tacticOf(side) {
-  const v = P.pv?.tactics?.[side] ?? "TACTIC_LINE";
-  const t = info("BattleTacticType", tyIdx("BattleTacticType", v));
-  return { name: t?.name ?? tyLabel("BattleTacticType", v), help: t?.help ? plain(t.help) : "" };
 }
 
 /** Attacks. While the attack is on its way (the `engage` command, a declaration of war asked, the
@@ -217,7 +207,7 @@ function onMove(ev) {
   else hideTip();
 }
 
-/** A click on the board moves nobody (the tactics arrange the lines); it is counted for the smoke
+/** A click on the board moves nobody (the auto formation arranges the lines); it is counted for the smoke
  *  test, which checks that. */
 function onClick() {
   P.clicks++;
@@ -258,7 +248,7 @@ export function unitInfo(pv, f, { pos, fc } = {}) {
       specials(f, pv.ground, pv.params).map((n) => h("li", n)),
     ),
     per ? h("div.small", "In the forecast it falls in ", h("b", `${per.fall_pct}%`), " of battles", per.escape_pct ? ` and escapes a killing blow in ${per.escape_pct}%` : "", ".") : null,
-    pos ? null : h("div.small.dim", f.side === me ? "Not in the line: its tactic left it out." : "Not in their line: it waits on the plot."),
+    pos ? null : h("div.small.dim", f.side === me ? "Not in the line: no slot left for it." : "Not in their line: it waits on the plot."),
     (pv.starving ?? []).some((x) => x.b === f.b) ? h("div.small.warn", `Starving: ${pv.starving.find((x) => x.b === f.b).pct}% damage dealt.`) : null,
   ];
 }
@@ -317,8 +307,6 @@ function render(ctx) {
   const theirsIn = F.filter((f) => f.side !== me && P.def.has(f.b));
   const theirsOut = F.filter((f) => f.side !== me && !P.def.has(f.b));
   const watch = ctx.prefs.get("watch", "watch");
-  const tac = [tacticOf(me), tacticOf(1 - me)];
-  const tacticLine = (side) => h("div.bt-row.small.bt-tactic", { "data-side": side, title: tac[side].help }, h("span.dim", "Tactic: "), h("b", tac[side].name));
   // ---- top left: the attack, your side
   add(
     ui,
@@ -328,7 +316,6 @@ function render(ctx) {
       h("div.bt-row", h("span.bt-h3.you", pv.sides?.[me]?.label ?? "Your army"), h("span.dim", `${used} of ${pv.slots[me].total}${pv.slots[me].river_only ? ` (+${pv.slots[me].river_only} river)` : ""} slots · ${pv.lanes[me]} lanes`)),
       h("div.small.dim", { title: "Why this many slots" }, slotSum(pv.slots[me])),
       squadLines(ctx),
-      tacticLine(me),
       h(
         "div.bt-row",
         { style: { marginTop: "2px" } },
@@ -345,14 +332,13 @@ function render(ctx) {
       { right: "6px", top: "4px", width: "470px" },
       h("div.bt-row", h("span.bt-h3.them", pv.sides?.[1 - me]?.label ?? where), h("span.dim", `${slotsUsed(P.def, F)} of ${pv.slots[1 - me].total} slots · ${pv.lanes[1 - me]} lanes`)),
       defSquadLine(),
-      tacticLine(1 - me),
       theirsOut.length
         ? h("div.bt-row.small", { title: "Defenders stay in place until annihilated: the plot falls only when none is left" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
         : null,
       groundLine(pv.ground, pv.plot),
     ),
   );
-  // ---- bottom left: the pool's other units (what its tactic left out), the rule
+  // ---- bottom left: the pool's other units (what the auto formation left out), the rule
   const benchRows = mineOut.map((f) =>
     tipped(
       f,
@@ -500,10 +486,6 @@ export const dev = {
   pickSquad(id) {
     const s = (P.pv?.squads ?? []).find((x) => x.squad === id);
     if (s && P.ctx) pickSquad(P.ctx, s);
-  },
-  /** Both sides' tactics as named on the board. */
-  get tactics() {
-    return P.pv ? [tacticOf(me).name, tacticOf(1 - me).name] : null;
   },
   get preview() {
     return P.pv;

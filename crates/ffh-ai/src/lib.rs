@@ -69,7 +69,6 @@ pub mod sites;
 pub mod squads;
 pub mod supply;
 pub mod switches;
-pub mod tactics;
 pub mod tech_plan;
 pub mod threat;
 #[cfg(test)]
@@ -162,7 +161,6 @@ impl Controller for Ai {
         if g.player_is_crusade_host(p) {
             crusade::host_turn(g, p);
             supply::turn(g, p);
-            tactics::turn(g, p);
             squads::turn(g, p);
             return;
         }
@@ -250,7 +248,6 @@ impl Controller for Ai {
         units::play(self, g, &mut v);
         squads::turn(g, p); // and for the battles it defends
         if !v.barbarian {
-            tactics::turn(g, p); // battle tactics, once the stacks of the turn are made (docs/TACTICS.md)
             cards::end_turn(g, p); // the cards' content that acts once the units have moved
         }
         sea_ice::end_turn(g, p); // Icebreak near our cities (ffh_core world_ritual_spells::illians)
