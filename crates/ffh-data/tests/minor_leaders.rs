@@ -45,6 +45,37 @@ fn all_approved_leaders_load_with_exact_traits_alignment_and_backstory_but_are_n
     assert_eq!(d.leader_heads.iter().filter(|l| l.preferred_breakaway).count(), 210);
 }
 
+/// The owner's rule (2026-11-21): a minor leader's alignment is at most one step
+/// (Good - Neutral - Evil) from that of at least one major leader of its civilization, since it
+/// heads a House inside that civilization's realm. Major leaders are those the civilization lists
+/// that are not minor leaders; Decius, listed under three civilizations, does not count.
+#[test]
+fn every_minor_leader_is_within_one_alignment_step_of_a_major_leader() {
+    let d = global();
+    let steps = ["ALIGNMENT_GOOD", "ALIGNMENT_NEUTRAL", "ALIGNMENT_EVIL"].map(|a| d.t::<AlignmentType>(a));
+    let step = |a: Option<AlignmentType>| steps.iter().position(|&s| Some(s) == a);
+    let decius = d.t::<LeaderHeadType>("LEADER_DECIUS");
+    let mut checked = 0;
+    for (lt, info) in d.leader_heads.iter_enumerated() {
+        let Some(civ) = info.minor_leader_of else { continue };
+        let majors: Vec<LeaderHeadType> = d.leader_heads.keys().filter(|&m| d.civilizations[civ].leaders[m] && m != decius && d.leader_heads[m].minor_leader_of.is_none()).collect();
+        assert!(!majors.is_empty(), "{} has no major leader", d.type_name(civ));
+        let own = step(info.alignment).unwrap_or_else(|| panic!("{} has no alignment", d.type_name(lt)));
+        let major_steps: Vec<usize> = majors.iter().map(|&m| step(d.leader_heads[m].alignment).unwrap_or_else(|| panic!("{} has no alignment", d.type_name(m)))).collect();
+        let names = |s: &[usize]| s.iter().map(|&i| d.type_name(steps[i])).collect::<Vec<_>>().join(", ");
+        assert!(
+            major_steps.iter().any(|&m| own.abs_diff(m) <= 1),
+            "{} is {}, more than one step from every major leader of {} ({})",
+            d.type_name(lt),
+            d.type_name(steps[own]),
+            d.type_name(civ),
+            names(&major_steps)
+        );
+        checked += 1;
+    }
+    assert!(checked >= 210, "every minor leader checked: {checked}");
+}
+
 #[test]
 fn changed_alignments_keep_their_explicit_civilization_commitments() {
     let d = global();

@@ -27,7 +27,7 @@
         "id": "odran_iron_mercy",
         "name": "Odran Vale",
         "epithet": "Iron Mercy",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_SPIRITUAL",
           "TRAIT_DEFENDER"
@@ -35,8 +35,8 @@
         "inherited_traits": [
           "TRAIT_GUARDSMAN"
         ],
-        "angle": "A Bannor prison chaplain turns the promise of safety into permanent confinement and inherited punishment.",
-        "backstory": "Odran tended prisoners who had survived demonic captivity, and came to believe that freedom itself gave evil its opportunity. His Order of the Closed Hand began by sheltering threatened families, then locked its sanctuary gates and declared that their children must remain until every outside temptation had been destroyed. Its fortress towns now export inquisitors who sentence the innocent for the sins they might one day commit, all while Odran continues to preach deliverance from Hell.",
+        "angle": "A Bannor prison chaplain turns the promise of safety into permanent confinement and inherited suspicion.",
+        "backstory": "Odran tended prisoners who had survived demonic captivity, and came to believe that freedom itself gave evil its opportunity. His Order of the Closed Hand began by sheltering threatened families, then locked its sanctuary gates and declared that their children must remain until every outside temptation had been destroyed. Its fortress towns now export inquisitors who question the innocent for the sins they might one day commit, and their walled families have not lost a child to Hell since Odran began to preach.",
         "portrait": "Broad pale-olive human man in his late fifties, shaved scalp, short iron-gray beard, soft mouth and unwavering cold eyes. Barred sanctuary door close at his side, small votive flames farther behind; both key-turning and shutting hand visible, no violence. Primary palette: Ivory white dominant, coal black secondary, dull gold glints. Clothing: Long ivory prison-chaplain hood and stole over close black armor; heavy black closed-hand emblem. Hand activity: Turns a heavy iron key in the lock of a barred sanctuary door beside his face, other hand drawing the door shut. Vibe: Paternal carceral calm. One independent square leaderhead portrait, face and hands clearly composed together.",
         "primary_palette": "Ivory white dominant, coal black secondary, dull gold glints",
         "hand_activity": "Turns a heavy iron key in the lock of a barred sanctuary door beside his face, other hand drawing the door shut",
@@ -167,7 +167,7 @@
         "id": "cedric_stave",
         "name": "Cedric Stave",
         "epithet": "Marshal of the Hallowed Mile",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_AGGRESSIVE",
           "TRAIT_ORGANIZED"
@@ -231,14 +231,14 @@
         "id": "qasir_of_noon",
         "name": "Qasir al-Nahar",
         "epithet": "The Unshadowed Judge",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_SPIRITUAL",
           "TRAIT_AGGRESSIVE"
         ],
         "inherited_traits": [],
-        "angle": "A splinter interpretation of the light's demand for truth abolishes privacy and treats concealment as guilt.",
-        "backstory": "Qasir exposed a caravan master's hidden slave pens by tearing the roofs from his warehouses at noon. Applause convinced the young preacher that every locked door concealed an equal wickedness, and his followers began dismantling shutters, veils, and the screens around family courtyards. The cities under his judgment glow with polished mirrors while informers decide whose private grief must be dragged into the sun, a tyranny he still calls service to Lugus.",
+        "angle": "A splinter interpretation of the light's demand for truth abolishes privacy and treats concealment as a question to be answered.",
+        "backstory": "Qasir exposed a caravan master's hidden slave pens by tearing the roofs from his warehouses at noon. Applause convinced the young preacher that every locked door concealed an equal wickedness, and his followers began dismantling shutters, veils, and the screens around family courtyards. The cities under his judgment glow with polished mirrors where hidden crimes and private griefs are dragged into the sun alike, a severity he calls service to Lugus.",
         "portrait": "Bronze-skinned human man in his thirties, shaved head, sharply trimmed black beard, intense narrowed eyes. Mirrored light crosses the otherwise shadowless white courtyard; active turning wrist, reflected ray, and outward command gesture tell the moment, no violence. Primary palette: Brilliant gold dominant, stark white secondary, bronze edging. Clothing: Rigid gold sun-priest shoulder mantle over a white pleated robe and bronze-scale collar. Hand activity: Tilts a hinged sun mirror to direct a sharp beam into a dark doorway, free hand commanding its occupants to emerge. Vibe: Radiant intrusive certainty. One independent square leaderhead portrait, face and hands clearly composed together.",
         "primary_palette": "Brilliant gold dominant, stark white secondary, bronze edging",
         "hand_activity": "Tilts a hinged sun mirror to direct a sharp beam into a dark doorway, free hand commanding its occupants to emerge",
@@ -339,7 +339,7 @@
         "id": "kamal_red_meridian",
         "name": "Kamal Red Meridian",
         "epithet": "Warden of the Midday Gate",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_AGGRESSIVE",
           "TRAIT_ORGANIZED"
@@ -417,14 +417,14 @@
         "id": "damar_ninebells",
         "name": "Damar of the Nine Bells",
         "epithet": "The Protector Without Release",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_ORGANIZED",
           "TRAIT_DEFENDER"
         ],
         "inherited_traits": [],
-        "angle": "The Elohim duty of guardianship hardens into occupation and the denial of a protected community's consent.",
-        "backstory": "Damar saved nine villages by erecting warning towers around a sacred valley and drilling every inhabitant in its defense. When the raiders were gone, he declared that the threat would return if anyone were allowed to leave, and placed each village under a monk-governor answerable only to him. His wardens now seize neighboring settlements for their protection, and the nine bells ring to announce both approaching enemies and the capture of escaping families.",
+        "angle": "The Elohim duty of guardianship hardens into a watch that a protected community has no power to dismiss.",
+        "backstory": "Damar saved nine villages by erecting warning towers around a sacred valley and drilling every inhabitant in its defense. When the raiders were gone, he declared that the threat would return if anyone were allowed to leave, and placed each village under a monk-governor answerable only to him. His wardens now extend their towers over neighboring settlements whether asked or not, and the nine bells ring to announce both approaching enemies and the return of families who stray beyond them.",
         "portrait": "Lean olive-skinned human man about forty-five with close dark hair gray at temples, rigid jaw and sleepless eyes. Taut bell rope crosses the lower frame, monastery gate and heavy bronze bell visible behind; cool disciplined symmetry. Primary palette: Ink navy dominant, aged bronze secondary, small black leather accents. Clothing: Ink-navy sleeveless monastic tabard over square bronze lamellar armor and a severe bell-studded collar. Hand activity: Pulls down a warning bell rope with one fist while his other hand gives a rigid stop signal across the gate. Vibe: Watchful coercive stillness. One independent square leaderhead portrait, face and hands clearly composed together.",
         "primary_palette": "Ink navy dominant, aged bronze secondary, small black leather accents",
         "hand_activity": "Pulls down a warning bell rope with one fist while his other hand gives a rigid stop signal across the gate",
@@ -543,7 +543,7 @@
         "id": "levan_pledge",
         "name": "Levan Pledge",
         "epithet": "The Collector of Sanctuary",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_FINANCIAL",
           "TRAIT_SPIRITUAL"
@@ -621,14 +621,14 @@
         "id": "talvek_unforgiven",
         "name": "Talvek",
         "epithet": "The Unforgiven",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_AGGRESSIVE",
           "TRAIT_CHARISMATIC"
         ],
         "inherited_traits": [],
-        "angle": "An anti-demon Mercurian splinter mistakes uncompromising purpose for righteousness and enslaves the people it claims to defend.",
-        "backstory": "Talvek returned from Hell with his wings burned and the names of his lost company carved into his armor. He decided that mortal hesitation had prolonged the war, and began binding rescued settlements to compulsory service until the last demon in existence was dead. His followers still fight the Infernals with terrible courage, but execute deserters and take children as guarantees of obedience, making a prison of the liberation they proclaim.",
+        "angle": "An anti-demon Mercurian splinter mistakes uncompromising purpose for righteousness and conscripts the people it claims to defend.",
+        "backstory": "Talvek returned from Hell with his wings burned and the names of his lost company carved into his armor. He decided that mortal hesitation had prolonged the war, and began binding rescued settlements to compulsory service until the last demon in existence was dead. His followers still fight the Infernals with terrible courage, but hang deserters and hold every rescued village to its quota of recruits, a liberation that does not end when the fighting does.",
         "portrait": "Male-presenting rebel angel appearing fifty, pale-gray skin, shorn white hair, ember-gold eyes, ragged burned-feather wing edges. Chain and mechanical ratchet active at table height, exacting raised palm by face; smoke-veiled fortress and martial banners behind, no prisoners or gore. Primary palette: Obsidian black dominant, scarlet red secondary, cold silver edging. Clothing: Broad obsidian commander armor with rigid scarlet sash and engraved silver gorget. Hand activity: Tightens a campaign oath chain across the map-table with a ratcheting gauntlet while raising the other hand to demand an oath. Vibe: Charismatic merciless conviction. One independent square leaderhead portrait, face and hands clearly composed together.",
         "primary_palette": "Obsidian black dominant, scarlet red secondary, cold silver edging",
         "hand_activity": "Tightens a campaign oath chain across the map-table with a ratcheting gauntlet while raising the other hand to demand an oath",
@@ -711,7 +711,7 @@
         "id": "caradriel_pale_fire",
         "name": "Caradriel Pale Fire",
         "epithet": "The Relentless Dawn",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_AGGRESSIVE",
           "TRAIT_MAGIC_RESISTANT"
@@ -825,14 +825,14 @@
         "id": "vorra_rentshaper",
         "name": "Vorra Rentshaper",
         "epithet": "Mistress of Borrowed Hands",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_FINANCIAL",
           "TRAIT_ORGANIZED"
         ],
         "inherited_traits": [],
-        "angle": "A dark Luchuirp offshoot turns the obedient servant economy into permanent dependence on its owners.",
-        "backstory": "Vorra rescued several indebted workshops by buying their golems and leasing the same servants back to them. Each repair introduced another proprietary enchantment, until an entire district could neither harvest nor build without her permission. When its council challenged her fees, she recalled every leased construct on the morning the flood defenses needed reinforcement. The council submitted, and her creditor cities now call submission to her contracts the price of civilization.",
+        "angle": "A Luchuirp offshoot turns the obedient servant economy into lasting dependence on its lenders.",
+        "backstory": "Vorra rescued several indebted workshops by buying their golems and leasing the same servants back to them. Each repair introduced another proprietary enchantment, until an entire district could neither harvest nor build without her permission. When its council challenged her fees, she offered to recall every leased construct and let it reinforce the flood defenses by hand. The council renewed, and her client cities now call her contracts the price of civilization.",
         "portrait": "Older Luchuirp dwarf woman with severe broad olive face, sleek iron-gray hair and heavy brows. Structured wine-red velvet merchant coat, high ivory collar, rigid shoulders and brass chain fastenings. With a tight closed smile she turns a bronze command key inside the shoulder lock of a foreground golem while pinning a rental contract flat with her other hand; shadowed warehouse of obedient constructs, cold polished wealth.",
         "primary_palette": "Wine red with ivory accents",
         "hand_activity": "Turning a command key inside a golem's shoulder lock while her other palm pins a rental contract to the desk.",
@@ -897,7 +897,7 @@
         "id": "nori_bondhammer",
         "name": "Nori Bondhammer",
         "epithet": "The Holder of the Keys",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_FINANCIAL",
           "TRAIT_ARCANE"
@@ -1017,7 +1017,7 @@
         "id": "avar_senn",
         "name": "Avar Senn",
         "epithet": "The Price of Welcome",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_FINANCIAL",
           "TRAIT_ORGANIZED"
@@ -1025,8 +1025,8 @@
         "inherited_traits": [
           "TRAIT_SPRAWLING"
         ],
-        "angle": "An authoritarian merchant preserves the multiracial metropolis while making its promise of asylum a source of exploitation.",
-        "backstory": "Avar rose by supplying food and housing to newcomers whom the royal administration had welcomed faster than it could accommodate. He converted those emergency advances into hereditary obligations, then purchased offices that let him decide when a family had repaid them. His city admits almost anyone and displays every people of Erebus in its splendid public processions. Behind that hospitality, his magistrates make leaving one's assigned work far harder than entering the gates.",
+        "angle": "A merchant preserves the multiracial metropolis while making its promise of asylum a source of profit.",
+        "backstory": "Avar rose by supplying food and housing to newcomers whom the royal administration had welcomed faster than it could accommodate. He converted those emergency advances into long contracts of service, then purchased offices that let him decide when a family had repaid them. His city admits almost anyone and displays every people of Erebus in its splendid public processions. Behind that hospitality, his magistrates make leaving one's assigned work far harder than entering the gates.",
         "portrait": "Middle-aged human man with deep-brown skin, heavy-lidded calculating eyes and neatly combed black hair, clean-shaven. Warm ivory silk civic gown with broad imperial-purple lapels and pleated sleeves. He slides a citizenship token toward the viewer with one hand while crossing out an exit clause on the accompanying contract with his other hand; opulent balcony, distant procession banners, welcoming smile and silken predatory assurance.",
         "primary_palette": "Warm ivory with imperial purple accents",
         "hand_activity": "Sliding a citizenship token toward the viewer while crossing out an exit clause in its contract with his other hand.",
@@ -1097,7 +1097,7 @@
         "id": "isil_coilbank",
         "name": "Isil Coilbank",
         "epithet": "The Holder of the Deeds",
-        "alignment": "Evil",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_ORGANIZED",
           "TRAIT_ARCANE"
@@ -1105,7 +1105,7 @@
         "inherited_traits": [
           "TRAIT_SPRAWLING"
         ],
-        "angle": "A deed broker coerces families whose homes stand on land built up by several peoples at once.",
+        "angle": "A deed broker profits from families whose homes stand on land built up by several peoples at once.",
         "backstory": "Isil amassed deeds to the old riverbed while its lamia houses were still built on floats. When the river shifted inland, she charged the residents for the reclaimed foundations under their homes and took their boats as collateral. Her tenants are free to move, provided they leave their furnishings and a child who knows the ledger.",
         "portrait": "Female lamia with tawny skin, black waves of hair, silver-green scales and hint of serpent coils, covered canal quay",
         "primary_palette": "Imperial purple gown, oxidized silver and dark green scales",
@@ -2525,14 +2525,14 @@
         "id": "harka_reedtooth",
         "name": "Harka Reedtooth",
         "epithet": "Keeper of the Last Sled",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_EXPANSIVE",
           "TRAIT_DEFENDER"
         ],
         "inherited_traits": [],
         "angle": "A rival interpretation of pack survival that makes reciprocal care a form of strength without abandoning Doviello independence.",
-        "backstory": "Harka lost a foot while bringing a wounded hunting party home, and her chief ordered her left beside the trail on their next migration. The hunters she had saved returned with a sled, then stayed when she challenged the chief and won from her knees. Her pack now judges a leader by how many people survive the journey, giving injured hunters work as trackers, toolmakers, and teachers instead of abandoning them. She meets demands for submission with the same ferocity as any beastman, but her growing winter camps offer fugitives a place where survival need not require another person's death.",
+        "backstory": "Harka lost a foot while bringing a wounded hunting party home, and her chief ordered her left beside the trail on their next migration. The hunters she had saved returned with a sled, then stayed when she challenged the chief and won from her knees. Her pack now judges a leader by how many people survive the journey, giving injured hunters work as trackers, toolmakers, and teachers instead of abandoning them. She meets demands for submission with the same ferocity as any beastman, and her growing winter camps take in fugitives on the same terms: every pair of hands is counted and none is wasted.",
         "portrait": "A powerful human Doviello woman around fifty with weather-browned skin, a scarred broad face, greying red braids, and steady amber eyes. Clothing: Forest-green padded hide tunic beneath a rust-red patched wolf-fur shoulder cape, birch-bone clasps, practical leather wrist braces. HAND ACTIVITY: Cinch-tightening a rescue sled harness knot with both hands, bracing the strap across one forearm. VIBE: Fierce sheltering patience. PRIMARY PALETTE: Forest green with rust red and pale birch accents. Background: A wood-and-iron crutch leans within reach; sleds and a well-kept winter tent camp lie behind her, northern mountains under cold sunrise. Waist-up leader portrait; clearly lit face and active hands, one principal character.",
         "primary_palette": "Forest green with rust red and pale birch accents",
         "hand_activity": "Cinch-tightening a rescue sled harness knot with both hands, bracing the strap across one forearm.",
@@ -2615,7 +2615,7 @@
         "id": "runa_boldhide",
         "name": "Runa Boldhide",
         "epithet": "Keeper of the Unfrozen Camp",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_EXPANSIVE",
           "TRAIT_INDUSTRIOUS"
@@ -2669,7 +2669,7 @@
         "id": "jerek_barkshield",
         "name": "Jerek Barkshield",
         "epithet": "Friend of the Winter Strangers",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_CHARISMATIC",
           "TRAIT_MAGIC_RESISTANT"
@@ -2711,14 +2711,14 @@
         "id": "perpentach_gentle_witness",
         "name": "Perpentach, the Gentle Witness",
         "epithet": "The Gentle Witness",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_SPIRITUAL",
           "TRAIT_TOLERANT"
         ],
         "inherited_traits": [],
         "angle": "Perpentach facet: a healer among his inner voices commands a breakaway court that treats his other personalities as usurpers of the same body.",
-        "backstory": "When a long-silenced healer among Perpentach's inner voices seized the king's attention, he ordered every carnival slave freed and forbade his court to enter an unwilling mind. At the next feast another voice revoked the decree, but three provincial circuses kept the first command and proclaimed the Gentle Witness their rightful sovereign. They shelter the king whenever his gentler facet prevails and dispatch his own signed letters to recruit soldiers against the courts obeying his other selves. The Witness calls those selves usurpers, even as they answer through his own mouth, and his followers fight to preserve a mercy their king may no longer remember promising.",
+        "backstory": "When a long-silenced healer among Perpentach's inner voices seized the king's attention, he ordered an end to the carnival's killing acts and forbade his court to enter an unwilling mind. At the next feast another voice revoked the decree, but three provincial circuses kept the first command and proclaimed the Gentle Witness their rightful sovereign. They shelter the king whenever his gentler facet prevails and dispatch his own signed letters to recruit soldiers against the courts obeying his other selves. The Witness calls those selves usurpers, even as they answer through his own mouth, and his followers fight to preserve a restraint their king may no longer remember promising.",
         "portrait": "Perpentach personality facet retaining his established likeness: lean pale human man appearing forty, sharp cheekbones, wild black hair streaked silver, gold-flecked eyes, long restless fingers. The familiar smiling white porcelain carnival mask with one black tear is clearly present. His face is attentive and merciful, with fragility around the eyes; recognizably the same man as the other two facets. Clothing: Soft sky-blue healer smock with rolled cream sleeves and a plain faded-gold waist tie; the familiar porcelain black-tear mask hangs clearly at his chest. HAND ACTIVITY: Stitching a torn performer glove with a fine needle, his other hand gently spreading its damaged fingers. VIBE: Attentive fragile mercy. PRIMARY PALETTE: Sky blue with warm cream and faded gold accents. Background: A quiet carnival at morning, unlit lanterns, and an empty stage. Waist-up leader portrait; clearly lit face and active hands, one principal character.",
         "primary_palette": "Sky blue with warm cream and faded gold accents",
         "hand_activity": "Stitching a torn performer glove with a fine needle, his other hand gently spreading its damaged fingers.",
@@ -2801,7 +2801,7 @@
         "id": "pella_crackmirror",
         "name": "Pella Crackmirror",
         "epithet": "Marshal of the Repaired Faces",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_CHARISMATIC",
           "TRAIT_INGENUITY"
@@ -2915,14 +2915,14 @@
         "id": "vorga_coalwidow",
         "name": "Vorga Coalwidow",
         "epithet": "Mother of the Banked Flame",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_BARBARIAN",
           "TRAIT_SPIRITUAL"
         ],
         "inherited_traits": [],
-        "angle": "An orc religious dissident who remembers the justice and mercy associated with Bhall before her fall, without pretending that Bhall herself has been redeemed.",
-        "backstory": "After her husband was offered to Bhall for a defeat his chief had caused, Vorga began gathering the old hearth prayers that named fire a shelter against the cold. She teaches that the goddess fell but that her people need not keep falling with her, and refuses the living sacrifices demanded by Braduk's priesthood. Refugee families carry embers from her hearth between settlements, giving her a following no single warlord can surround. Her clan shelters outsiders beside orcs, while its warriors still honour the truces that keep the scattered barbarian tribes from destroying one another.",
+        "angle": "An orc religious dissident who remembers the older hearth rites associated with Bhall before her fall, without pretending that Bhall herself has been redeemed.",
+        "backstory": "After her husband was offered to Bhall for a defeat his chief had caused, Vorga began gathering the old hearth prayers that named fire a shelter against the cold. She teaches that the goddess fell but that her people need not keep falling with her, and refuses to give her own kin to the living sacrifices demanded by Braduk's priesthood. Refugee families carry embers from her hearth between settlements, giving her a following no single warlord can surround. Her clan takes in any outsider who can tend a fire, while its warriors still honour the truces that keep the scattered barbarian tribes from destroying one another.",
         "portrait": "Older orc woman with deep olive skin, heavy lower tusks, weathered cheeks and iron-grey braids; heavy ivory hooded wool mantle with broad ember-red woven bands over a dark iron lamellar shoulder guard, white handprint on one shoulder; right hand sprinkles a controlled scoop of ash onto a small flame while left fingers slide the covered clay brazier vent closed, task raised to chest height; sheltering hearth and tent poles behind, fiercely compassionate gaze, luminous ivory is the main colour.",
         "primary_palette": "Ivory with ember-red bands and dark iron accents",
         "hand_activity": "Banking a small hearth flame by sprinkling a controlled scoop of ash from her right hand while her left hand slides the brazier vent closed.",
@@ -2987,7 +2987,7 @@
         "id": "gromka_potlid",
         "name": "Gromka Potlid",
         "epithet": "The Hearth That Feeds Strangers",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_BARBARIAN",
           "TRAIT_EXPANSIVE"
@@ -3059,7 +3059,7 @@
         "id": "mogra_tempreed",
         "name": "Mogra Tempreed",
         "epithet": "Speaker of the Reed Shields",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_BARBARIAN",
           "TRAIT_INGENUITY"
@@ -3083,7 +3083,7 @@
         "id": "neryss_thornveil",
         "name": "Neryss Thornveil",
         "epithet": "The Unsent Knife",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_DEFENDER",
           "TRAIT_CHARISMATIC"
@@ -3091,8 +3091,8 @@
         "inherited_traits": [
           "TRAIT_SINISTER"
         ],
-        "angle": "A protective Unseelie intelligence service that keeps its shadowcraft while rejecting Faeryl's dynastic vendetta.",
-        "backstory": "Neryss spent a century selecting the roads on which the queen's inconvenient relatives would disappear. Ordered to murder an entire winter household for sheltering a Seelie child, she instead scattered the family through her own network of false identities. The agents who helped her now protect isolated woodland settlements, using the same ambushes and misdirection once employed to keep those settlements afraid. She offers neither court the names of her dependants, and insists that a hidden blade can stand between a hunter and a victim.",
+        "angle": "An independent Unseelie intelligence service that keeps its shadowcraft while rejecting Faeryl's dynastic vendetta.",
+        "backstory": "Neryss spent a century selecting the roads on which the queen's inconvenient relatives would disappear. Ordered to murder an entire winter household for sheltering a Seelie child, she instead scattered the family through her own network of false identities. The agents who helped her now protect isolated woodland settlements, using the same ambushes and misdirection once employed to keep those settlements afraid. She offers neither court the names of her dependants, and insists that a hidden blade is worth more kept than spent.",
         "portrait": "Mature female dark elf with ash-brown skin, pale green eyes, angular features and long black braid streaked silver; close-cut slate-blue ranger hood and short shoulder cape over pearl-grey quilted leather with deep plum binding and an empty sheath; right hand delicately lifts a letter seal with a thorn pick as left fingers pin the folded message on a writing board at chest level; sheltered forest doorway in blue dawn behind, calm protective vigilance, slate blue dominates, no crown.",
         "primary_palette": "Slate blue with pearl-grey and deep plum accents",
         "hand_activity": "Carefully lifting a letter seal with a thin thorn pick in her right hand while left fingertips pin the folded message against a small writing board.",
@@ -3183,7 +3183,7 @@
         "id": "mirel_widowfern",
         "name": "Mirel Widowfern",
         "epithet": "The Warden of Surrender",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_DEFENDER",
           "TRAIT_ORGANIZED"
@@ -3263,7 +3263,7 @@
         "id": "valira_thinveil",
         "name": "Valira Thinveil",
         "epithet": "The Maker of Second Faces",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_CREATIVE",
           "TRAIT_MAGIC_RESISTANT"
@@ -3289,14 +3289,14 @@
         "id": "nemara_vey",
         "name": "Nemara Vey",
         "epithet": "Lady of the Last Feast",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_DEFENDER",
           "TRAIT_PHILOSOPHICAL"
         ],
         "inherited_traits": [],
-        "angle": "A vampire who accepts eventual death rather than continuing to consume souls; the Calabim's immortality becomes a moral deadline.",
-        "backstory": "Nemara heard the last words of a household servant whose soul she had meant to consume, and found herself remembering every other voice she had silenced. She swore never to feast again, knowing that blood alone could not purchase the stolen years on which a Calabim vampire depends. Her estate has become a refuge guarded by mortal soldiers and a few immortals willing to spend their remaining strength without replenishing it. She is training a human successor while rival broods gather at the borders, determined that her last inheritance will be a people who can survive her.",
+        "angle": "A vampire who accepts eventual death rather than continuing to consume souls; the Calabim's immortality becomes a deadline.",
+        "backstory": "Nemara heard the last words of a household servant whose soul she had meant to consume, and found she could no longer stop hearing every other voice she had silenced. She swore never to feast again, knowing that blood alone could not purchase the stolen years on which a Calabim vampire depends. Her estate has become a refuge guarded by mortal soldiers and a few immortals willing to spend their remaining strength without replenishing it. She is training a human successor while rival broods gather at the borders, determined that her last inheritance will be a people who can survive her.",
         "portrait": "Visibly aging female vampire with very pale olive skin, faint golden eyes, fine wrinkles and long white hair once black; warm-white mourning tabard over battered aged-silver breastplate, long white sleeves and muted-burgundy belt; right hand closes silver shears through the cord of a jeweled feeding collar held open in her left hand, a decisive renunciation at chest level; sunrise at fortified manor window behind, quiet sorrowful resolve, warm white dominates, no gore.",
         "primary_palette": "Warm white with muted burgundy and aged silver accents",
         "hand_activity": "Cutting the cord of a jeweled feeding collar with silver shears in her right hand while her left hand holds the collar open.",
@@ -3379,7 +3379,7 @@
         "id": "vesna_quayward",
         "name": "Vesna Quayward",
         "epithet": "The Mortal Factor",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_FINANCIAL",
           "TRAIT_MAGIC_RESISTANT"
@@ -3433,7 +3433,7 @@
         "id": "milos_grainsty",
         "name": "Milos Grainsty",
         "epithet": "The Keeper of the Cellar Door",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_EXPANSIVE",
           "TRAIT_DEFENDER"
@@ -3495,7 +3495,7 @@
         "id": "veyra_ash_witness",
         "name": "Veyra Ash-Witness",
         "epithet": "Keeper of the Burnt Names",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_MAGIC_RESISTANT",
           "TRAIT_ORGANIZED"
@@ -3504,7 +3504,7 @@
           "TRAIT_SUNDERED"
         ],
         "angle": "An explicitly dissident Sheaim faction uses its knowledge of destructive magic to document its victims and stop the next ritual.",
-        "backstory": "Veyra was the clerk ordered to certify that a vanished quarter of Galveholm had never contained any residents. Instead she carried its surviving household rolls into the streets, where the names drew relatives, deserters, and frightened apprentices to her side. Their breakaway wards use confiscated ritual diagrams to identify sacrifices and evacuate the intended victims before the gates open. Her faction has not escaped the Sheaim's dangerous magical inheritance, and its claim to goodness rests on accepting that danger themselves instead of charging it to strangers.",
+        "backstory": "Veyra was the clerk ordered to certify that a vanished quarter of Galveholm had never contained any residents. Instead she carried its surviving household rolls into the streets, where the names drew relatives, deserters, and frightened apprentices to her side. Their breakaway wards use confiscated ritual diagrams to identify sacrifices and evacuate the intended victims before the gates open. Her faction has not escaped the Sheaim's dangerous magical inheritance, and its claim to be different rests on accepting that danger themselves instead of charging it to strangers.",
         "portrait": "Human woman about forty-five, deep brown skin, close-cropped tightly curled hair streaked gray, pale healed magical burn across one temple, resolute tired eyes; plain charcoal clerk's coat over a violet protective collar, wax-sealed bundle of scorched household rolls held close, small iron name tags at her breast; distant ash towers and a narrow warm window behind, dignified sober head-and-shoulders portrait. Primary color scheme: mustard ochre with ink-black and parchment accents. Outfit silhouette: Ochre clerk apron over a fitted charcoal work tunic with reinforced ink-stained cuffs. Both hands clearly visible, actively pressing a small household-name stamp into a fresh wax witness tablet while steadying its wooden tray. Mood: exhausted forensic resolve. Use the stated primary color scheme and occupational outfit instead of any conflicting earlier garment colors; waist-up crop to include the complete active hands.",
         "primary_palette": "mustard ochre with ink-black and parchment accents",
         "hand_activity": "Pressing a small household-name stamp into a fresh wax witness tablet while steadying its wooden tray",
@@ -3595,7 +3595,7 @@
         "id": "ivaya_fadebell",
         "name": "Ivaya Fadebell",
         "epithet": "The Listener at the Safeline",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_MAGIC_RESISTANT",
           "TRAIT_DEFENDER"
@@ -3655,7 +3655,7 @@
         "id": "hesia_ashcomber",
         "name": "Hesia Ashcomber",
         "epithet": "Custodian of the Blue Orchard",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_CREATIVE",
           "TRAIT_INDUSTRIOUS"
@@ -3887,7 +3887,7 @@
         "id": "tovra_hearthmeter",
         "name": "Tovra Hearthmeter",
         "epithet": "The Keeper of Winter Stores",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_AGNOSTIC",
           "TRAIT_ORGANIZED",
@@ -3962,7 +3962,7 @@
         "id": "naevra_snow_listener",
         "name": "Naevra Snow-Listener",
         "epithet": "The Avalanche Warden",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_AGNOSTIC",
           "TRAIT_DEFENDER",
@@ -3970,7 +3970,7 @@
         ],
         "inherited_traits": [],
         "angle": "An Illian defender whose reverence for winter means recognizing its dangers and sheltering outsiders, rather than treating cold as a right to rule.",
-        "backstory": "Naevra was guarding a mountain shrine when an avalanche buried an invading company and her own relief patrol beneath the same snow. She broke the shrine's ceremonial doors into stretchers and brought survivors from both sides down the mountain. The watch houses that follow her preserve Illian winter customs but keep their shelters open to anyone who surrenders a weapon at the threshold. She refuses Auric's demand to close the passes to unbelievers, arguing that knowing the cold creates a duty to those who do not.",
+        "backstory": "Naevra was guarding a mountain shrine when an avalanche buried an invading company and her own relief patrol beneath the same snow. She broke the shrine's ceremonial doors into stretchers and brought survivors from both sides down the mountain. The watch houses that follow her preserve Illian winter customs but keep their shelters open to anyone who surrenders a weapon at the threshold. She refuses Auric's demand to close the passes to unbelievers, arguing that a closed pass starves the watch houses as surely as the strangers.",
         "portrait": "Human woman in her late twenties, very pale skin with a deep red cold-weather flush, dark red hair wound tightly beneath a white wool cap, strong brow and serious green eyes; weathered white-and-blue watch armor, a repaired wooden avalanche whistle and a small rescue rope over one shoulder; a stone mountain refuge in pale blue blowing snow with a small lit doorway behind, alert compassionate head-and-shoulders portrait. Primary color scheme: golden ochre with blue-gray and snow-white accents. Outfit silhouette: Golden ochre rescue-watch surcoat over blue-gray leather armor with a short white wool cap. Both hands clearly visible, actively fastening a rescue splint around a padded demonstration arm with both hands pulling opposite straps. Mood: alert disciplined compassion. Use the stated primary color scheme and occupational outfit instead of any conflicting earlier garment colors; waist-up crop to include the complete active hands.",
         "primary_palette": "golden ochre with blue-gray and snow-white accents",
         "hand_activity": "Fastening a rescue splint around a padded demonstration arm with both hands pulling opposite straps",
@@ -3981,7 +3981,7 @@
         "id": "rhuna_snowcellar",
         "name": "Rhuna Snowcellar",
         "epithet": "The Keeper of Tomorrow's Bread",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_AGNOSTIC",
           "TRAIT_INDUSTRIOUS",
@@ -4038,7 +4038,7 @@
         "id": "sieda_icequill",
         "name": "Sieda Icequill",
         "epithet": "The Keeper of the Thaw Tongue",
-        "alignment": "Good",
+        "alignment": "Neutral",
         "traits": [
           "TRAIT_AGNOSTIC",
           "TRAIT_CREATIVE",
