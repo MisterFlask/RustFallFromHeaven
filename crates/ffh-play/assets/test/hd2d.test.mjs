@@ -66,6 +66,19 @@ test("standing hill improvements occupy the crown, with five individually ground
       const over = [[0, 0], [0, 0.5], [0, 1], [-1, 0.5], [1, 0.5]].map(([u, v]) => c.y - world.heightAt(c.x + u * half, -c.z + v * c.w));
       assert.ok(over[1] < 0.03, `${type}: the middle of its painted ground is on the land (${over[1].toFixed(3)} over it)`);
       assert.ok(Math.abs(over.reduce((a, b) => a + b) / over.length) < 0.04, `${type}: its painted ground lies on the land on average`);
+      // An isometric work's painted ground is draped on the land: every ground vertex at the
+      // land's height where it lies, the top row standing over the corners' row.
+      if (!c.key.startsWith("bld_site_")) {
+        assert.ok(c.drape, `${type}: draped`);
+        const { cols, rows, v } = c.drape;
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+          const k = (j * cols + i) * 6;
+          if (j < rows - 1) {
+            assert.equal(v[k + 5], 0);
+            assert.ok(Math.abs(v[k + 3] - world.heightAt(v[k + 2], -v[k + 4])) < 0.01, `${type}: draped vertex on the land`);
+          } else assert.ok(v[k + 5] > 0 && v[k + 3] === v[k - cols * 6 + 3], `${type}: the top row stands over the corners`);
+        }
+      }
     }
     if (cards.length === 5) {
       assert.equal(new Set(cards.map((c) => `${c.x},${c.z}`)).size, 5, "five separate buildings");

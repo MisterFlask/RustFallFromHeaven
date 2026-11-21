@@ -99,6 +99,7 @@ export class Hd2dPasses {
     gl.depthFunc(gl.LEQUAL);
     const prog = this.p.sprite.use().set(this.cardUniforms(SU, scene, 0));
     this.sprites.draw(prog, "static", scene.copies);
+    this.sprites.draw(prog, "draped", scene.copies);
     this.sprites.draw(prog, "units", scene.copies);
     gl.depthMask(false);
   }
