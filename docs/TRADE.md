@@ -408,7 +408,8 @@ Choices made where this spec was silent (each open to change):
 - **The move** is `group_move` with the caravan as its forced unit (the rules' step: sight,
   entering a city, the sea patrols' interception, escorts); its movement points are restored after
   each step and its group is set asleep.
-- **Closed** (3.4): the caravans are removed without a killer; the slots keep their re-form timers,
+- **Closed** (3.4): the caravans are removed without a killer (through `unit_kill`, under the
+  telemetry cause `trade`); the slots keep their re-form timers,
   which count down whether the route is open or not; the caravans form when it is open again. At a
   war declaration every route of both sides' players is checked (a path through a third party's
   land can change too).
@@ -431,7 +432,7 @@ Choices made where this spec was silent (each open to change):
   not the unit); a killer at war with the owner is `war`; any other is `hidden`.
 - **The guard** (4.2): the highest `tier` of a unit type that is an army unit the origin can train
   now (`city_can_train`), set when a caravan forms and at each turn start. Each guard promotion is
-  DEF +10, MDEF +10 and HP +33% (percents sum: x1.33, x1.66, x2).
+  DEF +10, MDEF +10 and HP +33% (percents sum: x1.33, x1.66, x1.99).
 - **Limits** (3.1): routes from inland cities are limited to the base limit; all routes to the base
   limit plus `coastal_trade_routes`. Coastal is Civ4's (`city_is_coastal`, the ocean's minimum
   size). The building key `global_trade_routes` raises `Player::trade_routes` as before.

@@ -429,6 +429,10 @@ impl Game {
     /// Unit `u` becomes caravan `slot` of route `r`: alone in its group, asleep, no orders, bound
     /// for the destination, its guard set (4.2).
     pub(crate) fn caravan_join_route(&mut self, u: UnitId, r: RouteId, slot: usize) {
+        // Off any ship it was loaded on (it is never cargo in a route).
+        if self.units[u].transport_unit.is_some() {
+            self.unit_set_transport_unit(u, None);
+        }
         self.units[u].route = Some(r);
         let s = &mut self.routes[r].slots[slot];
         s.unit = Some(u);
@@ -498,7 +502,10 @@ impl Game {
         self.routes[r].slots[slot].bound = Leg::Out;
         if self.units.contains(u) {
             self.units[u].route = None;
+            // (A removal by rule, not a death: telemetry counts it under its own cause.)
+            self.tel_ctx_push("trade");
             self.unit_kill(u, false, None);
+            self.tel_ctx_pop();
         }
     }
 

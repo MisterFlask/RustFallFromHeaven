@@ -228,11 +228,10 @@ fn the_limits() {
     w.g.players[w.p0].coastal_trade_routes = 1;
     assert!(w.g.city_is_route_coastal(w.port));
     assert_eq!(w.g.unit_establish_refusal(v, third, [None, None]), None, "the port is coastal");
-    if !w.g.city_is_route_coastal(w.capital) {
-        w.g.city_change_extra_trade_routes(w.capital, 1);
-        let x = w.caravan_at(w.capital);
-        assert_eq!(w.g.unit_establish_refusal(x, w.far, [None, None]), Some(RouteRefusal::CoastalOnly));
-    }
+    assert!(!w.g.city_is_route_coastal(w.capital), "the capital is inland");
+    w.g.city_change_extra_trade_routes(w.capital, 1);
+    let x = w.caravan_at(w.capital);
+    assert_eq!(w.g.unit_establish_refusal(x, w.far, [None, None]), Some(RouteRefusal::CoastalOnly));
     // The game's routes (the votes) count for everyone.
     w.g.trade_routes = 1;
     assert_eq!(w.g.player_route_limit(w.p0), 3);
@@ -451,9 +450,8 @@ fn movement_on_road_land_and_water() {
         w.g.player_move_caravans(w.p0);
     }
     let on_water = path.iter().position(|&q| q == w.g.unit_plot(u)).unwrap();
-    if path[on_water + 1..].iter().take((m.caravan_move / m.caravan_cost_water) as usize + 1).all(|&q| w.g.plot_is_water(q)) {
-        assert_eq!(one_turn(&mut w, r) as i32, m.caravan_move / m.caravan_cost_water);
-    }
+    assert!(path[on_water + 1..].iter().take((m.caravan_move / m.caravan_cost_water) as usize + 1).all(|&q| w.g.plot_is_water(q)), "open water ahead");
+    assert_eq!(one_turn(&mut w, r) as i32, m.caravan_move / m.caravan_cost_water);
     assert!(!w.g.unit_is_in_boats(u), "a caravan is not in boats");
     w.consistent();
 }
@@ -865,6 +863,10 @@ fn routes_survive_a_save() {
     w.g.player_move_caravans(w.p0);
     let u = w.g.routes[r].slots[1].unit.unwrap();
     w.g.unit_kill(u, false, Some(w.p2));
+    // A route closed by a war (a refusal with a player) and one with a lost caravan.
+    w.war(w.p0, w.p1);
+    assert_eq!(w.g.routes[r].closed, Some(RouteRefusal::AtWar(w.p1)));
+    assert_eq!(w.g.routes[r].slots[1].lost_to, Some(w.p2));
     let bytes = w.g.save();
     let h = Game::load(w.g.d, &bytes).unwrap();
     assert_eq!(h.routes[r], w.g.routes[r]);
@@ -874,4 +876,38 @@ fn routes_survive_a_save() {
     }
     assert!(h.trade_stale().is_empty());
     assert_eq!(h.save(), bytes);
+}
+
+// ---- Through the rules' own turn ----
+
+#[test]
+fn a_route_runs_through_the_owner_s_turns() {
+    let mut w = world();
+    for c in [w.capital, w.port] {
+        w.g.city_set_population(c, 6);
+    }
+    let r = w.establish(w.capital, w.port);
+    let y = YieldType::YIELD_COMMERCE;
+    let mut arrived_at = None;
+    for turn in 0..40 {
+        w.g.player_do_turn_units(w.p0);
+        w.g.player_do_turn(w.p0);
+        w.consistent();
+        if arrived_at.is_none() && w.g.routes[r].arrived {
+            arrived_at = Some(turn);
+        }
+    }
+    assert!(arrived_at.is_some(), "the first caravan arrived");
+    let route = w.g.routes[r].clone();
+    assert!(route.is_open() && route.slots.iter().all(|s| s.unit.is_some()), "both caravans alive");
+    assert!(route.growth > 0);
+    // The pay reaches the origin's commerce.
+    let trade = w.g.cities[w.capital].trade_yield[y.idx()];
+    assert!(trade > 0, "the origin's trade yield");
+    assert!(w.g.city_yield_rate(w.capital, y) >= trade);
+    // The caravans shuttle: each has turned around at least once in 40 turns.
+    let bounds: Vec<Leg> = route.slots.iter().map(|s| s.bound).collect();
+    let plots: Vec<PlotIdx> = route.caravans().iter().map(|&u| w.g.unit_plot(u)).collect();
+    assert!(plots.iter().all(|q| route.path.contains(q)), "on the path: {bounds:?}");
+    assert!(!w.g.player_has_ready_unit(w.p0, true), "no caravan waits for orders");
 }

@@ -71,12 +71,12 @@ impl Game {
         let (on, dn) = (self.city_name_or(self.routes[r].origin), self.city_name_or(self.routes[r].destination));
         let growth = self.routes[r].growth;
         let who = match killer {
-            None => "nobody".to_string(),
-            Some(k) if self.player_is_barbarian(k) => "the barbarians".to_string(),
-            Some(k) => self.player_get_civilization_short_description(k),
+            None => String::new(),
+            Some(k) if self.player_is_barbarian(k) => " to the barbarians".to_string(),
+            Some(k) => format!(" to {}", self.player_get_civilization_short_description(k)),
         };
         let at = at_plot.map(|q| self.map.xy(q)).unwrap_or_else(|| self.route_origin_xy(r));
-        self.log.msg_at(turn, Some(owner), at, || format!("Caravan of {on} to {dn} lost to {who}. Growth: {growth}%."));
+        self.log.msg_at(turn, Some(owner), at, || format!("Caravan of {on} to {dn} lost{who}. Growth: {growth}%."));
         if let Some(k) = killer.filter(|&k| k != owner && plunder > 0) {
             self.log.msg_at(turn, Some(k), at, || format!("Caravan of {on} to {dn} plundered: +{plunder} gold."));
         }
