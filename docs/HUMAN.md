@@ -1168,10 +1168,11 @@ lanes. In the browser:
 battlefield). They open from the game as above (the plan from an attack, the battle and the report
 from a battle's links and marker), through the engine's `engage_preview`, `engage` and `battle_log`
 (`apiSource` in `battle.js`); a dev entry opens them over a fixture, `?battle=field` (or `forest`,
-`hills`, `city`, `raid`: a city that falls). In an overlay over the dimmed map, on one isometric
-battlefield of M7 tiles (six ranks deep, the attacker's rear to the defender's rear, by the lanes;
-the ground's scenery round it: trees round a forest or jungle, the city behind its defenders, hills
-on a hill): **the plan** (both lines as each side's battle tactic arranges them, theirs as you
+`hills`, `city`, `raid`: a city that falls). In an overlay over the darkened map, scaled to fit
+the screen, on one isometric battlefield of M7 tiles (six ranks deep, the attacker's rear to the
+defender's rear, by the lanes; the ground runs out into the dark round it, with its scenery: the
+trees of a forest or jungle, the city behind its defenders, hills on a hill; how it looks:
+docs/ISO.md, "The battle screens"): **the plan** (both lines as each side's battle tactic arranges them, theirs as you
 know it, and both tactics named ("Tactic: Charge", its rules as the tooltip; docs/TACTICS.md);
 the board is never edited by hand: it takes no drags, a click on it moves nobody, and there is
 no Auto-arrange; each unit's HP bar and its chance to fall; a tooltip over a unit says what it
@@ -1202,8 +1203,8 @@ an action's line on its contact frame (a starving side's line before the battle,
 Archer: -25% damage dealt.", with "starving" over each of them; each side's tactic under its
 name); play/pause `Space` (the action freezes where it is), step
 `→`, skip to the report `Esc`, speeds 1x (the default) to 8x `1`-`4`; played through, the report
-follows) and **the report** (the battlefield where the battle ended, whether the plot fell, each
-side's tactic and its fallen, escaped and standing with their heads, the whole log; Replay,
+follows) and **the report** (the battlefield where the battle ended, the result in a banner at the
+top, whether the plot fell, each side's tactic and its fallen, escaped and standing with their heads, the whole log; Replay,
 Continue). While the overlay is open no key reaches the map: the game's own hotkeys (the F-keys,
 `Ctrl+S`, `Ctrl+L`, `Ctrl+1`-`3`, `Tab`, `Backspace`) do nothing, the browser's other keys keep
 theirs. The

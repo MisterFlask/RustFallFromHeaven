@@ -119,7 +119,7 @@ function squadLines(ctx) {
   if (list.length) {
     out.push(
       h(
-        "div.bt-row.small.bt-squads",
+        "div.bt-row.wrap.small.bt-squads",
         h("span.dim", "Attacking: "),
         list.map((s, i) =>
           btn(squadLabel(s, several), {
@@ -142,7 +142,7 @@ function defSquadLine() {
   const d = P.pv?.def_squad;
   // (A squad the rules have not numbered yet: units that arrived since their owner's last turn.)
   const named = d?.number ? `their Squad ${roman(d.number)}` : P.def?.size ? "their squad" : null;
-  return named ? h("div.bt-row.small.bt-def-squad", { title: "Of their squads that fought the fewest battles this turn, the one with the best result against yours." }, h("span.dim", "Defending: "), h("b", named)) : null;
+  return named ? h("div.bt-row.wrap.small.bt-def-squad", { title: "Of their squads that fought the fewest battles this turn, the one with the best result against yours." }, h("span.dim", "Defending: "), h("b", named)) : null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -266,14 +266,18 @@ function showTip(f, cx, cy) {
     P.tip.replaceChildren();
     add(P.tip, unitInfo(P.pv, f, { pos: posOf(f.b), fc: P.fc }));
   }
+  // the pointer in frame coordinates (the frame may be scaled to fit the window)
   const fr = P.ctx.stage.canvas.getBoundingClientRect();
+  const k = fr.width / FRAME_W || 1;
+  const px = (cx - fr.left) / k;
+  const py = (cy - fr.top) / k;
   const tw = P.tip.offsetWidth;
   const th = P.tip.offsetHeight;
-  let x = cx - fr.left + 18;
-  let y = cy - fr.top + 14;
-  if (x + tw > FRAME_W - 6) x = cx - fr.left - tw - 18;
+  let x = px + 18;
+  let y = py + 14;
+  if (x + tw > FRAME_W - 6) x = px - tw - 18;
   if (x < 6) x = 6;
-  if (y + th > FRAME_H - 6) y = Math.max(6, cy - fr.top - th - 14);
+  if (y + th > FRAME_H - 6) y = Math.max(6, py - th - 14);
   P.tip.style.left = `${Math.round(x)}px`;
   P.tip.style.top = `${Math.round(y)}px`;
 }
@@ -286,7 +290,8 @@ function hideTip() {
 // ---------------------------------------------------------------------------------------------
 // The panels
 
-const pnl = (style, ...children) => h("div.bt-pnl", { style }, ...children);
+/** A panel; `at`: its place (`tl`, `tr`, `bl`, `br`: the frame's corners). */
+const pnl = (at, ...children) => h(`div.bt-pnl.bt-${at}`, ...children);
 
 function render(ctx) {
   const ui = ctx.ui;
@@ -296,7 +301,7 @@ function render(ctx) {
   ov.replaceChildren();
   const pv = P.pv;
   if (!pv) {
-    add(ui, pnl({ left: "540px", top: "360px", width: "200px", textAlign: "center" }, h("span.dim", "Planning…")));
+    add(ui, h("div.bt-pnl", { style: { left: "540px", top: "360px", width: "200px", textAlign: "center" } }, h("span.dim", "Planning…")));
     return;
   }
   const F = P.F;
@@ -308,35 +313,29 @@ function render(ctx) {
   const mineOut = F.filter((f) => f.side === me && !P.place.has(f.b));
   const theirsIn = F.filter((f) => f.side !== me && P.def.has(f.b));
   const theirsOut = F.filter((f) => f.side !== me && !P.def.has(f.b));
-  const watch = ctx.prefs.get("watch", "watch");
   // ---- top left: the attack, your side
   add(
     ui,
     pnl(
-      { left: "6px", top: "4px", width: "380px" },
-      h("div.bt-row", uiIcon("attack", 16), h("span.bt-h3", `Attack ${where}`)),
-      h("div.bt-row", h("span.bt-h3.you", pv.sides?.[me]?.label ?? "Your army"), h("span.dim", `${used} of ${pv.slots[me].total}${pv.slots[me].river_only ? ` (+${pv.slots[me].river_only} river)` : ""} slots · ${pv.lanes[me]} lanes`)),
+      "tl",
+      h("div.bt-h3.bt-title", uiIcon("attack", 16), ` Attack ${where}`),
+      h("div.bt-h3.you", pv.sides?.[me]?.label ?? "Your army"),
+      h("div.small.dim", `${used} of ${pv.slots[me].total}${pv.slots[me].river_only ? ` (+${pv.slots[me].river_only} river)` : ""} slots · ${pv.lanes[me]} lanes`),
       // A squad's places do not change (frontage is gone); an old plan's changes still read.
       (pv.slots[me].changes ?? []).some((c) => c.delta) ? h("div.small.dim", { title: "Why this many slots" }, slotSum(pv.slots[me])) : null,
       squadLines(ctx),
-      h(
-        "div.bt-row",
-        { style: { marginTop: "2px" } },
-        h("span.dim", "Then"),
-        btn("Watch", { cls: "sm", on: watch === "watch", title: "Attack, then watch the battle", onclick: () => (ctx.prefs.set("watch", "watch"), render(ctx)) }),
-        btn("Report", { cls: "sm", on: watch === "report", title: "Attack, then straight to the report", onclick: () => (ctx.prefs.set("watch", "report"), render(ctx)) }),
-      ),
     ),
   );
   // ---- top right: their side, the ground
   add(
     ui,
     pnl(
-      { right: "6px", top: "4px", width: "470px" },
-      h("div.bt-row", h("span.bt-h3.them", pv.sides?.[1 - me]?.label ?? where), h("span.dim", `${slotsUsed(P.def, F)} of ${pv.slots[1 - me].total} slots · ${pv.lanes[1 - me]} lanes`)),
+      "tr",
+      h("div.bt-h3.them", pv.sides?.[1 - me]?.label ?? where),
+      h("div.small.dim", `${slotsUsed(P.def, F)} of ${pv.slots[1 - me].total} slots · ${pv.lanes[1 - me]} lanes`),
       defSquadLine(),
       theirsOut.length
-        ? h("div.bt-row.small", { title: pv.plot?.city ? "In a city the defenders stay until none is left" : "A lost battle pushes them back with the line" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
+        ? h("div.bt-row.wrap.small", { title: pv.plot?.city ? "In a city the defenders stay until none is left" : "A lost battle pushes them back with the line" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
         : null,
       groundLine(pv.ground, pv.plot),
     ),
@@ -348,15 +347,16 @@ function render(ctx) {
       h(
         "div.bt-bench",
         { "data-b": f.b, title: "" },
-        headChip(f, pv.sides, { w: 28, h: 26 }),
-        h("span.bt-ell", h("b", uname(pv, f.b)), h("br"), h("span.small.dim", `${rowsLine(f)}${f.large ? " · large" : ""} · ATK ${stat(f.a_x100)} · DEF ${stat(f.dv_x100)}`)),
+        headChip(f, pv.sides, { w: 24, h: 22 }),
+        h("b.bt-ell", uname(pv, f.b)),
+        h("div.small.dim", `${rowsLine(f)}${f.large ? " · large" : ""} · ATK ${stat(f.a_x100)} · DEF ${stat(f.dv_x100)}`),
       ),
     ),
   );
   add(
     ui,
     pnl(
-      { left: "6px", top: "506px", width: "420px", height: "288px", display: "block" },
+      "bl",
       h("div.bt-row", h("span.bt-h4", "Not in the line"), h("span.dim.small", `${mineIn.length} of ${mineIn.length + mineOut.length} in the line`)),
       benchRows.length ? h("div.bt-benchlist", benchRows) : h("div.dim.small", "Every unit is in the line."),
       h("div.bt-rule"),
@@ -429,12 +429,21 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
   }
   if (war) body.push(h("div.warn.small", "Attacking declares war."));
   for (const e of P.errors) body.push(h("div.bad.small", e));
+  const watch = ctx.prefs.get("watch", "watch");
   return pnl(
-    { right: "6px", top: "556px", width: "424px", height: "238px", display: "flex", flexDirection: "column", padding: "4px 12px" },
-    h("div", { style: { flex: "1" } }, body),
+    "br",
+    h("div.bt-fcbody", body),
+    // what follows the attack
     h(
-      "div.bt-row",
-      { style: { justifyContent: "flex-end", gap: "8px" } },
+      "div.bt-row.bt-end",
+      { style: { marginTop: "6px" } },
+      h("span.dim", "Then"),
+      btn("Watch", { cls: "sm", on: watch === "watch", title: "Attack, then watch the battle", onclick: () => (ctx.prefs.set("watch", "watch"), render(ctx)) }),
+      btn("Report", { cls: "sm", on: watch === "report", title: "Attack, then straight to the report", onclick: () => (ctx.prefs.set("watch", "report"), render(ctx)) }),
+    ),
+    h(
+      "div.bt-row.bt-end",
+      { style: { marginTop: "4px" } },
       btn("Cancel", { title: "Back to the map [Esc]", disabled: P.busy, onclick: () => !P.busy && ctx.close() }),
       btn([uiIcon("attack", 16), war ? " Declare war and attack" : " Attack"], {
         cls: "primary",

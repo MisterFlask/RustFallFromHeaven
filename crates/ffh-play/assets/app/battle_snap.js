@@ -420,9 +420,9 @@ export class Snap {
     const g = stage.g;
     const [sx, sy] = (this.shake(now) ?? [0, 0]).map(Math.round);
     g.save();
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    stage.base();
     if (C.P.shade) this.drawShade(g, ph, sx, sy);
-    g.setTransform(1, 0, 0, 1, sx, sy);
+    stage.base(sx, sy);
     const order = [...C.roles.values()].sort((a, b) => a.home[1] + a.off[1] - (b.home[1] + b.off[1]));
     this.drawImpact(g, ph, "back");
     for (const r of order) this.drawRole(stage, g, r, ph, wall);

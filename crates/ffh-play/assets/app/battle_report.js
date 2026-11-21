@@ -58,7 +58,8 @@ export function frame(ctx, _dt, now) {
   ctx.stage.draw({ figs });
 }
 
-const pnl = (style, ...children) => h("div.bt-pnl", { style }, ...children);
+/** A panel; `at`: its place (`tl`, `tr`, `bl`, `br`: the frame's corners). */
+const pnl = (at, ...children) => h(`div.bt-pnl.bt-${at}`, ...children);
 
 function render(ctx) {
   const ui = ctx.ui;
@@ -69,24 +70,26 @@ function render(ctx) {
   const rw = resultWords(L);
   const where = L.plot?.city?.name;
   const rounds = L.outcome?.rounds ?? Math.max(0, ...L.events.map((e) => e.round ?? 0));
-  // ---- top left: the result
+  // ---- centre top: the result
+  add(ui, h("div.bt-pnl.bt-banner.bt-ribbon", h(`span.bt-ribbonword.${rw.good ? "goldlt" : "bad"}#bt-result`, { "data-kind": rw.kind }, rw.ribbon), withCalc(h("div.small", rw.line), rw.calc)));
+  // ---- top left: the battle, its rounds, the ground
   add(
     ui,
     pnl(
-      { left: "6px", top: "4px", width: "380px" },
-      h("div.bt-row", uiIcon("attack", 16), h("span.bt-h3", where ? `Battle of ${where}` : `Battle at (${L.plot?.x ?? "?"}, ${L.plot?.y ?? "?"})`)),
-      h("div.bt-row", h(`b.bt-spaced.${rw.good ? "goldlt" : "bad"}#bt-result`, { "data-kind": rw.kind }, rw.ribbon), h("span.dim", `${rounds} round${rounds === 1 ? "" : "s"}`)),
-      withCalc(h("div.small", rw.line), rw.calc),
+      "tl",
+      h("div.bt-h3.bt-title", uiIcon("attack", 16), where ? ` Battle of ${where}` : ` Battle at (${L.plot?.x ?? "?"}, ${L.plot?.y ?? "?"})`),
+      h("div.small.dim", `${rounds} round${rounds === 1 ? "" : "s"}`),
+      groundLine(L.ground, L.plot),
     ),
   );
-  // ---- top right: the ground, the way on
+  // ---- top right: the way on
+  const queue = ctx.queueRow?.();
   add(
     ui,
-    pnl(
-      { right: "6px", top: "4px", width: "470px" },
-      h("div.bt-row", { style: { justifyContent: "flex-end", gap: "8px" } }, btn("Replay", { key: "replay", title: "Watch it again", onclick: () => ctx.toWatch(L) }), btn("Continue", { cls: "primary", key: "continue", title: "Back to the map [Enter]", onclick: () => ctx.close() })),
-      groundLine(L.ground, L.plot),
-      ctx.queueRow?.(),
+    h(
+      "div.bt-tr.bt-way",
+      h("div.bt-row.bt-end", btn("Replay", { key: "replay", title: "Watch it again", onclick: () => ctx.toWatch(L) }), btn("Continue", { cls: "primary", key: "continue", title: "Back to the map [Enter]", onclick: () => ctx.close() })),
+      queue ? h("div.bt-pnl.bt-queuepnl", queue) : null,
     ),
   );
   // ---- bottom left: the log
@@ -95,7 +98,7 @@ function render(ctx) {
     if (l.head) list.append(h("li.head", l.text));
     else list.append(h("li", h("span.sp", l.speed !== null ? String(l.speed) : "·"), partsEl(l.parts)));
   }
-  add(ui, pnl({ left: "6px", top: "506px", width: "420px", height: "288px", display: "flex", flexDirection: "column" }, h("div.bt-row", h("span.bt-h4", "Battle log"), h("span.dim.small", `${L.events.length} actions`)), list));
+  add(ui, pnl("bl.bt-col", h("div.bt-row", h("span.bt-h4", "Battle log"), h("span.dim.small", `${L.events.length} actions`)), list));
   // ---- bottom right: each side's fates
   add(ui, fatesPanel(L, me));
 }
@@ -122,7 +125,7 @@ function fatesPanel(L, me) {
     const counts = [`${s.fallen.length} fallen`, s.escaped.length ? `${s.escaped.length} escaped` : null, `${s.standing.length} standing`, s.afraid.length ? `${s.afraid.length} sat out` : null].filter(Boolean).join(" · ");
     return h(
       "div.bt-side",
-      h("div.bt-row", h(`span.bt-h4.${side === me ? "you" : "them"}`, label), h("span.dim.small", counts)),
+      h("div.bt-row.wrap", { style: { rowGap: "0" } }, h(`span.bt-h4.${side === me ? "you" : "them"}`, label), h("span.dim.small", counts)),
       ships ? h("div.small.bt-shore", h("span.dim", "Ships fired from the coast: "), ships) : null,
       h("div.bt-chips", s.standing.map((b) => chip(b, "standing")), s.escaped.map((b) => chip(b, "escaped")), s.afraid.map((b) => chip(b, "afraid")), s.fallen.map((b) => chip(b, "fallen"))),
     );
@@ -130,7 +133,7 @@ function fatesPanel(L, me) {
   const o = L.outcome ?? {};
   const left = o.defenders_left ?? fs[1].standing.length;
   return pnl(
-    { right: "6px", top: "556px", width: "424px", height: "238px", display: "block", padding: "4px 12px" },
+    "br",
     sideBlock(me),
     sideBlock(1 - me),
     h("div.bt-rule"),

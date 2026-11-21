@@ -185,7 +185,7 @@ export function loadArt({ fighters, plot, from, sides }) {
  *  top panels. */
 export function geom(lanes) {
   const L = Math.max(lanes?.[0] ?? 2, lanes?.[1] ?? 2);
-  return { L, lanes: [lanes?.[0] ?? 2, lanes?.[1] ?? 2], ox: 640 - ((5 - (L - 1)) / 2) * 96, oy: 124 + (4 - L) * 24 };
+  return { L, lanes: [lanes?.[0] ?? 2, lanes?.[1] ?? 2], ox: 640 - ((5 - (L - 1)) / 2) * 96, oy: 136 + (4 - L) * 24 };
 }
 
 export const depthOf = (side, row) => (side === 0 ? 2 - row : 3 + row);
@@ -218,6 +218,79 @@ export function cellAt(G, x, y) {
   return { side, lane: l, row };
 }
 
+/** The frame point of grid coordinates (d, l): a cell's centre at integers, its corners at halves. */
+const gridPt = (G, d, l) => [G.ox + (d - l) * 96, G.oy + (d + l) * 48 + 48];
+
+/** The board's light (buildBoard): `grade` how far the tiles' colour is pulled to grey (the units
+ *  are the brightest, most saturated thing on the field, the ground supports them); `off` the
+ *  darkening of the ground off the grid; `fall` the
+ *  falloff into the dark and `pool` the warm light, as [r, alpha] stops along the light's ellipse
+ *  (r 1: the grid's half extents); `tint`, `hair` (a dark line, a cream one beside it), `outline`
+ *  the sides' blocks. */
+const LIGHT = {
+  grade: 0.32,
+  off: 0.26,
+  fall: [[0, 0], [1.04, 0], [1.2, 0.3], [1.42, 0.62], [1.7, 0.88]],
+  pool: [[0, 0.14], [0.6, 0.09], [1.12, 0]],
+  poolOp: "soft-light",
+  tint: 0.05,
+  hair: [0.32, 0.16],
+  outline: 0.75,
+};
+
+/** Where the ranks' names stand: lanes past the near lane (1: the centre of the tile outside it). */
+const LABEL_AT = 0.8;
+
+/** The ellipse the board's light is centred on: the grid's centre, its half extents. */
+function lightEllipse(G) {
+  const [cx, cy] = gridPt(G, 2.5, (G.L - 1) / 2);
+  return { cx, cy, rx: (6 + G.L) * 48, ry: (6 + G.L) * 24 };
+}
+
+/** How dark the ground is at frame point (x, y) (0..1): the falloff with the darkening off the grid. */
+function darkAt(G, x, y) {
+  const E = lightEllipse(G);
+  const r = Math.hypot((x - E.cx) / E.rx, (y - E.cy) / E.ry);
+  const S = LIGHT.fall;
+  let a = S.at(-1)[1];
+  for (let i = 1; i < S.length; i++)
+    if (r <= S[i][0]) {
+      const [r0, a0] = S[i - 1];
+      const [r1, a1] = S[i];
+      a = a0 + ((a1 - a0) * (r - r0)) / (r1 - r0);
+      break;
+    }
+  return 1 - (1 - a) * (1 - LIGHT.off);
+}
+
+/** A deterministic hash of a tile (the gaps in a wood). */
+function treeHash(d, l) {
+  let h = Math.imul(d + 100, 0x27d4eb2d) ^ Math.imul(l + 100, 0x165667b1);
+  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+  return (h ^ (h >>> 13)) >>> 0;
+}
+
+const DARK = new Map();
+
+/** `im` darkened by `a` (a dark fill over its pixels), cached by key and level. */
+function darkImage(key, im, a) {
+  if (a <= 0) return im;
+  const id = `${key}@${a}`;
+  let c = DARK.get(id);
+  if (!c) {
+    c = document.createElement("canvas");
+    c.width = im.width;
+    c.height = im.height;
+    const g = c.getContext("2d");
+    g.drawImage(im, 0, 0);
+    g.globalCompositeOperation = "source-atop";
+    g.fillStyle = `rgba(4, 6, 16, ${a})`;
+    g.fillRect(0, 0, c.width, c.height);
+    DARK.set(id, c);
+  }
+  return c;
+}
+
 function diamond(g, x, y) {
   g.beginPath();
   g.moveTo(x, y - 48);
@@ -233,10 +306,10 @@ function diamond(g, x, y) {
 export class Stage {
   constructor(canvas) {
     this.canvas = canvas;
-    canvas.width = FRAME_W;
-    canvas.height = FRAME_H;
     this.g = canvas.getContext("2d");
-    this.g.imageSmoothingEnabled = false;
+    /** The canvas's supersampling: its backing store is `n` pixels a frame px (battle.js `fit`). */
+    this.n = 0;
+    this.setScale(1);
     this.board = null;
     this.boardKey = "";
     this.model = null;
@@ -244,6 +317,23 @@ export class Stage {
     this.scenery = [];
     /** The viewer's side: its rings and cells are Azure, the other side's Gules. */
     this.me = 0;
+  }
+
+  /** Supersamples the canvas `n` times (1-3): every drawing stays in frame coordinates under
+   *  `base`, the offscreen caches stay at 1x and are drawn through it. */
+  setScale(n) {
+    if (n === this.n) return;
+    this.n = n;
+    this.canvas.width = FRAME_W * n;
+    this.canvas.height = FRAME_H * n;
+    // resizing resets the context's state
+    this.g.imageSmoothingEnabled = false;
+  }
+
+  /** Sets the base transform: frame coordinates, offset by (dx, dy) frame px. */
+  base(dx = 0, dy = 0) {
+    const n = this.n;
+    this.g.setTransform(n, 0, 0, n, n * dx, n * dy);
   }
 
   /** The board of `model` ({plot, from, sides, lanes}); kept while the model's ground and lanes
@@ -258,6 +348,10 @@ export class Stage {
     this.scenery = this.buildScenery();
   }
 
+  /** The ground, lit as a diorama: tiles over the whole frame (the attacker's plot's terrain on
+   *  its half, the defender's on the other), the ground off the grid a little darker and falling
+   *  off into the dark towards the frame's edges, a warm pool of light on the grid; each side's
+   *  block of cells outlined in its colour, the contact line between the fronts in gold. */
   buildBoard() {
     const { plot, from } = this.model;
     const G = this.G;
@@ -267,47 +361,109 @@ export class Stage {
     const g = c.getContext("2d");
     g.imageSmoothingEnabled = false;
     const tiles = [];
-    for (let d = -1; d <= 6; d++) for (let l = -1; l <= G.L; l++) tiles.push([d, l]);
+    for (let d = -14; d <= 20; d++)
+      for (let l = -14; l <= 20; l++) {
+        const [x, y] = tileTL(G, d, l);
+        if (x + 192 > 0 && x < FRAME_W && y + 128 > 0 && y < FRAME_H) tiles.push([d, l]);
+      }
     tiles.sort((a, b) => a[0] + a[1] - (b[0] + b[1]) || a[0] - b[0]);
-    const inGrid = (d, l) => d >= 0 && d <= 5 && l >= 0 && l < G.lanes[d <= 2 ? 0 : 1];
     for (const [d, l] of tiles) {
       const [x, y] = tileTL(G, d, l);
-      const def = d >= 3;
-      const p = def ? plot : from;
+      const p = d >= 3 ? plot : from;
       const base = tileKey(p?.terrain);
-      const alt = ((d + 9) * 31 + (l + 9) * 17) % 3 === 0;
+      const alt = ((d + 40) * 31 + (l + 40) * 17) % 3 === 0;
       const t = (alt && IMG.get(`${base}_b`)) || IMG.get(base);
       if (t) g.drawImage(t, x, y);
       if (p?.hills) {
         const hl = IMG.get(hillsKey(p.terrain));
         if (hl) g.drawImage(hl, x, y + (hl.height < 128 ? 128 - hl.height : 0));
       }
+    }
+    // the ground's colour, muted
+    g.save();
+    g.globalCompositeOperation = "saturation";
+    g.globalAlpha = LIGHT.grade;
+    g.fillStyle = "#808080";
+    g.fillRect(0, 0, FRAME_W, FRAME_H);
+    g.restore();
+    const P = (d, l) => gridPt(G, d, l);
+    const [n0, n1] = G.lanes;
+    const gridPath = () => {
+      g.beginPath();
+      for (const [i, [d, l]] of [[-0.5, -0.5], [5.5, -0.5], [5.5, n1 - 0.5], [2.5, n1 - 0.5], [2.5, n0 - 0.5], [-0.5, n0 - 0.5]].entries()) g[i ? "lineTo" : "moveTo"](...P(d, l));
+      g.closePath();
+    };
+    // (a) the ground off the grid, a little darker
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, FRAME_W, FRAME_H);
+    gridPath();
+    g.fillStyle = `rgba(6, 10, 28, ${LIGHT.off})`;
+    g.fill("evenodd");
+    g.restore();
+    // (b) the falloff into the dark, and (c) the warm pool of light on the grid
+    const E = lightEllipse(G);
+    const ellipse = (stops, op) => {
       g.save();
-      diamond(g, x + 96, y + 48);
-      if (!inGrid(d, l)) {
-        g.fillStyle = "rgba(4, 10, 30, 0.5)";
-        g.fill();
-      } else {
-        const mine = (d <= 2 ? 0 : 1) === this.me;
-        g.fillStyle = mine ? "rgba(60, 100, 220, 0.12)" : "rgba(220, 60, 50, 0.12)";
-        g.fill();
-        g.strokeStyle = "rgba(255, 245, 210, 0.3)";
-        g.lineWidth = 1;
+      g.globalCompositeOperation = op;
+      g.translate(E.cx, E.cy);
+      g.scale(1, E.ry / E.rx);
+      const R = E.rx * stops.at(-1)[0];
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, R);
+      for (const [r, col] of stops) gr.addColorStop(r / stops.at(-1)[0], col);
+      g.fillStyle = gr;
+      g.fillRect(-4000, -4000, 8000, 8000);
+      g.restore();
+    };
+    ellipse(LIGHT.fall.map(([r, a]) => [r, `rgba(4, 6, 16, ${a})`]), "source-over");
+    ellipse(LIGHT.pool.map(([r, a]) => [r, `rgba(255, 236, 196, ${a})`]), LIGHT.poolOp);
+    // the sides' blocks: a faint tint, cream hairlines between the cells, the outline in the side's colour
+    for (const side of [0, 1]) {
+      const n = G.lanes[side];
+      const [d0, d1] = side === 0 ? [-0.5, 2.5] : [2.5, 5.5];
+      const far = side === 0 ? d0 : d1;
+      const col = (side === this.me ? COLORS.azure : COLORS.gules)[0];
+      g.save();
+      g.beginPath();
+      for (const [i, [d, l]] of [[d0, -0.5], [d1, -0.5], [d1, n - 0.5], [d0, n - 0.5]].entries()) g[i ? "lineTo" : "moveTo"](...P(d, l));
+      g.closePath();
+      g.globalAlpha = LIGHT.tint;
+      g.fillStyle = col;
+      g.fill();
+      g.globalAlpha = 1;
+      g.lineWidth = 1;
+      for (const [dy, line] of [[0, `rgba(12, 20, 10, ${LIGHT.hair[0]})`], [1, `rgba(255, 245, 210, ${LIGHT.hair[1]})`]]) {
+        g.strokeStyle = line;
+        g.beginPath();
+        for (let l = 0.5; l < n - 0.5; l++) g.moveTo(P(d0, l)[0], P(d0, l)[1] + dy), g.lineTo(P(d1, l)[0], P(d1, l)[1] + dy);
+        for (let d = d0 + 1; d < d1; d++) g.moveTo(P(d, -0.5)[0], P(d, -0.5)[1] + dy), g.lineTo(P(d, n - 0.5)[0], P(d, n - 0.5)[1] + dy);
         g.stroke();
       }
+      g.strokeStyle = col;
+      g.globalAlpha = LIGHT.outline;
+      g.lineWidth = 2;
+      g.lineJoin = "round";
+      g.beginPath();
+      g.moveTo(...P(2.5, -0.5));
+      g.lineTo(...P(far, -0.5));
+      g.lineTo(...P(far, n - 0.5));
+      g.lineTo(...P(2.5, n - 0.5));
+      g.stroke();
       g.restore();
     }
     // the contact line between the two fronts
     g.save();
-    g.strokeStyle = "rgba(246, 198, 80, 0.75)";
     g.lineWidth = 2;
     g.setLineDash([8, 6]);
-    const [ax, ay] = tileTL(G, 3, 0);
-    const [bx, by] = tileTL(G, 3, G.L);
-    g.beginPath();
-    g.moveTo(ax + 96, ay);
-    g.lineTo(bx + 96, by);
-    g.stroke();
+    for (const [dy, col] of [[1, "rgba(10, 6, 2, 0.5)"], [0, "rgba(255, 212, 96, 0.95)"]]) {
+      const [ax, ay] = P(2.5, -0.5);
+      const [bx, by] = P(2.5, G.L - 0.5);
+      g.beginPath();
+      g.moveTo(ax, ay + dy);
+      g.lineTo(bx, by + dy);
+      g.strokeStyle = col;
+      g.stroke();
+    }
     g.restore();
     return c;
   }
@@ -320,36 +476,59 @@ export class Stage {
     const out = [];
     const tree = (p) => featureKey(p?.feature);
     const td = tree(plot);
-    if (td) {
-      for (let d = 3; d <= 6; d++) out.push({ key: td, d, l: -1 }, { key: td, d, l: G.L });
-      for (let l = 0; l < G.L; l++) if (!plot.city || l !== Math.floor((G.L - 1) / 2)) out.push({ key: td, d: 6, l });
-    }
     const ta = tree(from);
-    if (ta) for (let d = -1; d <= 2; d++) out.push({ key: ta, d, l: -1 }, { key: ta, d, l: G.L });
-    if (plot?.city) out.push({ key: cityKey(plot, sides), d: 6, l: Math.floor((G.L - 1) / 2), city: true });
+    // the city behind the defenders' first lane: the far corner of the field, clear of the panels
+    const cityL = 0;
+    // the trees of each half's wood: the ring round the grid (as the prototype had it), and the
+    // outer ground with gaps (a hash keeps about 70% of its tiles); never on the board's cells, nor
+    // in the row behind the attacker's rear
+    for (let d = -14; d <= 20; d++)
+      for (let l = -14; l <= 20; l++) {
+        const key = d >= 3 ? td : ta;
+        if (!key) continue;
+        if (d >= 0 && d <= 5 && l >= 0 && l < G.L) continue;
+        if (d === -1 && l >= 0 && l < G.L) continue;
+        if (plot?.city && d === 6 && l === cityL) continue;
+        const [x, y] = tileTL(G, d, l);
+        if (!(x + 192 > 0 && x < FRAME_W && y + 96 > 0 && y < FRAME_H)) continue;
+        const ring = d >= -1 && d <= 6 && l >= -1 && l <= G.L;
+        if (!ring && treeHash(d, l) % 100 >= 70) continue;
+        out.push({ key, d, l });
+      }
+    if (plot?.city) out.push({ key: cityKey(plot, sides), d: 6, l: cityL, city: true });
     return out.map((s) => {
       const [x, y] = tileTL(G, s.d, s.l);
-      return { ...s, x, y, base: y + 96 };
+      // sunk into the falloff: the dark of the ground under it, in steps
+      const a = darkAt(G, x + 96, y + 64) * (s.city ? 0.8 : 1);
+      const dark = Math.round(a * 5) / 5;
+      return { ...s, x, y, base: y + 96, dark };
     });
   }
 
-  /** The ranks' names along the upper edge. */
+  /** The ranks' names along the near edge, one a depth, on the ground just outside the near lane. */
   labels() {
     const g = this.g;
     g.save();
-    g.font = "10px Herald, Georgia, serif";
+    g.font = "20px Herald, Georgia, serif";
     g.textAlign = "center";
+    g.textBaseline = "middle";
     for (let d = 0; d <= 5; d++) {
       const side = d <= 2 ? 0 : 1;
       const row = side === 0 ? 2 - d : d - 3;
-      const [x, y] = tileTL(this.G, d, -1);
-      const lx = x + 96 + 44;
-      const ly = y + 48 - 14;
-      const t = ROWS[row].toUpperCase();
-      g.fillStyle = "rgba(0, 0, 0, 0.7)";
-      g.fillText(t, lx + 1, ly + 1);
+      const [x, y] = gridPt(this.G, d, this.G.L - 1 + LABEL_AT);
+      const t = ROWS[row];
+      // a soft dark edge and a 1 px drop shadow: they read on bright sand and over trees
+      g.globalAlpha = 0.45;
+      g.strokeStyle = "#05040c";
+      g.lineWidth = 3;
+      g.lineJoin = "round";
+      g.strokeText(t, x, y);
+      g.globalAlpha = 0.9;
+      g.fillStyle = "#05040c";
+      g.fillText(t, x + 1, y + 1);
+      g.globalAlpha = 0.92;
       g.fillStyle = side === this.me ? "#bcd0ff" : "#ffc2b8";
-      g.fillText(t, lx, ly);
+      g.fillText(t, x, y);
     }
     g.restore();
   }
@@ -363,10 +542,10 @@ export class Stage {
    *  progress 0..1. */
   draw(sc) {
     const g = this.g;
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    this.base();
     g.clearRect(0, 0, FRAME_W, FRAME_H);
     if (!this.board) return;
-    if (sc.shake) g.setTransform(1, 0, 0, 1, Math.round(sc.shake[0]), Math.round(sc.shake[1]));
+    if (sc.shake) this.base(Math.round(sc.shake[0]), Math.round(sc.shake[1]));
     g.drawImage(this.board, 0, 0);
     for (const c of sc.cells ?? []) {
       const [x, y] = cellXY(this.G, c.side, c.lane, c.row);
@@ -386,7 +565,7 @@ export class Stage {
     for (const it of items) {
       if (it.s) {
         const im = IMG.get(it.s.key);
-        if (im) g.drawImage(im, it.s.x, it.s.y + 128 - im.height - (it.s.city ? 10 : 0));
+        if (im) g.drawImage(darkImage(it.s.key, im, it.s.dark), it.s.x, it.s.y + 128 - im.height - (it.s.city ? 10 : 0));
       } else this.fig(it.f);
     }
     this.labels();
@@ -394,6 +573,7 @@ export class Stage {
     for (const e of sc.fx ?? []) drawFx(g, e);
   }
 
+  /** A unit's ground mark: a soft contact shadow, then its side's ring with a faint fill. */
   ring(f) {
     const g = this.g;
     const [c0, c1] = f.side === this.me ? COLORS.azure : COLORS.gules;
@@ -401,9 +581,16 @@ export class Stage {
     const h = f.large ? 30 : 15;
     const a = f.ringAlpha ?? f.alpha ?? 1;
     g.save();
-    g.globalAlpha = a * 0.55;
+    g.fillStyle = "#05040c";
+    for (const [k, al] of [[1.14, 0.17], [0.96, 0.22]]) {
+      g.globalAlpha = a * al;
+      g.beginPath();
+      g.ellipse(f.x + 4, f.y + 3, w * k, h * k, 0, 0, Math.PI * 2);
+      g.fill();
+    }
     g.beginPath();
     g.ellipse(f.x, f.y, w, h, 0, 0, Math.PI * 2);
+    g.globalAlpha = a * 0.22;
     g.fillStyle = c1;
     g.fill();
     g.globalAlpha = a;
@@ -433,19 +620,33 @@ export class Stage {
     const k = Math.max(0, Math.min(1, f.bar.hp / Math.max(1, f.bar.max)));
     g.save();
     g.globalAlpha = f.alpha ?? 1;
-    g.fillStyle = "rgba(8, 10, 24, 0.85)";
-    g.fillRect(x - 1, y - 1, w + 2, 7);
-    g.fillStyle = hpColor(k);
-    g.fillRect(x, y, Math.round(w * k), 5);
+    // a 1 px dark frame round a 5 px fill (a lighter top line) and the side's underline
+    g.fillStyle = "#070814";
+    g.fillRect(x - 1, y - 1, w + 2, 8);
+    g.fillStyle = "#262a3c";
+    g.fillRect(x, y, w, 5);
+    const fw = Math.round(w * k);
+    if (fw > 0) {
+      const col = hpColor(k);
+      g.fillStyle = col;
+      g.fillRect(x, y, fw, 5);
+      g.fillStyle = HP_LIGHT[col] ?? "rgba(255, 255, 255, 0.45)";
+      g.fillRect(x, y, fw, 1);
+    }
     g.fillStyle = (f.side === this.me ? COLORS.azure : COLORS.gules)[0];
     g.fillRect(x, y + 5, w, 1);
-    if (f.odds) {
+    if (f.odds && f.odds !== "0%") {
       g.font = "10px Herald, Georgia, serif";
       g.textAlign = "left";
-      g.fillStyle = "rgba(0,0,0,0.8)";
-      g.fillText(f.odds, x + w + 5, y + 7);
+      g.textBaseline = "middle";
+      const tw = Math.ceil(g.measureText(f.odds).width);
+      const px = x + w + 4;
+      g.fillStyle = f.oddsHot ? "rgba(70, 12, 10, 0.88)" : "rgba(7, 8, 20, 0.82)";
+      g.beginPath();
+      g.roundRect(px, y - 3, tw + 8, 12, 3);
+      g.fill();
       g.fillStyle = f.oddsHot ? "#ffb4a8" : "#e8ecf6";
-      g.fillText(f.odds, x + w + 4, y + 6);
+      g.fillText(f.odds, px + 4, y + 3.5);
     }
     g.restore();
   }
@@ -774,6 +975,9 @@ export function uiIcon(name, px = 16) {
   im.className = "bt-ic";
   return im;
 }
+
+/** The lighter top line of each health colour (the stage's bars). */
+const HP_LIGHT = { "#5ad16a": "#a6f2ae", "#f0b040": "#ffd98a", "#ee5040": "#ff9a8a" };
 
 /** A health colour, as the map's bars. */
 export const hpColor = (p) => (p > 0.5 ? "#5ad16a" : p > 0.25 ? "#f0b040" : "#ee5040");

@@ -687,10 +687,11 @@ html.iso .iso-title, html.iso .iso-name, html.iso .iso-desc-title, html.iso .mod
 html.iso .iso-name .coords { font-weight: 400; }
 
 /* --- the battle screens (battle.js: the plan, the battle, the report; formation battles) -------
-   An overlay above the dimmed map, in this skin whatever the renderer: a 1280 x 800 frame centred,
-   the battlefield on a canvas, navy panels with gilt frames in its corners, Herald at 20 px (10 px
-   for secondary labels), one colour per meaning: amber A, frost Dv, gold the ground's rules, Azure
-   you, Gules them. */
+   An overlay above the darkened map, in this skin whatever the renderer: a 1280 x 800 frame scaled
+   to fit the screen, the battlefield on a canvas, navy panels with gilt frames in its corners (one
+   grid: 420 px wide, 8 px from the edges), Herald at 20 px (15 px for everything secondary), one
+   colour per meaning: amber A, frost Dv, gold the ground's rules, Azure you, Gules them
+   (docs/ISO.md, "The battle screens"). */
 #battle {
   --b-ink: #fbf2d6; --b-dim: #b3c0dc; --b-mute: #7d88a4;
   --b-gold: #f6c650; --b-gold-lt: #ffe58c;
@@ -699,7 +700,7 @@ html.iso .iso-name .coords { font-weight: 400; }
   --b-you: #8fb6ff; --b-them: #ff8d7a; --b-outline: #0c0703;
   /* above the dialogs (20) and the title screen (17), below the toasts (30) and the tooltips */
   position: fixed; inset: 0; z-index: 25; overflow: hidden;
-  background: rgba(4, 14, 44, 0.62);
+  background: radial-gradient(ellipse 75% 75% at 50% 46%, rgba(5, 9, 26, 0.82), rgba(3, 5, 16, 0.94) 70%, rgba(2, 3, 10, 0.97));
   font: 20px/24px Herald, Georgia, serif; color: var(--b-ink);
   -webkit-font-smoothing: none; user-select: none;
 }
@@ -708,8 +709,15 @@ body.battle-open #modals .backdrop { z-index: 26; }
 /* The map stays, dimmed; the interface over it steps aside while a battle screen is open. */
 body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city, #mapwrap .minimap, #mapwrap .zoom, #mapwrap .layers, #mapwrap .tooltip),
 body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * { visibility: hidden !important; }
-#battle .bt-frame { position: absolute; width: 1280px; height: 800px; left: max(0px, calc(50% - 640px)); top: max(0px, calc(50% - 400px)); }
-#battle canvas.bt-stage { position: absolute; left: 0; top: 0; image-rendering: pixelated; }
+/* battle.js `fit` scales the frame to the viewport and centres it (inline left, top, transform) */
+#battle .bt-frame { position: absolute; width: 1280px; height: 800px; left: 0; top: 0; transform-origin: 0 0; }
+/* the backing store is supersampled (battle_stage.js `setScale`); the picture dissolves before
+   the canvas's edges */
+#battle canvas.bt-stage {
+  position: absolute; left: 0; top: 0; width: 1280px; height: 800px; image-rendering: pixelated;
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 74%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 74%, transparent 100%);
+}
 #battle .bt-ov, #battle .bt-ui { position: absolute; inset: 0; pointer-events: none; }
 #battle .bt-ui > *, #battle .click, #battle .bt-ui button { pointer-events: auto; }
 /* the plan's pointer layer over the battlefield, under the panels */
@@ -722,13 +730,14 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
 #battle .good { color: var(--b-good); } #battle .bad { color: var(--b-bad); } #battle .warn { color: var(--b-warn); }
 #battle .you { color: var(--b-you); } #battle .them { color: var(--b-them); }
 #battle .amber { color: var(--b-amber); } #battle .frost { color: var(--b-frost); }
-#battle .small { font-size: 10px; line-height: 12px; }
+#battle .small { font-size: 15px; line-height: 18px; }
 #battle .bt-h3 { font: 700 20px/24px Herald, Georgia, serif; color: #fff8e4; }
 #battle .bt-h3.you { color: var(--b-you); } #battle .bt-h3.them { color: var(--b-them); }
 #battle .bt-h4 { font: 400 20px/24px Herald, Georgia, serif; color: var(--b-gold); }
 #battle .bt-h4.you { color: var(--b-you); } #battle .bt-h4.them { color: var(--b-them); }
 #battle .bt-row { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-#battle .bt-queue { margin-top: 6px; color: var(--b-gold-lt); }
+#battle .bt-row.wrap { flex-wrap: wrap; white-space: normal; row-gap: 4px; }
+#battle .bt-queue { margin-top: 6px; color: var(--b-gold-lt); font-size: 15px; line-height: 18px; }
 #battle .bt-rule { height: 4px; margin: 4px 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px); }
 #battle .bt-ell { overflow: hidden; text-overflow: ellipsis; min-width: 0; white-space: nowrap; }
 #battle .bt-spaced { letter-spacing: 2px; }
@@ -741,6 +750,26 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
   background-clip: padding-box; padding: 4px 12px; box-sizing: border-box;
 }
 #battle .bt-ribbon { background: linear-gradient(180deg, #7a1d1f, #561417); background-clip: padding-box; }
+/* One grid: four corner panels 420 px wide, 8 px from the frame's edges; heights follow the
+   content, the bottom ones grow upward to at most 288 px (the logs are 288 tall, scrolling inside). */
+#battle .bt-tl, #battle .bt-tr, #battle .bt-bl, #battle .bt-br { width: 420px; }
+#battle .bt-tl { left: 8px; top: 8px; } #battle .bt-tr { right: 8px; top: 8px; }
+#battle .bt-bl { left: 8px; bottom: 8px; } #battle .bt-br { right: 8px; bottom: 8px; }
+#battle .bt-bl, #battle .bt-br { max-height: 312px; display: flex; flex-direction: column; }
+#battle .bt-br { overflow-y: auto; }
+#battle .bt-fcbody { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+#battle .bt-col { height: 288px; }
+#battle .bt-mid { left: 640px; top: 8px; transform: translateX(-50%); text-align: center; }
+#battle .bt-sub { font-size: 15px; line-height: 18px; color: var(--b-dim); }
+#battle .bt-end { justify-content: flex-end; }
+/* the report's way on: its buttons at the top right, the queue's row under them */
+#battle .bt-way { position: absolute; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+#battle .bt-way .bt-pnl { position: static; padding: 2px 12px 4px; }
+#battle .bt-way .bt-queue { margin-top: 0; }
+#battle :is(ol.bt-log, .bt-benchlist, .bt-fcbody, .bt-br) { scrollbar-width: thin; scrollbar-color: #b08a3a transparent; }
+#battle :is(ol.bt-log, .bt-benchlist, .bt-fcbody, .bt-br)::-webkit-scrollbar { width: 6px; }
+#battle :is(ol.bt-log, .bt-benchlist, .bt-fcbody, .bt-br)::-webkit-scrollbar-track { background: transparent; }
+#battle :is(ol.bt-log, .bt-benchlist, .bt-fcbody, .bt-br)::-webkit-scrollbar-thumb { background: #b08a3a; }
 
 #battle .bt-btn {
   all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -760,44 +789,51 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
 #battle .bt-hp i { position: absolute; top: 0; bottom: 0; left: 0; }
 #battle .bt-tag { position: absolute; font-size: 20px; line-height: 22px; padding: 0 5px; background: rgba(2, 12, 40, 0.88); outline: 2px solid var(--b-outline); white-space: nowrap; }
 #battle .bt-chip { display: inline-block; padding: 0 4px; outline: 2px solid var(--b-outline); font-size: 20px; line-height: 22px; white-space: nowrap; }
-#battle .bt-chip.tiny { font-size: 10px; line-height: 12px; }
+#battle .bt-chip.tiny { font-size: 15px; line-height: 18px; }
 #battle .bt-chip.you { background: #1d3f8a; color: #e8f0ff; } #battle .bt-chip.them { background: #561417; color: #ffe4dc; }
 #battle .bt-head { display: inline-block; image-rendering: pixelated; background-repeat: no-repeat; outline: 2px solid var(--b-outline); background-color: #0a2258; flex: none; vertical-align: middle; }
 #battle .bt-head.dead { filter: grayscale(1) brightness(0.6); }
 
 /* the plan: the tooltip of a unit, the units out of the line, a placement's message */
-#battle .bt-tip { width: 420px; padding: 4px 10px 6px; z-index: 9; pointer-events: none !important; white-space: normal; }
+#battle .bt-tip { width: 512px; padding: 4px 10px 6px; z-index: 9; pointer-events: none !important; white-space: normal; }
 #battle .bt-tip > * + * { margin-top: 2px; }
-#battle table.bt-rows { border-collapse: collapse; width: 100%; font-size: 10px; line-height: 13px; margin: 3px 0; }
+#battle table.bt-rows { border-collapse: collapse; width: 100%; font-size: 15px; line-height: 18px; margin: 3px 0; }
 #battle table.bt-rows th, #battle table.bt-rows td { text-align: left; padding: 1px 4px; vertical-align: top; }
 #battle table.bt-rows thead th { color: var(--b-gold); font-weight: 400; }
+#battle table.bt-rows :is(th, td):nth-child(-n+2) { white-space: nowrap; }
 #battle table.bt-rows tr.here { background: rgba(246, 198, 80, 0.16); }
-#battle ul.bt-notes { margin: 2px 0; padding-left: 14px; font-size: 10px; line-height: 12px; color: var(--b-dim); }
+#battle ul.bt-notes { margin: 2px 0; padding-left: 18px; font-size: 15px; line-height: 18px; color: var(--b-dim); }
 #battle ul.bt-notes:empty { display: none; }
-#battle .bt-benchlist { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; max-height: 150px; overflow-y: auto; margin: 2px 0; }
-#battle .bt-bench { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; outline: 2px solid transparent; line-height: 16px; font-size: 16px; min-width: 0; }
+#battle .bt-benchlist { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; flex: 0 1 auto; min-height: 0; overflow-y: auto; margin: 2px 0; padding: 2px; }
+#battle .bt-bench { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; column-gap: 8px; padding: 2px 4px; cursor: pointer; outline: 2px solid transparent; min-width: 0; }
+#battle .bt-bench .bt-ell { display: block; }
+#battle .bt-bench > .small { grid-column: 1 / -1; white-space: normal; }
 #battle .bt-bench:hover, #battle .bt-bench:focus-visible { background: rgba(47, 107, 208, 0.25); outline-color: var(--b-outline); }
 #battle .bt-bench.sel { background: rgba(246, 198, 80, 0.18); outline-color: var(--b-gold); }
-#battle .bt-flash { left: 50%; top: 612px; transform: translateX(-50%); max-width: 400px; white-space: normal; font-size: 16px; line-height: 18px; padding: 4px 8px; z-index: 8; color: var(--b-gold-lt); }
+#battle .bt-flash { left: 50%; top: 612px; transform: translateX(-50%); max-width: 400px; white-space: normal; font-size: 15px; line-height: 18px; padding: 4px 8px; z-index: 8; color: var(--b-gold-lt); }
 
 /* the battle and the report: the log, the strength bars, the round under way, the end */
-#battle ol.bt-log { list-style: none; margin: 2px 0 0; padding: 0 4px 0 0; flex: 1; min-height: 0; overflow-y: auto; font-size: 16px; line-height: 19px; user-select: text; }
-#battle ol.bt-log li { white-space: normal; padding-left: 22px; text-indent: -22px; }
-#battle ol.bt-log li.head { color: var(--b-gold); font-size: 10px; line-height: 12px; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px; padding-left: 0; text-indent: 0; }
-#battle ol.bt-log .sp { display: inline-block; width: 18px; margin-right: 4px; text-indent: 0; text-align: right; color: var(--b-mute); font-size: 10px; }
+#battle ol.bt-log { list-style: none; margin: 2px 0 0; padding: 0 4px 0 0; flex: 1; min-height: 0; overflow-y: auto; font-size: 15px; line-height: 18px; user-select: text; }
+#battle ol.bt-log li { white-space: normal; padding-left: 26px; text-indent: -26px; }
+#battle ol.bt-log li.head { color: var(--b-gold); font-size: 15px; line-height: 18px; letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; padding-left: 0; text-indent: 0; }
+#battle ol.bt-log .sp { display: inline-block; width: 20px; margin-right: 6px; text-indent: 0; text-align: right; color: var(--b-mute); font-size: 15px; }
 #battle ol.bt-log .bt-n { font-weight: 700; color: #fff8e4; }
 #battle ol.bt-log .bt-n.heal { color: #8dffb4; }
 #battle ol.bt-log li > * { text-indent: 0; }
 #battle ol.bt-log .crit { color: var(--b-gold-lt); font-weight: 700; }
-#battle .bt-sbar { position: relative; height: 10px; margin: 4px 0 2px; background: #1a0e0a; outline: 2px solid var(--b-outline); }
+#battle .bt-sbar { position: relative; height: 12px; margin: 6px 2px 4px; background: #1a0e0a; outline: 2px solid var(--b-outline); }
 #battle .bt-sbar i { position: absolute; top: 0; bottom: 0; left: 0; transition: width 0.25s; }
-#battle .bt-phase { left: 50%; top: 4px; transform: translateX(-50%); font-size: 16px; color: var(--b-gold-lt); }
+#battle .bt-phase { padding: 2px 14px; font: 400 20px/24px Herald, Georgia, serif; color: var(--b-gold-lt); white-space: nowrap; }
 #battle .bt-phase:empty { display: none; }
-#battle .bt-banner { left: 50% !important; transform: translateX(-50%); padding: 6px 30px; font: 700 20px/24px Herald, Georgia, serif; letter-spacing: 2px; text-align: center; white-space: normal; max-width: 640px; display: block; z-index: 4; }
-#battle .bt-banner .small { letter-spacing: 0; font-weight: 400; }
+/* the result: centre top, between the top panels (the gap is 408 px) */
+#battle .bt-banner { left: 640px; top: 8px; transform: translateX(-50%); width: max-content; max-width: 400px; padding: 4px 14px 6px; text-align: center; white-space: normal; display: block; z-index: 4; }
+#battle .bt-banner .bt-ribbonword { display: block; font: 700 20px/24px Herald, Georgia, serif; letter-spacing: 3px; color: var(--b-ink); }
+#battle .bt-banner .bt-ribbonword.bad { color: var(--b-bad); }
+#battle .bt-banner .bt-ribbonword.goldlt { color: var(--b-gold-lt); }
+#battle .bt-banner .small { letter-spacing: 0; font-weight: 400; color: #f4e6d0; text-wrap: balance; }
 #battle .bt-side { margin-bottom: 4px; }
-#battle .bt-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
-#battle .bt-fate { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; width: 30px; }
+#battle .bt-chips { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
+#battle .bt-fate { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; min-width: 30px; }
 #battle .bt-fate.fallen .small { color: var(--b-bad); } #battle .bt-fate.escaped .small { color: var(--b-lilac-lt); } #battle .bt-fate.afraid .small { color: var(--b-mute); }
 
 /* --- phones (dom.js `compactScreen`: up to 760 px wide, or up to 520 px high) -------------- */

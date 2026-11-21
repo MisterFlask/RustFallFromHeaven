@@ -295,14 +295,15 @@ function draw(ctx, now, wall) {
 // ---------------------------------------------------------------------------------------------
 // The panels
 
-const pnl = (style, ...children) => h("div.bt-pnl", { style }, ...children);
+/** A panel; `at`: its place (`tl`, `tr`, `bl`, `br`: the frame's corners). */
+const pnl = (at, ...children) => h(`div.bt-pnl.bt-${at}`, ...children);
 
 function sideBox(side) {
   const L = W.log;
   const label = L.sides?.[side]?.label ?? (side === W.me ? "You" : "Them");
   return pnl(
-    { [side === W.me ? "left" : "right"]: "6px", top: "4px", width: side === W.me ? "380px" : "470px" },
-    h("div.bt-row", h(`span.bt-h3.${side === W.me ? "you" : "them"}`, label), h(`span.dim#bt-n${side}`)),
+    side === W.me ? "tl" : "tr",
+    h("div.bt-row.wrap", { style: { rowGap: "0" } }, h(`span.bt-h3.${side === W.me ? "you" : "them"}`, label), h(`span.dim#bt-n${side}`)),
     h("div.bt-sbar", h(`i#bt-sb${side}`, { style: { background: side === W.me ? "linear-gradient(#8fb6ff,#3356b6)" : "linear-gradient(#ff8d7a,#c8272b)" } })),
   );
 }
@@ -312,10 +313,10 @@ function renderUI(ctx) {
   ui.replaceChildren();
   ctx.ov.replaceChildren();
   add(ui, sideBox(W.me), sideBox(1 - W.me));
-  add(ui, h("div.bt-tag.bt-phase#bt-head", { "aria-live": "polite" }));
+  add(ui, h("div.bt-pnl.bt-mid.bt-phase#bt-head", { "aria-live": "polite" }));
   W.logEl = h("ol.bt-log#bt-log", { "aria-live": "polite" });
-  add(ui, pnl({ left: "6px", top: "506px", width: "420px", height: "288px", display: "flex", flexDirection: "column" }, h("div.bt-row", h("span.bt-h4", "Battle log"), h("span.dim.small", "the number before a line is its unit's speed")), W.logEl));
-  add(ui, pnl({ right: "6px", top: "640px", width: "424px", height: "154px", display: "block", padding: "6px 12px" }, h("div#bt-ctl")));
+  add(ui, pnl("bl.bt-col", h("div.bt-row.wrap", { style: { rowGap: "0" } }, h("span.bt-h4", "Battle log"), h("span.dim.small", "the number before a line is its unit's speed")), W.logEl));
+  add(ui, pnl("br", { style: { padding: "6px 12px" } }, h("div#bt-ctl")));
   W.shown = 0;
   syncLog();
   syncTop();
@@ -342,7 +343,7 @@ function renderControls() {
       SPEEDS.map((s, k) => btn(`${s}×`, { cls: "sm", on: W.speed === s, key: `speed${s}`, title: `[${k + 1}]`, onclick: () => setSpeed(s) })),
     ),
     // With the queue's row the panel has no room for this line (the banner says it).
-    W.done && !W.ctx?.queueRow?.() ? h("div.small.dim", { style: { marginTop: "4px" } }, "The battle is over.") : null,
+    W.done && !W.ctx?.queueRow?.() ? h("div.small.dim", { style: { marginTop: "6px" } }, "The battle is over.") : null,
     W.ctx?.queueRow?.(),
   );
 }
@@ -410,7 +411,8 @@ function syncHead() {
   const el = document.getElementById("bt-head");
   if (!el) return;
   const e = W.cur?.e ?? W.log.events[Math.max(0, W.i - 1)];
-  const t = W.done ? "The battle is over" : e ? headOf(e) : "";
+  // over: the banner takes the plaque's place
+  const t = W.done ? "" : e ? headOf(e) : "";
   if (el.textContent !== t) el.textContent = t;
 }
 
@@ -419,7 +421,7 @@ function syncBanner() {
   if (!W.done) return has?.remove();
   if (has) return;
   const rw = resultWords(W.log);
-  add(W.ctx.ui, h("div.bt-pnl.bt-banner.bt-ribbon#bt-banner", { style: { top: "40px" } }, h(rw.good ? "span.goldlt" : "span", rw.ribbon), withCalc(h("div.small", rw.line), rw.calc)));
+  add(W.ctx.ui, h("div.bt-pnl.bt-banner.bt-ribbon#bt-banner", h(`span.bt-ribbonword.${rw.good ? "goldlt" : "bad"}`, rw.ribbon), withCalc(h("div.small", rw.line), rw.calc)));
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -19,7 +19,7 @@ import { h, toast, errorText } from "./dom.js";
 import { installFrames } from "./isoui.js";
 import { installIsoFont } from "./isofont.js";
 import { battleToast, prefs } from "./engagements.js";
-import { Stage, btn } from "./battle_stage.js";
+import { Stage, btn, FRAME_W, FRAME_H } from "./battle_stage.js";
 import * as planScreen from "./battle_plan.js";
 import * as watchScreen from "./battle_watch.js";
 import * as reportScreen from "./battle_report.js";
@@ -102,9 +102,31 @@ function mount() {
   document.body.append(B.root);
   document.body.classList.add("battle-open");
   B.stage = new Stage(canvas);
+  fit();
+  window.addEventListener("resize", fit);
   document.addEventListener("keydown", onKey, true);
   B.last = performance.now();
   B.raf = requestAnimationFrame(loop);
+}
+
+/** Fits the 1280 x 800 frame to the viewport: scaled by `k` (its panels and the stage keep the
+ *  frame's coordinates) and centred; the canvas supersampled `n` times so the pixel art stays sharp
+ *  under that scale and the device's pixel ratio (`n` exactly `k * dpr`: shown pixelated; else the
+ *  browser scales the integer-scaled picture down smoothly). */
+function fit() {
+  if (!B.root) return;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const k = Math.min(2.5, Math.max(0.4, Math.min(W / FRAME_W, H / FRAME_H)));
+  const f = B.frame.style;
+  f.transformOrigin = "0 0";
+  f.transform = `scale(${k})`;
+  f.left = `${Math.round((W - FRAME_W * k) / 2)}px`;
+  f.top = `${Math.round((H - FRAME_H * k) / 2)}px`;
+  const px = k * (window.devicePixelRatio || 1);
+  const n = Math.min(3, Math.max(1, Math.ceil(px - 0.01)));
+  B.stage.setScale(n);
+  B.stage.canvas.style.imageRendering = Math.abs(n - px) <= 0.01 ? "pixelated" : "auto";
 }
 
 /** Closes the overlay (the map comes back). */
@@ -113,6 +135,7 @@ export function closeBattle() {
   B.screen?.leave?.(ctx);
   B.screen = null;
   cancelAnimationFrame(B.raf);
+  window.removeEventListener("resize", fit);
   document.removeEventListener("keydown", onKey, true);
   B.root.remove();
   B.root = null;

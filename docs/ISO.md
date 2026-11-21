@@ -340,11 +340,37 @@ a dialog; the flat renderer keeps the grid.
 ### The battle screens
 
 The battle plan, the battle and its report (`battle*.js`; docs/HUMAN.md, "The battle screens")
-wear this skin whatever the renderer: an overlay of the design's 1280 x 800 frame over the dimmed
-map (the interface steps aside meanwhile), the two plots as one board of M7 tiles at 1x with the
-units on Azure (yours) and Gules rings, the anim-sprint strips (`app/anim/`, the units that have
-them) for idle, strike, flinch, death and walk, and procedural motion for the rest; the panels,
-buttons and Herald of this section (iso.css, "the battle screens"). Phones are not laid out yet.
+wear this skin whatever the renderer: an overlay of the design's 1280 x 800 frame over the map
+darkened almost to black (the interface steps aside meanwhile), the anim-sprint strips
+(`app/anim/`, the units that have them) for idle, strike, flinch, death and walk, and procedural
+motion for the rest; the panels, buttons and Herald of this section (iso.css, "the battle
+screens"). Phones are not laid out yet (the frame is scaled down to fit them).
+
+The look (the aesthetic pass of 2026-11-21; shots in `docs/shots/battle/`, made by
+`node tools/battle-shots.mjs --bin <built>/ffh-play` over the dev fixtures):
+
+* **The frame fits the screen.** Its coordinates stay 1280 x 800; `battle.js` `fit` scales it to
+  the viewport (0.4 to 2.5) and supersamples the canvas a whole number of times (`Stage.setScale`:
+  the scale times the device's pixel ratio, rounded up, at most 3), so the pixel art is drawn
+  sharp and the browser only ever scales it down smoothly. Everything on the canvas is drawn in
+  frame coordinates under `Stage.base`.
+* **The battlefield is a lit diorama** (`battle_stage.js` `buildBoard`, the `LIGHT` table): M7
+  tiles over the whole frame (the attacker's plot's terrain on its half, the defender's on the
+  other), their colour pulled a third of the way to grey so the units are the most saturated thing
+  on it; the ground off the grid a little darker and falling off into the dark; a warm pool of
+  light on the grid; the canvas masked to an ellipse (iso.css), so no edge of it shows on any
+  screen. A side's cells are told by their outline (Azure yours, Gules theirs) and the units'
+  rings, not by a wash over the ground; the contact line is gold. A wood's trees stand on the
+  plot's half beyond the grid too, each darkened as the ground under it. A unit stands on a soft
+  shadow in a thin ring; its HP bar has a dark frame, and the plan's chance to fall sits beside it
+  on a dark pill (not drawn at 0%). The ranks' names (Rear, Middle, Front) run along the near
+  edge.
+* **The panels are on one grid**: four corners, each 420 px wide and 8 px from the frame's edges
+  (`.bt-tl`, `.bt-tr`, `.bt-bl`, `.bt-br`), as tall as their content (the log's 288 px, the others
+  at most 312); between the top two, the round's plaque during the battle and the result's banner
+  at its end and on the report.
+* **Two text sizes**: 20 px for titles, names, values and buttons, 15 px for everything else. No
+  text is at Herald's 10 px but the chance to fall on the canvas.
 
 ### Phones
 
