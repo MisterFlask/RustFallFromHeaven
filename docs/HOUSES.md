@@ -118,12 +118,15 @@ Every game has Houses (no game option).
 
 8. **What opinion does.** Every city of the House has happiness by its state: Friendly `+2`,
    Pleased `+1`, Cautious `0`, Annoyed `-2`, Furious `-4` (`HOUSE_HAPPY_*`), and an outsider's
-   cities `-3` besides. While a House is Furious its perk is off (rule 9). Nothing else: a House
-   never leaves, revolts, pays or withholds.
+   cities `-3` besides. A Furious House's perk is off (rule 9). Nothing else: a House never
+   leaves, revolts, pays or withholds.
 
 9. **Perks.** A perk is a trait (`TraitInfo` with `house_perk_tier` 1 to 3, never a leader's own
    trait and never selectable) shown as the House leader's trait. It applies in the House's
-   cities while the House is not Furious.
+   cities while it is on (`House::perk_on`). Happiness follows the opinion at once; the perk
+   switches in the House's owner's turn processing, in the pass that tells a change of state
+   (rule 11): off when the House is Furious then, on again when it is not. (What a perk changes
+   is kept in the cities' stored rates, so it switches at one known moment.)
    - *Tier*, by the turn the House forms: tier 1 before turn 100, tier 2 from turn 100, tier 3
      from turn 200 (`HOUSE_PERK_TIER_TURNS`, at Normal speed; scaled by the game speed as
      `crusade::speed_turns` scales). A House keeps its perk.
