@@ -200,7 +200,7 @@ exists. **(new)** marks a lever the engine does not have yet.
 ### 1.8 Battles as a lever set
 
 Slots by ground (open land 10; fewer on rough ground and against Sentinels). Rows and lanes.
-Reserves. Three rounds. Ground effects:
+Reserves. Two rounds. Ground effects:
 - a city halves the attacker's arrows;
 - forest and jungle halve arrows and stones and stop flanking;
 - hills weaken the attacker and strengthen the defender's arrows.

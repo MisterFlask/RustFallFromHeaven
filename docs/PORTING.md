@@ -117,6 +117,13 @@ Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement c
 no longer playable side by side. Save format 16 removed the last three options and the crusade
 flag.
 
+- **Formation battles last two rounds** (the owner's decision, 2026-11-21; was three):
+  `ENGAGEMENT_ROUNDS` 3 -> 2. A battle ends after its second round, or earlier when a side has no
+  unit left on the field. Fewer units fall per attack, so a held plot or city takes more attacks.
+  A unit's third `round_percent` value no longer applies (the Berserker, Balor, Brujah, Circle of
+  Urd and Clockwork Golem ramp 110/130/150 and now reach 130); a one-round hold (the Moat's) now
+  covers half the battle. Saves are unaffected (the rule is data).
+
 - **Lair exploration: choose between two results** (the owner's decision, 2026-11-14).
   Ordinary, epic and event-triggered explorations keep their category roll, then offer two
   distinct random results from that category. The second draw excludes every copy of the
@@ -583,7 +590,7 @@ flag.
   roles (Frontline, Screen, Flanker, Assassin, Archer, Siege, Arcane, Divine) that say what they do
   from each row (strike, charge, stab, shoot, bombard, cast, heal) with their speed, dodge and crits;
   units of tier 4 and heroes act once more. Fear sits units out and defensive strikes open the
-  battle (reserves included), then three rounds of passes, fastest first (first strikes are speed),
+  battle (reserves included), then two rounds of passes (three until 2026-11-21, below), fastest first (first strikes are speed),
   every hit landing at once: melee reaches the front of a lane, shots, spells and stones its back,
   stabs anyone, a cavalry charge anyone in the field (twice as hard in the first round), each unit
   takes the units within a lane of it first, then the kill on offer or the most hurt; misses, crits
