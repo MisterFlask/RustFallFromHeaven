@@ -946,7 +946,7 @@ async function stagedGovernors(bin, saves) {
 }
 
 async function moveUnit() {
-  const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && S.data.tables.UnitType[u.type].combat > 0) || null; })()`);
+  const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && S.data.tables.UnitType[u.type].attack > 0) || null; })()`);
   if (!unit) return steps.push("no unit to move");
   const p = await plotPos(unit.x, unit.y);
   await b.mouse(p.x, p.y);
@@ -2027,7 +2027,7 @@ async function crusadeHd2d(url, bin, saves) {
   // The staged warriors in the capital, picked in the lend dialog (with their map figures).
   const pick = await S(`(() => {
     const me = S.view.me.player, cap = S.view.cities.find((c) => c.owner === me);
-    const ids = S.view.units.filter((u) => u.owner === me && u.x === cap.x && u.y === cap.y && S.data.tables.UnitType[u.type].combat > 0).map((u) => u.id);
+    const ids = S.view.units.filter((u) => u.owner === me && u.x === cap.x && u.y === cap.y && S.data.tables.UnitType[u.type].attack > 0).map((u) => u.id);
     return { ids, x: cap.x, y: cap.y };
   })()`);
   const ids = pick.ids;
