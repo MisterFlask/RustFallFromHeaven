@@ -33,6 +33,9 @@ const FRAGMENTS: &[(&str, &[&str])] = &[
     ("KEYWORD_CHANNEL", &["one cultural order at a time", "diverts half its culture", "in full within 5 plots", "nothing beyond 20"]),
     ("KEYWORD_COURT", &["a channel at a house of another realm", "then fades 5%", "join the courter's realm", "a house of one city joins whole", "the median civilization's culture"]),
     ("KEYWORD_GUARD", &["a liege's channel at one of its own houses", "taken from every civilization's favour"]),
+    // The Armageddon counter (docs/CARDS.md, section 4).
+    ("KEYWORD_ARMAGEDDON_COUNTER", &["100 over 300 turns", "raise or lower it"]),
+    ("KEYWORD_ARMAGEDDON_CARD", &["one card or none at each slot", "within 5 of its slot", "reaches its slot"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.
