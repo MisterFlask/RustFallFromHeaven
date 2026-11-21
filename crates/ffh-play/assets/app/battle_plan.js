@@ -139,8 +139,10 @@ function squadLines(ctx) {
 
 /** "Defending: their Squad N" (the squad that answers the attack, as the real fight picks it). */
 function defSquadLine() {
-  const n = P.pv?.def_squad?.number;
-  return n ? h("div.bt-row.small.bt-def-squad", { title: "Of their squads that fought the fewest battles this turn, the one with the best result against yours." }, h("span.dim", "Defending: "), h("b", `their Squad ${roman(n)}`)) : null;
+  const d = P.pv?.def_squad;
+  // (A squad the rules have not numbered yet: units that arrived since their owner's last turn.)
+  const named = d?.number ? `their Squad ${roman(d.number)}` : P.def?.size ? "their squad" : null;
+  return named ? h("div.bt-row.small.bt-def-squad", { title: "Of their squads that fought the fewest battles this turn, the one with the best result against yours." }, h("span.dim", "Defending: "), h("b", named)) : null;
 }
 
 // ---------------------------------------------------------------------------------------------
