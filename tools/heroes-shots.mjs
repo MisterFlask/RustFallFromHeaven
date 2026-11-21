@@ -183,7 +183,8 @@ async function main() {
     }
 
     // (5) The Armies screen's sections.
-    await page.evaluate(() => window.ffh.openScreen("armies"));
+    // (Not awaited: the screen's promise settles when it closes.)
+    await page.evaluate(() => { window.ffh.openScreen("armies"); });
     await until(() => page.evaluate(() => !!document.querySelector('.modal[data-tag="armies"] .fallen-list')), "the Armies screen's dead", 20000);
     await sleep(500);
     await page.evaluate(() => document.querySelector('.modal[data-tag="armies"] .fallen-list').scrollIntoView({ block: "center" }));
