@@ -32,6 +32,7 @@ import { shieldHits, starHit } from "./plates.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
 import { drawLanesIso, outpostTag } from "./lanes.js";
 import { drawMarksIso } from "./marks.js";
+import { plateTag } from "./raids.js";
 
 /** A tile's width in art pixels: the M7 contract (tiles 192 x 128, the diamond in rows 0-95). */
 const NATIVE = 192;
@@ -1568,7 +1569,7 @@ export class IsoMap {
       const col = ownerColor(city.owner);
       const size = city.size === null || city.size === undefined ? "?" : String(city.size);
       const turns = city.owner === mine ? city.production?.turns : null;
-      const label = f.TW >= 64 ? `${city.name ?? ""}${outpostTag(city)}${city.siege ? ` · ${city.siege.label}` : ""}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
+      const label = f.TW >= 64 ? `${city.name ?? ""}${outpostTag(city)}${plateTag(city)}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
       const tw = label ? Math.ceil(g.measureText(label).width) : 0;
       const sw = Math.ceil(g.measureText(size).width);
       const h = 15 * u;

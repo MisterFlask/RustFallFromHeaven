@@ -61,6 +61,7 @@ pub mod pacts;
 pub mod predict;
 pub mod probes;
 pub mod production;
+pub mod raids;
 pub mod reach;
 pub mod research;
 pub mod research_path;

@@ -162,6 +162,12 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
             _ => {
                 if can(m, -1, -1, true) {
                     push("mission", can(m, -1, -1, false), mission_cmd(units, m, -1, -1), crate::jobj! { "mission" => Json::idx(m) });
+                } else if m == MissionType::MISSION_PILLAGE {
+                    // Raids (docs/RAIDS.md, section 7): a pillage the fields rule refuses is shown
+                    // disabled, with its reason (refused for any other reason, it is not shown).
+                    if let Some(why) = units.iter().find_map(|&u| g.unit_pillage_refusal(u, plot)) {
+                        push("mission", false, mission_cmd(units, m, -1, -1), crate::jobj! { "mission" => Json::idx(m), "why" => why });
+                    }
                 }
             }
         }
@@ -617,6 +623,11 @@ fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json,
                 format!("Upgrade all: {} unit{} ({price} gold)", plan.len(), if plan.len() == 1 { "" } else { "s" }),
                 "Each unit takes its best upgrade, the most experienced first, while the gold lasts.",
             );
+        }
+        // Raids (docs/RAIDS.md, section 8): `Raid <city>` on an enemy city's countryside, `Stop
+        // raiding` while it holds the order.
+        if !fleet {
+            out.extend(crate::view::raids::actions(v, a, plot));
         }
     }
     out

@@ -752,6 +752,9 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
     if !alive(g, grp) {
         return;
     }
+    // A raiding stack the guard would now sally against stops raiding before it may stop to heal
+    // in place (raids.rs).
+    crate::raids::still_raiding(g, v, grp, u);
     // (Not a stack about to strike: the strike estimate counts its wounds, and the city's
     // defenders heal faster than we do.)
     match heal(g, v, grp, u) {
@@ -802,6 +805,13 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
     // War (or its preparation): the operation against the chosen enemy city; stacks close to
     // a barbarian target act on its operation before hunting (campaign.rs).
     if crate::campaign::act(g, v, grp, u, true) {
+        return;
+    }
+
+    // A raiding stack the branches above left where it is keeps its Raid order while the guard
+    // would stay in (docs/RAIDS.md, section 9; raids.rs): the hunt, the Raiders' walk, gathering
+    // and the walk home do not pull it away.
+    if crate::raids::keep(g, v, grp, u) {
         return;
     }
 
@@ -863,6 +873,10 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
         }
     }
     crate::trace!(g, p, "stack {:?} ({} units, power {}) idle at {:?}; {} targets", grp, g.groups[grp].units.len(), stack_power(g, grp), g.map.xy(here), v.targets.len());
+    // Nothing to do on an enemy city's countryside: raid it (raids.rs).
+    if crate::raids::at_hold(g, v, grp, u) {
+        return;
+    }
     if g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) {
         hold(g, grp);
     } else if let Some(c) = nearest_city(g, p, here) {

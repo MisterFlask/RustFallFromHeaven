@@ -24,6 +24,7 @@ import { CARDS, IMPROVEMENTS } from "./r3d/hd2d/art/index.js";
 import { ISO_TABLES, unitSpriteKeys, civShortName } from "./iso.js";
 import * as api from "./api.js";
 import { infoTip, moodTip } from "./infotips.js";
+import { raidTone } from "./raids.js";
 
 /** Whether the skin is on, and the MapView it dresses. */
 export const skin = { on: false, view: null };
@@ -694,7 +695,7 @@ export async function renderCityPanel() {
     return;
   }
   // Not every command's view (the server counts each): the turn and what the view says of the city.
-  const key = `${city.id}|${S.view.turn}|${city.size}|${city.production?.order}|${city.production?.type}|${city.production?.turns}|${city.food_turns}|${city.disorder}|${city.siege?.turn}|${city.siege?.counting}|${city.siege?.relief_turns}`;
+  const key = `${city.id}|${S.view.turn}|${city.size}|${city.production?.order}|${city.production?.type}|${city.production?.turns}|${city.food_turns}|${city.disorder}|${city.siege?.turn}|${city.siege?.counting}|${city.siege?.relief_turns}|${city.raid?.label}|${city.raid?.percent}`;
   if (key === cityKey && el.childElementCount) return;
   cityKey = key;
   const n = ++cityToken;
@@ -719,6 +720,8 @@ export async function renderCityPanel() {
     el,
     h("h3.iso-title", { title: city.capital ? "Your capital" : null }, city.capital ? isoIcon("capital", { px: 16, cls: "capital" }) ?? isoIcon("civics", { px: 16, cls: "capital" }) : null, city.name ?? ""),
     city.siege ? h(`p.siege-status${city.siege.state === "starvation" ? ".bad" : ".warn"}`, { tip: city.siege.text }, city.siege.label) : null,
+    // Raids (docs/RAIDS.md, section 8): contested, overrun or stripped, its rule as the tip.
+    city.raid ? h(`p.raid-status.${raidTone(city.raid)}`, { tip: city.raid.text }, city.raid.label) : null,
     cityPicture(city),
     h(
       "div.iso-stat",

@@ -131,29 +131,128 @@ The pillage gold of what can still be pillaged is unchanged.
 
 ## 8. What the player sees
 
-- **The army.** With an army selected on an enemy city's countryside: the order `Raid <city>`,
-  with the forecast take in its tooltip, or the reason it is refused. A raiding army's line says
-  `Raiding <city>` (unit panel, Armies screen); `Stop raiding` ends it.
-- **The pillage order** on a field is refused with `Fields are raided, not pillaged.`
-- **The city.** Its banner and city screen show `Contested`, `Overrun` or `Stripped (N turns)`
-  for both sides while the city is visible; the city screen has the raid's line with its
-  calculation and the sally posture's selector with the rule of each posture.
-- **Messages.** The order taken (both sides); each sally (the battle report); the take each turn
-  (both sides, with the gold); driven off; stripped; the order ended and why.
+As built (2026-11-21; `crates/ffh-play/src/view/raids.rs`, `app/raids.js`; the protocol in
+docs/HUMAN.md, "Raids"; shots in `docs/shots/raids/`, made by `tools/raids-shots.mjs`).
+
+- **The army.** With a whole land army of yours selected on the countryside of a city your team
+  is at war with, the unit panel lists `Raid <city>` among the army actions (`army: "raid"`, its
+  command `army_station` with `{"raid": city}`). Its tooltip: `Take: 18 gold a turn at 50%.` (the
+  army's own share, `army_raid_forecast`, overrun), `The guard sallies under the city's posture.`
+  and the take's calculation (`calc`, `Game::raid_calc_lines`: `Production: 4 at +0% less 2 at
+  -50% = 2.`, `Commerce: 14 at +0% less 7 at -50% = 7.`, `Loss: 2 + 7 = 9.`, `Split: 15 ÷ 2 = 7,
+  the remainder 1 to the 1st Army.` with several raiders, `2nd Army: 9 + 100% (Raiders) = 18
+  gold.`; the percents are the city's yield modifier over 100, with and without the raid). Refused
+  (`army_raid_refusal`), it is shown disabled with the reason in red first in its tooltip (`why`).
+  Not shown on no enemy countryside. While the army holds the order: `Stop raiding` (`army:
+  "stop_raid"`, `army_station` with no station; tooltip `The 2nd Army ends its Raid order on
+  Prespur.`).
+- **The army's line.** A land army's `station` (`{kind: none}` or `{kind: raid, city, text,
+  holds}`): `Raiding Prespur.` on the unit panel's army line and on the Armies screen's row, with a
+  `Stop raiding` button there; an order that no longer holds says `Raiding Prespur: ends at the
+  end of your turn (the war ended).` Its supply reads `Supplied: raiding, no supply line needed.`
+  (section 3; `supply.raiding`).
+- **The pillage order** on fields is shown disabled with `Fields are raided, not pillaged.`
+  (`unit_pillage_refusal`, as the action's `why`; a pillage refused for any other reason is not
+  shown, as before). A disabled action of any kind that carries a `why` shows it in its tooltip
+  (or the HD-2D card's description box).
+- **The city.** `raid` beside `siege` in the view's city tiles, the city query and so the compact
+  city panel, for both sides while the city is visible: `state` (`contested`, `overrun`,
+  `stripped`), `label` (`Contested`, `Overrun`, `Stripped (12 turns)`), `text` (`Overrun: -50%
+  production and commerce. The raiders take what the city loses as gold.`, `Contested: -10% ...`
+  the same, `Stripped: no raid takes anything for 12 turns.`), `percent`, `raiders` (`[{army,
+  name, owner, owner_name}]`), `lost` and `gold` (the take now: the city's production and commerce
+  lost, the raiders' gold), `calc`; null with no raid. Every map appends the label to the banner
+  (`Thariss · Overrun`); the HD-2D plate is ringed in dashed amber (`#ffb63b`) while contested or
+  overrun, standing off the plate so that it reads apart from a gold owner's border (a besieged
+  city's solid red wins). The compact city panel has a `Overrun` line (its text as the tooltip),
+  the plot tooltip the text, the city screen a `Contested` / `Overrun` / `Stripped` chip, and a
+  **Raid** section: the label, the text, `Raiders: the Calabim 1st Army.` and `Lost: 9 production
+  and commerce a turn. Raiders' gold: 18 a turn.` with the calculation as its tooltip. The city
+  query is the owner's only, so the raider sees the raid on the banner, the panel and the plot
+  tooltip.
+- **The posture.** The owner's city screen has a **Sally** section (beside the garrison, in every
+  city of yours): `Posture [Never | When favoured | Always]` (`sally: {posture, options: [{name,
+  label, text}], rule}`), the chosen posture's rule under it (`The guard never sallies.`, `The
+  guard sallies when its squad has at least 60% to win the battle.`, `The guard sallies whenever
+  it has a squad that can fight.`) and `A sally is a battle between a guard squad and a raider
+  squad, each turn. The guard does not leave the city.` It sends `city_sally {city, posture}`
+  (`Never`, `Favoured`, `Always`; another player's city: `not_owner`).
+- **Messages.** The rules' `log.msg_at` lines reach the player's message log like any other (each
+  with its map position): the order taken (both sides); each sally (the battle report); the take
+  each turn (both sides, with the gold); driven off; stripped; the order ended and why.
+- **Stages.** `ffh-play stage raid-order DIR` (your army of three Axemen on a cottage next to an
+  enemy city, at war, the order open), `raid-overrun DIR` (your city raided by the rival's army,
+  no guard, its raid step run: overrun), `raid-contested DIR` (the same with posture Always and a
+  Warrior at 10% HP that sallies and does not drive the raiders off: contested). Tests:
+  `crates/ffh-play/tests/raids.rs`.
 
 ## 9. AI (ffh-ai)
 
-A rules change is not gated on the AI (CLAUDE.md, "AI changes"); what it does:
+A rules change is not gated on the AI (CLAUDE.md, "AI changes"); what it does (`crates/ffh-ai/src/raids.rs`,
+2026-11-21):
 
-- **The guard** is the rules' `Favoured` posture.
-- **Raiding.** An army at war that stands outside an enemy city it will not assault this turn
-  and is not part of an investment in force takes the Raid order, when the city can be raided and
-  the guard's forecast against its plot is below `RAID_SALLY_ODDS` (the guard would stay in). It
-  moves on when the order ends.
-- It no longer pillages fields.
+- **The guard** is the rules' `Favoured` posture; the AI never sets `City::sally`.
+- **Taking the order** (`raids::at_hold`). Called where a land army at war would otherwise only
+  hold where it stands, after every branch of higher priority in `military::army`: its idle hold
+  (the end of `military::army`, where a stack with nothing to do on an enemy countryside used to
+  walk to the nearest city of ours), and the campaign's holds two plots or more from the
+  operation's target (`campaign::hold_or_raid`: March waiting on the assembly ring, Gather waiting
+  in sight of the city, a stack already at its destination, a move the supply gate refused). The
+  stack's army (its group's army, a land army of a civilization) takes `Station::Raid(c)` on the
+  city `c` whose countryside it stands on (`Plot::working_city`) when all hold, in this order:
+  `army_raid_refusal(a, c)` is `None`; it is not next to the target of its own operation in a
+  Strike, StepIn or March phase (there it is the besieger); `c` is not next to it and cut by siege
+  with an investment that would not hold without its units (`city_invested_after_move` with the
+  units counted on the city's own plot: neither besiegers nor defenders; only `c` is tested, since
+  raiders still besiege every other city); its share of `army_raid_forecast(a, c)` is at least 1
+  gold; the guard's `raid_sally_forecast(c, plot)` is `None` or below `RAID_SALLY_ODDS`. The sally
+  forecast is asked last and once per stack and plot a turn (`View::raid_sally`). A campaign stack
+  that raids keeps the operation's target as its mission AI (`MISSIONAI_ASSAULT`).
+- **Keeping it** (`raids::keep`, in `military::army` after the campaign's early orders and before
+  the hunt; and `at_hold` at the hold points above). A stack whose army's order holds
+  (`army_raid_city`) holds, unless the guard's forecast against its plot is now at or above
+  `RAID_SALLY_ODDS`: then the AI ends the order (`Station::None`) and the stack decides as any
+  other. The branches above it (a queued group attack, an opportune capture or adjacent assault,
+  a city of ours in peril, a cut supply line, an escort, the campaign's strike, step or approach)
+  move or attack, which ends the order by rule (a stack that stops to heal where it stands keeps
+  the order, healing being no move; the guard's forecast is asked before it does,
+  `raids::still_raiding`, and the order ends there if the guard would sally); the branches below (the hunt, the
+  Raiders' walk, gathering into a bigger stack, the walk home) never see a raiding stack whose raid
+  holds and pays. Next to its operation's target in a Strike, StepIn or March phase, a stack
+  raiding that city ends the order (`raids::stop_raiding`) and besieges it.
+- **The Raiders trait** (`traits::raid`, a stack no operation needs): on a raidable countryside
+  (a civilization's city at war, not stripped) it takes the order there; else it walks to the
+  countryside of the enemy city within two turns whose forecast share is largest (a plot whose
+  danger is under two thirds of the stack's defense and that holds no enemy unit it sees, two
+  plots or more from the city where there is one), and takes the order on arrival (the same turn
+  if it arrives, else on the next turn's call). With no such city (or no army), the old walk to the
+  best enemy improvement within two turns, which `traits::pillage_target` now asks the rules
+  about (`unit_can_pillage`, and no fields: a field with a road is not walked to for its road).
+- No new war reasons, no relief of a raided city beyond the defence against stacks on our land.
 
-Not done: the AI does not yet go to war in order to raid, and does not send an army to relieve a
-raided city beyond what its defence already does against enemy stacks on its land.
+Measured 2026-11-21 (`FFH_TELEMETRY=1 ffh stats`, seeds 1-8, 6-8 civs, 250 turns, small maps):
+
+| seed (civs) | orders | takes (overrun / contested) | gold to raiders | lost by cities | sallies (guard won / lost) | driven off | stripped |
+|---|---|---|---|---|---|---|---|
+| 1 (7) | 3 | 5 / 0 | 82 | 82 | 0 | 0 | 0 |
+| 2 (8) | 3 | 10 / 0 | 110 | 65 | 0 | 0 | 1 |
+| 3 (6) | 0 | 0 / 0 | 0 | 0 | 0 | 0 | 0 |
+| 4 (7) | 3 | 5 / 0 | 48 | 24 | 0 | 0 | 0 |
+| 5 (8) | 2 | 2 / 0 | 46 | 46 | 0 | 0 | 0 |
+| 6 (6) | 13 | 16 / 0 | 193 | 193 | 1 / 0 | 0 | 0 |
+| 7 (7) | 5 | 9 / 0 | 348 | 174 | 1 / 0 | 1 | 0 |
+| 8 (8) | 1 | 1 / 0 | 22 | 22 | 0 | 0 | 0 |
+| **total** | **30** | **48 / 0** | **849** | **606** | **2 / 0** | **1** | **1** |
+
+(Takes are counted per raiding army, losses per city; gold above the loss is the Raiders trait's
++100%.) Orders ended: 18 by a move order (every one traced was the campaign's next step: a stack
+raiding from the assembly ring steps next to the city when the phase turns to StepIn, or attacks;
+none by the hunt, gathering, the walk home or a heal), 6 by the AI (the guard's forecast rose to
+`RAID_SALLY_ODDS` or more), 2 by a strip, 1 driven off; 3 had no ending counted (still held at
+turn 250, or the army was destroyed). 30 orders taken, 19 kept a further turn; a raid lasted 1.6
+takes on average, about 18 gold a take.
+Every game finished; `ffh-stress batch --matrix random --random 20 --turns 200` (harness
+invariant checks every 5 turns): 20 of 20 ok.
 
 ## 10. Defines (`rules_defines.jsonc`)
 
@@ -184,8 +283,7 @@ The owner's discussion of 2026-11-21 also covered these; each is its own build (
 ## 12. As built
 
 The rules, the data, the saves and their tests (2026-11-21). The AI (section 9) and the views
-(section 8) are separate builds on this API; until the AI build, no AI army takes the order (and
-no AI unit pillages fields: the rule refuses it).
+(section 8) are built on this API.
 
 ### Code map
 
@@ -255,9 +353,7 @@ pub fn army_set_station(&mut self, p: PlayerId, a: ArmyId, station: Station) -> 
 pub fn unit_pillage_refusal(&self, u: UnitId, plot: PlotIdx) -> Option<&'static str>;
 ```
 
-`ffh-play`'s `army_station` command takes `{"raid": city}` (`station_json` writes it); the
-Armies view's station has `kind: "raid"`, `city`, `text: "Raiding <city>."`. Both are only what
-the build needed to compile; the views are the UI build's.
+`ffh-play`'s `army_station` command takes `{"raid": city}`; its views and controls are section 8's.
 
 ### Decisions beyond the text
 

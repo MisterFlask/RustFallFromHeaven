@@ -1522,3 +1522,106 @@ pub fn heroes(dir: &Path) -> Result<Json, String> {
     let paths = s.save("heroes").map_err(|e| format!("save: {e:?}"))?;
     Ok(crate::jobj! { "stage" => "heroes", "save" => paths.save.display().to_string(), "capital" => capital, "wounded" => wounded, "caster" => caster, "x" => cx, "y" => cy })
 }
+
+/// Raids (docs/RAIDS.md, section 8): a duel (seed 11, turn 4) at war, the land within 2 of a city
+/// cleared to grassland (two hills with mines and cottages on its first ring, size 5, so the take
+/// is worth reading), a three-Axeman army on a cottage of its countryside next to it.
+/// - `raid-order`: the city is the rival's, the army the human's: it can take the Raid order, and
+///   its pillage is refused on the cottage (fields).
+/// - `raid-overrun`: the city is the human's (no guard), the army the rival's, holding the Raid
+///   order; the human's raid step has run: the city is overrun, the take made.
+/// - `raid-contested`: as `raid-overrun`, the city's posture Always and its guard one Warrior at
+///   10% HP: it sallies and does not drive the raiders off, so the city is contested.
+pub fn raid(dir: &Path, kind: &str) -> Result<Json, String> {
+    use ffh_core::army::Station;
+    use ffh_core::raid::{RaidState, Sally};
+    let mut s = duel_with(dir, 11, 4, None, &[])?;
+    let h = s.human;
+    let rival = s.g.player_ids().find(|&p| p != h && !s.g.player_is_barbarian(p) && s.g.players[p].alive).ok_or("no rival")?;
+    let (owner, raider) = if kind == "raid-order" { (rival, h) } else { (h, rival) };
+    let g = &mut s.g;
+    let c = *g.players[owner].cities.first().ok_or("no city")?;
+    let (cx, cy) = (g.cities[c].x, g.cities[c].y);
+    let plots: Vec<_> = (-2..=2).flat_map(|dy| (-2..=2).map(move |dx| (dx, dy))).filter_map(|(dx, dy)| g.plot_xy(cx, cy, dx, dy)).collect();
+    let remove: Vec<_> = plots.iter().flat_map(|&q| g.map.plots[q].units.clone()).collect();
+    for u in remove {
+        if g.units.contains(u) {
+            g.unit_kill(u, false, None);
+        }
+    }
+    let grass = g.d.t("TERRAIN_GRASS");
+    for &q in &plots {
+        g.plot_set_plot_type(q, PlotType::PLOT_LAND, false);
+        g.plot_set_terrain_type(q, grass, false);
+        g.plot_set_feature_type(q, None);
+    }
+    g.map_recalculate_areas();
+    g.update_plot_groups();
+    // The first ring: the city's own, two hills with mines, cottages on the rest.
+    let (mine, cottage) = (g.d.t::<ImprovementType>("IMPROVEMENT_MINE"), g.d.t::<ImprovementType>("IMPROVEMENT_COTTAGE"));
+    let ring: Vec<_> = (0..DirectionType::NUM).filter_map(|i| g.plot_direction(cx, cy, DirectionType::from_usize(i))).collect();
+    for (i, &q) in ring.iter().enumerate() {
+        g.plot_set_owner(q, Some(owner), false, false);
+        if i == 1 || i == 5 {
+            g.plot_set_plot_type(q, PlotType::PLOT_HILLS, false);
+            g.plot_set_improvement_type(q, Some(mine));
+        } else {
+            g.plot_set_improvement_type(q, Some(cottage));
+        }
+    }
+    for &q in &plots {
+        g.plot_update_working_city(q);
+    }
+    g.map_recalculate_areas();
+    g.update_plot_groups();
+    g.city_set_population(c, 5);
+    g.city_assign_working_plots(c);
+    let (ot, rt) = (g.players[owner].team, g.players[raider].team);
+    g.team_meet(ot, rt, false);
+    g.team_declare_war(ot, rt, false, None);
+    // The army on a cottage of the countryside (fields), next to the city.
+    let at = ring.iter().copied().find(|&q| g.map.plots[q].improvement_type == Some(cottage) && g.plot_in_countryside(q, c)).ok_or("no countryside plot")?;
+    let (x, y) = g.map.xy(at);
+    let axeman = g.d.t::<UnitType>("UNIT_AXEMAN");
+    let units: Vec<_> = (0..3).map(|_| g.player_init_unit(raider, axeman, x, y, None, None)).collect();
+    let army = g.army_form(raider, &units).map_err(|e| format!("army: {e}"))?;
+    let mut guard = Vec::new();
+    match kind {
+        "raid-order" => {
+            if let Some(why) = g.army_raid_refusal(army, c) {
+                return Err(format!("the order is refused: {why}"));
+            }
+        }
+        "raid-overrun" | "raid-contested" => {
+            if kind == "raid-contested" {
+                let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+                let u = g.player_init_unit(h, warrior, cx, cy, None, None);
+                g.player_army_sync(h);
+                g.units[u].damage = 90;
+                guard.push(u);
+                g.city_set_sally(h, c, Sally::Always).map_err(|e| format!("posture: {e}"))?;
+            }
+            g.army_set_station(raider, army, Station::Raid(c)).map_err(|e| format!("the order: {e:?}"))?;
+            g.player_do_raids(h);
+            let want = if kind == "raid-overrun" { RaidState::Overrun } else { RaidState::Contested };
+            if g.city_raid_state(c) != want {
+                return Err(format!("{kind}: the city is {:?}", g.city_raid_state(c)));
+            }
+        }
+        _ => return Err(format!("no stage {kind}")),
+    }
+    // Keep unrelated research/build prompts out of the walkthrough.
+    if let Some(t) = g.d.techs.keys().find(|&t| g.player_can_research(h, t, false)) {
+        g.player_push_research(h, t, true);
+    }
+    for city in g.players[h].cities.clone() {
+        if !g.city_is_production(city) {
+            if let Some(u) = g.d.units.keys().find(|&u| g.city_can_train(city, u, false, false, false, false)) {
+                g.city_push_order(city, OrderType::ORDER_TRAIN, u.idx() as i32, -1, false, false, false, false);
+            }
+        }
+    }
+    let turn = s.g.game_turn();
+    let paths = s.save(kind).map_err(|e| format!("save: {e:?}"))?;
+    Ok(crate::jobj! { "stage" => kind, "save" => paths.save.display().to_string(), "turn" => turn, "city" => c, "army" => army, "units" => units, "guard" => guard, "x" => x, "y" => y, "cx" => cx, "cy" => cy })
+}

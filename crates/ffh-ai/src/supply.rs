@@ -63,7 +63,7 @@ pub(crate) const STRANDED_TURNS: i32 = 10;
 
 /// The army the group's head belongs to (an AI army of a player that is no barbarian, and not a
 /// marching recruit).
-fn army_of(g: &Game, grp: GroupId) -> Option<ArmyId> {
+pub(crate) fn army_of(g: &Game, grp: GroupId) -> Option<ArmyId> {
     let head = g.group_get_head_unit(grp)?;
     let a = g.units[head].army.filter(|&a| g.armies.contains(a))?;
     if g.player_is_barbarian(g.armies[a].owner) || g.units[head].march.is_some() {

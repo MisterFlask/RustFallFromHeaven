@@ -19,6 +19,30 @@ wants done next into this file.
 - Other: "Next steps" in docs/PORTING.md, "Not in this change" in docs/SUPPLY.md, the "Not built"
   notes in docs/NAVAL.md
 
+## Raids: the second build
+
+The first build (docs/RAIDS.md, 2026-11-21) is the Raid order, the guard's sallies, the take and
+the strip timer. The owner's discussion of the same day agreed these in outline; each is its own
+build (docs/RAIDS.md, section 11):
+
+- **A raid without a war of conquest.** A war declared for a stated goal (a raid, a demand); in
+  a raid's war no city changes hands, and it ends with a truce when the raiders leave or are
+  paid. The defender can end a limited war by conceding its goal. Open: what a war of conquest
+  costs beyond it (weariness, relations), and what the victim's escalation costs.
+- **Paying raiders off.** A refused demand as the war's goal; a raided AI pays when the raids
+  cost more than the tribute (the demands of docs/PORTING.md, "Gifts and demands").
+- **A militia building.** The owner's idea: a building that strengthens the defence of the land
+  a city works. As discussed: more damage for the guard in a sally, or a militia unit in its
+  squad (the Cairn card's Sentinel is the precedent), its own cheap early building, seen on the
+  map from outside. Open: name, cost, technology, numbers.
+- **A resource's term.** Raiding a resource plot takes the resource for some turns (the raider
+  has it, the owner does not): the one plot outside a city's work that matters.
+- **Barbarians.** A barbarian party on a city's land met by the guard under the raid's rule.
+- **The AI goes to war to raid**, and relieves a raided city on purpose. Today it raids in the
+  wars it fights anyway (docs/RAIDS.md, section 9).
+- **Measure a contest's length.** A contested raid should last two to four turns; count it in
+  played games before the numbers are tuned.
+
 ## Calculated numbers: the other screens
 
 The owner's rule (2026-11-20; docs/PLAY_DESIGN.md 4.9): a number the rules calculate shows its

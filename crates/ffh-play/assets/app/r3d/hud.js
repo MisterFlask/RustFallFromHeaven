@@ -11,6 +11,7 @@ import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "../mana-art.js";
 import { CATALOG } from "./assets/catalog.js";
 import { SEA } from "./world.js";
 import { drawCityWork } from "../citywork.js";
+import { plateTag, plateRing } from "../raids.js";
 import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark } from "../supply.js";
 import { stackWear, drawWearPip, drawHarbourMark } from "../sea.js";
 import { outpostTag } from "../lanes.js";
@@ -138,7 +139,7 @@ function drawHudParts(r3d, cam) {
     const seen = city.visible !== false;
     const fs = Math.max(10, Math.min(15, Math.round(ts * 0.15)));
     g.font = `600 ${fs}px ${FONT}`;
-    const name = ts >= 40 ? (city.name ?? "") + outpostTag(city) + (city.siege ? ` · ${city.siege.label}` : "") : "";
+    const name = ts >= 40 ? (city.name ?? "") + outpostTag(city) + plateTag(city) : "";
     const tw = g.measureText(name).width;
     const sizeR = fs * 0.78;
     const pad = fs * 0.45;
@@ -194,11 +195,18 @@ function drawHudParts(r3d, cam) {
     // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plate's left end (left of the
     // shield when there is one).
     drawHarbourMark(g, city, x - h * 0.45 - (shieldW ? shieldW + 3 : 0), p.y, h * 0.42, 1);
-    if (city.besieged) {
-      g.lineWidth = 2.5;
-      g.strokeStyle = "#e0442c";
-      roundRect(g, x - 2, y - 2, w + 4, h + 4, (h + 4) / 2);
+    // Raids (docs/RAIDS.md, section 8; raids.js): a contested or overrun city's plate is ringed in
+    // dashed amber (a besieged one's solid red wins).
+    const ring = plateRing(city);
+    if (ring) {
+      g.lineWidth = ring.dash.length ? 3 : 2.5;
+      g.strokeStyle = ring.colour;
+      g.setLineDash(ring.dash);
+      // (The dashed ring stands off the plate, clear of the owner's border.)
+      const off = ring.dash.length ? 4 : 2;
+      roundRect(g, x - off, y - off, w + off * 2, h + off * 2, (h + off * 2) / 2);
       g.stroke();
+      g.setLineDash([]);
     }
     if (city.sentinels?.length) {
       const tw2 = Math.max(4, fs * 0.42);

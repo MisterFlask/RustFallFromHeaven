@@ -109,6 +109,9 @@ pub enum Command {
     FreeHouse { house: HouseId },
     /// Set the realm's default tribute (the one a new House takes) to `pct` percent.
     SetTributeDefault { pct: i32 },
+    /// Raids (docs/RAIDS.md, section 4): city `city`'s sally posture (`posture`: `Never`,
+    /// `Favoured` or `Always`, `Sally::name`).
+    CitySally { city: CityId, posture: ffh_core::raid::Sally },
     Research { tech: Option<TechType>, shift: bool },
     /// Commit to research path `path` (docs/PORTING.md, "Research paths").
     ResearchPath { path: ResearchPathType },
@@ -466,6 +469,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "house_tribute",
     "free_house",
     "tribute_default",
+    "city_sally",
     "research",
     "research_path",
     "update_civics",
@@ -528,6 +532,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("house_tribute", &["house", "pct"]),
     ("free_house", &["house"]),
     ("tribute_default", &["pct"]),
+    ("city_sally", &["city", "posture"]),
     ("research", &["tech", "shift"]),
     ("research_path", &["path"]),
     ("update_civics", &["civics"]),
@@ -656,6 +661,12 @@ fn station_field(j: &Json) -> Result<ffh_core::army::Station, FieldError> {
     }
 }
 
+/// The `posture` field of `city_sally`: a posture's name (`Never`, `Favoured`, `Always`).
+fn sally_field(j: &Json) -> Result<ffh_core::raid::Sally, FieldError> {
+    let name: String = j.req("posture")?;
+    ffh_core::raid::Sally::from_name(&name).ok_or_else(|| FieldError::new("posture", format!("expected Never, Favoured or Always, got {name:?}")))
+}
+
 /// The grantee of `grant_city`: exactly one of `house` and `found: true`.
 fn grant_to_field(j: &Json) -> Result<ffh_core::persons::GrantTo, FieldError> {
     use ffh_core::persons::GrantTo;
@@ -734,6 +745,7 @@ impl Command {
             Command::SetHouseTribute { .. } => "house_tribute",
             Command::FreeHouse { .. } => "free_house",
             Command::SetTributeDefault { .. } => "tribute_default",
+            Command::CitySally { .. } => "city_sally",
             Command::Research { .. } => "research",
             Command::ResearchPath { .. } => "research_path",
             Command::UpdateCivics { .. } => "update_civics",
@@ -863,6 +875,7 @@ impl Command {
             "house_tribute" => Command::SetHouseTribute { house: j.req("house")?, pct: j.req("pct")? },
             "free_house" => Command::FreeHouse { house: j.req("house")? },
             "tribute_default" => Command::SetTributeDefault { pct: j.req("pct")? },
+            "city_sally" => Command::CitySally { city: j.req("city")?, posture: sally_field(j)? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "research_path" => Command::ResearchPath { path: names::field(d, j, "path")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
@@ -989,6 +1002,7 @@ impl Command {
             Command::SetHouseTribute { house, pct } => j.with("house", *house).with("pct", *pct),
             Command::FreeHouse { house } => j.with("house", *house),
             Command::SetTributeDefault { pct } => j.with("pct", *pct),
+            Command::CitySally { city, posture } => j.with("city", *city).with("posture", posture.name()),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::ResearchPath { path } => j.with("path", Json::idx(*path)),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
@@ -1376,6 +1390,7 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::SetHouseTribute { house, pct } => g.player_set_house_tribute(h, *house, *pct).map_err(|_| "The tribute cannot be set."),
         Command::FreeHouse { house } => g.player_free_house(h, *house),
         Command::SetTributeDefault { pct } => g.player_set_house_tribute_default(h, *pct),
+        Command::CitySally { city, posture } => g.city_set_sally(h, *city, *posture),
         Command::RecruitDest { city, index, dest } => {
             if *index < 0 {
                 g.cities[*city].recruit_default = *dest;
@@ -1885,6 +1900,11 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if !(0..=ffh_core::persons::TRIBUTE_MAX).contains(pct) || pct % ffh_core::persons::TRIBUTE_STEP != 0 {
                 return Err(cannot("Tribute: 0 to 50 percent, in steps of 10."));
             }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::CitySally { city, .. } => {
+            city_of(g, h, *city)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -2768,6 +2788,9 @@ mod tests {
             Command::SetHouseTribute { house: HouseId(0), pct: 30 },
             Command::FreeHouse { house: HouseId(2) },
             Command::SetTributeDefault { pct: 10 },
+            Command::CitySally { city: CityId(2), posture: ffh_core::raid::Sally::Always },
+            Command::CitySally { city: CityId(0), posture: ffh_core::raid::Sally::Never },
+            Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Raid(CityId(4)) },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::ResearchPath { path: ResearchPathType(2) },

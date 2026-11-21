@@ -586,7 +586,8 @@ impl Game {
             let candidates = self.engage_defenders(plot, owner, &[], WarTest::AtWar);
             let battles = self.engage_field_squads(plot, &candidates, Side::Defender, &HitCtx::sally(city_plot, plot)).len();
             for _ in 0..battles {
-                let here: Vec<ArmyId> = self.city_raiders(c).into_iter().filter(|&a| self.army_plot(a) == Some(plot)).collect();
+                // (With each army's owner: an army the battle destroys is gone before it is counted.)
+                let here: Vec<(ArmyId, PlayerId)> = self.city_raiders(c).into_iter().filter(|&a| self.army_plot(a) == Some(plot)).map(|a| (a, self.armies[a].owner)).collect();
                 if here.is_empty() {
                     break;
                 }
@@ -603,12 +604,14 @@ impl Game {
                 }
                 // Driven off: every Raid order on that plot ends.
                 if out.loser == Some(Side::Defender) {
-                    for a in here {
+                    for (a, raider) in here {
+                        // (An army that fell to the last unit is driven off too: the battle report
+                        // is its message.)
+                        if self.telemetry.on() && self.armies.get(a).is_none_or(|ar| ar.station == Station::Raid(c)) {
+                            self.tel_raid_driven_off(raider);
+                        }
                         if self.armies.get(a).is_some_and(|ar| ar.station == Station::Raid(c)) {
                             self.armies[a].station = Station::None;
-                            if self.telemetry.on() {
-                                self.tel_raid_driven_off(self.armies[a].owner);
-                            }
                             self.raid_order_ended(a, c, "driven off");
                         }
                     }
@@ -664,5 +667,57 @@ impl Game {
                 self.raid_end_all(c, "the countryside is stripped");
             }
         }
+    }
+}
+
+// -------------------------------------------------------------------------------------------
+// The take's calculation, for the tooltips (CLAUDE.md, "a number the rules calculate shows its
+// calculation"; docs/RAIDS.md, section 8)
+// -------------------------------------------------------------------------------------------
+
+impl Game {
+    /// The lines of take `calc` of a raid on city `c` (made now, by [`Game::raid_take_calc`],
+    /// [`Game::city_raid_calc`] or [`Game::army_raid_forecast`]): each yield's rate without the
+    /// raid modifier less its rate with it (`Production: 12 at +0% less 6 at -50% = 6.`, the
+    /// percents the city's modifier over 100), the loss (`Loss: 6 + 9 = 15.`), the split between
+    /// several armies (`Split: 15 ÷ 2 = 7, the remainder 1 to the 1st Army.`), and each army's
+    /// gold (`1st Army: 15 gold.`, `1st Army: 15 + 100% (Raiders) = 30 gold.`).
+    pub fn raid_calc_lines(&self, c: CityId, calc: &RaidCalc) -> Vec<String> {
+        if !self.cities.contains(c) {
+            return Vec::new();
+        }
+        let now = self.cities[c].raid_percent;
+        let line = |label: &str, y: YieldType, without: i32, with: i32, lost: i32| {
+            let m = self.city_base_yield_rate_modifier(c, y, now) - 100;
+            format!("{label}: {without} at {m:+}% less {with} at {:+}% = {lost}.", m - calc.percent)
+        };
+        let mut out = vec![
+            line("Production", YieldType::YIELD_PRODUCTION, calc.production_without, calc.production_with, calc.production_lost),
+            line("Commerce", YieldType::YIELD_COMMERCE, calc.commerce_without, calc.commerce_with, calc.commerce_lost),
+            format!("Loss: {} + {} = {}.", calc.production_lost, calc.commerce_lost, calc.total),
+        ];
+        let name = |a: ArmyId| self.armies.get(a).map_or_else(|| "an army".to_string(), |ar| ar.name.clone());
+        let n = calc.shares.len() as i32;
+        if n > 1 {
+            let rest = calc.total % n;
+            let remainder = if rest > 0 { format!(", the remainder {rest} to the {}", name(calc.shares[0].army)) } else { String::new() };
+            out.push(format!("Split: {} \u{f7} {n} = {}{remainder}.", calc.total, calc.total / n));
+        }
+        for s in &calc.shares {
+            if s.modifier == 0 {
+                out.push(format!("{}: {} gold.", name(s.army), s.gold));
+            } else {
+                let traits: Vec<&str> = self
+                    .d
+                    .traits
+                    .keys()
+                    .filter(|&t| self.players[s.owner].traits[t] && self.d.traits[t].pillaging_gold != 0)
+                    .map(|t| self.d.text.name(&self.d.traits[t].base.description))
+                    .collect();
+                let from = if traits.is_empty() { String::new() } else { format!(" ({})", traits.join(", ")) };
+                out.push(format!("{}: {} {} {}%{from} = {} gold.", name(s.army), s.share, if s.modifier < 0 { "\u{2212}" } else { "+" }, s.modifier.abs(), s.gold));
+            }
+        }
+        out
     }
 }

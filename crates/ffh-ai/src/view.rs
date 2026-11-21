@@ -48,6 +48,9 @@ pub struct View {
     pub flood: Flood,
     /// This turn's battle forecasts (`forecast::Cache`, lent by the controller).
     pub forecasts: crate::forecast::Cache,
+    /// This turn's sally forecasts of the guards against our stacks' plots (stack, plot,
+    /// `won_permille`): asked once per stack and plot (`raids.rs`).
+    pub raid_sally: Vec<(GroupId, PlotIdx, Option<i32>)>,
 }
 
 /// Does enemy unit `u` count when player `p` weighs the threats to itself (the danger map, a
@@ -149,6 +152,7 @@ impl View {
             rival_def: BTreeMap::new(),
             flood: Flood::default(),
             forecasts: Default::default(),
+            raid_sally: Vec::new(),
         }
     }
 

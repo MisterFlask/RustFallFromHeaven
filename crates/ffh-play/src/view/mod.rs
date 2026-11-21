@@ -37,6 +37,7 @@ pub mod marks;
 pub mod player;
 pub mod perks;
 pub mod persons;
+pub mod raids;
 pub mod sieges;
 pub mod outposts;
 pub mod place;
@@ -377,6 +378,9 @@ pub fn cities(v: &Viewer) -> Json {
             // Sieges (docs/SIEGES.md): besieged, and each Sentinel's HP left in percent.
             "besieged" => visible.then(|| g.city_is_besieged(c)),
             "siege" => sieges::city(v, c),
+            // Raids (docs/RAIDS.md, section 8): contested, overrun or stripped, for both sides while
+            // the city is visible (the banner's label and ring).
+            "raid" => raids::city(v, c),
             "sentinels" => visible.then(|| crate::view::city::sentinels_json(g, c)),
             // The sea (docs/NAVAL.md, section 10): a port of the human's team (its tooltip on
             // the Sea layer names the range it gives).

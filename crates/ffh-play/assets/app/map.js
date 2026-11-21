@@ -23,6 +23,7 @@ import { remindersNode } from "./keywords.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
 import { drawLanesFlat, outpostTag } from "./lanes.js";
 import { drawMarksFlat } from "./marks.js";
+import { plateTag } from "./raids.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
 /** The smallest tile (CSS px) the battle markers are drawn and clicked at (`battleMarkerAt`). */
@@ -1482,7 +1483,7 @@ export class MapView {
         // Zoomed out (no label): the harbour mark at the banner's left.
         if (ts < 16) drawHarbourMark(g, c, bx, by + hh / 2, 5, 1);
         if (ts >= 16) {
-          const label = `${c.capital ? "★ " : ""}${c.name}${outpostTag(c)}${c.siege ? ` · ${c.siege.label}` : ""}`;
+          const label = `${c.capital ? "★ " : ""}${c.name}${outpostTag(c)}${plateTag(c)}`;
           g.font = `${ts >= 32 ? 12 : 10}px ${FONT}`;
           const tw = g.measureText(label).width + 8;
           g.fillStyle = "rgba(10,10,12,0.78)";

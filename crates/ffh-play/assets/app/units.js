@@ -22,7 +22,8 @@ import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
 import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
-import { withCalc } from "./calc.js";
+import { withCalc, calcTip } from "./calc.js";
+import { raidTone } from "./raids.js";
 import { squadBoard, squadName, roman, stripGroups, setSquadUnitTip } from "./squads.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
@@ -979,6 +980,8 @@ function showTip() {
     const walls = city.sentinels?.length ? `, Sentinels ${city.sentinels.map((p) => (p > 0 ? `${p}%` : "breached")).join("/")}` : "";
     lines.push(h("div.tip-city", `${city.capital ? "★ " : ""}${city.name}`, h("span.dim", ` (${playerName(city.owner)}${city.size !== null && city.size !== undefined ? `, size ${city.size}` : ""}${walls})`), city.besieged ? h("span.bad", " besieged") : null));
     if (city.siege) lines.push(h(`div.tip-siege${city.siege.state === "starvation" ? ".bad" : ".warn"}`, `Siege turn ${city.siege.turn}. ${city.siege.text}`));
+    // Raids (docs/RAIDS.md, section 8): contested, overrun or stripped (its text names the state).
+    if (city.raid) lines.push(h(`div.tip-raid.${raidTone(city.raid)}`, city.raid.text));
     // A ritual under way (the view's `ritual`): its plot is seen by every player.
     if (city.ritual) lines.push(h("div.tip-ritual", `Ritual under way: ${city.ritual}. This plot is visible to every player.`));
     // The Sea layer (docs/NAVAL.md section 10): a port of yours names the range it gives.
@@ -1271,17 +1274,24 @@ function sectionActions(actions, test) {
   return [...list.filter((a) => !isDelete(a)), ...list.filter(isDelete)];
 }
 
-/** An action's help text (markup): a spell's, a promotion's, a build's or a mission's. */
+/** An action's help text (markup): a spell's, a promotion's, a build's or a mission's; first, for
+ *  a disabled action of any kind that says why (`why`: a card's missing needs, no valid target, a
+ *  refused Raid order, a pillage on fields), the reason. */
 function helpOf(a) {
+  const why = !a.enabled && a.why ? `[COLOR_NEGATIVE_TEXT]${a.why}[COLOR_REVERT]` : "";
+  const help = ownHelp(a);
+  return why && help ? `${why}[NEWLINE]${help}` : why || help;
+}
+
+/** An action's own help text (markup), without its reason. */
+function ownHelp(a) {
   // A spell's, promotion's and upgrade's help: the data's `effects` (the server's help texts).
   if (a.kind === "spell") {
-    // Why it cannot be cast now (a card's missing needs, no valid target), and for the Discover
-    // action the card's own help (what it is and gives).
-    const why = !a.enabled && a.why ? `[COLOR_NEGATIVE_TEXT]${a.why}[COLOR_REVERT]` : "";
+    // For the Discover action the card's own help (what it is and gives).
     const card = a.card !== undefined && a.card !== null ? effectsOf("TechType", a.card) : "";
     // Explore Lair: the odds for the selected units (view/explore.rs).
     const explore = a.explore ? exploreFull(a.explore, dname) : "";
-    return [why, card, effectsOf("SpellType", a.spell) || a.help || "", explore].filter(Boolean).join("[NEWLINE]");
+    return [card, effectsOf("SpellType", a.spell) || a.help || "", explore].filter(Boolean).join("[NEWLINE]");
   }
   if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
@@ -1298,7 +1308,7 @@ const actionType = (a) =>
 /** The kinds the isometric card lists as labelled buttons rather than icon tiles (their icons
  *  would all look alike), with the icon each label carries. */
 const LISTED = ["spell", "promotion", "upgrade", "army"];
-const ARMY_ICONS = { form: "units", split: "units", join: "units", garrison: "defense", disband: "disband", upgrade: "upgrade" };
+const ARMY_ICONS = { form: "units", split: "units", join: "units", garrison: "defense", disband: "disband", upgrade: "upgrade", raid: "plunder", stop_raid: "cancel" };
 const listedIcon = (a) => (a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : a.kind === "army" ? (ARMY_ICONS[a.army] ?? "units") : "upgrade");
 
 /** Whether the card lists action `a` as a labelled button: spells, promotions, upgrades and army
@@ -1308,7 +1318,8 @@ const listedAction = (a) => LISTED.includes(a.kind) || coarse();
 
 function actionButton(a) {
   const key = hotkeyOf(a);
-  const help = LISTED.includes(a.kind) ? helpOf(a) : "";
+  // (A disabled order that says why shows the reason as its tooltip, whatever its kind.)
+  const help = LISTED.includes(a.kind) || (!a.enabled && a.why) ? helpOf(a) : "";
   const extra = a.turns !== undefined ? ` (${turns(a.turns)})` : "";
   if (isoSkin()) return isoAction(a, key, extra);
   const btn = h(
@@ -1319,7 +1330,7 @@ function actionButton(a) {
       "data-type": actionType(a),
       // The help as a rich tooltip (its bullets and colours kept), else the key as the title.
       title: help ? null : key ? `[${key}]` : null,
-      tip: help ? [h("div.tip-title", actionLabel(a), key ? h("kbd", key) : null), h("div.tip-effects", markup(help))] : null,
+      tip: help ? [h("div.tip-title", actionLabel(a), key ? h("kbd", key) : null), h("div.tip-effects", markup(help)), calcTip(a.calc)] : null,
       onclick: () => doAction(a),
     },
     a.kind === "promotion" ? promotionIcon(a.promotion, { u: 1 }) : null,
@@ -1339,7 +1350,9 @@ function isoAction(a, key, extra) {
   const label = actionLabel(a) + extra;
   const help = helpOf(a);
   // A finger cannot point at an order to read it: on a touch screen the orders say what they are.
-  if (!coarse()) descs.set(a, description(a, label, key, listed ? "" : help));
+  // (A disabled order that says why: the reason alone, as the card's box holds two lines.)
+  const boxHelp = !a.enabled && a.why ? `[COLOR_NEGATIVE_TEXT]${a.why}[COLOR_REVERT]` : help;
+  if (!coarse()) descs.set(a, description(a, label, key, listed ? "" : boxHelp));
   const show = () => describe(a);
   return h(
     `button.action${listed ? ".listed" : ".tile"}${isDelete(a) ? ".danger" : ""}`,
@@ -1348,7 +1361,8 @@ function isoAction(a, key, extra) {
       "data-kind": a.kind,
       "data-type": actionType(a),
       title: listed && help ? null : `${label}${key ? ` [${key}]` : ""}`,
-      tip: listed && help ? [h("div.tip-title", label, key ? h("kbd", key) : null), h("div.tip-effects", markup(help))] : null,
+      // (A calculation, `calc`: the Raid order's take, under the help.)
+      tip: listed && help ? [h("div.tip-title", label, key ? h("kbd", key) : null), h("div.tip-effects", markup(help)), calcTip(a.calc)] : null,
       "aria-label": label,
       onclick: () => doAction(a),
       onmouseenter: show,
@@ -1625,15 +1639,16 @@ function armyLine() {
     "div.army-line",
     h("b", a.name),
     h("span.dim", ` · ${n} ${fleet ? "ship" : "unit"}${n === 1 ? "" : "s"}${a.target_size ? ` of ${a.target_size}` : ""}`),
-    // A fleet's standing order (docs/NAVAL.md, 7.2).
+    // A fleet's standing order (docs/NAVAL.md, 7.2); a land army's Raid (docs/RAIDS.md, 8).
     fleet && a.station?.text ? h("div.dim.fleet-station-line", a.station.text) : null,
+    !fleet && a.station?.kind === "raid" ? h("span.warn.raid-station-line", ` · ${a.station.text}`) : null,
     a.marching.length ? h("span.dim", { title: "Recruits marching to it" }, ` · ${a.marching.length} marching to it`) : null,
     training ? h("span.dim", { title: "Units cities train for it: its requisition's, and those they build next for it" }, ` · ${training} in training`) : null,
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
     " ",
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
     // Supply (docs/SUPPLY.md, section 5): its state in bare words.
-    a.supply?.text ? h(`div.army-supply${a.supply.state === "supplied" && a.supply.line ? ".dim" : ".warn"}`, a.supply.text) : null,
+    a.supply?.text ? h(`div.army-supply${a.supply.state === "supplied" && (a.supply.line || a.supply.raiding) ? ".dim" : ".warn"}`, a.supply.text) : null,
   );
 }
 

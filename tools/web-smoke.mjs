@@ -1452,6 +1452,26 @@ async function stagedAttack(bin, saves) {
   steps.push(`attacked from the odds tooltip (${odds.replace(/\s+/g, " ").slice(0, 40)}…): ${won ? "won" : "lost or damaged"}; combat flash shown; the battle screens opened by themselves`);
 }
 
+/** Raids (docs/RAIDS.md, section 8; `stage raid-order`): the army's Raid action, enabled with its
+ *  take's calculation, taken from the unit panel; the army's line says so; Stop raiding ends it. */
+async function stagedRaid(bin, saves) {
+  const st = await loadStaged(bin, saves, "raid-order");
+  await b.eval(`window.ffh.units.select(${JSON.stringify(st.units)})`);
+  const raid = '#unit-panel button.action[data-kind="army"][data-type="raid"]';
+  await until2(`!!document.querySelector(${q(raid)}) && !document.querySelector(${q(raid)}).disabled`, "the Raid action");
+  const calc = await b.eval(`(window.ffh.units.currentActions().find((a) => a.army === "raid")?.calc ?? []).length`);
+  if (!calc) throw new Error("the Raid action has no calculation");
+  await click(raid);
+  await until2(`window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.station?.kind === "raid"`, "the Raid order taken");
+  await until2(`/Raiding /.test(document.querySelector("#unit-panel .army-line")?.textContent ?? "")`, "the army's Raid line");
+  await shot("raid-order");
+  const stop = '#unit-panel button.action[data-kind="army"][data-type="stop_raid"]';
+  await until2(`!!document.querySelector(${q(stop)})`, "Stop raiding");
+  await click(stop);
+  await until2(`window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.station?.kind === "none"`, "the Raid order ended");
+  steps.push("raid: the order taken from the unit panel (its calculation in the action), the army's line, Stop raiding");
+}
+
 /** A staged capture: the move into the enemy city and its keep/raze decision modal. */
 async function stagedCapture(bin, saves) {
   const st = await loadStaged(bin, saves, "capture");
@@ -2311,6 +2331,7 @@ async function main() {
     await stagedDiplomacy(bin, saves);
     await stagedAutomate(bin, saves);
     await stagedArmies(bin, saves);
+    await stagedRaid(bin, saves);
     await stagedGovernors(bin, saves);
     await stagedEngagement(bin, saves);
     await stagedElection(bin, saves);

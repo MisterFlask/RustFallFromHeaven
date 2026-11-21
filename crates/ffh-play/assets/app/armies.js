@@ -20,6 +20,9 @@
 // a standing order (`station`: none, Patrol of a sea of `seas`, Escort of one of
 // `escort_targets`), sent by `army_station`, and its ships' wear. Its requisition takes ships from
 // coastal cities.
+//
+// Raids (docs/RAIDS.md, section 8): a land army holding the Raid order says so (`station`:
+// `kind: "raid"`, `text`), with Stop raiding (`army_station` with no station).
 
 import * as api from "./api.js";
 import { S, dname, turns, cityAt, me } from "./state.js";
@@ -332,7 +335,11 @@ export async function openArmies({ select, centerOn } = {}) {
           ? h("ul.army-on-order", a.on_order.map((o) => h("li", { "data-city": o.city }, h("span", `${dname("UnitType", o.unit)} in ${o.name}`), h("span.dim", ` · ${turns(o.turns)} · on order`))))
           : null,
         // Supply (docs/SUPPLY.md, section 5): the state in bare words.
-        h(`div.army-supply${a.supply?.state === "supplied" && a.supply?.line ? "" : ".warn"}`, { title: `Supply line: the cheapest path over land to one of your cities or ships, of cost ${r.supply_budget} at most. Cut: Hunger, then Starvation.` }, a.supply?.text ?? ""),
+        h(`div.army-supply${a.supply?.state === "supplied" && (a.supply?.line || a.supply?.raiding) ? "" : ".warn"}`, { title: `Supply line: the cheapest path over land to one of your cities or ships, of cost ${r.supply_budget} at most. Cut: Hunger, then Starvation.` }, a.supply?.text ?? ""),
+        // Raids (docs/RAIDS.md, section 8): its Raid order, and Stop raiding.
+        a.station?.kind === "raid"
+          ? h("div.row.raid-station", h("span.warn", a.station.text), " ", h("button.small.stop-raid", { onclick: () => act({ c: "army_station", army: a.id, station: null }), title: "End the Raid order. A move order also ends it." }, "Stop raiding"))
+          : null,
         h(
           "div.row",
           h(

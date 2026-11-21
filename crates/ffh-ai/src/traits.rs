@@ -3,10 +3,13 @@
 //! generic AI already profits from some of them where it reads numbers the trait changes (wonder
 //! turns, civic upkeep, upgrade prices). What it did not do is *play* to them; here a leader does:
 //!
-//! - **Raiders** (pillaged gold +100%, Commando): an army stack at war pillages the improved enemy
-//!   plot it stands on (one unit, with moves to spare or while the stack holds), and a stack that
-//!   no operation needs raids the enemy improvements it can reach safely ([`after_army`],
-//!   [`raid`]). The generic AI never pillages.
+//! - **Raiders** (pillaged and raided gold +100%, Commando): a stack that no operation needs walks
+//!   to the countryside of the enemy city within two turns whose raid takes most and takes the
+//!   Raid order there (docs/RAIDS.md; [`raid`], `raids.rs`); with no city to raid, to an enemy
+//!   improvement the rules let it pillage (fields are raided, not pillaged). An army stack at war
+//!   pillages the pillageable enemy improvement it stands on (one unit, with moves to spare or
+//!   while the stack holds: [`before_army`], [`after_army`]). The generic AI pillages nothing,
+//!   and raids from its hold points (`raids.rs`).
 //! - **Spiritual** (no anarchy): civics are reconsidered every 2 turns at a gain of 40 instead of
 //!   every 10 at 100, and a change of state religion carries no anarchy weight ([`civic_cadence`],
 //!   [`religion_stickiness`]).
@@ -118,13 +121,18 @@ pub fn has(g: &Game, p: PlayerId, t: Trait) -> bool {
 // Raiders: pillage
 // ----------------------------------------------------------------------------
 
-/// Can our units pillage plot `q` for gold: an improvement (not a permanent one, not a city) on
-/// land owned by a civilization we are at war with -- but not the land of the city our war
-/// operation is taking (within two plots of it), which is ours to work once it falls.
-fn pillage_target(g: &Game, v: &View, q: PlotIdx) -> bool {
+/// Can the units of `grp` pillage plot `q` for gold: an improvement (not a permanent one, not a
+/// city, not fields: those are raided through their city, docs/RAIDS.md, section 7) that the
+/// rules let one of them pillage (`unit_can_pillage`), on land owned by a civilization we are at
+/// war with -- but not the land of the city our war operation is taking (within two plots of
+/// it), which is ours to work once it falls.
+pub(crate) fn pillage_target(g: &Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
     let pl = &g.map.plots[q];
     let Some(imp) = pl.improvement_type else { return false };
-    if g.d.improvements[imp].permanent || pl.plot_city.is_some() {
+    if g.d.improvements[imp].permanent || pl.plot_city.is_some() || g.plot_is_fields(q) {
+        return false;
+    }
+    if !g.groups[grp].units.iter().any(|&o| g.unit_can_pillage(o, q)) {
         return false;
     }
     if !pl.owner.is_some_and(|o| v.civ_enemies.contains(&g.players[o].team)) {
@@ -176,7 +184,7 @@ pub fn before_army(g: &mut Game, v: &mut View, grp: GroupId) {
     }
     crate::campaign::plan(g, v);
     let Some(head) = g.group_get_head_unit(grp) else { return };
-    if !pillage_target(g, v, g.unit_plot(head)) {
+    if !pillage_target(g, v, grp, g.unit_plot(head)) {
         return;
     }
     // (A stack that may have to march home to a city in peril keeps its moves too.)
@@ -197,7 +205,7 @@ pub fn after_army(g: &mut Game, v: &View, grp: GroupId) {
         return;
     }
     let Some(head) = g.group_get_head_unit(grp) else { return };
-    if !pillage_target(g, v, g.unit_plot(head)) {
+    if !pillage_target(g, v, grp, g.unit_plot(head)) {
         return;
     }
     if let Some(u) = pillager(g, grp) {
@@ -205,27 +213,87 @@ pub fn after_army(g: &mut Game, v: &View, grp: GroupId) {
     }
 }
 
-/// A Raiders stack that no operation needs, at war: the enemy improvement within two turns that
-/// is worth most, where the danger is well under the stack's defense and no enemy city is next
-/// door (garrisons are not in the danger map). True if the stack set out.
+/// A Raiders stack that no operation needs, at war, raids (docs/RAIDS.md, section 9): an army on
+/// the countryside of a city it may raid takes the Raid order there (`raids::at_hold`); else it
+/// walks to the countryside within two turns of the enemy city whose forecast take is largest
+/// (not stripped; a plot where the danger is well under the stack's defense, two plots or more
+/// from the city where there is one, since garrisons are not in the danger map), and takes the
+/// order on arrival. With no such city, the enemy improvement within two turns that is worth most
+/// and that the rules let it pillage (no fields), on a plot with the same danger test and no
+/// enemy city next door. True if the stack acted.
 pub fn raid(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     if !has(g, v.p, Trait::Raiders) || v.civ_enemies.is_empty() {
         return false;
     }
     crate::campaign::plan(g, v);
-    if v.campaign.op_of(grp).is_some() || !g.groups[grp].units.iter().any(|&o| g.d.units[g.units[o].unit_type].pillage) {
+    if v.campaign.op_of(grp).is_some() {
         return false;
     }
     let here = g.unit_plot(u);
     let defense: i32 = g.groups[grp].units.iter().map(|&o| defense_power(g, o)).sum::<i32>().max(1);
-    let reach = v.flood.run(g, u, 2, false);
-    let near_city = |q: PlotIdx| {
+    let near_city = |g: &Game, v: &View, q: PlotIdx| {
         let (x, y) = g.map.xy(q);
         (0..DirectionType::NUM).any(|dir| g.plot_direction(x, y, DirectionType::from_usize(dir)).is_some_and(|n| g.map.plots[n].plot_city.is_some_and(|c| v.civ_enemies.contains(&g.players[g.cities[c].owner].team))))
     };
+    if let Some(a) = crate::raids::stack_army(g, grp) {
+        // On a raidable countryside already: the order here, if the stack may take it.
+        let here_city = g.map.plots[here].working_city.filter(|&c| g.plot_in_countryside(here, c) && crate::raids::raidable(g, v, c));
+        if here_city.is_some() && crate::raids::at_hold(g, v, grp, u) {
+            return true;
+        }
+        let reach = v.flood.run(g, u, 2, false);
+        // Per city: its forecast gold, and the best plot to reach (away from the city first,
+        // then the fewest turns).
+        let mut best: Option<(i32, i32, CityId, PlotIdx)> = None;
+        let mut plots: Vec<(CityId, bool, i32, PlotIdx)> = Vec::new();
+        for r in &reach {
+            let q = r.plot;
+            let Some(c) = g.map.plots[q].working_city else { continue };
+            if q == here || Some(c) == here_city || !g.plot_in_countryside(q, c) || !crate::raids::raidable(g, v, c) {
+                continue;
+            }
+            if v.danger_at(q) * 3 >= defense * 2 || g.plot_is_visible_enemy_unit_for_unit(q, u) {
+                continue;
+            }
+            plots.push((c, near_city(g, v, q), r.turns, q));
+        }
+        plots.sort_by_key(|&(c, near, turns, q)| (c, near, turns, q));
+        let mut last: Option<CityId> = None;
+        for &(c, _, turns, q) in &plots {
+            if last == Some(c) {
+                continue;
+            }
+            last = Some(c);
+            let gold = crate::raids::forecast_gold(g, a, c);
+            if gold < 1 {
+                continue;
+            }
+            if best.map_or(true, |(bg, bt, bc, _)| (gold, -turns, std::cmp::Reverse(c)) > (bg, -bt, std::cmp::Reverse(bc))) {
+                best = Some((gold, turns, c, q));
+            }
+        }
+        if let Some((gold, _, c, q)) = best {
+            crate::trace!(g, v.p, "raiders: stack {:?} goes to raid {} from {:?} (+{} gold a turn)", grp, g.d.text.name(&g.cities[c].name), g.map.xy(q), gold);
+            move_to(g, grp, q, 0);
+            // There this turn: the order now (the guard's forecast needs it standing there).
+            if alive(g, grp) && g.units.contains(u) && g.unit_plot(u) == q && crate::raids::at_hold(g, v, grp, u) {
+                return true;
+            }
+            after_army(g, v, grp);
+            if alive(g, grp) && g.group_ready_to_move(grp, true) {
+                crate::units::skip(g, grp);
+            }
+            return true;
+        }
+    }
+    // No city to raid: an improvement the rules let it pillage.
+    if !g.groups[grp].units.iter().any(|&o| g.d.units[g.units[o].unit_type].pillage) {
+        return false;
+    }
+    let reach = v.flood.run(g, u, 2, false);
     let best = reach
         .iter()
-        .filter(|r| r.plot != here && pillage_target(g, v, r.plot) && v.danger_at(r.plot) * 3 < defense * 2 && !near_city(r.plot))
+        .filter(|r| r.plot != here && pillage_target(g, v, grp, r.plot) && v.danger_at(r.plot) * 3 < defense * 2 && !near_city(g, v, r.plot))
         .map(|r| {
             let imp = g.map.plots[r.plot].improvement_type.expect("pillage target");
             let worth: i32 = g.d.improvements[imp].yield_change.iter().sum::<i32>() + 1;
@@ -233,7 +301,7 @@ pub fn raid(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         })
         .max_by_key(|&(s, q)| (s, std::cmp::Reverse(q)));
     let Some((_, q)) = best else { return false };
-    crate::trace!(g, v.p, "raiders: stack {:?} raids {:?}", grp, g.map.xy(q));
+    crate::trace!(g, v.p, "raiders: stack {:?} pillages toward {:?}", grp, g.map.xy(q));
     move_to(g, grp, q, 0);
     after_army(g, v, grp);
     if alive(g, grp) && g.group_ready_to_move(grp, true) {

@@ -29,6 +29,8 @@ import { keywordChips } from "./keywords.js";
 import { perkView } from "./perks.js";
 import { stateKey } from "./persons_mark.js";
 import { render as markup } from "./markup.js";
+import { withCalc } from "./calc.js";
+import { raidTone } from "./raids.js";
 
 // ---- Outposts in the help display (docs/NAVAL.md, section 9) -----------------------------------
 
@@ -527,6 +529,52 @@ function siegeView(c) {
   );
 }
 
+/** Raids (docs/RAIDS.md, section 8; the city query's `raid`): its state, the rule, the raiders and
+ *  what is taken a turn, with its calculation as the tooltip. */
+function raidView(c) {
+  const r = c.raid;
+  if (!r) return null;
+  const by = (r.raiders ?? []).map((x) => `the ${x.owner_name} ${x.name}`);
+  const tone = raidTone(r);
+  return h(
+    "section.section.raid-status",
+    { "aria-label": "Raid" },
+    h("h4", "Raid"),
+    h(`p${tone ? `.${tone}` : ""}`, r.label),
+    h("p", r.text),
+    by.length ? h("p.raid-raiders", `Raiders: ${by.join(", ")}.`) : null,
+    r.state === "stripped" ? null : withCalc(h("p.raid-take", `Lost: ${r.lost} production and commerce a turn. Raiders' gold: ${r.gold} a turn.`), r.calc),
+  );
+}
+
+/** The sally posture (docs/RAIDS.md, section 4; the city query's `sally`, its owner's): a select
+ *  of the three postures sending `city_sally`, the chosen one's rule under it and the shared
+ *  rule of a sally. */
+function sallyView(c, reload) {
+  const s = c.sally;
+  if (!s) return null;
+  const cur = s.options.find((o) => o.name === s.posture) ?? s.options[0];
+  const set = async (posture) => {
+    if (await run({ c: "city_sally", city: c.id, posture })) reload();
+  };
+  return h(
+    "section.section.sally",
+    { "aria-label": "Sally" },
+    h("h4", "Sally"),
+    h(
+      "label.sally-row",
+      h("span", "Posture "),
+      h(
+        "select.sally-posture",
+        { "aria-label": "Sally posture", onchange: (ev) => set(ev.target.value) },
+        s.options.map((o) => h("option", { value: o.name, selected: o.name === s.posture }, o.label)),
+      ),
+    ),
+    h("p.sally-text", cur?.text ?? ""),
+    h("p.small.dim.sally-rule", s.rule),
+  );
+}
+
 function growthView(c) {
   const ct = c.culture_threshold;
   return h(
@@ -555,6 +603,8 @@ function growthView(c) {
             `Sentinels ${c.sentinels.map((p) => (p > 0 ? `${p}%` : "breached")).join(" · ")}`,
           )
         : null,
+      // Raids (docs/RAIDS.md, section 8): contested, overrun or stripped.
+      c.raid ? h(`span.chip.raid.${raidTone(c.raid)}`, { tip: c.raid.text }, c.raid.state === "stripped" ? "Stripped" : c.raid.label) : null,
       c.besieged ? h("span.chip.bad", { tip: `Besieged by ${c.besiegers} enemy unit${c.besiegers === 1 ? "" : "s"} next to the city. ${c.harbour?.state === "open" ? "City healing and Sentinel repair run at half rate while the harbour stays open." : "No healing from the city; no Sentinel repair."}` }, "Besieged") : null,
       // Named seas (docs/NAVAL.md 10): the harbour, open or blockaded.
       c.harbour ? h(`span.chip${c.harbour.state === "blockaded" ? ".bad" : ""}.harbour`, { tip: c.harbour.text }, c.harbour.text) : null,
@@ -943,12 +993,13 @@ function screen(c, { task, choose, remove, overlay, tap, reload }) {
   const plots = overlay ? null : plotGrid(c, task);
   // This game's cultural channel after the city's numbers (its culture among them), above the
   // buildings.
-  const left = h("div.city-col", siegeView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
+  const left = h("div.city-col", siegeView(c), raidView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
   // What to build first; then the orders, where trained units go (armies.js) and the governance.
   // An outpost builds nothing and has no governor: its lane and Raise to city instead.
   if (c.outpost) return [summaryView(c, reload, overlay), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];
   const garrison = c.governance?.governed ? null : recruitView(c, reload);
-  const right = h("div.city-col", productionView(c, choose, remove, tap, reload), manageView(c, task), garrison ? h("div.section.recruit", garrison) : null, governanceView(c, reload));
+  // The sally posture beside the garrison (docs/RAIDS.md, section 4).
+  const right = h("div.city-col", productionView(c, choose, remove, tap, reload), manageView(c, task), garrison ? h("div.section.recruit", garrison) : null, sallyView(c, reload), governanceView(c, reload));
   return [summaryView(c, reload, overlay), h("div.city-cols", left, right)];
 }
 

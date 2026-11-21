@@ -865,9 +865,11 @@ Each army group is a stack; per decision, in order:
 8. escort a settler that asks for one (single units);
 9. its siege operation (below), if the stack is committed to one: at war (or while preparing
    one) always; against a barbarian city once the force is gathered, or to step back from it;
-10. hunt the best barbarian/animal/lair target within 6 turns it can take (entering an empty
+10. keep its Raid order, if its army holds one, while the guard would stay in ("Raids" below);
+11. hunt the best barbarian/animal/lair target within 6 turns it can take (entering an empty
    lair destroys it; an empty enemy city at war within 2 turns is walked into, `CAPTURE`);
-11. join a bigger stack within 3 turns, else hold in the nearest city.
+12. join a bigger stack within 3 turns, else raid the enemy city whose countryside it stands on
+   ("Raids" below), else hold in the nearest city.
 
 **Deciding an attack** (round 7g). Every attack in steps 1, 4, 5 and 10 and a landing's
 assault (`naval.rs`) is decided on the simulation of the group attack
@@ -1004,6 +1006,19 @@ them stand within 6 plots of a civ city with 6 units inside: out of reach of the
 civs field. `FFH_AI_TRACE` prints each turn's operation ("campaign vs ..."), every stack next
 to its target ("next to ...", with our army units around the city) and each strike ("strike
 on ...").
+
+**Raids** (`raids.rs`; the rules and the AI's conditions in docs/RAIDS.md, sections 9 and 12). A
+land army at war that would only hold where it stands -- the idle hold of step 12, or an
+operation's stack waiting two plots or more from its target (March and Gather waiting, a move the
+supply gate refused) -- takes the Raid order on the enemy city whose countryside it stands on
+when the rules allow it, it is not the besieger next to its operation's target, the raid would not
+end that city's investment, its forecast share is at least 1 gold, and the guard's sally forecast
+against its plot is below `RAID_SALLY_ODDS` (asked last, once per stack and plot a turn). A raiding
+stack keeps the order by holding (step 10, and the same hold points) until a branch above the hunt
+moves it (a move ends the order by rule), the guard's forecast reaches `RAID_SALLY_ODDS` (it ends
+the order and decides again), or it stands next to its operation's target in a Strike, StepIn or
+March phase (it ends a raid on that city: it is the besieger there). The AI's cities keep the
+rules' `Favoured` posture.
 
 **Assault estimate**: for each attacker, the rules' combat odds against the defender it would
 face; the stack's expected "kills" are the sum of the odds plus a third of the rest (a lost
@@ -2959,7 +2974,7 @@ whatever the win rate does, and a drop is investigated as a flaw to fix). The ho
 
 | trait | leaders | play |
 |---|---|---|
-| Raiders (pillaged gold +100%, Commando) | Decius, Basium, Amelanchier, Hannah, Tasunke, Mahala, Weevil, Faeryl, Sallos | an army stack at war pillages the improved enemy plot it stands on with one unit (taken out of the stack and back), before its orders when that costs no march (no operation needs the stack and no city of ours is in peril, or every unit has a move to spare) and after them while it holds; a stack no operation needs raids the best enemy improvement within two turns whose danger is under two thirds of its defense and that is not next to an enemy city; the land within two plots of the city our war operation is taking is spared (it is ours once the city falls). The generic AI never pillages. |
+| Raiders (pillaged gold +100%, Commando) | Decius, Basium, Amelanchier, Hannah, Tasunke, Mahala, Weevil, Faeryl, Sallos | a stack no operation needs raids (docs/RAIDS.md, section 9): on a raidable enemy countryside it takes the Raid order (`raids::at_hold`); else it walks to the countryside within two turns of the enemy city (at war, not stripped) whose forecast take is largest, on a plot whose danger is under two thirds of its defense, two plots or more from the city where there is one, and takes the order on arrival; with no such city, to the best enemy improvement within two turns the rules let it pillage (fields are raided, not pillaged: docs/RAIDS.md, section 7), under the same danger test and not next to an enemy city. An army stack at war pillages the pillageable enemy improvement it stands on with one unit (taken out of the stack and back), before its orders when that costs no march (no operation needs the stack and no city of ours is in peril, or every unit has a move to spare) and after them while it holds; the land within two plots of the city our war operation is taking is spared (it is ours once the city falls). The generic AI pillages nothing; every AI army raids from its hold points (`raids.rs`). |
 | Spiritual (no anarchy) | Capria, Varn, Arendel, Jonas, Hyborem, Lethe | civics every 2 turns at a summed gain of 40 (others every 10 at 100); keeping the state religion weighs 5 instead of 15 |
 | Arcane (adepts +20% experience) | Thessa, Valledia, Dain, Tya, Perpentach, Faeryl, Tebryn | a caster corps of (cities + 2) / 3, or with Sorcery one for every four field units if more (`MAGE_ARMY`), trained in the most productive city whose garrison holds, its Mage Guild first (`civs::casters_up_to`, the civilizations' unique casters' helper); research toward Sorcery once the economy's tier 2 is in (`ARCANE_PATH`; "Spellcasting", "Magic civilizations") |
 | Summoner (summons +1 turn, Combat I; since 2026-11-05 Summoner's Bond: +50% HP, attack, defence, magic and magic defence) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2, or with Sorcery one for every four field units if more, and the Arcane leaders' research path ("Magic civilizations"); research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasted a turn longer; since 2026-11-05 for its Bond), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (once switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |

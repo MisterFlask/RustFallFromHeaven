@@ -847,11 +847,12 @@ fn order(g: &mut Game, grp: GroupId, mission: MissionType, x: i32, y: i32, flags
 /// so the stack decides again next turn (an AI group on a multi-turn mission gets no orders until it ends,
 /// C++ `CvSelectionGroup::doTurn`: stacks walked on to plots chosen for an earlier phase while
 /// the force they were part of dwindled, or past cities of ours in peril while gathering).
-fn march(g: &mut Game, grp: GroupId, dest: PlotIdx, tp: PlotIdx) {
+fn march(g: &mut Game, v: &mut View, grp: GroupId, dest: PlotIdx, tp: PlotIdx) {
     // Not to a plot without a supply line, unless the target is within two turns of it
-    // (docs/SUPPLY.md, supply.rs): the stack holds where it is.
+    // (docs/SUPPLY.md, supply.rs): the stack holds where it is (or raids there: a raiding army
+    // is supplied).
     if !crate::supply::may_move(g, grp, dest, Some(tp)) {
-        hold_for(g, grp, tp);
+        hold_or_raid(g, v, grp, tp);
         return;
     }
     let (x, y) = g.map.xy(dest);
@@ -871,6 +872,22 @@ fn hold_for(g: &mut Game, grp: GroupId, tp: PlotIdx) {
     }
 }
 
+/// [`hold_for`], or, two plots or more from the target, the Raid order on the enemy city whose
+/// countryside the stack stands on, or the one it keeps (`raids::at_hold`; docs/RAIDS.md,
+/// section 9). The raiding stack keeps the operation's target as its mission AI.
+fn hold_or_raid(g: &mut Game, v: &mut View, grp: GroupId, tp: PlotIdx) {
+    if let Some(u) = g.group_get_head_unit(grp) {
+        let ((x, y), (tx, ty)) = (g.map.xy(g.unit_plot(u)), g.map.xy(tp));
+        if g.plot_distance(x, y, tx, ty) >= 2 && crate::raids::at_hold(g, v, grp, u) {
+            if alive(g, grp) {
+                g.group_ai_set_mission_ai(grp, Some(MissionAIType::MISSIONAI_ASSAULT), Some(tp), None);
+            }
+            return;
+        }
+    }
+    hold_for(g, grp, tp);
+}
+
 /// The target city plot of the group's last campaign order (see `order`).
 pub fn tagged(g: &Game, grp: GroupId) -> Option<PlotIdx> {
     if g.groups[grp].ai_mission_ai_type != Some(MissionAIType::MISSIONAI_ASSAULT) {
@@ -883,7 +900,7 @@ pub fn tagged(g: &Game, grp: GroupId) -> Option<PlotIdx> {
 fn go(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, dest: PlotIdx, tp: PlotIdx) {
     let here = g.unit_plot(u);
     if here == dest {
-        hold_for(g, grp, tp);
+        hold_or_raid(g, v, grp, tp);
         return;
     }
     // Farther than the stack walks this turn: our casters haste it (`magic::haste_march`).
@@ -892,7 +909,7 @@ fn go(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, dest: PlotIdx, tp: Pl
     if g.plot_distance(hx, hy, dx, dy) > pace {
         crate::magic::haste_march(g, v, grp);
     }
-    march(g, grp, dest, tp);
+    march(g, v, grp, dest, tp);
     if alive(g, grp) && g.group_ready_to_move(grp, false) && g.units.contains(u) && g.unit_moves_left(u) > 0 {
         // No path: the reached plot nearest the destination.
         let (dx, dy) = g.map.xy(dest);
@@ -912,7 +929,7 @@ fn go(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, dest: PlotIdx, tp: Pl
             })
             .copied()
         {
-            march(g, grp, r.plot, tp);
+            march(g, v, grp, r.plot, tp);
         }
     }
     finish(g, grp);
@@ -939,13 +956,13 @@ fn approach(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, op: &Op, ring: 
         .copied();
     crate::trace!(g, v.p, "  approach {:?} at {:?} -> ring {} of {:?}: {:?} (reach {}, preferred {:?})", grp, g.map.xy(here), ring, (tx, ty), best.map(|r| (g.map.xy(r.plot), r.turns)), reach.len(), preferred.map(|q| g.map.xy(q)));
     match best {
-        Some(r) if r.plot == here => hold_for(g, grp, op.plot),
+        Some(r) if r.plot == here => hold_or_raid(g, v, grp, op.plot),
         Some(r) => {
             // Not there this turn: our casters haste the stack (`magic::haste_march`).
             if r.turns >= 1 {
                 crate::magic::haste_march(g, v, grp);
             }
-            march(g, grp, r.plot, op.plot);
+            march(g, v, grp, r.plot, op.plot);
             finish(g, grp);
         }
         None => match preferred.or(op.assembly).or(op.staging) {
@@ -1016,6 +1033,7 @@ pub fn act(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, early: bool) -> 
     }
     match op.phase {
         Phase::Strike if dist <= 1 => {
+            crate::raids::stop_raiding(g, v, grp, op.city);
             if !op.struck {
                 v.campaign.ops[i].struck = true;
                 strike(g, v, &op);
@@ -1026,6 +1044,8 @@ pub fn act(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, early: bool) -> 
         }
         Phase::Strike | Phase::StepIn => {
             if dist <= 1 {
+                // The besieger: it does not raid the city it stands next to (raids.rs).
+                crate::raids::stop_raiding(g, v, grp, op.city);
                 bombard(g, grp, &op);
                 if alive(g, grp) && g.group_ready_to_move(grp, false) {
                     hold_for(g, grp, op.plot);
@@ -1038,13 +1058,14 @@ pub fn act(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, early: bool) -> 
         }
         Phase::March => {
             if dist <= 1 && g.groups[grp].units.len() >= 2 {
-                // Here early: hold the ground (siege engines work on the walls).
+                // Here early: hold the ground (siege engines work on the walls), as the besieger.
+                crate::raids::stop_raiding(g, v, grp, op.city);
                 bombard(g, grp, &op);
                 if alive(g, grp) && g.group_ready_to_move(grp, false) {
                     hold_for(g, grp, op.plot);
                 }
             } else if dist == 2 {
-                hold_for(g, grp, op.plot);
+                hold_or_raid(g, v, grp, op.plot);
             } else {
                 approach(g, v, grp, u, &op, 2);
             }
@@ -1057,7 +1078,7 @@ pub fn act(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, early: bool) -> 
             // plot waits there for the rest (stepping back would lose sight of the garrison).
             let close = op.at_war && op.have * 10 >= op.need * 7;
             if dist == 2 && close && g.plot_is_visible(op.plot, v.team) {
-                hold_for(g, grp, op.plot);
+                hold_or_raid(g, v, grp, op.plot);
                 return true;
             }
             if dist <= 1 {
@@ -1480,7 +1501,7 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
                 g.unit_join_group(u, None, true);
             }
             if let Some(grp) = g.units[u].group {
-                march(g, grp, tp, tp);
+                march(g, v, grp, tp, tp);
                 n += 1;
             }
         }

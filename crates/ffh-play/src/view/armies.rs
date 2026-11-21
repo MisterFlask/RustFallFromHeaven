@@ -135,7 +135,8 @@ pub fn supply_line_json(g: &Game, line: &SupplyLine) -> Json {
 /// Army `a`'s supply (docs/SUPPLY.md, section 5), the human's own: `state` (`supplied`, `hunger`
 /// or `starvation`, from its counter), `turn` and `of` (Hunger's turn of `SUPPLY_HUNGER_TURNS`),
 /// `turns_to_starvation` (Hunger: the turn starts with the line cut before Starvation; else
-/// null), `line` (the line as it is traced now, [`supply_line_json`]; null: cut) and `text`, the
+/// null), `line` (the line as it is traced now, [`supply_line_json`]; null: cut), `raiding` (it
+/// holds a Raid order: supplied whatever its line, docs/RAIDS.md section 3) and `text`, the
 /// state in the bare words of the Armies screen and the unit panel.
 pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
     let g = v.g;
@@ -151,7 +152,10 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
     // No line: why a supply ship of the human's on or by the army's plot is no source
     // (docs/NAVAL.md, 4.6 and 10: `the transport is in Sirens' Water, held by Lanun.`).
     let sea_why = if line.is_none() { g.army_plot(a).and_then(|q| crate::view::seas::transport_refusal(v, q)) } else { None };
+    // Raids (docs/RAIDS.md, section 3): an army holding the Raid order lives off the land.
+    let raiding = g.army_raid_city(a).is_some();
     let mut text = match state {
+        SupplyState::Supplied if raiding => "Supplied: raiding, no supply line needed.".to_string(),
         SupplyState::Supplied => match (&line, &sea_why) {
             (Some(l), _) => format!("Supplied: {}", supplied(l)),
             (None, Some(why)) => format!("No supply line: {why} Hunger from your next turn."),
@@ -180,6 +184,7 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
         "of" => of,
         "turns_to_starvation" => state.turns_to_starvation(),
         "line" => line.as_ref().map(|l| supply_line_json(g, l)),
+        "raiding" => raiding,
         "text" => text,
     }
 }
@@ -281,6 +286,8 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "upgrade_price" => upgrades.iter().map(|&(u, t)| g.unit_upgrade_price(u, t)).sum::<i32>(),
     };
     j.set("domain", "land");
+    // Its Raid order (docs/RAIDS.md, section 8): `kind` none or raid, its `text`.
+    j.set("station", crate::view::raids::station(v, a));
     if screen {
         j.set("recruits", Json::Arr(marching.into_iter().map(|u| recruit_json(v, u)).collect()));
         // This game's governors (docs/GOVERNORS.md): the empire orders for the army in the human's
