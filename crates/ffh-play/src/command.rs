@@ -264,24 +264,6 @@ impl EngageBy {
     }
 }
 
-/// A formation member: `[{"unit": u, "lane": l, "row": r}, ...]`; `None` when absent or null.
-pub fn formation_field(j: &Json, key: &str) -> Result<Option<Vec<Place>>, FieldError> {
-    let Some(v) = j.opt_value(key)?.filter(|v| !v.is_null()) else { return Ok(None) };
-    let wrong = || FieldError::wrong(key, "a formation [{\"unit\": u, \"lane\": l, \"row\": r}, ...]", v);
-    let list = v.as_arr().ok_or_else(wrong)?;
-    let mut out = Vec::with_capacity(list.len());
-    for p in list {
-        let unit = p.get("unit").and_then(Json::as_i64).and_then(|u| u32::try_from(u).ok());
-        let lane = p.get("lane").and_then(Json::as_i64).and_then(|l| u8::try_from(l).ok());
-        let row = p.get("row").and_then(Json::as_i64).and_then(|r| u8::try_from(r).ok());
-        match (unit, lane, row) {
-            (Some(u), Some(lane), Some(row)) => out.push(Place { unit: UnitId(u), lane, row }),
-            _ => return Err(wrong()),
-        }
-    }
-    Ok(Some(out))
-}
-
 /// A formation as the protocol writes it: `[{"unit": u, "lane": l, "row": r}, ...]`.
 pub fn formation_json(f: &[Place]) -> Json {
     Json::Arr(f.iter().map(|p| crate::jobj! { "unit" => p.unit, "lane" => p.lane as i32, "row" => p.row as i32 }).collect())
