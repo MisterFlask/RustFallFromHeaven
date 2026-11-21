@@ -34,6 +34,7 @@ impl Game {
     fn house_add_city(&mut self, h: HouseId, c: CityId, tell: bool) {
         self.houses[h].cities.push(c);
         self.cities[c].house = Some(h);
+        self.city_house_perk_changed(c);
         if tell {
             let name = self.d.text.name(&self.cities[c].name).to_string();
             let label = self.house_label(h);
@@ -63,6 +64,7 @@ impl Game {
     pub fn house_city_lost(&mut self, c: CityId) {
         let Some(h) = self.cities.get(c).and_then(|city| city.house) else { return };
         self.cities[c].house = None;
+        self.city_house_perk_changed(c);
         let Some(house) = self.houses.get_mut(h) else { return };
         house.cities.retain(|&x| x != c);
         if house.cities.is_empty() {
@@ -79,6 +81,7 @@ impl Game {
         for &c in &self.houses[h].cities.clone() {
             if self.cities.contains(c) {
                 self.cities[c].house = None;
+                self.city_house_perk_changed(c);
             }
         }
         self.houses.remove(h);
@@ -147,13 +150,22 @@ impl Game {
     }
 
     /// Each House of `p` whose state changed since it was last told: `House Aldric is now
-    /// Furious: its perk is off.` / `House Aldric is now Annoyed.`
+    /// Furious: its perk is off.` / `House Aldric is now Annoyed.` The perk switches here, and
+    /// only here (rule 9): off when the House is Furious now, on when it is not; its cities'
+    /// stored values follow.
     fn player_houses_tell_states(&mut self, p: PlayerId) {
         for h in self.players[p].houses.clone() {
             if !self.houses.contains(h) {
                 continue;
             }
             let state = self.house_state(h);
+            let on = state != HouseState::Furious;
+            if on != self.houses[h].perk_on {
+                self.houses[h].perk_on = on;
+                for c in self.houses[h].cities.clone() {
+                    self.city_house_perk_changed(c);
+                }
+            }
             if state == self.houses[h].told_state {
                 continue;
             }
@@ -195,6 +207,8 @@ impl Game {
         }
         let chosen = candidates[pick].clone();
         let turn = self.game_turn();
+        let leaning = Leaning { alignment: chosen.alignment, religion: chosen.religion, sympathy: chosen.sympathy, outsider: chosen.outsider };
+        let state = HouseState::of(self.d, self.house_opinion_of(p, &leaning, None).total());
         let id = self.houses.next_id();
         let house = House {
             id,
@@ -209,7 +223,9 @@ impl Game {
             outsider: chosen.outsider,
             formed_turn: turn,
             cities: Vec::new(),
-            told_state: HouseState::Cautious,
+            told_state: state,
+            // On unless it is Furious as it forms (rule 9).
+            perk_on: state != HouseState::Furious,
         };
         let h = self.houses.insert(house);
         debug_assert_eq!(h, id);
@@ -218,7 +234,7 @@ impl Game {
         for &c in &cities {
             self.house_add_city(h, c, false);
         }
-        self.houses[h].told_state = self.house_state(h);
+        debug_assert_eq!(self.houses[h].told_state, self.house_state(h));
         let label = self.house_label(h);
         let leader = leader_name(self.d, chosen.leader);
         let names: Vec<String> = cities.iter().map(|&c| self.d.text.name(&self.cities[c].name).to_string()).collect();

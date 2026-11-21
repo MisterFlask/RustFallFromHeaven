@@ -205,7 +205,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 63: Houses as records over their owner's cities (docs/HOUSES.md): `Game::houses`,
 ///   `City::house`, `Player::houses`, `house_names`, `house_turn`; `LogMark::House`,
 ///   `LogTag::House`.
-pub const FORMAT_VERSION: u32 = 63;
+/// - 64: a House's perk is a stored switch (`House::perk_on`).
+pub const FORMAT_VERSION: u32 = 64;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

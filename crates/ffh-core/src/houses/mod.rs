@@ -20,6 +20,7 @@ use crate::log::{LogMark, LogTag};
 
 mod membership;
 mod opinion;
+mod perks;
 mod pick;
 mod read;
 
@@ -52,6 +53,10 @@ pub struct House {
     pub cities: Vec<CityId>,
     /// The state its owner was last told (rule 11): a change is told in the owner's turn.
     pub told_state: HouseState,
+    /// Whether its perk is on (rule 9): set when it forms (on unless it is Furious then) and
+    /// changed only in its owner's turn pass that tells a change of state (off when it is
+    /// Furious then, on when it is not), so the cities' stored values change at one moment.
+    pub perk_on: bool,
 }
 
 impl House {
@@ -224,12 +229,12 @@ impl Game {
         Some(self.houses[h].origin) != self.player_get_civilization_type(self.houses[h].owner)
     }
 
-    /// The perk in effect in city `c` (rule 9): its House's, `None` for a city in no House or in
-    /// a Furious House. The one read the perks' effects use.
+    /// The perk in effect in city `c` (rule 9): its House's while the House's switch is on
+    /// (`House::perk_on`); `None` for a city in no House or whose House's perk is off.
     pub fn city_house_perk(&self, c: CityId) -> Option<TraitType> {
         let h = self.cities.get(c)?.house?;
         let house = self.houses.get(h)?;
-        (self.house_state(h) != HouseState::Furious).then_some(house.perk)
+        house.perk_on.then_some(house.perk)
     }
 
     /// The perk tier a House forming now rolls (rule 9): 1 before `HOUSE_PERK_TIER_2_TURN`, 2

@@ -32,6 +32,9 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
                 "order" => Json::idx(OrderType::ORDER_TRAIN), "type" => Json::idx(u),
                 "enabled" => g.city_can_train(c, u, false, false, false, false),
                 "cost" => g.city_production_needed_unit(c, u), "turns" => g.city_production_turns_left_unit(c, u, 0),
+                // The House perk's parts of its production modifier and experience.
+                "house" => house_part(g, c, g.city_house_unit_production_modifier(c, u), "", "%"),
+                "house_xp" => house_part(g, c, g.city_house_unit_experience(c, Some(u)), "", " experience"),
             };
             set_national(g, c, u, &mut j);
             out.push(j);
@@ -43,6 +46,7 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
                 "order" => Json::idx(OrderType::ORDER_CONSTRUCT), "type" => Json::idx(b),
                 "enabled" => g.city_can_construct(c, b, false, false, false),
                 "cost" => g.city_production_needed_building(c, b), "turns" => g.city_production_turns_left_building(c, b, 0),
+                "house" => house_part(g, c, g.city_house_building_production_modifier(c, b), "", "%"),
             };
             set_tier(g, c, b, &mut j);
             out.push(j);
@@ -55,6 +59,7 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
                 "order" => Json::idx(OrderType::ORDER_CREATE), "type" => Json::idx(p),
                 "enabled" => enabled,
                 "cost" => g.city_production_needed_project(c, p), "turns" => g.city_production_turns_left_project(c, p, 0),
+                "house" => house_part(g, c, g.city_house_project_production_modifier(c, p), "", "%"),
             };
             // World rituals (docs/CARDS.md): the rules line and why it cannot be chosen now.
             crate::view::rituals::buildable_fields(g, c, p, enabled, &mut j);
@@ -146,6 +151,17 @@ fn queue(v: &Viewer, c: CityId) -> Json {
         j
     });
     Json::Arr(out.collect())
+}
+
+/// The part of a calculation city `c`'s House perk gives (docs/HOUSES.md, rule 9): `{label,
+/// n, text}` with `text` `House Aldric (Scholars II): +25%` (`what` before the number where
+/// given: `House Aldric (Freeholders I): distance maintenance -50%`; `unit` after it:
+/// `+2 experience`); null where the perk gives nothing or is off.
+fn house_part(g: &ffh_core::game::Game, c: CityId, n: i32, what: &str, unit: &str) -> Json {
+    let Some(label) = g.city_house_perk_label(c).filter(|_| n != 0) else { return Json::Null };
+    let what = if what.is_empty() { String::new() } else { format!("{what} ") };
+    let text = format!("{label}: {what}{n:+}{unit}");
+    crate::jobj! { "label" => label, "n" => n, "text" => text }
 }
 
 /// One line of a city's happiness or health: what it comes from and how much (a positive count).
@@ -384,7 +400,12 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     });
     let emphasize: Vec<bool> = d.emphasizes.keys().map(|e| city.ai_emphasize[e]).collect();
     let yields = all::<YieldType>(YieldType::NUM).map(|y| {
-        crate::jobj! { "yield" => Json::idx(y), "rate" => g.city_yield_rate(c, y), "base" => city.base_yield_rate[y.idx()], "modifier" => city.yield_rate_modifier[y.idx()] }
+        // `house`: the House perk's part of the modifier (in `modifier`'s total rate, not in
+        // `modifier`, which is the city's buildings').
+        crate::jobj! {
+            "yield" => Json::idx(y), "rate" => g.city_yield_rate(c, y), "base" => city.base_yield_rate[y.idx()], "modifier" => city.yield_rate_modifier[y.idx()],
+            "house" => house_part(g, c, g.city_house_yield_modifier(c, y), "", "%"),
+        }
     });
     let commerces = all::<CommerceType>(CommerceType::NUM).map(|k| {
         // Where the commerce comes from (`getBaseCommerceRateTimes100`, `updateCommerce`): the
@@ -409,6 +430,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
             "empire" => parts[4] / 100,
             "process" => parts[5] / 100,
             "modifier" => g.city_total_commerce_rate_modifier(c, k) - 100,
+            // The House perk's part of `modifier`.
+            "house" => house_part(g, c, g.city_house_commerce_modifier(c, k), "", "%"),
         }
     });
     // What a click on a plot the city does not work takes (`alterWorkingPlot`): a citizen without
@@ -527,6 +550,16 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "sentinels" => sentinels_json(g, c),
         "sentinel_max_hp" => g.city_sentinel_max_hp(c),
         "maintenance" => g.city_maintenance(c),
+        // The House perk's parts of the maintenance (percent of the distance and city-count parts).
+        "maintenance_house" => Json::Arr(
+            [
+                house_part(g, c, g.city_house_distance_maintenance_modifier(c), "distance maintenance", "%"),
+                house_part(g, c, g.city_house_num_cities_maintenance_modifier(c), "city-count maintenance", "%"),
+            ]
+            .into_iter()
+            .filter(|j| !matches!(j, Json::Null))
+            .collect(),
+        ),
         "trade_routes" => g.city_trade_routes(c),
         "disorder" => g.city_is_disorder(c),
         "occupation" => city.occupation_timer,
@@ -543,6 +576,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
             "needed" => if city.order_queue.is_empty() { Json::Null } else { Json::from(g.city_production_needed(c)) },
             "rate" => g.city_current_production_difference(c, false, true),
             "automated" => city.production_automated,
+            // The House perk's part of the head order's production modifier.
+            "house" => house_part(g, c, house_order_modifier(g, c), "", "%"),
         },
         // This game's city works (docs/WORKS.md): the crews' work rate and their build.
         "crews" => crate::jobj! {
@@ -560,7 +595,10 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "commerces" => Json::Arr(commerces.collect()),
         "happiness" => happiness,
         "health" => health,
-        "great_people" => crate::jobj! { "progress" => city.great_people_progress, "rate" => g.city_great_people_rate(c) },
+        "great_people" => crate::jobj! {
+            "progress" => city.great_people_progress, "rate" => g.city_great_people_rate(c),
+            "house" => house_part(g, c, g.city_house_great_people_rate_modifier(c), "", "%"),
+        },
         "plots" => Json::Arr(plots),
         "specialists" => Json::Arr(specialists.collect()),
         "free_specialists" => g.city_total_free_specialists(c),
@@ -581,6 +619,20 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     // taken off).
     crate::view::rituals::city_fields(g, c, &mut out);
     Ok(out)
+}
+
+/// The House perk's part of the production modifier of city `c`'s head order (0 for none).
+fn house_order_modifier(g: &ffh_core::game::Game, c: CityId) -> i32 {
+    let Some(o) = g.cities[c].head_order() else { return 0 };
+    let k = o.data1;
+    let d = g.d;
+    let ok = |n: usize| k >= 0 && (k as usize) < n;
+    match o.order_type {
+        OrderType::ORDER_TRAIN if ok(d.units.len()) => g.city_house_unit_production_modifier(c, UnitType::from_usize(k as usize)),
+        OrderType::ORDER_CONSTRUCT if ok(d.buildings.len()) => g.city_house_building_production_modifier(c, BuildingType::from_usize(k as usize)),
+        OrderType::ORDER_CREATE if ok(d.projects.len()) => g.city_house_project_production_modifier(c, ProjectType::from_usize(k as usize)),
+        _ => 0,
+    }
 }
 
 /// City `c`'s Sentinels (docs/SIEGES.md): each one's HP left in percent (0: breached).

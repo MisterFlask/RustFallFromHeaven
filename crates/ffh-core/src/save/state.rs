@@ -61,7 +61,7 @@ persist_newtype!(
 use crate::houses::{House, HouseState};
 persist_enum!(HouseState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
 persist_struct!(House {
-    id, owner, name, leader, origin, alignment, religion, sympathy, perk, outsider, formed_turn, cities, told_state,
+    id, owner, name, leader, origin, alignment, religion, sympathy, perk, outsider, formed_turn, cities, told_state, perk_on,
 });
 
 use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Squad, SquadBody, Station};

@@ -569,6 +569,8 @@ impl Game {
 
         let mut experience = city.free_experience;
         experience += player.free_experience;
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's, every unit's and its combat's.
+        experience += self.city_house_unit_experience(c, unit);
 
         if let Some(unit) = unit {
             if let Some(unit_combat) = d.units[unit].unit_combat_type {
@@ -607,6 +609,11 @@ impl Game {
                     }
                 }
             }
+        }
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's promotions for its combat.
+        self.city_house_give_promotions(c, unit);
+        if !self.units.contains(unit) {
+            return;
         }
         // This game's building suitability (docs/SUITABILITY.md): the promotions the city's
         // buildings give the units they unlock, where the promotion's unit combats allow.
@@ -939,6 +946,8 @@ impl Game {
         // unlock, and the units a Lesser Warrens copies.
         multiplier += self.city_unlocked_unit_bonus(c, unit).1;
         multiplier += self.ev_warrens_production_modifier(c, unit);
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's, for the unit's combat.
+        multiplier += self.city_house_unit_production_modifier(c, unit);
 
         // FfH: Modified by Kael 02/11/2009 (was `std::max(0, iMultiplier)`)
         multiplier
@@ -963,6 +972,9 @@ impl Game {
             }
         }
 
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's, for a world or national wonder.
+        multiplier += self.city_house_building_production_modifier(c, building);
+
         if self.city_has_specialty(c, WONDERS) && d.buildings[building].building_class_type.is_some_and(|k| d.building_classes[k].max_global_instances != -1 || d.building_classes[k].max_team_instances != -1 || d.building_classes[k].max_player_instances != -1) {
             let base = self.city_base_yield_rate_modifier(c, YieldType::YIELD_PRODUCTION, 0);
             multiplier = (base + multiplier) * 3 / 2 - base;
@@ -980,6 +992,8 @@ impl Game {
         // FfH: Modified by Kael 08/31/2007 (the "spaceship modifier" applies to all rituals,
         // not only to `isSpaceship()` projects)
         multiplier += city.space_production_modifier;
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's, for a ritual.
+        multiplier += self.city_house_project_production_modifier(c, project);
 
         for bonus in d.bonuses.keys() {
             if self.city_has_bonus(c, bonus) {
