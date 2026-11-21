@@ -728,6 +728,19 @@ flag.
     as one chain, Hellfire 80, Wrath 90, Apocalypse 100. They no longer all come in every game.
     A card is shown to everyone when the counter is within 5 of its slot and plays when the
     counter reaches it. FFH2's message at 10 (`EVENTTRIGGER_ARMAGEDDON`) is gone.
+  - **The doom clock** (the owner's decision, 2026-11-21): the Armageddon counter also rises
+    with time, by its limit spread evenly over 300 turns at Normal speed (scaled by the speed's
+    `victory_delay_percent`: 201 Quick, 450 Epic, 900 Marathon), each game turn before the deck is
+    checked (`doom_clock_tick`, `deck/doom.rs`). FFH2 had no timed rise: the counter moved only
+    on events, and AI games reached 1-13 by turn 300 (12 games, 4 civilizations, Small map), so
+    most of the deck never played. Now the clock alone brings it to 100 (the deck's ending) by
+    turn 300; events bring that sooner, and only what lowers the counter puts it off. The
+    counter's tooltip gives the clock's rate (`doom_clock_calc`).
+    With it, only the players of the game's start raise the counter's limit
+    (`GLOBAL_COUNTER_LIMIT_PER_PLAYER`, `player_init`): in FFH2 every player born later raised it
+    too, which lowered the counter's percentage, and the deck's own civilizations, the Sundering's
+    factions and revolts (4 civilizations alive at the start, up to 18 by turn 300) held the
+    counter at 57-84 at turn 300 with the clock running.
   - **No random events.** The weighted roll for a random event each turn is gone, and with it
     every random event and quest. The triggers rules code fires (the Adaptive and Insane traits,
     lairs, Aeron's Chosen, alignment picks) still fire. Crime, which only enabled random

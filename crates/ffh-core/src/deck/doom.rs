@@ -48,6 +48,11 @@ pub const SLOTS: [i32; 10] = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 /// How far below its slot a card is revealed.
 pub const REVEAL_AHEAD: i32 = 5;
 
+/// The doom clock (not in FFH2; the owner's decision, 2026-11-21): the turns, at Normal speed,
+/// in which the clock alone takes the counter from 0 to 100 (scaled by the game speed's
+/// `victory_delay_percent`). Events add to it and subtract from it as in FFH2.
+pub const CLOCK_TURNS: i32 = 300;
+
 /// A slot of the dealt deck.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct DoomSlot {
@@ -125,6 +130,45 @@ pub fn find(key: &str) -> Option<&'static DoomCard> {
 }
 
 impl Game {
+    /// The doom clock's length in turns at this game's speed: the clock alone brings the counter
+    /// from 0 to 100 in this many turns ([`CLOCK_TURNS`] at Normal).
+    pub fn doom_clock_turns(&self) -> i32 {
+        (CLOCK_TURNS * self.d.game_speeds[self.game_speed_type()].victory_delay_percent / 100).max(1)
+    }
+
+    /// The raw counter points the clock has added once `turns` game turns are played (before
+    /// GAMEOPTION_DOUBLE_GLOBAL_COUNTER doubles them): the limit spread evenly over the clock.
+    fn doom_clock_points(&self, turns: i32) -> i32 {
+        (self.global_counter_limit as i64 * turns as i64 / self.doom_clock_turns() as i64) as i32
+    }
+
+    /// The doom clock's tick, each game turn before the deck is checked: the counter rises by
+    /// the clock's points for this turn (`change_global_counter`, so the game options apply).
+    pub fn doom_clock_tick(&mut self) {
+        let n = self.elapsed_game_turns;
+        let add = self.doom_clock_points(n + 1) - self.doom_clock_points(n);
+        self.change_global_counter(add);
+    }
+
+    /// The clock's lines for the counter's tooltip: its rate and when it alone fills the
+    /// counter. Empty with GAMEOPTION_NO_GLOBAL_COUNTER.
+    pub fn doom_clock_calc(&self) -> Vec<String> {
+        if self.is_option(GameOptionType::GAMEOPTION_NO_GLOBAL_COUNTER) {
+            return Vec::new();
+        }
+        let double = self.is_option(GameOptionType::GAMEOPTION_DOUBLE_GLOBAL_COUNTER);
+        let turns = self.doom_clock_turns();
+        let full = if double { (turns + 1) / 2 } else { turns };
+        // The rate in hundredths of a point a turn.
+        let rate = 10000 * if double { 2 } else { 1 } / turns;
+        let mut lines = vec![format!("Clock: +{}.{:02} a turn; 100 at turn {full} from the clock alone.", rate / 100, rate % 100)];
+        if double {
+            lines.push("Double Armageddon counter: every change x2.".to_string());
+        }
+        lines.push("Also changed by: razing cities, the Ashen Veil and the Octopus Overlords, demon units, some rituals and spells.".to_string());
+        lines
+    }
+
     /// The keys of the cards dealt to some slot.
     fn doom_dealt_keys(&self) -> Vec<&str> {
         self.doom.slots.iter().filter_map(|s| s.card.as_ref().map(|(k, _)| k.as_str())).collect()
@@ -282,6 +326,25 @@ mod tests {
         let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_SMALL", 3));
         g.game_init();
         g
+    }
+
+    #[test]
+    fn the_clock_alone_fills_the_counter_in_its_turns() {
+        let mut g = game();
+        let turns = g.doom_clock_turns();
+        let speed = g.d.game_speeds[g.game_speed_type()].victory_delay_percent;
+        assert_eq!(turns, CLOCK_TURNS * speed / 100);
+        g.global_counter = 0;
+        for n in 0..turns {
+            g.elapsed_game_turns = n;
+            g.doom_clock_tick();
+            if n + 1 == turns / 2 {
+                assert!((g.get_global_counter() - 50).abs() <= 1, "half way: {}", g.get_global_counter());
+            }
+        }
+        assert_eq!(g.global_counter, g.global_counter_limit);
+        assert_eq!(g.get_global_counter(), 100);
+        assert!(!g.doom_clock_calc().is_empty());
     }
 
     #[test]

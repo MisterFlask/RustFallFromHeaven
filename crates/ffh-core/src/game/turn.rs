@@ -107,6 +107,9 @@ impl Game {
         // Not in C++: crusades and loans (docs/CRUSADE.md; nothing runs with the flag off).
         self.crusade_do_turn();
 
+        // Not in C++: the doom clock raises the Armageddon counter (docs/CARDS.md, section 4).
+        self.doom_clock_tick();
+
         // Not in C++: the Armageddon deck (docs/DECKS.md): its cards are revealed and fired.
         self.doom_do_turn();
 
