@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|breakaway|diplomacy|automate|armies|governors|engagement|supply|election|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice DIR`,
+//! capture|attack|automoves|load|trade|breakaway|diplomacy|automate|armies|governors|governors-mixed|engagement|supply|election|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -696,20 +696,33 @@ pub struct StagedGovernors {
     pub army: ffh_core::ids::ArmyId,
     pub capital: ffh_core::ids::CityId,
     pub city: ffh_core::ids::CityId,
+    /// `stage governors-mixed`: the city run by hand.
+    pub hand_run: Option<ffh_core::ids::CityId>,
     pub turn: i32,
 }
 
 impl StagedGovernors {
     pub fn to_json(&self) -> Json {
         crate::jobj! {
-            "stage" => "governors", "save" => self.save.display().to_string(), "army" => self.army, "capital" => self.capital,
-            "city" => self.city, "turn" => self.turn,
+            "stage" => if self.hand_run.is_some() { "governors-mixed" } else { "governors" }, "save" => self.save.display().to_string(), "army" => self.army, "capital" => self.capital,
+            "city" => self.city, "hand_run" => self.hand_run, "turn" => self.turn,
         }
     }
 }
 
 /// Writes a [`StagedGovernors`] into `dir` (a game directory).
 pub fn governors(dir: &Path) -> Result<StagedGovernors, String> {
+    governors_scene(dir, false)
+}
+
+/// `stage governors-mixed`: a mixed empire under Republic (docs/GOVERNORS.md, "Who runs cities"):
+/// the scene of [`governors`] with a third city, the `capital` and `city` handed to governors and
+/// the third (`hand_run`) run by hand; the human knows Cartography (City States can be adopted).
+pub fn governors_mixed(dir: &Path) -> Result<StagedGovernors, String> {
+    governors_scene(dir, true)
+}
+
+fn governors_scene(dir: &Path, mixed: bool) -> Result<StagedGovernors, String> {
     let d = ffh_data::global();
     let mut s = duel_with(dir, 11, 4, None, &[])?;
     let h = s.human;
@@ -731,15 +744,39 @@ pub fn governors(dir: &Path) -> Result<StagedGovernors, String> {
     let &(ax, ay) = free_plots_near_capital(g, h)?.first().ok_or("no free plot near the capital")?;
     let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, w, ax, ay, None, None)).collect();
     let army = g.army_form(h, &units)?;
-    let aristocracy = d.t::<CivicType>("CIVIC_ARISTOCRACY");
-    let option = d.civics[aristocracy].civic_option_type.ok_or("no civic option")?;
-    g.player_set_civics(h, option, Some(aristocracy));
-    if !g.city_is_governed(capital) || !g.city_is_governed(city) {
-        return Err("the cities are not governed".into());
+    let mut hand_run = None;
+    if mixed {
+        let third = g
+            .map
+            .plot_ids()
+            .map(|q| g.map.xy(q))
+            .filter(|&(x, y)| g.map.plots[g.map.plot_xy(x, y).unwrap()].area == area && g.player_can_found(h, x, y, false))
+            .filter(|&(x, y)| g.players[h].cities.iter().all(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) >= 4))
+            .min_by_key(|&(x, y)| (g.plot_distance(x, y, cx, cy), x, y))
+            .ok_or("no site for a third city")?;
+        let third = g.player_init_city(h, third.0, third.1, true, true);
+        // Its own production (else its screen opens as the production prompt).
+        g.city_push_order(third, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, false, false);
+        hand_run = Some(third);
+        let republic = d.t::<CivicType>("CIVIC_REPUBLIC");
+        let option = d.civics[republic].civic_option_type.ok_or("no civic option")?;
+        g.player_set_civics(h, option, Some(republic));
+        g.player_set_city_governed(h, capital, true)?;
+        g.player_set_city_governed(h, city, true)?;
+        let team = g.players[h].team;
+        let cartography = d.t::<TechType>("TECH_CARTOGRAPHY");
+        g.team_set_has_tech(team, cartography, true, Some(h), false, false);
+    } else {
+        let aristocracy = d.t::<CivicType>("CIVIC_ARISTOCRACY");
+        let option = d.civics[aristocracy].civic_option_type.ok_or("no civic option")?;
+        g.player_set_civics(h, option, Some(aristocracy));
+    }
+    if !g.city_is_governed(capital) || !g.city_is_governed(city) || hand_run.is_some_and(|c| g.city_is_governed(c)) {
+        return Err("the cities are not run as the scene needs".into());
     }
     g.player_army_sync(h);
-    let paths = s.save("governors").map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedGovernors { save: paths.save, army, capital, city, turn: s.g.game_turn() })
+    let paths = s.save(if mixed { "governors-mixed" } else { "governors" }).map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedGovernors { save: paths.save, army, capital, city, hand_run, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point (turn 4 of a duel, seed 11, armies and engagements on)

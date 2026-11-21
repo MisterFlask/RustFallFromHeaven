@@ -1,15 +1,16 @@
 // Governors (this game's own rules, docs/GOVERNORS.md): the city screen's Governance section, the
 // Governors screen (F9) and the two steps of an empire order.
 //
-// The government civic decides who runs the cities: under Despotism or God King every city is
-// ruled directly; under any other government every city, the capital included, is governed. A
-// governed city has a role (proposed from its building tiers, or chosen by the player when it
-// suits the city well enough), and its governor builds by it. The player sets up to two empire
-// priorities (roles that weigh more in the proposals) and places empire orders in governed cities:
-// a unit (for an army too), a wonder, a palace or a ritual, ahead of the governor's choice. The
-// `governors` query has the screen; `empire_items` and `empire_cities` the order's two steps; the
-// buttons send `govern_role`, `govern_priorities`, `empire_order` and `empire_order_remove`,
-// which the server checks.
+// Under City States and Aristocracy every city, the capital included, is governed. Under any other
+// government a city is run by hand until the player hands it to a governor, and the player takes
+// it back at will (`govern_city`); an empire may be mixed. A governed city has a role (proposed
+// from its building tiers, or chosen by the player when it suits the city well enough), and its
+// governor builds by it. The player sets up to two empire priorities (roles that weigh more in the
+// proposals) and places empire orders in governed cities: a unit (for an army too), a wonder, a
+// palace or a ritual, ahead of the governor's choice. The `governors` query has the screen;
+// `empire_items` and `empire_cities` the order's two steps; the buttons send `govern_city`,
+// `govern_role`, `govern_priorities`, `empire_order` and `empire_order_remove`, which the server
+// checks.
 
 import * as api from "./api.js";
 import { S, dname, turns, orderName, emit } from "./state.js";
@@ -35,7 +36,7 @@ addHelp({
   group: "Game options",
   title: "Governors",
   body: () => [
-    h("p", "The government decides who runs the cities. Under Despotism and God King every city is ruled directly. Under any other government every city, the capital included, is governed. A change of government hands every city over or takes every city back at once."),
+    h("p", "Under City States and Aristocracy every city, the capital included, is run by a governor; adopting one hands every city over. Under any other government a city is run by hand until you hand it to a governor; you take it back at will, city by city, at no cost. Leaving City States or Aristocracy changes no city. A city gained is run by hand."),
     h("h4", "Governed cities"),
     h(
       "ul",
@@ -65,22 +66,54 @@ function roleLabel(c) {
   return `${dname("CityRoleType", c.role)} (${c.role_overridden ? "overruled" : "proposed"})`;
 }
 
-/** "Government: Aristocracy. Every city is governed." */
-function modeLine(government, direct) {
-  return `Government: ${dname("CivicType", government)}. Every city is ${direct ? "ruled directly" : "governed"}.`;
+/** "Government: Aristocracy. Every city is run by a governor." or "Government: Republic.
+ *  Governed: 2 of 5 cities." */
+function modeLine(r) {
+  const gov = `Government: ${dname("CivicType", r.government)}.`;
+  if (r.civics_govern) return `${gov} Every city is run by a governor.`;
+  return `${gov} Governed: ${r.governed} of ${r.cities.length} cit${r.cities.length === 1 ? "y" : "ies"}.`;
+}
+
+/** What handing a city to a governor changes (docs/GOVERNORS.md, "Handed over"). */
+const HAND_OVER_TIP = "Kept: requisition orders; units, wonders, palaces and rituals as empire orders. Dropped: other orders.";
+/** What taking a city back changes ("Taken back"). */
+const TAKE_BACK_TIP = "Kept: the queue, empire orders as ordinary orders. Production and emphasis: yours.";
+
+/** The toggle of who runs city `x` (a `governors` city or the city screen's `governance`):
+ *  `Hand to a governor` on a hand-run city, `Run by hand` on a governed one; none under a civic
+ *  that governs every city. `done` runs after the command was accepted. */
+export function governToggle(x, cityId, done) {
+  if (x.civics_govern) return null;
+  const governed = !!x.governed;
+  return h(
+    "button.small.govern-toggle",
+    {
+      "data-city": cityId,
+      disabled: !!x.toggle_why,
+      tip: x.toggle_why ?? (governed ? TAKE_BACK_TIP : HAND_OVER_TIP),
+      onclick: async () => {
+        if (await run({ c: "govern_city", city: cityId, governed: !governed })) done?.();
+      },
+    },
+    governed ? "Run by hand" : "Hand to a governor",
+  );
 }
 
 /** The city screen's Governance section (null for another's city). `reload` re-reads the screen. */
-export function governanceView(c) {
+export function governanceView(c, reload) {
   const k = c.governance;
   if (!k) return null;
+  const gov = dname("CivicType", k.government);
+  const toggle = governToggle(k, c.id, reload);
   if (!k.governed) {
-    return h("div.section.governance", h("h4", "Governance"), h("p", `Ruled directly. Government: ${dname("CivicType", k.government)}.`));
+    return h("div.section.governance", h("h4", "Governance"), h("p", `Run by hand. Government: ${gov}.`), toggle ? h("div.row", toggle) : null);
   }
   return h(
     "div.section.governance",
     h("h4", "Governance"),
-    h("p", `Role: ${roleLabel(k)}${k.suitability !== null && k.suitability !== undefined ? `, suitability ${k.suitability}%` : ""}.`),
+    h("p", `Governed. Role: ${roleLabel(k)}${k.suitability !== null && k.suitability !== undefined ? `, suitability ${k.suitability}%` : ""}.`),
+    k.civics_govern ? h("p.dim", `${gov}: every city is run by a governor.`) : null,
+    toggle ? h("div.row", toggle) : null,
   );
 }
 
@@ -146,6 +179,7 @@ function roleCard(c, r, act, go) {
       "div.role-card-head",
       h("button.link", { onclick: () => go(c.city), title: "Open the city" }, h("b", c.name)),
       c.capital ? h("span.dim", " (capital)") : null,
+      r.civics_govern ? null : governToggle({ ...c, civics_govern: false }, c.city, act.reload),
     ),
     h("div.role-line", h("span", "Role: "), h("b", dname("CityRoleType", c.role)), h("span.dim", ` (${c.role_overridden ? "overruled" : "proposed"}), suitability ${c.suitability}%`)),
     h("ul.role-keys", keys),
@@ -178,10 +212,24 @@ export async function openGovernors({ openCity } = {}) {
       m.close(null);
       openCity?.(id);
     };
-    const mode = h("p.governors-mode", modeLine(r.government, r.direct_rule));
-    if (r.direct_rule) {
-      const rows = r.cities.map((c) => h("tr", { "data-city": c.city }, h("td", h("button.link", { onclick: () => go(c.city), title: "Open the city" }, c.name), c.capital ? h("span.dim", " (capital)") : null), h("td.num", `${c.production}`)));
-      m.setBody(mode, h("table.governors", h("thead", h("tr", h("th", "City"), h("th", { title: "Production" }, "Prod."))), h("tbody", rows)));
+    act.reload = load;
+    const mode = h("p.governors-mode", modeLine(r));
+    // The cities run by hand (none under a civic that governs every city), each with its toggle.
+    const byHand = r.cities.filter((c) => !c.governed);
+    const handRows = byHand.map((c) =>
+      h(
+        "tr",
+        { "data-city": c.city },
+        h("td", h("button.link", { onclick: () => go(c.city), title: "Open the city" }, c.name), c.capital ? h("span.dim", " (capital)") : null),
+        h("td.num", `${c.production}`),
+        h("td", governToggle({ ...c, civics_govern: r.civics_govern }, c.city, load)),
+      ),
+    );
+    const handTable = byHand.length
+      ? [h("h4", `Run by hand (${byHand.length})`), h("table.governors", h("thead", h("tr", h("th", "City"), h("th", { title: "Production" }, "Prod."), h("th", ""))), h("tbody", handRows))]
+      : [];
+    if (!r.governed) {
+      m.setBody(mode, ...handTable);
       return;
     }
     const roles = (S.data?.tables?.CityRoleType ?? []).map((_, i) => i);
@@ -228,8 +276,9 @@ export async function openGovernors({ openCity } = {}) {
           "Empire order",
         ),
       ),
-      h("h4", `Cities (${cards.length})`),
+      h("h4", `Governed (${cards.length})`),
       h("div.role-cards", cards),
+      ...handTable,
     );
   };
   await load();

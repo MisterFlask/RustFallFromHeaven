@@ -51,6 +51,9 @@ pub const POLICIES: &[(&str, Policy)] = &[
     // (the rules' default unit for an army's requisition: the human picks the cities, not the unit)
     ("requisition_unit", Policy::Fixed),
     ("govern_cities", Policy::Advisor),
+    // (a city is run by hand until the human hands it over: the `govern_city` command)
+    ("choose_city_governance", Policy::Fixed),
+    ("govern_gained_city", Policy::Fixed),
     // (docs/WORKS.md: the cities' crews choose their next build as the AI's do)
     ("choose_crew_build", Policy::Advisor),
     ("choose_research", Policy::Deferred),
@@ -323,6 +326,20 @@ impl Controller for HumanController {
     /// This game's governors: the governors of the human's governed cities act on their own.
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.advisor.govern_cities(g, p);
+    }
+
+    /// This game's governors: the human hands its cities over by command (`govern_city`); the AI
+    /// chooses while it plays the human's civilization.
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        if !g.players[p].human {
+            self.advisor.choose_city_governance(g, p);
+        }
+    }
+
+    /// This game's governors: a city the human gains is run by hand (the AI's choice while it
+    /// plays the human's civilization).
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        !g.players[g.cities[c].owner].human && self.advisor.govern_gained_city(g, c)
     }
 
     /// This game's city works (docs/WORKS.md): the crews of the human's cities choose their next

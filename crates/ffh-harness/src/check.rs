@@ -338,14 +338,13 @@ pub fn check(g: &Game) {
     }
 
     // This game's governors (docs/GOVERNORS.md): a governed city always has production and a
-    // role; every city of a player is in the mode its
-    // civics give.
+    // role; under a governed civic every city is governed.
     for p in g.player_ids() {
-        let direct = g.player_rules_directly(p);
+        let civics_govern = g.player_civics_govern(p);
         for &c in &g.players[p].cities {
             // An outpost has no governor in any mode (docs/NAVAL.md, 9.2).
-            if !g.cities[c].outpost && g.city_is_governed(c) == direct {
-                fail(format!("city {} of player {} is not in its owner's mode (direct rule: {direct})", g.cities[c].name, p.0));
+            if civics_govern && !g.cities[c].outpost && !g.city_is_governed(c) {
+                fail(format!("city {} of player {} is run by hand under a governed civic", g.cities[c].name, p.0));
             }
             if g.city_is_governed(c) && g.cities[c].order_queue.is_empty() {
                 fail(format!("governed city {} of player {} has no production", g.cities[c].name, p.0));

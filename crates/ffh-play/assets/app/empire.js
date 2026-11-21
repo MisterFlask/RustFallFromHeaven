@@ -699,6 +699,14 @@ export async function openResearchPaths() {
 /** The civics screen: each civic option with its civics (the current one marked, those not
  *  available greyed); clicking civics picks a new set, whose anarchy and upkeep the server
  *  computes (`civics {with}`); Revolution sends `update_civics`. */
+/** The civics preview's line of who will run the cities (this game's governors): adopting a civic
+ *  that governs every city, or leaving one. */
+export function ruleChangeLine(p) {
+  if (p.rule_change === "governed" && !p.cities) return "Every city will be run by a governor.";
+  if (p.rule_change === "governed") return p.cities === 1 ? "Your city will be run by a governor." : `Your ${p.cities} cities will be run by governors.`;
+  return "Your cities stay governed until you take them back.";
+}
+
 export async function openCivics() {
   const m = openModal({ title: "Civics", body: [h("p.dim", "…")], tag: "civics", wide: true, buttons: [{ label: "Close", value: null }] });
   let picked = [];
@@ -743,8 +751,8 @@ export async function openCivics() {
       ? h(
           "div.civic-summary",
           p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : (p.changed ? h("span.warn", { title: "The revolution timer, a civic you cannot leave, or anarchy" }, "This change is not possible now.") : h("span.warn", "No change.")),
-          // This game's governors: the government decides who runs the cities.
-          p.rule_change ? h("div.civic-rule-change", p.rule_change === "governed" ? "Every city will be handed to governors." : "Every city will be ruled directly.") : null,
+          // This game's governors: a governed civic governs every city; leaving one changes none.
+          p.rule_change ? h("div.civic-rule-change", ruleChangeLine(p)) : null,
         )
       : h("div.civic-summary.dim", `Upkeep ${c.upkeep} gold per turn.${c.anarchy ? ` Anarchy: ${turns(c.anarchy)}.` : ""}${c.revolution_timer ? ` Next revolution in ${turns(c.revolution_timer)}.` : ""} Pick civics to see the change.`);
     m.setBody(h("div.civics", columns), summary);

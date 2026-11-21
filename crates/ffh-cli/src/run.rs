@@ -102,6 +102,12 @@ impl Controller for Timed {
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.time(|| self.inner.govern_cities(g, p))
     }
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        self.time(|| self.inner.choose_city_governance(g, p))
+    }
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        self.time(|| self.inner.govern_gained_city(g, c))
+    }
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
         self.time(|| self.inner.choose_crew_build(g, c))
     }
@@ -262,6 +268,12 @@ impl Controller for CppCitizens {
     }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.inner.govern_cities(g, p)
+    }
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        self.inner.choose_city_governance(g, p)
+    }
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        self.inner.govern_gained_city(g, c)
     }
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
         self.inner.choose_crew_build(g, c)
@@ -1129,6 +1141,12 @@ impl Controller for FreeRider {
     }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.inner.govern_cities(g, p)
+    }
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        self.inner.choose_city_governance(g, p)
+    }
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        self.inner.govern_gained_city(g, c)
     }
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
         self.inner.choose_crew_build(g, c)

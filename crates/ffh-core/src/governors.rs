@@ -1,10 +1,13 @@
 //! Governors (this game's own rules, not FFH2's; docs/GOVERNORS.md).
 //!
-//! **Who runs the cities.** The government civic decides: under a civic with `direct_rule`
-//! (Despotism, God King) every city of its player is ruled directly; under any other every city
-//! is governed, the capital included ([`Game::player_rules_directly`]). A city gained takes its
-//! owner's mode; a change of civics hands every city over, or takes every city back, at once
-//! ([`Game::player_governance_sync`]). Barbarian cities are always ruled directly.
+//! **Who runs the cities.** Under a civic with `governed` (City States, Aristocracy) every city of
+//! its player is governed, the capital included ([`Game::player_civics_govern`]); adopting one
+//! hands every city over ([`Game::player_governance_sync`]). Under any other a city is run by hand
+//! unless its owner hands it to a governor, and the owner takes it back at will, city by city
+//! ([`Game::player_set_city_governed`]); leaving a governed civic changes no city. A city gained
+//! is run by hand (unless a governed civic governs it, or its owner's controller hands it over at
+//! once: [`crate::controller::Controller::govern_gained_city`]). Barbarian cities are never
+//! governed.
 //!
 //! **Roles.** A governed city has a role (`city_roles.jsonc`), which its governor runs it by: the
 //! role's flavors weigh what it builds and its emphasis is the citizens'. The role is the city's
@@ -54,10 +57,61 @@ impl Game {
         !self.cities[c].direct_rule && !self.player_is_barbarian(self.cities[c].owner) && !self.cities[c].outpost
     }
 
-    /// Whether player `p` rules its cities directly: one of its civics has `direct_rule`, or it is
-    /// the barbarian player. Otherwise every city of it is governed.
-    pub fn player_rules_directly(&self, p: PlayerId) -> bool {
-        self.player_is_barbarian(p) || self.players[p].civics.iter().flatten().any(|&civic| self.d.civics[civic].direct_rule)
+    /// Player `p`'s civic that governs every city of it (`governed`: City States, Aristocracy), if
+    /// any. Never the barbarians'.
+    pub fn player_governing_civic(&self, p: PlayerId) -> Option<CivicType> {
+        if self.player_is_barbarian(p) {
+            return None;
+        }
+        self.players[p].civics.iter().flatten().copied().find(|&civic| self.d.civics[civic].governed)
+    }
+
+    /// Whether player `p`'s civics govern every city of it ([`Game::player_governing_civic`]).
+    /// Otherwise each city is run by hand unless its owner handed it to a governor.
+    pub fn player_civics_govern(&self, p: PlayerId) -> bool {
+        self.player_governing_civic(p).is_some()
+    }
+
+    /// Whether player `p` may hand its city `c` to a governor (`governed`) or take it back (else
+    /// why not): not under a governed civic (taking back), not an outpost, not a barbarian city.
+    pub fn player_check_city_governed(&self, p: PlayerId, c: CityId, governed: bool) -> Result<(), String> {
+        if !self.cities.contains(c) || self.cities[c].owner != p {
+            return Err("Not a city of yours.".into());
+        }
+        if self.player_is_barbarian(p) {
+            return Err("Barbarian cities have no governor.".into());
+        }
+        if self.cities[c].outpost {
+            return Err("An outpost has no governor.".into());
+        }
+        if !governed {
+            if let Some(civic) = self.player_governing_civic(p) {
+                let name = self.d.text.name(&self.d.civics[civic].base.description);
+                return Err(format!("{name}: every city is run by a governor."));
+            }
+        }
+        if self.city_is_governed(c) == governed {
+            return Err(if governed { "The city is run by a governor." } else { "The city is run by hand." }.into());
+        }
+        Ok(())
+    }
+
+    /// Player `p` hands its city `c` to a governor (`governed`) or takes it back, at no cost and
+    /// at once ([`Game::player_check_city_governed`]). Handed over, the city keeps its requisition
+    /// orders and the orders that may be empire orders (as empire orders), drops the others and
+    /// takes its role and its role's emphasis; with an empty queue its governor chooses at once.
+    /// Taken back, it keeps its queue (empire orders as ordinary orders) and drops the emphasis.
+    pub fn player_set_city_governed(&mut self, p: PlayerId, c: CityId, governed: bool) -> Result<(), String> {
+        self.player_check_city_governed(p, c, governed)?;
+        if governed {
+            self.city_become_governed(c);
+            if self.cities.contains(c) && self.cities[c].order_queue.is_empty() {
+                self.city_choose_production(c, None, None, None, false, false);
+            }
+        } else {
+            self.city_become_direct(c);
+        }
+        Ok(())
     }
 
     /// The role city `c` is governed by; `None` for a directly ruled city.
@@ -261,15 +315,18 @@ impl Game {
     // A city's arrival and departure, and the change of civics
     // ---------------------------------------------------------------------------------------
 
-    /// City `c` is new to its owner (founded, captured, traded, flipped): it takes its owner's
-    /// mode. A founded city (`assign`) is handed to its governor at once; a city that changed
-    /// hands once its state is restored (`city_governance_acquired`), so that its role is
-    /// proposed for the city as it is (its civilization).
+    /// City `c` is new to its owner (founded, captured, traded, flipped, an outpost raised): it is
+    /// run by hand, unless its owner's civics govern every city or its owner hands it to a
+    /// governor at once (`Controller::govern_gained_city`). A founded city (`assign`) is handed to
+    /// its governor at once; a city that changed hands once its state is restored
+    /// (`city_governance_acquired`), so that its role is proposed for the city as it is (its
+    /// civilization).
     pub fn city_governance_init(&mut self, c: CityId, assign: bool) {
         let p = self.cities[c].owner;
         self.cities[c].role = None;
         self.cities[c].role_overridden = false;
-        self.cities[c].direct_rule = self.player_rules_directly(p);
+        let governed = !self.player_is_barbarian(p) && (self.player_civics_govern(p) || self.controller(p).govern_gained_city(self, c));
+        self.cities[c].direct_rule = !governed;
         if !self.city_is_governed(c) {
             return;
         }
@@ -296,41 +353,29 @@ impl Game {
         }
     }
 
-    /// Player `p`'s cities take the mode its civics give (`player_rules_directly`): all handed
-    /// over, or all taken back, at once, with one message. Called when its civics change and in
-    /// its turn.
+    /// Under a governed civic ([`Game::player_civics_govern`]) every city of player `p` run by
+    /// hand is handed to its governor, with one message; then its controller may hand cities over
+    /// or take them back (`Controller::choose_city_governance`). Called when its civics change and
+    /// in its turn. Leaving a governed civic changes no city.
     pub fn player_governance_sync(&mut self, p: PlayerId) {
         if self.player_is_barbarian(p) {
             return;
         }
-        let direct = self.player_rules_directly(p);
-        let mut changed = 0;
-        for c in self.players[p].cities.clone() {
-            if !self.cities.contains(c) {
-                continue;
-            }
-            let governed = self.city_is_governed(c);
-            if direct && governed {
-                self.city_become_direct(c);
-                changed += 1;
-            } else if !direct && !governed {
-                self.city_become_governed(c);
-                changed += 1;
-                if self.cities.contains(c) && self.cities[c].order_queue.is_empty() && !self.cities[c].outpost {
-                    self.city_choose_production(c, None, None, None, false, false);
+        if let Some(civic) = self.player_governing_civic(p) {
+            let mut changed = 0;
+            for c in self.players[p].cities.clone() {
+                if self.cities.contains(c) && !self.cities[c].outpost && !self.city_is_governed(c) && self.player_set_city_governed(p, c, true).is_ok() {
+                    changed += 1;
                 }
             }
+            if changed > 0 {
+                let turn = self.game_turn();
+                let name = self.d.text.name(&self.d.civics[civic].base.description).to_string();
+                self.log.msg(turn, Some(p), || format!("Government: {name}: every city is run by a governor ({changed} handed to governors)."));
+            }
         }
-        if changed > 0 {
-            let turn = self.game_turn();
-            self.log.msg(turn, Some(p), || {
-                if direct {
-                    format!("Government: every city is ruled directly ({changed} taken back from governors).")
-                } else {
-                    format!("Government: every city is governed ({changed} handed to governors).")
-                }
-            });
-        }
+        let controller = self.controller(p);
+        controller.choose_city_governance(self, p);
     }
 
     /// City `c` goes to its governor: production automated, its units for its own garrison, its
@@ -476,7 +521,8 @@ impl Game {
     // The turn
     // ---------------------------------------------------------------------------------------
 
-    /// Player `p`'s governance in its turn processing: its cities in the mode its civics give,
+    /// Player `p`'s governance in its turn processing: under a governed civic every city governed,
+    /// its controller's choice of cities to hand over or take back (`player_governance_sync`),
     /// governed cities automated, the governors' own initiative (a human's governed cities).
     pub fn player_governance_turn(&mut self, p: PlayerId) {
         if self.player_is_barbarian(p) || !self.players[p].alive {

@@ -276,8 +276,8 @@ pub struct City {
     /// Where the city's trained land combat units go when their order names no destination
     /// (docs/ARMIES.md); `None`: its own garrison.
     pub recruit_default: Option<crate::army::RecruitDest>,
-    /// This game's governors (docs/GOVERNORS.md): ruled directly (else governed); its owner's
-    /// government civic decides (`Game::player_rules_directly`).
+    /// This game's governors (docs/GOVERNORS.md): run by hand (else governed); its owner's choice
+    /// (`Game::player_set_city_governed`), governed under a governed civic.
     pub direct_rule: bool,
     /// Its role (`None` until it is first governed): the proposal (`Game::city_role_proposal`)
     /// unless the player chose another (`role_overridden`).
