@@ -41,11 +41,13 @@
 //! 8. **Attack cost**: every committed attacker (sat-out ones included) has made its attack
 //!    (`made_attack`, `attacks_made`) and pays today's attack move cost unless it moves in.
 //!    Withdrawn attackers stay in their group and army; the survivors stay on their plot.
-//! 9. **The result** (spec 1.7; the owner's rule, 2026-11-21): the side whose units lost more HP
-//!    in the engagement lost it ([`super::engage::engage_loser`]: each fighter's HP when the
-//!    engagement began less its HP at the end, a fallen one's all of it and a withdrawn one's all
-//!    it had left (its withdrawal took the place of a killing hit), the Sentinels the defender's;
-//!    a tie has no loser). The plot falls only when the defenders lost and none of
+//! 9. **The result** (spec 1.7; the owner's rules, 2026-11-21): who lost
+//!    ([`super::engage::engage_verdict`]), by the first rule that tells the sides apart: (1) a
+//!    side all of whose units that fought fell; (2) the side with more units fallen; (3) the side
+//!    that lost more HP (each fighter's HP when the engagement began less its HP at the end, a
+//!    fallen one's all of it and a withdrawn one's all it had left, its withdrawal having taken
+//!    the place of a killing hit; the Sentinels count here only, on the defender's side); none:
+//!    no loser. The plot falls only when the defenders lost and none of
 //!    them is left on it (in the line or in reserve, a city's Sentinels standing included): then
 //!    the launcher's group moves in (a city is captured as today), and only it; its mission queue
 //!    is cleared. Otherwise nobody moves. A kill a Sentinel makes or suffers has no per-kill
@@ -54,9 +56,9 @@
 
 use ffh_data::*;
 
-use super::engage::{damage_from_hp, engage_loser, Eng, Fought};
+use super::engage::{damage_from_hp, engage_verdict, Eng, Fought};
 use super::formation::{FighterIdx, Side};
-use super::report::{EngageResult, HealSource, KillKind, LogEvent, Stage, XpSource};
+use super::report::{DecidedBy, EngageResult, HealSource, KillKind, LogEvent, LogFate, Stage, XpSource};
 use super::sink::Sink;
 use crate::game::Game;
 use crate::ids::*;
@@ -78,9 +80,11 @@ pub(crate) struct Post {
     /// Defenders that fled (withdrawals), and the defender's units pushed back (step 7b).
     pub fled: i32,
     pub pushed: i32,
-    /// Each side's HP lost (centi-HP) and the loser ([`super::engage::engage_loser`]).
+    /// Each side's HP lost (centi-HP), the loser and the rule that found it
+    /// ([`super::engage::engage_verdict`]).
     pub hp_lost: [i64; 2],
     pub loser: Option<Side>,
+    pub decided_by: DecidedBy,
 }
 
 impl Game {
@@ -94,12 +98,12 @@ impl Game {
         let d = self.d;
         let n = e.units.len();
         let to = e.to;
-        // Who lost: the side whose units lost more HP (as fought: before the Font of Rebirth
-        // spares anyone, below).
-        let hp_lost = e.setup.hp_lost(&e.setup.start_hp(), &r.hp, |i| r.withdrew(i));
-        let loser = engage_loser(hp_lost);
+        // Who lost (step 9; as fought: before the Font of Rebirth spares anyone, below).
+        let tally = e.setup.tally(&e.setup.start_hp(), &r.hp, |i| !matches!(r.fate[i], LogFate::SatOut), |i| r.killed(i), |i| r.withdrew(i));
+        let (loser, decided_by) = engage_verdict(tally);
         let defenders_lost = loser == Some(Side::Defender);
-        let mut post = Post { result: EngageResult::Held, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, xp: vec![0; n], kills: vec![0; n], fled: 0, pushed: 0, hp_lost, loser };
+        let hp_lost = tally.map(|t| t.hp_lost);
+        let mut post = Post { result: EngageResult::Held, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, xp: vec![0; n], kills: vec![0; n], fled: 0, pushed: 0, hp_lost, loser, decided_by };
         if let Some(s) = sink.as_mut() {
             s.stage(Stage::Post);
         }
@@ -379,7 +383,7 @@ impl Game {
                 }
                 let by = e.of(e.side(t).other()).find(|&h| {
                     let hu = e.units[h];
-                    r.dealt(h, t) > 0 && self.units.contains(hu) && self.units[hu].damage_type_combat[DamageType::DAMAGE_POISON] > 0
+                    r.dealt(h, t) > 0 && self.units.contains(hu) && self.units[hu].damage_type_attack[DamageType::DAMAGE_POISON] > 0
                 });
                 let Some(h) = by else { continue };
                 if self.unit_is_alive(tu) && self.units[tu].damage > 0 {

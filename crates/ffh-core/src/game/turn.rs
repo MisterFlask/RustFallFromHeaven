@@ -770,11 +770,12 @@ impl Game {
         length
     }
 
-    /// C++ `CvGame::getBestLandUnitCombat` (at least 1).
-    pub fn best_land_unit_combat(&self) -> i32 {
+    /// The rating of the best land unit type built so far (C++ `CvGame::getBestLandUnitCombat`,
+    /// its strength there; docs/UNIT_STATS.md, "Ratings"), at least 1.
+    pub fn best_land_unit_rating(&self) -> i32 {
         match self.best_land_unit {
             None => 1,
-            Some(unit) => std::cmp::max(1, self.d.units[unit].combat),
+            Some(unit) => std::cmp::max(1, self.d.units[unit].rating()),
         }
     }
 
@@ -1671,10 +1672,10 @@ mod tests {
             assert_eq!(g.production_per_population(Some(h)), expected);
         }
 
-        assert_eq!(g.best_land_unit_combat(), 1);
+        assert_eq!(g.best_land_unit_rating(), 1);
         let warrior = d.t::<UnitType>("UNIT_WARRIOR");
         g.best_land_unit = Some(warrior);
-        assert_eq!(g.best_land_unit_combat(), std::cmp::max(1, d.units[warrior].combat));
+        assert_eq!(g.best_land_unit_rating(), std::cmp::max(1, d.units[warrior].rating()));
     }
 
     #[test]

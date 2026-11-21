@@ -50,10 +50,12 @@ use crate::ids::*;
 mod fleet;
 mod march;
 mod requisition;
+mod squad;
 mod supply;
 
 pub use fleet::{ArmyDomain, EscortTarget, Station};
 pub use march::March;
+pub use squad::{Squad, SquadBody, SquadDest, SquadLayout, SQUAD_CELLS, SQUAD_LANES};
 pub use supply::{SupplyLine, SupplyShipRefusal, SupplySource, SupplyState};
 
 /// A persistent army (`Game::armies`).
@@ -73,11 +75,6 @@ pub struct Army {
     /// The cities it requisitions units from, in the order its owner picked them (only its
     /// owner's cities: a city lost, traded, razed or flipped leaves every list).
     pub requisition: Vec<CityId>,
-    /// Its battle tactic (docs/TACTICS.md): how its units are arranged in every battle it fights.
-    pub tactic: BattleTacticType,
-    /// The tactic it takes at the start of its owner's next turn processing (the same as `tactic`
-    /// when no change is pending): [`Game::army_set_tactic`].
-    pub tactic_next: BattleTacticType,
     /// Its owner's turn starts in a row its supply line was cut at (docs/SUPPLY.md): 0 supplied,
     /// 1 to `SUPPLY_HUNGER_TURNS` hungry, above starving ([`Game::army_supply_state`]).
     pub unsupplied_turns: i32,
@@ -128,7 +125,7 @@ impl Game {
     /// [`Game::unit_is_army_unit`] refuses every hero).
     pub fn unit_type_is_army_unit(&self, unit_type: UnitType) -> bool {
         let info = &self.d.units[unit_type];
-        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 || info.animal {
+        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.attack_rating() <= 0 || info.animal {
             return false;
         }
         if hero_promotion(self.d).is_some_and(|h| info.free_promotions[h]) {
@@ -199,8 +196,7 @@ impl Game {
         };
         let name = (1..).map(|n| format!("{} {kind}", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
         let turn = self.game_turn();
-        let line = self.tactic_line();
-        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, disband_to: None, formed_turn: turn, requisition: Vec::new(), tactic: line, tactic_next: line, unsupplied_turns: 0, domain, station: Station::None, carried: false });
+        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, disband_to: None, formed_turn: turn, requisition: Vec::new(), unsupplied_turns: 0, domain, station: Station::None, carried: false });
         self.players[p].armies.push(a);
         a
     }
@@ -276,6 +272,12 @@ impl Game {
     /// army units outside a garrison has one army; the oldest group with units of an army keeps it;
     /// a disbanded army in the city it marched to joins its garrison; armies without units go.
     pub fn player_army_sync(&mut self, p: PlayerId) {
+        self.player_army_sync_armies(p);
+        // The squads follow the armies (squad.rs).
+        self.player_squad_sync(p);
+    }
+
+    fn player_army_sync_armies(&mut self, p: PlayerId) {
         if self.player_is_barbarian(p) {
             return;
         }
@@ -314,16 +316,7 @@ impl Game {
             // Its army: the first not yet claimed among its units', else a new one.
             let a = match members.iter().filter_map(|&u| self.units[u].army).find(|a| self.armies.contains(*a) && !claimed.contains(a) && self.armies[*a].domain == domain) {
                 Some(a) => a,
-                None => {
-                    // A split-off part: the tactic of the army most of its units came from.
-                    let from = self.units_source_tactics(&members, None);
-                    let a = self.army_create(p, domain);
-                    if let Some((tactic, next)) = from {
-                        self.armies[a].tactic = tactic;
-                        self.armies[a].tactic_next = next;
-                    }
-                    a
-                }
+                None => self.army_create(p, domain),
             };
             claimed.insert(a);
             // Supply (docs/SUPPLY.md): a part split off takes its army's counter, armies grouped
@@ -443,17 +436,11 @@ impl Game {
 
     /// Forms a new army of `units` (army units of `p` on one plot), in one group of their own.
     pub fn army_form(&mut self, p: PlayerId, units: &[UnitId]) -> Result<ArmyId, &'static str> {
-        let plot = self.army_units_plot(p, units)?;
-        // Its tactic: that of the army or garrison most of its units came from (docs/TACTICS.md).
-        let from = self.units_source_tactics(units, Some(plot));
+        self.army_units_plot(p, units)?;
         // Its supply counter: the highest of the armies its units came from (0 from a garrison).
         let unsupplied = self.units_unsupplied_turns(units);
         let domain = self.unit_army_domain(units[0]).expect("army units");
         let a = self.army_create(p, domain);
-        if let Some((tactic, next)) = from {
-            self.armies[a].tactic = tactic;
-            self.armies[a].tactic_next = next;
-        }
         self.armies[a].unsupplied_turns = unsupplied;
         let first = units[0];
         // Units that are exactly one group already keep it (a ship or an army leaving port).
@@ -578,78 +565,6 @@ impl Game {
         Ok(())
     }
 
-    /// Sets army `a`'s battle tactic (docs/TACTICS.md): it takes effect at the start of `p`'s next
-    /// turn processing (`Army::tactic_next`); setting the tactic it has cancels a pending change.
-    pub fn army_set_tactic(&mut self, p: PlayerId, a: ArmyId, tactic: BattleTacticType) -> ArmyResult {
-        if !self.armies.contains(a) || self.armies[a].owner != p {
-            return Err("no such army");
-        }
-        if tactic.idx() >= self.d.battle_tactics.len() {
-            return Err("no such tactic");
-        }
-        if self.armies[a].domain == ArmyDomain::Sea {
-            return Err("a fleet has no battle tactic");
-        }
-        self.armies[a].tactic_next = tactic;
-        Ok(())
-    }
-
-    /// Sets the battle tactic of city `c`'s garrison (docs/TACTICS.md): it takes effect at the start
-    /// of `p`'s next turn processing (`City::garrison_tactic_next`).
-    pub fn city_set_garrison_tactic(&mut self, p: PlayerId, c: CityId, tactic: BattleTacticType) -> ArmyResult {
-        if !self.cities.contains(c) || self.cities[c].owner != p {
-            return Err("not your city");
-        }
-        if tactic.idx() >= self.d.battle_tactics.len() {
-            return Err("no such tactic");
-        }
-        self.cities[c].garrison_tactic_next = tactic;
-        Ok(())
-    }
-
-    /// The tactics changed for `p`'s armies and garrisons take effect (docs/TACTICS.md; the start of
-    /// its turn processing, `player_do_turn`).
-    pub fn player_apply_tactics(&mut self, p: PlayerId) {
-        for a in self.players[p].armies.clone() {
-            if self.armies.contains(a) {
-                let army = &mut self.armies[a];
-                army.tactic = army.tactic_next;
-            }
-        }
-        for c in self.players[p].cities.clone() {
-            if self.cities.contains(c) {
-                let city = &mut self.cities[c];
-                city.garrison_tactic = city.garrison_tactic_next;
-            }
-        }
-    }
-
-    /// The tactics (`tactic`, `tactic_next`) of the body most of `units` come from: by army, and with
-    /// `plot`, the garrison of its city counting for the city (as [`Game::engage_side_tactic`]
-    /// counts them; an army first on a tie, then the lower army id). `None`: none of them is in an
-    /// army or that garrison.
-    fn units_source_tactics(&self, units: &[UnitId], plot: Option<PlotIdx>) -> Option<(BattleTacticType, BattleTacticType)> {
-        let city = plot.and_then(|q| self.map.plots[q].plot_city).filter(|&c| self.cities.contains(c));
-        let mut armies: Vec<(ArmyId, i32)> = Vec::new();
-        let mut garrison = 0;
-        for &u in units {
-            if let Some(a) = self.units[u].army.filter(|&a| self.armies.contains(a)) {
-                match armies.iter_mut().find(|x| x.0 == a) {
-                    Some(x) => x.1 += 1,
-                    None => armies.push((a, 1)),
-                }
-            } else if city.is_some() && self.unit_garrison_city(u) == city {
-                garrison += 1;
-            }
-        }
-        armies.sort_by_key(|&(a, n)| (Reverse(n), a));
-        match (armies.first(), city) {
-            (Some(&(a, n)), _) if n >= garrison => Some((self.armies[a].tactic, self.armies[a].tactic_next)),
-            (_, Some(c)) if garrison > 0 => Some((self.cities[c].garrison_tactic, self.cities[c].garrison_tactic_next)),
-            _ => None,
-        }
-    }
-
     /// The highest supply counter (`Army::unsupplied_turns`) of the armies `units` are in (0: none
     /// is in an army).
     fn units_unsupplied_turns(&self, units: &[UnitId]) -> i32 {
@@ -705,10 +620,10 @@ impl Game {
         Ok(())
     }
 
-    /// Unit `u`'s best upgrade (the strongest, then the dearest): one it can afford now, or with
+    /// Unit `u`'s best upgrade (the highest rating, then the dearest): one it can afford now, or with
     /// `test_visible` one it could upgrade to with the gold.
     pub fn unit_best_upgrade(&self, u: UnitId, test_visible: bool) -> Option<UnitType> {
-        self.d.units.keys().filter(|&t| self.unit_can_upgrade(u, Some(t), test_visible)).max_by_key(|&t| (self.d.units[t].combat, self.d.units[t].production_cost, Reverse(t)))
+        self.d.units.keys().filter(|&t| self.unit_can_upgrade(u, Some(t), test_visible)).max_by_key(|&t| (self.d.units[t].rating(), self.d.units[t].production_cost, Reverse(t)))
     }
 
     /// Army `a`'s units in the order Upgrade all takes them: the most experienced first.

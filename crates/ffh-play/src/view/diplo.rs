@@ -398,7 +398,7 @@ fn troops(v: &Viewer, with: PlayerId) -> Json {
         .iter()
         .copied()
         .filter(|&u| g.units.contains(u) && g.crusade_unit_lendable(u))
-        .map(|u| crate::jobj! { "unit" => u, "type" => Json::idx(g.units[u].unit_type), "strength" => g.crusade_unit_strength(u), "x" => g.units[u].x, "y" => g.units[u].y })
+        .map(|u| crate::jobj! { "unit" => u, "type" => Json::idx(g.units[u].unit_type), "strength" => g.crusade_unit_force(u), "x" => g.units[u].x, "y" => g.units[u].y })
         .collect();
     lend.set("units", Json::Arr(units));
     crate::jobj! {

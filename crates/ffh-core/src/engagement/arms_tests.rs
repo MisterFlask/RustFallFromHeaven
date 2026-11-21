@@ -153,10 +153,12 @@ fn the_thunderhead_tower_strike_is_logged() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.build("BUILDING_THUNDERHEAD_TOWER");
-    w.unit(p0, "UNIT_AXEMAN", from);
+    let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     let catapult = w.unit(p0, "UNIT_CATAPULT", from);
+    // One army: one squad, the catapult in its rear row (docs/ENGAGEMENTS.md, "Squads").
+    w.g.army_form(p0, &[axeman, catapult]).expect("an army");
     w.unit(p1, "UNIT_WARRIOR", to);
-    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, formation: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
+    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, squad: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
     let log = w.g.battle_report(out.report).and_then(|r| r.log.clone()).expect("a log");
     let b = log.fighters.iter().position(|f| f.unit == catapult).expect("in the log") as FighterIdx;
     let strike = log.events.iter().find_map(|e| match e {
@@ -227,7 +229,7 @@ fn the_moat_holds_the_first_battle_of_the_turn() {
     assert!(s.of(Side::Attacker).all(|i| s.fighters[i].arms.hold_melee_rounds == 1));
     assert!(s.of(Side::Defender).all(|i| s.fighters[i].arms.hold_melee_rounds == 0));
     assert!(w.g.city_first_battle_this_turn(w.city));
-    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, formation: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
+    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, squad: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
     let log = w.g.battle_report(out.report).and_then(|r| r.log.clone()).expect("a log");
     assert!(log.events.iter().any(|e| matches!(e, LogEvent::Action(a) if a.round == 1 && a.note == Some(Note::Held))), "the warrior was held in round 1");
     assert_eq!(w.g.cities[w.city].owner, p1);
@@ -239,21 +241,23 @@ fn the_moat_holds_the_first_battle_of_the_turn() {
     assert!(s.of(Side::Attacker).all(|i| s.fighters[i].arms.hold_melee_rounds == 0));
 }
 
-/// Trench: the attacker has 3 fewer slots on its plot; the defender's are unchanged; every
-/// worker can dig it.
+/// Trench: the attacker's hits deal 60% in round 1 on its plot (no slot changes: every battle
+/// is a squad against a squad); every worker can dig it.
 #[test]
-fn a_trench_narrows_the_attacker() {
+fn a_trench_slows_the_attacker() {
     let mut w = world();
     let (from, to) = (w.from, w.to);
     // The trench on `from`, attacked from the city's plot.
     let ctx = HitCtx::new(to, from);
-    let open = w.g.engage_slots(&ctx);
+    let open = w.g.engage_ground(&ctx);
+    assert_eq!(open.trench_pct, 0);
     let trench = w.g.d.t::<ImprovementType>("IMPROVEMENT_TRENCH");
     w.g.map.plots[from].improvement_type = Some(trench);
-    let dug = w.g.engage_slots(&ctx);
-    assert_eq!(dug.att(), open.att() - 3);
-    assert_eq!(dug.def(), open.def());
-    assert!(dug.sides[0].changes.iter().any(|c| c.src == SlotSource::Improvement(trench) && c.delta == -3));
+    let dug = w.g.engage_ground(&ctx);
+    assert_eq!(dug.trench_pct, 60);
+    let params = crate::engagement::formation::Params::from_defines(&w.g.d.defines);
+    assert!(dug.rules(&params).contains(&crate::engagement::GroundRule::Trench { pct: 60 }));
+    assert_eq!(w.g.engage_slots(&ctx), w.g.engage_slots(&HitCtx::new(to, from)));
     let d = w.g.d;
     let build = d.t::<BuildType>("BUILD_TRENCH");
     // The Road's builders (`same_builders_as`, docs/WORKS.md): the cities' crews and the army

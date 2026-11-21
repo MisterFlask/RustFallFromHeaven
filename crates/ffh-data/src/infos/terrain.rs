@@ -110,9 +110,10 @@ pub struct TerrainInfo {
     pub river_yield_change: [i32; YieldType::NUM],
     pub hills_yield_change: [i32; YieldType::NUM],
     // ---- This game's own: engagement combat (docs/ENGAGEMENTS.md) ----
-    /// `iEngagementSlotsChange`: each side's engagement slots on a flat plot of this terrain
-    /// without a feature that sets its own change (`GameData::engagement_slots_change`).
-    pub engagement_slots_change: i32,
+    /// Open ground on a flat plot without a forest or jungle (docs/ENGAGEMENTS.md, "The ground").
+    pub engagement_open: bool,
+    /// A marsh: no charges, large units weaker (docs/ENGAGEMENTS.md, "The ground").
+    pub engagement_mire: bool,
     // ---- This game's own: the cards' terrains (docs/CARDS.md) ----
     /// The Sky Falls' Crater: no improvement can be built on a plot of this terrain
     /// (`Game::plot_can_have_improvement`).
@@ -146,7 +147,8 @@ pub fn read_terrain(rd: &Rd) -> TerrainInfo {
         yield_: rd.yields("yields"),
         river_yield_change: rd.yields("river_yield_change"),
         hills_yield_change: rd.yields("hills_yield_change"),
-        engagement_slots_change: rd.int("engagement_slots_change"),
+        engagement_open: rd.bool("engagement_open"),
+        engagement_mire: rd.bool("engagement_mire"),
         no_improvement: rd.bool("no_improvement"),
         unworkable: rd.bool("unworkable"),
     }
@@ -209,9 +211,9 @@ pub struct FeatureInfo {
     /// `isTerrain(i)` (`TerrainBooleans`): terrains the feature may be placed on.
     pub terrain: IdxVec<TerrainType, bool>,
     // ---- This game's own: engagement combat (docs/ENGAGEMENTS.md) ----
-    /// `iEngagementSlotsChange`: each side's engagement slots on a plot with this feature,
-    /// replacing the terrain's where non-zero (`GameData::engagement_slots_change`).
-    pub engagement_slots_change: i32,
+    /// A forest or jungle: no charges, arrows and stones fly short, stabs stronger, large units
+    /// weaker (docs/ENGAGEMENTS.md, "The ground").
+    pub engagement_forest: bool,
 }
 
 /// C++ `CvFeatureInfo::read` + `readPass2` (`FeatureUpgrade`).
@@ -248,7 +250,7 @@ pub fn read_feature(rd: &Rd) -> FeatureInfo {
         river_yield_change: rd.yields("river_yield_change"),
         hills_yield_change: rd.yields("hills_yield_change"),
         terrain: rd.pairs_bool("terrain_booleans"),
-        engagement_slots_change: rd.int("engagement_slots_change"),
+        engagement_forest: rd.bool("engagement_forest"),
     }
 }
 
@@ -513,9 +515,9 @@ pub struct ImprovementInfo {
     /// `getImprovementBonusDiscoverRand(b)` are its other fields.
     pub improvement_bonus: IdxVec<BonusType, ImprovementBonusInfo>,
     /// This game's own (a great-person card's key, docs/CARDS.md section 2):
-    /// `engagement_attacker_slots_change`, the change to the attacker's slots in battles on its
-    /// plot (before the minimum).
-    pub engagement_attacker_slots_change: i32,
+    /// `engagement_attacker_first_round_percent`: the attacker's hits in round 1 of battles on
+    /// its plot deal this percent (0: no change; the Trench).
+    pub engagement_attacker_first_round_percent: i32,
     // This game's (the Trading Post card, docs/CARDS.md)
     /// The plots within this distance of the improvement (its own included) are its builder's
     /// territory, whatever their culture (`claim_range`; 0: no claim). An improvement with a
@@ -594,7 +596,7 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         tech_yield_changes: yields_by_type(rd, "tech_yield_changes", "prereq_tech", "tech_yields"),
         route_yield_changes: yields_by_type(rd, "route_yield_changes", "route_type", "route_yields"),
         improvement_bonus: improvement_bonuses(rd),
-        engagement_attacker_slots_change: rd.int("engagement_attacker_slots_change"),
+        engagement_attacker_first_round_percent: rd.int("engagement_attacker_first_round_percent"),
         claim_range: rd.int("claim_range"),
         min_city_distance: rd.int("min_city_distance"),
         battle_sentinels: rd.int("battle_sentinels"),

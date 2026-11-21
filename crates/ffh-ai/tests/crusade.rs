@@ -192,10 +192,10 @@ fn duel(seed: u32, attacker: &str, defender: &str, ratio: i32, baseline: bool) -
     units(&mut g, PlayerId(1), "UNIT_WARRIOR", 1, 3, 8, UnitAIType::UNITAI_CITY_DEFENSE);
     let a0 = units(&mut g, PlayerId(0), attacker, 4, 4, 5, UnitAIType::UNITAI_ATTACK);
     let a1 = if baseline { units(&mut g, PlayerId(0), attacker, 4, 4, 5, UnitAIType::UNITAI_ATTACK) } else { units(&mut g, PlayerId(1), attacker, 4, 4, 8, UnitAIType::UNITAI_ATTACK) };
-    let lent: i32 = a0.iter().chain(&a1).map(|&u| g.crusade_unit_strength(u)).sum();
+    let lent: i32 = a0.iter().chain(&a1).map(|&u| g.crusade_unit_force(u)).sum();
     let dt = g.d.t::<UnitType>(defender);
     let probe = g.player_init_unit(PlayerId(2), dt, 14, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
-    let each = g.crusade_unit_strength(probe).max(1);
+    let each = g.crusade_unit_force(probe).max(1);
     let n_def = (lent * 100 / ratio / each).max(1) as usize;
     if n_def > 1 {
         units(&mut g, PlayerId(2), defender, n_def - 1, 14, 5, UnitAIType::UNITAI_CITY_DEFENSE);

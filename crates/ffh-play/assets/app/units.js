@@ -15,13 +15,15 @@ import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn, unitFigure, up
 import { effectsOf, infoTip, partsList } from "./infotips.js";
 import { marchLine } from "./armies.js";
 import { exploreShort, exploreFull } from "./explore.js";
-import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
+import { battleTerrain, openPlan, preferredRow, flashBattle, engageBrief } from "./engagements.js";
+import { unitCard } from "./unit_card.js";
 import { portLine, seaLineWarns } from "./sea.js";
 import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
 import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
 import { withCalc } from "./calc.js";
+import { squadBoard, squadName, roman, stripGroups, setSquadUnitTip } from "./squads.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -155,6 +157,8 @@ function reply() {
 export function initUnits(view, panelEl) {
   mapView = view;
   panel = panelEl;
+  // The squad board's units show the unit card, as the strip's do.
+  setSquadUnitTip((u, hint) => cardOf({ ...(reply()?.units?.find((d) => d.id === u.id) ?? {}), ...u }, hint));
   on("applied", (c, reply) => {
     if (c?.units && S.sel && c.units.some((u) => S.sel.units.includes(u))) advance = { x: S.sel.x, y: S.sel.y };
     // Engagement combat: the battle the command launched (several units may fall at once, and
@@ -985,7 +989,7 @@ function showTip() {
   }
   const units = unitsAt(x, y);
   if (units.length) {
-    // The plot query's units carry their strength, level and promotions (C++ plot help).
+    // The plot query's units carry their attack and defence, level and promotions (C++ plot help).
     const known = new Map((p && p.x === x && p.y === y ? (p.units ?? []) : []).map((u) => [u.id, u]));
     const shown = units.slice(0, 8).map((u0) => {
       const u = { ...u0, ...(known.get(u0.id) ?? {}) };
@@ -993,7 +997,7 @@ function showTip() {
       return h(
         "div.tip-unit",
         `${dname("UnitType", u.type)}`,
-        u.strength !== undefined ? ` ${u.strength}${u.defense_strength !== undefined && u.defense_strength !== u.strength ? `/${u.defense_strength}` : ""}⚔` : "",
+        ratingShort(u) ? ` ${ratingShort(u)}` : "",
         h("span.dim", ` ${playerName(u.owner)}${u.level > 1 ? `, level ${u.level}` : ""}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`),
         promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
         // Ritual: Upgrade's stacks on a golem (the view's line).
@@ -1208,7 +1212,7 @@ function actionLabel(a) {
       return a.label;
     case "upgrade": {
       const u = info("UnitType", a.unit);
-      return `Upgrade: ${dname("UnitType", a.unit)} (${a.price} gold${u ? `; ${u.combat}/${u.combat_defense} strength, ${u.moves} moves` : ""})`;
+      return `Upgrade: ${dname("UnitType", a.unit)} (${a.price} gold${u ? `; ${ratingShort(u)}, ${u.moves} moves` : ""})`;
     }
   }
   return a.kind;
@@ -1443,27 +1447,135 @@ function armyBadge(u) {
   return null;
 }
 
+/** Squads (docs/ENGAGEMENTS.md, "Squads"): the unit's squad as a badge ("II"), or null. */
+function squadBadge(u) {
+  if (!u.squad) return null;
+  return h("span.badge.squad", { title: `${squadName(u.squad)}: ${u.squad.auto ? "Auto" : "Hand-set"}` }, roman(u.squad.num));
+}
+
+/** Squads: the squad board of the selection's plot in a dialog (the `group` query's `squads`),
+ *  re-read after each change. */
+export async function openSquads() {
+  if (!S.sel) return;
+  const units = [...S.sel.units];
+  const { x, y } = S.sel;
+  const m = openModal({ title: `Squads at (${x}, ${y})`, tag: "squads", wide: true, body: [h("p.dim", "…")], buttons: [{ label: "Close", value: null }], help: "squads" });
+  const load = async () => {
+    let r;
+    try {
+      r = await api.query("group", { units });
+    } catch (e) {
+      if (!m.closed) m.setBody(h("p.warn", errorText(e)));
+      return;
+    }
+    if (m.closed) return;
+    const details = new Map((r.units ?? []).map((u) => [u.id, u]));
+    const unitOf = (id) => (S.units.get(id) || details.get(id) ? { ...(S.units.get(id) ?? {}), ...(details.get(id) ?? {}) } : null);
+    m.setBody(r.squads?.length ? squadBoard(r.squads, { unitOf, changed: load }) : h("p.dim", "No squads here."));
+  };
+  await load();
+  return m;
+}
+
+/** Squads: dragging a unit of the strip onto another squad's group moves it there
+ *  (`squad_move`, the first free cell of its best row); a press that moves less than 6 px stays a
+ *  click. */
+function wireStripDrag(strip) {
+  let drag = null;
+  let swallow = false;
+  const groupAt = (x, y) => document.elementFromPoint(x, y)?.closest?.(".strip-squad[data-squad]") ?? null;
+  strip.addEventListener("pointerdown", (e) => {
+    const chip = e.target.closest(".unit-chip[data-unit]");
+    const from = chip?.closest(".strip-squad[data-squad]");
+    if (!chip || !from || e.button > 0) return;
+    drag = { unit: Number(chip.dataset.unit), from: from.dataset.squad, x: e.clientX, y: e.clientY, on: false, ghost: null, chip, over: null };
+  });
+  strip.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    if (!drag.on && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
+      drag.on = true;
+      drag.chip.setPointerCapture?.(e.pointerId);
+      const fig = drag.chip.querySelector(".figure");
+      drag.ghost = h("div.sq-ghost", fig ? fig.cloneNode(true) : null);
+      document.body.append(drag.ghost);
+    }
+    if (!drag.on) return;
+    drag.ghost.style.left = `${e.clientX}px`;
+    drag.ghost.style.top = `${e.clientY}px`;
+    const g = groupAt(e.clientX, e.clientY);
+    const over = g && g.dataset.squad !== drag.from ? g : null;
+    if (over !== drag.over) {
+      drag.over?.classList.remove("drop");
+      drag.over = over;
+      over?.classList.add("drop");
+    }
+  });
+  const end = async (e, cancel) => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    d.ghost?.remove();
+    d.over?.classList.remove("drop");
+    if (!d.on) return;
+    swallow = true;
+    setTimeout(() => (swallow = false), 0);
+    if (cancel || !d.over) return;
+    if (await run({ c: "squad_move", unit: d.unit, squad: Number(d.over.dataset.squad), cell: null })) refreshGroup();
+  };
+  strip.addEventListener("pointerup", (e) => end(e, false));
+  strip.addEventListener("pointercancel", (e) => end(e, true));
+  strip.addEventListener(
+    "click",
+    (e) => {
+      if (!swallow) return;
+      swallow = false;
+      e.stopPropagation();
+      e.preventDefault();
+    },
+    true,
+  );
+}
+
 /** Engagement combat (docs/ENGAGEMENTS.md): the row the unit prefers and what it does there as a
- *  badge, its A, Dv and battle HP in the tooltip; null without engagements (or a sea or air unit). */
+ *  badge (the row's tooltip is the unit card); null without engagements (or a sea or air unit). */
 function roleBadge(u) {
   const row = preferredRow(u);
   if (!row) return null;
-  return h("span.badge.role", { title: engageText(u) }, row);
+  return h("span.badge.role", row);
 }
 
-/** "Front: 2 strikes · A 4 · Dv 5 · HP 55/120 · speed 4". */
-const engageText = (u) => `${preferredRow(u)} · ${engageNumbers(u)}`;
-
-const ENGAGE_TITLE =
-  "In a battle: the row it stands in decides what it does and how many times (front, middle, rear: its own rows); the auto formation puts it in the row it prefers first. ATK and DEF: its attack and defence; MAG and MDEF: its magic (spells) and magic defence; ACC: its chance to hit, less the target's EVA (evasion); CRIT: its crit chance; HP: its health in a battle; speed: when it acts (the fastest first)";
-
 /** The lead unit's battle numbers (engagement combat): the row it prefers and what it does there,
- *  A, Dv and HP; null without engagements (or for a sea or air unit). */
+ *  ATK, DEF and battle HP, the unit card as its tooltip; null without engagements (or for a sea or
+ *  air unit). */
 function engageLine(u) {
   const row = u ? preferredRow(u) : "";
   if (!row) return null;
-  return h("div.engage-line", { title: ENGAGE_TITLE }, h("b", row), h("span.dim", ` · ${engageNumbers(u)}`));
+  return h("div.engage-line", { tip: () => cardOf(u) }, h("b", row), h("span.dim", ` · ${engageBrief(u)}`));
 }
+
+/** The unit's state as the card's chips: a promotion waiting, its automation, army, summon's
+ *  turns, cargo, what it is doing, its siege, its great person's card. */
+function stateChips(u) {
+  const act = activityOf(u);
+  return [
+    u.promo_ready ? h("span.badge.promo", "promote") : null,
+    automationBadge(u),
+    armyBadge(u),
+    u.summon_turns ? h("span.badge", `${u.summon_turns} turns left`) : null,
+    u.cargo?.length ? h("span.badge", `${u.cargo.length} aboard`) : null,
+    u.transport !== null && u.transport !== undefined ? h("span.badge", "aboard") : null,
+    act ? h("span.badge", humanize(act)) : null,
+    u.siege?.turn > 0 ? h("span.badge.warn", `${u.siege.label}: no healing`) : u.besieged ? h("span.badge.warn", "besieged: no city healing") : null,
+    cardBadge(u),
+  ].filter(Boolean);
+}
+
+/** Unit `u`'s card (unit_card.js) as a tooltip: its state's chips, `hint` its click's. */
+function cardOf(u, hint = null) {
+  return unitCard(u, { chips: stateChips(u), hint, figure: unitFigure(u.type, u.owner, 56) ?? unitIcon(u.type, ownerLook(u.owner)) });
+}
+
+const CLICK_HINT = "Click: select its group. Ctrl-click: add or remove this unit.";
 
 /** The selection's army in one line: its size (and target), its recruits marching to it and in
  *  training for it, its supply; the Armies screen [F5] has the
@@ -1620,32 +1732,19 @@ function unitChip(u, selected, lead) {
   );
 }
 
-/** A strip unit's tooltip: its name, numbers, state and what a click does. */
+/** A unit's fighting numbers in short (the view's `attack`, `defense`, `strength`;
+ *  docs/UNIT_STATS.md, "Ratings"): a ship's strength (and defence when it differs) with ⚔, a land
+ *  unit's "ATK 40 · DEF 40"; "" without them or for a unit that does not fight. */
+export function ratingShort(u) {
+  const sd = u.defense_strength ?? u.strength_defense;
+  if (u.strength !== undefined) return `${u.strength}${sd !== undefined && sd !== u.strength ? `/${sd}` : ""}⚔`;
+  if (u.attack || u.defense) return `ATK ${u.attack ?? 0} · DEF ${u.defense ?? 0}`;
+  return "";
+}
+
+/** A strip unit's tooltip: its card, with what a click does. */
 function chipTip(u) {
-  const act = activityOf(u);
-  const numbers = [
-    u.strength !== undefined ? `${u.strength} strength` : null,
-    `${Math.round((100 * u.hp) / Math.max(1, u.max_hp))}% health${u.siege?.turn > 0 ? ` (${u.siege.label}: no healing)` : u.besieged ? " (besieged: city healing suppressed)" : ""}`,
-    u.moves !== undefined ? `${moves(u.moves)}/${moves(u.max_moves)} moves` : null,
-    u.level !== undefined ? `level ${u.level}${u.xp !== undefined && u.xp_needed ? ` (${u.xp}/${u.xp_needed} xp)` : ""}` : null,
-  ].filter(Boolean);
-  const badges = [
-    u.promo_ready ? h("span.badge.promo", "promote") : null,
-    automationBadge(u),
-    armyBadge(u),
-    u.summon_turns ? h("span.badge", `${u.summon_turns} turns left`) : null,
-    u.cargo?.length ? h("span.badge", `${u.cargo.length} aboard`) : null,
-    u.transport !== null && u.transport !== undefined ? h("span.badge", "aboard") : null,
-    act ? h("span.badge", humanize(act)) : null,
-    cardBadge(u),
-  ].filter(Boolean);
-  return [
-    h("div.tip-title", u.name ?? dname("UnitType", u.type)),
-    h("div.tip-stats", numbers.join(" · ")),
-    preferredRow(u) ? h("div.tip-stats", engageText(u)) : null,
-    badges.length ? h("div.chip-badges", badges) : null,
-    h("div.tip-hint", touchy() ? "Tap: select its group." : "Click: select its group. Ctrl-click: add or remove this unit."),
-  ];
+  return cardOf(u, touchy() ? "Tap: select its group." : CLICK_HINT);
 }
 
 function unitRow(u, selected) {
@@ -1655,7 +1754,7 @@ function unitRow(u, selected) {
     {
       "data-unit": u.id,
       class: [selected ? "selected" : "", u.transport !== null && u.transport !== undefined ? "cargo" : ""].filter(Boolean).join(" "),
-      title: "Click: select its group. Ctrl-click: add or remove this unit.",
+      tip: () => cardOf(u, touchy() ? "Tap: select its group." : CLICK_HINT),
       onclick: (ev) => pickUnit(u, ev),
     },
     h(
@@ -1666,6 +1765,7 @@ function unitRow(u, selected) {
       u.promo_ready ? h("span.badge.promo", "promote") : null,
       automationBadge(u),
       armyBadge(u),
+      squadBadge(u),
       roleBadge(u),
       u.summon_turns ? h("span.badge", { title: "A summoned unit: turns left" }, `${u.summon_turns}t`) : null,
       u.cargo?.length ? h("span.badge", { title: "Units on board" }, `${u.cargo.length} aboard`) : null,
@@ -1674,6 +1774,7 @@ function unitRow(u, selected) {
     look.art || isoSkin()
       ? h(
           "span.unit-stats",
+          // A ship's strength; a land unit's battle numbers are in its row badge.
           u.strength !== undefined ? h("span.stat-n", pix(String(u.strength)), icon8("strength", "⚔", "Strength")) : null,
           barEl(u.hp / Math.max(1, u.max_hp), u.hp * 4 < u.max_hp ? "hp_low" : "hp", { w: 14, title: `${Math.round((100 * u.hp) / u.max_hp)}% health` }),
           u.moves !== undefined ? h("span.stat-n", pix(`${moves(u.moves)}/${moves(u.max_moves)}`), icon8("moves", "➜", "Moves")) : null,
@@ -1759,6 +1860,11 @@ export function renderPanel() {
   if (r?.actions?.some((a) => a.kind === "promotion" && a.enabled)) {
     tools.append(h("button.promote", { onclick: () => openPromotions(), title: "Choose a promotion" }, "Promote…"));
   }
+  // Squads (docs/ENGAGEMENTS.md, "Squads"): the board of your squads here.
+  if (r?.squads?.length && !observing()) {
+    const n = r.squads.length;
+    tools.append(h("button.squads-open", { onclick: () => openSquads(), title: `Your ${n === 1 ? "squad" : `${n} squads`} here: move units between cells and squads` }, "Squads…"));
+  }
   const city = cityAt(x, y);
   if (city && city.owner === me()?.player) {
     tools.append(h("button", { onclick: () => emit("open-city", city.id), title: "Open the city (or double-click it)" }, `Open ${city.name}`));
@@ -1831,19 +1937,20 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
   const d = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
   // Each number by its icon; the label (shown on a wide screen only where there is room) is the
   // line's tooltip as well.
-  const stat = (icon, label, value, title, cls = "") =>
-    h(`div.iso-statline${cls}`, { title: title ?? label }, isoIcon(icon, { px: 32 }), h("span.label", label), value);
+  const stat = (icon, label, value, title, cls = "", tip = null) =>
+    h(`div.iso-statline${cls}`, tip ? { tip } : { title: title ?? label }, isoIcon(icon, { px: 32 }), h("span.label", label), value);
   const plate = d
     ? h(
         "div.iso-plate",
+        // A ship's strength (land units have none: their battle line follows).
         d.strength !== undefined ? stat("strength", "Strength", h("span.value", String(d.strength))) : null,
         d.moves !== undefined ? stat("moves", "Movement", h("span.value", `${moves(d.moves)}/${moves(d.max_moves)}`)) : null,
         d.max_hp ? stat("hp", "Health", isoBar(d.hp / Math.max(1, d.max_hp), { w: 64, kind: d.hp * 4 < d.max_hp ? "low" : "hp" }), `Health: ${Math.round((100 * d.hp) / d.max_hp)}%`) : null,
         d.level !== undefined ? stat("xp", "Level", h("span.value", `${d.level}${d.xp !== undefined && d.xp_needed ? ` (${d.xp}/${d.xp_needed})` : ""}`), d.xp !== undefined && d.xp_needed ? `Level ${d.level}: ${d.xp} of the ${d.xp_needed} experience the next promotion needs` : null) : null,
-        // Engagement combat: the row it prefers and what it does there, A, Dv and battle HP (the
-        // rest in the tooltip).
+        // Engagement combat: the row it prefers and what it does there, ATK, DEF and battle HP
+        // (the rest on the unit card, its tooltip).
         preferredRow(d)
-          ? stat("strength", "Battle", h("span.value.engage", `${preferredRow(d)} · ${engageBrief(d)}`), `${engageText(d)}\n\n${ENGAGE_TITLE}`, ".engage-stat")
+          ? stat("strength", "Battle", h("span.value.engage", `${preferredRow(d)} · ${engageBrief(d)}`), null, ".engage-stat", () => cardOf(d))
           : null,
         d.siege?.turn > 0 ? h(`div.siege-status${d.siege.state === "starvation" ? ".bad" : ".warn"}`, { tip: d.siege.text }, `${d.siege.label} · no healing`) : null,
       )
@@ -1852,14 +1959,28 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
   const lead2 = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
   const seals = look.art && promotions?.length ? h("div.seals", woundsFirst(promotions).map((p) => sealEl(p, lead2, 2))) : null;
   // The plot's units, transports with their cargo after them.
+  // Squads (docs/ENGAGEMENTS.md, "Squads"): grouped by squad, each group under its numeral.
+  const chip = (u) => unitChip({ ...u, ...(details.get(u.id) ?? {}) }, S.sel.units.includes(u.id), u.id === S.sel.units[0]);
+  const groups = r?.squads?.length ? stripGroups(ordered, r.squads) : null;
+  const several = new Set((r?.squads ?? []).map((s) => s.body)).size > 1;
   const strip =
     own.length > 1
       ? h(
           "div.iso-strip",
           { role: "group", "aria-label": "The units here" },
-          ordered.map((u) => unitChip({ ...u, ...(details.get(u.id) ?? {}) }, S.sel.units.includes(u.id), u.id === S.sel.units[0])),
+          groups
+            ? groups.map((g) =>
+                h(
+                  "div.strip-squad",
+                  { "data-squad": g.squad?.id ?? undefined, class: g.squad ? "" : "none" },
+                  g.squad ? h("span.strip-num", { title: `${squadName(g.squad)}${several ? ` (${g.squad.body})` : ""}: ${g.squad.auto ? "Auto" : "Hand-set"}. Drag a unit onto another squad to move it there.` }, roman(g.squad.num)) : null,
+                  h("div.strip-units", g.units.map(chip)),
+                ),
+              )
+            : ordered.map(chip),
         )
       : null;
+  if (strip && groups) wireStripDrag(strip);
   const tiles = [];
   const listed = [];
   descs.clear();
@@ -1994,21 +2115,21 @@ async function renderPlotInfo(x, y, selUnits = S.sel?.units ?? null) {
   const units = list.map((u) =>
     h(
       "div.plot-unit",
-      `${dname("UnitType", u.type)} (${ownerText(u)}) ⚔${u.strength} ${Math.round((100 * u.hp) / u.max_hp)}%`,
+      `${dname("UnitType", u.type)} (${ownerText(u)})${ratingShort(u) ? ` ${ratingShort(u)}` : ""} ${Math.round((100 * u.hp) / u.max_hp)}%`,
       u.level > 1 ? h("span.dim", ` L${u.level}`) : null,
       role(u) || orders(u) ? h("div.dim.small", [role(u) ? `AI: ${role(u)}` : null, orders(u) ? `orders: ${orders(u)}` : null].filter(Boolean).join(" · "), ` · #${u.id}${u.group !== undefined && u.group !== null ? ` g${u.group}` : ""}`) : null,
     ),
   );
   // The stack at a glance: how many, how many can fight, by owner.
-  const fighters = list.filter((u) => (u.strength ?? 0) > 0);
+  const fighters = list.filter((u) => (u.rating ?? 0) > 0);
   const owners = [...new Set(list.map((u) => u.owner))];
-  const strongest = fighters.reduce((b, u) => (!b || u.strength > b.strength ? u : b), null);
+  const strongest = fighters.reduce((b, u) => (!b || u.rating > b.rating ? u : b), null);
   const summary = list.length
     ? h(
         "p.stack-summary",
         `${list.length} unit${list.length > 1 ? "s" : ""}`,
         fighters.length !== list.length ? `, ${fighters.length} can fight` : "",
-        strongest ? ` · strongest ${dname("UnitType", strongest.type)} ⚔${strongest.strength}` : "",
+        strongest ? ` · strongest ${dname("UnitType", strongest.type)} ${ratingShort(strongest)}` : "",
         owners.length > 1 ? ` · ${owners.map((o) => `${playerName(o)} ${list.filter((u) => u.owner === o).length}`).join(", ")}` : "",
       )
     : null;

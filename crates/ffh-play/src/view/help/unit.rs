@@ -176,7 +176,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         espionage_points,
         terrain_impassable,
         feature_impassable,
-        combat,
+        strength,
         combat_limit,
         air_combat,
         // Read by the rules only (air combat, experience); C++'s help leaves them out.
@@ -239,7 +239,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         // Read by the rules only; FfH2's help leaves it out.
         never_obsolete: _,
         no_war_weariness,
-        combat_defense,
+        strength_defense,
         defensive_strike_chance,
         defensive_strike_damage,
         // Read by the rules only; FfH2's help leaves it out.
@@ -274,7 +274,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         // Python callbacks: C++ shows only the XML help for them.
         py_post_combat_lost: _,
         py_post_combat_won: _,
-        damage_type_combat,
+        damage_type_attack,
         bonus_affinity,
         // AI.
         ai_block_explore: _,
@@ -310,19 +310,18 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     let class = *unit_class_type;
     let mut b = String::new();
 
-    // ---- The strength and moves line (C++ `setBasicUnitHelp` without `bCivilopediaText`) ----
+    // ---- The strength (ships) and moves line (C++ `setBasicUnitHelp` without `bCivilopediaText`) ----
     if *domain_type == Some(DomainType::DOMAIN_AIR) {
         if *air_combat > 0 {
             b.push_str(&format!("{air_combat}[ICON_STRENGTH], "));
         }
-    } else if *combat > 0 || *combat_defense > 0 {
-        // FfH: units defend with `iCombatDefense`. C++ shows `getCombat()` only here (the type's
-        // help was not updated; its unit help writes `att/def`), which misleads for the 52 units
-        // whose defence differs (the Archer's 3/5): written as the unit help writes it.
-        if combat_defense == combat {
-            b.push_str(&format!("{combat}[ICON_STRENGTH], "));
+    } else if *strength > 0 || *strength_defense > 0 {
+        // A ship's strength, and its defence when it differs (land units have none: their stat
+        // sheet follows; docs/UNIT_STATS.md).
+        if strength_defense == strength {
+            b.push_str(&format!("{strength}[ICON_STRENGTH], "));
         } else {
-            b.push_str(&format!("{combat}/{combat_defense}[ICON_STRENGTH], "));
+            b.push_str(&format!("{strength}/{strength_defense}[ICON_STRENGTH], "));
         }
     }
     b.push_str(&format!("{moves}[ICON_MOVES]"));
@@ -363,7 +362,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         let df = &d.defines;
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]At sea out of range of a port: -{}% HP a turn, no healing", df.sea_attrition_percent));
-        if *combat > 0 || *combat_defense > 0 {
+        if *strength > 0 || *strength_defense > 0 {
             b.push_str(NEWLINE);
             b.push_str(&format!(
                 "[ICON_BULLET]Wear after {} turns outside a port: -{}% strength a turn (at most -{}%)",
@@ -630,7 +629,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         }
     }
     let hp = d.defines.max_hit_points.max(1);
-    if *combat_limit < hp && *combat > 0 && !*only_defensive {
+    if *combat_limit < hp && d.units[u].attack_rating() > 0 && !*only_defensive {
         add(d, &mut b, "TXT_KEY_UNIT_COMBAT_LIMIT", &[Arg::N(100 * combat_limit / hp)]);
     }
     if *collateral_damage > 0 {
@@ -762,7 +761,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         }
     }
     // FfH.
-    for (dt, &n) in damage_type_combat.iter_enumerated() {
+    for (dt, &n) in damage_type_attack.iter_enumerated() {
         if n != 0 {
             add(d, &mut b, "TXT_KEY_DAMAGE_TYPE_COMBAT", &[Arg::N(n), Arg::S(&display(d, dt))]);
         }
@@ -996,19 +995,19 @@ mod tests {
     }
 
     #[test]
-    fn melee_units_say_their_strength_and_bonuses() {
+    fn melee_units_say_their_battle_numbers_and_bonuses() {
         let w = help("UNIT_WARRIOR");
-        assert!(w.starts_with("3[ICON_STRENGTH], 1[ICON_MOVES] (Melee Units)"), "{w}");
+        assert!(w.starts_with("1[ICON_MOVES] (Melee Units)"), "{w}");
         has(&w, &["[ICON_BULLET]+25% City Defense", "[ICON_BULLET]Unit can use Bronze weapons.", "Upgrades To: ", "Axeman"]);
         assert!(!w.contains("Replaced by"), "{w}");
         let a = help("UNIT_AXEMAN");
-        assert!(a.starts_with("4[ICON_STRENGTH], 1[ICON_MOVES] (Melee Units)"), "{a}");
+        assert!(a.starts_with("1[ICON_MOVES] (Melee Units)"), "{a}");
+        assert!(a.contains("Attack 40") && !a.contains("[ICON_STRENGTH]"), "{a}");
         has(&a, &["[ICON_BULLET]+10% City Attack", "[ICON_BULLET]Unit can use Bronze, Iron and Mithril weapons.", "Requires Bronze Working", "Requires Training Yard"]);
         let c = help("UNIT_CHAMPION");
         has(&c, &["[ICON_BULLET]+25% vs. [LINK=literal]Melee Units[\\LINK]", "Requires Iron Working"]);
-        // FfH's defence strength.
         let archer = help("UNIT_ARCHER");
-        assert!(archer.starts_with("3/5[ICON_STRENGTH], 1[ICON_MOVES] (Archery Units)"), "{archer}");
+        assert!(archer.starts_with("1[ICON_MOVES] (Archery Units)"), "{archer}");
     }
 
     #[test]
@@ -1019,7 +1018,7 @@ mod tests {
         has(&w, &["[ICON_BULLET]In a city of its owner: +25 work rate of the city's work crews", "[ICON_BULLET]Unit doesn't provide military happiness"]);
         assert!(!w.contains("Can Improve Tiles") && !w.contains("Build a"), "{w}");
         let s = help("UNIT_SCOUT");
-        assert!(s.starts_with("2[ICON_STRENGTH], 2[ICON_MOVES] (Recon Units)"), "{s}");
+        assert!(s.starts_with("2[ICON_MOVES] (Recon Units)"), "{s}");
         has(&s, &["[ICON_BULLET]Better Results from Tribal Villages", "Upgrades To: "]);
         let p = help("UNIT_PROPHET");
         has(

@@ -233,15 +233,24 @@ impl Game {
         self.unit_battle_spells(u)
     }
 
-    /// The defended plot's ground for a formation battle (spec 1.6): a city on it; a forest or
-    /// jungle (a feature that narrows the field: `iEngagementSlotsChange` below 0, the forests and
-    /// the jungle); hills.
-    pub fn engage_ground(&self, to: PlotIdx) -> Ground {
+    /// The ground of a formation battle on `ctx.to` (docs/ENGAGEMENTS.md, "The ground"): a city
+    /// on it; a forest or jungle (`engagement_forest`); hills; open ground (a flat plot of an
+    /// `engagement_open` terrain without a forest or jungle); a marsh (`engagement_mire`); a river
+    /// the attacker crosses (from `ctx.from`); the plot's Trench.
+    pub fn engage_ground(&self, ctx: &HitCtx) -> Ground {
+        let to = ctx.to;
         let plot = &self.map.plots[to];
+        let forest = plot.feature_type.is_some_and(|f| self.d.features[f].engagement_forest);
+        let hills = self.plot_is_hills(to);
+        let terrain = plot.terrain_type.map(|t| &self.d.terrains[t]);
         Ground {
             city: self.plot_is_city(to, false, None),
-            forest: plot.feature_type.is_some_and(|f| self.d.features[f].engagement_slots_change < 0),
-            hills: self.plot_is_hills(to),
+            forest,
+            hills,
+            open: !forest && !hills && terrain.is_some_and(|t| t.engagement_open),
+            marsh: terrain.is_some_and(|t| t.engagement_mire),
+            crossing: ctx.from.is_some_and(|from| self.plot_is_river_crossing(from, self.direction_xy_plots(from, to))),
+            trench_pct: self.engage_arms_attacker_first_round(to).unwrap_or(0),
         }
     }
 
@@ -389,27 +398,28 @@ impl Game {
     }
 
     /// The base of the unit's A (`attack`) or Dv, x100 (plan 4.2; docs/UNIT_STATS.md): its sheet's
-    /// attack (defence) plus its own points, x10; plus its typed strength, each type's points
+    /// attack (defence) plus its own points, x10; plus its typed attack points, x10, each type's
     /// scaled by the opponent's resistance to it (Q2). A type without a sheet (it never fights a
-    /// land battle): its strength, x100.
+    /// land battle): its rating's own part (strength x10, plus its points), x10.
     fn engage_base_x100(&self, u: UnitId, opponent: Option<UnitId>, attack: bool) -> i32 {
         let unit = &self.units[u];
         let s = if attack { StatType::Attack } else { StatType::Defense };
         let own = match self.d.units[unit.unit_type].stats {
             Some(sheet) => (sheet[s.idx()] + unit.stat_flat[s.idx()]) * 10,
-            None => (if attack { unit.base_combat } else { unit.base_combat_defense }) * 100,
+            None => self.unit_own_rating(u, s) * 10,
         };
         // Card: Elemental Forge (docs/CARDS.md): an attack of a damage type is cut by its resistance.
         let own = if attack { self.engage_arms_attack(u, opponent, own) } else { own };
         let mut typed = 0;
         for damage_type in self.d.damages.keys() {
-            let points = unit.damage_type_combat[damage_type];
+            let points = unit.damage_type_attack[damage_type];
             if points != 0 {
                 let resist = opponent.map_or(0, |o| self.unit_get_damage_type_resist(o, damage_type));
                 typed += points * (100 - resist);
             }
         }
-        own + typed
+        // Typed points are on the sheet's scale (ten a strength point): x100 / 10.
+        own + typed / 10
     }
 
     /// [`StrMode::EngageAttack`] (`attack`) and [`StrMode::EngageDefense`]: the terms of `u`'s

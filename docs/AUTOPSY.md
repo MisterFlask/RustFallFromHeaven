@@ -76,7 +76,7 @@ at war with), `other`; `_still` counts those that spent no movement that turn. T
 unit-turns; the count is the player-turns in that war state.
 
 Military: a land unit on the map that can fight (the rules' `canFight`: some strength).
-Strength: the rules' contribution value of a unit (`crusade_unit_strength`, docs/CRUSADE.md): the
+Strength: the rules' contribution value of a unit (`crusade_unit_force`, docs/CRUSADE.md): the
 better of its attack and defense strengths x100, with its general combat bonus, scaled by its
 hit points. The report shows it /100.
 

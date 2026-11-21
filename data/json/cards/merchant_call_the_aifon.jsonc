@@ -60,14 +60,14 @@
       "min_area_size": -1,
       "moves": 4,
       "nuke_range": -1,
-      "combat": 17,
+      "strength": 17,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
       "asset": 26,
       "power": 52,
       "free_promotions": {"PROMOTION_HERO": true},
-      "combat_defense": 17,
+      "strength_defense": 17,
       "tier": 4
     }
   ],

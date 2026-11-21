@@ -84,7 +84,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 6,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -93,7 +92,6 @@
       "asset": 9,
       "power": 18,
       "never_obsolete": true,
-      "combat_defense": 6,
       "tier": 3,
       "weapon_tier": 3,
       "free_promotions": {"PROMOTION_HERO": true}

@@ -350,13 +350,12 @@ impl Game {
     /// every order of a group into an enemy plot. Today's preamble (the path step for
     /// `MOVE_THROUGH_ENEMY`, the AI's pre-attack spells and bombard-first), then, for an
     /// engagement (`group_engage_applies`), the engagement's preamble and one engagement
-    /// (`Game::group_attack_engage`); otherwise today's attack, unchanged. `formation`: where the
-    /// attacker's units stand (checked against the pool and the slots: `engage_validate_formation`),
-    /// `None` the rules' auto formation. A call parameter, not state: nothing is saved. `Err`:
+    /// (`Game::group_attack_engage`); otherwise today's attack, unchanged. `squad`: the attacker's
+    /// squad that fights (`None`: its strongest; docs/ENGAGEMENTS.md, "Squads"). A call parameter, not state: nothing is saved. `Err`:
     /// refused, no battle; nothing changed but what an AI owner's preamble did (its pre-attack
     /// spells, a war it declared on the plot's owner, which may have pushed the defenders off the
     /// plot).
-    pub fn group_attack_force(&mut self, g: GroupId, x: i32, y: i32, flags: i32, formation: Option<Vec<crate::engagement::Place>>) -> Result<(bool, bool), &'static str> {
+    pub fn group_attack_force(&mut self, g: GroupId, x: i32, y: i32, flags: i32, squad: Option<SquadId>) -> Result<(bool, bool), &'static str> {
         let mut dest_plot = self.map.plot_xy(x, y);
 
         if flags & MOVE_THROUGH_ENEMY != 0 {
@@ -437,7 +436,7 @@ impl Game {
                     // Engagement combat: the engagement's preamble and one engagement; with
                     // nobody to fight but non-combatants, today's attack captures them.
                     if self.group_engage_applies(g, dest_plot) {
-                        if let Some(r) = self.group_attack_engage(g, dest_plot, human, formation)? {
+                        if let Some(r) = self.group_attack_engage(g, dest_plot, human, squad)? {
                             return Ok(r);
                         }
                     }
@@ -516,8 +515,8 @@ impl Game {
 
     /// The engagement's part of [`Game::group_attack_force`] (plan section 6, the preamble's
     /// steps 2 to 5, then the engagement): no candidate defender: `None` (today's attack captures
-    /// the non-combatants there, if any); Alertness for a human order without a formation (a human
-    /// formation comes from the `engage` command, which requires a visible plot, G5); the AI's war
+    /// the non-combatants there, if any); Alertness for a human order without a squad (a human
+    /// squad comes from the `engage` command, which requires a visible plot, G5); the AI's war
     /// declaration as today (a human's is confirmed in the command layer: an attack that would
     /// still need one finds no defender at war); the `doCombat` hook; then a missile strike per
     /// missile for a group of missiles only (plan 6.11), else one engagement launched by `g`.
@@ -526,27 +525,23 @@ impl Game {
         g: GroupId,
         dest: PlotIdx,
         human: bool,
-        formation: Option<Vec<crate::engagement::Place>>,
+        squad: Option<SquadId>,
     ) -> Result<Option<(bool, bool)>, &'static str> {
         let owner = self.groups[g].owner;
         let Some(from) = self.group_plot(g) else { return Ok(Some((false, false))) };
         // Card: False Colours (docs/CARDS.md): an attack under false colours on units of a civ at
         // peace declares the war at the battle, and takes the defenders by surprise.
         let surprise = self.group_false_colours_team(g, dest).is_some()
-            && !(human && formation.is_none() && !self.groups[g].last_plot_visible)
+            && !(human && squad.is_none() && !self.groups[g].last_plot_visible)
             && self.group_false_colours_strike(g, dest);
         let members = units_snapshot(self, g);
         let missiles = !members.is_empty() && members.iter().all(|&u| self.unit_is_suicide(u));
-        let test: Vec<UnitId> = match (&formation, missiles) {
-            (Some(f), _) => f.iter().map(|p| p.unit).collect(),
-            (None, true) => members.clone(),
-            (None, false) => self.engage_attackers(owner, from, dest, crate::engagement::WarTest::AtWar),
-        };
+        let test: Vec<UnitId> = if missiles { members.clone() } else { self.engage_attackers(owner, from, dest, crate::engagement::WarTest::AtWar) };
         let team = self.players[owner].team;
         if self.engage_defenders(dest, owner, &test, crate::engagement::WarTest::AtWar).is_empty() && (missiles || !self.plot_has_enemy_sentinels(dest, team)) {
             return Ok(None);
         }
-        if human && formation.is_none() && !self.groups[g].last_plot_visible {
+        if human && squad.is_none() && !self.groups[g].last_plot_visible {
             return Ok(Some((false, false)));
         }
         if self.group_declare_war(g, dest, false) {
@@ -567,7 +562,7 @@ impl Game {
             }
             return Ok(Some((attacked, false)));
         }
-        let order = crate::engagement::engage::EngageOrder { p: owner, from, to: dest, launcher: Some(g), formation, forced: None, log: None, surprise };
+        let order = crate::engagement::engage::EngageOrder { p: owner, from, to: dest, launcher: Some(g), squad, forced: None, log: None, surprise };
         self.engage(order)?;
         Ok(Some((true, false)))
     }

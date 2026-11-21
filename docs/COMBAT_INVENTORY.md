@@ -234,8 +234,8 @@ Chalid (+2 Sun), Brigit (Fire) and Gurid (+1 per Banana). KEEP.
 ## 3. Damage types and resistances
 
 **Today.** Typed strength (`DamageTypeCombats` on units and promotions, plus typed mana affinities)
-is added to base strength, attacking and defending alike (`unit_base_combat_str`,
-`unit_base_combat_str_defense`). Against a given opponent each type's points are scaled by
+is added to base strength, attacking and defending alike (`unit_attack_rating`,
+`unit_defense_rating`; attack points since 2026-11-21). Against a given opponent each type's points are scaled by
 (100 - the opponent's resistance to it)% (`unit_max_combat_str`; resistance clamped to -100..100),
 so a 6 + 3 fire Fire Elemental fights a fire-immune unit at 6. Resistances also cut spell damage
 (`unit_do_damage`) and the chance to be poisoned after combat (section 24). Negative resistances
@@ -1031,7 +1031,7 @@ turn to become Enraged.
 
 ## U1. Separate defense strength
 
-**Today.** FfH's `iCombatDefense` is the strength used to defend (`unit_base_combat_str_defense`).
+**Today.** FfH's `iCombatDefense` is the strength used to defend (`unit_defense_rating` since 2026-11-21: docs/UNIT_STATS.md, section 10).
 281 unit types set it; 52 differ from their attack: archers defend higher (Archer 3/5, Crossbowman
 9/13, Longbowman 5/6), as do Maros 6/12, Royal Guard 4/8, War Tortoise 11/19, Minotaur 8/11, Tar Demon
 2/7; shock units lower (Berserker line 11/5, Knight 11/7, Seraph 8/2, Balor 7/3, Death Knight 8/4,

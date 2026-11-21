@@ -12,7 +12,7 @@
 
 import { h } from "./dom.js";
 import { withCalc } from "./calc.js";
-import { initialState, applyEvent, logLines, viewerSide, resultWords, fates, headOf, uname, tacticName } from "./battle_log.js";
+import { initialState, applyEvent, logLines, viewerSide, resultWords, fates, headOf, uname } from "./battle_log.js";
 import { loadArt, unitXY, cellXY, pic, deadPic, faceFlip, animated, keyPoses, unitCard, figOf, pixGlyph, GLYPH, btn, add, partsEl } from "./battle_stage.js";
 import { Snap, breath, LEAD } from "./battle_snap.js";
 
@@ -303,7 +303,6 @@ function sideBox(side) {
   return pnl(
     { [side === W.me ? "left" : "right"]: "6px", top: "4px", width: side === W.me ? "380px" : "470px" },
     h("div.bt-row", h(`span.bt-h3.${side === W.me ? "you" : "them"}`, label), h(`span.dim#bt-n${side}`)),
-    tacticName(L, side) ? h("div.small.dim.bt-tactic", { "data-side": side }, `Tactic: ${tacticName(L, side)}`) : null,
     h("div.bt-sbar", h(`i#bt-sb${side}`, { style: { background: side === W.me ? "linear-gradient(#8fb6ff,#3356b6)" : "linear-gradient(#ff8d7a,#c8272b)" } })),
   );
 }

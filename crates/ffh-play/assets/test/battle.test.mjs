@@ -2,8 +2,8 @@
 // revision 4) over the dev fixture (app/battle_fixture.js, made by make_battle_fixtures.mjs from
 // the owner's prototype): the log folded into states (the fold's fates are the outcome's counts,
 // nobody acts or is hit off the field, no two units share a cell after a knock-back), the log's
-// lines, the opening's events, a formation's cells (large units, the slots), the tactics' names,
-// the ground's rules in words, and damage in words (the replay's pace is battle_snap.test.mjs's).
+// lines, the opening's events, a formation's cells (large units, the slots), a starving side's
+// line, the ground's rules in words, and damage in words (the replay's pace is battle_snap.test.mjs's).
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as L from "../app/battle_log.js";
@@ -289,11 +289,7 @@ test("a formation's cells: a large unit's two, the slots", () => {
   assert.equal(grid[ep.row][ep.lane + 1], elephant.b);
 });
 
-test("the tactics: each side's named from the log, none in a log without them; a starving side's line", () => {
-  assert.equal(L.tacticName(field, 0), null, "the fixture has no tactics");
-  const withTactics = { ...field, tactics: ["TACTIC_CHARGE", "TACTIC_LINE"] };
-  assert.equal(L.tacticName(withTactics, 0), "Charge");
-  assert.equal(L.tacticName(withTactics, 1), "Line");
+test("a starving side's line", () => {
   const att = field.fighters.find((f) => f.side === 0);
   const starving = { ...field, events: [{ round: 0, pass: 0, kind: "Starvation", units: [att.b], dealt_pct: -25 }] };
   const line = L.logLines(starving).find((l) => !l.head);
@@ -361,28 +357,29 @@ test("the result when no attacker is left: worded from the fates (fallen, escape
   assert.deepEqual([d.ribbon, d.good, d.line], ["HELD", true, w.line]);
 });
 
-test("the result follows who lost more HP (outcome.loser): won, lost on an empty plot, drawn", () => {
+test("the result follows the verdict (outcome.loser, decided_by): all fell, more fell, more HP, even", () => {
   const fighter = (b, side, lane) => ({ b, unit: 900 + b, unit_type: "UNIT_AXEMAN", name: "Axeman", owner: side, side, large: false, lane, row: 0, max_hp: 100, hp_start: 10000, speed: 6, actions: [] });
   const fighters = [fighter(0, 0, 0), fighter(1, 0, 1), fighter(2, 1, 0)];
   const kill = { round: 1, pass: 1, actor: 0, kind: "Strike", target: 2, hits: [{ target: 2, dmg: 10000, killed: true }] };
-  const log = (outcome, viewer_side = 0) => ({ viewer_side, plot: { x: 1, y: 1, city: null }, fighters, events: [kill], outcome: { rounds: 1, calc: ["HP lost: ..."], ...outcome } });
-  // won, the reserve pushed back, the plot taken
-  const won = L.resultWords(log({ plot_taken: true, defenders_left: 0, pushed: 2, hp_lost: [1250, 10000], loser: 1 }));
+  const sides = (fa, fd) => [{ committed: 2, sat_out: 0, fallen: fa, escaped: 0, standing: 2 - fa }, { committed: 1, sat_out: 0, fallen: fd, escaped: 0, standing: 1 - fd }];
+  const log = (outcome, viewer_side = 0) => ({ viewer_side, plot: { x: 1, y: 1, city: null }, fighters, events: [kill], outcome: { rounds: 1, calc: ["1. ..."], sides: sides(0, 1), ...outcome } });
+  // the defenders' line all fell: won by rule 1, the reserve pushed back, the plot taken
+  const won = L.resultWords(log({ plot_taken: true, defenders_left: 0, pushed: 2, hp_lost: [12500, 1000], loser: 1, decided_by: "Wiped" }));
   assert.deepEqual([won.kind, won.ribbon, won.good], ["taken", "VICTORY", true]);
-  assert.equal(won.line, "The plot falls: the defenders lost more HP (100.0 to 12.5) and none is left; the attackers move in. 2 defenders are pushed back.");
-  assert.deepEqual(won.calc, ["HP lost: ..."]);
-  // every defender fell, but the attackers lost more HP: nobody moves in
-  const lost = L.resultWords(log({ plot_taken: false, defenders_left: 0, pushed: 0, hp_lost: [15000, 10000], loser: 0 }));
+  assert.equal(won.line, "The plot falls: every one of the defenders in the line fell and none is left; the attackers move in. 2 defenders are pushed back.");
+  assert.deepEqual(won.calc, ["1. ..."]);
+  // more attackers fell: lost by rule 2, however the HP stood
+  const lost = L.resultWords(log({ plot_taken: false, defenders_left: 1, pushed: 0, hp_lost: [15000, 30000], loser: 0, decided_by: "Deaths", sides: [{ committed: 2, sat_out: 0, fallen: 1, escaped: 0, standing: 1 }, { committed: 3, sat_out: 0, fallen: 0, escaped: 0, standing: 3 }] }));
   assert.deepEqual([lost.kind, lost.ribbon, lost.good], ["held", "DEFEAT", false]);
-  assert.equal(lost.line, "No defender is left on the plot. The attackers lost more HP (150.0 to 100.0): they stay where they are.");
-  const seen = L.resultWords(log({ plot_taken: false, defenders_left: 0, pushed: 0, hp_lost: [15000, 10000], loser: 0 }, 1));
+  assert.equal(lost.line, "The defenders hold the plot: 1 still stands there. More attackers fell (1 to 0): they stay where they are.");
+  const seen = L.resultWords(log({ plot_taken: false, defenders_left: 1, pushed: 0, hp_lost: [15000, 30000], loser: 0, decided_by: "Deaths" }, 1));
   assert.deepEqual([seen.ribbon, seen.good], ["VICTORY", true]);
-  // the defenders lost in a city: nobody is pushed back, the city holds
-  const city = L.resultWords({ ...log({ plot_taken: false, defenders_left: 3, pushed: 0, hp_lost: [1000, 10000], loser: 1 }), plot: { x: 1, y: 1, city: { name: "Strages" } } });
+  // the defenders lost more HP in a city: nobody is pushed back, the city holds
+  const city = L.resultWords({ ...log({ plot_taken: false, defenders_left: 3, pushed: 0, hp_lost: [1000, 10000], loser: 1, decided_by: "Damage", sides: sides(0, 0) }), plot: { x: 1, y: 1, city: { name: "Strages" } } });
   assert.deepEqual([city.ribbon, city.good], ["VICTORY", true]);
   assert.equal(city.line, "The defenders lost more HP (100.0 to 10.0), but 3 still stand on Strages (nobody is pushed back from a city): it holds.");
-  // drawn
-  const draw = L.resultWords(log({ plot_taken: false, defenders_left: 1, pushed: 0, hp_lost: [500, 500], loser: null }));
+  // even
+  const draw = L.resultWords(log({ plot_taken: false, defenders_left: 1, pushed: 0, hp_lost: [500, 500], loser: null, decided_by: "Even", sides: sides(0, 0) }));
   assert.equal(draw.ribbon, "DRAW");
-  assert.equal(draw.line, "The defenders hold the plot: 1 still stands there. Both sides lost 5.0 HP: the plot holds.");
+  assert.equal(draw.line, "The defenders hold the plot: 1 still stands there. Neither side lost more units or HP: the plot holds.");
 });

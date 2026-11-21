@@ -378,7 +378,7 @@ pub fn usurper_unit(g: &Game, q: PlayerId) -> Option<UnitType> {
         .filter(|&class| !crate::utils::is_world_unit_class(d, class))
         .filter_map(|class| d.civ_unit(civ, class))
         .filter(|&u| d.units[u].unit_combat_type == melee && g.player_can_train(q, u, false, true, false))
-        .max_by_key(|&u| (d.units[u].tier, d.units[u].combat, Reverse(u)));
+        .max_by_key(|&u| (d.units[u].tier, d.units[u].rating(), Reverse(u)));
     best.or_else(|| d.ty::<UnitClassType>("UNITCLASS_WARRIOR").and_then(|class| d.civ_unit(civ, class)))
 }
 

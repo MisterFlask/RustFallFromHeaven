@@ -357,7 +357,7 @@ fn summon_value(g: &Game, u: UnitId, spell: SpellType) -> i32 {
     if !enemy_near(g, u, move_range) {
         return 0;
     }
-    let mut v = d.units[cu].combat + d.units[cu].damage_type_combat.iter().sum::<i32>();
+    let mut v = d.units[cu].attack_rating() / 10;
     v *= 100;
     v * info.create_unit_num
 }

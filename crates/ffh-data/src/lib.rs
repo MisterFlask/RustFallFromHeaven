@@ -1,9 +1,9 @@
 //! FFH2 game data: loads `data/json/*.jsonc` (JSON with comments) into typed info tables.
 //!
 //! The tables are a port of the DLL's `CvInfos.cpp`; the data began as FFH2 0.41's XML.
-//! Field names mirror the C++ members (`m_iCombat` -> `combat`,
+//! Field names mirror the C++ members (`m_iMoves` -> `moves`,
 //! `m_piYieldChange` -> `yield_change`), so ported rules code maps
-//! `kInfo.getCombat()` to `info.combat`.
+//! `kInfo.getMoves()` to `info.moves`.
 
 pub mod defines;
 pub mod defines_gen;
@@ -212,7 +212,6 @@ game_data! {
     governor_names: GovernorNameType => GovernorNameInfo, governor::read_governor_names;
     building_tiers: BuildingTierType => BuildingTierInfo, building::read_building_tier;
     research_paths: ResearchPathType => ResearchPathInfo, research_path::read_research_path;
-    battle_tactics: BattleTacticType => BattleTacticInfo, battle_tactic::read_battle_tactic;
     sea_names: SeaNameType => SeaNameInfo, sea::read_sea_names;
     // Presentation: the keywords and their reminder texts (docs/PLAY_DESIGN.md).
     keywords: KeywordType => KeywordInfo, keyword::read_keyword;
@@ -619,20 +618,20 @@ impl GameData {
 
     /// Whether spell `s` is a battle summon (`SpellInfo::battle_summon`): it creates a temporary
     /// unit (`create_unit_type` without `permanent_unit_create`) of a land type with a stat sheet
-    /// and strength (attack, defence or a typed strength) that is not a missile (`bSuicide`).
+    /// that fights ([`UnitInfo::fights`]) and is not a missile (`bSuicide`).
     fn spell_summons_in_battle(&self, s: SpellType) -> bool {
         let info = &self.spells[s];
         let Some(t) = info.create_unit_type else { return false };
         let ty = &self.units[t];
-        !info.permanent_unit_create && self.type_engages_on_land(t) && ty.stats.is_some() && !ty.suicide && (ty.combat > 0 || ty.combat_defense > 0 || ty.damage_type_combat.iter().any(|&x| x > 0))
+        !info.permanent_unit_create && self.type_engages_on_land(t) && ty.stats.is_some() && !ty.suicide && ty.fights()
     }
 
-    /// A battle summon's strength, to choose a caster's strongest summon: its type's attack and
-    /// defence (the stat sheet's) plus ten times its typed strength, then its HP.
+    /// A battle summon's might, to choose a caster's strongest summon: its type's attack and
+    /// defence (the stat sheet's) plus its typed attack points, then its HP.
     pub fn battle_summon_strength(&self, s: SpellType) -> (i32, i32) {
         let Some(t) = self.spells[s].create_unit_type else { return (0, 0) };
-        let typed: i32 = self.units[t].damage_type_combat.iter().sum();
-        (self.unit_stat(t, StatType::Attack) + self.unit_stat(t, StatType::Defense) + 10 * typed, self.unit_stat(t, StatType::Hp))
+        let typed: i32 = self.units[t].damage_type_attack.iter().sum();
+        (self.unit_stat(t, StatType::Attack) + self.unit_stat(t, StatType::Defense) + typed, self.unit_stat(t, StatType::Hp))
     }
 
     /// The battle summons a unit of type `unit_type` holding the promotions `has_promotion` accepts
@@ -856,22 +855,6 @@ impl GameData {
     /// in its reach are taken first.
     pub fn engage_flanks(&self, t: UnitType) -> bool {
         rows_charge(&self.engage_rows(t))
-    }
-
-    /// The change to each side's engagement slots on a plot (added to `ENGAGEMENT_SLOTS_BASE`):
-    /// `ENGAGEMENT_SLOTS_HILLS` on hills, plus the feature's `iEngagementSlotsChange` where it is
-    /// non-zero, else, on a flat plot, the terrain's. So the terrain's "open land" change counts only
-    /// on a flat plot without a forest or jungle, and a feature replaces it.
-    pub fn engagement_slots_change(&self, terrain: TerrainType, feature: Option<FeatureType>, hills: bool) -> i32 {
-        let feature_change = feature.map_or(0, |f| self.features[f].engagement_slots_change);
-        let cover = if feature_change != 0 {
-            feature_change
-        } else if hills {
-            0
-        } else {
-            self.terrains[terrain].engagement_slots_change
-        };
-        (if hills { self.defines.engagement_slots_hills } else { 0 }) + cover
     }
 
     /// Verifies that data-defined tables whose order is hard-coded in C++ enums match.

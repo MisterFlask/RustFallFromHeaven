@@ -120,7 +120,7 @@ fn buy_out(g: &mut Game, p: PlayerId, u: UnitId) -> bool {
         .unit_buy_out_targets(u)
         .into_iter()
         .filter(|&t| g.unit_buy_out_price(t).is_some_and(|price| gold - price >= keep))
-        .max_by_key(|&t| (g.unit_base_combat_str(t) * 100 + g.units[t].experience, std::cmp::Reverse(t)));
+        .max_by_key(|&t| (g.unit_attack_rating(t) * 10 + g.units[t].experience, std::cmp::Reverse(t)));
     let Some(t) = best else { return false };
     if !g.unit_can_cast_at(u, spell, SpellTarget::Unit(t)) {
         return false;

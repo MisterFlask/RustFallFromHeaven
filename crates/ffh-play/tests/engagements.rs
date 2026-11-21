@@ -1,6 +1,6 @@
 //! Engagement combat through the human's protocol (docs/ENGAGEMENTS.md, formation battles; docs/HUMAN.md,
-//! "Engagement combat"): `ffh-play stage engagement`'s attack fought through `engage` (in the auto
-//! formation and in one the player orders), its report and battle log in the server's shapes
+//! "Engagement combat"): `ffh-play stage engagement`'s attack fought through `engage` (with the strongest
+//! squad and with the squad the player names), its report and battle log in the server's shapes
 //! (`view/battles.rs`), the plan with its forecast, the war an attack declares asked first and
 //! the view's fields; and with the option off, the command refused and the view without them.
 
@@ -52,7 +52,7 @@ fn int(j: &Json, key: &str) -> i64 {
 // The shapes of the battle log (`view/battles.rs`; `assets/app/battle_log.js`'s header is the
 // screens' contract).
 const LOG: &[&str] = &[
-    "v", "id", "turn", "viewer_side", "plot", "from", "ground", "params", "slots", "lanes", "tactics", "sides", "fighters", "pairs", "events", "after", "forecast", "outcome", "summary",
+    "v", "id", "turn", "viewer_side", "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "pairs", "events", "after", "forecast", "outcome", "summary",
 ];
 const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "lanes", "ordered"];
 const FIGHTER: &[&str] = &[
@@ -62,14 +62,14 @@ const FIGHTER: &[&str] = &[
 ];
 const STAT: &[&str] = &["base_x100", "terms", "total_x100"];
 const PAIR: &[&str] = &["h", "t", "a_x100", "dv_x100", "mean", "ma_x100", "md_x100", "spell_pct", "magic_mean", "a_extra", "dv_extra"];
-const GROUND: &[&str] = &["city", "forest", "hills", "flanking", "rules"];
+const GROUND: &[&str] = &["city", "forest", "hills", "open", "marsh", "crossing", "flanking", "rules"];
 const PARAMS: &[&str] = &["bolt_pct", "splash_pct", "first_strike_speed", "extra_action_tier", "extra_actions"];
-const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "pushed", "hp_lost", "loser", "calc", "lines_down", "sides"];
+const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "pushed", "hp_lost", "loser", "decided_by", "calc", "lines_down", "sides"];
 const LINE: &[&str] = &["committed", "sat_out", "fallen", "escaped", "standing"];
-const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "pushed", "hp_lost", "loser", "has_log", "sides"];
+const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "pushed", "hp_lost", "loser", "decided_by", "has_log", "sides"];
 const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "slots", "lanes", "used", "committed", "sat_out", "lost", "lost_types", "escaped", "standing", "shore"];
 const PLAN: &[&str] = &[
-    "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "formation", "auto_formation", "reserve", "def_formation", "def_reserve", "summons", "tactics",
+    "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "formation", "auto_formation", "squads", "squad", "def_squad", "reserve", "def_formation", "def_reserve", "summons",
     "starving", "shore", "shore_unseen", "forecast", "declare_war", "errors",
 ];
 const FORECAST: &[&str] = &["runs", "line_wiped_permille", "plot_falls_permille", "attackers_wiped_permille", "attackers_win_permille", "lost_x100", "escaped_x100", "per"];
@@ -147,20 +147,21 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let fc = pv.get("forecast").unwrap();
     assert_eq!(keys(fc), sorted(FORECAST));
     assert!(int(fc, "runs") > 0 && arr(fc, "per").len() == formation.len() + arr(&pv, "def_formation").len());
-    // A formation that breaks the grid: the plan in the auto formation, no forecast, and why.
-    let u0 = int(&formation[0], "unit");
-    let bad = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{{"unit":{u0},"lane":9,"row":0}}]}}"#));
+    // A squad that cannot attack there (the defenders', else an id no squad has): the plan of
+    // the strongest squad, no forecast, and why.
+    let theirs = s.g.units[st.defenders[0]].squad.map_or(u32::MAX, |q| q.0);
+    let bad = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}},"squad":{theirs}}}"#));
     assert!(!arr(&bad, "errors").is_empty(), "{bad:?}");
     assert!(bad.get("forecast").is_some_and(Json::is_null), "{bad:?}");
-    assert_eq!(arr(&bad, "formation"), formation, "the refused formation's plan is the auto formation's");
+    assert_eq!(arr(&bad, "formation"), formation, "the refused squad's plan is the strongest squad's");
 
     // An attack on a plot that is not next to the army is refused, and changes nothing.
     let far = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{},"y":{y}}}}}"#, x + 3));
     assert!(matches!(far, Err(CmdErr::Cannot(_))), "{far:?}");
     assert!(s.g.battle_reports.is_empty());
-    // A formation is refused: an army fights in its tactic (docs/TACTICS.md).
-    let off = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{{"unit":{u0},"lane":9,"row":0}}]}}"#));
-    assert!(matches!(&off, Err(CmdErr::Cannot(r)) if r == "An army fights in its tactic."), "{off:?}");
+    // An attack with a squad that cannot attack there fights no battle.
+    let off = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"squad":{theirs}}}"#));
+    assert!(matches!(&off, Ok(CmdOk::Applied { battle: None, .. }) | Err(CmdErr::Cannot(_))), "{off:?}");
     assert!(s.g.battle_reports.is_empty());
 
     // The attack: its report in the reply, the message tagged with it.
@@ -359,34 +360,46 @@ fn the_combat_query_previews_a_battle_on_arrival() {
     assert!(arr(&pv, "errors").iter().any(|e| e.as_str().is_some_and(|t| t.contains("cannot see"))), "{pv:?}");
 }
 
-/// Battle tactics (docs/TACTICS.md): `engage` refuses a formation (even the plan's own), and the
-/// attack fights in the formation the plan shows: the army's tactic's (Line, the army's first),
-/// named on both sides of the plan and the log, not ordered.
+/// `engage` fights with the squad the plan shows, in its cells: without a squad, the strongest
+/// (not ordered); with the plan's squad named, the same cells, ordered; a squad that cannot attack
+/// there fights no battle and changes nothing. The `formation` field is gone from the command.
 #[test]
-fn an_army_fights_in_its_tactic_not_in_a_formation_given() {
+fn an_army_fights_with_the_squad_the_plan_shows() {
     let dir = common::TempDir::new("stage-engagement-formation");
     let st = ffh_play::stage::engagement(&dir.0).expect("staged");
-    let mut s = load(&st.save);
     let (army, x, y) = (st.army.0, st.x, st.y);
-    let pv = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}}}}"#));
-    let line = ffh_data::global().t::<ffh_data::BattleTacticType>("TACTIC_LINE");
-    let tactics: Vec<i64> = arr(&pv, "tactics").iter().filter_map(Json::as_i64).collect();
-    assert_eq!(tactics, vec![ffh_data::Idx::idx(line) as i64; 2], "{pv:?}");
-    let cells: Vec<(i64, i64, i64)> = arr(&pv, "formation").iter().map(|p| (int(p, "unit"), int(p, "lane"), int(p, "row"))).collect();
-    assert!(!cells.is_empty());
+    let plan = |s: &Session| {
+        let pv = q(s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}}}}"#));
+        let cells: Vec<(i64, i64, i64)> = arr(&pv, "formation").iter().map(|p| (int(p, "unit"), int(p, "lane"), int(p, "row"))).collect();
+        assert!(!cells.is_empty());
+        let squads = arr(&pv, "squads");
+        let squad = int(&squads[int(&pv, "squad") as usize], "squad");
+        (cells, squad)
+    };
+    // The formation field is no longer the command's.
+    let mut s = load(&st.save);
+    let (cells, squad) = plan(&s);
     let list: Vec<String> = cells.iter().map(|(u, l, r)| format!(r#"{{"unit":{u},"lane":{l},"row":{r}}}"#)).collect();
-    let refused = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{}]}}"#, list.join(",")));
-    assert!(matches!(&refused, Err(CmdErr::Cannot(r)) if r == "An army fights in its tactic."), "{refused:?}");
-    assert!(s.g.battle_reports.is_empty(), "a refused attack changes nothing");
-    let r = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}}}}"#)).unwrap();
-    let CmdOk::Applied { battle: Some(id), .. } = r else { panic!("no battle: {r:?}") };
-    let l = q(&s, &format!(r#"{{"q":"battle_log","report":{id}}}"#));
-    assert_eq!(arr(&l, "tactics").iter().filter_map(Json::as_i64).collect::<Vec<_>>(), tactics);
-    let side = arr(&l, "sides").into_iter().next().unwrap();
-    assert_eq!(side.get("ordered").and_then(Json::as_bool), Some(false), "{side:?}");
-    for (u, lane, row) in cells {
-        let f = arr(&l, "fighters").into_iter().find(|f| int(f, "unit") == u).expect("in the log");
-        assert_eq!((int(&f, "lane"), int(&f, "row")), (lane, row), "the plan's cell: {f:?}");
+    let line = format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{}]}}"#, list.join(","));
+    assert!(Command::from_json(ffh_data::global(), &Json::parse(&line).unwrap()).is_err(), "a formation is not a field of engage");
+    // A squad that cannot attack there: no battle, nothing changed.
+    let units_now = |s: &Session| st.units.iter().chain(&st.defenders).map(|&u| (s.g.unit_plot_opt(u), s.g.units[u].damage, s.g.units[u].moves, s.g.units[u].attacks_made)).collect::<Vec<_>>();
+    let before = units_now(&s);
+    let off = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"squad":{}}}"#, u32::MAX));
+    assert!(matches!(&off, Ok(CmdOk::Applied { battle: None, .. }) | Err(CmdErr::Cannot(_))), "{off:?}");
+    assert!(s.g.battle_reports.is_empty() && units_now(&s) == before, "a refused attack moves, hurts or spends no unit");
+    for named in [false, true] {
+        let mut s = load(&st.save);
+        let extra = if named { format!(r#","squad":{squad}"#) } else { String::new() };
+        let r = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}}{extra}}}"#)).unwrap();
+        let CmdOk::Applied { battle: Some(id), .. } = r else { panic!("no battle: {r:?}") };
+        let l = q(&s, &format!(r#"{{"q":"battle_log","report":{id}}}"#));
+        let side = arr(&l, "sides").into_iter().next().unwrap();
+        assert_eq!(side.get("ordered").and_then(Json::as_bool), Some(named), "{side:?}");
+        for &(u, lane, row) in &cells {
+            let f = arr(&l, "fighters").into_iter().find(|f| int(f, "unit") == u).expect("in the log");
+            assert_eq!((int(&f, "lane"), int(&f, "row")), (lane, row), "the plan's cell: {f:?}");
+        }
     }
 }
 

@@ -60,8 +60,6 @@
       "min_area_size": -1,
       "moves": 3,
       "nuke_range": -1,
-      "combat": 15,
-      "combat_defense": 12,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,

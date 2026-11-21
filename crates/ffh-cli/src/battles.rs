@@ -5,8 +5,8 @@
 //!
 //! A line: `name | ATTACKERS | DEFENDERS | GROUND`, `#` starts a comment. ATTACKERS and DEFENDERS
 //! are comma-separated `[N*]UNIT[+PROMOTION]..[:LEVEL][@ROW]` (the `UNIT_` and `PROMOTION_`
-//! prefixes may be left out; `:LEVEL` sets the units' level, as for a veteran of the Vanguard
-//! tactic, without the promotions it would have earned: name those); an attacker's `@front`,
+//! prefixes may be left out; `:LEVEL` sets the units' level, without the promotions it would have
+//! earned: name those); an attacker's `@front`,
 //! `@middle` or `@rear` suffix moves it to that row of the auto formation (to a free cell, else
 //! swapping with a unit there; not for large units). GROUND is
 //! space-separated words: `open` (the default: flat grassland, no feature), `forest`, `hills`,
@@ -15,10 +15,7 @@
 //! the turn, each committing the attackers that have not attacked yet, until the plot falls),
 //! `bombard:N` (N turns of siege first: each attacker that can bombard does, then the attackers'
 //! attacks and moves are reset; the defenders do not heal, as in a besieged city), `imp:NAME` (the
-//! defended plot's improvement, `IMPROVEMENT_` prefix optional: a card's Cairn), `tactic:NAME` and
-//! `dtactic:NAME` (the attackers' and the defenders' battle tactic, docs/TACTICS.md, `TACTIC_` prefix
-//! optional; default LINE: set on every army of the side and on the defended city's garrison, so
-//! the rules' own resolution picks it).
+//! defended plot's improvement, `IMPROVEMENT_` prefix optional: a card's Cairn).
 //!
 //! The world is a duel map, players 0 (attacker) and 1 (defender) at war, no controllers. Every
 //! unit keeps only its unit type's free promotions and the ones the line names (the civs' races and
@@ -58,8 +55,6 @@ struct Spec {
     waves: usize,
     bombard: usize,
     improvement: Option<ImprovementType>,
-    /// The attackers' and the defenders' battle tactics.
-    tactics: [Option<BattleTacticType>; 2],
 }
 
 fn parse_stacks(d: &GameData, s: &str) -> Result<Vec<Stack>, String> {
@@ -136,7 +131,6 @@ fn parse_line(d: &GameData, line: &str) -> Result<Option<Spec>, String> {
         waves: 1,
         bombard: 0,
         improvement: None,
-        tactics: [None, None],
     };
     for w in f.get(3).copied().unwrap_or("").split_whitespace() {
         match w {
@@ -157,9 +151,6 @@ fn parse_line(d: &GameData, line: &str) -> Result<Option<Spec>, String> {
                     s.waves = n.parse().map_err(|_| format!("bad {w}"))?;
                 } else if let Some(n) = w.strip_prefix("dmg:") {
                     s.dmg = n.parse().map_err(|_| format!("bad {w}"))?;
-                } else if let Some((k, n)) = w.strip_prefix("tactic:").map(|n| (0, n)).or_else(|| w.strip_prefix("dtactic:").map(|n| (1, n))) {
-                    let name = if n.starts_with("TACTIC_") { n.to_string() } else { format!("TACTIC_{n}") };
-                    s.tactics[k] = Some(d.ty::<BattleTacticType>(&name).ok_or_else(|| format!("unknown tactic {name}"))?);
                 } else if let Some(n) = w.strip_prefix("imp:") {
                     let name = if n.starts_with("IMPROVEMENT_") { n.to_string() } else { format!("IMPROVEMENT_{n}") };
                     s.improvement = Some(d.ty::<ImprovementType>(&name).ok_or_else(|| format!("unknown improvement {name}"))?);
@@ -261,19 +252,27 @@ fn stage(s: &Spec) -> (Game, PlotIdx, PlotIdx, UnitId, Vec<(UnitId, u8)>) {
         }
         g.player_army_sync(owner);
     }
-    // The sides' tactics: every army of the side, and the defended city's garrison.
-    for (k, owner) in [(0, p0), (1, p1)] {
-        let Some(tactic) = s.tactics[k] else { continue };
-        for a in g.players[owner].armies.clone() {
-            g.armies[a].tactic = tactic;
-            g.armies[a].tactic_next = tactic;
-        }
-        if let Some(c) = g.map.plots[to].plot_city.filter(|&c| g.cities[c].owner == owner) {
-            g.cities[c].garrison_tactic = tactic;
-            g.cities[c].garrison_tactic_next = tactic;
+    (g, from, to, first.expect("an attacker"), rows)
+}
+
+/// A hand-set squad of the attacker's auto formation with `rows` applied (module comment): the
+/// squad of its first unit, holding exactly those units in those cells.
+fn squad_with(g: &mut Game, from: PlotIdx, to: PlotIdx, rows: &[(UnitId, u8)]) -> Option<SquadId> {
+    let f = formation_with(g, from, to, rows);
+    g.player_army_sync(PlayerId(0));
+    let s = g.units[f.first()?.unit].squad?;
+    for u in g.map.plots[from].units.clone() {
+        if g.units[u].squad == Some(s) && !f.iter().any(|p| p.unit == u) {
+            g.units[u].squad = None;
         }
     }
-    (g, from, to, first.expect("an attacker"), rows)
+    for p in &f {
+        g.units[p.unit].squad = Some(s);
+        g.units[p.unit].squad_cell = p.row * 3 + p.lane;
+    }
+    g.squads[s].hand_set = true;
+    g.player_army_sync(PlayerId(0));
+    Some(s)
 }
 
 /// The attacker's auto formation with `rows` applied (module comment).
@@ -367,13 +366,8 @@ struct Agg {
     reserve: [i64; 2],
     slots: [i64; 2],
     lanes: [i64; 2],
-    /// Each side's battle tactic (the first battle log's).
-    tactics: [Option<BattleTacticType>; 2],
-    /// Per side, over the runs it won: those runs, its veterans committed (the Hero promotion or
-    /// level `TACTIC_VETERAN_LEVEL`) and those that fell.
+    /// Per side, the runs it won.
     won: [i64; 2],
-    vet_won: [i64; 2],
-    vet_fell_won: [i64; 2],
 }
 
 fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
@@ -409,12 +403,12 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
             };
             let before = g.battle_report_next;
             let grp = g.units[lead].group.expect("a group");
-            let formation = if rows.is_empty() {
+            let squad = if rows.is_empty() {
                 None
             } else {
-                Some(formation_with(&g, from, to, &rows))
+                squad_with(&mut g, from, to, &rows)
             };
-            if let Err(e) = g.group_attack_force(grp, tx, ty, MOVE_DIRECT_ATTACK, formation) {
+            if let Err(e) = g.group_attack_force(grp, tx, ty, MOVE_DIRECT_ATTACK, squad) {
                 eprintln!("{}: refused: {e}", spec.name);
                 break;
             }
@@ -457,15 +451,6 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
             R::Repulsed | R::Held => 1,
         };
         a.won[winner] += 1;
-        let vet_level = d.defines.tactic_veteran_level;
-        for log in reports.iter().filter_map(|r| r.log.as_ref()) {
-            for f in log.fighters.iter().filter(|f| f.place.is_some() && !f.sentinel && f.side.index() == winner && (f.hero || f.level >= vet_level)) {
-                a.vet_won[winner] += 1;
-                if matches!(f.fate, Some(LogFate::Fell { .. })) {
-                    a.vet_fell_won[winner] += 1;
-                }
-            }
-        }
         let (hp, cw) = run_net(&reports);
         a.net_hp[0] += hp;
         a.net_hp[1] += hp * hp;
@@ -527,9 +512,6 @@ fn add_report(a: &mut Agg, r: &BattleReport, name: &str) {
     for s in 0..2 {
         a.slots[s] += r.sides[s].slots as i64;
         a.lanes[s] += r.sides[s].lanes as i64;
-        if a.tactics[s].is_none() {
-            a.tactics[s] = Some(log.tactics[s]);
-        }
     }
     for f in &log.fighters {
         let s = f.side.index();
@@ -622,12 +604,7 @@ fn json(spec: &Spec, a: &Agg) -> String {
         ",\"slots\":{:?},\"lanes\":{:?},\"reserve\":{:?}",
         a.slots, a.lanes, a.reserve
     );
-    let tactic = |k: usize| a.tactics[k].map_or("".to_string(), |t| d.type_name(t).to_string());
-    let _ = write!(
-        s,
-        ",\"tactics\":[{:?},{:?}],\"won\":{:?},\"vet_won\":{:?},\"vet_fell_won\":{:?}",
-        tactic(0), tactic(1), a.won, a.vet_won, a.vet_fell_won
-    );
+    let _ = write!(s, ",\"won\":{:?}", a.won);
     s.push_str(",\"sides\":[");
     for k in 0..2 {
         let x = &a.sides[k];

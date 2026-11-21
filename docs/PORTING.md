@@ -112,6 +112,24 @@ went wrong", below.)
   precious-unit bar for heroes is 60% plus 1% a level and 5% a Wound, at most 90% (was 85% plus
   1% a level, at most 99%); it casts Resurrection from a city on its most valuable dead unit of
   cost 60 or level 3 and more.
+- **Land units have no strength** (docs/UNIT_STATS.md, section 10; the owner's decision,
+  2026-11-21). `iCombat` and `iCombatDefense` are gone from every land unit; the stat sheet is the
+  only source of its attack and defence, and the rules that read strength read the sheet's
+  ratings (ATK, DEF, the higher of the two) on its scale, ten a strength point. Ships keep
+  strength and the naval duel. Typed attack and affinities are in points (x10). What plays
+  differently, for the 120 land units whose sheet is not their old strength x10 and for the
+  rounding: Ira -30 ATK and DEF after a fight its opponent survives, while ATK < 320 (FfH: -3
+  strength under 32); the Repentant Angel -50 while ATK > 50 (-5 above 5); a Flesh Golem +10 ATK
+  (DEF) when the merged unit's is higher (+1 strength), its trophy at ATK 150 (15); defensive
+  strike and spell damage resistance take DEF / 5 (2 x defence strength); the Fear check
+  `(rating - the source's) / 10 + 20 + levels` (strengths), its source the highest rating;
+  Kidnap's chance ATK x 8 / 10 % (strength x 8); Domination's target rating + (100 - resist)
+  (10 x strength); Pillar of Fire's and the Citadel event's targets half the ratings (5 x
+  strength); Rantine's Convert City, The Cull's order, the best land unit, upgrade and
+  requisition picks by rating; the AI-only gates of Commander Join (rating above 50) and Take
+  Equipment (rating more than 20 above the holder's). Crusade and loan **force** (was strength)
+  is the rating with the combat bonus, shown on the sheet's scale (an Axeman's 40, was 4).
+  Save format 59.
 - **Fixed mana resources.** Map generation assigns every ordinary mana deposit a uniformly
   random sphere from the 17 standard node types, using the map RNG after start normalization
   and far-shore placement. Same seed, same resources. Ice remains special to Letum Frigus.
@@ -137,6 +155,29 @@ Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement c
 2026-11-03); the owner's decision made them part of every game, so FFH2's rules without them are
 no longer playable side by side. Save format 16 removed the last three options and the crusade
 flag.
+
+- **Squads; frontage gone; the ground's own rules** (the owner's decision, 2026-11-21;
+  docs/ENGAGEMENTS.md, "Squads" and "The ground"). Every land fighting unit stands in a squad: a
+  grid of 3 rows by 3 lanes holding `ENGAGEMENT_SQUAD_PLACES` (6) places, a large unit 2, kept
+  between battles. Armies and garrisons are divided into squads, Auto (the auto formation) until
+  the player hand-sets one; a new unit joins the first squad with room and a free cell in its best
+  row, else forms a squad of one; auto-sort deals chosen squads into as few as hold them. One
+  battle is one squad against one squad (it was up to 8 units a side, 10 on open land, 6 in forest,
+  jungle and on hills): the order names the attacking squad (else the strongest); the defenders
+  field, of the squads that fought the fewest battles this turn, the one with the best result over
+  `ENGAGEMENT_DEFENSE_PICK_RUNS` (6) battles on a private RNG. With the same day's result rule (a
+  lost battle outside a city pushes every defender on the plot back), one squad's lost battle moves
+  the whole stack off the plot, its reserve squads too. Frontage goes: no slots by terrain,
+  feature or hills (`iEngagementSlotsChange`, `ENGAGEMENT_SLOTS_*` gone), no river slots, no slot
+  cost for a city's Sentinels (they stand in the defender's front cells on top of its squad,
+  displacing its units to the nearest free cell: walls are stronger than before), no Trench slot
+  cut. The ground's lines instead: in a forest or jungle stabs deal 150% and large units 75%; on
+  open flat land large units deal 120%; on hills the attacker's charges lose the first-round bonus;
+  a marsh stops charges and large units deal 75%; an attacker crossing a river deals 50% in round 1
+  with its units that do not cross rivers freely (`bRiver`); the Trench makes the attacker's hits
+  60% in round 1 (`engagement_attacker_first_round_percent`). Battle tactics are retired (squads
+  do their work). The proposal's longer battles on open ground were not built: battles last two
+  rounds everywhere (the owner's decision of the same day). Save format 57.
 
 - **Formation battles last two rounds** (the owner's decision, 2026-11-21; was three):
   `ENGAGEMENT_ROUNDS` 3 -> 2. A battle ends after its second round, or earlier when a side has no
@@ -626,13 +667,15 @@ flag.
   Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
   battle's hit, against the plot's own defence, as before the formation battles). Save format 10.
   (Who wins and when the plot falls changed on 2026-11-21: the next entry.)
-- **A battle is lost by the side that loses more HP; the losing defenders are pushed back** (the
-  owner's rule, 2026-11-21; docs/ENGAGEMENTS.md, "The engagement", step 6). Each side's HP lost
-  is every one of its units' HP when the engagement began less its HP at the end: a fallen unit's
-  all of it, a withdrawn one's all it had left (its withdrawal took the place of a killing hit),
-  heals in the battle taken back, a city's Sentinels on the defender's side, the opening's
-  defensive strikes and pre-battle damage included. The side that lost more lost the battle (a
-  tie: neither). When the defenders lost outside a city, every defender left on the plot (the
+- **A battle has a loser; the losing defenders are pushed back** (the owner's rules, 2026-11-21;
+  docs/ENGAGEMENTS.md, "The engagement", step 6). The loser is found by the first of three rules
+  that tells the sides apart: (1) a side all of whose units in the battle fell loses; (2) the side
+  with more units fallen loses; (3) the side that lost more HP loses (every one of its units' HP
+  when the engagement began less its HP at the end: a fallen unit's all of it, a withdrawn one's
+  all it had left, as its withdrawal took the place of a killing hit; heals in the battle taken
+  back; a city's Sentinels, which count in this rule only, on the defender's side; the opening's
+  defensive strikes and pre-battle damage included); none: no loser. (The first version that day
+  had rule 3 alone; it let a line that wiped out wounded defenders lose.) When the defenders lost outside a city, every defender left on the plot (the
   line's survivors, those that sat out, the reserve) is pushed back to a plot next to it, the
   farthest from the attacker's plot among those it could withdraw to, a group together with its
   non-combatants; one with nowhere to go stays. The plot falls only when the defenders lost and
@@ -640,11 +683,11 @@ flag.
   the battle emptied (the attackers lost: the next attack walks in). In a city nobody is pushed
   back, and the city falls as before when no defender is left, but only to a won battle. Before:
   there was no winner by damage, and the plot fell whenever no defender was left. Why: the
-  owner's design, a battle won or lost by the damage each side took. The preview and the AI's
+  owner's design, a battle won or lost by what each side lost. The preview and the AI's
   forecasts use the same rule (the chance to win, and the plot falls); the winner of a battle for
   the Dawn Vow is the side that did not lose. A unit that withdraws before taking damage counts
-  as losing all it had, so a fast raider cannot win by chipping a stack and escaping. Save format
-  57.
+  as losing all it had, so a fast raider cannot win by chipping a stack and escaping. Save formats
+  57 and 58.
 - **Unit stats** (docs/UNIT_STATS.md; the owner's design, 2026-11-05). Every land unit type has a
   stat sheet (`stats`: HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed),
   and promotions name the stats they change (`stat_changes`: points and percentages). A physical

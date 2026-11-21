@@ -452,10 +452,10 @@ fn post_combat_heal50(g: &mut Game, caster: UnitId, _opponent: UnitId, _call: &P
 
 /// `postCombatIra(pCaster, pOpponent)`.
 fn post_combat_ira(g: &mut Game, caster: UnitId, opponent: UnitId, _call: &PyCall) {
-    if g.unit_is_alive(opponent) && g.unit_base_combat_str(caster) < 32 {
-        // setBaseCombatStr(baseCombatStr() - 3): the getter includes damage-type strength.
-        g.unit_set_base_combat_str(caster, g.unit_base_combat_str(caster) - 3);
-        g.unit_set_base_combat_str_defense(caster, g.unit_base_combat_str_defense(caster) - 3);
+    // FfH: -3 strength while under 32; here on the sheet's scale (docs/PORTING.md).
+    if g.unit_is_alive(opponent) && g.unit_attack_rating(caster) < 320 {
+        g.unit_change_attack_points(caster, -30);
+        g.unit_change_defense_points(caster, -30);
     }
 }
 
@@ -599,10 +599,10 @@ fn post_combat_yersinia(g: &mut Game, _caster: UnitId, opponent: UnitId, _call: 
 
 /// `postCombatReduceCombat1(pCaster, pOpponent)`.
 fn post_combat_reduce_combat1(g: &mut Game, caster: UnitId, opponent: UnitId, _call: &PyCall) {
-    if g.unit_is_alive(opponent) && g.unit_base_combat_str(caster) > 5 {
-        // setBaseCombatStr(baseCombatStr() - 5): the getter includes damage-type strength.
-        g.unit_set_base_combat_str(caster, g.unit_base_combat_str(caster) - 5);
-        g.unit_set_base_combat_str_defense(caster, g.unit_base_combat_str_defense(caster) - 5);
+    // FfH: -5 strength while above 5; here on the sheet's scale (docs/PORTING.md).
+    if g.unit_is_alive(opponent) && g.unit_attack_rating(caster) > 50 {
+        g.unit_change_attack_points(caster, -50);
+        g.unit_change_defense_points(caster, -50);
     }
 }
 
@@ -693,11 +693,13 @@ fn spell_add_to_flesh_golem(g: &mut Game, caster: UnitId, _call: &PyCall) {
         }
     }
     let Some(golem) = golem else { return };
-    if g.unit_base_combat_str(caster) > g.unit_base_combat_str(golem) {
-        g.unit_set_base_combat_str(golem, g.unit_base_combat_str(golem) + 1);
+    // FfH: +1 strength (defence strength) if the unit's is higher; here +10 attack (defence)
+    // points if its attack (defence) rating is higher (docs/PORTING.md).
+    if g.unit_attack_rating(caster) > g.unit_attack_rating(golem) {
+        g.unit_change_attack_points(golem, 10);
     }
-    if g.unit_base_combat_str_defense(caster) > g.unit_base_combat_str_defense(golem) {
-        g.unit_set_base_combat_str_defense(golem, g.unit_base_combat_str_defense(golem) + 1);
+    if g.unit_defense_rating(caster) > g.unit_defense_rating(golem) {
+        g.unit_change_defense_points(golem, 10);
     }
     for prom in d.promotions.keys() {
         if g.units[caster].has_promotion[prom] {
@@ -725,7 +727,7 @@ fn spell_add_to_flesh_golem(g: &mut Game, caster: UnitId, _call: &PyCall) {
     if g.units[golem].has_promotion[iron] {
         g.unit_set_has_promotion(golem, bronze, false);
     }
-    if g.unit_base_combat_str(golem) >= 15 {
+    if g.unit_attack_rating(golem) >= 150 {
         trophy_if_human(g, p, "TROPHY_FEAT_FLESH_GOLEM_15");
     }
 }
@@ -993,7 +995,8 @@ fn req_commander_join(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     if g.units[commander].has_casted {
         return false;
     }
-    if !g.players[p].human && g.unit_base_combat_str(caster) <= 5 {
+    // FfH: strength above 5 (docs/PORTING.md; AI-only: docs/AI_ONLY_RULES.md, A2).
+    if !g.players[p].human && g.unit_rating(caster) <= 50 {
         return false;
     }
     true
@@ -1072,7 +1075,7 @@ fn req_convert_city_rantine(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     }
     let pl = g.unit_plot(caster);
     for &u in &g.map.plots[pl].units {
-        if g.units[u].owner == barbarian && g.unit_base_combat_str(u) > g.unit_base_combat_str(caster) {
+        if g.units[u].owner == barbarian && g.unit_rating(u) > g.unit_rating(caster) {
             return false;
         }
     }
@@ -1173,7 +1176,7 @@ fn req_crew_buccaneers(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     if g.unit_max_moves(caster) <= 1 {
         return false;
     }
-    if g.unit_base_combat_str(caster) < 1 {
+    if !g.unit_can_fight(caster) {
         return false;
     }
     if !g.players[g.units[caster].owner].human {
@@ -1194,7 +1197,7 @@ fn req_crew_longshoremen(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     if g.unit_cargo_space_available(caster, None, Some(DomainType::DOMAIN_LAND)) == 0 {
         return false;
     }
-    if g.unit_base_combat_str(caster) < 1 {
+    if !g.unit_can_fight(caster) {
         return false;
     }
     if !g.players[g.units[caster].owner].human {
@@ -1225,7 +1228,7 @@ fn req_crew_skeleton_crew(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     if g.units[caster].has_promotion[d.t::<PromotionType>("PROMOTION_SKELETON_CREW")] {
         return false;
     }
-    if g.unit_base_combat_str(caster) < 1 {
+    if !g.unit_can_fight(caster) {
         return false;
     }
     if !g.players[g.units[caster].owner].human {
@@ -1465,7 +1468,8 @@ fn spell_domination(g: &mut Game, caster: UnitId, _call: &PyCall) {
             if g.unit_is_alive(u) && !g.units[u].death_delay && caster_at_war(g, caster, g.unit_get_team(u)) {
                 let resist = g.unit_get_resist_chance(u, caster, spell);
                 if resist <= resist_max {
-                    let value = g.unit_base_combat_str(u) * 10 + (100 - resist);
+                    // FfH: 10 x strength; its rating (docs/PORTING.md).
+                    let value = g.unit_rating(u) + (100 - resist);
                     if value > best_value {
                         best_value = value;
                         best_unit = Some(u);
@@ -2192,7 +2196,8 @@ fn spell_kidnap(g: &mut Game, caster: UnitId, _call: &PyCall) {
             target = Some((d.t::<UnitType>(unit), specialist));
         }
     }
-    let mut chance = g.unit_base_combat_str(caster) * 8;
+    // FfH: 8 x strength; 8 x its attack rating / 10 (docs/PORTING.md).
+    let mut chance = g.unit_attack_rating(caster) * 8 / 10;
     if chance > 95 {
         chance = 95;
     }
@@ -2437,7 +2442,8 @@ fn spell_pillar_of_fire(g: &mut Game, caster: UnitId, _call: &PyCall) {
         let mut value = 0;
         for &u in &g.map.plots[pl].units {
             if caster_at_war(g, caster, g.unit_get_team(u)) {
-                value += 5 * g.unit_base_combat_str(u);
+                // FfH: 5 x strength; half its rating (docs/PORTING.md).
+                value += g.unit_rating(u) / 2;
             } else {
                 neutral = true;
             }

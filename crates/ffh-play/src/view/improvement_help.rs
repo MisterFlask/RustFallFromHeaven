@@ -89,8 +89,8 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
         lines.push(txt(d, "TXT_KEY_IMPROVEMENT_VISIBILITY_CHANGE", &[Arg::N(info.visibility_change)]));
     }
     // A great-person card's key (docs/CARDS.md): the Trench.
-    if info.engagement_attacker_slots_change != 0 {
-        lines.push(format!("[ICON_BULLET]In battles on this plot: {:+} slots for the attacker (at least the minimum)", info.engagement_attacker_slots_change));
+    if info.engagement_attacker_first_round_percent != 0 {
+        lines.push(format!("[ICON_BULLET]In battles on this plot: the attacker's hits in round 1 deal {}%", info.engagement_attacker_first_round_percent));
     }
     // A great-person card's keys (docs/CARDS.md): the Cairn.
     if info.engagement_defense != 0 {
@@ -223,7 +223,7 @@ mod tests {
         for part in ["+25% Tile Defense", "+1[ICON_HAPPY] in nearby cities", "+6 to unit visibility range", "World Improvement", "Provides "] {
             assert!(mirror.contains(part), "{part}: {mirror}");
         }
-        assert!(effects_of("IMPROVEMENT_ODIOS_PRISON").contains("+25% strength to all units within 3 tiles"));
+        assert!(effects_of("IMPROVEMENT_ODIOS_PRISON").contains("+25% defense to all units within 3 tiles"));
         let maelstrom = effects_of("IMPROVEMENT_MAELSTROM");
         assert!(maelstrom.contains("sinks (26%)"), "{maelstrom}");
         let pool = effects_of("IMPROVEMENT_POOL_OF_TEARS");

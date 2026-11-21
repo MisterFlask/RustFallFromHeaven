@@ -32,7 +32,7 @@ queue (`ffh_harness::check`).
 `ArmyDomain::Land` or `Sea`). A sea army is a fleet ("1st Fleet", numbered apart from the armies)
 of a player's warships and ships with cargo room; it shares the sync, the commands, the target
 size, the requisition (coastal cities; the ship sails to it as a recruit marches) and Upgrade all,
-and has no supply line, no tactic and no garrison; it holds a standing order (`Army::station`:
+and has no supply line, no squads and no garrison; it holds a standing order (`Army::station`:
 Patrol of a sea, Escort). Everything below about armies is about land armies unless it says
 otherwise; the code that only means land armies skips fleets (`Game::army_is_fleet`). An army
 carried by ships stays one army aboard and lands as one group (`Army::carried`).
@@ -42,6 +42,10 @@ Until 2026-11-05 they were a game option (`GAMEOPTION_ARMIES`, on by default onl
 new-game screen); the owner removed it, with those of the cultural actions and the governors.
 
 ## Rules
+
+**Squads** (2026-11-21): an army and a city's garrison are divided into squads, the units a battle
+commits (docs/ENGAGEMENTS.md, "Squads"); the army commands keep whole squads together where they
+can (a squad split off or merged whole keeps its cells).
 
 **Army units.** Land units with a strength, except mages (`UNITCOMBAT_ADEPT`), recon units
 (`UNITCOMBAT_RECON`), heroes (`PROMOTION_HERO`: a unit that has it, and so a unit type that gives

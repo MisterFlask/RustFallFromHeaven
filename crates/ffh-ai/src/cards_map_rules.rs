@@ -328,7 +328,7 @@ fn siege_lines(g: &mut Game, v: &View) {
     }
     let Some((_, site)) = best else { return };
     // The stack's weakest unit that can build them digs; the others stay free to fight.
-    let digger = fighters_on(g, p, site).into_iter().filter(|&u| g.unit_can_build(u, site, build, false) && !g.unit_is_cargo(u)).min_by_key(|&u| (g.unit_base_combat_str(u), u));
+    let digger = fighters_on(g, p, site).into_iter().filter(|&u| g.unit_can_build(u, site, build, false) && !g.unit_is_cargo(u)).min_by_key(|&u| (g.unit_attack_rating(u), u));
     let Some(digger) = digger else { return };
     let Some(grp) = own_group(g, digger) else { return };
     g.group_clear_mission_queue(grp);

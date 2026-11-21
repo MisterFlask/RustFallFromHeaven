@@ -177,7 +177,7 @@ async function answerConfirm(c, confirm) {
       const items = (v) => (v?.length ? v.map(tradeItemLabel).join(", ") : "nothing");
       const who = S.players.get(k.to)?.name ?? `Player ${k.to}`;
       const text = [
-        `${who} would agree to: ${k.lend ? "you lend" : "they lend"} strength ${k.strength / 100} for ${k.duration} turns, to ${k.mission === "defend" ? "defend the borrower against" : "attack"} ${teamName(k.target)}.`,
+        `${who} would agree to: ${k.lend ? "you lend" : "they lend"} force ${Math.round(k.strength / 10)} for ${k.duration} turns, to ${k.mission === "defend" ? "defend the borrower against" : "attack"} ${teamName(k.target)}.`,
         `You give: ${items(k.give)}. You get: ${items(k.get)}.`,
       ];
       const v = await ask("Counter-offer", text, [

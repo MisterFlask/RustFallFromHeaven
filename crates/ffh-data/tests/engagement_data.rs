@@ -408,32 +408,21 @@ fn every_land_type_has_rows() {
 }
 
 #[test]
-fn plots_change_the_slots() {
+fn plots_have_their_ground() {
+    // docs/ENGAGEMENTS.md, "The ground": the open terrains, the forests and jungle, the marsh.
     let d = d();
     let t = |n: &str| d.t::<TerrainType>(n);
-    let f = |n: &str| Some(d.t::<FeatureType>(n));
+    let f = |n: &str| d.t::<FeatureType>(n);
     for n in ["TERRAIN_GRASS", "TERRAIN_PLAINS", "TERRAIN_DESERT", "TERRAIN_TUNDRA", "TERRAIN_SNOW", "TERRAIN_BURNING_SANDS", "TERRAIN_FIELDS_OF_PERDITION"] {
-        assert_eq!(d.terrains[t(n)].engagement_slots_change, 2, "{n}");
+        assert!(d.terrains[t(n)].engagement_open, "{n}");
     }
-    assert_eq!(d.terrains.iter().filter(|x| x.engagement_slots_change != 0).count(), 7);
+    assert_eq!(d.terrains.iter().filter(|x| x.engagement_open).count(), 7);
     for n in ["FEATURE_JUNGLE", "FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_FOREST_NEW"] {
-        assert_eq!(d.features[f(n).unwrap()].engagement_slots_change, -2, "{n}");
+        assert!(d.features[f(n)].engagement_forest, "{n}");
     }
-    assert_eq!(d.features.iter().filter(|x| x.engagement_slots_change != 0).count(), 4);
-    // Each side's slots before the minimum, the city and the river (plan section 2.4).
-    let s = |terrain: &str, feature: Option<FeatureType>, hills: bool| {
-        d.defines.engagement_slots_base + d.engagement_slots_change(t(terrain), feature, hills)
-    };
-    assert_eq!(s("TERRAIN_GRASS", None, false), 10, "open grassland");
-    assert_eq!(s("TERRAIN_GRASS", f("FEATURE_FOREST"), false), 6, "forest");
-    assert_eq!(s("TERRAIN_GRASS", f("FEATURE_JUNGLE"), false), 6, "jungle");
-    assert_eq!(s("TERRAIN_PLAINS", None, true), 6, "hills");
-    assert_eq!(s("TERRAIN_PLAINS", f("FEATURE_FOREST"), true), 4, "forested hills");
-    assert_eq!(s("TERRAIN_MARSH", None, false), 8, "marsh");
-    assert_eq!(s("TERRAIN_BROKEN_LANDS", None, false), 8, "broken lands");
-    // a feature without a change leaves the terrain's
-    assert_eq!(s("TERRAIN_DESERT", f("FEATURE_FLOOD_PLAINS"), false), 10, "flood plains");
-    assert_eq!(s("TERRAIN_GRASS", f("FEATURE_SCRUB"), false), 10, "scrub");
+    assert_eq!(d.features.iter().filter(|x| x.engagement_forest).count(), 4);
+    assert!(d.terrains[t("TERRAIN_MARSH")].engagement_mire);
+    assert_eq!(d.terrains.iter().filter(|x| x.engagement_mire).count(), 1);
 }
 
 #[test]
@@ -451,7 +440,8 @@ fn withered_and_puppet_lower_defence_too() {
 #[test]
 fn engagement_defines() {
     let x = &d().defines;
-    assert_eq!((x.engagement_slots_base, x.engagement_slots_min, x.engagement_slots_hills, x.engagement_slots_river), (8, 3, -2, 2));
+    assert_eq!((x.engagement_squad_places, x.engagement_defense_pick_runs), (6, 6));
+    assert_eq!((x.engagement_forest_stab_percent, x.engagement_open_large_percent, x.engagement_rough_large_percent, x.engagement_wading_percent), (150, 120, 75, 50));
     assert_eq!(x.engagement_summon_extra_slots, 2);
     // Sieges (docs/SIEGES.md).
     assert_eq!((x.sentinel_repair_percent, x.siege_bombard_floor_percent), (10, 50));

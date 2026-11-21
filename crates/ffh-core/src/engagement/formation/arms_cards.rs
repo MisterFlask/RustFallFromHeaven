@@ -173,8 +173,8 @@ mod tests {
     use ffh_data::ActionKind as K;
 
     const EQ: Pair = Pair { a: 400, dv: 400, ma: 400, md: 400, spell_pct: 100, pct: 100 };
-    const OPEN: Ground = Ground { city: false, forest: false, hills: false };
-    const CITY: Ground = Ground { city: true, forest: false, hills: false };
+    const OPEN: Ground = Ground { city: false, forest: false, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };
+    const CITY: Ground = Ground { city: true, forest: false, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };
 
     fn row(kind: K, count: i32) -> RowActions {
         RowActions { kind, count }

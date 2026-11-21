@@ -797,7 +797,7 @@ impl Cai {
                         unit_value *= 4;
                     }
 
-                    unit_value *= g.unit_base_combat_str(u);
+                    unit_value *= g.unit_attack_rating(u) / 10;
                     unit_counts[g.units[u].unit_type] += unit_value;
                     domain_sums[g.unit_get_domain_type(u).idx()] += unit_value;
                     new_total += unit_value;
@@ -891,10 +891,10 @@ impl Cai {
                 let tech = info.prereq_and_tech;
                 if weights[class.idx()] > 0 || g.team_is_has_tech(team, tech) {
                     if info.unit_ai_type[unit_ai] {
-                        best_unit_ai_strength = best_unit_ai_strength.max(info.combat);
+                        best_unit_ai_strength = best_unit_ai_strength.max(info.attack_rating() / 10);
                     }
 
-                    best_other_strength = best_other_strength.max(info.combat);
+                    best_other_strength = best_other_strength.max(info.attack_rating() / 10);
                 }
             }
         }
@@ -1314,14 +1314,15 @@ impl Cai {
         let d = g.d;
         let info = &d.units[unit];
 
-        let mut combat = if info.domain_type == Some(DomainType::DOMAIN_AIR) { info.air_combat } else { info.combat };
-
-        for damage_type in d.damages.keys() {
-            combat += info.damage_type_combat[damage_type];
-        }
+        // `attack_rating` includes the typed attack points; an air unit adds them to its air strength.
+        let mut combat = if info.domain_type == Some(DomainType::DOMAIN_AIR) {
+            info.air_combat + info.damage_type_attack.iter().sum::<i32>() / 10
+        } else {
+            info.attack_rating() / 10
+        };
 
         for bonus in d.bonuses.keys() {
-            combat += info.bonus_affinity[bonus] * g.player_get_num_available_bonuses(p, bonus);
+            combat += (info.bonus_affinity[bonus] * g.player_get_num_available_bonuses(p, bonus)) / 10;
         }
 
         if info.weapon_tier > 0 {
@@ -1330,17 +1331,17 @@ impl Cai {
             let mut combat_bonus = 0;
             if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier1) {
                 if available(d.defines.weapon_req_bonus_tier1) > 0 {
-                    combat_bonus = d.promotions[promotion].extra_combat_str();
+                    combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
                 }
             }
             if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier2) {
                 if info.weapon_tier > 1 && available(d.defines.weapon_req_bonus_tier2) > 0 {
-                    combat_bonus = d.promotions[promotion].extra_combat_str();
+                    combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
                 }
             }
             if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier3) {
                 if info.weapon_tier > 2 && available(d.defines.weapon_req_bonus_tier3) > 0 {
-                    combat_bonus = d.promotions[promotion].extra_combat_str();
+                    combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
                 }
             }
             combat += combat_bonus;
@@ -1356,7 +1357,7 @@ impl Cai {
         let mut value = 100 * self.player_ai_true_combat_value(g, p, unit);
         value *= (((info.first_strikes * 2) + info.chance_first_strikes) * (d.defines.combat_damage / 5)) + 100;
         value /= 100;
-        value /= g.best_land_unit_combat();
+        value /= (g.best_land_unit_rating() / 10).max(1);
         value
     }
 

@@ -71,20 +71,19 @@ pub fn sees_units(g: &Game, team: TeamId, q: PlotIdx) -> bool {
         || g.map.plots[q].revealed[team]
 }
 
-/// Rough attack power of a unit: strength x health x experience. 0 for non-combatants.
+/// Rough attack power of a unit: attack rating x health x experience. 0 for non-combatants.
 pub fn attack_power(g: &Game, u: UnitId) -> i32 {
     let unit = &g.units[u];
-    let base = unit.base_combat + unit.total_damage_type_combat;
+    let base = g.unit_attack_rating(u);
     if base <= 0 || unit.only_defensive > 0 {
         return 0;
     }
     scaled_power(g, u, base)
 }
 
-/// Rough defense power of a unit (FfH units have separate defense strength).
+/// Rough defense power of a unit (its defence rating x health x experience).
 pub fn defense_power(g: &Game, u: UnitId) -> i32 {
-    let unit = &g.units[u];
-    let base = unit.base_combat_defense.max(0) + unit.total_damage_type_combat;
+    let base = g.unit_defense_rating(u);
     if base <= 0 {
         return 0;
     }
@@ -95,23 +94,22 @@ fn scaled_power(g: &Game, u: UnitId, base: i32) -> i32 {
     let unit = &g.units[u];
     let max_hp = g.d.defines.max_hit_points.max(1);
     let hp = (max_hp - unit.damage).max(0);
-    base * 100 * hp / max_hp * (100 + 10 * unit.level.max(0)) / 100
+    // `base` is a rating (ten a strength point): x10 gives the old strength x100.
+    base * 10 * hp / max_hp * (100 + 10 * unit.level.max(0)) / 100
 }
 
 /// Static power of a unit type (for production choices).
 pub fn type_attack_power(d: &GameData, ut: UnitType) -> i32 {
     let info = &d.units[ut];
-    let dmg: i32 = info.damage_type_combat.iter().sum();
     if info.only_defensive {
         return 0;
     }
-    (info.combat + dmg) * 100
+    info.attack_rating() * 10
 }
 
 pub fn type_defense_power(d: &GameData, ut: UnitType) -> i32 {
     let info = &d.units[ut];
-    let dmg: i32 = info.damage_type_combat.iter().sum();
-    (info.combat_defense + dmg) * 100
+    info.defense_rating() * 10
 }
 
 impl View {

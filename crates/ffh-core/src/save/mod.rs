@@ -190,10 +190,16 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `culture_revolt_level`, no `LoyaltyCause::Offered`; `MEMORY_BOUGHT_HOUSE` renamed
 ///   `MEMORY_SPLIT_HOUSE`; `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL` gone (`TradeableItem::NUM` 17).
 /// - 57: an engagement is lost by the side whose units lost more HP (docs/ENGAGEMENTS.md, "The
-///   result"): `Outcome::hp_lost`, `loser`.
-/// - 58: heroes return after they die and Resurrection brings back other units (unit/fallen.rs):
+///   result"): `Outcome::hp_lost`, `loser`, `pushed`; the log's `PushBack`.
+/// - 58: the loser by all fallen, then more fallen, then more HP lost: `Outcome::decided_by`.
+/// - 59: land units have no strength (docs/UNIT_STATS.md, section 10): no `Unit::base_combat`,
+///   `base_combat_defense`; typed and affinity amounts in attack points (ten a strength point).
+/// - 60: squads (docs/ENGAGEMENTS.md, "Squads"): `Game::squads`, `Unit::squad`, `squad_cell`;
+///   engagement slots no longer vary by ground; battle tactics retired (no `Army::tactic`,
+///   `tactic_next`, `City::garrison_tactic`, `garrison_tactic_next`, no battle log `tactics`).
+/// - 61: heroes return after they die and Resurrection brings back other units (unit/fallen.rs):
 ///   `Unit::wounds`, `Player::recovering`, `Player::fallen`; `PROMOTION_WOUNDED`.
-pub const FORMAT_VERSION: u32 = 58;
+pub const FORMAT_VERSION: u32 = 61;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -347,6 +353,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         plot_groups,
         deals,
         armies,
+        squads,
         houses,
         battle_reports,
         battle_report_next,
@@ -471,6 +478,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     plot_groups.grow(slots);
     deals.grow(slots);
     armies.grow(slots);
+    squads.grow(slots);
     houses.grow(slots);
     battle_reports.grow(slots);
     battle_report_next.grow(slots);
@@ -594,6 +602,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         plot_groups,
         deals,
         armies,
+        squads,
         houses,
         battle_reports,
         battle_report_next,
@@ -717,6 +726,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     plot_groups.write(w);
     deals.write(w);
     armies.write(w);
+    squads.write(w);
     houses.write(w);
     battle_reports.write(w);
     battle_report_next.write(w);
@@ -837,6 +847,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         plot_groups: Persist::read(r)?,
         deals: Persist::read(r)?,
         armies: Persist::read(r)?,
+        squads: Persist::read(r)?,
         houses: Persist::read(r)?,
         battle_reports: Persist::read(r)?,
         battle_report_next: Persist::read(r)?,

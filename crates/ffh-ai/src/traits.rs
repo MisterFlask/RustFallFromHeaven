@@ -362,7 +362,7 @@ pub const SUMMON_NODE: i32 = 3000;
 pub fn summon_mana(d: &GameData) -> &'static [BonusType] {
     static S: std::sync::OnceLock<Vec<BonusType>> = std::sync::OnceLock::new();
     S.get_or_init(|| {
-        let creature = |u: UnitType| !d.units[u].suicide && d.units[u].combat + d.units[u].damage_type_combat.iter().sum::<i32>() > 0;
+        let creature = |u: UnitType| !d.units[u].suicide && d.units[u].attack_rating() > 0;
         let mut v: Vec<BonusType> = d
             .spells
             .iter()
@@ -422,7 +422,7 @@ fn summoning_spheres(d: &GameData) -> &'static [PromotionType] {
             }
             false
         };
-        let fights = |u: UnitType| d.units[u].combat + d.units[u].damage_type_combat.iter().sum::<i32>() > 0;
+        let fights = |u: UnitType| d.units[u].attack_rating() > 0;
         let mut v: Vec<PromotionType> = d
             .spells
             .iter()

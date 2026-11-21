@@ -371,7 +371,7 @@ fn attacker_strength(g: &Game, p: PlayerId, u: UnitType) -> Option<i64> {
     let info = &d.units[u];
     let civ = g.player_get_civilization_type(p)?;
     let class = info.unit_class_type?;
-    if d.civ_unit(civ, class) != Some(u) || info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 || info.only_defensive || info.found || info.production_cost <= 0 {
+    if d.civ_unit(civ, class) != Some(u) || info.domain_type != Some(DomainType::DOMAIN_LAND) || info.attack_rating() <= 0 || info.only_defensive || info.found || info.production_cost <= 0 {
         return None;
     }
     if !(info.unit_ai_type[UnitAIType::UNITAI_ATTACK] || info.unit_ai_type[UnitAIType::UNITAI_ATTACK_CITY]) || crate::production::siege_engine(info) {
@@ -387,7 +387,7 @@ fn attacker_strength(g: &Game, p: PlayerId, u: UnitType) -> Option<i64> {
     if info.prereq_building.is_some_and(|b| d.buildings[b].prereq_religion.is_some() || d.buildings[b].state_religion.is_some()) {
         return None;
     }
-    Some(((info.combat + info.damage_type_combat.iter().sum::<i32>()) * (100 + info.city_attack_modifier.max(-50))) as i64)
+    Some((info.attack_rating() / 10 * (100 + info.city_attack_modifier.max(-50))) as i64)
 }
 
 /// Do we have (or own a revealed plot with) the resources unit `u` needs?

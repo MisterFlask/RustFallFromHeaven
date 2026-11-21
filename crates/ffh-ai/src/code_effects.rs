@@ -227,7 +227,7 @@ fn unit_hammers(d: &GameData, info: &UnitInfo) -> i32 {
         let max = d.units.iter().map(|u| u.tier).max().unwrap_or(0).max(0) as usize;
         (0..=max)
             .map(|t| {
-                let costs: Vec<i32> = d.units.iter().filter(|u| u.tier == t as i32 && u.production_cost > 0 && u.combat > 0).map(|u| u.production_cost).collect();
+                let costs: Vec<i32> = d.units.iter().filter(|u| u.tier == t as i32 && u.production_cost > 0 && u.attack_rating() > 0).map(|u| u.production_cost).collect();
                 if costs.is_empty() {
                     0
                 } else {
@@ -237,7 +237,7 @@ fn unit_hammers(d: &GameData, info: &UnitInfo) -> i32 {
             .collect()
     });
     let by_tier = usize::try_from(info.tier).ok().and_then(|t| tiers.get(t).copied()).unwrap_or(0);
-    (info.combat * info.combat * 10 / 3).max(by_tier)
+    (info.attack_rating() * info.attack_rating() / 30).max(by_tier)
 }
 
 /// Does unit type `info` (of civilization `civ`'s line) come with what `units` covers?
@@ -247,7 +247,7 @@ fn type_matches(d: &GameData, civ: CivilizationType, info: &UnitInfo, units: Uni
         Units::Combat(name) => d.ty::<UnitCombatType>(name).is_some_and(|c| info.unit_combat_type == Some(c)),
         // A race comes with the civilization (`CvUnit::init`'s default race) or the unit.
         Units::Promotion(name) => d.ty::<PromotionType>(name).is_some_and(|pr| {
-            info.free_promotions[pr] || (d.civilizations[civ].default_race == Some(pr) && info.domain_type == Some(DomainType::DOMAIN_LAND) && info.combat > 0)
+            info.free_promotions[pr] || (d.civilizations[civ].default_race == Some(pr) && info.domain_type == Some(DomainType::DOMAIN_LAND) && info.attack_rating() > 0)
         }),
     }
 }

@@ -80,7 +80,6 @@
       "min_area_size": -1,
       "moves": 2,
       "nuke_range": -1,
-      "combat": 10,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -88,7 +87,6 @@
       "asset": 20,
       "power": 40,
       "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_WOODSMAN1": true, "PROMOTION_WOODSMAN2": true},
-      "combat_defense": 10,
       "tier": 4,
       "strategy": "TXT_KEY_UNIT_ERLKING_STRATEGY",
       "unit_combat": "UNITCOMBAT_MELEE"

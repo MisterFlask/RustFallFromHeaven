@@ -1265,7 +1265,6 @@ fn strike_forecast(g: &mut Game, v: &mut View, op: &Op, pool: &[UnitId]) -> i32 
         }
         let moves = g.unit_moves_left(u);
         g.groups[grp].ai_group_attack = false;
-        crate::tactics::note_attack(g, p, from, tp);
         order(g, grp, MissionType::MISSION_MOVE_TO, tx, ty, MOVE_DIRECT_ATTACK, tp);
         fights += 1;
         if alive(g, grp) {
@@ -1438,7 +1437,6 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
         }
         let moves = g.unit_moves_left(u);
         g.groups[grp].ai_group_attack = false;
-        crate::tactics::note_attack(g, p, g.unit_plot(u), tp);
         order(g, grp, MissionType::MISSION_MOVE_TO, tx, ty, MOVE_DIRECT_ATTACK, tp);
         fights += 1;
         if alive(g, grp) {

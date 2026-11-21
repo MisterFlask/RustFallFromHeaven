@@ -115,7 +115,7 @@ impl Game {
             if !self.units.contains(u) {
                 continue;
             }
-            let strength = self.crusade_unit_strength(u);
+            let strength = self.crusade_unit_force(u);
             self.crusade_transfer_to_host(idx, p, u, strength);
             total += strength;
         }
@@ -124,7 +124,7 @@ impl Game {
         lender.units += units.len() as i32;
         self.crusades[idx].had_units = true;
         let n = units.len();
-        self.log.msg(turn, Some(p), || format!("Crusade {}: lent {} unit{} (strength {})", id.0, n, if n == 1 { "" } else { "s" }, strength_text(total)));
+        self.log.msg(turn, Some(p), || format!("Crusade {}: lent {} unit{} (force {})", id.0, n, if n == 1 { "" } else { "s" }, force_text(total)));
         Ok(total)
     }
 

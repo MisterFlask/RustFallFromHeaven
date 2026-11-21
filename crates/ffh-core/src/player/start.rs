@@ -526,12 +526,12 @@ fn ai_unit_value(g: &Game, p: PlayerId, unit: UnitType, unit_ai: UnitAIType) -> 
                 }
             }
             UnitAIType::UNITAI_CITY_DEFENSE => {
-                if info.combat > 0 && !info.no_defensive_bonus && info.city_defense_modifier > 0 {
+                if info.fights() && !info.no_defensive_bonus && info.city_defense_modifier > 0 {
                     valid = true;
                 }
             }
             UnitAIType::UNITAI_EXPLORE => {
-                if info.combat > 0 && ai_unit_impassable_count(g, p, unit) == 0 {
+                if info.fights() && ai_unit_impassable_count(g, p, unit) == 0 {
                     valid = true;
                 }
             }
@@ -678,21 +678,19 @@ fn ai_combat_value(g: &Game, p: PlayerId, unit: UnitType) -> i32 {
     let mut value = 100 * ai_true_combat_value(g, p, unit);
     value *= (((info.first_strikes * 2) + info.chance_first_strikes) * (d.defines.combat_damage / 5)) + 100;
     value /= 100;
-    value /= g.best_land_unit_combat();
+    value /= g.best_land_unit_rating();
     value
 }
 
-/// AI: C++ `CvPlayerAI::AI_trueCombatValue` (FfH): base strength plus damage-type strength,
+/// AI: C++ `CvPlayerAI::AI_trueCombatValue` (FfH): its attack rating (typed points included),
 /// bonus affinities and the weapon promotion the player's resources would give.
 fn ai_true_combat_value(g: &Game, p: PlayerId, unit: UnitType) -> i32 {
     let d = g.d;
     let info = &d.units[unit];
 
-    let mut combat = if info.domain_type == Some(DomainType::DOMAIN_AIR) { info.air_combat } else { info.combat };
-
-    for damage_type in d.damages.keys() {
-        combat += info.damage_type_combat[damage_type];
-    }
+    // On the sheet's scale (docs/UNIT_STATS.md, "Ratings"): its attack rating (typed points
+    // included); an air unit's air strength x10.
+    let mut combat = if info.domain_type == Some(DomainType::DOMAIN_AIR) { info.air_combat * 10 } else { info.attack_rating() };
 
     for bonus in d.bonuses.keys() {
         combat += info.bonus_affinity[bonus] * g.player_get_num_available_bonuses(p, bonus);
@@ -705,17 +703,17 @@ fn ai_true_combat_value(g: &Game, p: PlayerId, unit: UnitType) -> i32 {
         let mut combat_bonus = 0;
         if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier1) {
             if available(d.defines.weapon_req_bonus_tier1) > 0 {
-                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
+                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat;
             }
         }
         if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier2) {
             if info.weapon_tier > 1 && available(d.defines.weapon_req_bonus_tier2) > 0 {
-                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
+                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat;
             }
         }
         if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier3) {
             if info.weapon_tier > 2 && available(d.defines.weapon_req_bonus_tier3) > 0 {
-                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
+                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat;
             }
         }
         combat += combat_bonus;

@@ -94,9 +94,10 @@ pub fn node_value(g: &Game, p: PlayerId, bonus: BonusType) -> i32 {
         v += SPELL_SCALE * spells_value(g, p, bonus);
         v += buildings_value(g, p, bonus);
     }
-    // Affinities (a unit's strength grows with the mana of its type: Fire Elementals, ...).
+    // Affinities (a unit's attack and defence grow with the mana of its type: Fire Elementals,
+    // ...; ten points a resource).
     let affinity: i32 = pl.units.iter().map(|&u| g.units[u].bonus_affinity[bonus].max(0)).sum();
-    v += affinity * 40;
+    v += affinity * 4;
     crate::traits::node_value(g, p, bonus, v) // trait-play
 }
 

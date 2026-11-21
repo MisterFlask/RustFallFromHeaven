@@ -104,7 +104,7 @@ impl Game {
         }
         let sum = |f: &dyn Fn(&PromotionInfo) -> i32| held.iter().map(|&p| f(&d.promotions[p])).sum::<i32>();
         let stat = |s: StatType| (sum(&|i| i.stat_changes[s.idx()].flat), sum(&|i| i.stat_changes[s.idx()].percent));
-        let typed = sum(&|i| i.damage_type_combat.iter().sum::<i32>());
+        let typed = sum(&|i| i.damage_type_attack.iter().sum::<i32>());
         let pct = |with: i32, without: i32| (without.max(1) as i64 * 100 / with.max(1) as i64) as i32;
         let (fa, pa) = stat(StatType::Attack);
         let (fd, pd) = stat(StatType::Defense);
@@ -323,17 +323,37 @@ mod tests {
         let mut out = [Vec::new(), Vec::new()];
         for (k, (owner, names, at)) in [(PlayerId(0), att, from), (PlayerId(1), def, to)].into_iter().enumerate() {
             let (x, y) = g.map.xy(at);
-            for n in names {
-                out[k].push(g.player_init_unit(owner, d.t::<UnitType>(n), x, y, None, None));
+            // One army a side, its squads sorted into as few as hold them, so up to six of its
+            // units fight in one squad (docs/ENGAGEMENTS.md, "Squads"); the units that are no
+            // army units (casters, heroes) are made after it and arrive in its squad.
+            let types: Vec<UnitType> = names.iter().map(|n| d.t::<UnitType>(n)).collect();
+            let mut made: Vec<Option<UnitId>> = vec![None; types.len()];
+            for (i, &t) in types.iter().enumerate() {
+                if g.unit_type_is_army_unit(t) {
+                    made[i] = Some(g.player_init_unit(owner, t, x, y, None, None));
+                }
+            }
+            let army: Vec<UnitId> = made.iter().flatten().copied().collect();
+            if !army.is_empty() {
+                g.army_form(owner, &army).expect("an army");
+                let squads: Vec<SquadId> = g.squad_layouts_at(owner, at).iter().filter_map(|l| l.squad).collect();
+                g.squad_auto_sort(owner, &squads).expect("sorted");
+            }
+            for (i, &t) in types.iter().enumerate() {
+                if made[i].is_none() {
+                    made[i] = Some(g.player_init_unit(owner, t, x, y, None, None));
+                    g.player_army_sync(owner);
+                }
             }
             g.player_army_sync(owner);
+            out[k] = made.into_iter().flatten().collect();
         }
         let [a, b] = out;
         (g, from, to, a, b)
     }
 
     fn order(from: PlotIdx, to: PlotIdx) -> EngageOrder {
-        EngageOrder { p: PlayerId(0), from, to, launcher: None, formation: None, forced: None, log: Some(true), surprise: false }
+        EngageOrder { p: PlayerId(0), from, to, launcher: None, squad: None, forced: None, log: Some(true), surprise: false }
     }
 
     fn give(g: &mut Game, u: UnitId, names: &[&str]) {

@@ -626,7 +626,7 @@ pub(crate) fn release_garrison(g: &Game, c: CityId, keep: Option<UnitId>, keep_a
                 && Some(u) != keep
                 && g.units[u].owner == owner
                 && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
-                && d.units[g.units[u].unit_type].combat > 0
+                && d.units[g.units[u].unit_type].attack_rating() > 0
                 && !g.unit_is_hero(u)
                 && !(keep_armies && (g.units[u].army.is_some() || g.units[u].march.is_some()))
         })

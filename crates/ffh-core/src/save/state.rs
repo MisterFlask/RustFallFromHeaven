@@ -46,7 +46,7 @@ persist_newtype!(
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
     WorldSizeType, YieldType, CulturalActionType, CityRoleType,
-    BuildingTierType, ResearchPathType, BattleTacticType,
+    BuildingTierType, ResearchPathType,
 );
 
 persist_enum!(ActionKind { 0 => None, 1 => Strike, 2 => Charge, 3 => Stab, 4 => Shoot, 5 => Spell, 6 => Bombard, 7 => Heal });
@@ -54,7 +54,7 @@ persist_struct!(RowActions { kind, count });
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote, ArmyId, SeaId, HouseId,
+    PlayerVote, ArmyId, SeaId, HouseId, SquadId,
 );
 
 // ---- this game's own rules (docs/CULTURE.md) ----
@@ -93,8 +93,32 @@ persist_struct!(Contract { kind, until, deal });
 
 use crate::culture::{ChannelTarget, CultureChannel};
 persist_enum!(ChannelTarget { 0 => House(house), 1 => Player(player) });
-use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Station};
-persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, tactic, tactic_next, unsupplied_turns, domain, station, carried });
+use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Squad, SquadBody, Station};
+persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, unsupplied_turns, domain, station, carried });
+persist_struct!(Squad { id, owner, body, hand_set, fought_turn, fought });
+impl Persist for SquadBody {
+    fn write(&self, w: &mut Writer) {
+        match *self {
+            SquadBody::Army(a) => {
+                0u8.write(w);
+                a.write(w);
+            }
+            SquadBody::Garrison(c) => {
+                1u8.write(w);
+                c.write(w);
+            }
+            SquadBody::Loose => 2u8.write(w),
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        match u8::read(r)? {
+            0 => Ok(SquadBody::Army(ArmyId::read(r)?)),
+            1 => Ok(SquadBody::Garrison(CityId::read(r)?)),
+            2 => Ok(SquadBody::Loose),
+            t => Err(LoadError::Corrupt(format!("squad body tag {t}"))),
+        }
+    }
+}
 impl Persist for ArmyDomain {
     fn write(&self, w: &mut Writer) {
         match self {
@@ -408,24 +432,24 @@ persist_struct!(Unit {
     extra_combat_percent, extra_city_attack_percent, extra_city_defense_percent,
     extra_hills_attack_percent, extra_hills_defense_percent, revolt_protection,
     collateral_damage_protection, pillage_change, upgrade_discount, experience_percent,
-    kamikaze_percent, base_combat, immobile_timer, made_attack, made_interception, promotion_ready,
+    kamikaze_percent, immobile_timer, made_attack, made_interception, promotion_ready,
     death_delay, blockading, air_combat, flee_withdrawl, has_casted, ignore_hide, terraformer, alive,
     ai_control, boarding, defensive_strike_chance, defensive_strike_damage, double_fortify_bonus,
     fear, flying, held, hidden_nationality, ignore_building_defense, immortal, immune_to_capture,
     immune_to_defensive_strike, immune_to_fear, immune_to_magic, invisible, only_defensive,
     see_invisible, summoner, target_weakest_unit, target_weakest_unit_counter, twincast,
-    water_walking, base_combat_defense, better_defender_than_percent, combat_heal_percent,
+    water_walking, better_defender_than_percent, combat_heal_percent,
     combat_limit, combat_percent_in_borders, combat_percent_global_counter, delayed_spell, delayed_spell_target, duration,
     free_promotion_pick, gold_from_combat, invisible_type, race, religion, resist, resist_modify,
-    scenario_counter, spell_caster_xp, spell_damage_modify, total_damage_type_combat,
-    work_rate_modify, bonus_affinity, bonus_affinity_amount, damage_type_combat, damage_type_resist,
+    scenario_counter, spell_caster_xp, spell_damage_modify, total_damage_type_attack,
+    work_rate_modify, bonus_affinity, bonus_affinity_amount, damage_type_attack, damage_type_resist,
     auto_spell_cast, owner, capturing_player, unit_type, leader_unit_type, combat_unit,
     transport_unit, extra_domain_modifier, name, script_data, has_promotion,
     terrain_double_move_count, feature_double_move_count, extra_terrain_attack_percent,
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
-    stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
+    squad, squad_cell, stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
     battle_summon, sea_turns, sea_out_of_range, intercepted, shore_fired, reinforced, wounds,
 });
 
@@ -484,7 +508,7 @@ persist_struct!(City {
     ai_emphasize_avoid_unhealthy_citizens_count, recruit_default, direct_rule, role, role_overridden,
     specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
-    garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane,
+    outpost, lane_cut_turns, lane,
 });
 
 persist_struct!(Player {

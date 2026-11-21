@@ -173,7 +173,7 @@ pub fn enemy_support(g: &Game, p: PlayerId, cp: PlotIdx) -> Vec<UnitId> {
                     continue;
                 }
                 let info = &g.d.units[g.units[u].unit_type];
-                if info.animal || info.combat <= 0 && info.combat_defense <= 0 {
+                if info.animal || !info.fights() {
                     continue;
                 }
                 if d > (g.unit_max_moves(u) / denom).max(1) * SUPPORT_TURNS {

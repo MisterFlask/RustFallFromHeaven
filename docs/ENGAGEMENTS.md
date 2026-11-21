@@ -8,8 +8,9 @@ applies only to units in an army). Every game fights engagements, the AI-only ga
 the duel); saves made before do not load (the game options changed). When units attack a land plot, they fight a **formation battle** (revision 4, the
 owner's Ogre Battle-style engagements, 2026-10-31, designed in a browser prototype): each side's
 units stand on a grid of three rows by its lanes and act by row and speed for two rounds (three until 2026-11-21);
-the side whose units lose more HP loses the battle; losing defenders outside a city are pushed
-back, and the plot falls when they lost and none of them is left on it. The owner's answers on every FfH combat
+a side loses when all its units in the battle fall, else when more of them fall, else when they
+lose more HP; losing defenders outside a city are pushed back, and the plot falls when they lost
+and none of them is left on it. The owner's answers on every FfH combat
 ability (Q1-Q13) and the ground rules G1-G5 are in docs/COMBAT_INVENTORY.md (its answers about
 rounds, stances and targeting are superseded by revision 4: this document).
 
@@ -28,15 +29,60 @@ data in `crates/ffh-data/tests/engagement_data.rs` and `engagement_overrides.rs`
 
 ## The rules
 
-**The field.** Slots per side as before (`slots.rs`: 8 base, +2 open flat land, -2 a forest or
-jungle, -2 hills; a walled city's standing Sentinels cost each side one each (docs/SIEGES.md: a
-city's defence costs no slots); at least 3; across a river two of the attacker's slots are only for
-`bRiver` units, Q9). A walled city's Sentinels stand in the defender's front row beside its
-soldiers' slots (docs/SIEGES.md). Each side stands on a grid of 3 rows
-(front 0, middle 1, rear 2) by `max(2, ceil((slots + 2) / 3))` lanes (`formation::lanes_for`, of the
-side's ordinary and river slots together; the sides' lane counts may differ). A large unit (`bLarge`,
-below) fills two cells side by side in one row and counts 2 slots, and is the front or back unit
-of both its lanes.
+**The field** (the owner's decision, 2026-11-21: frontage is gone). One battle is one squad
+against one squad (below, "Squads"). Each side stands on a grid of 3 rows (front 0, middle 1, rear
+2) by 3 lanes, and commits up to `ENGAGEMENT_SQUAD_PLACES` (6) places, whatever the ground
+(`slots.rs`; the slots of a side no longer change with the terrain, a feature, hills, a river or a
+city's Sentinels). A large unit (`bLarge`, below) fills two cells side by side in one row and counts
+2 places, and is the front or back unit of both its lanes. A walled city's standing Sentinels
+(docs/SIEGES.md) stand in the defender's front row, the lanes nearest the centre, on top of its
+squad (no place of either side); a unit of the defending squad whose cell they hold stands in the
+nearest free cell (its row, the lanes nearest the centre first, then the rows behind, then before).
+
+**Squads** (the owner's design, 2026-11-21; `army/squad.rs`, `engagement/squads.rs`; tests in
+`crates/ffh-core/tests/squads.rs`). Every land unit that fights stands in a squad: a 3 by 3 grid
+of up to 6 places, kept between battles (`Game::squads`, `Unit::squad`, `Unit::squad_cell`, `row
+* 3 + lane`).
+
+- *Bodies.* A squad belongs to an army, a city's garrison, or none (loose: heroes, mages, recon
+  units, marching recruits, the barbarians' units). An army unit stands only in its own army's or
+  garrison's squads; a unit of no body may stand in any squad of its owner on its plot (a hero in
+  an army's squad) and holds its cell only while it is on that plot.
+- *Auto and hand-set.* A squad is Auto until its owner moves a unit in or out of it: an Auto
+  squad is arranged by the auto formation (below) whenever it is read. A hand-set squad keeps its
+  units' cells; a unit that dies leaves its cell empty.
+- *The layout* (`Game::squad_layouts_at`): each unit keeps its squad and cell while they are valid
+  (its owner's squad, of a body that accepts it on this plot, the cell free and in the grid, room
+  left); every other unit **arrives**: it joins the first squad in order (armies by id, the
+  garrison, the loose squads; each body's by id) that accepts it, has room for its places and a
+  free cell in its best row (the first of its rank order; two side by side for a large unit), else
+  forms a squad of one. Battles and views read the layout, so it holds between syncs.
+- *The sync* (`Game::player_squad_sync`, with every army sync): new squads get ids, units their
+  squad and cell, squads no unit holds go. A squad of two or more units, or a hand-set one, whose
+  units all left its body for one other body together (split off into a new army, merged into
+  another) moves to that body; a lone unit of an Auto squad arrives instead.
+- *Commands*: move a unit to a cell of a squad on its plot (a unit of the same size in that cell
+  swaps with it; a full squad refuses) or to a new squad (`squad_move`), both squads becoming
+  hand-set; Auto (`squad_set_auto`); auto-sort (`squad_auto_sort`): the units of the chosen squads
+  of one plot, each body's apart, dealt into as few squads as hold them, guards (strikes and
+  charges) first, strongest first, in snake order (I, II, III, III, II, I, ...) so each squad gets
+  a front, then the other kinds in the auto formation's order, each squad Auto.
+- *The attacking squad.* The order names one of the attacker's squads on its plot (its units that
+  can attack the plot fight; the others leave their cells empty); without one, the strongest (the
+  sum of its fighting units' A against nobody in particular, a large unit's double). Units that
+  stand in no squad (an attack from a ship) are formed into squads by the auto formation.
+- *The defending squad* (the owner's rule, 2026-11-21: first who has fought least, then the best).
+  Of the defenders' squads on the plot (each owner's, its candidate units), those that fought the
+  fewest battles this game turn (`Squad::fought`, attacking or defending) may fight, so none fights
+  twice in a turn before every other has fought once. Of those, each is played against the
+  attacking squad `ENGAGEMENT_DEFENSE_PICK_RUNS` (6) times on a private RNG seeded from the battle
+  (no draw of the game's), and the one with the best result for the defender fights (the most
+  attacker HP lost less defender HP lost, each unit's loss in permille of its HP; ties: the first).
+  The other candidates are the defender's reserve. When the defending squad loses outside a city,
+  the reserve is pushed back with the line's survivors ("The result"), so one squad's lost battle
+  moves the whole stack off the plot.
+- *The AI* keeps its squads Auto and auto-sorts each body whose squads could be fewer
+  (`squad_bodies_to_sort`) at the start and the end of its turn (`ffh-ai/src/squads.rs`).
 
 **Each unit's own rows** (the owner's decision, 2026-11-06: there are no roles). Every land unit
 type has, in `units.jsonc`:
@@ -301,21 +347,31 @@ getting through, unless the hitter has `armor_piercing`.
 rolls it; on a success the hit does nothing and the unit leaves the battle alive. Never a city's
 defenders (Q3; the resolver enforces it), and never from a hit of a unit with `pursuit`.
 
-**The ground** (the defended plot's, `Game::engage_ground`: a city on it; a forest or jungle,
-which is a feature with `iEngagementSlotsChange` below 0: Forest, New Forest, Ancient Forest,
-Jungle; hills; several multiply; `formation::Ground::rules` lists those that apply): a city: the
-attacker's SHOOT deals `ENGAGEMENT_CITY_ATTACKER_SHOT_PERCENT` (50) %; a forest or jungle: SHOOT and
-BOMBARD deal `ENGAGEMENT_FOREST_RANGED_PERCENT` (50) % on both sides; hills: every attacker hit
-(spells too) deals `ENGAGEMENT_HILLS_ATTACKER_PERCENT` (75) %, the defender's SHOOT and BOMBARD
-`ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT` (125) %. A city, a forest or jungle stop flanking.
+**The ground** (the defended plot's, `Game::engage_ground`; the owner's decision of 2026-11-21
+replaced frontage's slots with each ground's own lines; `formation::Ground::rules` lists those that
+apply, several multiply):
+
+| Ground | What it does |
+|---|---|
+| A city | the attacker's SHOOT deals `ENGAGEMENT_CITY_ATTACKER_SHOT_PERCENT` (50) %; no flanking |
+| A forest or jungle (`engagement_forest`: Forest, New Forest, Ancient Forest, Jungle) | SHOOT and BOMBARD deal `ENGAGEMENT_FOREST_RANGED_PERCENT` (50) % on both sides; STAB deals `ENGAGEMENT_FOREST_STAB_PERCENT` (150) %; large units deal `ENGAGEMENT_ROUGH_LARGE_PERCENT` (75) %; no flanking |
+| Hills | every attacker hit (spells too) deals `ENGAGEMENT_HILLS_ATTACKER_PERCENT` (85) %, the defender's SHOOT and BOMBARD `ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT` (125) %; the attacker's charges get no first-round bonus (uphill) |
+| Open ground (a flat plot of an `engagement_open` terrain without a forest or jungle: Grass, Plains, Desert, Tundra, Snow, Burning Sands, Fields of Perdition) | large units deal `ENGAGEMENT_OPEN_LARGE_PERCENT` (120) % |
+| A marsh (`engagement_mire`) | no flanking; large units deal 75 % |
+| Across a river (the attacker crosses one) | in round 1 the attacker's units that do not cross rivers freely (`bRiver`) deal `ENGAGEMENT_WADING_PERCENT` (50) % |
+| The Trench (card, docs/CARDS.md) | in round 1 the attacker's hits deal its `engagement_attacker_first_round_percent` (60) % |
+
+Where flanking works a charge reaches anyone and deals `100 + ENGAGEMENT_CHARGE_BONUS` % in round 1
+(not the attacker's on hills). Each rule's reach (`GroundRule::reach`: side, action kinds, round 1
+only, and which units: all, large, or those without `bRiver`) is served to the screens with it.
 
 **The great-person cards' battle effects** (docs/CARDS.md, section 2, "New data keys"; the set-up's
 `engagement/arms.rs`, the resolver's `formation/arms_cards.rs`): a defended city's buildings strike
 the attacker's rear row before the battle (`pre_battle_damage`), hold its melee in round 1 of the
 first battle there each turn (`hold_melee_rounds`, a `Held` note), give the defenders a last stand
 (`last_stand_damage`) or more damage while the city has never changed hands (`never_lost_damage`),
-change its Sentinels (`sentinel_unit`, `sentinel_ranged_resist`); an improvement narrows the
-attacker (`engagement_attacker_slots_change`); a unit acts otherwise in round 1
+change its Sentinels (`sentinel_unit`, `sentinel_ranged_resist`); an improvement slows the
+attacker's first round (`engagement_attacker_first_round_percent`, the Trench); a unit acts otherwise in round 1
 (`engage_first_round`); promotions give the first STRIKE or CHARGE of each round a pattern
 (`first_melee_pattern`), a heal of the ally behind at each round's end (`heal_behind`, an event with
 pass 0) or an attack of a damage type (`attack_damage_type`). None of them draws a random number.
@@ -434,26 +490,20 @@ the lower unit id; while the slots last (a large unit needs 2; units without `bR
 ordinary slots, Q9's river rule). Then the large units are placed first, each unit in the first row
 of its rank order (`engage_row_order`) with room, the lanes nearest the centre first (then the
 lower); while another large unit is still to place, a large unit does not split a pair of free
-cells (it starts after an even run of free cells on its left), so a row of 4 lanes holds two. Deterministic, no RNG, the same for humans and the AI. Heroes and
-veterans are not held back. The attacker fights it when its order gives no formation; the defender
-always does (`Game::engage_defense_formation`). Each side's auto formation is arranged by its battle
-tactic (docs/TACTICS.md: the standing tactic of the army or garrison most of its units belong to;
-Line, the auto formation described here, by default).
-
-**An ordered formation** (`Game::engage_validate_formation`, the `engage` command's): every unit in
-the attacker's pool once, inside its side's lanes and rows, no two units in one cell (a large unit
-on two free cells of one row), at most the attacker's slots (a large unit counts 2), the units
-without `bRiver` at most its ordinary slots. The error is the reason the UI shows; a refused order
-changes nothing.
+cells (it starts after an even run of free cells on its left). Deterministic, no RNG, the same for
+humans and the AI. Heroes and veterans are not held back. It arranges every Auto squad (as a
+defender of the squad's plot), auto-sort's squads, a forced attack (Taunt) and units that stand in
+no squad (above, "Squads"); a battle otherwise fights each side's squad in its cells. Battle tactics
+(docs/TACTICS.md) are retired (2026-11-21): squads do their work.
 
 ## Which attacks are engagements
 
 `Game::engage_applies(u, to)`: the option is on, the attacker is a land unit (one carried on a
 transport counts: an amphibious attack) and `to` is land. The rule is applied at each entry:
 
-- `group_attack_force(g, x, y, flags, formation)`, the one entry for every order of a group into an
+- `group_attack_force(g, x, y, flags, squad)`, the one entry for every order of a group into an
   enemy plot (the human `move` and `engage` commands, AI and barbarian missions, the C++ AI
-  benchmark); `group_attack(g, x, y, flags)` is it with no formation. Today's preamble (the path
+  benchmark); `group_attack(g, x, y, flags)` is it with no squad (the strongest). Today's preamble (the path
   step for `MOVE_THROUGH_ENEMY`, the AI's pre-attack spells and bombard-first), then for an
   engagement: no candidate defender there means today's attack (it captures non-combatants, if
   any); Alertness for a human order without a formation; the AI's war declaration as today; the
@@ -472,10 +522,11 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
 
 1. **Set-up.** Each side's slots and lanes. The attacker's pool: every unit of the player on the
    attacking plot that can attack the plot (`engage_attackers`: across its armies, garrison,
-   heroes, mages and recon units); its formation: the order's (checked) or the auto formation. The
-   defender's candidates: every unit on the plot that can defend, is an enemy (hidden nationality
-   as in the duel) and is not invisible to the attacker (`engage_defenders`); its formation: the
-   auto formation of them. An empty formation or no defender is a refusal, and nothing has
+   heroes, mages and recon units); its formation: the order's squad, else the strongest (above,
+   "Squads"). The defender's candidates: every unit on the plot that can defend, is an enemy
+   (hidden nationality as in the duel) and is not invisible to the attacker (`engage_defenders`);
+   its formation: the defending squad (`Game::engage_def_plan`), in its cells, around the
+   Sentinels. After the battle both squads count it (`Game::squad_note_battle`). An empty formation or no defender is a refusal, and nothing has
    changed. The committed units in the engagement's order (the attacker's by lane, then row; then
    the defender's), each a resolver `Fighter` (`Game::engage_fighter`), and the pair table of A and
    Dv (`engage_hit`, which nothing before the battle changes). Phase 7's pre-battle hook reads the
@@ -501,13 +552,20 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    a turn per unit (Q12), then phase 7's post-battle hook; withdrawn defenders flee (outside a
    city); defenders that lost outside a city are pushed back (step 6); every committed attacker has made its attack (one a turn, Blitz one more, counting
    engagements, bombards and missile strikes) and pays the attack's moves unless it moves in.
-6. **The result** (spec 1.7; the owner's rule, 2026-11-21). **The side whose units lost more HP
-   lost the battle** (`engage_loser`, `Setup::hp_lost`): each unit's HP when the engagement began
-   (before the opening) less its HP at the end, a fallen unit's all of it and a withdrawn one's
-   all it had left (its withdrawal took the place of a killing hit), heals in the battle taken
-   back, a Sentinel's on the defender's side; equal HP lost: no loser. The report keeps each side's
-   HP lost and the loser (`Outcome::hp_lost`, `loser`, and the calculation the screens show,
-   `Outcome::verdict_calc`). **Push-back** (`apply.rs`, step 7b): when the defenders lost outside a
+6. **The result** (spec 1.7; the owner's rules, 2026-11-21). **Who lost** (`engage_verdict` on
+   each side's `Setup::tally`), by the first rule that tells the sides apart:
+   1. a side all of whose units that fought fell loses (both: the next rule);
+   2. the side with more units fallen loses;
+   3. the side that lost more HP loses: each unit's HP when the engagement began (before the
+      opening) less its HP at the end, a fallen unit's all of it and a withdrawn one's all it had
+      left (its withdrawal took the place of a killing hit), heals in the battle taken back.
+
+   None of them: no loser (`DecidedBy::Even`). The units that fought are the committed ones that did not
+   sit out (a unit a kill could have created that none did never fought); a withdrawn unit did
+   not fall. A Sentinel is no unit: it counts in rule 3 only, on the defender's side (a walled city
+   held by its Sentinels alone has no unit to be all fallen). The report keeps each side's HP lost,
+   the loser and the rule (`Outcome::hp_lost`, `loser`, `decided_by`; the screens show
+   `BattleReport::verdict_calc`, the three rules with each side's numbers). **Push-back** (`apply.rs`, step 7b): when the defenders lost outside a
    city, every defender's unit left on the plot (the line's survivors, those that sat out, the
    reserve; units invisible to the attacker are not met and stay) is pushed back to a plot next
    to it: of those every unit of its group could withdraw to (not a foreign city, its domain, one
@@ -615,10 +673,10 @@ and the last `ENGAGEMENT_REPORT_LOGS_KEPT` logged reports, its summary for the l
 ## The attack preview
 
 `preview.rs` (`Game::engage_preview`, pure): the plan of an attack before it is made: the
-attacker's pool, its slots and lanes, the plan's formation (the one given, checked, or the auto
-formation) and the auto formation, the pool's units not in it; the defenders the attacker's team
-sees (invisible units are never candidates) and their formation (the rules' auto formation of them,
-as the real fight forms them) and reserve; the ground and its rules; the war the attack would
+attacker's pool, its slots and lanes, its squads that can attack (`squads`) and the one the plan
+fights with (`squad`: the input's, else the strongest), that squad's formation, the pool's units not
+in it; the defenders the attacker's team sees (invisible units are never candidates), the squad
+that defends (`def_squad`, as the real fight picks it) and its formation, and the reserve; the ground and its rules; the war the attack would
 declare; and the forecast.
 
 - **The forecast** plays `ENGAGEMENT_PREVIEW_RUNS` (200) battles of the real fight's code on that
@@ -827,6 +885,10 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   a port) fights today's duel (see "Open").
 
 ## Open
+
+- **Squads (2026-11-21).** Measure sieges now that the Sentinels cost no place (docs/SIEGES.md),
+  and how often a defending plot fields each squad; the defender's choice plays
+  `ENGAGEMENT_DEFENSE_PICK_RUNS` battles per eligible squad (a cost in AI games to watch, docs/PERF.md).
 
 - The AI decides its attacks on the duel's odds and attacks in the auto formation (the AI is paused,
   the owner's call). Standing formations per army are the battle tactics (docs/TACTICS.md): both

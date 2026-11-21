@@ -1,13 +1,13 @@
 //! Engagement combat's slots, who can fight and where they stand
-//! (`engagement/slots.rs`, `engagement/pick.rs`, `engagement/arrange.rs`): each side's slots by
-//! plot, city defense, bombardment, the minimum and the river (Q9), and its lanes; the attack
-//! count with Blitz and bombards, the combat limit and marching units in `unit_can_engage` and the
-//! gates it shares with `unit_can_move_into`; the defender's candidates; the rules' auto formation
-//! (one of each role first, healthy and strong first, home rows, large units, the river rule) and
-//! an ordered formation's check.
+//! (`engagement/slots.rs`, `engagement/pick.rs`, `engagement/arrange.rs`): a squad's 6 places and
+//! 3 lanes a side on every ground, a city's Sentinels at no place, the river's Wading in place of
+//! its slots; the attack count with Blitz and bombards, the combat limit and marching units in
+//! `unit_can_engage` and the gates it shares with `unit_can_move_into`; the defender's
+//! candidates; the rules' auto formation (one of each kind first, healthy and strong first, home
+//! rows, large units).
 
 use ffh_core::army::{March, RecruitDest};
-use ffh_core::engagement::report::{SlotChange, SlotSource};
+use ffh_core::engagement::formation::{GroundRule, Params, RuleUnits};
 use ffh_core::engagement::{HitCtx, Place, Side, Slots, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -140,7 +140,7 @@ impl World {
     }
 }
 
-/// `base` plus the changes give the total, on both sides.
+/// `base` plus the changes give the total, on both sides; the defender has no river slots.
 fn check_sums(s: &Slots) {
     for side in &s.sides {
         assert_eq!(side.base + side.changes.iter().map(|c| c.delta).sum::<i32>(), side.total, "{side:?}");
@@ -148,93 +148,116 @@ fn check_sums(s: &Slots) {
     assert_eq!(s.sides[1].river_only, 0);
 }
 
-fn src(s: &Slots, side: Side) -> Vec<(SlotSource, i32)> {
-    s.sides[side.index()].changes.iter().map(|SlotChange { src, delta }| (src.clone(), *delta)).collect()
+/// A squad's places a side (`ENGAGEMENT_SQUAD_PLACES`), with no change and no river slots, on 3
+/// lanes.
+fn assert_squad_slots(w: &World, s: &Slots, what: &str) {
+    let n = w.g.d.defines.engagement_squad_places;
+    assert_eq!(n, 6);
+    check_sums(s);
+    assert_eq!((s.att(), s.att_river(), s.def()), (n, 0, n), "{what}");
+    assert!(s.sides.iter().all(|side| side.changes.is_empty()), "{what}: {:?}", s.sides);
+    assert_eq!(w.g.engage_lanes(s), [3, 3], "{what}");
 }
 
+/// Frontage is gone (docs/ENGAGEMENTS.md, "The field"): every ground gives each side a squad's 6
+/// places on 3 lanes; the grounds differ by their rules ("The ground").
 #[test]
-fn slots_follow_the_defended_plot() {
+fn every_ground_gives_a_squad_its_places_and_lanes() {
     let mut w = world();
     let d = w.g.d;
+    let params = Params::from_defines(&d.defines);
     let (grass, marsh) = (d.t::<TerrainType>("TERRAIN_GRASS"), d.t::<TerrainType>("TERRAIN_MARSH"));
     let forest = d.t::<FeatureType>("FEATURE_FOREST");
     let to = w.to;
-    // (terrain, hills, feature) -> slots a side (plan 2.4).
-    for (terrain, hills, feature, expect) in [
-        (grass, false, None, 10),
-        (grass, false, Some(forest), 6),
-        (grass, true, None, 6),
-        (grass, true, Some(forest), 4),
-        (marsh, false, None, 8),
-    ] {
+    for (terrain, hills, feature) in [(grass, false, None), (grass, false, Some(forest)), (grass, true, None), (grass, true, Some(forest)), (marsh, false, None)] {
         w.g.map.plots[to].terrain_type = Some(terrain);
         w.g.map.plots[to].plot_type = if hills { PlotType::PLOT_HILLS } else { PlotType::PLOT_LAND };
         w.g.map.plots[to].feature_type = feature;
-        let s = w.slots();
-        check_sums(&s);
-        assert_eq!((s.att(), s.att_river(), s.def()), (expect, 0, expect), "{terrain:?} hills {hills} {feature:?}");
-        assert_eq!(src(&s, Side::Attacker), src(&s, Side::Defender));
+        let what = format!("{terrain:?} hills {hills} {feature:?}");
+        assert_squad_slots(&w, &w.slots(), &what);
+        // What tells the grounds apart: their rules.
+        let rules = w.g.engage_ground(&w.ctx()).rules(&params);
+        let large = rules.iter().find_map(|r| match r {
+            GroundRule::LargeDealt { pct } => Some(*pct),
+            _ => None,
+        });
+        let want_large = if feature.is_some() || terrain == marsh {
+            Some(params.rough_large_pct)
+        } else if !hills {
+            Some(params.open_large_pct)
+        } else {
+            None
+        };
+        assert_eq!(large, want_large, "{what}: {rules:?}");
+        assert_eq!(rules.iter().any(|r| matches!(r, GroundRule::ForestStab { .. })), feature.is_some(), "{what}: {rules:?}");
+        assert_eq!(rules.iter().any(|r| matches!(r, GroundRule::Uphill { .. })), hills && feature.is_none(), "{what}: {rules:?}");
     }
-    // The last plot: forested hills list the hills and the forest, not the terrain.
-    w.g.map.plots[to].terrain_type = Some(grass);
-    w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
-    w.g.map.plots[to].feature_type = Some(forest);
-    assert_eq!(src(&w.slots(), Side::Defender), vec![(SlotSource::Hills, -2), (SlotSource::Feature(forest), -2)]);
+    // No approach plot (a hypothetical estimate): the same.
+    assert_squad_slots(&w, &w.g.engage_slots(&HitCtx { from: None, ..w.ctx() }), "no approach plot");
 }
 
+/// A walled city's standing Sentinels (docs/SIEGES.md) cost no place: they stand in the
+/// defender's front row, the lanes nearest the centre, on top of its squad; the defender's auto
+/// formation fills the cells they leave. On any ground.
 #[test]
-fn a_walled_citys_sentinels_cost_both_sides_slots_and_the_minimum_holds() {
-    // docs/SIEGES.md: a city's defence costs no slots; each standing Sentinel costs both sides one.
+fn a_walled_citys_sentinels_cost_no_place() {
     let mut w = world();
     let (p1, to) = (w.p1, w.to);
-    let grass = w.g.d.t::<TerrainType>("TERRAIN_GRASS");
     let c = w.city(p1, to, 60);
     let s = w.slots();
-    check_sums(&s);
-    assert_eq!((s.att(), s.def(), s.sentinels), (10, 10, 0), "no walls: the defence costs nothing");
+    assert_squad_slots(&w, &s, "no walls");
+    assert_eq!(s.sentinels, 0, "no walls: no Sentinels");
 
-    // Walls: two Sentinels.
+    // Walls: two Sentinels, in the front row's centre lane and then lane 0.
     let walls = w.g.d.t::<BuildingType>("BUILDING_WALLS");
     w.g.city_set_num_real_building(c, walls, 1);
     assert_eq!(w.g.city_sentinel_count(c), 2);
     let s = w.slots();
-    check_sums(&s);
-    assert_eq!((s.att(), s.def(), s.sentinels), (8, 8, 2));
-    let want = vec![(SlotSource::Terrain(grass), 2), (SlotSource::Sentinels(2), -2)];
-    assert_eq!((src(&s, Side::Attacker), src(&s, Side::Defender)), (want.clone(), want));
-    // The defender's grid holds its soldiers' slots and its Sentinels.
-    assert_eq!(w.g.engage_lanes(&s), [4, 4]);
-    assert_eq!(w.g.engage_sentinel_cells(&s), vec![(1, 0), (2, 0)]);
+    assert_squad_slots(&w, &s, "walls");
+    assert_eq!(s.sentinels, 2);
+    let cells = w.g.engage_sentinel_cells(&s);
+    assert_eq!(cells, vec![(1, 0), (0, 0)]);
+    // Eight axemen defend: six fight (a squad's places), none in a Sentinel's cell.
+    let axemen = w.units(p1, "UNIT_AXEMAN", to, 8);
+    let def = w.auto(&axemen, Side::Defender);
+    assert_eq!(def.len(), 6);
+    assert!(def.iter().all(|p| !cells.contains(&(p.lane, p.row))), "{def:?}");
 
-    // One breached: one slot back to each side.
+    // One breached: one Sentinel left, the places the same.
     w.g.city_set_sentinel_damage(c, 0, 100);
     let s = w.slots();
-    assert_eq!((s.att(), s.def(), s.sentinels), (9, 9, 1));
+    assert_squad_slots(&w, &s, "one breached");
+    assert_eq!(s.sentinels, 1);
     w.g.city_set_sentinel_damage(c, 0, 0);
 
-    // Forested hills: 4 a side; the Sentinels would leave 2: raised to SLOTS_MIN (3).
+    // Forested hills: the same 6 places and the two Sentinels.
     w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
     w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
     let s = w.slots();
-    check_sums(&s);
-    assert_eq!((s.att(), s.def()), (3, 3));
-    assert_eq!(src(&s, Side::Attacker).last(), Some(&(SlotSource::Minimum, 1)));
+    assert_squad_slots(&w, &s, "forested hills");
+    assert_eq!(s.sentinels, 2);
 }
 
+/// A river crossing costs the attacker no place (frontage's river slots are gone): the ground
+/// lists Wading instead, whose round-1 cut spares the units that cross rivers freely (`bRiver`);
+/// the auto formation takes six whatever their river.
 #[test]
-fn a_river_crossing_keeps_slots_for_units_that_cross_rivers() {
+fn a_river_crossing_costs_no_place_and_wades() {
     let mut w = world();
-    let (p0, from, to) = (w.p0, w.from, w.to);
+    let (p0, from) = (w.p0, w.from);
+    let params = Params::from_defines(&w.g.d.defines);
     w.g.map.plots[from].river_crossing[DirectionType::DIRECTION_EAST.idx()] = true;
-    let s = w.slots();
-    check_sums(&s);
-    assert_eq!((s.att(), s.att_river(), s.def()), (8, 2, 10));
-    assert_eq!(src(&s, Side::Attacker).last(), Some(&(SlotSource::River, -2)));
+    assert_squad_slots(&w, &w.slots(), "across a river");
+    let ground = w.g.engage_ground(&w.ctx());
+    assert!(ground.crossing);
+    let wading = GroundRule::Wading { pct: w.g.d.defines.engagement_wading_percent };
+    assert!(ground.rules(&params).contains(&wading), "{:?}", ground.rules(&params));
+    let reach = wading.reach();
+    assert_eq!((reach.side, reach.units), (Some(Side::Attacker), RuleUnits::NotRiver));
     // No approach plot (a hypothetical estimate): no river.
-    assert_eq!(w.g.engage_slots(&HitCtx { from: None, ..w.ctx() }).att(), 10);
+    assert!(!w.g.engage_ground(&HitCtx { from: None, ..w.ctx() }).crossing);
 
-    // Ten strong Axemen and three Lizardmen (bRiver): eight Axemen, the river slots to two
-    // Lizardmen.
+    // Ten strong Axemen and three Lizardmen (bRiver): six places on either side.
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 10);
     for &a in &axemen {
         w.promote(a, "PROMOTION_COMBAT1");
@@ -242,89 +265,8 @@ fn a_river_crossing_keeps_slots_for_units_that_cross_rivers() {
     let lizards = w.units(p0, "UNIT_LIZARDMAN", from, 3);
     assert!(w.g.unit_is_river(lizards[0]) && !w.g.unit_is_river(axemen[0]));
     let pool: Vec<UnitId> = axemen.iter().chain(&lizards).copied().collect();
-    let auto = w.auto(&pool, Side::Attacker);
-    let pick: Vec<UnitId> = auto.iter().map(|p| p.unit).collect();
-    assert_eq!((pick.len(), w.count(&pick, "UNIT_AXEMAN"), w.count(&pick, "UNIT_LIZARDMAN")), (10, 8, 2));
-    assert_eq!(w.g.engage_validate_formation(&pool, &auto, &s), Ok(()));
-    // The defender has no river slots.
-    assert_eq!(w.pick(&axemen, Side::Defender).len(), 10);
-
-    // Near the minimum the river takes only what is above it: forested hills, 4 - 1.
-    w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
-    w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
-    let s = w.slots();
-    check_sums(&s);
-    assert_eq!((s.att(), s.att_river()), (3, 1));
-}
-
-#[test]
-fn the_lanes_follow_the_slots() {
-    let mut w = world();
-    let to = w.to;
-    // Open flat land: 10 a side, 4 lanes; a forest: 6, 3 lanes; forested hills: 4, 2 lanes.
-    assert_eq!(w.g.engage_lanes(&w.slots()), [4, 4]);
-    w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
-    assert_eq!(w.g.engage_lanes(&w.slots()), [3, 3]);
-    w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
-    assert_eq!(w.g.engage_lanes(&w.slots()), [2, 2]);
-    // A walled city's two Sentinels take a slot of each side and stand in the defender's grid
-    // (docs/SIEGES.md): on hills 6 - 2 = 4 a side, the defender's 4 + 2 cells: 2 and 3 lanes.
-    w.g.map.plots[to].plot_type = PlotType::PLOT_LAND;
-    let p1 = w.p1;
-    let c = w.city(p1, to, 75);
-    w.g.city_set_num_real_building(c, w.g.d.t::<BuildingType>("BUILDING_WALLS"), 1);
-    w.g.map.plots[to].feature_type = None;
-    w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
-    let s = w.slots();
-    assert_eq!((s.max(Side::Attacker), s.def(), s.sentinels), (4, 4, 2));
-    assert_eq!(w.g.engage_lanes(&s), [2, 3]);
-}
-
-#[test]
-fn formations_are_validated() {
-    let mut w = world();
-    let (p0, from) = (w.p0, w.from);
-    w.g.map.plots[from].river_crossing[DirectionType::DIRECTION_EAST.idx()] = true;
-    let s = w.slots();
-    assert_eq!((s.att(), s.att_river(), w.g.engage_lanes(&s)[0]), (8, 2, 4));
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 10);
-    let lizard = w.unit(p0, "UNIT_LIZARDMAN", from);
-    let giant = w.unit(p0, "UNIT_HILL_GIANT", from);
-    assert!(w.g.unit_engage_large(giant) && w.g.unit_engage_size(giant) == 2);
-    let outsider = w.unit(p0, "UNIT_AXEMAN", w.to);
-    let pool: Vec<UnitId> = axemen.iter().copied().chain([lizard, giant]).collect();
-    let at = |u: UnitId, lane: u8, row: u8| Place { unit: u, lane, row };
-    // The first n axemen in the front row, then the middle, then the rear (4 lanes).
-    let rows = |n: usize| -> Vec<Place> { (0..n).map(|i| at(axemen[i], (i % 4) as u8, (i / 4) as u8)).collect() };
-    let v = |f: &[Place]| w.g.engage_validate_formation(&pool, f, &s);
-    assert!(v(&[]).is_err(), "empty");
-    assert_eq!(v(&rows(8)), Ok(()));
-    assert!(v(&[at(axemen[0], 0, 0), at(axemen[0], 1, 0)]).is_err(), "twice");
-    assert!(v(&[at(axemen[0], 0, 0), at(outsider, 1, 0)]).is_err(), "not in the pool");
-    assert!(v(&[at(axemen[0], 4, 0)]).is_err(), "outside the lanes");
-    assert!(v(&[at(axemen[0], 0, 3)]).is_err(), "outside the rows");
-    assert!(v(&[at(axemen[0], 1, 0), at(axemen[1], 1, 0)]).is_err(), "two in one cell");
-    // A large unit fills its lane and the next: not at the last lane, not over another unit.
-    assert_eq!(v(&[at(giant, 2, 0), at(axemen[0], 1, 0)]), Ok(()));
-    assert!(v(&[at(giant, 3, 0)]).is_err(), "a large unit needs two lanes");
-    assert!(v(&[at(giant, 1, 0), at(axemen[0], 2, 0)]).is_err(), "its second cell is taken");
-    // Nine without bRiver in eight ordinary slots; the river slot to the Lizardman is fine; a
-    // large unit counts two.
-    assert!(v(&rows(9)).is_err(), "nine without bRiver in eight ordinary slots");
-    let mut f = rows(8);
-    f.push(at(lizard, 0, 2));
-    assert_eq!(v(&f), Ok(()));
-    let mut f = rows(7);
-    f.push(at(giant, 0, 2));
-    assert!(v(&f).is_err(), "seven and a giant fill nine ordinary slots");
-    let mut f = rows(6);
-    f.push(at(giant, 2, 1));
-    assert_eq!(v(&f), Ok(()));
-    let mut more: Vec<UnitId> = w.units(p0, "UNIT_LIZARDMAN", from, 2);
-    more.extend(pool.iter().copied());
-    let mut f = rows(8);
-    f.extend([at(more[0], 0, 2), at(more[1], 1, 2), at(lizard, 2, 2)]);
-    assert!(w.g.engage_validate_formation(&more, &f, &s).is_err(), "more than the slots");
+    assert_eq!(w.pick(&pool, Side::Attacker).len(), 6);
+    assert_eq!(w.pick(&pool, Side::Defender).len(), 6);
 }
 
 #[test]
@@ -357,59 +299,59 @@ fn the_auto_formation_takes_one_of_each_kind_first_and_puts_each_in_the_row_it_p
     let adepts = w.units(p0, "UNIT_ADEPT", from, 2);
     let pool: Vec<UnitId> = [axemen.clone(), vec![screen], archers, horsemen, assassins, adepts].concat();
     assert_eq!(w.kind(screen), "ANTI_FLANK");
-    assert_eq!((w.slots().att(), w.g.engage_lanes(&w.slots())), (10, [4, 4]));
+    assert_eq!((w.slots().att(), w.g.engage_lanes(&w.slots())), (6, [3, 3]));
 
     let kinds = |pick: &[UnitId]| ["STRIKE", "ANTI_FLANK", "SHOOT", "CHARGE", "STAB", "SPELL"].map(|k| w.kinds(pick, k));
-    // One of each kind first (anti-flank, strike, shoot, charge, spell, stab: six), then the
-    // rest in the kinds' order: four more strikers.
+    // One of each kind first (anti-flank, strike, shoot, charge, spell, stab: six), which fills
+    // a squad's six places.
     let auto = w.auto(&pool, Side::Attacker);
     let pick: Vec<UnitId> = auto.iter().map(|p| p.unit).collect();
-    assert_eq!(kinds(&pick), [5, 1, 1, 1, 1, 1]);
-    assert_eq!(w.g.engage_validate_formation(&pool, &auto, &w.slots()), Ok(()));
-    // The rows they prefer: the anti-flanker and the horseman in the front row; the archer and
-    // the assassin in the middle; the adept in the rear; the front's four cells full, the other
-    // strikers in the next row of their rank order with room.
+    assert_eq!(kinds(&pick), [1, 1, 1, 1, 1, 1]);
+    // The rows they prefer: the anti-flanker, the axeman and the horseman in the front row (its
+    // three cells full); the archer and the assassin in the middle; the adept in the rear.
     let row_of = |u: UnitId| auto.iter().find(|p| p.unit == u).map(|p| p.row);
     let of_kind = |k: &str| pick.iter().copied().filter(|&u| w.kind(u) == k).collect::<Vec<_>>();
     assert_eq!(row_of(screen), Some(0));
+    assert_eq!(of_kind("STRIKE").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(0)]);
     assert_eq!(of_kind("CHARGE").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(0)]);
     assert_eq!(of_kind("SHOOT").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(1)]);
     assert_eq!(of_kind("STAB").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(1)]);
     assert_eq!(of_kind("SPELL").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(2)]);
-    assert_eq!(auto.iter().filter(|p| p.row == 0).count(), 4, "the front row is full");
-    // Centre lanes first: the anti-flanker, picked first, stands in lane 1 (lanes 1 and 2 are the
-    // centre; ties go to the lower).
+    assert_eq!(auto.iter().filter(|p| p.row == 0).count(), 3, "the front row is full");
+    // Centre lane first: the anti-flanker, picked first, stands in lane 1.
     assert_eq!(auto.iter().find(|p| p.unit == screen).map(|p| p.lane), Some(1));
+    // Strikers past the front's three cells go to the next row of their rank order with room.
+    let four = w.auto(&axemen[..4], Side::Attacker);
+    assert_eq!((four.iter().filter(|p| p.row == 0).count(), four.iter().filter(|p| p.row == 1).count()), (3, 1), "{four:?}");
 
-    // Deterministic, the same for both sides, no unit twice; fewer candidates than slots: all.
+    // Deterministic, the same for both sides, no unit twice; fewer candidates than places: all.
     for side in [Side::Attacker, Side::Defender] {
         let a = w.auto(&pool, side);
         assert_eq!(a, w.auto(&pool, side));
-        assert_eq!(a.len(), 10);
+        assert_eq!(a.len(), 6);
         let mut units: Vec<UnitId> = a.iter().map(|p| p.unit).collect();
         units.sort();
         units.dedup();
-        assert_eq!(units.len(), 10);
+        assert_eq!(units.len(), 6);
     }
-    assert_eq!(w.pick(&pool[..8], Side::Attacker).len(), 8);
+    assert_eq!(w.pick(&pool[..5], Side::Attacker).len(), 5);
 
-    // A large unit counts two slots and is placed first: a Hill Giant takes the centre of the
-    // front row.
+    // A large unit counts two places and is placed first: a Hill Giant takes two cells of the
+    // front row (lanes 0 and 1: three lanes have no centre pair; ties go to the lower).
     let giant = w.unit(p0, "UNIT_HILL_GIANT", from);
     let mut pool2 = pool.clone();
     pool2.push(giant);
     let auto = w.auto(&pool2, Side::Attacker);
     let g = auto.iter().find(|p| p.unit == giant).expect("the giant is strong enough to be taken");
-    assert_eq!((g.lane, g.row), (1, 0));
-    assert_eq!(auto.iter().map(|p| w.g.unit_engage_size(p.unit)).sum::<i32>(), 10);
-    assert_eq!(w.g.engage_validate_formation(&pool2, &auto, &w.slots()), Ok(()));
+    assert_eq!((g.lane, g.row), (0, 0));
+    assert_eq!(auto.iter().map(|p| w.g.unit_engage_size(p.unit)).sum::<i32>(), 6);
+    assert_eq!(auto.len(), 5);
 }
 
 #[test]
 fn a_wounded_unit_waits_behind_the_healthy_ones_of_its_role() {
     let mut w = world();
-    let (p0, from, to) = (w.p0, w.from, w.to);
-    w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
+    let (p0, from) = (w.p0, w.from);
     assert_eq!(w.slots().att(), 6);
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 7);
     let archer = w.unit(p0, "UNIT_ARCHER", from);

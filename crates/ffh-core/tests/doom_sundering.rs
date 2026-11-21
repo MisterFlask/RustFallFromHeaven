@@ -349,8 +349,8 @@ fn the_nearest_units_defect_up_to_the_seceded_share_of_the_parents_strength() {
     let (mut g, _, target) = bannor();
     let p0 = PlayerId(0);
     let army = field_army(&mut g, target, 1, 12);
-    let s = g.crusade_unit_strength(army[0]);
-    assert!(s > 0 && army.iter().all(|&u| g.crusade_unit_strength(u) == s));
+    let s = g.crusade_unit_force(army[0]);
+    assert!(s > 0 && army.iter().all(|&u| g.crusade_unit_force(u) == s));
     let np = world::next_player(&g);
     sd::fire_sundering(&mut g, 0);
     let capital = g.player_get_capital_city(np).unwrap();

@@ -579,7 +579,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 21,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -588,7 +587,6 @@
     "asset": 42,
     "power": 84,
     "free_promotions": {"PROMOTION_MAGIC_IMMUNE": true, "PROMOTION_DRAGON": true, "PROMOTION_SENTRY": true},
-    "combat_defense": 21,
     "tier": 4
   },
   {
@@ -614,7 +612,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 19,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -629,7 +626,6 @@
       "PROMOTION_SENTRY": true,
       "PROMOTION_SENTRY2": true
     },
-    "combat_defense": 19,
     "tier": 4,
     "python_post_combat_lost": "postCombatAcheron(pCaster,pOpponent)"
   },
@@ -681,7 +677,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 300,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -690,7 +685,6 @@
     "power": 6,
     "free_promotions": {"PROMOTION_CHANNELING1": true},
     "free_xp": true,
-    "combat_defense": 3,
     "free_promotion_pick": 1,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_MAGE_GUILD"
@@ -742,7 +736,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 300,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -751,11 +744,10 @@
     "power": 6,
     "free_promotions": {"PROMOTION_FIRE_RESISTANCE": true, "PROMOTION_CHANNELING1": true, "PROMOTION_DEMON": true},
     "free_xp": true,
-    "combat_defense": 3,
     "free_promotion_pick": 1,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_MAGE_GUILD",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_SHAMAN",
@@ -805,7 +797,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 300,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -814,7 +805,6 @@
     "power": 6,
     "free_promotions": {"PROMOTION_CHANNELING1": true},
     "free_xp": true,
-    "combat_defense": 3,
     "free_promotion_pick": 1,
     "tier": 2
   },
@@ -867,7 +857,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -875,7 +864,6 @@
     "asset": 2,
     "power": 4,
     "free_promotions": {"PROMOTION_HERO": true},
-    "combat_defense": 2,
     "tier": 2,
     "prereq_civ": "CIVILIZATION_GRIGORI"
   },
@@ -899,7 +887,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -913,12 +900,11 @@
       "PROMOTION_ELEMENTAL": true,
       "PROMOTION_IMMUNE_LIGHTNING": true
     },
-    "combat_defense": 5,
     "tier": 4,
     "unit_create_from_combat": "UNIT_LIGHTNING_ELEMENTAL",
     "unit_create_from_combat_chance": 100,
-    "damage_type_combats": {"DAMAGE_LIGHTNING": 2},
-    "bonus_affinities": {"BONUS_MANA_AIR": 1}
+    "damage_type_attacks": {"DAMAGE_LIGHTNING": 20},
+    "bonus_affinities": {"BONUS_MANA_AIR": 10}
   },
   {
     "type": "UNIT_ALAZKAN",
@@ -943,7 +929,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -960,9 +945,8 @@
       "PROMOTION_BLACK_MIRROR": true
     },
     "immune_to_defensive_strike": true,
-    "combat_defense": 4,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_POISON": 2}
+    "damage_type_attacks": {"DAMAGE_POISON": 20}
   },
   {
     "type": "UNIT_ANGEL",
@@ -994,18 +978,16 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "asset": 6,
     "power": 12,
     "free_promotions": {"PROMOTION_ANGEL": true},
-    "combat_defense": 4,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_civ": "CIVILIZATION_MERCURIANS",
-    "damage_type_combats": {"DAMAGE_HOLY": 1}
+    "damage_type_attacks": {"DAMAGE_HOLY": 10}
   },
   {
     "type": "UNIT_ANGEL_OF_DEATH",
@@ -1032,7 +1014,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1045,13 +1026,12 @@
       "PROMOTION_VILE_TOUCH": true,
       "PROMOTION_INVISIBLE": true
     },
-    "combat_defense": 6,
     "min_level": 4,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_civ": "CIVILIZATION_MERCURIANS",
     "python_post_combat_won": "postCombatReducePopulation(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_HOLY": 3}
+    "damage_type_attacks": {"DAMAGE_HOLY": 30}
   },
   {
     "type": "UNIT_ARCANE_BARGE",
@@ -1074,7 +1054,7 @@
     "min_area_size": 20,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 8,
+    "strength": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1083,7 +1063,7 @@
     "asset": 7,
     "power": 15,
     "free_promotions": {"PROMOTION_FIRE2": true},
-    "combat_defense": 8,
+    "strength_defense": 8,
     "tier": 3
   },
   {
@@ -1112,7 +1092,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1123,7 +1102,6 @@
     "culture_garrison": 4,
     "asset": 3,
     "power": 6,
-    "combat_defense": 5,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 2,
@@ -1154,7 +1132,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1164,7 +1141,6 @@
     "culture_garrison": 4,
     "asset": 3,
     "power": 8,
-    "combat_defense": 4,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 1
@@ -1194,7 +1170,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1207,12 +1182,11 @@
     "power": 6,
     "graphical_only": true,
     "free_promotions": {"PROMOTION_ORC": true},
-    "combat_defense": 5,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_ARCHERY_RANGE",
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_DWARVEN_SLINGER",
@@ -1240,7 +1214,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1252,7 +1225,6 @@
     "asset": 3,
     "power": 6,
     "free_promotions": {"PROMOTION_DWARF": true},
-    "combat_defense": 5,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 2,
@@ -1284,7 +1256,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1295,7 +1266,6 @@
     "culture_garrison": 4,
     "asset": 4,
     "power": 8,
-    "combat_defense": 4,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 2
@@ -1348,7 +1318,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 400,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1357,7 +1326,6 @@
     "power": 20,
     "free_promotions": {"PROMOTION_CHANNELING1": true, "PROMOTION_CHANNELING2": true, "PROMOTION_CHANNELING3": true},
     "free_xp": true,
-    "combat_defense": 5,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 4
@@ -1410,7 +1378,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 400,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1419,7 +1386,6 @@
     "power": 20,
     "free_promotions": {"PROMOTION_CHANNELING1": true, "PROMOTION_CHANNELING2": true, "PROMOTION_CHANNELING3": true},
     "free_xp": true,
-    "combat_defense": 5,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 4
@@ -1450,7 +1416,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 10,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1458,7 +1423,6 @@
     "culture_garrison": 7,
     "asset": 20,
     "power": 40,
-    "combat_defense": 10,
     "defensive_strike_chance": 30,
     "defensive_strike_damage": 15,
     "tier": 4
@@ -1484,7 +1448,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 13,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -1500,12 +1463,11 @@
       "PROMOTION_STAFF_OF_SOULS": true
     },
     "auto_raze": true,
-    "combat_defense": 13,
     "tier": 4,
     "unit_create_from_combat": "UNIT_WRAITH",
     "unit_create_from_combat_chance": 100,
     "python_post_combat_lost": "postCombatArs(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_DEATH": 11, "DAMAGE_UNHOLY": 5}
+    "damage_type_attacks": {"DAMAGE_DEATH": 110, "DAMAGE_UNHOLY": 50}
   },
   {
     "type": "UNIT_ARTHENDAIN",
@@ -1538,7 +1500,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -1556,7 +1517,6 @@
       "PROMOTION_DWARF": true
     },
     "abandon": true,
-    "combat_defense": 9,
     "defensive_strike_chance": 40,
     "defensive_strike_damage": 20,
     "tier": 4
@@ -1639,7 +1599,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1654,10 +1613,9 @@
     "ai_block_perm_defense": true,
     "immune_to_defensive_strike": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE",
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_CHANTER",
@@ -1686,7 +1644,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1701,10 +1658,9 @@
     "ai_block_perm_defense": true,
     "immune_to_defensive_strike": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE",
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_DEVOUT",
@@ -1739,7 +1695,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1753,7 +1708,6 @@
     "ai_block_perm_defense": true,
     "immune_to_defensive_strike": true,
     "never_obsolete": true,
-    "combat_defense": 5,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE"
   },
@@ -1784,7 +1738,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1799,10 +1752,9 @@
     "ai_block_perm_defense": true,
     "immune_to_defensive_strike": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE",
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_LIZARDMAN_ASSASSIN",
@@ -1831,7 +1783,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1847,10 +1798,9 @@
     "ai_block_perm_defense": true,
     "immune_to_defensive_strike": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE",
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_TASKMASTER",
@@ -1878,7 +1828,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1892,11 +1841,10 @@
     "ai_block_perm_defense": true,
     "immune_to_defensive_strike": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "enslavement_chance": 25,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE",
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_AUREALIS",
@@ -1918,7 +1866,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -1926,9 +1873,8 @@
     "asset": 12,
     "power": 24,
     "free_promotions": {"PROMOTION_ELEMENTAL": true},
-    "combat_defense": 6,
     "tier": 4,
-    "bonus_affinities": {"BONUS_MANA_SUN": 2}
+    "bonus_affinities": {"BONUS_MANA_SUN": 20}
   },
   {
     "type": "UNIT_AURIC",
@@ -1951,7 +1897,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -1959,7 +1904,6 @@
     "asset": 4,
     "power": 8,
     "graphical_only": true,
-    "combat_defense": 4,
     "tier": 2
   },
   {
@@ -1983,7 +1927,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 30,
     "combat_limit": 100,
     "xp_value_attack": 80,
     "xp_value_defense": 40,
@@ -1996,11 +1939,10 @@
       "PROMOTION_SENTRY": true,
       "PROMOTION_SENTRY2": true
     },
-    "combat_defense": 30,
     "tier": 4,
     "python_post_combat_lost": "postCombatAuricAscendedLost(pCaster,pOpponent)",
     "python_post_combat_won": "postCombatAuricAscendedWon(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_COLD": 30}
+    "damage_type_attacks": {"DAMAGE_COLD": 300}
   },
   {
     "type": "UNIT_AXEMAN",
@@ -2031,7 +1973,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2040,7 +1981,6 @@
     "culture_garrison": 4,
     "asset": 4,
     "power": 8,
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
@@ -2074,7 +2014,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2083,7 +2022,6 @@
     "culture_garrison": 4,
     "asset": 4,
     "power": 8,
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
@@ -2115,7 +2053,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2126,10 +2063,9 @@
     "free_promotions": {"PROMOTION_UNDEAD": true, "PROMOTION_FIRE_RESISTANCE": true},
     "ai_block_perm_defense": true,
     "explode_in_combat": true,
-    "combat_defense": 3,
     "tier": 2,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_FIRE": 1},
+    "damage_type_attacks": {"DAMAGE_FIRE": 10},
     "python_post_combat_lost": "postCombatExplode(pCaster,pOpponent)"
   },
   {
@@ -2161,7 +2097,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2171,7 +2106,6 @@
     "asset": 4,
     "power": 8,
     "disable_upgrade_to": true,
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -2204,7 +2138,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2213,7 +2146,6 @@
     "culture_garrison": 6,
     "asset": 4,
     "power": 8,
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
@@ -2247,7 +2179,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2256,7 +2187,6 @@
     "power": 12,
     "free_promotions": {"PROMOTION_VULNERABLE_TO_FIRE": true, "PROMOTION_GOLEM": true},
     "disable_upgrade_to": true,
-    "combat_defense": 6,
     "tier": 2
   },
   {
@@ -2279,7 +2209,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "culture_garrison": 3,
     "asset": 4,
@@ -2287,10 +2216,9 @@
     "graphical_only": true,
     "free_promotions": {"PROMOTION_FLYING": true, "PROMOTION_IMMUNE_FIRE": true, "PROMOTION_ELEMENTAL": true},
     "explode_in_combat": true,
-    "combat_defense": 3,
     "tier": 3,
     "python_post_combat_lost": "postCombatExplode(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_FIRE": 3}
+    "damage_type_attacks": {"DAMAGE_FIRE": 30}
   },
   {
     "type": "UNIT_BABY_SPIDER",
@@ -2314,16 +2242,14 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
     "graphical_only": true,
-    "combat_defense": 2,
     "unit_convert_from_combat": "UNIT_GIANT_SPIDER",
     "unit_convert_from_combat_chance": 2,
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_BAMBUR",
@@ -2356,7 +2282,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -2371,7 +2296,6 @@
       "PROMOTION_DWARF": true
     },
     "abandon": true,
-    "combat_defense": 5,
     "tier": 3,
     "weapon_tier": 3
   },
@@ -2403,7 +2327,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -2411,7 +2334,6 @@
     "asset": 5,
     "power": 10,
     "free_promotions": {"PROMOTION_GOLEM": true, "PROMOTION_PIECES_OF_BARNAXUS": true},
-    "combat_defense": 5,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -2436,7 +2358,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -2449,12 +2370,11 @@
       "PROMOTION_SENTRY": true,
       "PROMOTION_ANGEL": true
     },
-    "combat_defense": 7,
     "modify_global_counter": 5,
     "tier": 4,
     "weapon_tier": 3,
     "python_post_combat_lost": "postCombatBasium(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_HOLY": 4}
+    "damage_type_attacks": {"DAMAGE_HOLY": 40}
   },
   {
     "type": "UNIT_BATTERING_RAM",
@@ -2478,7 +2398,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 1,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2489,7 +2408,6 @@
     "ai_block_explore": true,
     "ai_block_patrol": true,
     "ai_block_perm_defense": true,
-    "combat_defense": 1,
     "tier": 2
   },
   {
@@ -2515,13 +2433,11 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
-    "feature_natives": {"FEATURE_FOREST": true, "FEATURE_FOREST_ANCIENT": true},
-    "combat_defense": 5
+    "feature_natives": {"FEATURE_FOREST": true, "FEATURE_FOREST_ANCIENT": true}
   },
   {
     "type": "UNIT_POLAR_BEAR",
@@ -2546,7 +2462,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2554,8 +2469,7 @@
     "terrain_natives": {"TERRAIN_SNOW": true},
     "feature_natives": {"FEATURE_FOREST": true, "FEATURE_FOREST_ANCIENT": true},
     "graphical_only": true,
-    "free_promotions": {"PROMOTION_WINTERBORN": true},
-    "combat_defense": 5
+    "free_promotions": {"PROMOTION_WINTERBORN": true}
   },
   {
     "type": "UNIT_BEAST_OF_AGARES",
@@ -2584,7 +2498,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2592,11 +2505,10 @@
     "asset": 22,
     "power": 44,
     "free_promotions": {"PROMOTION_DEMON": true},
-    "combat_defense": 11,
     "modify_global_counter": 1,
     "tier": 4,
     "python_post_combat_won": "postCombatConsumePaladin(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 5}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 50}
   },
   {
     "type": "UNIT_BEASTMASTER",
@@ -2625,7 +2537,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 100,
-    "combat": 14,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2636,7 +2547,6 @@
     "cargo": 1,
     "asset": 28,
     "power": 56,
-    "combat_defense": 14,
     "tier": 4
   },
   {
@@ -2666,7 +2576,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 100,
-    "combat": 14,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2679,7 +2588,6 @@
     "power": 56,
     "graphical_only": true,
     "free_promotions": {"PROMOTION_LIZARDMAN": true},
-    "combat_defense": 14,
     "tier": 4
   },
   {
@@ -2708,14 +2616,12 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 14,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -20,
     "asset": 28,
     "power": 56,
-    "combat_defense": 14,
     "tier": 4
   },
   {
@@ -2743,7 +2649,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 100,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2754,9 +2659,8 @@
     "asset": 24,
     "power": 48,
     "graphical_only": true,
-    "combat_defense": 12,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_POISON": 2}
+    "damage_type_attacks": {"DAMAGE_POISON": 20}
   },
   {
     "type": "UNIT_BALOR",
@@ -2782,7 +2686,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2791,12 +2694,11 @@
     "asset": 14,
     "power": 28,
     "free_promotions": {"PROMOTION_FIRE_RESISTANCE": true, "PROMOTION_DEMON": true, "PROMOTION_STIGMATA": true},
-    "combat_defense": 3,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD",
     "upgrade_civ": "CIVILIZATION_INFERNAL",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 4}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 40}
   },
   {
     "type": "UNIT_BERSERKER",
@@ -2823,7 +2725,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2834,7 +2735,6 @@
     "culture_garrison": 4,
     "asset": 22,
     "power": 44,
-    "combat_defense": 5,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
@@ -2864,7 +2764,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2882,7 +2781,6 @@
       "PROMOTION_BODY1": true,
       "PROMOTION_DEATH1": true
     },
-    "combat_defense": 5,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD",
@@ -2913,7 +2811,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2924,7 +2821,6 @@
     "culture_garrison": 4,
     "asset": 22,
     "power": 44,
-    "combat_defense": 5,
     "tier": 4,
     "weapon_tier": 3
   },
@@ -2953,7 +2849,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 15,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2965,7 +2860,6 @@
     "power": 60,
     "free_promotions": {"PROMOTION_GOLEM": true},
     "disable_upgrade_to": true,
-    "combat_defense": 9,
     "tier": 4,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
   },
@@ -2988,7 +2882,7 @@
     "min_area_size": 20,
     "moves": 4,
     "nuke_range": -1,
-    "combat": 10,
+    "strength": 10,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -2998,7 +2892,7 @@
     "asset": 10,
     "power": 21,
     "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_HIDDEN_NATIONALITY": true},
-    "combat_defense": 10,
+    "strength_defense": 10,
     "gold_from_combat": 3,
     "tier": 3
   },
@@ -3022,7 +2916,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3031,11 +2924,10 @@
     "power": 24,
     "free_promotions": {"PROMOTION_ANGEL": true, "PROMOTION_HERO": true},
     "immortal": true,
-    "combat_defense": 6,
     "tier": 4,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_HOLY": 3},
-    "bonus_affinities": {"BONUS_MANA_FIRE": 1}
+    "damage_type_attacks": {"DAMAGE_HOLY": 30},
+    "bonus_affinities": {"BONUS_MANA_FIRE": 10}
   },
   {
     "type": "UNIT_BRIGIT_HELD",
@@ -3087,7 +2979,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 25,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -3103,10 +2994,9 @@
       "PROMOTION_WAR": true
     },
     "auto_raze": true,
-    "combat_defense": 25,
     "tier": 4,
     "python_post_combat_lost": "postCombatBuboes(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
   },
   {
     "type": "UNIT_CANNON",
@@ -3138,7 +3028,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3153,7 +3042,6 @@
     "ai_block_explore": true,
     "ai_block_patrol": true,
     "ai_block_perm_defense": true,
-    "combat_defense": 6,
     "tier": 4
   },
   {
@@ -3186,7 +3074,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 10,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3201,7 +3088,6 @@
     "ai_block_explore": true,
     "ai_block_patrol": true,
     "ai_block_perm_defense": true,
-    "combat_defense": 7,
     "tier": 4
   },
   {
@@ -3231,7 +3117,7 @@
     "min_area_size": 20,
     "moves": 4,
     "nuke_range": -1,
-    "combat": 7,
+    "strength": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3240,7 +3126,7 @@
     "asset": 6,
     "power": 12,
     "free_promotions": {"PROMOTION_SENTRY": true},
-    "combat_defense": 7,
+    "strength_defense": 7,
     "tier": 3
   },
   {
@@ -3272,7 +3158,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 75,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3287,7 +3172,6 @@
     "ai_block_explore": true,
     "ai_block_patrol": true,
     "ai_block_perm_defense": true,
-    "combat_defense": 3,
     "tier": 2
   },
   {
@@ -3318,7 +3202,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 75,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3333,7 +3216,6 @@
     "ai_block_explore": true,
     "ai_block_patrol": true,
     "ai_block_perm_defense": true,
-    "combat_defense": 4,
     "tier": 2
   },
   {
@@ -3362,7 +3244,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -3380,10 +3261,9 @@
       "PROMOTION_SENTRY": true
     },
     "abandon": true,
-    "combat_defense": 7,
     "tier": 3,
     "diplo_vote_type": "DIPLOVOTE_OVERCOUNCIL",
-    "bonus_affinities": {"BONUS_MANA_SUN": 2}
+    "bonus_affinities": {"BONUS_MANA_SUN": 20}
   },
   {
     "type": "UNIT_BATTLEMASTER",
@@ -3423,7 +3303,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3435,7 +3314,6 @@
     "power": 18,
     "disable_upgrade_to": true,
     "never_obsolete": true,
-    "combat_defense": 6,
     "tier": 3,
     "weapon_tier": 3
   },
@@ -3472,7 +3350,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3482,7 +3359,6 @@
     "power": 15,
     "free_promotions": {"PROMOTION_BOARDING": true},
     "never_obsolete": true,
-    "combat_defense": 5,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HARBOR"
@@ -3525,7 +3401,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3535,7 +3410,6 @@
     "asset": 9,
     "power": 18,
     "never_obsolete": true,
-    "combat_defense": 6,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
@@ -3578,7 +3452,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3589,7 +3462,6 @@
     "power": 18,
     "free_promotions": {"PROMOTION_DRAGON_SLAYING": true, "PROMOTION_COURAGE": true},
     "never_obsolete": true,
-    "combat_defense": 6,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
@@ -3625,7 +3497,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 10,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3635,7 +3506,6 @@
     "free_promotions": {"PROMOTION_GOLEM": true},
     "disable_upgrade_to": true,
     "never_obsolete": true,
-    "combat_defense": 10,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_FORGE"
   },
@@ -3677,7 +3547,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3686,7 +3555,6 @@
     "asset": 7,
     "power": 15,
     "never_obsolete": true,
-    "combat_defense": 5,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD",
@@ -3723,7 +3591,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3734,7 +3601,6 @@
     "free_promotions": {"PROMOTION_ORC": true},
     "disable_upgrade_to": true,
     "never_obsolete": true,
-    "combat_defense": 8,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD",
@@ -3778,7 +3644,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3794,7 +3659,6 @@
       "PROMOTION_BODY1": true
     },
     "never_obsolete": true,
-    "combat_defense": 5,
     "tier": 3,
     "weapon_tier": 3,
     "upgrade_civ": "CIVILIZATION_CALABIM"
@@ -3820,7 +3684,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3828,7 +3691,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_DEMON": true},
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -3860,7 +3722,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3869,7 +3730,6 @@
     "asset": 5,
     "power": 10,
     "free_promotions": {"PROMOTION_CENTAUR": true},
-    "combat_defense": 3,
     "tier": 2,
     "weapon_tier": 3,
     "upgrade_civ": "CIVILIZATION_KURIOTATES"
@@ -3904,7 +3764,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3913,7 +3772,6 @@
     "culture_garrison": 4,
     "asset": 5,
     "power": 10,
-    "combat_defense": 3,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -3946,7 +3804,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -3955,10 +3812,9 @@
     "asset": 5,
     "power": 10,
     "graphical_only": true,
-    "combat_defense": 3,
     "tier": 2,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_COMMANDER",
@@ -4099,7 +3955,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4110,7 +3965,6 @@
     "culture_garrison": 6,
     "asset": 18,
     "power": 36,
-    "combat_defense": 13,
     "defensive_strike_chance": 40,
     "defensive_strike_damage": 20,
     "tier": 4,
@@ -4142,7 +3996,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4152,7 +4005,6 @@
     "asset": 24,
     "power": 48,
     "free_promotions": {"PROMOTION_BLITZ": true},
-    "combat_defense": 12,
     "defensive_strike_chance": 40,
     "defensive_strike_damage": 20,
     "tier": 4,
@@ -4194,7 +4046,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4202,9 +4053,8 @@
     "asset": 9,
     "power": 18,
     "free_promotions": {"PROMOTION_MEDIC1": true, "PROMOTION_IMMUNE_DISEASE": true, "PROMOTION_DEMON_SLAYING": true},
-    "combat_defense": 6,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_HOLY": 1}
+    "damage_type_attacks": {"DAMAGE_HOLY": 10}
   },
   {
     "type": "UNIT_DEMAGOG",
@@ -4233,7 +4083,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4242,7 +4091,6 @@
     "asset": 7,
     "power": 15,
     "abandon": true,
-    "combat_defense": 5,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD",
@@ -4279,7 +4127,6 @@
     "moves": 1,
     "nuke_range": -1,
     "great_work_culture": 20,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4289,7 +4136,6 @@
     "free_promotions": {"PROMOTION_MEDIC1": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 2
   },
   {
@@ -4323,7 +4169,6 @@
     "moves": 1,
     "nuke_range": -1,
     "great_work_culture": 20,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4333,7 +4178,6 @@
     "free_promotions": {"PROMOTION_MEDIC1": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 2
   },
   {
@@ -4367,7 +4211,6 @@
     "moves": 1,
     "nuke_range": -1,
     "great_work_culture": 20,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4377,7 +4220,6 @@
     "free_promotions": {"PROMOTION_MEDIC1": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 2
   },
   {
@@ -4401,7 +4243,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4416,10 +4257,9 @@
       "PROMOTION_LOYALTY": true
     },
     "free_xp": true,
-    "combat_defense": 3,
     "tier": 3,
     "prereq_civ": "CIVILIZATION_BARBARIAN",
-    "damage_type_combats": {"DAMAGE_FIRE": 1}
+    "damage_type_attacks": {"DAMAGE_FIRE": 10}
   },
   {
     "type": "UNIT_DISCIPLE_RUNES_OF_KILMORPH",
@@ -4452,7 +4292,6 @@
     "moves": 1,
     "nuke_range": -1,
     "great_work_culture": 20,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4462,7 +4301,6 @@
     "free_promotions": {"PROMOTION_MEDIC1": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 2
   },
   {
@@ -4495,7 +4333,6 @@
     "moves": 1,
     "nuke_range": -1,
     "base_discover": 15,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4505,7 +4342,6 @@
     "free_promotions": {"PROMOTION_MEDIC1": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 2
   },
   {
@@ -4538,7 +4374,6 @@
     "moves": 1,
     "nuke_range": -1,
     "great_work_culture": 20,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4548,7 +4383,6 @@
     "free_promotions": {"PROMOTION_MEDIC1": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 2
   },
   {
@@ -4581,7 +4415,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4589,10 +4422,9 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_DISEASED": true, "PROMOTION_UNDEAD": true},
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_DEATH": 2}
+    "damage_type_attacks": {"DAMAGE_DEATH": 20}
   },
   {
     "type": "UNIT_DJINN",
@@ -4613,7 +4445,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 1,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4621,27 +4452,26 @@
     "asset": 2,
     "power": 4,
     "free_promotions": {"PROMOTION_ELEMENTAL": true},
-    "combat_defense": 1,
     "tier": 4,
     "bonus_affinities": {
-      "BONUS_MANA_DEATH": 1,
-      "BONUS_MANA_FIRE": 1,
-      "BONUS_MANA_AIR": 1,
-      "BONUS_MANA_BODY": 1,
-      "BONUS_MANA_CHAOS": 1,
-      "BONUS_MANA_EARTH": 1,
-      "BONUS_MANA_ENCHANTMENT": 1,
-      "BONUS_MANA_ENTROPY": 1,
-      "BONUS_MANA_LAW": 1,
-      "BONUS_MANA_LIFE": 1,
-      "BONUS_MANA_METAMAGIC": 1,
-      "BONUS_MANA_MIND": 1,
-      "BONUS_MANA_NATURE": 1,
-      "BONUS_MANA_SPIRIT": 1,
-      "BONUS_MANA_WATER": 1,
-      "BONUS_MANA_SUN": 1,
-      "BONUS_MANA_SHADOW": 1,
-      "BONUS_MANA_ICE": 1
+      "BONUS_MANA_DEATH": 10,
+      "BONUS_MANA_FIRE": 10,
+      "BONUS_MANA_AIR": 10,
+      "BONUS_MANA_BODY": 10,
+      "BONUS_MANA_CHAOS": 10,
+      "BONUS_MANA_EARTH": 10,
+      "BONUS_MANA_ENCHANTMENT": 10,
+      "BONUS_MANA_ENTROPY": 10,
+      "BONUS_MANA_LAW": 10,
+      "BONUS_MANA_LIFE": 10,
+      "BONUS_MANA_METAMAGIC": 10,
+      "BONUS_MANA_MIND": 10,
+      "BONUS_MANA_NATURE": 10,
+      "BONUS_MANA_SPIRIT": 10,
+      "BONUS_MANA_WATER": 10,
+      "BONUS_MANA_SUN": 10,
+      "BONUS_MANA_SHADOW": 10,
+      "BONUS_MANA_ICE": 10
     }
   },
   {
@@ -4667,7 +4497,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -4681,7 +4510,6 @@
       "PROMOTION_GUARDSMAN": true,
       "PROMOTION_EMPTY_BIER": true
     },
-    "combat_defense": 7,
     "tier": 3,
     "weapon_tier": 3,
     "python_post_combat_won": "postCombatDonal(pCaster,pOpponent)"
@@ -4711,7 +4539,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 14,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -4728,9 +4555,8 @@
       "PROMOTION_VULNERABLE_TO_FIRE": true,
       "PROMOTION_IMMUNE_COLD": true
     },
-    "combat_defense": 14,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_COLD": 7}
+    "damage_type_attacks": {"DAMAGE_COLD": 70}
   },
   {
     "type": "UNIT_DROWN",
@@ -4760,7 +4586,6 @@
     "moves": 1,
     "nuke_range": -1,
     "terrain_impassables": {"TERRAIN_OCEAN": true},
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4772,10 +4597,9 @@
       "PROMOTION_UNDEAD": true,
       "PROMOTION_WATER_WALKING": true
     },
-    "combat_defense": 3,
     "tier": 2,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_DRUID",
@@ -4804,7 +4628,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 100,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4823,10 +4646,9 @@
       "PROMOTION_NATURE1": true
     },
     "free_xp": true,
-    "combat_defense": 8,
     "tier": 4,
     "prereq_alignment": "ALIGNMENT_NEUTRAL",
-    "bonus_affinities": {"BONUS_MANA_NATURE": 1}
+    "bonus_affinities": {"BONUS_MANA_NATURE": 10}
   },
   {
     "type": "UNIT_DWARVEN_DRUID",
@@ -4855,7 +4677,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 100,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4875,10 +4696,9 @@
       "PROMOTION_DWARF": true
     },
     "free_xp": true,
-    "combat_defense": 8,
     "tier": 4,
     "prereq_alignment": "ALIGNMENT_NEUTRAL",
-    "bonus_affinities": {"BONUS_MANA_EARTH": 1}
+    "bonus_affinities": {"BONUS_MANA_EARTH": 10}
   },
   {
     "type": "UNIT_LIZARDMAN_DRUID",
@@ -4907,7 +4727,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 100,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4928,10 +4747,9 @@
       "PROMOTION_LIZARDMAN": true
     },
     "free_xp": true,
-    "combat_defense": 8,
     "tier": 4,
     "prereq_alignment": "ALIGNMENT_NEUTRAL",
-    "bonus_affinities": {"BONUS_MANA_NATURE": 1}
+    "bonus_affinities": {"BONUS_MANA_NATURE": 10}
   },
   {
     "type": "UNIT_LUONNOTAR",
@@ -4957,7 +4775,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 100,
-    "combat": 10,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -4972,7 +4789,6 @@
       "PROMOTION_CHANNELING3": true
     },
     "free_xp": true,
-    "combat_defense": 10,
     "min_level": 6,
     "tier": 4
   },
@@ -5005,7 +4821,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -5013,7 +4828,6 @@
     "asset": 16,
     "power": 33,
     "free_promotions": {"PROMOTION_WEREWOLF": true, "PROMOTION_MAGIC_RESISTANCE": true},
-    "combat_defense": 11,
     "tier": 3,
     "unit_create_from_combat": "UNIT_RAVENOUS_WEREWOLF",
     "unit_create_from_combat_chance": 75
@@ -5047,7 +4861,6 @@
     "nuke_range": -1,
     "work_rate": 200,
     "base_hurry": 45,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5055,7 +4868,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_DWARF": true},
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -5080,7 +4892,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5088,9 +4899,8 @@
     "asset": 22,
     "power": 44,
     "free_promotions": {"PROMOTION_ELEMENTAL": true},
-    "combat_defense": 11,
     "tier": 4,
-    "bonus_affinities": {"BONUS_MANA_EARTH": 1}
+    "bonus_affinities": {"BONUS_MANA_EARTH": 10}
   },
   {
     "type": "UNIT_EIDOLON",
@@ -5121,7 +4931,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5129,11 +4938,10 @@
     "asset": 22,
     "power": 44,
     "free_promotions": {"PROMOTION_MARCH": true, "PROMOTION_DEMON": true},
-    "combat_defense": 11,
     "modify_global_counter": 1,
     "tier": 4,
     "prereq_alignment": "ALIGNMENT_EVIL",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 4}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 40}
   },
   {
     "type": "UNIT_EINHERJAR",
@@ -5155,7 +4963,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5163,10 +4970,9 @@
     "asset": 4,
     "power": 9,
     "free_promotions": {"PROMOTION_ANGEL": true},
-    "combat_defense": 3,
     "duration_from_combat": 1,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_HOLY": 2}
+    "damage_type_attacks": {"DAMAGE_HOLY": 20}
   },
   {
     "type": "UNIT_ELEPHANT",
@@ -5193,13 +4999,11 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
-    "terrain_natives": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true},
-    "combat_defense": 8
+    "terrain_natives": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true}
   },
   {
     "type": "UNIT_ENGINEER",
@@ -5280,7 +5084,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 23,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -5289,7 +5092,6 @@
     "asset": 46,
     "power": 92,
     "free_promotions": {"PROMOTION_MAGIC_IMMUNE": true, "PROMOTION_DRAGON": true, "PROMOTION_SENTRY": true},
-    "combat_defense": 23,
     "tier": 4
   },
   {
@@ -5342,7 +5144,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5350,7 +5151,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_WOODSMAN1": true},
-    "combat_defense": 4,
     "tier": 2
   },
   {
@@ -5374,7 +5174,6 @@
     "moves": 2,
     "nuke_range": -1,
     "terrain_impassables": {"TERRAIN_SNOW": true},
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5385,10 +5184,9 @@
     "asset": 12,
     "power": 24,
     "free_promotions": {"PROMOTION_IMMUNE_FIRE": true, "PROMOTION_ELEMENTAL": true},
-    "combat_defense": 6,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_FIRE": 3},
-    "bonus_affinities": {"BONUS_MANA_FIRE": 1}
+    "damage_type_attacks": {"DAMAGE_FIRE": 30},
+    "bonus_affinities": {"BONUS_MANA_FIRE": 10}
   },
   {
     "type": "UNIT_FIREBALL",
@@ -5425,7 +5223,7 @@
     "explode_in_combat": true,
     "no_war_weariness": true,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_FIRE": 4}
+    "damage_type_attacks": {"DAMAGE_FIRE": 40}
   },
   {
     "type": "UNIT_FLAGBEARER",
@@ -5456,7 +5254,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5464,7 +5261,6 @@
     "asset": 5,
     "power": 10,
     "free_promotions": {"PROMOTION_MORALE": true},
-    "combat_defense": 5,
     "tier": 2,
     "weapon_tier": 3,
     "prereq_civ": "CIVILIZATION_BANNOR",
@@ -5492,7 +5288,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5501,7 +5296,6 @@
     "power": 18,
     "free_promotions": {"PROMOTION_GOLEM": true},
     "disable_upgrade_to": true,
-    "combat_defense": 6,
     "tier": 3
   },
   {
@@ -5535,7 +5329,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5545,7 +5338,6 @@
     "power": 6,
     "free_promotions": {"PROMOTION_MUTATED": true},
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 1,
     "weapon_tier": 2,
     "prereq_civ": "CIVILIZATION_BALSERAPHS"
@@ -5577,7 +5369,7 @@
     "min_area_size": 20,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 10,
+    "strength": 10,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5586,7 +5378,7 @@
     "cargo": 2,
     "asset": 10,
     "power": 21,
-    "combat_defense": 10,
+    "strength_defense": 10,
     "tier": 3
   },
   {
@@ -5611,7 +5403,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5619,7 +5410,6 @@
     "power": 2,
     "graphical_only": true,
     "free_promotions": {"PROMOTION_FROSTLING": true},
-    "combat_defense": 2,
     "tier": 1
   },
   {
@@ -5643,7 +5433,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5655,7 +5444,6 @@
     "asset": 3,
     "power": 6,
     "free_promotions": {"PROMOTION_FROSTLING": true},
-    "combat_defense": 4,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 2,
@@ -5683,7 +5471,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5693,7 +5480,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_FROSTLING": true},
-    "combat_defense": 3,
     "tier": 2
   },
   {
@@ -5740,7 +5526,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 300,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5755,7 +5540,6 @@
       "PROMOTION_CHAOS1": true
     },
     "free_xp": true,
-    "combat_defense": 4,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 3
@@ -5780,7 +5564,7 @@
     "min_area_size": 20,
     "moves": 5,
     "nuke_range": -1,
-    "combat": 7,
+    "strength": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5788,7 +5572,7 @@
     "cargo": 3,
     "asset": 9,
     "power": 18,
-    "combat_defense": 7,
+    "strength_defense": 7,
     "tier": 3
   },
   {
@@ -5811,7 +5595,7 @@
     "min_area_size": 20,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 5,
+    "strength": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -5819,7 +5603,7 @@
     "asset": 3,
     "power": 6,
     "free_promotions": {"PROMOTION_SENTRY": true},
-    "combat_defense": 5,
+    "strength_defense": 5,
     "tier": 2
   },
   {
@@ -5845,18 +5629,16 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "first_strikes": 1,
     "city_attack": -25,
     "feature_natives": {"FEATURE_JUNGLE": true, "FEATURE_FOREST": true, "FEATURE_FOREST_ANCIENT": true},
-    "combat_defense": 4,
     "tier": 2,
     "unit_create_from_combat": "UNIT_BABY_SPIDER",
     "unit_create_from_combat_chance": 5,
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_GIANT_TORTOISE",
@@ -5876,12 +5658,12 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
+    "strength": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "terrain_natives": {"TERRAIN_OCEAN": true},
-    "combat_defense": 9,
+    "strength_defense": 9,
     "tier": 2
   },
   {
@@ -5910,7 +5692,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -5926,7 +5707,6 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 5,
     "tier": 3
   },
   {
@@ -5952,7 +5732,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -5963,7 +5742,6 @@
     "asset": 5,
     "power": 10,
     "free_promotions": {"PROMOTION_ELF": true, "PROMOTION_HERO": true, "PROMOTION_DEXTEROUS": true},
-    "combat_defense": 6,
     "defensive_strike_chance": 30,
     "defensive_strike_damage": 15,
     "tier": 2
@@ -5990,13 +5768,11 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
     "feature_natives": {"FEATURE_JUNGLE": true},
-    "combat_defense": 4,
     "tier": 1
   },
   {
@@ -6044,7 +5820,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 400,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -6058,7 +5833,6 @@
       "PROMOTION_HERO": true
     },
     "free_xp": true,
-    "combat_defense": 5,
     "tier": 4
   },
   {
@@ -6088,7 +5862,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6096,7 +5869,6 @@
     "asset": 16,
     "power": 33,
     "free_promotions": {"PROMOTION_WEREWOLF": true},
-    "combat_defense": 11,
     "tier": 3,
     "unit_create_from_combat": "UNIT_RAVENOUS_WEREWOLF",
     "unit_create_from_combat_chance": 45
@@ -6122,7 +5894,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6131,7 +5902,6 @@
     "asset": 6,
     "power": 12,
     "free_promotions": {"PROMOTION_FLYING": true},
-    "combat_defense": 4,
     "tier": 3
   },
   {
@@ -6159,7 +5929,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6169,7 +5938,6 @@
     "free_promotions": {"PROMOTION_MEDIC1": true, "PROMOTION_MEDIC2": true, "PROMOTION_MEDIC3": true},
     "ai_block_patrol": true,
     "never_obsolete": true,
-    "combat_defense": 4,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_civ": "CIVILIZATION_GRIGORI"
@@ -6194,14 +5962,12 @@
     "advanced_start_cost": -1,
     "min_area_size": -1,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "culture_garrison": 4,
     "asset": 13,
     "power": 27,
-    "combat_defense": 9,
     "tier": 3
   },
   {
@@ -6225,16 +5991,14 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 22,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
     "culture_garrison": 6,
     "graphical_only": true,
     "free_promotions": {"PROMOTION_SENTRY": true},
-    "combat_defense": 22,
     "tier": 4,
-    "bonus_affinities": {"BONUS_BANANA": 1}
+    "bonus_affinities": {"BONUS_BANANA": 10}
   },
   {
     "type": "UNIT_GUYBRUSH",
@@ -6258,7 +6022,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -6266,7 +6029,6 @@
     "asset": 10,
     "power": 21,
     "free_promotions": {"PROMOTION_BOARDING": true, "PROMOTION_HERO": true},
-    "combat_defense": 7,
     "tier": 3,
     "weapon_tier": 3
   },
@@ -6344,7 +6106,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 200,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -6359,7 +6120,6 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 7,
     "tier": 4
   },
   {
@@ -6386,7 +6146,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 14,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6398,7 +6157,6 @@
     "asset": 28,
     "power": 56,
     "free_promotions": {"PROMOTION_ANGEL": true},
-    "combat_defense": 14,
     "min_level": 4,
     "tier": 4,
     "weapon_tier": 3,
@@ -6426,7 +6184,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6435,7 +6192,6 @@
     "asset": 24,
     "power": 48,
     "free_promotions": {"PROMOTION_CENTAUR": true, "PROMOTION_HERO": true, "PROMOTION_BLITZ": true},
-    "combat_defense": 7,
     "tier": 4,
     "weapon_tier": 3
   },
@@ -6468,7 +6224,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6485,11 +6240,10 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 7,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_HOLY": 1}
+    "damage_type_attacks": {"DAMAGE_HOLY": 10}
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_LEAVES",
@@ -6520,7 +6274,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6537,7 +6290,6 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 8,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 4
@@ -6571,7 +6323,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6588,11 +6339,10 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 6,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_FIRE": 1, "DAMAGE_HOLY": 1}
+    "damage_type_attacks": {"DAMAGE_FIRE": 10, "DAMAGE_HOLY": 10}
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_THE_ORDER",
@@ -6623,7 +6373,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6640,11 +6389,10 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 6,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_HOLY": 2}
+    "damage_type_attacks": {"DAMAGE_HOLY": 20}
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_THE_OVERLORDS",
@@ -6675,7 +6423,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6692,11 +6439,10 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 7,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_THE_VEIL",
@@ -6727,7 +6473,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6744,11 +6489,10 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 6,
     "free_promotion_pick": 1,
     "min_level": 6,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_WINTER",
@@ -6775,7 +6519,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6795,11 +6538,10 @@
       "PROMOTION_DIVINE": true
     },
     "free_xp": true,
-    "combat_defense": 6,
     "min_level": 6,
     "tier": 4,
     "prereq_civ": "CIVILIZATION_ILLIANS",
-    "damage_type_combats": {"DAMAGE_COLD": 3}
+    "damage_type_attacks": {"DAMAGE_COLD": 30}
   },
   {
     "type": "UNIT_HILL_GIANT",
@@ -6825,14 +6567,12 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "terrain_natives": {"TERRAIN_DESERT": true},
     "bombard_rate": 15,
     "free_promotions": {"PROMOTION_SENTRY": true},
-    "combat_defense": 7,
     "tier": 2
   },
   {
@@ -6862,7 +6602,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6872,7 +6611,6 @@
     "asset": 9,
     "power": 18,
     "never_obsolete": true,
-    "combat_defense": 6,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 3,
@@ -6904,7 +6642,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6915,7 +6652,6 @@
     "power": 18,
     "free_promotions": {"PROMOTION_CENTAUR": true},
     "never_obsolete": true,
-    "combat_defense": 6,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 3,
@@ -6949,7 +6685,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -6960,7 +6695,6 @@
     "power": 18,
     "free_promotions": {"PROMOTION_ELF": true},
     "never_obsolete": true,
-    "combat_defense": 6,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 3,
@@ -6994,7 +6728,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7004,7 +6737,6 @@
     "asset": 9,
     "power": 18,
     "never_obsolete": true,
-    "combat_defense": 6,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 3,
@@ -7037,7 +6769,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7048,7 +6779,6 @@
     "power": 18,
     "free_promotions": {"PROMOTION_ELF": true},
     "never_obsolete": true,
-    "combat_defense": 6,
     "defensive_strike_chance": 20,
     "defensive_strike_damage": 10,
     "tier": 3,
@@ -7081,7 +6811,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7091,7 +6820,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_DWARF": true},
-    "combat_defense": 4,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_STABLE"
   },
@@ -7120,7 +6848,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7131,7 +6858,6 @@
     "power": 8,
     "free_promotions": {"PROMOTION_CENTAUR": true},
     "disable_upgrade_to": true,
-    "combat_defense": 4,
     "tier": 2,
     "upgrade_civ": "CIVILIZATION_KURIOTATES"
   },
@@ -7162,7 +6888,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7172,7 +6897,6 @@
     "culture_garrison": 4,
     "asset": 4,
     "power": 8,
-    "combat_defense": 4,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_STABLE"
   },
@@ -7202,7 +6926,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7212,7 +6935,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_ORC": true},
-    "combat_defense": 4,
     "tier": 2,
     "upgrade_civ": "CIVILIZATION_CLAN_OF_EMBERS"
   },
@@ -7240,7 +6962,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7251,9 +6972,8 @@
     "power": 8,
     "graphical_only": true,
     "free_promotions": {"PROMOTION_ORC": true},
-    "combat_defense": 4,
     "tier": 2,
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_DIVIDED_SOUL",
@@ -7282,7 +7002,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 200,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7293,7 +7012,6 @@
     "cargo": 1,
     "asset": 4,
     "power": 8,
-    "combat_defense": 4,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE"
   },
@@ -7324,7 +7042,6 @@
     "moves": 3,
     "nuke_range": -1,
     "work_rate": 200,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7335,10 +7052,9 @@
     "cargo": 1,
     "asset": 4,
     "power": 8,
-    "combat_defense": 3,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_HUNTER",
@@ -7367,7 +7083,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 200,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7378,7 +7093,6 @@
     "cargo": 1,
     "asset": 4,
     "power": 8,
-    "combat_defense": 4,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE"
   },
@@ -7409,7 +7123,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 200,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7421,7 +7134,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_LIZARDMAN": true},
-    "combat_defense": 4,
     "tier": 2,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE"
   },
@@ -7445,7 +7157,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -7459,12 +7170,11 @@
       "PROMOTION_SENTRY": true,
       "PROMOTION_GELA": true
     },
-    "combat_defense": 7,
     "modify_global_counter": 5,
     "tier": 4,
     "weapon_tier": 3,
     "python_post_combat_lost": "postCombatHyborem(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
   },
   {
     "type": "UNIT_ICE_ELEMENTAL",
@@ -7488,7 +7198,6 @@
     "moves": 1,
     "nuke_range": -1,
     "terrain_impassables": {"TERRAIN_DESERT": true, "TERRAIN_BURNING_SANDS": true},
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7502,10 +7211,9 @@
       "PROMOTION_VULNERABLE_TO_FIRE": true,
       "PROMOTION_IMMUNE_COLD": true
     },
-    "combat_defense": 2,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_COLD": 2},
-    "bonus_affinities": {"BONUS_MANA_ICE": 1}
+    "damage_type_attacks": {"DAMAGE_COLD": 20},
+    "bonus_affinities": {"BONUS_MANA_ICE": 10}
   },
   {
     "type": "UNIT_BONE_GOLEM",
@@ -7538,7 +7246,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 13,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7548,7 +7255,6 @@
     "free_promotions": {"PROMOTION_GOLEM": true, "PROMOTION_CANNIBALIZE": true},
     "disable_upgrade_to": true,
     "immortal": true,
-    "combat_defense": 13,
     "tier": 4,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
   },
@@ -7582,7 +7288,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7590,7 +7295,6 @@
     "asset": 18,
     "power": 36,
     "immortal": true,
-    "combat_defense": 9,
     "min_level": 6,
     "tier": 4,
     "weapon_tier": 3,
@@ -7626,7 +7330,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7635,7 +7338,6 @@
     "power": 36,
     "free_promotions": {"PROMOTION_ORC": true},
     "immortal": true,
-    "combat_defense": 11,
     "min_level": 6,
     "tier": 4,
     "weapon_tier": 3,
@@ -7672,7 +7374,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7680,7 +7381,6 @@
     "asset": 18,
     "power": 36,
     "immortal": true,
-    "combat_defense": 9,
     "min_level": 6,
     "tier": 4,
     "weapon_tier": 3
@@ -7715,7 +7415,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7732,7 +7431,6 @@
       "PROMOTION_MIND1": true
     },
     "immortal": true,
-    "combat_defense": 9,
     "min_level": 12,
     "tier": 4,
     "weapon_tier": 3,
@@ -7761,7 +7459,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7769,10 +7466,9 @@
     "asset": 16,
     "power": 32,
     "free_promotions": {"PROMOTION_WATER_WALKING": true, "PROMOTION_DEMON": true, "PROMOTION_CANNIBALIZE": true},
-    "combat_defense": 8,
     "tier": 4,
     "python_post_combat_won": "postCombatIra(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 4}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 40}
   },
   {
     "type": "UNIT_KITHRA",
@@ -7804,7 +7500,6 @@
     "moves": 3,
     "nuke_range": -1,
     "work_rate": 40,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -7815,7 +7510,6 @@
     "power": 24,
     "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_ELF": true},
     "abandon": true,
-    "combat_defense": 8,
     "tier": 3
   },
   {
@@ -7843,7 +7537,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7851,7 +7544,6 @@
     "culture_garrison": 6,
     "asset": 24,
     "power": 48,
-    "combat_defense": 10,
     "tier": 4,
     "weapon_tier": 3
   },
@@ -7879,7 +7571,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7888,7 +7579,6 @@
     "asset": 22,
     "power": 44,
     "free_promotions": {"PROMOTION_CENTAUR": true},
-    "combat_defense": 7,
     "tier": 4,
     "weapon_tier": 3,
     "upgrade_civ": "CIVILIZATION_KURIOTATES"
@@ -7920,7 +7610,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7934,10 +7623,9 @@
       "PROMOTION_DEATH1": true,
       "PROMOTION_DEMON": true
     },
-    "combat_defense": 4,
     "tier": 4,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_DEATH": 2, "DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_DEATH": 20, "DAMAGE_UNHOLY": 20}
   },
   {
     "type": "UNIT_HORNGUARD",
@@ -7965,7 +7653,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -7974,7 +7661,6 @@
     "asset": 24,
     "power": 48,
     "free_promotions": {"PROMOTION_DWARF": true},
-    "combat_defense": 8,
     "tier": 4,
     "weapon_tier": 3
   },
@@ -8005,7 +7691,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8013,7 +7698,6 @@
     "culture_garrison": 6,
     "asset": 22,
     "power": 44,
-    "combat_defense": 7,
     "tier": 4,
     "weapon_tier": 3
   },
@@ -8044,7 +7728,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8053,7 +7736,6 @@
     "asset": 22,
     "power": 44,
     "free_promotions": {"PROMOTION_WATER_WALKING": true},
-    "combat_defense": 19,
     "tier": 4
   },
   {
@@ -8074,14 +7756,14 @@
     "min_area_size": 20,
     "moves": 4,
     "nuke_range": -1,
-    "combat": 17,
+    "strength": 17,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "asset": 26,
     "power": 52,
     "free_promotions": {"PROMOTION_STEALTH": true},
-    "combat_defense": 17,
+    "strength_defense": 17,
     "tier": 4
   },
   {
@@ -8101,11 +7783,11 @@
     "min_area_size": 20,
     "moves": 4,
     "nuke_range": -1,
-    "combat": 22,
+    "strength": 22,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
-    "combat_defense": 22,
+    "strength_defense": 22,
     "tier": 4,
     "python_post_combat_lost": "postCombatLeviathan(pCaster,pOpponent)"
   },
@@ -8151,7 +7833,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 400,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8160,9 +7841,8 @@
     "power": 20,
     "free_promotions": {"PROMOTION_UNDEAD": true},
     "free_xp": true,
-    "combat_defense": 5,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_DEATH": 2}
+    "damage_type_attacks": {"DAMAGE_DEATH": 20}
   },
   {
     "type": "UNIT_LIGHTBRINGER",
@@ -8194,7 +7874,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8202,7 +7881,6 @@
     "asset": 1,
     "power": 2,
     "free_promotions": {"PROMOTION_SENTRY": true},
-    "combat_defense": 2,
     "tier": 1,
     "prereq_civ": "CIVILIZATION_MALAKIM"
   },
@@ -8230,7 +7908,7 @@
     "free_promotions": {"PROMOTION_BLITZ": true, "PROMOTION_ELEMENTAL": true, "PROMOTION_IMMUNE_LIGHTNING": true},
     "tier": 2,
     "python_post_combat_won": "postCombatHeal50(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_LIGHTNING": 3}
+    "damage_type_attacks": {"DAMAGE_LIGHTNING": 30}
   },
   {
     "type": "UNIT_LION",
@@ -8255,13 +7933,11 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
     "terrain_natives": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_DESERT": true},
-    "combat_defense": 3,
     "tier": 1,
     "unit_convert_from_combat": "UNIT_LION_PRIDE",
     "unit_convert_from_combat_chance": 10
@@ -8289,13 +7965,11 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
     "graphical_only": true,
-    "combat_defense": 4,
     "tier": 2
   },
   {
@@ -8321,7 +7995,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -8335,7 +8008,6 @@
       "PROMOTION_CHAOS1": true,
       "PROMOTION_MAGIC_IMMUNE": true
     },
-    "combat_defense": 2,
     "tier": 1,
     "withdrawl_prob_defensive": 100
   },
@@ -8364,7 +8036,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8377,7 +8048,6 @@
     "power": 15,
     "free_promotions": {"PROMOTION_FIRE1": true, "PROMOTION_CHANNELING2": true},
     "never_obsolete": true,
-    "combat_defense": 4,
     "defensive_strike_chance": 30,
     "defensive_strike_damage": 15,
     "tier": 3,
@@ -8408,7 +8078,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8420,7 +8089,6 @@
     "free_promotions": {"PROMOTION_GOLEM": true, "PROMOTION_DEFENSIVE": true},
     "disable_upgrade_to": true,
     "never_obsolete": true,
-    "combat_defense": 8,
     "tier": 3
   },
   {
@@ -8448,7 +8116,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8460,7 +8127,6 @@
     "asset": 7,
     "power": 15,
     "never_obsolete": true,
-    "combat_defense": 6,
     "defensive_strike_chance": 30,
     "defensive_strike_damage": 15,
     "tier": 3,
@@ -8490,7 +8156,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -8505,7 +8170,6 @@
       "PROMOTION_DEATH1": true,
       "PROMOTION_BODY1": true
     },
-    "combat_defense": 7,
     "tier": 3,
     "weapon_tier": 3,
     "promotion_from_combat": "PROMOTION_IMMORTAL"
@@ -8535,7 +8199,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -8544,7 +8207,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_WINTERBORN": true},
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -8573,7 +8235,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8584,7 +8245,6 @@
     "asset": 9,
     "power": 18,
     "free_promotions": {"PROMOTION_CRAZED": true},
-    "combat_defense": 4,
     "tier": 3,
     "weapon_tier": 3
   },
@@ -8636,7 +8296,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 300,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8646,7 +8305,6 @@
     "free_promotions": {"PROMOTION_CHANNELING1": true, "PROMOTION_CHANNELING2": true, "PROMOTION_ILLUSIONIST": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 4,
     "free_promotion_pick": 1,
     "min_level": 4,
     "tier": 3
@@ -8699,7 +8357,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 300,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8709,7 +8366,6 @@
     "free_promotions": {"PROMOTION_CHANNELING1": true, "PROMOTION_CHANNELING2": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 4,
     "free_promotion_pick": 1,
     "min_level": 4,
     "tier": 3
@@ -8762,7 +8418,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 300,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8772,7 +8427,6 @@
     "free_promotions": {"PROMOTION_CHANNELING1": true, "PROMOTION_CHANNELING2": true, "PROMOTION_SPELLSTAFF": true},
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 4,
     "free_promotion_pick": 1,
     "min_level": 4,
     "tier": 3
@@ -8801,7 +8455,6 @@
     "min_area_size": -1,
     "moves": 4,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8810,7 +8463,6 @@
     "asset": 16,
     "power": 33,
     "free_promotions": {"PROMOTION_COMMANDO": true, "PROMOTION_COURAGE": true, "PROMOTION_HERO": true},
-    "combat_defense": 11,
     "tier": 3,
     "weapon_tier": 3
   },
@@ -8836,7 +8488,7 @@
     "min_area_size": 20,
     "moves": 5,
     "nuke_range": -1,
-    "combat": 13,
+    "strength": 13,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8845,7 +8497,7 @@
     "cargo": 2,
     "asset": 18,
     "power": 36,
-    "combat_defense": 13,
+    "strength_defense": 13,
     "tier": 4
   },
   {
@@ -8876,16 +8528,14 @@
     "moves": 1,
     "nuke_range": -1,
     "base_hurry": 25,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "asset": 1,
     "power": 2,
     "free_promotions": {"PROMOTION_DEMON": true},
-    "combat_defense": 2,
     "tier": 1,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_MANTICORE",
@@ -8914,7 +8564,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -8924,9 +8573,8 @@
     "asset": 24,
     "power": 48,
     "free_promotions": {"PROMOTION_CANNIBALIZE": true, "PROMOTION_FLYING": true},
-    "combat_defense": 8,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_MARDERO",
@@ -8958,7 +8606,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 10,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -8977,10 +8624,9 @@
       "PROMOTION_STIGMATA": true
     },
     "abandon": true,
-    "combat_defense": 10,
     "modify_global_counter": 3,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 4}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 40}
   },
   {
     "type": "UNIT_MARGALARD",
@@ -9003,14 +8649,12 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 22,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
     "culture_garrison": 6,
     "graphical_only": true,
     "free_promotions": {"PROMOTION_SENTRY": true},
-    "combat_defense": 22,
     "tier": 4
   },
   {
@@ -9038,7 +8682,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9048,7 +8691,6 @@
     "asset": 22,
     "power": 44,
     "free_promotions": {"PROMOTION_MARKSMAN": true},
-    "combat_defense": 11,
     "defensive_strike_chance": 40,
     "defensive_strike_damage": 20,
     "min_level": 6,
@@ -9077,7 +8719,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -9086,7 +8727,6 @@
     "asset": 12,
     "power": 24,
     "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_DWARF": true},
-    "combat_defense": 12,
     "tier": 4,
     "weapon_tier": 3
   },
@@ -9110,7 +8750,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9119,10 +8758,9 @@
     "asset": 9,
     "power": 18,
     "free_promotions": {"PROMOTION_PLAGUE_CARRIER": true},
-    "combat_defense": 6,
     "tier": 3,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_POISON": 2}
+    "damage_type_attacks": {"DAMAGE_POISON": 20}
   },
   {
     "type": "UNIT_MERCENARY",
@@ -9146,7 +8784,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9155,7 +8792,6 @@
     "asset": 7,
     "power": 15,
     "no_war_weariness": true,
-    "combat_defense": 5,
     "tier": 3,
     "weapon_tier": 3
   },
@@ -9181,7 +8817,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9190,7 +8825,6 @@
     "asset": 7,
     "power": 15,
     "no_war_weariness": true,
-    "combat_defense": 5,
     "tier": 3,
     "weapon_tier": 3
   },
@@ -9272,7 +8906,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 19,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -9287,12 +8920,11 @@
       "PROMOTION_FIRE2": true
     },
     "abandon": true,
-    "combat_defense": 19,
     "modify_global_counter": 3,
     "prereq_global_counter": 70,
     "tier": 4,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_FIRE": 6, "DAMAGE_UNHOLY": 6}
+    "damage_type_attacks": {"DAMAGE_FIRE": 60, "DAMAGE_UNHOLY": 60}
   },
   {
     "type": "UNIT_METEOR",
@@ -9327,7 +8959,7 @@
     "explode_in_combat": true,
     "no_war_weariness": true,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_FIRE": 6}
+    "damage_type_attacks": {"DAMAGE_FIRE": 60}
   },
   {
     "type": "UNIT_MINOTAUR",
@@ -9351,7 +8983,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9360,7 +8991,6 @@
     "culture_garrison": 4,
     "asset": 16,
     "power": 32,
-    "combat_defense": 11,
     "tier": 4
   },
   {
@@ -9385,7 +9015,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9393,9 +9022,8 @@
     "asset": 12,
     "power": 24,
     "free_promotions": {"PROMOTION_ELEMENTAL": true, "PROMOTION_INVISIBLE": true, "PROMOTION_HIDDEN_NATIONALITY": true},
-    "combat_defense": 6,
     "tier": 4,
-    "bonus_affinities": {"BONUS_MANA_SHADOW": 1}
+    "bonus_affinities": {"BONUS_MANA_SHADOW": 10}
   },
   {
     "type": "UNIT_MITHRIL_GOLEM",
@@ -9424,7 +9052,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 25,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -9440,7 +9067,6 @@
     },
     "abandon": true,
     "disable_upgrade_to": true,
-    "combat_defense": 25,
     "prereq_global_counter": 70,
     "tier": 4
   },
@@ -9488,7 +9114,6 @@
     "moves": 1,
     "nuke_range": -1,
     "work_rate": 300,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9497,7 +9122,6 @@
     "power": 12,
     "free_promotions": {"PROMOTION_CHANNELING1": true, "PROMOTION_CHANNELING2": true},
     "free_xp": true,
-    "combat_defense": 4,
     "tier": 3
   },
   {
@@ -9522,7 +9146,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -9530,9 +9153,8 @@
     "asset": 6,
     "power": 12,
     "free_promotions": {"PROMOTION_CHANNELING1": true, "PROMOTION_CHANNELING2": true, "PROMOTION_FROSTLING": true},
-    "combat_defense": 6,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_COLD": 1}
+    "damage_type_attacks": {"DAMAGE_COLD": 10}
   },
   {
     "type": "UNIT_MONK",
@@ -9558,7 +9180,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9566,7 +9187,6 @@
     "power": 18,
     "free_promotions": {"PROMOTION_MEDIC1": true, "PROMOTION_DEMON_SLAYING": true},
     "never_obsolete": true,
-    "combat_defense": 6,
     "tier": 3,
     "prereq_civ": "CIVILIZATION_ELOHIM"
   },
@@ -9591,7 +9211,6 @@
     "moves": 1,
     "nuke_range": -1,
     "terrain_impassables": {"TERRAIN_OCEAN": true},
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9604,10 +9223,9 @@
       "PROMOTION_UNDEAD": true,
       "PROMOTION_WATER_WALKING": true
     },
-    "combat_defense": 3,
     "tier": 2,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_NIGHTWATCH",
@@ -9636,7 +9254,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9647,12 +9264,11 @@
     "power": 9,
     "free_promotions": {"PROMOTION_HIDDEN_NATIONALITY": true},
     "never_obsolete": true,
-    "combat_defense": 3,
     "defensive_strike_chance": 30,
     "defensive_strike_damage": 15,
     "tier": 3,
     "weapon_tier": 2,
-    "damage_type_combats": {"DAMAGE_POISON": 2}
+    "damage_type_attacks": {"DAMAGE_POISON": 20}
   },
   {
     "type": "UNIT_OPHANIM",
@@ -9678,7 +9294,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9688,12 +9303,11 @@
     "asset": 18,
     "power": 36,
     "free_promotions": {"PROMOTION_ANGEL": true, "PROMOTION_FLYING": true},
-    "combat_defense": 6,
     "min_level": 4,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_civ": "CIVILIZATION_MERCURIANS",
-    "damage_type_combats": {"DAMAGE_HOLY": 3}
+    "damage_type_attacks": {"DAMAGE_HOLY": 30}
   },
   {
     "type": "UNIT_ORTHUS",
@@ -9716,7 +9330,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -9730,7 +9343,6 @@
       "PROMOTION_ORTHUSS_AXE": true,
       "PROMOTION_LOYALTY": true
     },
-    "combat_defense": 5,
     "tier": 2,
     "weapon_tier": 3,
     "python_post_combat_lost": "postCombatOrthus(pCaster,pOpponent)"
@@ -9765,7 +9377,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 11,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9778,10 +9389,9 @@
       "PROMOTION_DEMON_SLAYING": true,
       "PROMOTION_MEDIC1": true
     },
-    "combat_defense": 11,
     "tier": 4,
     "prereq_alignment": "ALIGNMENT_GOOD",
-    "damage_type_combats": {"DAMAGE_HOLY": 3}
+    "damage_type_attacks": {"DAMAGE_HOLY": 30}
   },
   {
     "type": "UNIT_PARAMANDER",
@@ -9812,7 +9422,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9821,7 +9430,6 @@
     "power": 21,
     "free_promotions": {"PROMOTION_MEDIC1": true, "PROMOTION_DEMON_SLAYING": true},
     "never_obsolete": true,
-    "combat_defense": 7,
     "tier": 3
   },
   {
@@ -9848,7 +9456,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 13,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9858,7 +9465,6 @@
     "power": 52,
     "free_promotions": {"PROMOTION_MAGIC_IMMUNE": true, "PROMOTION_GOLEM": true, "PROMOTION_FORMATION": true},
     "disable_upgrade_to": true,
-    "combat_defense": 13,
     "tier": 4,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
   },
@@ -9892,7 +9498,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9901,7 +9506,6 @@
     "culture_garrison": 4,
     "asset": 24,
     "power": 48,
-    "combat_defense": 12,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD"
@@ -9935,7 +9539,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 14,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9945,7 +9548,6 @@
     "asset": 26,
     "power": 52,
     "free_promotions": {"PROMOTION_STONESKIN": true, "PROMOTION_ORC": true, "PROMOTION_FORMATION": true},
-    "combat_defense": 14,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_building_class": "BUILDINGCLASS_TRAINING_YARD",
@@ -9981,7 +9583,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -9990,7 +9591,6 @@
     "culture_garrison": 4,
     "asset": 24,
     "power": 48,
-    "combat_defense": 12,
     "tier": 4,
     "weapon_tier": 3
   },
@@ -10015,7 +9615,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10023,10 +9622,9 @@
     "asset": 6,
     "power": 12,
     "free_promotions": {"PROMOTION_DEMON": true},
-    "combat_defense": 4,
     "duration_from_combat": 1,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_PRIEST_OF_KILMORPH",
@@ -10063,7 +9661,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10077,7 +9674,6 @@
     },
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 5,
     "tier": 3
   },
   {
@@ -10115,7 +9711,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10129,7 +9724,6 @@
     },
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 5,
     "tier": 3
   },
   {
@@ -10167,7 +9761,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10181,9 +9774,8 @@
     },
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 4,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_HOLY": 1}
+    "damage_type_attacks": {"DAMAGE_HOLY": 10}
   },
   {
     "type": "UNIT_PRIEST_OF_THE_ORDER",
@@ -10220,7 +9812,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10235,9 +9826,8 @@
     },
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 4,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_HOLY": 1}
+    "damage_type_attacks": {"DAMAGE_HOLY": 10}
   },
   {
     "type": "UNIT_PRIEST_OF_THE_OVERLORDS",
@@ -10274,7 +9864,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10289,7 +9878,6 @@
     },
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 5,
     "tier": 3
   },
   {
@@ -10327,7 +9915,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10342,9 +9929,8 @@
     },
     "free_xp": true,
     "never_obsolete": true,
-    "combat_defense": 4,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_PRIEST_OF_WINTER",
@@ -10369,7 +9955,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10387,10 +9972,9 @@
       "PROMOTION_DIVINE": true
     },
     "free_xp": true,
-    "combat_defense": 5,
     "tier": 3,
     "prereq_civ": "CIVILIZATION_ILLIANS",
-    "damage_type_combats": {"DAMAGE_COLD": 2}
+    "damage_type_attacks": {"DAMAGE_COLD": 20}
   },
   {
     "type": "UNIT_PIRATE",
@@ -10414,7 +9998,7 @@
     "min_area_size": 20,
     "moves": 4,
     "nuke_range": -1,
-    "combat": 8,
+    "strength": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10424,7 +10008,7 @@
     "asset": 7,
     "power": 15,
     "free_promotions": {"PROMOTION_HIDDEN_NATIONALITY": true},
-    "combat_defense": 8,
+    "strength_defense": 8,
     "gold_from_combat": 3,
     "tier": 3
   },
@@ -10450,7 +10034,7 @@
     "min_area_size": 20,
     "moves": 4,
     "nuke_range": -1,
-    "combat": 8,
+    "strength": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10460,7 +10044,7 @@
     "asset": 7,
     "power": 15,
     "free_promotions": {"PROMOTION_HIDDEN_NATIONALITY": true},
-    "combat_defense": 8,
+    "strength_defense": 8,
     "tier": 3
   },
   {
@@ -10545,7 +10129,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10553,7 +10136,6 @@
     "asset": 2,
     "power": 4,
     "free_promotions": {"PROMOTION_PUPPET": true},
-    "combat_defense": 2,
     "tier": 2
   },
   {
@@ -10574,7 +10156,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10583,7 +10164,6 @@
     "power": 4,
     "graphical_only": true,
     "free_promotions": {"PROMOTION_PUPPET": true},
-    "combat_defense": 2,
     "tier": 2,
     "withdrawl_prob_defensive": 10
   },
@@ -10612,7 +10192,6 @@
     "min_area_size": 20,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10621,7 +10200,6 @@
     "asset": 10,
     "power": 20,
     "free_promotions": {"PROMOTION_FLYING": true},
-    "combat_defense": 9,
     "tier": 4
   },
   {
@@ -10646,7 +10224,7 @@
     "min_area_size": 20,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 9,
+    "strength": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10654,7 +10232,7 @@
     "cargo": 6,
     "asset": 10,
     "power": 20,
-    "combat_defense": 9,
+    "strength_defense": 9,
     "tier": 4
   },
   {
@@ -10690,7 +10268,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10701,7 +10278,6 @@
     "power": 8,
     "free_promotions": {"PROMOTION_SUN2": true},
     "never_obsolete": true,
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -10734,7 +10310,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 200,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10744,7 +10319,6 @@
     "asset": 9,
     "power": 18,
     "never_obsolete": true,
-    "combat_defense": 6,
     "tier": 3
   },
   {
@@ -10775,7 +10349,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 200,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10789,7 +10362,6 @@
     "graphical_only": true,
     "free_promotions": {"PROMOTION_LIZARDMAN": true},
     "never_obsolete": true,
-    "combat_defense": 7,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE"
   },
@@ -10821,7 +10393,6 @@
     "moves": 2,
     "nuke_range": -1,
     "work_rate": 200,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10833,7 +10404,6 @@
     "asset": 10,
     "power": 21,
     "never_obsolete": true,
-    "combat_defense": 7,
     "tier": 3,
     "prereq_building_class": "BUILDINGCLASS_HUNTING_LODGE"
   },
@@ -10865,7 +10435,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -10874,7 +10443,6 @@
     "asset": 4,
     "power": 8,
     "free_promotions": {"PROMOTION_ORC": true, "PROMOTION_HERO": true},
-    "combat_defense": 4,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -10909,7 +10477,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -10919,7 +10486,6 @@
     "asset": 5,
     "power": 10,
     "free_promotions": {"PROMOTION_SUN2": true},
-    "combat_defense": 3,
     "tier": 2,
     "weapon_tier": 3
   },
@@ -10948,7 +10514,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -10964,7 +10529,6 @@
       "PROMOTION_STEALTH": true
     },
     "immune_to_defensive_strike": true,
-    "combat_defense": 5,
     "tier": 3
   },
   {
@@ -10994,7 +10558,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11003,7 +10566,6 @@
     "asset": 5,
     "power": 10,
     "free_promotions": {"PROMOTION_WEREWOLF": true, "PROMOTION_ENRAGED": true},
-    "combat_defense": 5,
     "tier": 2,
     "unit_convert_from_combat": "UNIT_WEREWOLF",
     "unit_convert_from_combat_chance": 100,
@@ -11032,7 +10594,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11040,13 +10601,12 @@
     "asset": 24,
     "power": 48,
     "free_promotions": {"PROMOTION_ANGEL": true},
-    "combat_defense": 12,
     "min_level": 3,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_civ": "CIVILIZATION_MERCURIANS",
     "python_post_combat_won": "postCombatReduceCombat1(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_HOLY": 4}
+    "damage_type_attacks": {"DAMAGE_HOLY": 40}
   },
   {
     "type": "UNIT_REVELERS",
@@ -11071,7 +10631,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11079,9 +10638,8 @@
     "culture_garrison": 6,
     "asset": 9,
     "power": 18,
-    "combat_defense": 6,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_ROSIER",
@@ -11110,7 +10668,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -11121,10 +10678,9 @@
     "power": 28,
     "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_IMMUNE_DISEASE": true},
     "abandon": true,
-    "combat_defense": 7,
     "modify_global_counter": 2,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_ROSIER_OATHTAKER",
@@ -11147,7 +10703,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -11158,9 +10713,8 @@
     "power": 28,
     "graphical_only": true,
     "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_IMMUNE_DISEASE": true},
-    "combat_defense": 7,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_HOLY": 1}
+    "damage_type_attacks": {"DAMAGE_HOLY": 10}
   },
   {
     "type": "UNIT_ROYAL_GUARD",
@@ -11187,7 +10741,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11196,7 +10749,6 @@
     "power": 12,
     "free_promotions": {"PROMOTION_GUARDSMAN": true, "PROMOTION_SPIRIT2": true},
     "abandon": true,
-    "combat_defense": 8,
     "tier": 3,
     "weapon_tier": 3,
     "prereq_civic": "CIVIC_ARISTOCRACY"
@@ -11218,7 +10770,7 @@
     "min_area_size": 20,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 8,
+    "strength": 8,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -11228,10 +10780,10 @@
     "asset": 7,
     "power": 15,
     "free_promotions": {"PROMOTION_UNDEAD": true},
-    "combat_defense": 8,
+    "strength_defense": 8,
     "tier": 3,
     "python_post_combat_lost": "postCombatLostSailorsDirge(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_DEATH": 1}
+    "damage_type_attacks": {"DAMAGE_DEATH": 10}
   },
   {
     "type": "UNIT_SAND_LION",
@@ -11254,7 +10806,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11263,9 +10814,8 @@
     "asset": 7,
     "power": 15,
     "free_promotions": {"PROMOTION_NOMAD": true, "PROMOTION_ELEMENTAL": true, "PROMOTION_FIRE_RESISTANCE": true},
-    "combat_defense": 5,
     "tier": 3,
-    "damage_type_combats": {"DAMAGE_FIRE": 1}
+    "damage_type_attacks": {"DAMAGE_FIRE": 10}
   },
   {
     "type": "UNIT_SATYR",
@@ -11293,7 +10843,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11301,7 +10850,6 @@
     "asset": 13,
     "power": 27,
     "free_promotions": {"PROMOTION_WOODSMAN1": true},
-    "combat_defense": 4,
     "min_level": 4,
     "tier": 3
   },
@@ -11331,7 +10879,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -11341,10 +10888,9 @@
     "power": 10,
     "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_DEMON": true},
     "abandon": true,
-    "combat_defense": 5,
     "tier": 2,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
   },
   {
     "type": "UNIT_SCIENTIST",
@@ -11418,16 +10964,14 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "first_strikes": 1,
     "city_attack": -25,
     "terrain_natives": {"TERRAIN_DESERT": true},
-    "combat_defense": 4,
     "tier": 2,
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_GOBLIN",
@@ -11454,7 +10998,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11464,7 +11007,6 @@
     "free_promotions": {"PROMOTION_ORC": true},
     "ai_block_patrol": true,
     "ai_block_perm_defense": true,
-    "combat_defense": 2,
     "tier": 1,
     "upgrade_civ": "CIVILIZATION_CLAN_OF_EMBERS",
     "python_post_combat_won": "postCombatWolfRider(pCaster,pOpponent)"
@@ -11493,7 +11035,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11504,11 +11045,10 @@
     "free_promotions": {"PROMOTION_ORC": true},
     "ai_block_patrol": true,
     "ai_block_perm_defense": true,
-    "combat_defense": 2,
     "tier": 1,
     "upgrade_civ": "CIVILIZATION_CLAN_OF_EMBERS",
     "python_post_combat_won": "postCombatWolfRider(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "UNIT_SCOUT",
@@ -11535,7 +11075,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11544,7 +11083,6 @@
     "power": 2,
     "ai_block_patrol": true,
     "ai_block_perm_defense": true,
-    "combat_defense": 2,
     "tier": 1
   },
   {
@@ -11565,12 +11103,12 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
+    "strength": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "terrain_natives": {"TERRAIN_OCEAN": true},
-    "combat_defense": 8,
+    "strength_defense": 8,
     "tier": 3
   },
   {
@@ -11595,7 +11133,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11613,12 +11150,11 @@
       "PROMOTION_CHANNELING3": true,
       "PROMOTION_DIVINE": true
     },
-    "combat_defense": 2,
     "min_level": 4,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_civ": "CIVILIZATION_MERCURIANS",
-    "damage_type_combats": {"DAMAGE_HOLY": 3}
+    "damage_type_attacks": {"DAMAGE_HOLY": 30}
   },
   {
     "type": "UNIT_SETTLER",
@@ -11732,13 +11268,11 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "asset": 4,
     "power": 8,
-    "combat_defense": 2,
     "tier": 4
   },
   {
@@ -11769,7 +11303,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11780,10 +11313,9 @@
     "power": 32,
     "free_promotions": {"PROMOTION_MARKSMAN": true, "PROMOTION_INVISIBLE": true},
     "immune_to_defensive_strike": true,
-    "combat_defense": 7,
     "enslavement_chance": 25,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_POISON": 2}
+    "damage_type_attacks": {"DAMAGE_POISON": 20}
   },
   {
     "type": "UNIT_DWARVEN_SHADOW",
@@ -11813,7 +11345,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11827,9 +11358,8 @@
     "power": 32,
     "free_promotions": {"PROMOTION_MARKSMAN": true, "PROMOTION_DWARF": true, "PROMOTION_INVISIBLE": true},
     "immune_to_defensive_strike": true,
-    "combat_defense": 7,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_POISON": 2}
+    "damage_type_attacks": {"DAMAGE_POISON": 20}
   },
   {
     "type": "UNIT_SHADOW",
@@ -11859,7 +11389,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11870,9 +11399,8 @@
     "power": 32,
     "free_promotions": {"PROMOTION_MARKSMAN": true, "PROMOTION_INVISIBLE": true},
     "immune_to_defensive_strike": true,
-    "combat_defense": 7,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_POISON": 2}
+    "damage_type_attacks": {"DAMAGE_POISON": 20}
   },
   {
     "type": "UNIT_SHADOWRIDER",
@@ -11903,7 +11431,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -11914,11 +11441,10 @@
     "free_promotions": {"PROMOTION_HIDDEN_NATIONALITY": true},
     "abandon": true,
     "immune_to_defensive_strike": true,
-    "combat_defense": 9,
     "tier": 4,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_POISON": 2},
-    "bonus_affinities": {"BONUS_MANA_SHADOW": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 20},
+    "bonus_affinities": {"BONUS_MANA_SHADOW": 10}
   },
   {
     "type": "UNIT_SKELETON",
@@ -11939,16 +11465,14 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "asset": 1,
     "power": 3,
     "free_promotions": {"PROMOTION_UNDEAD": true},
-    "combat_defense": 2,
     "tier": 1,
-    "damage_type_combats": {"DAMAGE_DEATH": 1}
+    "damage_type_attacks": {"DAMAGE_DEATH": 10}
   },
   {
     "type": "UNIT_SLAVE",
@@ -11999,7 +11523,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12016,11 +11539,10 @@
       "PROMOTION_LOYALTY": true
     },
     "free_xp": true,
-    "combat_defense": 5,
     "min_level": 1,
     "tier": 4,
     "prereq_civ": "CIVILIZATION_BARBARIAN",
-    "damage_type_combats": {"DAMAGE_FIRE": 3}
+    "damage_type_attacks": {"DAMAGE_FIRE": 30}
   },
   {
     "type": "UNIT_SPECTRE",
@@ -12043,7 +11565,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12051,9 +11572,8 @@
     "asset": 6,
     "power": 12,
     "free_promotions": {"PROMOTION_FEAR": true, "PROMOTION_UNDEAD": true},
-    "combat_defense": 3,
     "tier": 4,
-    "bonus_affinities": {"BONUS_MANA_DEATH": 1}
+    "bonus_affinities": {"BONUS_MANA_DEATH": 10}
   },
   {
     "type": "UNIT_SPHENER",
@@ -12085,7 +11605,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -12106,10 +11625,9 @@
       "PROMOTION_MEDIC3": true
     },
     "abandon": true,
-    "combat_defense": 12,
     "modify_global_counter": -3,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_HOLY": 4}
+    "damage_type_attacks": {"DAMAGE_HOLY": 40}
   },
   {
     "type": "UNIT_STEPHANOS",
@@ -12132,7 +11650,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 19,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -12150,10 +11667,9 @@
       "PROMOTION_CROWN_OF_COMMAND": true
     },
     "auto_raze": true,
-    "combat_defense": 19,
     "tier": 4,
     "python_post_combat_lost": "postCombatStephanos(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 5}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 50}
   },
   {
     "type": "UNIT_STYGIAN_GUARD",
@@ -12189,7 +11705,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 5,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12198,10 +11713,9 @@
     "power": 15,
     "free_promotions": {"PROMOTION_MARCH": true, "PROMOTION_DEMON": true, "PROMOTION_WATER_WALKING": true},
     "never_obsolete": true,
-    "combat_defense": 5,
     "tier": 3,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
   },
   {
     "type": "UNIT_SUCCUBUS",
@@ -12225,7 +11739,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12233,10 +11746,9 @@
     "asset": 6,
     "power": 12,
     "free_promotions": {"PROMOTION_DEMON": true, "PROMOTION_MIND2": true},
-    "combat_defense": 4,
     "tier": 3,
     "weapon_tier": 3,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
   },
   {
     "type": "UNIT_SUPPLIES",
@@ -12308,7 +11820,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12316,10 +11827,9 @@
     "asset": 3,
     "power": 6,
     "free_promotions": {"PROMOTION_DEMON": true},
-    "combat_defense": 7,
     "tier": 3,
     "python_post_combat_lost": "postCombatSplit(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10}
   },
   {
     "type": "UNIT_TEUTORIX",
@@ -12348,7 +11858,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12358,7 +11867,6 @@
     "asset": 24,
     "power": 48,
     "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_NOMAD": true},
-    "combat_defense": 12,
     "defensive_strike_chance": 30,
     "defensive_strike_damage": 25,
     "tier": 4,
@@ -12387,13 +11895,11 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 4,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
     "feature_natives": {"FEATURE_JUNGLE": true},
-    "combat_defense": 4,
     "tier": 1
   },
   {
@@ -12420,7 +11926,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 10,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12434,7 +11939,6 @@
       "PROMOTION_ELEMENTAL": true,
       "PROMOTION_VULNERABLE_TO_FIRE": true
     },
-    "combat_defense": 10,
     "tier": 4,
     "python_post_combat_lost": "postCombatTreant(pCaster,pOpponent)"
   },
@@ -12461,7 +11965,7 @@
     "min_area_size": 20,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 7,
+    "strength": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12470,7 +11974,7 @@
     "cargo": 1,
     "asset": 5,
     "power": 10,
-    "combat_defense": 7,
+    "strength_defense": 7,
     "tier": 2
   },
   {
@@ -12496,7 +12000,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 12,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12505,7 +12008,6 @@
     "asset": 15,
     "power": 30,
     "free_promotions": {"PROMOTION_ORC": true, "PROMOTION_VALOR": true, "PROMOTION_HERO": true},
-    "combat_defense": 10,
     "tier": 3
   },
   {
@@ -12534,7 +12036,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -12544,10 +12045,9 @@
     "power": 24,
     "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_IMMUNE_DISEASE": true, "PROMOTION_DEMON_SLAYING": true},
     "abandon": true,
-    "combat_defense": 6,
     "modify_global_counter": -2,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_HOLY": 2}
+    "damage_type_attacks": {"DAMAGE_HOLY": 20}
   },
   {
     "type": "UNIT_VALKYRIE",
@@ -12572,7 +12072,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12581,12 +12080,11 @@
     "power": 24,
     "free_promotions": {"PROMOTION_ANGEL": true},
     "immortal": true,
-    "combat_defense": 6,
     "min_level": 6,
     "tier": 4,
     "weapon_tier": 3,
     "prereq_civ": "CIVILIZATION_MERCURIANS",
-    "damage_type_combats": {"DAMAGE_HOLY": 3}
+    "damage_type_attacks": {"DAMAGE_HOLY": 30}
   },
   {
     "type": "UNIT_WAR_ELEPHANT",
@@ -12614,7 +12112,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12623,7 +12120,6 @@
     "culture_garrison": 5,
     "asset": 10,
     "power": 21,
-    "combat_defense": 7,
     "min_level": 1,
     "tier": 3
   },
@@ -12653,7 +12149,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 19,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -12664,7 +12159,6 @@
     "power": 76,
     "free_promotions": {"PROMOTION_HERO": true},
     "auto_raze": true,
-    "combat_defense": 19,
     "tier": 4
   },
   {
@@ -12690,7 +12184,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12700,7 +12193,6 @@
     "culture_garrison": 3,
     "asset": 1,
     "power": 3,
-    "combat_defense": 3,
     "tier": 1,
     "weapon_tier": 1
   },
@@ -12727,7 +12219,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12737,7 +12228,6 @@
     "asset": 1,
     "power": 3,
     "never_obsolete": true,
-    "combat_defense": 3,
     "tier": 1,
     "weapon_tier": 1
   },
@@ -12764,7 +12254,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12773,7 +12262,6 @@
     "culture_garrison": 3,
     "asset": 1,
     "power": 3,
-    "combat_defense": 3,
     "tier": 1,
     "weapon_tier": 1
   },
@@ -12797,7 +12285,6 @@
     "min_area_size": -1,
     "moves": 1,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12805,10 +12292,9 @@
     "asset": 16,
     "power": 32,
     "free_promotions": {"PROMOTION_WATER_WALKING": true, "PROMOTION_ELEMENTAL": true},
-    "combat_defense": 8,
     "tier": 4,
     "python_post_combat_lost": "postCombatSplit(pCaster,pOpponent)",
-    "bonus_affinities": {"BONUS_MANA_WATER": 1}
+    "bonus_affinities": {"BONUS_MANA_WATER": 10}
   },
   {
     "type": "UNIT_WEREWOLF",
@@ -12837,7 +12323,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 8,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12845,7 +12330,6 @@
     "asset": 12,
     "power": 24,
     "free_promotions": {"PROMOTION_WEREWOLF": true},
-    "combat_defense": 8,
     "tier": 3,
     "unit_convert_from_combat": "UNIT_GREATER_WEREWOLF",
     "unit_convert_from_combat_chance": 5,
@@ -12875,7 +12359,6 @@
     "moves": 1,
     "nuke_range": -1,
     "terrain_impassables": {"TERRAIN_DESERT": true},
-    "combat": 7,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -12889,7 +12372,6 @@
       "PROMOTION_VULNERABLE_TO_FIRE": true,
       "PROMOTION_IMMUNE_COLD": true
     },
-    "combat_defense": 7,
     "tier": 3,
     "weapon_tier": 3
   },
@@ -12916,14 +12398,12 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 2,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
     "terrain_natives": {"TERRAIN_TUNDRA": true, "TERRAIN_SNOW": true},
     "feature_natives": {"FEATURE_FOREST": true},
-    "combat_defense": 2,
     "tier": 1,
     "unit_convert_from_combat": "UNIT_WOLF_PACK",
     "unit_convert_from_combat_chance": 10
@@ -12951,13 +12431,11 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 3,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
     "city_attack": -25,
     "graphical_only": true,
-    "combat_defense": 3,
     "tier": 2,
     "unit_create_from_combat": "UNIT_WOLF",
     "unit_create_from_combat_chance": 10
@@ -12979,7 +12457,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 6,
     "combat_limit": 100,
     "xp_value_attack": 8,
     "xp_value_defense": 4,
@@ -12987,10 +12464,9 @@
     "asset": 12,
     "power": 24,
     "free_promotions": {"PROMOTION_UNDEAD": true, "PROMOTION_VILE_TOUCH": true, "PROMOTION_FEAR": true},
-    "combat_defense": 6,
     "tier": 4,
-    "damage_type_combats": {"DAMAGE_DEATH": 3},
-    "bonus_affinities": {"BONUS_MANA_DEATH": 1}
+    "damage_type_attacks": {"DAMAGE_DEATH": 30},
+    "bonus_affinities": {"BONUS_MANA_DEATH": 10}
   },
   {
     "type": "UNIT_WRATH",
@@ -13012,7 +12488,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 33,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -13020,7 +12495,6 @@
     "asset": 66,
     "power": 132,
     "free_promotions": {"PROMOTION_WATER_WALKING": true, "PROMOTION_DEMON": true},
-    "combat_defense": 33,
     "modify_global_counter": 3,
     "tier": 4,
     "weapon_tier": 3
@@ -13046,7 +12520,6 @@
     "min_area_size": -1,
     "moves": 3,
     "nuke_range": -1,
-    "combat": 15,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -13063,10 +12536,9 @@
       "PROMOTION_ATHAME": true
     },
     "auto_raze": true,
-    "combat_defense": 15,
     "tier": 4,
     "python_post_combat_lost": "postCombatYersinia(pCaster,pOpponent)",
-    "damage_type_combats": {"DAMAGE_POISON": 7, "DAMAGE_UNHOLY": 5}
+    "damage_type_attacks": {"DAMAGE_POISON": 70, "DAMAGE_UNHOLY": 50}
   },
   {
     "type": "UNIT_YVAIN",
@@ -13100,7 +12572,6 @@
     "min_area_size": -1,
     "moves": 2,
     "nuke_range": -1,
-    "combat": 9,
     "combat_limit": 100,
     "xp_value_attack": 32,
     "xp_value_defense": 16,
@@ -13125,9 +12596,8 @@
     },
     "abandon": true,
     "free_xp": true,
-    "combat_defense": 9,
     "tier": 4,
-    "bonus_affinities": {"BONUS_MANA_NATURE": 2}
+    "bonus_affinities": {"BONUS_MANA_NATURE": 20}
   },
   {
     "type": "UNIT_SENTINEL",
@@ -13146,7 +12616,6 @@
     "advanced_start_cost": -1,
     "min_area_size": -1,
     "nuke_range": -1,
-    "combat": 1,
     "combat_limit": 100,
     "graphical_only": true
   }

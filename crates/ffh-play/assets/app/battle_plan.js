@@ -1,26 +1,31 @@
 // The battle plan (the formation-battle prototype's set-up, phase 6 revision 4): before an attack,
-// both lines on the battlefield as each side's battle tactic arranges them (docs/TACTICS.md: an
-// army's tactic, or a garrison's; the grid of one battle is never edited by hand), both tactics
-// named, the ground's scenery and its rules in words, a tooltip of what each unit is, the pool's
-// other units, the forecast, and Attack. Every number here is the engine's (its preview), none is
-// worked out by the client; a tactic is changed on the Armies screen and the city screen.
+// both lines on the battlefield as the rules' auto formation arranges them (the grid of one battle
+// is never edited by hand), the ground's scenery and its rules in words, a tooltip of what each
+// unit is, the pool's other units, the forecast, and Attack. Every number here is the engine's (its
+// preview), none is worked out by the client.
 
 import { h, toast } from "./dom.js";
-import { uname, ROWS, actionAt, actionText, reachText, specials, slotSum, rowsLine, placeOf, slotsUsed, stat, hpOf, tyLabel, tyIdx } from "./battle_log.js";
-import { info } from "./state.js";
-import { plain } from "./markup.js";
+import { uname, ROWS, actionAt, actionText, reachText, specials, slotSum, rowsLine, placeOf, slotsUsed, stat, hpOf, tyLabel } from "./battle_log.js";
 import { loadArt, unitXY, figBox, pic, faceFlip, headChip, uiIcon, btn, add, groundLine, FRAME_W, FRAME_H } from "./battle_stage.js";
+import { roman } from "./squads.js";
 
 export const NAME = "plan";
 
 // `fc`: the forecast of the plan (null: none); `busy`: the attack is on its way (the plan stays
 // open until its battle's screens take over); `visit`: counts the plan's openings and leavings (an
 // answer that comes after the plan was left is dropped).
-const P = { ctx: null, pv: null, F: null, place: null, def: null, hover: null, fc: null, errors: [], declare: null, busy: false, visit: 0, figs: [], tip: null, summons: [], clicks: 0 };
+// `squad`: the attacking squad picked (an id; null: the engine's choice, the strongest).
+const P = { ctx: null, pv: null, F: null, place: null, def: null, hover: null, fc: null, errors: [], declare: null, busy: false, visit: 0, figs: [], tip: null, summons: [], clicks: 0, squad: null };
 
 const me = 0;
 
 export async function enter(ctx) {
+  P.squad = null;
+  return plan(ctx);
+}
+
+/** Reads the plan (with the squad picked, `P.squad`) and draws it. */
+async function plan(ctx) {
   const visit = ++P.visit;
   P.ctx = ctx;
   P.hover = null;
@@ -28,7 +33,7 @@ export async function enter(ctx) {
   P.pv = null;
   P.clicks = 0;
   render(ctx);
-  const pv = await ctx.source.preview();
+  const pv = await ctx.source.preview(P.squad);
   if (visit !== P.visit) return;
   // No plan (the engine answers a plot the player does not see, or one not next to the attackers,
   // with its errors alone): say why and close.
@@ -59,13 +64,6 @@ export function leave() {
   P.tip = null;
 }
 
-/** Side `side`'s tactic: `{name, help}` (the data's; a fixture without tactics fights in Line). */
-function tacticOf(side) {
-  const v = P.pv?.tactics?.[side] ?? "TACTIC_LINE";
-  const t = info("BattleTacticType", tyIdx("BattleTacticType", v));
-  return { name: t?.name ?? tyLabel("BattleTacticType", v), help: t?.help ? plain(t.help) : "" };
-}
-
 /** Attacks. While the attack is on its way (the `engage` command, a declaration of war asked, the
  *  battle's log) the plan cannot be closed (Escape and Cancel wait): the battle's screens take
  *  over from it, and its message is theirs to show. */
@@ -76,7 +74,7 @@ async function attack(ctx) {
   render(ctx);
   let r = null;
   try {
-    r = await ctx.source.attack({ declare_war: P.declare !== null });
+    r = await ctx.source.attack({ declare_war: P.declare !== null, squad: planSquad()?.squad ?? null });
   } catch (e) {
     console.warn("battle plan: the attack:", e);
   } finally {
@@ -88,6 +86,63 @@ async function attack(ctx) {
   if (!r?.log) return render(ctx);
   if (ctx.prefs.get("watch", "watch") === "report") ctx.toReport(r.log);
   else ctx.toWatch(r.log);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Squads (docs/ENGAGEMENTS.md, "Squads"): one battle is one squad against one squad
+
+/** The attacking squad the plan fights with (the preview's `squads[squad]`), or null. */
+function planSquad() {
+  return P.pv?.squads?.[P.pv.squad] ?? null;
+}
+
+/** A squad's name in the plan: "Squad II" (and its body, when the squads are of several). */
+function squadLabel(s, several) {
+  const name = s.number ? `Squad ${roman(s.number)}` : "Unassigned";
+  return several && s.body ? `${name} (${s.body})` : name;
+}
+
+/** Picks attacking squad `s` (an entry of the preview's `squads`): the plan is read again. */
+function pickSquad(ctx, s) {
+  if (P.busy || s.squad === null || s.squad === undefined || s.squad === planSquad()?.squad) return;
+  P.squad = s.squad;
+  plan(ctx);
+}
+
+/** "Attacking: Squad I / Squad II" (the one the plan fights with lit; a click picks another) and
+ *  "Defending: their Squad N". */
+function squadLines(ctx) {
+  const pv = P.pv;
+  const list = pv.squads ?? [];
+  const several = new Set(list.map((s) => s.body)).size > 1;
+  const out = [];
+  if (list.length) {
+    out.push(
+      h(
+        "div.bt-row.small.bt-squads",
+        h("span.dim", "Attacking: "),
+        list.map((s, i) =>
+          btn(squadLabel(s, several), {
+            cls: "sm",
+            on: i === pv.squad,
+            key: `squad-${s.squad ?? "none"}`,
+            title: i === pv.squad ? "The squad this plan attacks with" : "Attack with this squad",
+            disabled: P.busy || list.length < 2,
+            onclick: () => pickSquad(ctx, s),
+          }),
+        ),
+      ),
+    );
+  }
+  return out;
+}
+
+/** "Defending: their Squad N" (the squad that answers the attack, as the real fight picks it). */
+function defSquadLine() {
+  const d = P.pv?.def_squad;
+  // (A squad the rules have not numbered yet: units that arrived since their owner's last turn.)
+  const named = d?.number ? `their Squad ${roman(d.number)}` : P.def?.size ? "their squad" : null;
+  return named ? h("div.bt-row.small.bt-def-squad", { title: "Of their squads that fought the fewest battles this turn, the one with the best result against yours." }, h("span.dim", "Defending: "), h("b", named)) : null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -154,7 +209,7 @@ function onMove(ev) {
   else hideTip();
 }
 
-/** A click on the board moves nobody (the tactics arrange the lines); it is counted for the smoke
+/** A click on the board moves nobody (the auto formation arranges the lines); it is counted for the smoke
  *  test, which checks that. */
 function onClick() {
   P.clicks++;
@@ -195,7 +250,7 @@ export function unitInfo(pv, f, { pos, fc } = {}) {
       specials(f, pv.ground, pv.params).map((n) => h("li", n)),
     ),
     per ? h("div.small", "In the forecast it falls in ", h("b", `${per.fall_pct}%`), " of battles", per.escape_pct ? ` and escapes a killing blow in ${per.escape_pct}%` : "", ".") : null,
-    pos ? null : h("div.small.dim", f.side === me ? "Not in the line: its tactic left it out." : "Not in their line: it waits on the plot."),
+    pos ? null : h("div.small.dim", f.side === me ? "Not in the line: no slot left for it." : "Not in their line: it waits on the plot."),
     (pv.starving ?? []).some((x) => x.b === f.b) ? h("div.small.warn", `Starving: ${pv.starving.find((x) => x.b === f.b).pct}% damage dealt.`) : null,
   ];
 }
@@ -254,8 +309,6 @@ function render(ctx) {
   const theirsIn = F.filter((f) => f.side !== me && P.def.has(f.b));
   const theirsOut = F.filter((f) => f.side !== me && !P.def.has(f.b));
   const watch = ctx.prefs.get("watch", "watch");
-  const tac = [tacticOf(me), tacticOf(1 - me)];
-  const tacticLine = (side) => h("div.bt-row.small.bt-tactic", { "data-side": side, title: tac[side].help }, h("span.dim", "Tactic: "), h("b", tac[side].name));
   // ---- top left: the attack, your side
   add(
     ui,
@@ -263,8 +316,9 @@ function render(ctx) {
       { left: "6px", top: "4px", width: "380px" },
       h("div.bt-row", uiIcon("attack", 16), h("span.bt-h3", `Attack ${where}`)),
       h("div.bt-row", h("span.bt-h3.you", pv.sides?.[me]?.label ?? "Your army"), h("span.dim", `${used} of ${pv.slots[me].total}${pv.slots[me].river_only ? ` (+${pv.slots[me].river_only} river)` : ""} slots · ${pv.lanes[me]} lanes`)),
-      h("div.small.dim", { title: "Why this many slots" }, slotSum(pv.slots[me])),
-      tacticLine(me),
+      // A squad's places do not change (frontage is gone); an old plan's changes still read.
+      (pv.slots[me].changes ?? []).some((c) => c.delta) ? h("div.small.dim", { title: "Why this many slots" }, slotSum(pv.slots[me])) : null,
+      squadLines(ctx),
       h(
         "div.bt-row",
         { style: { marginTop: "2px" } },
@@ -280,14 +334,14 @@ function render(ctx) {
     pnl(
       { right: "6px", top: "4px", width: "470px" },
       h("div.bt-row", h("span.bt-h3.them", pv.sides?.[1 - me]?.label ?? where), h("span.dim", `${slotsUsed(P.def, F)} of ${pv.slots[1 - me].total} slots · ${pv.lanes[1 - me]} lanes`)),
-      tacticLine(1 - me),
+      defSquadLine(),
       theirsOut.length
         ? h("div.bt-row.small", { title: pv.plot?.city ? "In a city the defenders stay until none is left" : "A lost battle pushes them back with the line" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
         : null,
       groundLine(pv.ground, pv.plot),
     ),
   );
-  // ---- bottom left: the pool's other units (what its tactic left out), the rule
+  // ---- bottom left: the pool's other units (what the auto formation left out), the rule
   const benchRows = mineOut.map((f) =>
     tipped(
       f,
@@ -306,7 +360,7 @@ function render(ctx) {
       h("div.bt-row", h("span.bt-h4", "Not in the line"), h("span.dim.small", `${mineIn.length} of ${mineIn.length + mineOut.length} in the line`)),
       benchRows.length ? h("div.bt-benchlist", benchRows) : h("div.dim.small", "Every unit is in the line."),
       h("div.bt-rule"),
-      h("div.small.dim", "Each side stands as its tactic arranges it. An army's tactic is set on the Armies screen [F5], a garrison's on its city's screen; a change applies from your next turn."),
+      h("div.small.dim", "One squad attacks, one squad defends. Your squad stands as its squad board sets it (Squads… in the unit panel, the Armies screen [F5])."),
     ),
   );
   // ---- bottom right: the forecast, Attack
@@ -336,7 +390,7 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
       h("div.bt-kv", h("span.dim", "Their line wiped out"), h("b", pct(fc.line_wiped_permille ?? 0))),
       h(
         "div.bt-kv",
-        { title: "The side whose units lose more HP loses the battle." },
+        { title: "A side loses when all its units in the line fall; else when more of its units fall; else when its units lose more HP." },
         h("span.dim", "You win"),
         h(`b${(fc.attackers_win_permille ?? 0) >= 500 ? ".good" : ""}`, pct(fc.attackers_win_permille ?? 0)),
       ),
@@ -434,9 +488,17 @@ export const dev = {
   get formation() {
     return P.pv ? [...P.place.entries()].sort((a, b) => a[0] - b[0]).map(([b, p]) => ({ unit: P.F[b].unit, lane: p.lane, row: p.row })) : null;
   },
-  /** Both sides' tactics as named on the board. */
-  get tactics() {
-    return P.pv ? [tacticOf(me).name, tacticOf(1 - me).name] : null;
+  /** The attacking squads as the plan lists them (`{squad, number, on}`), and the defenders'. */
+  get squads() {
+    return P.pv ? (P.pv.squads ?? []).map((s, i) => ({ squad: s.squad, number: s.number, on: i === P.pv.squad })) : null;
+  },
+  get defSquad() {
+    return P.pv?.def_squad ?? null;
+  },
+  /** Picks the attacking squad of id `id` (the plan is read again). */
+  pickSquad(id) {
+    const s = (P.pv?.squads ?? []).find((x) => x.squad === id);
+    if (s && P.ctx) pickSquad(P.ctx, s);
   },
   get preview() {
     return P.pv;

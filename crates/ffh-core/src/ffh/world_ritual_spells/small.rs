@@ -223,7 +223,7 @@ fn tithe_completed(g: &mut Game, c: CityId) {
 pub const CULL_XP_PER_KILL: i32 = 5;
 
 /// The units of player `p` on `plot` that The Cull counts, weakest first: alive (no death under
-/// way), land, with base strength above 0, not carried.
+/// way), land, able to fight, not carried; by rating, then experience.
 pub fn cull_units(g: &Game, p: PlayerId, plot: PlotIdx) -> Vec<UnitId> {
     let mut out: Vec<UnitId> = g.map.plots[plot]
         .units
@@ -236,11 +236,11 @@ pub fn cull_units(g: &Game, p: PlayerId, plot: PlotIdx) -> Vec<UnitId> {
                 && !g.units[u].death_delay
                 && !g.units[u].battle_summon
                 && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
-                && g.unit_base_combat_str(u) > 0
+                && g.unit_can_fight(u)
                 && !g.unit_is_cargo(u)
         })
         .collect();
-    out.sort_by_key(|&u| (g.unit_base_combat_str(u), g.units[u].experience, u));
+    out.sort_by_key(|&u| (g.unit_rating(u), g.units[u].experience, u));
     out
 }
 

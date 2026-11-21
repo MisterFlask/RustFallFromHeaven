@@ -1346,7 +1346,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_ATTACK => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if !ui.only_defensive {
                             valid = true;
                         }
@@ -1354,7 +1354,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_ATTACK_CITY => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if !ui.only_defensive {
                             if !ui.no_capture {
                                 valid = true;
@@ -1364,7 +1364,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_COLLATERAL => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if !ui.only_defensive {
                             if ui.collateral_damage > 0 {
                                 valid = true;
@@ -1374,7 +1374,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_PILLAGE => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if !ui.only_defensive {
                             valid = true;
                         }
@@ -1382,7 +1382,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_RESERVE => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if !ui.only_defensive {
                             valid = true;
                         }
@@ -1390,7 +1390,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_COUNTER => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if !ui.only_defensive {
                             if ui.interception_probability > 0 {
                                 valid = true;
@@ -1446,7 +1446,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_CITY_DEFENSE => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if !ui.no_defensive_bonus {
                             if ui.city_defense_modifier > 0 {
                                 valid = true;
@@ -1456,7 +1456,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_CITY_COUNTER => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if !ui.no_defensive_bonus {
                             if ui.interception_probability > 0 {
                                 valid = true;
@@ -1492,7 +1492,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_EXPLORE => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         if self.player_ai_unit_impassable_count(g, p, unit) == 0 {
                             valid = true;
                         }
@@ -1555,7 +1555,7 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_ATTACK_SEA => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         // FfH: Modified by Kael 11/22/2008 (no cargo space test)
                         if !ui.invisible && ui.invisible_type.is_none() {
                             valid = true;
@@ -1564,14 +1564,14 @@ impl Cai {
                 }
 
                 UnitAIType::UNITAI_RESERVE_SEA => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         // FfH: Modified by Kael 11/22/2008 (no cargo space test)
                         valid = true;
                     }
                 }
 
                 UnitAIType::UNITAI_ESCORT_SEA => {
-                    if ui.combat > 0 {
+                    if ui.attack_rating() > 0 {
                         // FfH: Modified by Kael 11/22/2008 (no cargo space test)
                         if self.player_ai_unit_impassable_count(g, p, unit) == 0 {
                             valid = true;

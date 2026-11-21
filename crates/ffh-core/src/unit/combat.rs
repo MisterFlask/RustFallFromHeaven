@@ -652,9 +652,7 @@ impl Game {
             self.unit_do_defensive_strike(defender, u);
         }
         if self.unit_is_fear(defender) && !self.unit_is_immune_to_fear(u) {
-            let mut chance = self.unit_base_combat_str(u) + 20 + self.units[u].level
-                - self.unit_base_combat_str(defender)
-                - self.units[defender].level;
+            let mut chance = (self.unit_rating(u) - self.unit_rating(defender)) / 10 + 20 + self.units[u].level - self.units[defender].level;
             if chance < 4 {
                 chance = 4;
             }
@@ -860,7 +858,7 @@ impl Game {
                                 continue;
                             }
                             if self.unit_is_enemy(loop_unit, Some(team), None) && !self.unit_is_immune_to_fear(loop_unit) {
-                                let threshold = self.unit_base_combat_str(u) + 10 - self.unit_base_combat_str(loop_unit);
+                                let threshold = (self.unit_rating(u) - self.unit_rating(loop_unit)) / 10 + 10;
                                 if self.soren_rand_num(20, "Im afeared!") <= threshold {
                                     self.unit_join_group(loop_unit, None, true);
                                     self.unit_withdrawl_to_nearest_valid_plot(loop_unit, false);
@@ -1283,10 +1281,12 @@ impl Game {
         // FfH Defense Str: Modified by Kael 08/18/2007 (attacks use the attack strength,
         // everything else the defense strength)
         // C++ quirk: `pAttacker == this` cannot hold any more here (it was reset above).
+        // Its attack or defence rating (docs/UNIT_STATS.md, "Ratings"): a ship's strength x10, a
+        // land unit's sheet (the AI's estimates read the duel for land units too).
         let str_ = if (attacker.is_none() && plot.is_none()) || attacker == Some(u) {
-            self.unit_base_combat_str(u)
+            self.unit_attack_rating(u)
         } else {
-            self.unit_base_combat_str_defense(u)
+            self.unit_defense_rating(u)
         };
 
         if str_ == 0 {
@@ -1378,21 +1378,22 @@ impl Game {
         // reduced by the opponent's resistances)
         log.set(|det| {
             det.modifier_total = modifier;
-            det.base_combat_str = str_;
+            det.base_combat_str = str_ / 10;
         });
 
-        let mut base = str_ * 100;
+        // The rating is ten a strength point; the base is in hundredths of strength.
+        let mut base = str_ * 10;
         // C++ quirk: for an unknown defender `pAttacker` is this unit again, so its own
         // resistances reduce its damage-type strength.
-        let our_damage_type_combat = &self.units[u].damage_type_combat;
+        let our_damage_type_combat = &self.units[u].damage_type_attack;
         for opponent in [attacker, defender].into_iter().flatten() {
             for damage_type in d.damages.keys() {
-                let damage_type_combat = our_damage_type_combat[damage_type];
-                if damage_type_combat != 0 {
+                let damage_type_attack = our_damage_type_combat[damage_type];
+                if damage_type_attack != 0 {
                     let resist = self.unit_get_damage_type_resist(opponent, damage_type);
                     if resist != 0 {
-                        base -= damage_type_combat * 100;
-                        base += damage_type_combat * (100 - resist);
+                        base -= damage_type_attack * 10;
+                        base += damage_type_attack * (100 - resist) / 10;
                     }
                 }
             }
@@ -1636,7 +1637,7 @@ impl Game {
     /// C++ `CvUnit::canFight` (CvUnit.cpp:9596-9608).
     pub fn unit_can_fight(&self, u: UnitId) -> bool {
         // FfH: a unit with only defensive strength can still fight.
-        !(self.unit_base_combat_str(u) == 0 && self.unit_base_combat_str_defense(u) == 0)
+        !(self.unit_attack_rating(u) == 0 && self.unit_defense_rating(u) == 0)
     }
 
     /// C++ `CvUnit::canAttack` (CvUnit.cpp:9611-9636).
@@ -1650,7 +1651,7 @@ impl Game {
         }
 
         // FfH: Added by Kael 04/25/2010
-        if self.unit_base_combat_str(u) == 0 {
+        if self.unit_attack_rating(u) == 0 {
             return false;
         }
 
@@ -1696,7 +1697,7 @@ impl Game {
         }
 
         // FfH: Added by Kael 10/31/2007
-        if self.unit_base_combat_str_defense(u) == 0 {
+        if self.unit_defense_rating(u) == 0 {
             return false;
         }
         // FfH: End Add
@@ -2060,7 +2061,8 @@ impl Game {
             let mut damage = 0;
             damage += rng.rand(strike_damage, "Defensive Strike 1");
             damage += rng.rand(strike_damage, "Defensive Strike 2");
-            damage -= self.unit_base_combat_str_defense(attacker) * 2;
+            // FfH: 2 x the attacker's defence strength; its defence rating / 5 (docs/PORTING.md).
+            damage -= self.unit_defense_rating(attacker) / 5;
             damage -= self.units[attacker].level;
             let attacker_damage = ov.damage(self, attacker);
             if damage + attacker_damage > 95 {
@@ -2250,7 +2252,7 @@ impl Game {
         if self.units[u].duration > 0 {
             self.unit_change_duration(u, info.duration_from_combat);
         }
-        if duel && self.units[loser].damage_type_combat[DamageType::DAMAGE_POISON] > 0 && d.defines.poisoned_promotion != -1
+        if duel && self.units[loser].damage_type_attack[DamageType::DAMAGE_POISON] > 0 && d.defines.poisoned_promotion != -1
             && self.unit_is_alive(u) && self.units[u].damage > 0
         {
             let resist = self.unit_get_damage_type_resist(u, DamageType::DAMAGE_POISON);
@@ -2450,7 +2452,7 @@ impl Game {
     /// unit) times its collateral damage percent; 0: no collateral.
     pub(crate) fn unit_collateral_strength(&self, u: UnitId) -> i32 {
         let air = self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR;
-        let base_strength = if air { self.unit_air_base_combat_str(u) } else { self.unit_base_combat_str(u) };
+        let base_strength = if air { self.unit_air_base_combat_str(u) } else { self.unit_attack_rating(u) / 10 };
         base_strength * self.unit_collateral_damage(u) / 100
     }
 
@@ -2505,7 +2507,7 @@ impl Game {
         if immune {
             return damage;
         }
-        let their_strength = self.unit_base_combat_str(target);
+        let their_strength = self.unit_attack_rating(target) / 10;
 
         let strength_factor = (collateral_strength + their_strength + 1) / 2;
 
@@ -3155,9 +3157,10 @@ mod tests {
         g.units[striker].defensive_strike_chance = 100;
         g.units[striker].defensive_strike_damage = 10;
 
-        // The attacker's defense absorbs any strike (2 * 20 > 2 * (10 - 1)), so no damage and no
+        // The attacker's defence absorbs any strike (200 / 5 > 2 * (10 - 1)), so no damage and no
         // experience change.
-        g.units[attacker].base_combat_defense = 20;
+        let def = g.unit_defense_rating(attacker);
+        g.unit_change_defense_points(attacker, 200 - def);
 
         let mut rng = g.soren_rand.clone();
         assert!(rng.get_i(100, "Defensive Strike") < 100);

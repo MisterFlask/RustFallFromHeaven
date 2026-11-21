@@ -1078,13 +1078,13 @@ export function dressSpriteUnits(world, map, atlas, buoys = null) {
   const w = world.w;
   const mine = S.view?.me?.player;
   const sel = S.sel?.units ?? [];
-  const strength = (u) => S.data?.tables?.UnitType?.[u.type]?.combat ?? 0;
+  const rating = (u) => S.data?.tables?.UnitType?.[u.type]?.rating ?? 0;
   const sctx = {
     me: mine,
     selected: sel,
     unitInfo: (t) => {
-      const s = strength({ type: t });
-      return { hero: false, combat: s > 0 ? "COMBAT" : "NONE", strength: s };
+      const s = rating({ type: t });
+      return { hero: false, combat: s > 0 ? "COMBAT" : "NONE", rating: s };
     },
     activity: (a) => tname("ActivityType", a),
     automated: (g) => {

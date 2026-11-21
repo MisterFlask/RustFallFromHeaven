@@ -23,7 +23,7 @@
     "immune_to_fear": true,
     "combat_heal_percent": 20,
     "min_level": -1,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
   },
   {
     "type": "PROMOTION_AIR1",
@@ -111,7 +111,7 @@
     "button": "Art/Interface/Buttons/Equipment/Athame.dds",
     "equipment": true,
     "promotion_combat_apply": "PROMOTION_PLAGUED",
-    "damage_type_combats": {"DAMAGE_POISON": 3}
+    "damage_type_attacks": {"DAMAGE_POISON": 30}
   },
   {
     "type": "PROMOTION_AVATAR",
@@ -179,7 +179,7 @@
     "min_level": -1,
     "promotion_combat_type": "PROMOTION_DEMON",
     "promotion_combat_mod": 20,
-    "damage_type_combats": {"DAMAGE_HOLY": 1}
+    "damage_type_attacks": {"DAMAGE_HOLY": 10}
   },
   {
     "type": "PROMOTION_BLITZ",
@@ -1445,7 +1445,7 @@
     "validate": true,
     "ai_weight": 100,
     "min_level": -1,
-    "damage_type_combats": {"DAMAGE_FIRE": 1}
+    "damage_type_attacks": {"DAMAGE_FIRE": 10}
   },
   {
     "type": "PROMOTION_FLANKING1",
@@ -1525,7 +1525,7 @@
     "terrain_defenses": {"TERRAIN_SNOW": 25, "TERRAIN_TUNDRA": 10, "TERRAIN_DESERT": -25},
     "button": "Art/Interface/Buttons/Promotions/Frostling.dds",
     "race": true,
-    "damage_type_combats": {"DAMAGE_COLD": 1},
+    "damage_type_attacks": {"DAMAGE_COLD": 10},
     "damage_type_resists": {"DAMAGE_COLD": 100, "DAMAGE_FIRE": -50}
   },
   {
@@ -1535,7 +1535,7 @@
     "button": "Art/Interface/Buttons/Equipment/Gela.dds",
     "equipment": true,
     "ai_weight": 100,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
   },
   {
     "type": "PROMOTION_GODSLAYER",
@@ -2520,7 +2520,7 @@
     "equipment": true,
     "promotion_combat_type": "PROMOTION_HERO",
     "promotion_combat_mod": 80,
-    "damage_type_combats": {"DAMAGE_DEATH": 2}
+    "damage_type_attacks": {"DAMAGE_DEATH": 20}
   },
   {
     "type": "PROMOTION_NIGHTMARE",
@@ -2562,7 +2562,7 @@
     "blitz": true,
     "button": "Art/Interface/Buttons/Equipment/Orthussaxe.dds",
     "equipment": true,
-    "damage_type_combats": {"DAMAGE_FIRE": 1}
+    "damage_type_attacks": {"DAMAGE_FIRE": 10}
   },
   {
     "type": "PROMOTION_PERFECT_SIGHT",
@@ -2657,7 +2657,7 @@
     "validate": true,
     "ai_weight": 100,
     "min_level": -1,
-    "damage_type_combats": {"DAMAGE_POISON": 1}
+    "damage_type_attacks": {"DAMAGE_POISON": 10}
   },
   {
     "type": "PROMOTION_POTENCY",
@@ -2759,7 +2759,7 @@
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Equipment/RodOfWinds.dds",
     "equipment": true,
-    "bonus_affinities": {"BONUS_MANA_AIR": 1}
+    "bonus_affinities": {"BONUS_MANA_AIR": 10}
   },
   {
     "type": "PROMOTION_RUSTED",
@@ -2778,7 +2778,7 @@
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Equipment/ScorchedStaff.dds",
     "equipment": true,
-    "bonus_affinities": {"BONUS_MANA_FIRE": 1}
+    "bonus_affinities": {"BONUS_MANA_FIRE": 10}
   },
   {
     "type": "PROMOTION_SCOURGE",
@@ -2904,7 +2904,7 @@
     },
     "button": "Art/Interface/Buttons/Promotions/SheutStone.dds",
     "min_level": -1,
-    "damage_type_combats": {"DAMAGE_DEATH": 1},
+    "damage_type_attacks": {"DAMAGE_DEATH": 10},
     "damage_type_resists": {"DAMAGE_DEATH": 25, "DAMAGE_HOLY": -10}
   },
   {
@@ -3076,8 +3076,8 @@
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Equipment/StaffOfSouls.dds",
     "equipment": true,
-    "damage_type_combats": {"DAMAGE_DEATH": 3},
-    "bonus_affinities": {"BONUS_MANA_DEATH": 1}
+    "damage_type_attacks": {"DAMAGE_DEATH": 30},
+    "bonus_affinities": {"BONUS_MANA_DEATH": 10}
   },
   {
     "type": "PROMOTION_STARTING_SETTLER",
@@ -3323,7 +3323,7 @@
     "button": "Art/Interface/Buttons/Promotions/Unholytaint.dds",
     "min_level": -1,
     "spell_caster_xp": 10,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 1},
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 10},
     "damage_type_resists": {"DAMAGE_UNHOLY": 25}
   },
   {
@@ -3379,7 +3379,7 @@
     "button": "Art/Interface/Buttons/Equipment/War.dds",
     "equipment": true,
     "modify_global_counter_on_combat": 1,
-    "damage_type_combats": {"DAMAGE_UNHOLY": 3}
+    "damage_type_attacks": {"DAMAGE_UNHOLY": 30}
   },
   {
     "type": "PROMOTION_WARCRY",

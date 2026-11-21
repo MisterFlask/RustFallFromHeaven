@@ -206,7 +206,7 @@ pub fn fire_sundering(g: &mut Game, _: usize) {
 /// - **The candidates:** `q`'s units that `crusade_unit_lendable` (land combat units, not lent,
 ///   temporary, aboard or carrying) and are not heroes, nearest the faction's capital first (plot
 ///   distance; ties: the lower unit id).
-/// - **Each in turn defects** when its strength `s` (`crusade_unit_strength`) is above 0 and keeps
+/// - **Each in turn defects** when its strength `s` (`crusade_unit_force`) is above 0 and keeps
 ///   the defected strength within the budget, when the faction's strength plus `s` stays at most
 ///   the parent's minus `s`, and when it is not the only lendable unit of `q` in one of `q`'s
 ///   cities; a candidate that fails is passed over, and the next is tried. The strengths are
@@ -246,7 +246,7 @@ pub fn defect_units(g: &mut Game, np: PlayerId, q: PlayerId, cities_before: usiz
         if !candidate(g, u) {
             continue;
         }
-        let s = g.crusade_unit_strength(u);
+        let s = g.crusade_unit_force(u);
         if s <= 0 || spent + s > budget || faction + s > parent - s {
             continue;
         }

@@ -40,7 +40,7 @@ pub fn is_army_unit(g: &Game, u: UnitId) -> bool {
     let unit = &g.units[u];
     let info = &g.d.units[unit.unit_type];
     unit.march.is_none()
-        && info.combat > 0
+        && info.attack_rating() > 0
         && !info.found
         && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
         && matches!(
@@ -456,7 +456,6 @@ fn assault_forecast(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
             }
         }
         g.groups[lg].ai_group_attack = false;
-        crate::tactics::note_attack(g, p, from, q);
         move_to(g, lg, q, MOVE_DIRECT_ATTACK);
         fought = true;
         if alive(g, lg) {
@@ -535,7 +534,6 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
         }
         g.groups[grp].ai_group_attack = false;
         let before = g.groups[grp].units.len();
-        crate::tactics::note_attack(g, v.p, g.unit_plot(head), q);
         move_to(g, grp, q, MOVE_DIRECT_ATTACK);
         fought = true;
         if !alive(g, grp) {

@@ -25,7 +25,12 @@
 //     rules: [{kind, pct, side, kinds, first_round}]} (each rule's reach from the engine: side 0 or 1, null both; the action kinds, null all; first round only) with kind "CityShots" (the attacker's Shoot deals pct), "ForestRanged" (Shoot and
 //     Bombard deal pct on both sides), "HillsAttacker" (every attacker hit deals pct), "HillsDefenderRanged" (the
 //     defender's Shoot and Bombard deal pct), "ChargeFirstRound" (where flanking works: a Charge in the first round
-//     deals pct on both sides, 100 + ENGAGEMENT_CHARGE_BONUS; absent when that is 100); empty: open ground, no bonus
+//     deals pct on both sides, 100 + ENGAGEMENT_CHARGE_BONUS; absent when that is 100), "Uphill" (hills where flanking
+//     works: only the defender's first-round charges deal pct), "ForestStab" (Stab deals pct on both sides),
+//     "LargeDealt" (a large unit's hits deal pct: open ground more, a forest, jungle or marsh less), "Wading" (across a
+//     river: in round 1 the attacker's units that do not cross rivers freely deal pct), "Trench" (in round 1 the
+//     attacker's hits deal pct); each rule's `units` says whose hits it changes: "all", "large" or "not_river";
+//     the ground's `open`, `marsh` and `crossing` flags too; empty: open ground, no bonus
 //   params: {bolt_pct (the magic bolt's power, ENGAGEMENT_BOLT_PERCENT), splash_pct (a splash on each neighbour, in
 //     percent of the hit on the target, ENGAGEMENT_SPLASH_PERCENT), first_strike_speed (speed a first strike adds,
 //     ENGAGEMENT_FIRST_STRIKE_SPEED), extra_action_tier and extra_actions (a type of that tier or above, and a hero,
@@ -35,9 +40,8 @@
 //                 city's Sentinels, docs/SIEGES.md) | "Minimum" | "Summons" (n) | "Improvement" (improvement: the
 //                 attacker, on a plot whose improvement narrows it: a card's Trench), delta}
 //   lanes: [attacker's lanes, defender's lanes]
-//   tactics: [attacker's, defender's] (BattleTacticType: what arranged each side's line; docs/TACTICS.md)
 //   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, lanes, ordered (its formation was given by
-//     the rules' caller (the lab, tests), not its tactic's)} (`player`: the real one on the viewer's side, the one the viewer saw on the
+//     the rules' caller (the lab, tests), not the auto formation's)} (`player`: the real one on the viewer's side, the one the viewer saw on the
 //     other: hidden nationality)
 //   fighters: [Fighter]: both lines, and the units of both sides on the two plots that stayed out of them (the
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
@@ -81,8 +85,8 @@
 //        card's Templar) has pass 0
 //   outcome: {plot_taken, city_captured (the city as the attacker's: its id changes with its owner; null), rounds
 //     (fought), defenders_left (on the plot after the battle, in the line or not), pushed (the defender's units a
-//     lost battle pushed back), hp_lost: [attacker, defender] (centi-HP), loser (the side index whose units lost
-//     more HP; null: the same), calc (how the loser was found, a line each), sides: [{committed, sat_out,
+//     lost battle pushed back), hp_lost: [attacker, defender] (centi-HP), loser (the side index that lost; null:
+//     neither), decided_by ("Wiped" | "Deaths" | "Damage" | "Even": the rule that found it), calc (how the loser was found, a line each), sides: [{committed, sat_out,
 //     fallen, escaped, standing} (counts of the units in the line), ...]}
 //   after: [{kind: "Xp", unit, amount} | {kind: "MoveIn", units, city} | {kind: "Flee", unit, to: {x, y}} |
 //          {kind: "PushBack", units, to: {x, y}} (a lost battle outside a city pushed them back) |
@@ -98,9 +102,9 @@
 //   battle carries `kind: "engagement"` and `report` (its id).
 //
 // EngagePreview (`engage_preview {army | units | from, to}`): plot, from, ground, params, slots, lanes, sides,
-//   fighters (the attacker's pool in the formation its tactic gives; the defenders it sees in their formation as it
+//   fighters (the attacker's pool in the auto formation; the defenders it sees in their formation as it
 //   knows it), formation and auto_formation ([{unit, lane, row}]: the attacker's in `fighters`, the one the
-//   forecast is for), tactics: [attacker's, defender's] (BattleTacticType), starving: [{b, pct}] (fighters of
+//   forecast is for), starving: [{b, pct}] (fighters of
 //   starving armies and the percent change of the damage they deal; docs/SUPPLY.md),
 //   summons: [{caster (b), unit_type, spell (null: on_kill), on_kill (a unit a kill may create), side, lane, row, hp,
 //   max_hp, a_x100, fall_pct}] (the units the battle calls, made for it: no fighter of the plan, not in `per`;
@@ -113,8 +117,8 @@
 //   expected to fall, x100),
 //   line_wiped_permille (the defenders' line wiped out), plot_falls_permille, attackers_wiped_permille?,
 //   per: [{b, fall_pct, escape_pct}]}.
-// The `engage` command: {army | units | from, to, declare_war?} (a `formation` is refused: an army fights in its
-//   tactic); its reply's `r.report` is the battle's.
+// The `engage` command: {army | units | from, to, declare_war?} (a `formation` is refused: an army fights in the
+//   auto formation); its reply's `r.report` is the battle's.
 // Static data (`/api/data`): the names of UnitType, PromotionType, TerrainType, FeatureType,
 //   SpellType, CivilizationType.
 // ---------------------------------------------------------------------------------------------
@@ -295,7 +299,7 @@ export function specials(f, ground, params = null) {
   if (f.large) notes.push("Large: fills two cells side by side and counts two slots; it is the front or back unit of both its lanes.");
   if (f.anti_flank) notes.push("Anti-flanking: enemy flankers attack it first whenever it is in their reach.");
   if (f.actions?.some((a) => kindKey(a?.kind) === "Charge")) {
-    const c = chargeRule(ground);
+    const c = chargeRule(ground, f.side);
     const how =
       ground?.flanking === false
         ? "No flanking in a city, forest or jungle: its charges hit the front unit of a lane."
@@ -338,21 +342,25 @@ export function specials(f, ground, params = null) {
  *  percents multiplied); `firstRound`: a hit of the first round (the charge's rule counts). Each
  *  rule carries its reach from the engine: `side` (null: both), `kinds` (null: all) and
  *  `first_round`. */
-export function groundPct(ground, side, kind, { firstRound = false } = {}) {
+export function groundPct(ground, side, kind, { firstRound = false, large = false, river = false } = {}) {
   let pct = 100;
   const k = kindKey(kind);
   for (const r of ground?.rules ?? []) {
     if ((r.first_round && !firstRound) || (r.side !== null && r.side !== undefined && r.side !== side) || (Array.isArray(r.kinds) && !r.kinds.includes(k))) continue;
+    // Whose hits (`units`): every unit's, a large unit's, those of units that do not cross rivers.
+    if ((r.units === "large" && !large) || (r.units === "not_river" && river)) continue;
     pct = (pct * r.pct) / 100;
   }
   return Math.round(pct);
 }
 
-/** The ground's charge rule (`ChargeFirstRound`) where flanking works and it changes anything,
- *  or null. */
-export function chargeRule(ground) {
+/** The ground's charge rule where flanking works and it changes anything, or null:
+ *  `ChargeFirstRound` (both sides), or on hills `Uphill` (the defender's charges only: pass
+ *  `side`). */
+export function chargeRule(ground, side = null) {
   if (ground?.flanking === false) return null;
-  return (ground?.rules ?? []).find((r) => r.kind === "ChargeFirstRound" && r.pct !== 100) ?? null;
+  const rules = ground?.rules ?? [];
+  return rules.find((r) => r.kind === "ChargeFirstRound" && r.pct !== 100) ?? (side === 1 ? rules.find((r) => r.kind === "Uphill" && r.pct !== 100) : null) ?? null;
 }
 
 /** A hit's damage in percent, in words: "double damage", "150% damage". */
@@ -367,9 +375,9 @@ export function groundNote(f, ground) {
   const kinds = [...new Set([0, 1, 2].map((r) => actionAt(f, r).kind))].filter((k) => k !== "None" && k !== "Heal");
   const parts = [];
   for (const k of kinds) {
-    const p = groundPct(ground, f.side, k);
+    const p = groundPct(ground, f.side, k, { large: !!f.large });
     if (p === 100) continue;
-    const first = k === "Charge" ? groundPct(ground, f.side, k, { firstRound: true }) : p;
+    const first = k === "Charge" ? groundPct(ground, f.side, k, { firstRound: true, large: !!f.large }) : p;
     parts.push(`${KINDS[k].nouns} deal ${p}%${first !== p ? ` (${first}% in the first round)` : ""}`);
   }
   return parts.length ? `Here its ${parts.join(", ")} of normal damage.` : "";
@@ -377,10 +385,14 @@ export function groundNote(f, ground) {
 
 const half = (p) => (p === 50 ? "half damage" : `${p}%`);
 const less = (p) => (p < 100 ? `${100 - p}% less` : `${p - 100}% more`);
-/** Flanking where it works, in words, with the charge's first-round damage. */
+/** Flanking where it works, in words, with the charge's first-round damage (on hills: the
+ *  defender's only, `Uphill`). */
 function flankText(ground) {
   const c = chargeRule(ground);
-  return c ? `cavalry flanks, and its first-round charges deal ${damageText(c.pct)}` : "cavalry flanks";
+  if (c) return `cavalry flanks, and its first-round charges deal ${damageText(c.pct)}`;
+  const up = (ground?.rules ?? []).find((r) => r.kind === "Uphill");
+  if (up) return `cavalry flanks; no charge bonus for the attacker${up.pct !== 100 ? `; the defenders' first-round charges deal ${damageText(up.pct)}` : ""}`;
+  return "cavalry flanks";
 }
 
 /** The ground's rules in words: a sentence each (the plan and the report show them). `plot`:
@@ -388,12 +400,26 @@ function flankText(ground) {
 export function groundRules(ground, plot) {
   const rule = (k) => (ground?.rules ?? []).find((r) => r.kind === k);
   const out = [];
+  // A large unit's damage: said once, with the ground it comes from.
+  const lg = rule("LargeDealt");
+  const largeText = lg ? `large units deal ${lg.pct}%` : null;
+  let largeSaid = false;
   const c = rule("CityShots");
   if (ground?.city || c) out.push(`City: ${c ? `the attackers' arrows deal ${half(c.pct)}` : "no change to damage"}; no flanking.`);
   const f = rule("ForestRanged");
-  if (ground?.forest || f) {
+  const fs = rule("ForestStab");
+  if (ground?.forest || f || fs) {
     const name = plot?.feature !== null && plot?.feature !== undefined ? tyLabel("FeatureType", plot.feature) : "Forest";
-    out.push(`${name}: ${f ? `arrows and stones deal ${half(f.pct)} on both sides` : "no change to damage"}; no flanking.`);
+    const parts = [];
+    if (f) parts.push(`arrows and stones deal ${half(f.pct)} on both sides`);
+    if (fs) parts.push(`stabs deal ${fs.pct}%`);
+    if (largeText) parts.push(largeText);
+    largeSaid = !!largeText;
+    out.push(`${name}: ${parts.length ? parts.join("; ") : "no change to damage"}; no flanking.`);
+  }
+  if (ground?.marsh && !largeSaid) {
+    out.push(`Marsh: ${largeText ?? "no change to damage"}; no flanking.`);
+    largeSaid = !!largeText;
   }
   const ha = rule("HillsAttacker");
   const hd = rule("HillsDefenderRanged");
@@ -407,9 +433,16 @@ export function groundRules(ground, plot) {
     out.push(`Hills: ${parts.join("; ")}.`);
   }
   if (!out.length) {
-    if (ground?.flanking === false) out.push("Open ground: no damage changes; no flanking.");
-    else out.push(chargeRule(ground) ? `Open ground: ${flankText(ground)}.` : "Open ground: no damage changes; cavalry flanks.");
+    const lead = largeText ? `${largeText}; ` : "";
+    largeSaid = !!largeText;
+    if (ground?.flanking === false) out.push(`Open ground: ${lead || "no damage changes; "}no flanking.`);
+    else out.push(chargeRule(ground) ? `Open ground: ${lead}${flankText(ground)}.` : `Open ground: ${lead || "no damage changes; "}cavalry flanks.`);
   }
+  if (largeText && !largeSaid) out.push(`Large units: ${largeText.slice("large units ".length)}.`);
+  const w = rule("Wading");
+  if (w) out.push(`Wading: the attackers' units without river crossing deal ${w.pct}% in round 1.`);
+  const t = rule("Trench");
+  if (t) out.push(`Trench: the attackers deal ${t.pct}% in round 1.`);
   return out;
 }
 
@@ -446,13 +479,6 @@ export function slotChangeText(c) {
   }
 }
 
-/** The name of side `side`'s battle tactic in a log or a preview (`tactics`; docs/TACTICS.md), or
- *  null when it has none (a fixture). */
-export function tacticName(L, side) {
-  const v = L?.tactics?.[side];
-  return v === null || v === undefined ? null : tyLabel("BattleTacticType", v);
-}
-
 /** "8 slots − 2 for the hill = 6" (the changes that moved the count). */
 export function slotSum(s) {
   const parts = [`${s.base} slots`];
@@ -469,7 +495,7 @@ export const slotCap = (s) => (s?.total ?? 0) + (s?.river_only ?? 0);
 
 // ---------------------------------------------------------------------------------------------
 // A formation: where each unit of a side stands (`Map b -> {lane, row}`). The engine arranges it
-// (each side's tactic, docs/TACTICS.md): the board shows it, nobody edits it.
+// (the auto formation): the board shows it, nobody edits it.
 
 /** The formation of side `side` in `fighters` (their `lane` and `row`). */
 export function placeOf(fighters, side) {
@@ -585,9 +611,10 @@ export function fates(log, st) {
 
 /** The battle's result for the viewer: `{kind, ribbon, line, good, calc}`: kind "taken" (the plot
  *  fell), "repulsed" (no attacker stands: worded from their fates, as all fallen are not all
- *  escaped), "held" (the plot holds). The side whose units lost more HP lost (the outcome's
- *  `loser`, `hp_lost`; docs/ENGAGEMENTS.md, "The result"): the ribbon and `good` follow it, the
- *  line names the HP lost, `calc` is how the loser was found (its tooltip). A log without a
+ *  escaped), "held" (the plot holds). The outcome's `loser` and the rule that found it,
+ *  `decided_by` (docs/ENGAGEMENTS.md, "The result": "Wiped" all of a side's units fell, "Deaths"
+ *  more of them fell, "Damage" more HP lost, "Even" none): the ribbon and `good` follow it, the
+ *  line names the rule's numbers, `calc` is how the loser was found (its tooltip). A log without a
  *  `loser` (saved before the rule) is worded from the plot alone. */
 export function resultWords(log) {
   const me = viewerSide(log);
@@ -600,10 +627,20 @@ export function resultWords(log) {
   const [ha, hd] = (o.hp_lost ?? [0, 0]).map(hp);
   const calc = judged ? (o.calc ?? null) : null;
   const pushedLine = o.pushed ? ` ${o.pushed} defender${o.pushed === 1 ? " is" : "s are"} pushed back.` : "";
+  // Why side `l` lost, by the rule that found it.
+  const fell = (l) => o.sides?.[l]?.fallen ?? fs[l].fallen.length;
+  const who = (l) => (l === 1 ? "defenders" : "attackers");
+  const why = (l) => {
+    const by = o.decided_by ?? "Damage";
+    if (by === "Wiped") return `every one of the ${who(l)} in the line fell`;
+    if (by === "Deaths") return `more ${who(l)} fell (${fell(l)} to ${fell(1 - l)})`;
+    return `the ${who(l)} lost more HP (${l === 1 ? hd : ha} to ${l === 1 ? ha : hd})`;
+  };
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   if (o.plot_taken) {
     const head = city ? `${city} falls` : "The plot falls";
     const line = judged
-      ? `${head}: the defenders lost more HP (${hd} to ${ha}) and none is left; the attackers move in.${pushedLine}`
+      ? `${head}: ${why(1)} and none is left; the attackers move in.${pushedLine}`
       : `${head}: no defender is left, and the attackers move in.`;
     return { kind: "taken", good: me === 0, ribbon: me === 0 ? "VICTORY" : "DEFEAT", line, calc };
   }
@@ -616,10 +653,10 @@ export function resultWords(log) {
   const verdict = !judged
     ? ""
     : o.loser === 0
-      ? ` The attackers lost more HP (${ha} to ${hd}): they stay where they are.`
+      ? ` ${cap(why(0))}: they stay where they are.`
       : o.loser === 1
-        ? ` The defenders lost more HP (${hd} to ${ha}), but ${stand} on ${where}${city ? " (nobody is pushed back from a city)" : ""}: it holds.${pushedLine}`
-        : ` Both sides lost ${ha} HP: the plot holds.`;
+        ? ` ${cap(why(1))}, but ${stand} on ${where}${city ? " (nobody is pushed back from a city)" : ""}: it holds.${pushedLine}`
+        : ` Neither side lost more units or HP: the plot holds.`;
   if (!fs[0].standing.length) {
     // Withdrawn attackers stay with their army, afraid ones sat out: only all fallen is wiped out.
     const a = fs[0];
@@ -632,7 +669,7 @@ export function resultWords(log) {
     const line =
       left === 0
         ? o.loser === 1
-          ? `No defender is left on ${where}; the defenders lost more HP (${hd} to ${ha}).${pushedLine}`
+          ? `No defender is left on ${where}; ${why(1)}.${pushedLine}`
           : `No defender is left on ${where}.${verdict}`
         : o.loser === 1
           ? verdict.trim()

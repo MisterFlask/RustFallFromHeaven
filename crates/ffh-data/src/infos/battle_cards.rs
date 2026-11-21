@@ -11,7 +11,7 @@
 //! | `last_stand_damage` | building | once half the city's committed defenders have fallen, the rest deal more damage |
 //! | `never_lost_damage` | building | while the city has never changed hands, its defenders deal more damage |
 //! | `exclusive_with` | building | a city with a building of one of these classes cannot build it |
-//! | `engagement_attacker_slots_change` | improvement | the attacker's slots in battles on its plot |
+//! | `engagement_attacker_first_round_percent` | improvement | the attacker's hits in round 1 of battles on its plot, percent |
 //! | `bombard_range`, `bombard_besieges` | unit | it bombards a city this many plots away; a city it bombards counts as besieged until its next turn |
 //! | `engage_first_round` | unit | what it does in a battle's first round, in place of its row's action |
 //! | `first_melee_pattern` | promotion | the attack pattern of the unit's first STRIKE or CHARGE each round |

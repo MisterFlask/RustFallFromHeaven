@@ -90,10 +90,10 @@ fn hurt(mut f: Fighter, hp: i32) -> Fighter {
     f
 }
 
-const OPEN: Ground = Ground { city: false, forest: false, hills: false };
-const FOREST: Ground = Ground { city: false, forest: true, hills: false };
-const CITY: Ground = Ground { city: true, forest: false, hills: false };
-const HILLS: Ground = Ground { city: false, forest: false, hills: true };
+const OPEN: Ground = Ground { city: false, forest: false, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };
+const FOREST: Ground = Ground { city: false, forest: true, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };
+const CITY: Ground = Ground { city: true, forest: false, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };
+const HILLS: Ground = Ground { city: false, forest: false, hills: true, open: false, marsh: false, crossing: false, trench_pct: 0 };
 
 fn battle(ground: Ground, fighters: Vec<Fighter>) -> Formation {
     let b = Formation::new(Params::default(), ground, [4, 4], fighters, |_, _| EQ);
@@ -359,8 +359,8 @@ fn the_ground() {
         (FOREST, [EVEN / 2, EVEN / 2, EVEN, EVEN, EVEN / 2, EVEN / 2, EVEN]),
         (HILLS, [1500, 1500, 1500, 1500, 2500, 2500, EVEN]),
         // several multiply: 2000 x 50% x 75% = 750; 2000 x 50% x 125% = 1250
-        (Ground { forest: true, hills: true, city: false }, [750, 750, 1500, 1500, 1250, 1250, EVEN]),
-        (Ground { city: true, hills: true, forest: false }, [750, 1500, 1500, 1500, 2500, 2500, EVEN]),
+        (Ground { forest: true, hills: true, city: false, open: false, marsh: false, crossing: false, trench_pct: 0 }, [750, 750, 1500, 1500, 1250, 1250, EVEN]),
+        (Ground { city: true, hills: true, forest: false, open: false, marsh: false, crossing: false, trench_pct: 0 }, [750, 1500, 1500, 1500, 2500, 2500, EVEN]),
     ] {
         let b = battle(g, fs.clone());
         let got = [
@@ -385,33 +385,46 @@ fn the_ground() {
 }
 
 /// `GroundRule::reach` (what the host serves the screens with each rule) says what the resolver
-/// applies: on every ground, for each side, action kind and round, a hit's expected damage is the
-/// even hit times the percentages of the ground's rules whose reach takes it in.
+/// applies: on every ground, for each side, action kind, round and kind of unit (large or not,
+/// crossing rivers freely or not), a hit's expected damage is the even hit times the percentages of
+/// the ground's rules whose reach takes it in.
 #[test]
 fn ground_rules_reach_what_the_resolver_applies() {
     use Side::*;
-    let mut fs = vec![frontline(Attacker, 0, 0), frontline(Defender, 0, 0)];
-    for f in &mut fs {
-        f.spell = Spell::known(7);
-    }
     let params = Params::default();
     let mut seen = Vec::new();
-    for bits in 0..8 {
-        let g = Ground { city: bits & 1 != 0, forest: bits & 2 != 0, hills: bits & 4 != 0 };
+    for bits in 0..128u32 {
+        let b = |i: u32| bits & (1 << i) != 0;
+        let g = Ground { city: b(0), forest: b(1), hills: b(2), open: b(3) && !b(1) && !b(2), marsh: b(4), crossing: b(5), trench_pct: if b(6) { 60 } else { 0 } };
         let rules = g.rules(&params);
-        let b = battle(g, fs.clone());
-        for (h, t, side) in [(0, 1, Attacker), (1, 0, Defender)] {
-            for kind in ffh_data::ActionKind::ALL {
-                for round in 1..=3 {
-                    let mut num: i64 = EVEN as i64;
-                    let mut den: i64 = 1;
-                    for r in rules.iter().filter(|r| r.reach().touches(side, kind, round)) {
-                        num *= r.pct().unwrap_or(100) as i64;
-                        den *= 100;
+        for (large, river) in [(false, false), (true, false), (false, true)] {
+            let mut fs = vec![frontline(Attacker, 0, 0), frontline(Defender, 0, 0)];
+            for f in &mut fs {
+                f.spell = Spell::known(7);
+                f.large = large;
+                f.river = river;
+            }
+            let bt = battle(g, fs);
+            for (h, t, side) in [(0, 1, Attacker), (1, 0, Defender)] {
+                for kind in ffh_data::ActionKind::ALL {
+                    for round in 1..=3 {
+                        let mut num: i64 = EVEN as i64;
+                        let mut den: i64 = 1;
+                        for r in rules.iter().filter(|r| {
+                            let reach = r.reach();
+                            let units = match reach.units {
+                                RuleUnits::All => true,
+                                RuleUnits::Large => large,
+                                RuleUnits::NotRiver => !river,
+                            };
+                            units && reach.touches(side, kind, round)
+                        }) {
+                            num *= r.pct().unwrap_or(100) as i64;
+                            den *= 100;
+                        }
+                        let want = (num / den) as i32;
+                        assert_eq!(bt.expected(h, t, kind, round, false), want, "{g:?} large {large} river {river} {side:?} {kind:?} round {round}");
                     }
-                    assert_eq!(num % den, 0, "{g:?} {side:?} {kind:?} round {round}");
-                    let want = (num / den) as i32;
-                    assert_eq!(b.expected(h, t, kind, round, false), want, "{g:?} {side:?} {kind:?} round {round}");
                 }
             }
         }
@@ -425,6 +438,11 @@ fn ground_rules_reach_what_the_resolver_applies() {
         GroundRule::HillsDefenderRanged { pct: 0 },
         GroundRule::Charge { pct: 0 },
         GroundRule::NoFlanking,
+        GroundRule::ForestStab { pct: 0 },
+        GroundRule::LargeDealt { pct: 0 },
+        GroundRule::Wading { pct: 0 },
+        GroundRule::Trench { pct: 0 },
+        GroundRule::Uphill { pct: 0 },
     ] {
         assert!(seen.contains(&std::mem::discriminant(&r)), "{r:?}");
     }
@@ -888,7 +906,7 @@ fn the_draw_order() {
 fn random_battle(seed: u32) -> Formation {
     let mut g = Rng::new(seed);
     let mut r = |n: i32| g.get_i(n, "test");
-    let ground = Ground { city: r(3) == 0, forest: r(3) == 0, hills: r(3) == 0 };
+    let ground = Ground { city: r(3) == 0, forest: r(3) == 0, hills: r(3) == 0, open: false, marsh: false, crossing: false, trench_pct: 0 };
     let lanes = [2 + r(4) as u8, 2 + r(4) as u8];
     let mut fighters = Vec::new();
     for side in [Side::Attacker, Side::Defender] {
@@ -1146,7 +1164,7 @@ fn order_from(home: u8) -> [u8; ROWS] {
 }
 
 fn cand(pick_order: i32, home_row: u8, value: i64) -> Candidate {
-    Candidate { pick_order, row_order: order_from(home_row), large: false, value, healthy: true, river: true, veteran: false }
+    Candidate { pick_order, row_order: order_from(home_row), large: false, value, healthy: true, river: true }
 }
 
 #[test]
@@ -1307,7 +1325,7 @@ fn proto_scenario(key: &str) -> (Formation, Vec<String>) {
             .iter()
             .map(|u| {
                 let r = &PROTO_ROLES[u.role];
-                Candidate { pick_order: r.8, row_order: order_from(r.9), large: u.large, value: (u.str_ * (100 + 10 * (u.level - 1))) as i64, healthy: true, river: true, veteran: false }
+                Candidate { pick_order: r.8, row_order: order_from(r.9), large: u.large, value: (u.str_ * (100 + 10 * (u.level - 1))) as i64, healthy: true, river: true }
             })
             .collect();
         let tag = if side == Side::Attacker { "att" } else { "def" };
@@ -1565,6 +1583,56 @@ fn large_units_side_by_side() {
     assert_eq!((p[0].lane, p[0].row), (1, 0));
     // Four fill two rows; none is left out.
     assert_eq!(auto_arrange(&[big(50), big(40), big(30), big(20)], 4, 10, 10).len(), 4);
+}
+
+/// On random pools, with and without a city's Sentinels: each unit at most once, inside the grid,
+/// no two in one cell, within the slots and the river rule; small units are left out only when
+/// the slots or the cells run out.
+#[test]
+fn the_auto_formation_places_each_unit_once_inside_the_grid() {
+    let mut rng = Rng::new(7);
+    let mut r = |n: i32| rng.get_i(n, "test");
+    let orders: [[u8; ROWS]; 6] = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+    for _ in 0..2000 {
+        let n = r(15) as usize;
+        let cands: Vec<Candidate> = (0..n)
+            .map(|_| Candidate {
+                pick_order: 1 + r(9),
+                row_order: orders[r(6) as usize],
+                large: r(100) < 15,
+                value: 1 + r(100) as i64,
+                healthy: r(100) < 80,
+                river: r(100) < 80,
+            })
+            .collect();
+        let lanes = 2 + r(5) as u8;
+        let slots = 3 + r(12);
+        let ordinary = slots - r(3);
+        let blocked = if r(3) == 0 { sentinel_cells(lanes, r(4) as usize) } else { Vec::new() };
+        let p = auto_arrange_around(&cands, lanes, slots, ordinary, &blocked);
+        let mut taken: Vec<(u8, u8)> = blocked.clone();
+        let (mut used, mut non_river) = (0, 0);
+        for x in &p {
+            assert!(x.row < 3);
+            let size = 1 + cands[x.unit].large as i32;
+            used += size;
+            if !cands[x.unit].river {
+                non_river += size;
+            }
+            for l in x.lane..x.lane + size as u8 {
+                assert!(l < lanes);
+                assert!(!taken.contains(&(l, x.row)), "two units in one cell");
+                taken.push((l, x.row));
+            }
+        }
+        assert!(used <= slots && non_river <= ordinary);
+        assert!(p.windows(2).all(|w| w[0].unit < w[1].unit));
+        if cands.iter().all(|c| !c.large) {
+            let river = cands.iter().filter(|c| c.river).count();
+            let fit = (slots as usize).min(river + (cands.len() - river).min(ordinary as usize)).min(3 * lanes as usize - blocked.len());
+            assert_eq!(p.len(), fit, "{} placed, {fit} fit", p.len());
+        }
+    }
 }
 
 /// A caster's charms and hexes take its first SPELL actions, one each; they last the battle, on

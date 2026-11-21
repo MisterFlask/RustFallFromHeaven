@@ -66,9 +66,9 @@ pub mod research;
 pub mod research_path;
 pub mod sea_ice;
 pub mod sites;
+pub mod squads;
 pub mod supply;
 pub mod switches;
-pub mod tactics;
 pub mod tech_plan;
 pub mod threat;
 #[cfg(test)]
@@ -161,7 +161,7 @@ impl Controller for Ai {
         if g.player_is_crusade_host(p) {
             crusade::host_turn(g, p);
             supply::turn(g, p);
-            tactics::turn(g, p);
+            squads::turn(g, p);
             return;
         }
         let turn = g.game_turn();
@@ -244,9 +244,10 @@ impl Controller for Ai {
             campaign::plan(g, &mut v);
             casting::barrage(g, &v);
         }
+        squads::turn(g, p); // squads of one sorted before the turn's attacks (docs/ENGAGEMENTS.md)
         units::play(self, g, &mut v);
+        squads::turn(g, p); // and for the battles it defends
         if !v.barbarian {
-            tactics::turn(g, p); // battle tactics, once the stacks of the turn are made (docs/TACTICS.md)
             cards::end_turn(g, p); // the cards' content that acts once the units have moved
         }
         sea_ice::end_turn(g, p); // Icebreak near our cities (ffh_core world_ritual_spells::illians)
@@ -338,7 +339,7 @@ impl Controller for Ai {
         // A simple preference for smaller threats and lasting rewards; the two offers are
         // already rolled, so choosing consumes no randomness and cannot redraw the category.
         let value = |outcome: &LairOutcome| match *outcome {
-            LairOutcome::Monster { monster, henchman, count, .. } => -(g.d.units[monster].combat * 100 + g.d.units[henchman].combat * count * 30),
+            LairOutcome::Monster { monster, henchman, count, .. } => -(g.d.units[monster].attack_rating() * 10 + g.d.units[henchman].attack_rating() * count * 3),
             LairOutcome::Result(key) => match key {
                 "DEATH" => -10_000,
                 "DEMONIC_POSSESSION" | "CRAZED" | "CAGE" => -900,

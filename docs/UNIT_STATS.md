@@ -149,15 +149,11 @@ the old values back for the code that wants them):
 All of these are physical only. MAG and MDEF see only stat changes and elemental resistances.
 
 **The unit's own changes** (`Unit::stat_flat`, `Unit::stat_pct`, by stat): a promotion's
-`stat_changes` (`Game::unit_apply_stat_changes`) and every change of the unit's strength. The
-strength outside land battles stays the C++ fields (`base_combat`, `base_combat_defense`,
-`extra_combat_percent`, `spell_damage_modify`: decision 6); the functions that change them
-(`unit_change_base_combat_str`, `_defense`, `unit_change_extra_combat_percent`,
-`unit_change_spell_damage_modify`, and the setters the Python effects use) change the stat arrays
-too, ten points a strength point. So the post-combat strength effects (Ira, the Wolf Rider and
-others), adding to a Flesh Golem and affinities (`BonusAffinities`) reach the battle. A promotion's
-attack and defence points change the strength outside battles in tens; its attack percentage, the
-strength's percentage. Its magic percentage is a battle's only: the damage of spells cast outside
+`stat_changes` (`Game::unit_apply_stat_changes`) and every other change of its attack and defence
+(`unit_change_attack_points`, `unit_change_defense_points`: the Python effects, affinities;
+`unit_change_extra_combat_percent`, `unit_change_spell_damage_modify`). So the post-combat effects
+(Ira, the Repentant Angel), adding to a Flesh Golem and affinities (`BonusAffinities`) reach the
+battle. Land units have no strength (section 10). Its magic percentage is a battle's only: the damage of spells cast outside
 battles is its own key again, `spell_damage_modify` (FfH's `iSpellDamageModify`, the values it had),
 so the content pass's magic did not change spells on the map.
 
@@ -272,9 +268,51 @@ data (`--apply`). In short:
    FFH Python rules that read strength (spell chances and requirements, post-combat effects, Flesh
    Golem merging, event values) and the AI's power estimates. The alternative is to derive the rating from ATK and DEF
    and drop `iCombat`, which means more churn now for one fewer number.
+   **Reversed 2026-11-21** (the owner's decision): land units' strength is gone; section 10.
 7. **Situational modifiers.** Recommended: **keep them as ATK or DEF percentages, physical only**
    (section 4).
 8. **Heals.** Recommended: **unchanged for now**, with heals scaling with MAG left for the content
    pass.
 9. **The content pass.** Recommended: **I draft it as tables after the build** (section 7), and the
    owner edits.
+
+## 10. Ratings: land units have no strength (the owner's decision, 2026-11-21)
+
+Two numbers for one thing confused the player: a unit card showed the Sons of Asena's strength 4
+next to their battle line, ATK 40 and DEF 40, and only the second decides a land battle. So land
+units have no strength at all: `iCombat` and `iCombatDefense` are gone from every land unit's data
+(`units.jsonc` and the cards' units), and the stat sheet is the only source of a land unit's attack
+and defence. **Ships keep strength** (`strength`, `strength_defense` in their data: the naval duel
+is still fought on it, docs/NAVAL.md); the two air units have none.
+
+**Ratings** (the stat sheet's scale, ten an old strength point). Where a rule needs one number for
+a unit outside a battle, it reads:
+
+- `Game::unit_attack_rating(u)`: the type's sheet ATK (a ship's strength x10), plus the unit's own
+  attack points (`stat_flat`) and its typed attack points, at least 0. No percentage and no
+  situational modifier: what FfH's base strength (`baseCombatStr`) was.
+- `Game::unit_defense_rating(u)`: the same with DEF (typed points count here too, as in FfH).
+- `Game::unit_rating(u)`: the higher of the two. The number rules compare might by; never shown.
+- `UnitInfo::attack_rating()`, `defense_rating()`, `rating()`, `fights()`: the same for a type.
+
+Changes to a unit's attack or defence outside battle are points (`unit_change_attack_points`,
+`unit_change_defense_points`). Typed attack (`damage_type_attacks`, FfH's `DamageTypeCombats`) and
+affinities (`bonus_affinities`) are stored in points too, the old values x10. The duel's base for a
+land unit (the AI's estimates still read `unit_max_combat_str`) is its rating, x10 in hundredths.
+
+**The rules that read strength**, each decided by the owner (2026-11-21; docs/PORTING.md, "Changes
+from FFH2"): Ira -30 ATK and DEF while ATK < 320; Repentant Angel -50 while ATK > 50; Flesh Golem
++10 ATK (DEF) when the merged unit's is higher, its trophy at ATK 150; untyped affinities +10N
+ATK and DEF; can fight / attack / defend: ATK > 0 or DEF > 0 / ATK > 0 / DEF > 0 (the same units as
+before: for every land unit, strength 0 and a sheet value 0 coincide); Target Weakest skips DEF 0;
+defensive strike -DEF/5; spell damage resistance DEF/5; the Fear check
+`(own rating - source's rating) / 10 + 20 + levels`, its source the highest rating; Kidnap
+ATK x 8 / 10 %; Domination rating + (100 - resist); Pillar of Fire and the Citadel event half the
+rating; Rantine's Convert City, The Cull's order, the best land unit, upgrade and requisition picks
+by rating; Commander Join (AI) rating above 50; Take Equipment (AI) rating more than 20 above the
+holder's. A crusade's or loan's **force** (`crusade_unit_force`) is the rating with the unit's
+combat bonus, x10, scaled by health, shown /10 (a healthy Axeman's 40).
+
+**What the player sees.** A land unit's card, strip and tooltips show ATK and DEF, never a
+strength; the unit help's first line has no strength (its sheet follows). A ship keeps its ⚔
+strength. Modifier lines that said "Strength" say "Attack and Defense".

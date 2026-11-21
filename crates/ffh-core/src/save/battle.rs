@@ -12,15 +12,16 @@ use crate::engagement::report::*;
 
 persist_enum!(Side { 0 => Attacker, 1 => Defender });
 persist_enum!(EngageResult { 0 => Taken, 1 => Cleared, 2 => Repulsed, 3 => Held });
+persist_enum!(DecidedBy { 0 => Wiped, 1 => Deaths, 2 => Damage, 3 => Even });
 
 persist_struct!(BattleReport { id, turn, plot, from, place, sides, outcome, log });
 persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost, summons, shore });
 persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city });
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
-persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached, hp_lost, loser, pushed });
+persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached, hp_lost, loser, decided_by, pushed });
 
-persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, tactics, fighters, pairs, events, forecast });
-persist_struct!(Ground { city, forest, hills });
+persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, fighters, pairs, events, forecast });
+persist_struct!(Ground { city, forest, hills, open, marsh, crossing, trench_pct });
 persist_enum!(GroundRule {
     0 => CityShots { pct },
     1 => ForestRanged { pct },
@@ -28,6 +29,11 @@ persist_enum!(GroundRule {
     3 => HillsDefenderRanged { pct },
     4 => Charge { pct },
     5 => NoFlanking,
+    6 => ForestStab { pct },
+    7 => LargeDealt { pct },
+    8 => Wading { pct },
+    9 => Trench { pct },
+    10 => Uphill { pct },
 });
 persist_struct!(SideSlots { base, changes, total, river_only });
 persist_struct!(SlotChange { src, delta });
@@ -323,7 +329,7 @@ mod tests {
         let log = BattleLog {
             slots: [slots, SideSlots { base: 8, changes: vec![], total: 8, river_only: 0 }],
             lanes: [4, 3],
-            ground: Ground { city: true, forest: false, hills: true },
+            ground: Ground { city: true, forest: false, hills: true, open: false, marsh: false, crossing: false, trench_pct: 0 },
             rules: vec![
                 GroundRule::CityShots { pct: 50 },
                 GroundRule::ForestRanged { pct: 50 },
@@ -333,7 +339,6 @@ mod tests {
                 GroundRule::NoFlanking,
             ],
             ordered: [true, false],
-            tactics: [BattleTacticType(1), BattleTacticType(3)],
             fighters: vec![
                 fighter(Side::Attacker, Some((0, 0)), Some(LogFate::Withdrew { round: 2 })),
                 fighter(Side::Defender, Some((1, 0)), Some(LogFate::Fell { by: 0, round: 1 })),
@@ -384,7 +389,7 @@ mod tests {
                 city: Some(CitySnap { id: CityId(3), name: "Strages".to_string(), owner: PlayerId(2), size: 7, defense_pct: 60 }),
             },
             sides: [side(1, 8), side(2, 2)],
-            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0, sentinels: 2, sentinels_breached: 1, hp_lost: [4200, 9100], loser: Some(Side::Defender), pushed: 2 },
+            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0, sentinels: 2, sentinels_breached: 1, hp_lost: [4200, 9100], loser: Some(Side::Defender), decided_by: DecidedBy::Deaths, pushed: 2 },
             log: Some(Box::new(log)),
         }
     }

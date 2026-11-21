@@ -48,7 +48,7 @@
 //! Integers throughout: HP in centi-HP, A and Dv x100, percentages multiplied in `i128` and
 //! divided once. No map iteration, every sort a total order (ties by fighter index last).
 
-use ffh_data::{ActionKind, TacticKind, TacticKnobs, TacticPlacement, AttackPattern, BattleCharm, Defines, RowActions, ROWS};
+use ffh_data::{ActionKind, AttackPattern, BattleCharm, Defines, RowActions, ROWS};
 
 use crate::rng::Rng;
 
@@ -60,8 +60,6 @@ pub mod spawn;
 mod magic_tests;
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod tactic_tests;
 
 pub use magic::{add_illusions, Applied, Bare, FighterMagic, IllusionSpell, MagicState};
 
@@ -145,15 +143,27 @@ pub struct Ground {
     pub city: bool,
     /// A forest or jungle: arrows and stones fly short on both sides; no flanking.
     pub forest: bool,
-    /// Hills: the attacker's hits are weaker, the defender's arrows and stones stronger.
+    /// Hills: the attacker's hits are weaker, the defender's arrows and stones stronger; the
+    /// attacker charges uphill (no first-round bonus).
     pub hills: bool,
+    /// Open ground (a flat plot of an open terrain without a forest or jungle): large units hit
+    /// harder.
+    pub open: bool,
+    /// A marsh: no flanking; large units hit softer.
+    pub marsh: bool,
+    /// The attacker crosses a river: its units that do not cross rivers freely hit softer in
+    /// round 1 (wading).
+    pub crossing: bool,
+    /// Card: the Trench (`engagement_attacker_first_round_percent`): the attacker's hits in round
+    /// 1 deal this percent (0: no trench).
+    pub trench_pct: i32,
 }
 
 impl Ground {
     /// Whether flanking works here (no city, no forest or jungle): a charge reaches anyone and
     /// is harder in the first round.
     pub fn flanking(&self) -> bool {
-        !self.city && !self.forest
+        !self.city && !self.forest && !self.marsh
     }
 
     /// The ground's rules that apply here, in the order [`GroundRule`] lists them (the battle
@@ -170,10 +180,26 @@ impl Ground {
             out.push(GroundRule::HillsAttacker { pct: p.hills_attacker_pct });
             out.push(GroundRule::HillsDefenderRanged { pct: p.hills_defender_ranged_pct });
         }
-        if self.flanking() {
-            out.push(GroundRule::Charge { pct: 100 + p.charge_bonus });
-        } else {
+        if self.forest {
+            out.push(GroundRule::ForestStab { pct: p.forest_stab_pct });
+        }
+        if self.open {
+            out.push(GroundRule::LargeDealt { pct: p.open_large_pct });
+        } else if self.forest || self.marsh {
+            out.push(GroundRule::LargeDealt { pct: p.rough_large_pct });
+        }
+        if self.crossing {
+            out.push(GroundRule::Wading { pct: p.wading_pct });
+        }
+        if self.trench_pct != 0 {
+            out.push(GroundRule::Trench { pct: self.trench_pct });
+        }
+        if !self.flanking() {
             out.push(GroundRule::NoFlanking);
+        } else if self.hills {
+            out.push(GroundRule::Uphill { pct: 100 + p.charge_bonus });
+        } else {
+            out.push(GroundRule::Charge { pct: 100 + p.charge_bonus });
         }
         out
     }
@@ -192,8 +218,29 @@ pub enum GroundRule {
     HillsDefenderRanged { pct: i32 },
     /// Flanking works: a charge reaches anyone, and its first-round hits deal `pct`.
     Charge { pct: i32 },
-    /// No flanking (a city, a forest or jungle): a charge is a strike.
+    /// No flanking (a city, a forest or jungle, a marsh): a charge is a strike.
     NoFlanking,
+    /// A forest or jungle: STAB deals `pct` on both sides.
+    ForestStab { pct: i32 },
+    /// A large unit's hits deal `pct` (open ground more, a forest, jungle or marsh less).
+    LargeDealt { pct: i32 },
+    /// Across a river: the attacker's units that do not cross rivers freely deal `pct` in round 1.
+    Wading { pct: i32 },
+    /// The Trench: the attacker's hits deal `pct` in round 1.
+    Trench { pct: i32 },
+    /// Hills: flanking works, but only the defender's charges get the first-round bonus (`pct`):
+    /// the attacker charges uphill.
+    Uphill { pct: i32 },
+}
+
+/// Which units a [`GroundRule`] changes the hits of ([`RuleReach::units`]).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum RuleUnits {
+    All,
+    /// Large units only.
+    Large,
+    /// Units that do not cross rivers freely (`bRiver`).
+    NotRiver,
 }
 
 /// Which hits a [`GroundRule`] changes ([`GroundRule::reach`]).
@@ -205,6 +252,8 @@ pub struct RuleReach {
     pub kinds: Option<&'static [ActionKind]>,
     /// It changes the hits of the first round only.
     pub first_round: bool,
+    /// Whose hits among the side's units.
+    pub units: RuleUnits,
 }
 
 impl RuleReach {
@@ -225,7 +274,12 @@ impl GroundRule {
             | GroundRule::ForestRanged { pct }
             | GroundRule::HillsAttacker { pct }
             | GroundRule::HillsDefenderRanged { pct }
-            | GroundRule::Charge { pct } => Some(pct),
+            | GroundRule::Charge { pct }
+            | GroundRule::ForestStab { pct }
+            | GroundRule::LargeDealt { pct }
+            | GroundRule::Wading { pct }
+            | GroundRule::Trench { pct }
+            | GroundRule::Uphill { pct } => Some(pct),
             GroundRule::NoFlanking => None,
         }
     }
@@ -244,8 +298,17 @@ impl GroundRule {
             GroundRule::HillsDefenderRanged { .. } => (Some(Side::Defender), Some(RANGED), false),
             GroundRule::Charge { .. } => (None, Some(&[K::Charge]), true),
             GroundRule::NoFlanking => (None, Some(&[]), false),
+            GroundRule::ForestStab { .. } => (None, Some(&[K::Stab]), false),
+            GroundRule::LargeDealt { .. } => (None, None, false),
+            GroundRule::Wading { .. } | GroundRule::Trench { .. } => (Some(Side::Attacker), None, true),
+            GroundRule::Uphill { .. } => (Some(Side::Defender), Some(&[K::Charge]), true),
         };
-        RuleReach { side, kinds, first_round }
+        let units = match self {
+            GroundRule::LargeDealt { .. } => RuleUnits::Large,
+            GroundRule::Wading { .. } => RuleUnits::NotRiver,
+            _ => RuleUnits::All,
+        };
+        RuleReach { side, kinds, first_round, units }
     }
 }
 
@@ -285,6 +348,12 @@ pub struct Params {
     pub forest_ranged_pct: i32,
     pub hills_attacker_pct: i32,
     pub hills_defender_ranged_pct: i32,
+    /// The ground's lines (docs/ENGAGEMENTS.md, "The ground"): STAB in a forest or jungle; a
+    /// large unit's hits on open ground and in a forest, jungle or marsh; wading.
+    pub forest_stab_pct: i32,
+    pub open_large_pct: i32,
+    pub rough_large_pct: i32,
+    pub wading_pct: i32,
 }
 
 impl Default for Params {
@@ -313,6 +382,10 @@ impl Default for Params {
             forest_ranged_pct: 50,
             hills_attacker_pct: 75,
             hills_defender_ranged_pct: 125,
+            forest_stab_pct: 150,
+            open_large_pct: 120,
+            rough_large_pct: 75,
+            wading_pct: 50,
         }
     }
 }
@@ -355,6 +428,10 @@ impl Params {
             forest_ranged_pct: d.engagement_forest_ranged_percent,
             hills_attacker_pct: d.engagement_hills_attacker_percent,
             hills_defender_ranged_pct: d.engagement_hills_defender_ranged_percent,
+            forest_stab_pct: d.engagement_forest_stab_percent,
+            open_large_pct: d.engagement_open_large_percent,
+            rough_large_pct: d.engagement_rough_large_percent,
+            wading_pct: d.engagement_wading_percent,
         }
     }
 }
@@ -420,6 +497,8 @@ pub struct Fighter {
     pub row: u8,
     /// Two cells side by side (`lane` and `lane + 1`).
     pub large: bool,
+    /// It crosses rivers freely (`bRiver`): no wading.
+    pub river: bool,
     /// Maximum HP (100% of the damage field).
     pub max_hp: i32,
     /// HP at the start of the battle, in centi-HP; 1..=`max_hp * 100`.
@@ -516,6 +595,7 @@ impl Fighter {
             lane: 0,
             row: 0,
             large: false,
+            river: false,
             max_hp,
             hp: max_hp * 100,
             speed: 4,
@@ -682,6 +762,30 @@ impl Formation {
         if g.hills && !attacker && shot_or_stone {
             x.mul(p.hills_defender_ranged_pct);
         }
+        if g.forest && kind == ActionKind::Stab {
+            x.mul(p.forest_stab_pct);
+        }
+        if self.fighters[h].large {
+            if g.open {
+                x.mul(p.open_large_pct);
+            } else if g.forest || g.marsh {
+                x.mul(p.rough_large_pct);
+            }
+        }
+    }
+
+    /// The ground's first-round percentages on a hit by `h` in round `round` (wading, the
+    /// Trench), multiplied into `x`.
+    fn ground_round_pcts(&self, h: usize, round: i32, x: &mut Pcts) {
+        if round != 1 || self.fighters[h].side != Side::Attacker {
+            return;
+        }
+        if self.ground.crossing && !self.fighters[h].river {
+            x.mul(self.params.wading_pct);
+        }
+        if self.ground.trench_pct != 0 {
+            x.mul(self.ground.trench_pct);
+        }
     }
 
     /// The expected damage of a hit of `kind` (as it is fought: a charge where flanking does not
@@ -713,8 +817,9 @@ impl Formation {
             x.mul(p.spell_pct);
         }
         self.ground_pcts(h, t, kind, &mut x);
-        // Card: a charge that reaches anywhere (more_cards.rs).
-        if kind == ActionKind::Charge && round == 1 && self.flanks(h) {
+        self.ground_round_pcts(h, round, &mut x);
+        // Card: a charge that reaches anywhere (more_cards.rs). No bonus charging uphill.
+        if kind == ActionKind::Charge && round == 1 && self.flanks(h) && !(self.ground.hills && self.fighters[h].side == Side::Attacker) {
             x.mul(100 + self.params.charge_bonus);
         }
         x.mul(p.pct);
@@ -1705,16 +1810,25 @@ impl<'a> Run<'a> {
 
 /// The auto formation's order of a unit's kind (the action of the row it prefers), lowest first:
 /// anti-flanking strikers, strikers, shooters, chargers, casters, healers, bombards, stabbers
-/// (docs/ENGAGEMENTS.md, "The auto formation"): Line's pick order, [`TacticKind`]'s.
+/// (docs/ENGAGEMENTS.md, "The auto formation"), then units that do nothing.
 pub fn kind_pick_order(kind: ActionKind, anti_flank: bool) -> i32 {
-    TacticKind::of(kind, anti_flank).pick_order()
+    match kind {
+        ActionKind::Strike if anti_flank => 1,
+        ActionKind::Strike => 2,
+        ActionKind::Shoot => 3,
+        ActionKind::Charge => 4,
+        ActionKind::Spell => 5,
+        ActionKind::Heal => 6,
+        ActionKind::Bombard => 7,
+        ActionKind::Stab => 8,
+        ActionKind::None => 9,
+    }
 }
 
 /// A unit the auto formation may place ([`auto_arrange`]).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Candidate {
-    /// Its kind's place in Line's order ([`kind_pick_order`], lowest first; [`TacticKind`]'s
-    /// discriminant).
+    /// Its kind's place in the auto formation's order ([`kind_pick_order`], lowest first).
     pub pick_order: i32,
     /// Its rank preference: the rows in the order it is placed in them (`engage_row_order`).
     pub row_order: [u8; ROWS],
@@ -1726,22 +1840,9 @@ pub struct Candidate {
     /// It may fill the river slots (`bRiver`: it crosses rivers freely): only such units fill the
     /// slots above `ordinary` ([`auto_arrange`]).
     pub river: bool,
-    /// A veteran for the Vanguard tactic: the Hero promotion, or level `TACTIC_VETERAN_LEVEL` or
-    /// above (docs/TACTICS.md).
-    pub veteran: bool,
 }
 
 impl Candidate {
-    /// Its kind ([`TacticKind`]; a pick order that is none of Line's reads as `None`).
-    pub fn kind(&self) -> TacticKind {
-        TacticKind::from_pick_order(self.pick_order).unwrap_or(TacticKind::None)
-    }
-
-    /// A guard: a strike or a charge (docs/TACTICS.md, section 2).
-    pub fn guard(&self) -> bool {
-        self.kind().guard()
-    }
-
     fn size(&self) -> i32 {
         1 + self.large as i32
     }
@@ -1761,7 +1862,7 @@ pub struct Placement {
     pub row: u8,
 }
 
-/// The rules' auto formation in Line, the default tactic (the prototype's `autoArrange`): one
+/// The rules' auto formation (the prototype's `autoArrange`): one
 /// unit of each kind first, in the kinds' pick order, then the rest in that order, each kind's
 /// healthy units first and the strongest first (a large unit's value counts double), while the
 /// slots last (a large unit needs 2; units that cannot fill river slots at most `ordinary` of
@@ -1769,7 +1870,7 @@ pub struct Placement {
 /// rank preference with room, the lanes nearest the centre first (then the lower). A unit with no
 /// room is left out. In candidate order.
 pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32) -> Vec<Placement> {
-    auto_arrange_around(cands, lanes, slots, ordinary, &[], &TacticKnobs::line())
+    auto_arrange_around(cands, lanes, slots, ordinary, &[])
 }
 
 /// The cells of `n` Sentinels on a side of `lanes` lanes (docs/SIEGES.md): the front row, the
@@ -1808,14 +1909,7 @@ impl Grid {
         (2 * l as i32 + large as i32 - (self.lanes as i32 - 1)).abs()
     }
 
-    /// The lanes from the centre out (then the lower).
-    fn lanes_out(&self) -> Vec<usize> {
-        let mut ls: Vec<usize> = (0..self.lanes).collect();
-        ls.sort_by_key(|&l| (self.centre(l, false), l));
-        ls
-    }
-
-    /// The cell of row `r` Line's placement gives candidate `c` (the lanes nearest the centre
+    /// The cell of row `r` the auto formation gives candidate `c` (the lanes nearest the centre
     /// first; `larges_left`: other large units still to place), if any is free.
     fn cell_in_row(&self, c: &Candidate, r: usize, larges_left: usize) -> Option<usize> {
         let mut free: Vec<usize> = (0..self.lanes).filter(|&l| if c.large { self.free(l, r) && self.free(l + 1, r) } else { self.free(l, r) }).collect();
@@ -1836,7 +1930,7 @@ impl Grid {
         out.push(Placement { unit: i, lane: l as u8, row: r as u8 });
     }
 
-    /// Line's placement of `seq`, in that order: each unit in the first row of `rows(c)` with
+    /// The placement of `seq`, in that order: each unit in the first row of `rows(c)` with
     /// room. A unit with no room is left out.
     fn place_in_rows(&mut self, out: &mut Vec<Placement>, cands: &[Candidate], seq: &[usize], rows: impl Fn(&Candidate) -> [u8; ROWS]) {
         let mut larges_left = seq.iter().filter(|&&i| cands[i].large).count();
@@ -1853,95 +1947,45 @@ impl Grid {
     }
 }
 
-/// [`auto_arrange`] with the cells in `blocked` already taken (a city's Sentinels), arranged by
-/// the tactic whose knobs are `knobs` (docs/TACTICS.md, section 3). With Line's knobs
-/// ([`TacticKnobs::line`]) it is the auto formation as it was.
+/// [`auto_arrange`] with the cells in `blocked` already taken (a city's Sentinels).
 ///
-/// **Selection.** A screen first (`screen_per_lane` guards per lane with a free front cell, the
-/// healthy and then the strongest first, a large one screening two lanes); then the candidates in
-/// the tactic's pick order, the healthy and then the strongest first within a kind, one of each
-/// kind before the rest when `one_of_each`; each while the slots last (a large unit needs 2; the
-/// river rule).
+/// **Selection.** The candidates in their kinds' pick order, the healthy and then the strongest
+/// first within a kind, one of each kind before the rest; each while the slots last (a large unit
+/// needs 2; the river rule).
 ///
-/// **Placement.** `Line`: large units first, then `place_first` kinds, each in the first row of
-/// its rank preference with room, the lanes nearest the centre first. `Vanguard`: when the side has
-/// veteran guards and its guards that are no veterans are at least as many as its lanes whose front
-/// cell is free once the large units stand, first, lanes from the centre out, a guard that is no
-/// veteran (the strongest first) in front of a veteran guard (the most valuable first) in the
-/// middle, while there are both; then Line's placement of the rest. Otherwise exactly Line's.
-pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &TacticKnobs) -> Vec<Placement> {
-    let chosen = arrange_select(cands, lanes, slots, ordinary, blocked, knobs);
+/// **Placement.** Large units first, each in the first row of its rank preference with room, the
+/// lanes nearest the centre first.
+pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)]) -> Vec<Placement> {
+    let mut seq = arrange_select(cands, slots, ordinary);
     let mut grid = Grid::new(lanes, blocked);
     let mut out: Vec<Placement> = Vec::new();
-    let place_first = |c: &Candidate| knobs.place_first.contains(&c.kind());
-    match knobs.placement {
-        TacticPlacement::Line => {
-            let mut seq = chosen.clone();
-            // Stable: large units first, then the kinds placed first, each in the order taken.
-            seq.sort_by_key(|&i| (!cands[i].large, !place_first(&cands[i])));
-            grid.place_in_rows(&mut out, cands, &seq, |c| c.row_order);
-        }
-        TacticPlacement::Vanguard => {
-            let larges: Vec<usize> = chosen.iter().copied().filter(|&i| cands[i].large).collect();
-            grid.place_in_rows(&mut out, cands, &larges, |c| c.row_order);
-            let small_guard = |i: usize| !cands[i].large && cands[i].guard();
-            let mut vets: Vec<usize> = chosen.iter().copied().filter(|&i| small_guard(i) && cands[i].veteran).collect();
-            vets.sort_by_key(|&i| (std::cmp::Reverse(cands[i].weight()), i));
-            let mut fronts: Vec<usize> = chosen.iter().copied().filter(|&i| small_guard(i) && !cands[i].veteran).collect();
-            fronts.sort_by_key(|&i| (std::cmp::Reverse(cands[i].weight()), i));
-            // The cover: a guard that is no veteran for each lane whose front cell is free once
-            // the large units stand (a full front row of cover). Without it, Line.
-            let free_front = (0..grid.lanes).filter(|&l| grid.free(l, 0)).count();
-            if vets.is_empty() || fronts.len() < free_front {
-                grid = Grid::new(lanes, blocked);
-                out.clear();
-                let mut seq = chosen.clone();
-                seq.sort_by_key(|&i| (!cands[i].large, !place_first(&cands[i])));
-                grid.place_in_rows(&mut out, cands, &seq, |c| c.row_order);
-            } else {
-                let (mut vi, mut fi) = (0, 0);
-                for l in grid.lanes_out() {
-                    if vi >= vets.len() || fi >= fronts.len() {
-                        break;
-                    }
-                    if grid.free(l, 0) && grid.free(l, 1) {
-                        grid.put(&mut out, cands, fronts[fi], l, 0);
-                        grid.put(&mut out, cands, vets[vi], l, 1);
-                        fi += 1;
-                        vi += 1;
-                    }
-                }
-                let rest: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !out.iter().any(|p| p.unit == i)).collect();
-                grid.place_in_rows(&mut out, cands, &rest, |c| c.row_order);
-            }
-        }
-    }
+    // Stable: large units first, each in the order taken.
+    seq.sort_by_key(|&i| !cands[i].large);
+    grid.place_in_rows(&mut out, cands, &seq, |c| c.row_order);
     out.sort_by_key(|p| p.unit);
     out
 }
 
 /// The auto formation's selection (see [`auto_arrange_around`]): the candidates that fight, in
 /// the order they were taken.
-fn arrange_select(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &TacticKnobs) -> Vec<usize> {
-    // A kind's rank in the tactic's pick order: Line's order when the tactic gives none; kinds the
-    // tactic leaves out after the others, in Line's order.
-    let rank = |c: &Candidate| -> (u8, i32) {
-        if knobs.pick_order.is_empty() {
-            return (0, c.pick_order);
-        }
-        match knobs.pick_order.iter().position(|&k| k == c.kind()) {
-            Some(i) => (0, i as i32),
-            None => (1, c.pick_order),
-        }
-    };
+fn arrange_select(cands: &[Candidate], slots: i32, ordinary: i32) -> Vec<usize> {
     let mut order: Vec<usize> = (0..cands.len()).collect();
     order.sort_by(|&x, &y| {
         let (a, b) = (&cands[x], &cands[y]);
-        rank(a).cmp(&rank(b)).then(b.healthy.cmp(&a.healthy)).then(b.weight().cmp(&a.weight())).then(x.cmp(&y))
+        a.pick_order.cmp(&b.pick_order).then(b.healthy.cmp(&a.healthy)).then(b.weight().cmp(&a.weight())).then(x.cmp(&y))
     });
     let (mut used, mut non_river) = (0, 0);
     let mut chosen: Vec<usize> = Vec::new();
-    let mut take = |i: usize, chosen: &mut Vec<usize>| -> bool {
+    let mut first: Vec<usize> = Vec::new();
+    let mut rest: Vec<usize> = Vec::new();
+    for i in order {
+        if !first.iter().any(|&j| cands[j].pick_order == cands[i].pick_order) {
+            first.push(i);
+        } else {
+            rest.push(i);
+        }
+    }
+    for i in first.into_iter().chain(rest) {
         let c = &cands[i];
         if used + c.size() <= slots && (c.river || non_river + c.size() <= ordinary) {
             chosen.push(i);
@@ -1949,40 +1993,7 @@ fn arrange_select(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blo
             if !c.river {
                 non_river += c.size();
             }
-            true
-        } else {
-            false
         }
-    };
-    if knobs.screen_per_lane > 0 {
-        let front = (0..lanes).filter(|&l| !blocked.contains(&(l, 0))).count() as i32;
-        let need = knobs.screen_per_lane * front;
-        let mut guards: Vec<usize> = (0..cands.len()).filter(|&i| cands[i].guard()).collect();
-        guards.sort_by(|&x, &y| {
-            let (a, b) = (&cands[x], &cands[y]);
-            b.healthy.cmp(&a.healthy).then(b.weight().cmp(&a.weight())).then(x.cmp(&y))
-        });
-        let mut covered = 0;
-        for i in guards {
-            if covered >= need {
-                break;
-            }
-            if take(i, &mut chosen) {
-                covered += cands[i].size();
-            }
-        }
-    }
-    let mut first: Vec<usize> = Vec::new();
-    let mut rest: Vec<usize> = Vec::new();
-    for &i in order.iter().filter(|i| !chosen.contains(i)) {
-        if knobs.one_of_each && !first.iter().any(|&j| rank(&cands[j]) == rank(&cands[i])) {
-            first.push(i);
-        } else {
-            rest.push(i);
-        }
-    }
-    for i in first.into_iter().chain(rest) {
-        take(i, &mut chosen);
     }
     chosen
 }

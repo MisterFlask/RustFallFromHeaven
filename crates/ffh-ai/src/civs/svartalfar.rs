@@ -48,7 +48,7 @@ fn settled_great_people(g: &Game, c: CityId) -> i32 {
 }
 
 /// Kidnappers need this much base strength (x 8 = the success chance in percent).
-const MIN_STRENGTH: i32 = 4;
+const MIN_ATTACK: i32 = 40;
 
 /// The team whose war is near enough for a Kidnap (see the module doc), if it has great people
 /// settled in a city.
@@ -69,14 +69,14 @@ fn kidnapper(g: &Game, c: CityId, threat: i32) -> Option<Choice> {
         return None;
     }
     let recon = d.ty::<UnitCombatType>("UNITCOMBAT_RECON")?;
-    if g.players[p].units.iter().any(|&u| g.unit_get_unit_combat_type(u) == Some(recon) && g.unit_base_combat_str(u) >= MIN_STRENGTH) {
+    if g.players[p].units.iter().any(|&u| g.unit_get_unit_combat_type(u) == Some(recon) && g.unit_attack_rating(u) >= MIN_ATTACK) {
         return None;
     }
     let best = g.players[p].cities.iter().copied().max_by_key(|&o| (g.city_yield_rate(o, YieldType::YIELD_PRODUCTION), std::cmp::Reverse(o)));
     if best != Some(c) {
         return None;
     }
-    let u = d.units.keys().filter(|&u| d.units[u].unit_combat_type == Some(recon) && d.units[u].combat >= MIN_STRENGTH && g.city_can_train(c, u, false, false, false, false)).max_by_key(|&u| (d.units[u].combat, std::cmp::Reverse(u)))?;
+    let u = d.units.keys().filter(|&u| d.units[u].unit_combat_type == Some(recon) && d.units[u].attack_rating() >= MIN_ATTACK && g.city_can_train(c, u, false, false, false, false)).max_by_key(|&u| (d.units[u].attack_rating(), std::cmp::Reverse(u)))?;
     crate::trace!(g, p, "{}: {} to kidnap", g.cities[c].name, d.units[u].base.type_);
     Some(Choice::Train(u, UnitAIType::UNITAI_EXPLORE))
 }
@@ -87,7 +87,7 @@ fn kidnap(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let p = v.p;
     let Some(spell) = d.ty::<SpellType>("SPELL_KIDNAP") else { return false };
     let recon = d.ty::<UnitCombatType>("UNITCOMBAT_RECON");
-    if recon.is_none() || g.unit_get_unit_combat_type(u) != recon || g.groups[grp].units.len() != 1 || g.unit_base_combat_str(u) < MIN_STRENGTH {
+    if recon.is_none() || g.unit_get_unit_combat_type(u) != recon || g.groups[grp].units.len() != 1 || g.unit_attack_rating(u) < MIN_ATTACK {
         return false;
     }
     let Some(target) = kidnap_target(g, p) else { return false };

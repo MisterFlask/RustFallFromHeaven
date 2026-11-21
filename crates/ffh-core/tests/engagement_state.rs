@@ -67,7 +67,7 @@ fn land_attacks_on_land_are_engagements() {
         let water = g.map.plot_xy(wx, wy).unwrap();
         assert!(!g.engage_applies(u, water), "an attack on water is a duel");
         // A ship attacking land is not an engagement.
-        let ship = g.d.units.keys().find(|&t| g.d.units[t].domain_type == Some(DomainType::DOMAIN_SEA) && g.d.units[t].combat > 0).unwrap();
+        let ship = g.d.units.keys().find(|&t| g.d.units[t].domain_type == Some(DomainType::DOMAIN_SEA) && g.d.units[t].strength > 0).unwrap();
         let s = g.player_init_unit(PlayerId(0), ship, wx, wy, None, None);
         assert!(!g.engage_applies(s, land));
     }
@@ -191,10 +191,9 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
     let log = BattleLog {
         slots: [0, 1].map(|_| SideSlots { base: 8, changes: vec![SlotChange { src: SlotSource::Hills, delta: -2 }], total: 6, river_only: 0 }),
         lanes: [3, 3],
-        ground: Ground { city: false, forest: false, hills: true },
+        ground: Ground { city: false, forest: false, hills: true, open: false, marsh: false, crossing: false, trench_pct: 0 },
         rules: vec![GroundRule::HillsAttacker { pct: 75 }, GroundRule::HillsDefenderRanged { pct: 125 }, GroundRule::Charge { pct: 200 }],
         ordered: [false, false],
-        tactics: [ffh_data::BattleTacticType(0); 2],
         fighters: vec![fighter(Side::Attacker, UnitId(1000), LogFate::Standing), fighter(Side::Defender, UnitId(1001), LogFate::Fell { by: 0, round: 2 })],
         pairs: vec![LogPair { h: 0, t: 1, a_x100: 300, dv_x100: 375, mean: 1777, ma_x100: 300, md_x100: 375, spell_pct: 100, magic_mean: 1777, a_extra: vec![], dv_extra: vec![] }],
         events: vec![
@@ -219,7 +218,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         from: plot,
         place: PlotSnap { x: g.cities[c].x, y: g.cities[c].y, terrain: g.map.plots[plot].terrain_type, feature: None, hills: false, river_crossing: false, city: None },
         sides: [side(1), side(2)],
-        outcome: Outcome { result: EngageResult::Taken, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, sentinels: 0, sentinels_breached: 0, hp_lost: [800, 2400], loser: Some(Side::Defender), pushed: 0 },
+        outcome: Outcome { result: EngageResult::Taken, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, sentinels: 0, sentinels_breached: 0, hp_lost: [800, 2400], loser: Some(Side::Defender), decided_by: DecidedBy::Damage, pushed: 0 },
         log: logged.then(|| Box::new(log)),
     }
 }

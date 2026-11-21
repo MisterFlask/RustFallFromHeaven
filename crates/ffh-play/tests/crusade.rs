@@ -86,7 +86,7 @@ fn a_call_waits_in_pending_and_the_human_answers_and_lends() {
     let p = s.pending();
     assert_eq!(p.crusade_calls.len(), 1);
     assert_eq!(p.crusade_calls[0].crusade, id.0);
-    assert!(p.crusade_calls[0].lendable >= 3 * s.g.crusade_unit_strength(mine[0]));
+    assert!(p.crusade_calls[0].lendable >= 3 * s.g.crusade_unit_force(mine[0]));
     assert!(s.g.crusade(id).unwrap().calls.iter().any(|c| c.player == ALLY && c.answer.is_some()));
     // The end-turn gate counts it.
     match s.execute(&Command::EndTurn { force: false }) {
@@ -94,7 +94,7 @@ fn a_call_waits_in_pending_and_the_human_answers_and_lends() {
         other => panic!("{other:?}"),
     }
     // Answer: pledge.
-    let strength = 2 * s.g.crusade_unit_strength(mine[0]);
+    let strength = 2 * s.g.crusade_unit_force(mine[0]);
     applied(&mut s, Command::CrusadeAnswer { crusade: id.0, strength: Some(strength) });
     assert!(s.pending().crusade_calls.is_empty());
     assert!(matches!(s.execute(&Command::CrusadeAnswer { crusade: id.0, strength: None }), Err(CmdErr::Cannot(_))), "answered once");
@@ -160,7 +160,7 @@ fn the_human_borrows_and_lends_through_propose_loan() {
         s.g.team_set_has_tech(t, gold_tech, true, None, false, false);
     }
     let theirs = warriors(&mut s, ALLY, 6);
-    let one = s.g.crusade_unit_strength(theirs[0]);
+    let one = s.g.crusade_unit_force(theirs[0]);
 
     // Borrow, paying gold: accepted, or countered (then the counter is resent and accepted).
     let gold = |n: i32| vec![TradeData { item_type: TradeableItem::TRADE_GOLD, data: n, offering: false, hidden: false }];
@@ -228,7 +228,7 @@ fn troops_are_an_item_of_the_trade_screen() {
     let r = s.query(&Query::Group { units: mine.clone() }).unwrap();
     assert!(r.req_arr("actions").unwrap().iter().all(|a| a.req_str("kind") != Ok("crusade")));
     // The loan as the trade screen sends it: our units picked, a gift with it.
-    let one = s.g.crusade_unit_strength(mine[0]);
+    let one = s.g.crusade_unit_force(mine[0]);
     let cmd = Command::ProposeLoan { to: ALLY, lend: true, target, defend: false, strength: 2 * one, duration: 5, give: vec![], get: vec![], units: mine.clone() };
     let accepted = match s.execute(&cmd) {
         Ok(CmdOk::Applied { accepted, .. }) => accepted,

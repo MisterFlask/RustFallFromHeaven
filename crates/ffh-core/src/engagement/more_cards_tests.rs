@@ -122,7 +122,7 @@ fn a_bastion_brings_two_grown_sentinels_that_hold_no_plot() {
     assert_eq!((s.slots.field_sentinels, s.slots.sentinels), (2, 0));
     assert_eq!(s.slots.att(), w.g.engage_slots(&HitCtx::new(from, to)).att(), "they cost the attacker no slot");
     // A battle: the Bastion falls only to the whole force; with it alone, its Sentinels still fight.
-    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, formation: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
+    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, squad: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
     let r = w.g.battle_report(out.report).expect("a report");
     assert_eq!(r.outcome.sentinels, 2);
     if !w.g.units.contains(bastion) || w.g.unit_is_dead(bastion) {

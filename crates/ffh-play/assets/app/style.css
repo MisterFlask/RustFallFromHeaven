@@ -285,6 +285,57 @@ button.calc .target-line { text-decoration: underline dotted color-mix(in srgb, 
 .tip-combat .odds { font-size: 15px; color: var(--c-vellum); display: flex; align-items: center; gap: 6px; }
 .tip-combat .odds.bad { color: var(--c-scarlet); }
 .tip-combat .mods { font-size: 12px; color: var(--dim); }
+/* The unit card (unit_card.js): a unit's tooltip as a small character screen. The header (portrait,
+   name, level, HP and XP bars) over a gilt rule, the eight battle numbers as tiles (a number the
+   unit does not use greyed in place), the three rows of a battle (the best one gilt, the one it
+   stands in outlined), its promotions, its state as chips, the click's hint. */
+.unit-card {
+  --uc-gold: var(--c-gold); --uc-rule: var(--c-ochre); --uc-tile: var(--c-coal); --uc-edge: var(--c-iron);
+  width: 20rem; max-width: 100%; display: flex; flex-direction: column; gap: 6px;
+  font-family: var(--font); font-size: 13px; line-height: 1.3; color: var(--c-bone);
+}
+.uc-head { display: flex; gap: 8px; align-items: stretch; padding-bottom: 6px; border-bottom: 1px solid var(--uc-rule); }
+.uc-portrait {
+  flex: none; width: 64px; height: 64px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  background: radial-gradient(circle at 50% 70%, var(--c-navy), var(--c-deep) 55%, var(--c-soot)); border: 1px solid var(--uc-rule);
+}
+.uc-portrait > * { max-width: 100%; max-height: 100%; }
+.uc-portrait .figure { margin-bottom: 3px; image-rendering: auto; }
+.uc-abbr { align-self: center; font-size: 20px; color: var(--c-vellum); }
+.uc-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.uc-name { color: var(--c-vellum); font-size: 16px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.uc-sub { font-size: 12px; color: var(--c-stone); }
+.uc-bar { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 6px; font-size: 11px; }
+.uc-bar-k { color: var(--c-stone); font-weight: 700; letter-spacing: 0.05em; }
+.uc-bar-track { position: relative; height: 7px; overflow: hidden; background: var(--c-void); border: 1px solid var(--uc-edge); }
+.uc-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--c-needle); }
+.uc-bar.low .uc-bar-fill { background: var(--c-crimson); }
+.uc-bar.xp .uc-bar-fill { background: var(--c-tide); }
+.uc-bar-v { min-width: 3.4em; text-align: right; color: var(--c-vellum); font-variant-numeric: tabular-nums; }
+.uc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.uc-stat { display: flex; flex-direction: column; align-items: center; padding: 1px 0 2px; background: var(--uc-tile); border: 1px solid var(--uc-edge); }
+.uc-stat-k { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--c-sand); }
+.uc-stat-v { font-size: 15px; line-height: 1.2; color: var(--c-vellum); font-variant-numeric: tabular-nums; }
+.uc-stat.off { opacity: 0.45; }
+.uc-stat.off .uc-stat-k, .uc-stat.off .uc-stat-v { color: var(--c-ash); }
+.uc-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-stone); margin-bottom: -3px; }
+.uc-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.uc-row { padding: 1px 4px 2px; text-align: center; background: var(--uc-tile); border: 1px solid var(--uc-edge); }
+.uc-row-k { font-size: 11px; color: var(--c-stone); }
+.uc-row-v { color: var(--c-vellum); }
+.uc-row-v.none { color: var(--c-ash); }
+.uc-row.best { border-color: var(--uc-gold); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--uc-gold) 35%, transparent); }
+.uc-best { color: var(--uc-gold); }
+.uc-row.here { outline: 1px dashed var(--c-frost); outline-offset: 1px; }
+.uc-row-here { font-size: 10px; color: var(--c-frost); }
+.uc-warn { font-size: 12px; color: var(--c-scarlet); }
+.uc-promos { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.uc-promo-name { font-size: 11px; color: var(--c-sand); }
+.uc-promo-name + .uc-promo-name::before { content: "· "; color: var(--c-ash); }
+.uc-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.uc-chips .badge { margin-left: 0; }
+.badge.squad { color: var(--c-vellum); border-color: var(--c-tide); }
+.uc-hint { padding-top: 4px; border-top: 1px solid var(--uc-edge); font-size: 11px; color: var(--c-ash); }
 
 #side { background: var(--panel); border-left: 1px solid var(--c-ash); box-shadow: inset 2px 0 0 var(--c-soot), inset 3px 0 0 var(--c-iron); overflow: auto; padding: 10px 12px; }
 .panel-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--c-ash); }
@@ -1494,3 +1545,49 @@ tr.empire-city.refused { opacity: 0.75; cursor: not-allowed; }
 .toast.house-alert.secession { border-left-color: var(--warn); }
 .toast.house-alert .leader-portrait { flex: none; border-radius: 4px; }
 .toast.house-alert .house-alert-mark { color: var(--accent); }
+
+/* Squads (squads.js; docs/ENGAGEMENTS.md, "Squads"): the squad board, one card per squad with its
+   3 by 3 grid (front row at the top, toward the enemy), a unit's figure in its cell (a large unit
+   over two), a red ! on a unit outside its best row; the New squad drop zone; the ghost under the
+   pointer while a unit is dragged. */
+.sq-board { display: flex; flex-direction: column; gap: 8px; }
+.sq-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sq-list { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+.sq-card { width: 196px; padding: 6px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.22); }
+.sq-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.sq-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.sq-name { display: flex; align-items: center; gap: 4px; margin-right: auto; font-weight: 700; color: var(--em, var(--fg)); cursor: pointer; }
+.sq-name input { accent-color: var(--accent); margin: 0; }
+.sq-badge { font-size: 11px; padding: 0 4px; border: 1px solid; line-height: 16px; }
+.sq-badge.auto { color: var(--c-glint); border-color: var(--c-tide); }
+.sq-badge.hand { color: var(--accent); border-color: var(--c-khaki); }
+.sq-count { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.sq-body { font-size: 11px; margin: -2px 0 4px; }
+.sq-grid { display: grid; grid-template-columns: 40px repeat(3, 1fr); grid-template-rows: repeat(3, 48px); gap: 3px; }
+.sq-rlab { align-self: center; font-size: 11px; color: var(--dim); }
+.sq-cell { border: 1px dashed var(--line); background: rgba(255, 255, 255, 0.03); }
+.sq-cell.front { background: rgba(255, 255, 255, 0.07); }
+.sq-cell.target { border-style: solid; border-color: var(--accent); }
+.sq-cell.drop, .sq-unit.drop { outline: 2px solid var(--c-glint); outline-offset: -2px; background: rgba(63, 140, 210, 0.3); }
+.sq-unit {
+  position: relative; z-index: 1; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  border: 1px solid var(--line); background: rgba(10, 18, 34, 0.86); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.sq-unit:focus-visible { outline: 2px solid var(--c-glint); outline-offset: 1px; }
+.sq-unit.picked { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.sq-unit.dragging { opacity: 0.4; }
+.sq-unit .figure { pointer-events: none; margin-bottom: 2px; }
+.sq-abbr { margin: auto; color: var(--fg); }
+.sq-lv { position: absolute; left: 2px; top: 0; font: 10px var(--mono); color: var(--fg); text-shadow: 0 1px 0 #000; }
+.sq-off { position: absolute; right: 3px; top: 0; color: var(--c-scarlet); font-weight: 800; font-size: 14px; line-height: 16px; text-shadow: 0 1px 0 #000; }
+.sq-foot { display: flex; justify-content: flex-end; margin-top: 4px; }
+.sq-new {
+  width: 120px; min-height: 120px; display: grid; place-items: center; padding: 6px; text-align: center;
+  border: 1px dashed var(--accent); color: var(--accent);
+}
+.sq-new.target { border-style: solid; }
+.sq-new.drop { background: rgba(63, 140, 210, 0.3); }
+.sq-ghost { position: fixed; z-index: 1000; pointer-events: none; transform: translate(-50%, -60%); opacity: 0.9; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6)); }
+.badge.squad { color: var(--accent); border-color: var(--c-khaki); }
+.army-squads > summary { cursor: pointer; }
+.army-squads .sq-board { margin-top: 6px; }

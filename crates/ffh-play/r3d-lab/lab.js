@@ -35,10 +35,14 @@
 //   &ritual=1                                  (any scene with cities) the city nearest the camera's
 //                                              point performs a ritual (its beam and storm, ritual.js);
 //                                              &ritual=all every city, &ritual=id:3,id:5 those ids
+//        &ritualType=PROJECT_RITUAL_RAGING_SEAS    the ritual (its look); cycle: each city another,
+//                                              in RITUAL_LOOK_OF's order (from the first look:
+//                                              &ritualFrom=N)
 
 import { S, setData, setView, setMap } from "/app/state.js";
 import { Map3D } from "/app/r3d/map3d.js";
 import { MapHd2d } from "/app/r3d/hd2d/index.js";
+import { RITUAL_LOOK_OF } from "/app/r3d/ritual.js";
 import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d, mana, sites, moods } from "./scenes.js";
 
 const q = new URLSearchParams(location.search);
@@ -88,7 +92,14 @@ async function main() {
     const [fx, fy] = [Number(q.get("cx") ?? scene.focus[0]), Number(q.get("cy") ?? scene.focus[1])];
     const near = cs.reduce((a, c) => (Math.hypot(c.x + 0.5 - fx, c.y + 0.5 - fy) < Math.hypot(a.x + 0.5 - fx, a.y + 0.5 - fy) ? c : a));
     const ids = ritual.split(",").filter((s) => s.startsWith("id:")).map((s) => Number(s.slice(3)));
-    for (const c of cs) if (ritual === "all" || ids.includes(c.id) || (!ids.length && c === near)) c.ritual = "Ritual";
+    const type = q.get("ritualType");
+    const types = Object.keys(RITUAL_LOOK_OF);
+    let k = Number(q.get("ritualFrom") ?? 0);
+    for (const c of cs) {
+      if (!(ritual === "all" || ids.includes(c.id) || (!ids.length && c === near))) continue;
+      c.ritual = "Ritual";
+      c.ritual_type = type === "cycle" ? types[k++ % types.length] : type ?? undefined;
+    }
   }
   setView(scene.view);
   // &wrap=1 on any scene: its map wraps east-west (a game's map does, and the ground's noise is

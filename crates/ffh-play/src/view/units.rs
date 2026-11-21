@@ -7,6 +7,7 @@
 //! the ports in [`crate::selection`]. Each action carries the command that performs it (`cmd`,
 //! the canonical request form), so a client (or the fuzz test) can send it as is.
 
+use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::path::PathFinder;
 use ffh_core::unit::CombatDetails;
@@ -621,6 +622,20 @@ fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json,
     out
 }
 
+/// A unit's attack and defence ratings and its rating (docs/UNIT_STATS.md, "Ratings": the
+/// sheet's scale, without percentages or situational modifiers) as `attack`, `defense` and
+/// `rating`; for a ship (a type without a stat sheet) its duel strength as `strength` and
+/// `defense_strength` too. Land units have no strength.
+pub(crate) fn unit_ratings(g: &Game, u: UnitId, j: &mut Json) {
+    j.set("attack", g.unit_attack_rating(u));
+    j.set("defense", g.unit_defense_rating(u));
+    j.set("rating", g.unit_rating(u));
+    if g.d.units[g.units[u].unit_type].stats.is_none() {
+        j.set("strength", g.unit_attack_rating(u) / 10);
+        j.set("defense_strength", g.unit_defense_rating(u) / 10);
+    }
+}
+
 /// One of the human's units in detail (the unit panel).
 pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     let g = v.g;
@@ -629,8 +644,7 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     let info = &d.units[unit.unit_type];
     let mut j = unit_json(v, u);
     j.set("name", if unit.name.is_empty() { Json::Null } else { Json::from(crate::names::text(d, &unit.name)) });
-    j.set("strength", g.unit_base_combat_str(u));
-    j.set("defense_strength", g.unit_base_combat_str_defense(u));
+    unit_ratings(g, u, &mut j);
     j.set("domain", Json::idx(g.unit_get_domain_type(u)));
     j.set("unit_combat", Json::opt_idx(info.unit_combat_type));
     j.set("race", Json::opt_idx(unit.race));
@@ -668,6 +682,9 @@ pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
         "busy" => selection::is_busy(g, units),
         "actions" => Json::Arr(if marching.is_some() { Vec::new() } else { actions(v, units) }),
         "marching" => marching,
+        // Squads (docs/ENGAGEMENTS.md, "Squads"): the human's squads on the selection's plot, for
+        // the squad board (`view::squads::plot_squads`).
+        "squads" => crate::view::squads::plot_squads(v, plot, None),
     })
 }
 

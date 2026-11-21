@@ -114,7 +114,7 @@ pub fn building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> i32 
 pub fn build_value(g: &Game, p: PlayerId, plot: PlotIdx, build: BuildType) -> Option<i32> {
     let d = g.d;
     let imp = d.builds[build].improvement?;
-    if d.improvements[imp].engagement_attacker_slots_change >= 0 {
+    if d.improvements[imp].engagement_attacker_first_round_percent == 0 {
         return None;
     }
     let pl = &g.map.plots[plot];

@@ -938,8 +938,10 @@ join now); the faces as paving (redrawn).
 
 ## 6b. A city's ritual
 
-A city whose production is a ritual (its view record's `ritual`, the ritual's name) is marked on
-the map by a column of light and a storm over it (`r3d/ritual.js`; the 3D renderer draws it too):
+A city whose production is a ritual (its view record's `ritual`, the ritual's name, and
+`ritual_type`, its project's type) is marked on the map by a column of light and a storm over it
+(`r3d/ritual.js`; the 3D renderer draws it too). The colours below are the arcane look's (violet);
+each ritual has its own (see "Looks" below).
 
 * **The beam**: a camera-facing strip from the city's centre to nearly the camera's height (out of
   the top of the view), a white core a quarter of its width and a violet halo, streaming upward and
@@ -958,6 +960,21 @@ the map by a column of light and a storm over it (`r3d/ritual.js`; the 3D render
   on the ground, trees and buildings alike.
 * **Motes**: violet and white particles rising round the town (Map3D.sync adds the emitters).
 
+**Looks.** `RITUAL_LOOK_OF` gives each project a look in `RITUAL_LOOKS` (a project without one
+takes `arcane`): the beam's core and halo, the light it casts (the storm's inner bands, the pool at
+its foot, the lightning), the cloud's three tones (depths, body, sunlit faces), the shadow's tint and
+strength, the storm's turn (speed and sense: the Lanun's sea storm and the hells turn clockwise),
+its number of spiral arms, how often lightning flickers (none for Sanctuary, the mist, the night),
+its density, and the motes (colours, sizes, rise; some smoke: hellfire's soot, the Delve's dust,
+the Sidar's mist, the Lanun's spray). The holy, sun, genesis and phoenix looks have light clouds and
+a light shadow; the night, blood and hellfire looks the darkest. A node test
+(`test/r3d-ritual.test.mjs`) checks that every project in projects.jsonc has a look.
+
+**Zoom fade.** The storm hides what lies under it, so it fades as the camera rises (`zoomFade`,
+`RITUAL_LOOK.fade`, by the pixels a plot): whole from 200 px a plot in, about a third at the
+gameplay zoom (96), 6% from 64 out; the shadow keeps at least 20% and the beam 55% (it stays the
+ritual's mark on the far view). The motes do not fade.
+
 Drawn in the overlay stage, after the ground marks and the x-ray figures and before the particles:
 over the finished display colour, so the storm's darks are as chosen, not lifted by the grade. Per
 city the shadow (a quad round the city, depth test off), the storm's three layers (alpha-blended,
@@ -966,7 +983,8 @@ the town's front hides its foot). One program (`ritual` in pipeline.js's list, l
 others), a strip of 8 quads drawn five times a city; nothing drawn or bound while no city holds a
 ritual. It moves with the frame's time, and is a still frame of the same when the map does not
 animate. The lab shows it with `&ritual=1` (the city nearest the camera's point), `&ritual=all` or
-`&ritual=id:3,id:5`.
+`&ritual=id:3,id:5`, and the look with `&ritualType=PROJECT_RITUAL_RAGING_SEAS` (`cycle`: each city
+another).
 
 ## 7. The lab and tools
 

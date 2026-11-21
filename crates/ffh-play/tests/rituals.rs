@@ -460,7 +460,7 @@ fn wellspring_menu_lists_each_mana_type_compactly() {
     // Earth: the staged Earth Elemental's affinity; Fire: no unit of the human's has one.
     let earth = chip(menu_row(&menu, "Earth Mana"), "affinity").expect("the Earth Elemental's affinity");
     let tip: Vec<&str> = arr(&earth, "tip").iter().filter_map(Json::as_str).collect();
-    assert_eq!(tip[0], "Affinity: +1 strength per Earth Mana you own, for Djinn, Dwarven Druid and Earth Elemental.");
+    assert_eq!(tip[0], "Affinity: +10 attack and defense per Earth Mana you own, for Djinn, Dwarven Druid and Earth Elemental.");
     assert!(tip.contains(&"Yours: Earth Elemental."), "{tip:?}");
     assert!(chip(menu_row(&menu, "Fire Mana"), "affinity").is_none(), "no Fire Elemental");
     // The now lines: the first node, and each free-promotion threshold crossed.

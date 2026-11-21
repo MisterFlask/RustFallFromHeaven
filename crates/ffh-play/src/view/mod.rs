@@ -44,6 +44,7 @@ pub mod rituals;
 pub mod sea;
 pub mod seas;
 pub mod speech;
+pub mod squads;
 pub mod text;
 pub mod units;
 
@@ -387,10 +388,12 @@ pub fn cities(v: &Viewer) -> Json {
         // This game's outposts (docs/NAVAL.md, 9.2 and 10): the banner's mark, the list's row.
         crate::view::outposts::city_fields(v, c, &mut j);
         // A ritual under way (its first build a project): its name, the map's and the minimap's
-        // mark. Its plot is visible to every team while it lasts (ffh-core `ffh::rituals`).
+        // mark, and its type (which look the 3D map's beam and storm take: r3d/ritual.js). Its
+        // plot is visible to every team while it lasts (ffh-core `ffh::rituals`).
         if visible || own {
             if let Some(project) = g.city_production_project(c) {
                 j.set("ritual", crate::view::rituals::ritual_name(g.d, project));
+                j.set("ritual_type", g.d.type_name(project));
             }
         }
         if own {
@@ -449,6 +452,9 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("garrison", g.unit_garrison_city(u));
         j.set("army_unit", g.unit_is_army_unit(u));
         j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
+        // Squads (docs/ENGAGEMENTS.md, "Squads"): its squad, its number on the plot, its cell and
+        // whether the squad is Auto (null: in no squad).
+        j.set("squad", squads::unit_squad(g, u));
         // The sea (docs/NAVAL.md): in boats, and a warship's wear (the Sea layer's pip).
         sea::unit_fields(g, u, &mut j);
     }

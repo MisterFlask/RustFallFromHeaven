@@ -88,8 +88,9 @@ until dissolution, by called civs and **volunteers** alike (open question 5: yes
 recalled, and a lender whose units serve against the target cannot trade a peace treaty with it
 (open question 6, **separate peace: no**). Upkeep: none (Host units cost no one anything).
 
-**Contribution.** A unit's value is its combat strength at handover: the better of attack and
-defense with its general combat bonus, x100, **scaled by its health** (so lending wounded units to
+**Contribution.** A unit's value is its force at handover (`crusade_unit_force`; it was its
+strength until 2026-11-21, docs/UNIT_STATS.md section 10): the better of attack and
+defense ratings with its general combat bonus, x10 (an Axeman's 400, shown 40), **scaled by its health** (so lending wounded units to
 die cheaply earns what they are worth). It is credited to the lender once, on the unit's first kill
 of an enemy of the crusade (a combat won against the target bloc) or its death (any cause),
 whichever comes first. Share = credit / all credits. Draft order: descending credit, ties to the

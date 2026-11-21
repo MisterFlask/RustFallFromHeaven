@@ -38,7 +38,6 @@
       "min_area_size": -1,
       "moves": 2,
       "nuke_range": -1,
-      "combat": 7,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -49,9 +48,8 @@
       "power": 28,
       "free_promotions": {"PROMOTION_MARKSMAN": true, "PROMOTION_LIZARDMAN": true, "PROMOTION_HERO": true},
       "immune_to_defensive_strike": true,
-      "combat_defense": 4,
       "tier": 4,
-      "damage_type_combats": {"DAMAGE_POISON": 1}
+      "damage_type_attacks": {"DAMAGE_POISON": 10}
     }
   ],
   "promotions": [

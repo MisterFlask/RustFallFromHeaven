@@ -6,7 +6,7 @@
 //! such ship outside a city is a one-ship fleet; a ship in a city in no fleet is simply a ship.
 //! What a fleet shares with an army: the sync, form / split / join / merge / rename / disband, a
 //! target size, requisition (from coastal cities: the ship sails to the fleet as a recruit
-//! marches), upgrade all. What it has not: a supply line, a battle tactic, a garrison.
+//! marches), upgrade all. What it has not: a supply line, a garrison.
 //!
 //! **Standing orders** (`Army::station`, 7.2), carried out by the rules:
 //!
@@ -72,7 +72,7 @@ impl Game {
     /// animals and not heroes.
     pub fn unit_type_is_fleet_unit(&self, t: UnitType) -> bool {
         let info = &self.d.units[t];
-        info.domain_type == Some(DomainType::DOMAIN_SEA) && !info.animal && (info.combat > 0 || info.cargo_space > 0) && !super::hero_promotion(self.d).is_some_and(|h| info.free_promotions[h])
+        info.domain_type == Some(DomainType::DOMAIN_SEA) && !info.animal && (info.strength > 0 || info.cargo_space > 0) && !super::hero_promotion(self.d).is_some_and(|h| info.free_promotions[h])
     }
 
     /// Whether unit `u` serves in fleets: a fleet unit type, not a summon, not a hero, not the
@@ -138,7 +138,7 @@ impl Game {
         let d = self.d;
         let ok = |t: UnitType| self.unit_type_is_fleet_unit(t) && !d.units[t].unit_class_type.is_some_and(|k| crate::utils::is_limited_unit_class(d, k)) && self.city_can_train(c, t, false, false, false, false);
         let candidates: Vec<UnitType> = d.units.keys().filter(|&t| ok(t)).collect();
-        if let Some(t) = candidates.iter().copied().filter(|&t| d.units[t].combat > 0).max_by_key(|&t| (d.units[t].combat, Reverse(d.units[t].production_cost), Reverse(t))) {
+        if let Some(t) = candidates.iter().copied().filter(|&t| d.units[t].strength > 0).max_by_key(|&t| (d.units[t].strength, Reverse(d.units[t].production_cost), Reverse(t))) {
             return Some((t, UnitAIType::UNITAI_ATTACK_SEA));
         }
         candidates.into_iter().max_by_key(|&t| (d.units[t].cargo_space, Reverse(d.units[t].production_cost), Reverse(t))).map(|t| (t, UnitAIType::UNITAI_ASSAULT_SEA))

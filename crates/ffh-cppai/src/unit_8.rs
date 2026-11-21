@@ -358,7 +358,7 @@ impl Cai {
                         Some(d) => {
                             !g.unit_is_fear(d)
                                 || g.unit_is_immune_to_fear(u)
-                                || g.unit_base_combat_str(u) > g.unit_base_combat_str_defense(d)
+                                || g.unit_attack_rating(u) / 10 > g.unit_defense_rating(d) / 10
                         }
                     };
                     if !hopeful {
@@ -1871,10 +1871,8 @@ impl Cai {
                     }
                     if enemy {
                         let cu = &g.d.units[create_unit];
-                        let mut temp_value = cu.combat;
-                        for dt in g.d.damages.keys() {
-                            temp_value += cu.damage_type_combat.get(dt).copied().unwrap_or(0);
-                        }
+                        // `attack_rating` includes the typed attack points.
+                        let mut temp_value = cu.attack_rating() / 10;
                         temp_value *= 100;
                         temp_value *= info.create_unit_num;
                         value += temp_value;

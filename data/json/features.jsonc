@@ -3,9 +3,8 @@
 // Copyright Firaxis Games 2005
 //
 // Feature
-// iEngagementSlotsChange is this game's own (GAMEOPTION_ENGAGEMENTS): it changes each side's
-//     engagement slots on the plot and replaces the terrain's change where non-zero (forest and
-//     jungle -2).
+// engagement_forest is this game's own (docs/ENGAGEMENTS.md, "The ground"): a forest or jungle
+//     (no charges, arrows and stones fly short, stabs stronger, large units weaker).
 [
   {
     "type": "FEATURE_ICE",
@@ -24,7 +23,7 @@
     "see_through": 1,
     "health_percent": -25,
     "defense": 25,
-    "engagement_slots_change": -2,
+    "engagement_forest": true,
     "growth": 16,
     "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_MARSH": true},
     "advanced_start_remove_cost": 40,
@@ -69,7 +68,7 @@
     "see_through": 1,
     "health_percent": 50,
     "defense": 25,
-    "engagement_slots_change": -2,
+    "engagement_forest": true,
     "growth": 8,
     "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_TUNDRA": true},
     "flammable": true,
@@ -94,7 +93,7 @@
     "movement": 1,
     "see_through": 1,
     "health_percent": 25,
-    "engagement_slots_change": -2,
+    "engagement_forest": true,
     "growth": 8,
     "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_MARSH": true, "TERRAIN_TUNDRA": true},
     "feature_upgrade": "FEATURE_FOREST"
@@ -126,7 +125,7 @@
     "see_through": 1,
     "health_percent": 50,
     "defense": 50,
-    "engagement_slots_change": -2,
+    "engagement_forest": true,
     "no_coast": true,
     "no_river": true,
     "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_TUNDRA": true},

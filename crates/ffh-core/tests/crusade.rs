@@ -140,7 +140,7 @@ fn lending_transfers_ownership_records_the_lender_removes_upkeep_and_declares_wa
     assert!(g.at_war(g.players[host].team, tt), "the Host is at war with the target");
 
     let units: Vec<UnitId> = (0..4).map(|_| unit(&mut g, A, "UNIT_WARRIOR", 3, 4)).collect();
-    let strength: i32 = units.iter().map(|&u| g.crusade_unit_strength(u)).sum();
+    let strength: i32 = units.iter().map(|&u| g.crusade_unit_force(u)).sum();
     let lender_units = g.players[A].units.len();
     let lent = g.crusade_lend(id, A, &units).expect("A can lend");
     assert_eq!(lent, strength);
@@ -521,7 +521,7 @@ fn an_accepted_loan_moves_units_to_a_general_at_war_with_the_target_and_the_lend
     for _ in 0..3 {
         unit(&mut g, A, "UNIT_WARRIOR", 3, 4);
     }
-    let one = g.crusade_unit_strength(g.players[A].units[0]);
+    let one = g.crusade_unit_force(g.players[A].units[0]);
     let id = propose(&mut g, A, 2 * one, 5);
     let host = host_of(&g, id);
     let (ta, tt) = (g.players[A].team, g.players[T].team);
@@ -535,7 +535,7 @@ fn an_accepted_loan_moves_units_to_a_general_at_war_with_the_target_and_the_lend
 fn loan_survivors_return_home_with_promotions_when_the_term_ends() {
     let (mut g, _) = loan_game();
     unit(&mut g, A, "UNIT_WARRIOR", 3, 4);
-    let s = g.crusade_unit_strength(g.players[A].units[0]);
+    let s = g.crusade_unit_force(g.players[A].units[0]);
     let id = propose(&mut g, A, s, 4);
     let host = host_of(&g, id);
     let hu = g.players[host].units[0];
@@ -558,7 +558,7 @@ fn two_allies_lending_against_the_same_target_share_one_general() {
     let (mut g, _) = loan_game();
     unit(&mut g, A, "UNIT_WARRIOR", 3, 4);
     unit(&mut g, C, "UNIT_WARRIOR", 12, 12);
-    let s = g.crusade_unit_strength(g.players[A].units[0]);
+    let s = g.crusade_unit_force(g.players[A].units[0]);
     let id1 = propose(&mut g, A, s, 5);
     let id2 = propose(&mut g, C, s, 8);
     assert_eq!(id1, id2, "one general per borrower and target");
@@ -578,7 +578,7 @@ fn two_allies_lending_against_the_same_target_share_one_general() {
 fn the_borrower_making_peace_ends_the_loan_early() {
     let (mut g, _) = loan_game();
     unit(&mut g, A, "UNIT_WARRIOR", 3, 4);
-    let s = g.crusade_unit_strength(g.players[A].units[0]);
+    let s = g.crusade_unit_force(g.players[A].units[0]);
     let id = propose(&mut g, A, s, 20);
     let (tb, tt) = (g.players[B].team, g.players[T].team);
     g.team_make_peace(tb, tt, true);
@@ -592,7 +592,7 @@ fn the_borrower_making_peace_ends_the_loan_early() {
 fn cities_the_general_captures_go_to_the_borrower() {
     let (mut g, _) = loan_game();
     unit(&mut g, A, "UNIT_WARRIOR", 20, 4);
-    let s = g.crusade_unit_strength(g.players[A].units[0]);
+    let s = g.crusade_unit_force(g.players[A].units[0]);
     let id = propose(&mut g, A, s, 20);
     let host = host_of(&g, id);
     let hu = g.players[host].units[0];
@@ -682,7 +682,7 @@ fn a_loans_ongoing_payment_runs_as_long_as_the_loan() {
     let gpt = ffh_core::structs::TradeData { item_type: TradeableItem::TRADE_GOLD_PER_TURN, data: 2, offering: false, hidden: false };
     let loan = |g: &mut Game| {
         unit(g, A, "UNIT_WARRIOR", 3, 4);
-        let one = g.crusade_unit_strength(*g.players[A].units.last().unwrap());
+        let one = g.crusade_unit_force(*g.players[A].units.last().unwrap());
         let terms = LoanTerms { lender: A, borrower: B, target, mission: LoanMission::Attack, strength: one, duration: 4 };
         let p = LoanProposal { terms, from: B, lender_gives: vec![], borrower_gives: vec![gpt.clone()] };
         let (answer, id) = g.loan_propose(&p).expect("valid loan");

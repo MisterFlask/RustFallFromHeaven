@@ -20,7 +20,7 @@
 // frame, the cards, picking, selection, zoom, pan, layers, a lost context's fallback). Phase 7: the automate buttons (`stage automate`: a
 // scout exploring with a click), this game's armies (`stage
 // armies`: a marching recruit that takes no orders, a city added to an army's requisition on the
-// Armies screen, an army's and a garrison's battle tactic, a requisition order in a city's queue),
+// Armies screen, a requisition order in a city's queue),
 // supply lines (`stage supply` on the HD-2D map: a line drawn, a Hunger marker, the readout under
 // the pointer, the words on the Armies screen), the secretary general's election
 // popup (`stage election`);
@@ -946,7 +946,7 @@ async function stagedGovernors(bin, saves) {
 }
 
 async function moveUnit() {
-  const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && S.data.tables.UnitType[u.type].combat > 0) || null; })()`);
+  const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && S.data.tables.UnitType[u.type].attack > 0) || null; })()`);
   if (!unit) return steps.push("no unit to move");
   const p = await plotPos(unit.x, unit.y);
   await b.mouse(p.x, p.y);
@@ -1678,13 +1678,6 @@ async function stagedArmies(bin, saves) {
   await click(box);
   await until2(`!!window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.requisition.cities.includes(${st.city})`, "the city added to the army's requisition");
   await until2(`!!document.querySelector(${q(`${box}:checked`)})`, "the city ticked on the screen");
-  // The army's battle tactic (docs/TACTICS.md): four options with their help; a change waits for
-  // the next turn ("from next turn").
-  const tsel = `${card} select.army-tactic`;
-  await until2(`document.querySelectorAll(${q(`${tsel} option`)}).length === 4 && [...document.querySelectorAll(${q(`${tsel} option`)})].every((o) => !!o.title)`, "the army's tactic selector with its four tactics");
-  await b.eval(`(() => { const s = document.querySelector(${q(tsel)}); s.value = "1"; s.dispatchEvent(new Event("change")); })()`);
-  await until2(`window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.tactic_next === 1`, "the army's next tactic set");
-  await until2(`/from next turn/.test(document.querySelector(${q(`${card} .tactic-pending`)})?.textContent ?? "")`, "the pending tactic shown as from next turn");
   await shot("armies-requisition");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the Armies screen closed");
@@ -1695,12 +1688,12 @@ async function stagedArmies(bin, saves) {
   if (await b.eval(`!!document.querySelector(${q(`${first} button[data-index]`)})`)) throw new Error("the requisition order has a remove button");
   const pop = await b.eval(`window.ffh.api.send({ k: "cmd", c: "pop_order", city: ${st.capital}, index: 0 }).then((r) => (r.ok ? "applied" : r.detail))`);
   if (!named("requisitioned by").test(pop ?? "")) throw new Error(`taking the requisition order off by hand: ${pop}`);
-  // The garrison's tactic, next to where the city's units go.
-  await until2(`document.querySelectorAll(${q(`${TOP} .recruit-default select.garrison-tactic option`)}).length === 4`, "the garrison's tactic selector");
+  // Where the city's units go.
+  await until2(`!!document.querySelector(${q(`${TOP} .recruit-default select.recruit-default-dest`)})`, "the city's recruit destination");
   await shot("city-requisition");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
-  steps.push("armies (stage armies): a marching recruit shows its march, offers no orders and refuses a move; the Armies screen adds a city to the requisition and sets the army's tactic (from next turn); the capital's requisition order is tagged and cannot be removed; the garrison's tactic selector");
+  steps.push("armies (stage armies): a marching recruit shows its march, offers no orders and refuses a move; the Armies screen adds a city to the requisition; the capital's requisition order is tagged and cannot be removed; the city's recruit destination");
 }
 
 /** Waits until the battle overlay shows screen `name` and it is ready. */
@@ -1721,8 +1714,8 @@ async function closeBattle() {
 
 /** Engagement combat, `stage engagement` (docs/ENGAGEMENTS.md, formation battles): the army next
  *  to the enemy city shows its role, A, Dv and HP in the unit panel; the tooltip over the city says
- *  it is a battle; a right-click opens the battle plan in the formation the tactics give (both
- *  named, Line; no Auto-arrange; a click on a unit of the line moves nobody; a forecast); Enter
+ *  it is a battle; a right-click opens the battle plan in the rules' auto formation (no
+ *  Auto-arrange; a click on a unit of the line moves nobody; a forecast); Enter
  *  attacks (Escape and Cancel do
  *  not close the plan while the attack is on its way; a keep/raze decision over the overlay
  *  answered if the city falls), the combat flash comes from the battle's report, the attack's messages wait for the
@@ -1750,11 +1743,8 @@ async function stagedEngagement(bin, saves) {
   await battleScreen("plan");
   const placed = await b.eval(`window.ffh.battle.plan.formation.length`);
   if (!placed) throw new Error("the plan's auto formation puts nobody in the line");
-  // The board shows the formation the tactics give (docs/TACTICS.md): both sides' tactics named,
-  // no Auto-arrange, and a click on a unit of the line moves nobody.
-  const tactics = await b.eval(`JSON.stringify(window.ffh.battle.plan.tactics)`);
-  if (tactics !== JSON.stringify(["Line", "Line"])) throw new Error(`the plan names the tactics ${tactics}`);
-  await until2(`document.querySelectorAll("#battle .bt-tactic").length === 2`, "both sides' tactics on the board");
+  // The board shows the auto formation: no Auto-arrange, and a click on a unit of the line moves
+  // nobody.
   if (await b.eval(`[...document.querySelectorAll("#battle button")].some((x) => /Auto/.test(x.textContent))`)) throw new Error("the plan still offers Auto-arrange");
   const before = await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`);
   const at = await b.eval(`(() => { const p = window.ffh.battle.plan; const f = p.preview.fighters.find((g) => g.side === 0 && g.lane !== null && !!p.point(g.b)); return f ? p.point(f.b) : null; })()`);
@@ -1834,7 +1824,7 @@ async function stagedEngagement(bin, saves) {
   await click(link);
   await battleScreen("report", "the battle's report from its message");
   await closeBattle();
-  steps.push(`engagement (stage engagement): the plan (${placed} in the line, both sides' tactics named, no Auto-arrange, a click on the board moving nobody, its forecast), the attack (the plan held open, by Escape and Cancel, while it is on its way), the flash from the report, its messages held until the screens close, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
+  steps.push(`engagement (stage engagement): the plan (${placed} in the line, no Auto-arrange, a click on the board moving nobody, its forecast), the attack (the plan held open, by Escape and Cancel, while it is on its way), the flash from the report, its messages held until the screens close, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events
@@ -2027,7 +2017,7 @@ async function crusadeHd2d(url, bin, saves) {
   // The staged warriors in the capital, picked in the lend dialog (with their map figures).
   const pick = await S(`(() => {
     const me = S.view.me.player, cap = S.view.cities.find((c) => c.owner === me);
-    const ids = S.view.units.filter((u) => u.owner === me && u.x === cap.x && u.y === cap.y && S.data.tables.UnitType[u.type].combat > 0).map((u) => u.id);
+    const ids = S.view.units.filter((u) => u.owner === me && u.x === cap.x && u.y === cap.y && S.data.tables.UnitType[u.type].attack > 0).map((u) => u.id);
     return { ids, x: cap.x, y: cap.y };
   })()`);
   const ids = pick.ids;

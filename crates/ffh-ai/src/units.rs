@@ -93,7 +93,7 @@ fn role_of(g: &Game, u: UnitId) -> Role {
     // A hero that cannot attack (Loki, defensive only; Corlindale, strength 0) moves as a caster,
     // with a stack or to a city: as an army unit Loki walked alone, and 30 of 42 Lokis were
     // killed, 89% of the attacks finding him alone in the field (docs/AI.md, "Unique units").
-    if ai == UnitAIType::UNITAI_HERO && (info.only_defensive || info.combat == 0) {
+    if ai == UnitAIType::UNITAI_HERO && (info.only_defensive || info.attack_rating() == 0) {
         return Role::Caster;
     }
     match ai {
@@ -108,7 +108,7 @@ fn role_of(g: &Game, u: UnitId) -> Role {
         _ => {
             if info.found {
                 Role::Settler
-            } else if info.combat > 0 || info.combat_defense > 0 {
+            } else if info.fights() {
                 Role::Army
             } else if info.crew_work > 0 {
                 Role::Laborer
@@ -126,7 +126,7 @@ pub(crate) fn fighters_off_worker_ai(g: &mut Game, p: PlayerId) {
     for u in g.players[p].units.clone() {
         let unit = &g.units[u];
         let info = &g.d.units[unit.unit_type];
-        if unit.ai_type == Some(UnitAIType::UNITAI_WORKER) && info.combat > 0 {
+        if unit.ai_type == Some(UnitAIType::UNITAI_WORKER) && info.attack_rating() > 0 {
             g.unit_ai_set_unit_ai_type(u, info.default_unit_ai_type.unwrap_or(UnitAIType::UNITAI_ATTACK));
         }
     }
@@ -390,7 +390,7 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType) -> i32 {
     v += info.moves_change * if defender { 5 } else { 60 };
     v += info.withdrawal_change * 2;
     v += info.combat_heal_percent / 2 + info.same_tile_heal_change + info.adjacent_tile_heal_change;
-    v += info.damage_type_combat.iter().sum::<i32>() * 40;
+    v += info.damage_type_attack.iter().sum::<i32>() * 4;
     // The battle levers (docs/UNIT_ROLES.md): damage against and resistance to unit combats at
     // about a quarter of their percentage (they work against some enemies), armor and pursuit.
     v += (info.damage_vs.iter().sum::<i32>() + info.resist_vs.iter().sum::<i32>()) / 4;

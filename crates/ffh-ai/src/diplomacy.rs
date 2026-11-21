@@ -805,13 +805,13 @@ impl TechCtx {
 fn is_military_tech(g: &Game, to: PlayerId, tech: TechType) -> bool {
     let d = g.d;
     let Some(civ) = g.player_get_civilization_type(to) else { return false };
-    let best = g.best_land_unit_combat().max(1);
+    let best = g.best_land_unit_rating().max(1);
     d.unit_classes.keys().filter_map(|uc| d.civ_unit(civ, uc)).any(|u| {
         let info = &d.units[u];
         (info.prereq_and_tech == Some(tech) || info.prereq_and_techs.contains(&tech))
-            && info.combat > 0
+            && info.attack_rating() > 0
             && !info.found
-            && info.combat * 100 >= best * 60
+            && info.rating() * 100 >= best * 60
             && matches!(info.domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_SEA))
     })
 }
@@ -989,13 +989,13 @@ pub(crate) fn best_trainable_attack(g: &Game, p: PlayerId) -> Option<(i32, bool)
     let mut siege = false;
     for u in d.units.keys() {
         let info = &d.units[u];
-        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 || info.only_defensive {
+        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.attack_rating() <= 0 || info.only_defensive {
             continue;
         }
         if !g.city_offers_unit(c, u) || !g.city_can_train(c, u, false, false, false, false) {
             continue;
         }
-        best_attack = best_attack.max((info.combat + info.damage_type_combat.iter().sum::<i32>()) * (100 + info.city_attack_modifier.max(0)));
+        best_attack = best_attack.max(info.attack_rating() / 10 * (100 + info.city_attack_modifier.max(0)));
         siege |= info.bombard_rate > 0;
     }
     // An Aggressive leader's fighters start with Combat I (trait-play).
@@ -1006,7 +1006,7 @@ pub(crate) fn best_trainable_attack(g: &Game, p: PlayerId) -> Option<(i32, bool)
 /// A unit type's strength (x100) as a city defender: its defense strength with its city
 /// defense bonus.
 fn defender_strength(info: &UnitInfo) -> i32 {
-    let def = if info.combat_defense > 0 { info.combat_defense } else { info.combat } + info.damage_type_combat.iter().sum::<i32>();
+    let def = if info.defense_rating() > 0 { info.defense_rating() } else { info.attack_rating() } / 10;
     def * (100 + info.city_defense_modifier.max(0))
 }
 
@@ -1026,7 +1026,7 @@ fn city_best_defense(g: &Game, p: PlayerId, c: CityId) -> Option<i32> {
             continue;
         }
         let info = &g.d.units[g.units[e].unit_type];
-        if info.combat <= 0 {
+        if info.attack_rating() <= 0 {
             continue;
         }
         best = best.max(defender_strength(info));

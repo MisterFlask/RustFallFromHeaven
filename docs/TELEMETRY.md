@@ -151,7 +151,7 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `cast` and `cast_result`;
 - `combat`;
 - `engagement` (the attacker's: `vs`, the report `id`, `res` (`taken`, `cleared`, `repulsed`,
-  `held`), `loser` (`att`, `def`, `none`: the side whose units lost more HP), `att` / `def` committed, `att_lost` / `def_lost`, `rounds`, `city`, `taken` (the
+  `held`), `loser` (`att`, `def`, `none`), `by` (the rule that found it: `Wiped`, `Deaths`, `Damage`, `Even`), `att` / `def` committed, `att_lost` / `def_lost`, `rounds`, `city`, `taken` (the
   launcher moved in), `x`, `y`);
 - `war`, `peace` and `war_plan`;
 - `deal`;

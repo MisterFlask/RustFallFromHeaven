@@ -24,7 +24,7 @@ is the only thing that stops a wasteful cast: moving them needs the same conditi
 
 | spell | AI-only condition (a human may cast without it) |
 |---|---|
-| Commander Join | caster base strength above 5 |
+| Commander Join | caster rating above 50 (was base strength above 5; docs/UNIT_STATS.md, section 10) |
 | Crew Buccaneers / Longshoremen / Skeleton Crew / Normal Crew | certain ship types only, Normal Crew never -- dead code: all four are `bAllowAI` 0 |
 | Declare Nationality | not for pirate-sea or animal units, Hidden or Invisible units, barbarians |
 | Destroy Undead | only undead of a team at war with us (a human: any undead in range) |
@@ -42,7 +42,7 @@ is the only thing that stops a wasteful cast: moving them needs the same conditi
 | Sirona's Touch | 15+ damage |
 | Spread the Council of Esus | its state religion is Esus |
 | Spring | desert only if its own (no flames); never Infernal |
-| Take Equipment (22 AI-castable `SPELL_TAKE_*_PROMOTION`) | caster strength - 2 above the holder's, and the holder's unit type lacks the item as a free promotion |
+| Take Equipment (22 AI-castable `SPELL_TAKE_*_PROMOTION`) | caster rating more than 20 above the holder's (was strength 2 above), and the holder's unit type lacks the item as a free promotion |
 | Upgrade Doviello Warrior (worker -> Beastman) | at war, and workers at least the city count |
 
 **A3. Other AI behaviour inside rules functions** (mostly C++ "BETTER AI" additions):

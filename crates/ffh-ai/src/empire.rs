@@ -47,8 +47,8 @@ fn hurry(g: &mut Game, p: PlayerId) {
                 let threatened = crate::production::local_threat(g, p, plot, 2) > crate::production::garrison(g, p, plot).1;
                 // A unit bought at the rush rate is worth its gold when it fights, past the first
                 // tier (a new city's Warriors are not): at war, or always for the Free Companies.
-                let cheap = info.combat > 0 && info.tier >= 2 && (at_war || mercenary) && hurries.iter().any(|&h| g.city_unit_rush_gold(c, h).is_some());
-                info.found || info.work_rate > 0 && info.combat == 0 || threatened && info.combat > 0 || cheap
+                let cheap = info.attack_rating() > 0 && info.tier >= 2 && (at_war || mercenary) && hurries.iter().any(|&h| g.city_unit_rush_gold(c, h).is_some());
+                info.found || info.work_rate > 0 && info.attack_rating() == 0 || threatened && info.attack_rating() > 0 || cheap
             }
             None => false,
         };

@@ -138,7 +138,7 @@ help):
 | buildings | `last_stand_damage` | Last Stand Hymn | in a battle at its city, once half the defender's committed units (not Sentinels) have fallen, the rest deal this percent more damage |
 | buildings | `never_lost_damage` | The Unconquered City | while its city has never changed hands (`never_lost` and its original owner owns it), its defenders (units and Sentinels) deal this percent more damage (the pairs' percentage) |
 | buildings | `exclusive_with` `[class]` | Elemental Forge | a city with a building of one of these classes cannot build it |
-| improvements | `engagement_attacker_slots_change` | Trench | the attacker's slots in battles on its plot (before the minimum; `SlotSource::Improvement`) |
+| improvements | `engagement_attacker_first_round_percent` | Trench | the attacker's hits in round 1 of battles on its plot, percent (60; `GroundRule::Trench`; was -3 attacker slots until frontage went, 2026-11-21) |
 | units | `engage_first_round` `{action, pattern}` | Siege Colossus | what it does in a battle's first round from any row, with the row's count, in place of the row's action; its pattern then (`SINGLE` without one) |
 | units | `bombard_range` | Siege Colossus | it bombards a city this many plots away (a city on a plot its team has revealed; absent: the adjacent ones) |
 | units | `bombard_besieges` | Siege Colossus | a city it bombards counts as besieged until the city's next turn (`City::besieged_by_bombard`) |
@@ -416,7 +416,10 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   change the difference), through `change_global_counter` (doubled by the double-counter option,
   nothing with the counter off). `clock_turns` is `CLOCK_TURNS` (300) x the speed's
   `victory_delay_percent` / 100: alone it fills the counter at turn 300 at Normal. The counter's
-  tooltip shows its rate (`doom_clock_calc`, sent as `me.doom.calc`).
+  tooltip shows its change a turn, worked out (`doom_clock_calc`, sent as `me.doom.calc`:
+  `Per turn: 100 ÷ 300 turns = +0.33.`). How the counter and the cards work is reminder text, in
+  boxes beside the tooltip (keywords `KEYWORD_ARMAGEDDON_COUNTER` and `KEYWORD_ARMAGEDDON_CARD`,
+  sent as `me.doom.reminders`), never in its body.
 - **The cards** are code: `doom::CARDS` holds FFH2's events (Blight, the Four Horsemen as one
   chain, Hellfire, Wrath, Apocalypse), and `doom_cards::CARDS` the new ones. Each card has a key
   `DOOM_<NAME>`, its thresholds, what each stage does, and an optional condition. Its text is
@@ -500,7 +503,7 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   **The candidates** are the parent's units that `crusade_unit_lendable` (land combat units, not
   lent, temporary, aboard or carrying) and are not heroes, ordered by plot distance from the
   unit to the faction's capital (ties: the lower unit id). **Each in turn** defects when all hold
-  at that moment: its strength `s` (`crusade_unit_strength`) is above 0 and the strength defected
+  at that moment: its strength `s` (`crusade_unit_force`) is above 0 and the strength defected
   so far plus `s` stays within the budget; the faction's strength plus `s` stays at most the
   parent's minus `s` (both measured anew after each defection); and it is not the only lendable
   unit of the parent on the plot of one of the parent's cities. A candidate that fails is passed

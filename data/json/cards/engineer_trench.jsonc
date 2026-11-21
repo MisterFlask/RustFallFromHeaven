@@ -36,7 +36,7 @@
         "TERRAIN_TUNDRA": true,
         "TERRAIN_SNOW": true
       },
-      "engagement_attacker_slots_change": -3
+      "engagement_attacker_first_round_percent": 60
     }
   ],
   "builds": [

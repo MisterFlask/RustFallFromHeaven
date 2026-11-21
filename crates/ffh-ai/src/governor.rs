@@ -403,7 +403,7 @@ fn civ_threat(g: &Game, p: PlayerId, c: CityId) -> bool {
             for &u in &g.map.plots[q].units {
                 let owner = g.units[u].owner;
                 let their = g.players[owner].team;
-                if their != team && !g.player_is_barbarian(owner) && g.at_war(team, their) && g.d.units[g.units[u].unit_type].combat > 0 && crate::view::known_threat(g, p, u) {
+                if their != team && !g.player_is_barbarian(owner) && g.at_war(team, their) && g.d.units[g.units[u].unit_type].attack_rating() > 0 && crate::view::known_threat(g, p, u) {
                     return true;
                 }
             }
