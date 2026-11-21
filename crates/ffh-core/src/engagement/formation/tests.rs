@@ -1336,7 +1336,9 @@ fn proto_scenario(key: &str) -> (Formation, Vec<String>) {
         }
     }
     let dv = |u: &Proto| u.def * PROTO_ROLES[u.role].1 * (100 + 10 * (u.level - 1)) / 100;
-    let b = Formation::new(Params::default(), ground, lanes, fighters.clone(), |h, t| Pair::physical(fighters[h].a, dv(&units[t])));
+    // The prototype fought three rounds (the game two since 2026-11-21); its numbers are of three.
+    let params = Params { rounds: 3, ..Params::default() };
+    let b = Formation::new(params, ground, lanes, fighters.clone(), |h, t| Pair::physical(fighters[h].a, dv(&units[t])));
     assert_eq!(b.validate(), Ok(()));
     (b, shown)
 }
