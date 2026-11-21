@@ -57,7 +57,7 @@ export async function openDiplomacy() {
         const yours = !ownHouse && p.house_offer?.courting ? [withCalc(h("div.house-courting-row", p.house_offer.courting), p.house_offer.courting_calc)] : [];
         const courted = [...yours, ...(house?.courted ?? []).map((c) => withCalc(h("div.house-courted", c.line), c.calc))];
         const attitude = ownHouse && house.state
-          ? h("td", { tip: () => houseAttitudeTip(p) }, stateMark(house.state, house.turns))
+          ? h("td", { tip: () => houseAttitudeTip(house) }, ownHouseStateMark(house))
           : h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-");
         // Your deals with them; one may be cancelled after its first turns (a peace treaty ends then).
         const deals = p.deals.map((d) => {
@@ -152,10 +152,14 @@ function houseState(p) {
   // own, without the separator).
   const chunk = (...c) => [" ", h("span.house-chunk", h("span.sep", "· "), ...c)];
   const x = p.house;
-  if (x.liege === me()?.player) return x.state ? h("span.house-state", chunk(stateMark(x.state, x.turns))) : null;
+  if (x.liege === me()?.player) return x.state ? h("span.house-state", chunk(ownHouseStateMark(x))) : null;
   const o = p.house_offer;
   if (!o) return null;
   return h("span.house-state", chunk(stateMark(o.state, o.turns)));
+}
+
+function ownHouseStateMark(house) {
+  return stateMark(house.state, house.turns, { details: () => houseAttitudeTip(house) });
 }
 
 /** The parties a war brings in for certain, by the vassal rules (docs/PERSONS.md, "The second
@@ -170,8 +174,7 @@ export function warPartyLines(against, join) {
 
 /** Your House's attitude toward you (its loyalty, docs/PERSONS.md, rule 5): its parts and total,
  *  and its ultimatum's outcome when Furious. */
-function houseAttitudeTip(p) {
-  const x = p.house;
+function houseAttitudeTip(x) {
   return [
     h("div.tip-title", `${x.label}: ${x.state} towards you`),
     (x.parts ?? []).length ? h("div", x.parts.map((l) => h("div", l))) : h("div.dim", "Nothing for or against you."),

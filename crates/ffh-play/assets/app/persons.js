@@ -46,13 +46,13 @@ function stateTip(key) {
  *  a key of persons_mark.js STATES; `turns` null or undefined: none. Its tooltip says what the
  *  state does (the attitude's help in the data); `note`: a line of the row's own about the state
  *  (`Annoyed after 2 levies.`) at the tooltip's head, where a crowded row puts it rather than in
- *  another sentence. */
-export function stateMark(state, turns, { note = null } = {}) {
+ *  another sentence. `details` builds the contextual contents of the tooltip. */
+export function stateMark(state, turns, { note = null, details = null } = {}) {
   const key = stateKey(state);
   const hasTurns = turns !== null && turns !== undefined;
   return h(
     `span.pstate.${stateClass(key)}`,
-    { "data-state": key, "data-note": note ?? null, tip: () => [note ? h("div.tip-title", note) : null, stateTip(key)] },
+    { "data-state": key, "data-note": note ?? null, tip: () => [note ? h("div.tip-title", note) : null, details?.(), stateTip(key)] },
     h("span.pstate-glyph", { "aria-hidden": "true" }, stateGlyph(key)),
     h("span.pstate-word", stateWord(key)),
     hasTurns ? h("span.pstate-turns", turnsText(turns)) : null,
