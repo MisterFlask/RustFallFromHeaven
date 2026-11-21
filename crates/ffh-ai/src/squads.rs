@@ -6,10 +6,9 @@
 use ffh_core::game::Game;
 use ffh_core::ids::PlayerId;
 
-/// Settles player `p`'s squads and auto-sorts the bodies whose squads could be fewer.
+/// Auto-sorts player `p`'s bodies whose squads could be fewer (nothing to do: no sync).
 pub fn turn(g: &mut Game, p: PlayerId) {
-    g.player_army_sync(p);
-    for list in g.squad_bodies_to_sort(p) {
-        let _ = g.squad_auto_sort(p, &list);
+    for (plot, body) in g.squad_bodies_to_sort(p) {
+        let _ = g.squad_auto_sort_body(p, plot, body);
     }
 }

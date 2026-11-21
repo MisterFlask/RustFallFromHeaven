@@ -10,7 +10,8 @@
 //! squad), and holds its cell only while it is on that plot.
 //!
 //! **Auto and hand-set.** A squad is Auto until the player moves a unit in or out of it: an Auto
-//! squad is arranged by the rules' auto formation whenever it is read. A hand-set squad keeps its
+//! squad is arranged by the rules' auto formation (its strength order by each unit's strength)
+//! whenever it is read. A hand-set squad keeps its
 //! units' cells (`Unit::squad_cell`); a unit that dies leaves its cell empty.
 //!
 //! **The layout** ([`Game::squad_layouts_at`]) is what the squads of a player on a plot are, read
@@ -222,13 +223,12 @@ impl Game {
         layout.units().iter().map(|&(u, _)| self.squad_size(u)).sum()
     }
 
-    /// The auto formation of `units` as a squad on `plot` (the rules' auto formation, as a
-    /// defender of `plot`), in cells.
-    fn squad_auto_cells(&self, layout: &mut SquadLayout, units: &[UnitId], plot: PlotIdx) {
+    /// The auto formation of `units` as a squad (the rules' auto formation, as a defender, its
+    /// strength order by each unit's strength: cheap, and the same on every plot), in cells.
+    fn squad_auto_cells(&self, layout: &mut SquadLayout, units: &[UnitId], _plot: PlotIdx) {
         layout.cells = [None; SQUAD_CELLS];
         let slots = self.engage_squad_slots();
-        let ctx = HitCtx { to: plot, from: None, cover: false };
-        let placed = self.engage_auto_formation(units, Side::Defender, &slots, &ctx);
+        let placed = self.engage_auto_formation_by(units, Side::Defender, &slots, |u| self.unit_base_combat_str(u) as i64);
         for p in placed {
             let size = self.squad_size(p.unit);
             layout.put(p.unit, p.row * SQUAD_LANES + p.lane, size);
@@ -570,24 +570,35 @@ impl Game {
         Ok(())
     }
 
-    /// Whether player `p`'s squads of some body on some plot could be fewer: more squads than
-    /// `ceil(places / ENGAGEMENT_SQUAD_PLACES)` (the AI auto-sorts those).
-    pub fn squad_bodies_to_sort(&self, p: PlayerId) -> Vec<Vec<SquadId>> {
+    /// The bodies (each with its plot) of player `p` whose squads could be fewer: more squads than
+    /// `ceil(places / ENGAGEMENT_SQUAD_PLACES)` (units that arrived formed squads of one; the AI
+    /// auto-sorts those). Reads the layouts only.
+    pub fn squad_bodies_to_sort(&self, p: PlayerId) -> Vec<(PlotIdx, SquadBody)> {
         let plots: BTreeSet<PlotIdx> = self.players[p].units.iter().filter(|&&u| self.unit_in_squads(u)).filter_map(|&u| self.unit_plot_opt(u)).collect();
         let cap = self.squad_places();
         let mut out = Vec::new();
         for plot in plots {
             let layouts = self.squad_layouts_at(p, plot);
+            if layouts.len() < 2 {
+                continue;
+            }
             let bodies: BTreeSet<SquadBody> = layouts.iter().map(|l| l.body).collect();
             for body in bodies {
                 let of: Vec<&SquadLayout> = layouts.iter().filter(|l| l.body == body).collect();
                 let places: i32 = of.iter().map(|l| self.squad_layout_places(l)).sum();
-                if of.len() as i32 > (places + cap - 1) / cap && of.iter().all(|l| l.squad.is_some()) {
-                    out.push(of.iter().filter_map(|l| l.squad).collect());
+                if of.len() as i32 > (places + cap - 1) / cap {
+                    out.push((plot, body));
                 }
             }
         }
         out
+    }
+
+    /// Auto-sorts every squad of body `body` of player `p` on `plot` (after a sync).
+    pub fn squad_auto_sort_body(&mut self, p: PlayerId, plot: PlotIdx, body: SquadBody) -> Result<(), &'static str> {
+        self.player_squad_sync(p);
+        let ids: Vec<SquadId> = self.squad_layouts_at(p, plot).iter().filter(|l| l.body == body).filter_map(|l| l.squad).collect();
+        self.squad_auto_sort(p, &ids)
     }
 }
 

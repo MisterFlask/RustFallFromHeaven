@@ -85,7 +85,7 @@ fn arrivals_take_their_best_row_or_form_a_squad() {
         assert!(!w.g.squads[*s].hand_set);
     }
     // 6 places fit one squad: the AI's rule sorts them.
-    assert_eq!(w.g.squad_bodies_to_sort(p0), vec![vec![sq[0].0, sq[1].0]]);
+    assert_eq!(w.g.squad_bodies_to_sort(p0), vec![(from, SquadBody::Army(army))]);
 }
 
 /// A moved unit keeps its cell, both squads become hand-set, a unit there swaps with it, a full
