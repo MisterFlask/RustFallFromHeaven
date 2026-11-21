@@ -1490,6 +1490,11 @@ could never run them.
     still means no winner). In the 26 time-victory games of the score dataset the winner changed
     in 10.
   - **Score victory**: `target_score` is in basis points of the world (5000 = half); 0 = off.
+  - **Scored land follows a plot that turns between water and land** (2026-11-21): a plot owned
+    long enough to count for the score enters scored land when it becomes land and leaves it when
+    it sinks (`plot_set_plot_type_with`). `CvPlot::setPlotType` changed only the total land, so a
+    scored water plot made land was subtracted, when its owner lost it, from scored land it had
+    never been added to, and a sunk one stayed counted.
   - **Ranks** (`updateScore`, ties to the higher index) follow the new score, and with them
     Ascension's Godslayer target, the switch-civs random event (rank 1 human) and the Cut Losers,
     High to Low and Flexible Difficulty challenge options.
