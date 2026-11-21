@@ -65,6 +65,49 @@ test("the unit every map draws for a stack: stackHead rates units by their type'
   assert.equal(St.stackHead([], 0, [], data), null);
 });
 
+test("a stack with squads: its head is the strongest squad's front unit, its figures that squad", () => {
+  const info = { 1: { combat: "MELEE", rating: 30 }, 2: { combat: "MELEE", rating: 60 }, 3: { combat: "NONE", rating: 0 } };
+  const ctx = (extra = {}) => ({ me: 0, selected: [], activity: () => "ACTIVITY_AWAKE", unitInfo: (t) => info[t], automated: () => false, ...extra });
+  // Rank 1 (the weaker squad): 30, 31; rank 0: 40 (middle row), 41 (front, lane 1), 42 (front, lane
+  // 0, spent); a worker without a stand, the only unit that can move besides 30.
+  const units = [
+    { id: 30, owner: 0, type: 1, moves: 60, stand: { rank: 1, cell: 0 } },
+    { id: 31, owner: 0, type: 1, moves: 0, stand: { rank: 1, cell: 1 } },
+    { id: 40, owner: 0, type: 2, moves: 0, stand: { rank: 0, cell: 4 } },
+    { id: 41, owner: 0, type: 2, moves: 0, stand: { rank: 0, cell: 1 } },
+    { id: 42, owner: 0, type: 1, moves: 0, stand: { rank: 0, cell: 0, large: true } },
+    { id: 50, owner: 0, type: 3, moves: 60 },
+  ];
+  // Unselected: the strongest squad's front unit (lowest rank, then cell), not the unit that can move.
+  let st = St.stackState(units, ctx());
+  assert.equal(st.head.id, 42);
+  assert.deepEqual(St.stackFigures(units, st.head).map((u) => u.id), [42, 41, 40], "rank 0, by cell");
+  assert.equal(st.state.moves, true, "some own unit here can move");
+  assert.equal(st.state.selected, false);
+  // A unit of the weaker squad selected: it leads, and its squad is drawn.
+  st = St.stackState(units, ctx({ selected: [31] }));
+  assert.equal(st.head.id, 31);
+  assert.deepEqual(St.stackFigures(units, st.head).map((u) => u.id), [30, 31]);
+  assert.equal(st.state.moves, false, "the selected head's moves");
+  // A selected unit without a stand (the worker among the soldiers): it alone.
+  st = St.stackState(units, ctx({ selected: [50] }));
+  assert.deepEqual(St.stackFigures(units, st.head).map((u) => u.id), [50]);
+  assert.equal(st.state.moves, true);
+  // Nothing on the tile can move.
+  const spent = units.map((u) => ({ ...u, moves: 0 }));
+  assert.equal(St.stackState(spent, ctx()).state.moves, false);
+  // The squad rule holds for a foreign tile too (before the strongest-unit rule).
+  const foreign = [{ id: 60, owner: 1, type: 2, stand: { rank: 1, cell: 0 } }, { id: 61, owner: 1, type: 1, stand: { rank: 0, cell: 2 } }];
+  assert.equal(St.stackState(foreign, ctx()).head.id, 61);
+  // A tile without any stand behaves as before: the own unit that can move, it alone drawn.
+  const plain = [{ id: 70, owner: 0, type: 1, moves: 0 }, { id: 71, owner: 0, type: 1, moves: 60 }];
+  st = St.stackState(plain, ctx());
+  assert.equal(st.head.id, 71);
+  assert.deepEqual(St.stackFigures(plain, st.head).map((u) => u.id), [71]);
+  assert.equal(st.state.moves, true);
+  assert.deepEqual(St.stackFigures([], null), []);
+});
+
 test("marks from Civ4's activities", () => {
   assert.equal(St.markOf("ACTIVITY_SLEEP", { canFight: true }), "fortify");
   assert.equal(St.markOf("ACTIVITY_SLEEP"), "sleep");

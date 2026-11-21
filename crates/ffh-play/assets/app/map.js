@@ -13,7 +13,7 @@
 
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
-import { stackHead } from "./stacks.js";
+import { stackHead, stackReady } from "./stacks.js";
 import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
@@ -1559,7 +1559,7 @@ export class MapView {
         } else if (top.owner === mine && s >= 10) {
           const r = Math.max(2, s / 9);
           const asleep = ASLEEP.includes(tname("ActivityType", top.activity));
-          g.fillStyle = asleep ? "#9a9a9a" : top.moves > 0 ? "#3fdc5a" : "#d03a2a";
+          g.fillStyle = asleep ? "#9a9a9a" : stackReady(units, top, mine, sel) ? "#3fdc5a" : "#d03a2a";
           g.beginPath();
           g.arc(bx + r + 1.5, by + r + 1.5, r, 0, Math.PI * 2);
           g.fill();

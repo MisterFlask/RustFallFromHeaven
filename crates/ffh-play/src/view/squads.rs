@@ -1,6 +1,9 @@
 //! Squads as the human sees them (docs/ENGAGEMENTS.md, "Squads"): each of its units' `squad`
 //! (`{id, num, cell, auto}`), and the squads of a plot (the `group` query's, the Armies screen's
-//! per army) for the squad board. Pure, like every view.
+//! per army) for the squad board; and where every listed unit stands on the map (`stand`). Pure,
+//! like every view.
+
+use std::collections::{BTreeMap, BTreeSet};
 
 use ffh_core::army::{SquadBody, SquadLayout};
 use ffh_core::game::Game;
@@ -28,6 +31,68 @@ pub fn unit_squad(g: &Game, u: UnitId) -> Json {
         }
     }
     crate::jobj! { "id" => s, "num" => before.len() + 1, "cell" => unit.squad_cell, "auto" => !sq.hand_set }
+}
+
+/// Where a listed unit stands on its plot (the unit's `stand`): its squad's rank among the squads
+/// on the plot with a listed unit, strongest first (0-based), its cell in that squad's layout (a
+/// large unit's first) and whether it is large (two cells).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Stand {
+    pub rank: u32,
+    pub cell: u8,
+    pub large: bool,
+}
+
+impl Stand {
+    pub fn json(&self) -> Json {
+        let mut j = crate::jobj! { "rank" => self.rank, "cell" => self.cell };
+        if self.large {
+            j.set("large", true);
+        }
+        j
+    }
+}
+
+/// Where each of `units` (the view's unit list) that stands in a squad stands: the layouts as the
+/// rules have them now ([`Game::squad_layouts_at`], once per owner and plot), every owner's squads
+/// on a plot ranked together by the summed attack rating of their listed units (a large unit
+/// counts double; ties: owners by id, then the layouts' order). Units of a squad not in `units`
+/// count for nothing; a squad with no listed unit takes no rank. Units in no squad are absent.
+pub fn stands(v: &Viewer, units: &[UnitId]) -> BTreeMap<UnitId, Stand> {
+    let g = v.g;
+    let listed: BTreeSet<UnitId> = units.iter().copied().collect();
+    // Each plot with a listed squad unit, and its owners there (ascending).
+    let mut at: BTreeMap<PlotIdx, BTreeSet<PlayerId>> = BTreeMap::new();
+    for &u in units {
+        if g.units.contains(u) && g.unit_in_squads(u) {
+            if let Some(plot) = g.unit_plot_opt(u) {
+                at.entry(plot).or_default().insert(g.units[u].owner);
+            }
+        }
+    }
+    let mut out = BTreeMap::new();
+    for (plot, owners) in at {
+        // (strength, [(unit, cell, large)]) of each squad with a listed unit, in the rules' order.
+        let mut ranked: Vec<(i64, Vec<(UnitId, u8, bool)>)> = Vec::new();
+        for p in owners {
+            for l in g.squad_layouts_at(p, plot) {
+                let members: Vec<(UnitId, u8, bool)> = l.units().into_iter().filter(|(u, _)| listed.contains(u)).map(|(u, c)| (u, c, g.unit_engage_large(u))).collect();
+                if members.is_empty() {
+                    continue;
+                }
+                let strength = members.iter().map(|&(u, _, large)| g.unit_attack_rating(u) as i64 * (1 + large as i64)).sum();
+                ranked.push((strength, members));
+            }
+        }
+        // Stable: ties keep the rules' order.
+        ranked.sort_by_key(|(s, _)| std::cmp::Reverse(*s));
+        for (rank, (_, members)) in ranked.into_iter().enumerate() {
+            for (u, cell, large) in members {
+                out.insert(u, Stand { rank: rank as u32, cell, large });
+            }
+        }
+    }
+    out
 }
 
 /// What a squad's body is called: the army's name, "<city> garrison", or "Loose".

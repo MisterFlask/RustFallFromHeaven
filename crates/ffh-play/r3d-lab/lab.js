@@ -8,6 +8,8 @@
 //                                               behind it, a small walled town; their garrisons
 //   lab.html?scene=sites&renderer=hd2d          villages, hilltop sites, peaks and mana landmarks
 //   lab.html?scene=fields                       farms, pastures and the like along a river
+//   lab.html?scene=squads&renderer=hd2d&ts=64   stacks as squads of one to six figures, two
+//                                               squads on a plot, a large unit, garrisons
 //   lab.html?scene=moods&renderer=hd2d          four civilizations' region moods in a two by two
 //            &civs=CIVILIZATION_A,...(4)&religions=RELIGION_X,,...   (scenes.js moods)
 //   lab.html?grid=tree.oak,tree.pine&variants=6 recipes in rows of variants on flat grass
@@ -43,7 +45,7 @@ import { S, setData, setView, setMap } from "/app/state.js";
 import { Map3D } from "/app/r3d/map3d.js";
 import { MapHd2d } from "/app/r3d/hd2d/index.js";
 import { RITUAL_LOOK_OF } from "/app/r3d/ritual.js";
-import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d, mana, sites, moods } from "./scenes.js";
+import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d, mana, sites, moods, squads } from "./scenes.js";
 
 const q = new URLSearchParams(location.search);
 
@@ -79,6 +81,8 @@ async function main() {
     scene = sites(data);
   } else if (q.get("scene") === "mana") {
     scene = mana(data);
+  } else if (q.get("scene") === "squads") {
+    scene = squads(data);
   } else {
     scene = showcase(data);
   }

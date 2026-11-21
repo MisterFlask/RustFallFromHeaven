@@ -124,7 +124,8 @@ export function buildView(data, { players = [], cities = [], units = [], me = 0 
     me: { player: me, team: me, civ: players[me] ? idx("CivilizationType", players[me].civ) : null },
     players: players.map((p, k) => ({ id: p.id ?? k, name: p.civ, civ: idx("CivilizationType", p.civ), team: p.id ?? k, barbarian: !!p.barbarian, alive: true, state_religion: p.religion ? idx("ReligionType", p.religion) : null })),
     cities: cities.map((c) => ({ visible: true, walls: false, ...c })),
-    units: units.map((u, k) => ({ id: u.id ?? 1000 + k, owner: u.owner ?? 0, type: idx("UnitType", u.type), x: u.x, y: u.y, hp: u.hp ?? 100, max_hp: 100, moves: 1, max_moves: 1, group: k })),
+    // (`stand`: its place in a squad, as the server's: { rank, cell, large? }; only where given.)
+    units: units.map((u, k) => ({ id: u.id ?? 1000 + k, owner: u.owner ?? 0, type: idx("UnitType", u.type), x: u.x, y: u.y, hp: u.hp ?? 100, max_hp: 100, moves: 1, max_moves: 1, group: k, ...(u.stand ? { stand: u.stand } : {}) })),
     groups: [],
     group_cycle: [],
     pending: { ready_groups: [] },
@@ -458,6 +459,50 @@ export function hd2d(data) {
   return { map, view, focus: [9.5, 6.4] };
 }
 
+/** The stacks as squads (HD-2D: hd2d/dress.js squadSpots), two plots apart on open grassland with
+ *  hills at the back. North row (y 6), west to east: a lone warrior; a swordsman with an archer
+ *  behind; three in one front row; five (three front, two middle); a full six of mixed types (three
+ *  front, three rear). South row (y 3): a War Elephant (a large unit: two cells) with two others;
+ *  two squads and a worker on one plot (only the stronger squad is drawn); a foreign squad of four;
+ *  a lone worker (no squad). East: a city with a full six as its garrison (y 6) and one with two
+ *  (y 3). Best framed with `renderer=hd2d&ts=64`. */
+export function squads(data) {
+  const rows = [
+    "hhn,....,,....nh",
+    "h,......,,......",
+    "..,.............",
+    "......,,........",
+    "................",
+    "..,.......,.....",
+    ".......,........",
+    "................",
+    "................",
+  ];
+  const big = { id: 1, owner: 0, x: 12, y: 6, name: "Aldenhal", capital: true, size: 7 };
+  const small = { id: 2, owner: 0, x: 12, y: 3, name: "Saltmere", capital: false, size: 3 };
+  const map = buildMap(data, rows, { owners: [[0, 0, 15, 8, 0]], routes: [[12, 6], [12, 5], [12, 4], [12, 3]], cities: [big, small] });
+  const at = (x, y, list, owner = 0) => list.map(([type, rank, cell, large]) => ({ owner, type, x, y, stand: { rank, cell, ...(large ? { large: true } : {}) } }));
+  const units = [
+    ...at(1, 6, [["UNIT_WARRIOR", 0, 1]]),
+    ...at(3, 6, [["UNIT_SWORDSMAN", 0, 1], ["UNIT_ARCHER", 0, 4]]),
+    ...at(5, 6, [["UNIT_AXEMAN", 0, 0], ["UNIT_SWORDSMAN", 0, 1], ["UNIT_WARRIOR", 0, 2]]),
+    ...at(7, 6, [["UNIT_SWORDSMAN", 0, 0], ["UNIT_AXEMAN", 0, 1], ["UNIT_SWORDSMAN", 0, 2], ["UNIT_ARCHER", 0, 3], ["UNIT_ARCHER", 0, 4]]),
+    ...at(9, 6, [["UNIT_HORSEMAN", 0, 0], ["UNIT_AXEMAN", 0, 1], ["UNIT_CHARIOT", 0, 2], ["UNIT_ARCHER", 0, 6], ["UNIT_ADEPT", 0, 7], ["UNIT_LONGBOWMAN", 0, 8]]),
+    ...at(1, 3, [["UNIT_WAR_ELEPHANT", 0, 0, true], ["UNIT_SWORDSMAN", 0, 2], ["UNIT_ARCHER", 0, 4]]),
+    ...at(3, 3, [["UNIT_ARCHER", 1, 0], ["UNIT_ARCHER", 1, 1], ["UNIT_AXEMAN", 0, 0], ["UNIT_SWORDSMAN", 0, 1], ["UNIT_HORSEMAN", 0, 2]]),
+    { owner: 0, type: "UNIT_WORKER", x: 3, y: 3 },
+    ...at(5, 3, [["UNIT_WARRIOR", 0, 0], ["UNIT_AXEMAN", 0, 1], ["UNIT_WARRIOR", 0, 2], ["UNIT_MAGE", 0, 4]], 1),
+    { owner: 0, type: "UNIT_WORKER", x: 7, y: 3 },
+    ...at(12, 6, [["UNIT_SWORDSMAN", 0, 0], ["UNIT_AXEMAN", 0, 1], ["UNIT_SWORDSMAN", 0, 2], ["UNIT_ARCHER", 0, 3], ["UNIT_LONGBOWMAN", 0, 4], ["UNIT_ARCHER", 0, 5]]),
+    ...at(12, 3, [["UNIT_WARRIOR", 0, 1], ["UNIT_ARCHER", 0, 4]]),
+  ];
+  const view = buildView(data, {
+    players: [{ civ: "CIVILIZATION_BANNOR" }, { civ: "CIVILIZATION_SHEAIM" }],
+    cities: [big, small],
+    units,
+  });
+  return { map, view, focus: [7.5, 4.6] };
+}
 
 /** Tribal villages, hilltop sites, exposed mountain flanks and mana-producing landmarks. */
 export function sites(data) {

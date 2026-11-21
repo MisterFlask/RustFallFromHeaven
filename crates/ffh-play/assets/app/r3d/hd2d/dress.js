@@ -1,8 +1,10 @@
 // What the HD-2D mode stands in the world as sprites (docs/HD2D.md): the isometric renderer's art
 // (docs/ISO.md), chosen as iso.js chooses it -- a unit's sprite by its civilization, type, class and
 // stand-ins (iso.js unitSpriteKeys), an improvement's and a resource's by kind -- and the mode's own
-// art (hd2d/art: prop cards, the town kit), placed on the 3D renderer's ground. A stack is a group of
-// two or three figures of its head unit under the owner's banner; a city is a town composed of the
+// art (hd2d/art: prop cards, the town kit), placed on the 3D renderer's ground. A stack is the squad
+// of its head unit (stacks.js stackFigures: the strongest squad on the plot, or the selected unit's),
+// one figure per unit standing in its formation (`squadSpots`), under the owner's banner; a unit in
+// no squad (a ship, a worker) is one figure; a city is a town composed of the
 // kit's cards (§5c: its landmark, houses, towers and walls); a standing improvement and a resource
 // are cards (a tribal village is five huts). The 3D models of what these replace are not placed (`claims`, read by
 // ../dress.js); forests, rocks, fields, flat improvements and the land stay the 3D renderer's.
@@ -14,7 +16,7 @@
 
 import { S, tname } from "../../state.js";
 import * as T from "../../tiles.js";
-import { stackState } from "../../stacks.js";
+import { stackState, stackFigures } from "../../stacks.js";
 import { isBarbarian } from "../../state.js";
 import { unitSpriteKeys, civShortName, ISO_TABLES } from "../../iso.js";
 import { hashf, hash32, rng, noise2 } from "../noise.js";
@@ -194,13 +196,62 @@ function builtFoot(world, x, y) {
  *  Each card has its own ground contact, including on a hill's crown. */
 const TRIBAL_HUTS = [[-0.23, -0.16, 0.46], [0.03, -0.21, 0.52], [0.25, -0.10, 0.44], [-0.19, 0.17, 0.49], [0.16, 0.21, 0.47]];
 
-/** A group of figures about its spot: two in front, one behind between them, far enough apart that
- *  each reads as a figure (about 0.6 of a figure's width), not a single blot. */
-const GROUP = {
-  3: [[-0.1, 0.07], [0.11, 0.05], [0.0, -0.08]],
-  2: [[-0.08, 0.05], [0.09, -0.03]],
-  1: [[0, 0]],
+/** How a stack's squad stands about its spot (`squadSpots`; plot-local, x east, z toward the
+ *  camera): one formation cell is `dx` wide and a row `dz` deep, figures at `scale`. A squad of up to
+ *  `cells` cells (a large unit counts two) takes `small`, a bigger one `big` (closer and smaller, so
+ *  six fit on a plot). Rows behind the front one are drawn at `rear` of the front's scale; the front
+ *  row stands `front` nearer the eye (depth bias), and a row behind it `lift` of its distance behind
+ *  the front (so a house or a tree beside the squad that hides none of its front row hides little
+ *  of the rows behind: they stay behind the front row, cos(pitch) being above `lift`). On a city's plot all of it is times `city`. */
+export const SQUAD = {
+  cells: 3,
+  small: { dx: 0.21, dz: 0.17, scale: 1 },
+  big: { dx: 0.18, dz: 0.18, scale: 0.9 },
+  rear: 0.94,
+  front: 0.02,
+  lift: 0.7,
+  city: 0.8,
 };
+
+/** Where each figure of a squad stands (`figs`: units with the view's `stand`, as stacks.js
+ *  stackFigures gives them): one `{ ox, oz, row, scale }` per figure, in `figs`' order -- offsets
+ *  from the stack's spot (x east, z toward the camera), the drawn row (0 the front) and the figure's
+ *  scale. Only the formation's non-empty rows are drawn, the front nearest the camera, each further
+ *  one `dz` behind, the rows together centred in depth on the spot. A row's figures stand side by
+ *  side in lane order, centred, one cell `dx` wide each (a large unit two, standing at their middle).
+ *  A row whose cells would line up with the drawn row in front of it is shifted by half a cell,
+ *  alternately right and left, so the figures behind show between the shoulders of those in front.
+ *  A figure without a stand counts as the front row. */
+export function squadSpots(figs) {
+  if (figs.length <= 1) return figs.map(() => ({ ox: 0, oz: 0, row: 0, scale: SQUAD.small.scale }));
+  const width = (f) => (f.stand?.large ? 2 : 1);
+  const rowOf = (f) => (f.stand ? Math.floor(f.stand.cell / 3) : 0);
+  const laneOf = (f) => (f.stand ? f.stand.cell % 3 : 0);
+  const cells = figs.reduce((n, f) => n + width(f), 0);
+  const { dx, dz, scale } = cells <= SQUAD.cells ? SQUAD.small : SQUAD.big;
+  const rows = [...new Set(figs.map(rowOf))].sort((a, b) => a - b);
+  const R = rows.length;
+  const out = new Array(figs.length);
+  // (The phase, in cells, of the drawn row in front: where its cells' middles fall, mod one cell.)
+  let phase = 0;
+  rows.forEach((row, d) => {
+    const members = figs.map((f, k) => [f, k]).filter(([f]) => rowOf(f) === row).sort((a, b) => laneOf(a[0]) - laneOf(b[0]) || a[1] - b[1]);
+    const W = members.reduce((n, [f]) => n + width(f), 0);
+    // A centred row of W cells has its cells' middles at a whole cell (W odd) or half a cell (even).
+    let shift = 0;
+    const own = W % 2 ? 0 : 0.5;
+    if (d > 0 && own === phase) shift = d % 2 ? 0.5 : -0.5;
+    phase = (((own + shift) % 1) + 1) % 1;
+    const oz = ((R - 1) / 2 - d) * dz;
+    let at = -W / 2;
+    for (const [f, k] of members) {
+      const w = width(f);
+      out[k] = { ox: (at + w / 2 + shift) * dx, oz, row: d, scale: scale * (d === 0 ? 1 : SQUAD.rear) };
+      at += w;
+    }
+  });
+  return out;
+}
 
 const ids = new Map();
 let nextId = 1;
@@ -222,18 +273,6 @@ function teamCss(owner) {
 function first(atlas, keys) {
   for (const k of keys) if (k && atlas.has(k)) return k;
   return null;
-}
-
-/** How many figures stand for a unit: one for a big creature, a ship, an engine or a hero-sized
- *  sprite (wider or taller than the unit contract's 96 x 120), two for a settler or a worker, three
- *  for the rest (a company). */
-function groupSize(info, art) {
-  if (!art || art.w > 110 || art.h > 130) return 1;
-  const dom = info ? tname("DomainType", info.domain) : null;
-  const combat = info ? tname("UnitCombatType", info.unit_combat) : null;
-  if (dom === "DOMAIN_SEA" || dom === "DOMAIN_AIR" || combat === "UNITCOMBAT_SIEGE" || combat === "UNITCOMBAT_NAVAL") return 1;
-  if (info?.found || info?.worker) return 2;
-  return 3;
 }
 
 /** The owner's banner as a sprite (drawn here, so the colour stays a runtime choice): a gonfalon on
@@ -1069,9 +1108,10 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null, c
   return { list: props.concat(list.slice(propCount)), beams, claims };
 }
 
-/** The unit stacks in sight as groups of figures under their banners, and the seas' buoys `buoys`
+/** The unit stacks in sight as squads of figures under their banners, and the seas' buoys `buoys`
  *  (on the Sea layer: dressSeaBuoys; null without). Returns `{list, stacks}` in the shape of
- *  ../dress.js dressUnits (stacks: for the HUD's badges and the team rings). */
+ *  ../dress.js dressUnits (stacks: for the HUD's badges and the team rings; also `moves`, the
+ *  ready dot's state, and `reach`, how far the figures stand to either side of the spot). */
 export function dressSpriteUnits(world, map, atlas, buoys = null) {
   const list = [];
   const stacks = [];
@@ -1103,45 +1143,71 @@ export function dressSpriteUnits(world, map, atlas, buoys = null) {
     const i = u0.y * w + u0.x;
     const st = stackState(units, sctx);
     const top = st?.head ?? u0;
-    const info = S.data?.tables?.UnitType?.[top.type] ?? null;
-    const key = first(atlas, unitSpriteKeys(top.type, civShortName(top.owner)));
-    if (!key) continue;
-    const art = atlas.info(key);
+    const domOf = (u) => {
+      const info = S.data?.tables?.UnitType?.[u.type];
+      return info ? tname("DomainType", info.domain) : null;
+    };
+    // One figure per unit of the head's squad (stacks.js stackFigures), each its own sprite; one the
+    // atlas has no sprite for is left out.
+    const figs = [];
+    for (const f of stackFigures(units, top)) {
+      const key = first(atlas, unitSpriteKeys(f.type, civShortName(f.owner)));
+      if (key) figs.push({ u: f, key, art: atlas.info(key), dom: domOf(f) });
+    }
+    if (!figs.length) continue;
+    const spots = squadSpots(figs.map((f) => f.u));
     const onCity = map.city[i] >= 0;
-    // A city's garrison is one figure at its front, so it does not crowd the town's walls and gate:
-    // at the front-left corner, else the front-right or the front's middle, out of a river.
-    const dom = info ? tname("DomainType", info.domain) : null;
+    // A city's garrison stands at its front, so it does not crowd the town's walls and gate: at the
+    // front-left corner, else the front-right or the front's middle, out of a river; the squad there
+    // is drawn smaller and closer (SQUAD.city).
+    const k = onCity ? SQUAD.city : 1;
+    const reach = figs.length > 1 ? Math.max(...spots.map((p) => Math.abs(p.ox))) * k : 0;
+    const dom = domOf(top);
     let spot = onCity ? garrisonSpot(world, u0.x, u0.y) : world.feat[i] === FEAT.VOLCANO ? VOLCANO_SPOT : standing.has(i) ? BUILT_SPOT : SPOT;
     // (A group on a land plot stands on its land, not past the rim of the land's face.)
-    if (!world.isWater(i) && world.kind[i] !== KIND.ICE && dom !== "DOMAIN_SEA" && dom !== "DOMAIN_AIR") spot = onLand(world, u0.x, u0.y, spot[0], spot[1], 0.13);
-    const n = onCity ? 1 : groupSize(info, art);
+    if (!world.isWater(i) && world.kind[i] !== KIND.ICE && dom !== "DOMAIN_SEA" && dom !== "DOMAIN_AIR") spot = onLand(world, u0.x, u0.y, spot[0], spot[1], Math.max(0.13, reach));
+    // (A garrison at the town's front-left stands mirrored: its rows behind step out to the left,
+    // away from the houses at the town's front, which would hide them.)
+    if (onCity && spot[0] < 0) for (const p of spots) p.ox = -p.ox;
     const css = teamCss(top.owner);
     const team = hexRgb(cssHex(css));
-    const scale = onCity ? 0.8 : 1;
-    let anchor = null;
-    GROUP[n].forEach(([ox, oz], k) => {
-      const lx = spot[0] + ox, lz = spot[1] + oz;
+    const front = [];
+    const frontOz = Math.max(...spots.map((p) => p.oz));
+    let height = 0;
+    figs.forEach((f, n) => {
+      const p = spots[n];
+      const lx = spot[0] + p.ox * k, lz = spot[1] + p.oz * k;
       const mx = u0.x + 0.5 + lx, my = u0.y + 0.5 - lz;
       const ground = Math.max(SEA, standHeight(world, mx, my, 0.06));
-      const y = dom === "DOMAIN_SEA" ? SEA - DRAFT : dom === "DOMAIN_AIR" ? ground + 0.12 : ground;
-      // The figures behind the first a touch smaller, as the 3D renderer's company.
-      const s = scale * (k === 0 ? 1 : 0.94);
-      const r = card(key, art, PX.unit * s, mx, y, -my, { shadow: true, team, bias: (onCity ? BIAS.garrison : BIAS.unit) + (k === 0 ? 0.02 : 0), id: idOf(`u${top.id}`), phase: hashf(top.id * 3 + k, 3) });
-      r.uid = `${top.id}:${k}`;
-      r.ground = dom !== "DOMAIN_SEA" && dom !== "DOMAIN_AIR";
+      const y = f.dom === "DOMAIN_SEA" ? SEA - DRAFT : f.dom === "DOMAIN_AIR" ? ground + 0.12 : ground;
+      const fcss = teamCss(f.u.owner);
+      const r = card(f.key, f.art, PX.unit * p.scale * k, mx, y, -my, { shadow: true, team: fcss === css ? team : hexRgb(cssHex(fcss)), bias: (onCity ? BIAS.garrison : BIAS.unit) + (p.row === 0 ? SQUAD.front : (frontOz - p.oz) * k * SQUAD.lift), id: idOf(`u${top.id}`), phase: hashf(f.u.id, 3) });
+      // (Keyed by the unit: each unit's figure walks when that unit moves, map3d.js startTweens.)
+      r.uid = String(f.u.id);
+      r.ground = f.dom !== "DOMAIN_SEA" && f.dom !== "DOMAIN_AIR";
       list.push(r);
-      if (k === 0) anchor = { x: mx, y, z: -my, height: r.h * 0.85 };
+      if (p.row === 0) front.push(r);
+      height = Math.max(height, r.h * 0.85);
     });
+    // The HUD's anchor: over the front row's middle.
+    const anchor = { x: front.reduce((s, r) => s + r.x, 0) / front.length, y: front.reduce((s, r) => s + r.y, 0) / front.length, z: front[0].z, height };
     // The banner behind the group's left, its cloth above the figures' heads.
     const bk = bannerKey(atlas, css);
-    const bx = u0.x + 0.5 + spot[0] - (n === 1 ? Math.min(0.3, art.w * PX.unit * 0.42) : 0.26);
-    const by = u0.y + 0.5 - (spot[1] - 0.11);
+    let bx, by;
+    if (figs.length === 1) {
+      bx = u0.x + 0.5 + spot[0] - Math.min(0.3, figs[0].art.w * PX.unit * 0.42);
+      by = u0.y + 0.5 - (spot[1] - 0.11);
+    } else {
+      const left = Math.min(...spots.map((p) => p.ox)), back = Math.min(...spots.map((p) => p.oz));
+      bx = u0.x + 0.5 + spot[0] + (left - 0.16) * k;
+      by = u0.y + 0.5 - (spot[1] + (back - 0.03) * k);
+    }
     const bg = Math.max(SEA, world.heightAt(bx, by));
-    const b = card(bk, atlas.info(bk), PX.banner * scale, bx, dom === "DOMAIN_SEA" ? SEA : bg, -by, { anchor: 5.5 / 40, banner: true, team, bias: BIAS.unit, id: idOf(`ub${top.id}`), phase: hashf(top.id, 7) });
+    const b = card(bk, atlas.info(bk), PX.banner * k, bx, dom === "DOMAIN_SEA" ? SEA : bg, -by, { anchor: 5.5 / 40, banner: true, team, bias: BIAS.unit, id: idOf(`ub${top.id}`), phase: hashf(top.id, 7) });
     b.uid = `${top.id}:b`;
     b.ground = dom !== "DOMAIN_SEA";
     list.push(b);
-    stacks.push({ units, top, x: u0.x, y: u0.y, k: i, anchor, picked: sel.includes(top.id), team: css, spot, mark: st?.state?.mark ?? null, hero: st?.state?.hero ?? false });
+    stacks.push({ units, top, x: u0.x, y: u0.y, k: i, anchor, picked: sel.includes(top.id), team: css, spot, mark: st?.state?.mark ?? null, hero: st?.state?.hero ?? false, moves: st?.state?.moves, reach });
   }
   if (buoys) list.push(...dressSeaBuoys(buoys, atlas));
   return { list, stacks };

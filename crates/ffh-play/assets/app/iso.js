@@ -22,7 +22,7 @@
 
 import { S, me, tname, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
-import { stackHead, unitMoves } from "./stacks.js";
+import { stackHead, stackReady, unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
 import { MANA_SPRITES, improvementContainsMana, manaSpriteKey } from "./mana-art.js";
 import { drawCityWork } from "./citywork.js";
@@ -1671,7 +1671,7 @@ export class IsoMap {
       } else if (top.owner === mine) {
         g.beginPath();
         g.arc(fx + 4.5 * f.s, fy + 3.5 * f.s, Math.max(2.5, 5 * f.s), 0, Math.PI * 2);
-        g.fillStyle = (top.moves ?? 0) > 0 ? "#45e05c" : "#d03a2a";
+        g.fillStyle = stackReady(units, top, mine, it.stack.picked ? [top.id] : []) ? "#45e05c" : "#d03a2a";
         g.fill();
         g.strokeStyle = "rgba(0,0,0,0.6)";
         g.lineWidth = 1;

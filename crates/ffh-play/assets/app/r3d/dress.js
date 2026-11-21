@@ -869,7 +869,7 @@ export function dressUnits(world, map) {
       out.push(it);
       if (k === 0) anchor = { x: mx, y: yy, z: -my, height: (look.height ?? 0.5) * s };
     });
-    stacks.push({ units, top, x: u0.x, y: u0.y, k: i, anchor, picked: sel.includes(top.id), team: teamColour(top.owner), spot: stands[0], mark: st?.state?.mark ?? null, hero: st?.state?.hero ?? false });
+    stacks.push({ units, top, x: u0.x, y: u0.y, k: i, anchor, picked: sel.includes(top.id), team: teamColour(top.owner), spot: stands[0], mark: st?.state?.mark ?? null, hero: st?.state?.hero ?? false, moves: st?.state?.moves });
   }
   return { list: out, stacks };
 }

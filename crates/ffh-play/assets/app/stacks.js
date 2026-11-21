@@ -1,6 +1,6 @@
 // The stacks on the map, computed without the DOM (tested by assets/test/stacks.test.mjs): each
-// tile's stack (head unit and its state: docs/ART.md 10.1, drawn by the HD-2D and 3D maps' dressing)
-// and the units' moves since the last view (the isometric map's move slide).
+// tile's stack (head unit and its state: docs/ART.md 10.1, drawn by the HD-2D and 3D maps' dressing;
+// the units of its squad the HD-2D map draws as figures) and the units' moves since the last view (the isometric map's move slide).
 
 /** Civ4's activities as the art's state marks (ui/mark_<state>). Fortified units sleep in C++
  *  (MISSION_FORTIFY sets ACTIVITY_SLEEP), so a sleeping unit that can fight shows the shield. */
@@ -21,12 +21,20 @@ export function markOf(activity, { canFight = false, automated = false, promote 
   }
 }
 
-/** The head of a stack (the unit drawn): the selection's first, else the viewer's own unit that
- *  can move, else its first, else the strongest foreign one (the best defender stands in front:
- *  docs/ART.md 10.1). `strength(unit)` rates a foreign unit. */
+/** The head of a stack (the unit drawn first, the one the badge speaks for): the selection's first;
+ *  else the front unit of the strongest squad on the tile (of the units that stand in a squad, the
+ *  view's `stand`: the lowest `rank`, then the lowest `cell`; docs/ENGAGEMENTS.md "Squads"); else
+ *  the viewer's own unit that can move, else its first, else the strongest foreign one (the best
+ *  defender stands in front: docs/ART.md 10.1). `strength(unit)` rates a foreign unit. */
 export function headUnit(units, me, selected = [], strength = () => 0) {
   const sel = units.find((u) => selected.includes(u.id));
   if (sel) return sel;
+  let front = null;
+  for (const u of units) {
+    if (!u.stand) continue;
+    if (!front || u.stand.rank < front.stand.rank || (u.stand.rank === front.stand.rank && u.stand.cell < front.stand.cell)) front = u;
+  }
+  if (front) return front;
   const own = units.filter((u) => u.owner === me);
   if (own.length) return own.find((u) => (u.moves ?? 0) > 0) ?? own[0];
   let best = units[0] ?? null;
@@ -47,9 +55,29 @@ export function stackHead(units, me, selected, data) {
   return headUnit(units, me, selected, (u) => unitRating(data, u));
 }
 
+/** The units drawn for a stack whose head is `head` (`headUnit`): the units of the head's squad
+ *  (those on the tile with its `stand.rank`), ordered by their cell; a head that stands in no squad
+ *  (a ship, a worker, a carried unit) alone. So an unselected stack shows its strongest squad, and
+ *  one with a unit selected shows that unit's squad, or that unit alone. */
+export function stackFigures(units, head) {
+  if (!head) return [];
+  if (!head.stand) return [head];
+  const rank = head.stand.rank;
+  return units.filter((u) => u.stand && u.stand.rank === rank).sort((a, b) => a.stand.cell - b.stand.cell);
+}
+
+/** Whether an own stack is ready (the maps' ready dot): with its head selected, whether the head can
+ *  move; else whether any of the viewer's own units on the tile can (the head of an unselected
+ *  stack is its squad's front unit, which may be spent while another unit is not). */
+export function stackReady(units, head, me, selected = []) {
+  if (selected.includes(head.id)) return (head.moves ?? 0) > 0;
+  return units.some((u) => u.owner === me && (u.moves ?? 0) > 0);
+}
+
 /**
  * The stack on one tile as the art draws it: `{head, state}` with state `{own, moves, selected,
- * hp, mark, hero, count, facing}` (web/art/units/stack.js). `units`: the view's units on the tile;
+ * hp, mark, hero, count, facing}` (web/art/units/stack.js), derived from the head, except `moves`
+ * (own stacks: `stackReady`). `units`: the view's units on the tile;
  * `ctx`: { me, selected (unit ids), activity(i) -> name, unitInfo(type) -> {hero, combat, rating},
  * automated(group) -> bool, facing(id) -> 'left'|'right' }.
  */
@@ -67,7 +95,7 @@ export function stackState(units, ctx) {
     facing: ctx.facing?.(head.id) ?? "right",
   };
   if (own) {
-    state.moves = (head.moves ?? 0) > 0;
+    state.moves = stackReady(units, head, ctx.me, ctx.selected ?? []);
     const promote = units.some((u) => u.owner === ctx.me && u.promo_ready);
     const a = head.activity === null || head.activity === undefined ? null : ctx.activity?.(head.activity);
     const fights = (info(head).combat ?? "NONE") !== "NONE" && (info(head).rating ?? 1) > 0;
