@@ -423,21 +423,25 @@ export class MapTextures {
     upload(gl, this.height, this.H);
   }
 
-  /** The per-plot mood channel (the HD-2D mode's region moods, hd2d/mood.js): RGBA8 a plot, read
-   *  LINEAR, so a mood blends over the plot between two centres. Made on first use. */
-  setMood(world, data) {
+  /** The per-plot mood channels (the HD-2D mode's region moods, hd2d/mood.js): two RGBA8 textures
+   *  of four moods each, a texel a plot, read LINEAR, so a mood blends over the plot between two
+   *  centres. Made on first use. */
+  setMood(world, data, data2) {
     const gl = this.gl;
-    if (!this.mood || this.mood.w !== world.w || this.mood.h !== world.h) {
-      if (this.mood) gl.deleteTexture(this.mood);
-      this.mood = texture(gl, world.w, world.h, { filter: gl.LINEAR, wrapS: world.wrapX ? gl.REPEAT : gl.CLAMP_TO_EDGE });
+    for (const [k, d] of [["mood", data], ["mood2", data2]]) {
+      if (!d) continue;
+      if (!this[k] || this[k].w !== world.w || this[k].h !== world.h) {
+        if (this[k]) gl.deleteTexture(this[k]);
+        this[k] = texture(gl, world.w, world.h, { filter: gl.LINEAR, wrapS: world.wrapX ? gl.REPEAT : gl.CLAMP_TO_EDGE });
+      }
+      upload(gl, this[k], d);
     }
-    upload(gl, this.mood, data);
   }
 
   dispose() {
     const gl = this.gl;
-    for (const k of ["terrain", "vis", "owner", "height", "mood"]) if (this[k]) gl.deleteTexture(this[k]);
-    this.terrain = this.vis = this.owner = this.height = this.mood = null;
+    for (const k of ["terrain", "vis", "owner", "height", "mood", "mood2"]) if (this[k]) gl.deleteTexture(this[k]);
+    this.terrain = this.vis = this.owner = this.height = this.mood = this.mood2 = null;
     this.w = this.h = 0;
   }
 }

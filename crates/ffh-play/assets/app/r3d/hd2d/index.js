@@ -345,7 +345,7 @@ export class MapHd2d extends Map3D {
     // the cards' shader's).
     env.town = { scale: this.cfg.townScale ?? 1, clearing: this.cfg.townClearing ?? 0, banners: this.cfg.townBanners ?? 0 };
     this.moods = plotMoods(world, this.view.map);
-    const st = dressSpriteStatic(world, this.view.map, this.sprites.atlas, env, this.moods.moods);
+    const st = dressSpriteStatic(world, this.view.map, this.sprites.atlas, env, this.moods.moods, this.moods.civs);
     env.claims = st.claims;
     this.spriteStatic = st;
     return env;
@@ -367,9 +367,9 @@ export class MapHd2d extends Map3D {
     const st = this.spriteStatic;
     this.sprites.set("static", st?.list ?? []);
     this.sprites.set("beams", st?.beams ?? []);
-    const { data, moods } = this.moods ?? plotMoods(this.world, map);
-    this.scene.tex.setMood(this.world, data);
-    for (const e of moodEmitters(this.world, moods)) emitters.push(e);
+    const { data, data2, moods, civs } = this.moods ?? plotMoods(this.world, map);
+    this.scene.tex.setMood(this.world, data, data2);
+    for (const e of moodEmitters(this.world, moods, civs)) emitters.push(e);
   }
 
   /** A group's ring: a thin one in the owner's colour round the whole group (the banner already
@@ -433,6 +433,7 @@ export class MapHd2d extends Map3D {
       tilt: smoothstep(48, 90, this.ts),
       farDepth: cam.dist * 2.2,
       mood: this.scene.tex.mood,
+      mood2: this.scene.tex.mood2,
       // The land's grade toward the end of the world (the mood pass's uDoom).
       doom: this.doom().land,
       dusk: this.doom().light,

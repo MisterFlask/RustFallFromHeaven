@@ -8,6 +8,8 @@
 //                                               behind it, a small walled town; their garrisons
 //   lab.html?scene=sites&renderer=hd2d          villages, hilltop sites, peaks and mana landmarks
 //   lab.html?scene=fields                       farms, pastures and the like along a river
+//   lab.html?scene=moods&renderer=hd2d          four civilizations' region moods in a two by two
+//            &civs=CIVILIZATION_A,...(4)&religions=RELIGION_X,,...   (scenes.js moods)
 //   lab.html?grid=tree.oak,tree.pine&variants=6 recipes in rows of variants on flat grass
 //            &param=x (all rows) or &params=a,b,c (one per row; repeat a name for several params)
 //            &ground=.  &spacing=1
@@ -37,7 +39,7 @@
 import { S, setData, setView, setMap } from "/app/state.js";
 import { Map3D } from "/app/r3d/map3d.js";
 import { MapHd2d } from "/app/r3d/hd2d/index.js";
-import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d, mana, sites } from "./scenes.js";
+import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d, mana, sites, moods } from "./scenes.js";
 
 const q = new URLSearchParams(location.search);
 
@@ -66,6 +68,9 @@ async function main() {
     scene = fields(data);
   } else if (q.get("scene") === "hd2d") {
     scene = hd2d(data);
+  } else if (q.get("scene") === "moods") {
+    const list = (k) => q.get(k)?.split(",") ?? undefined;
+    scene = moods(data, list("civs"), list("religions") ?? []);
   } else if (q.get("scene") === "sites") {
     scene = sites(data);
   } else if (q.get("scene") === "mana") {

@@ -25,6 +25,7 @@ import { MANA } from "../assets/palette.js";
 import { improvementContainsMana } from "../../mana-art.js";
 import { CATALOG } from "../assets/catalog.js";
 import { clamp } from "../math.js";
+import { M } from "./mood.js";
 
 /** World units per art pixel: figures (a 96 x 120 unit canvas is 0.46 x 0.58 of a plot), cities (a
  *  192-wide settlement 1.15 plots: its painted ground spans the plot), the other buildings, the
@@ -432,6 +433,9 @@ const FINE = 2.6;
 /** Open ground's grass tufts, smaller than the other small props: they say what the ground is
  *  without standing out of it (at FINE they read as dark stumps under the grade). */
 const TUFT = FINE * 0.7;
+/** The image model's props of the region moods and the civilizations (tools/hd2d/gen.py sheets
+ *  `frost_arcane`, `holy_ash`, `folk`) are carded at their height in art pixels at this scale. */
+const PAINTED = 1;
 const HELLISH = new Set([GROUND.BURNING_SANDS, GROUND.BROKEN_LANDS, GROUND.PERDITION]);
 
 /** The trees of a wooded plot, by its feature and ground: [kind, weight, scale]. */
@@ -462,16 +466,38 @@ function clutterOf(kind, ground, mood) {
   else out.push(["grass_3", 3.5, TUFT]);
   // Hills are turf-capped scarps in the terrain itself; their silhouette carries the elevation.
   // (A peak carries no cards: its mountain is a model, assets/props.js feat.mountain.)
-  // Each region's own things (the moods, hd2d/mood.js: [hell, corruption, lush, gloom]).
+  // Each region's own things (the moods, hd2d/mood.js MOODS: hell, corruption, lush, gloom, frost,
+  // arcane, holy, ash), where its mood is at least half.
   if (HELLISH.has(ground)) out.push(["bones", 0.4, FINE], ["vent", 0.35, FINE]);
-  if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9], ["obelisk", 0.14, FINE], ["altar", 0.06, FINE]);
-  if (mood && mood[2] >= 0.5) out.push(["lantern", 0.14, FINE]);
+  if (!mood) return out;
+  if (mood[M.corruption] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9], ["obelisk", 0.14, FINE], ["altar", 0.06, FINE]);
+  if (mood[M.lush] >= 0.5) out.push(["lantern", 0.14, FINE]);
+  if (mood[M.frost] >= 0.5 && !HELLISH.has(ground)) out.push(["ice_shard", 0.45, PAINTED], ["frost_shrub", 0.25, PAINTED], ["frost_cairn", 0.08, PAINTED]);
+  if (mood[M.arcane] >= 0.5) out.push(["rune_stone", 0.22, PAINTED], ["glyph_ring", 0.06, PAINTED], ["arcane_obelisk", 0.07, PAINTED], ["float_crystal", 0.05, PAINTED], ["crystal_pillar", 0.04, PAINTED]);
+  if (mood[M.holy] >= 0.5) out.push(["holy_shrine", 0.06, PAINTED], ["brazier", 0.07, PAINTED], ["angel_statue", 0.03, PAINTED], ["marble_column", 0.05, PAINTED]);
+  if (mood[M.ash] >= 0.5) out.push(["soot_rocks", 0.45, PAINTED], ["slag", 0.25, PAINTED], ["coal", 0.15, PAINTED], ["ash_mound", 0.15, PAINTED], ["ash_vent", 0.1, PAINTED]);
   return out;
 }
 
+/** The civilizations' own things on the land they hold (hd2d/mood.js gives a plot its owner's
+ *  civilization): [kind, how many (expected), scale, where]. `where`: "hills" on hills only, "coast"
+ *  on land next to the sea only, else any open ground. */
+const CIV_PROPS = {
+  CIVILIZATION_CLAN_OF_EMBERS: [["totem", 0.1, PAINTED], ["skull_pole", 0.13, PAINTED]],
+  CIVILIZATION_DOVIELLO: [["totem", 0.07, PAINTED], ["skull_pole", 0.1, PAINTED]],
+  CIVILIZATION_CALABIM: [["gallows", 0.03, PAINTED], ["red_lantern", 0.1, PAINTED]],
+  CIVILIZATION_BALSERAPHS: [["mask_pole", 0.11, PAINTED], ["carnival_stall", 0.06, PAINTED]],
+  CIVILIZATION_KHAZAD: [["mine_entrance", 0.3, PAINTED, "hills"]],
+  CIVILIZATION_LANUN: [["shipwreck", 0.2, PAINTED, "coast"], ["anchor", 0.2, PAINTED, "coast"]],
+};
+
 /** Props that carry a light of their own (hut windows, runes, lamps, embers): their bright,
  *  saturated pixels feed the bloom. */
-const GLOWS = { crystal: 1.3, lava_rock: 1.3, obelisk: 1.4, altar: 1.2, vent: 1.4, lantern: 1.4, hut: 0.6 };
+const GLOWS = {
+  crystal: 1.3, lava_rock: 1.3, obelisk: 1.4, altar: 1.2, vent: 1.4, lantern: 1.4, hut: 0.6,
+  rune_stone: 1.3, glyph_ring: 1.3, arcane_obelisk: 1.4, float_crystal: 1.3, crystal_pillar: 1.3,
+  brazier: 1.4, holy_shrine: 1.0, ash_vent: 1.4, ash_mound: 1.1, red_lantern: 1.4, mine_entrance: 0.8,
+};
 
 /** The town kit's architecture families (tools/hd2d/towns.json, docs/HD2D.md §5c), by the short
  *  name of a civilization (iso.js civShortName): the 3D renderer's families (architecture.js
@@ -689,7 +715,7 @@ const FARMED = /FARM|PASTURE|COTTAGE|HAMLET|VILLAGE|PLANTATION|WINERY/;
  *  thinned where something stands on the plot), bushes, flowers, rocks, crystals and lava rocks
  *  scattered on open ground -- off rivers, roads, towns and the spot where a stack stands. A pure
  *  function of the state and the plot index. */
-function dressProps(world, map, atlas, env, moods, list) {
+function dressProps(world, map, atlas, env, moods, civs, list) {
   const w = world.w;
   const H = (mx, my) => world.heightAt(mx, my);
   /** A town of the kit's shape (townShape), by its plot: worked out once a dressing. */
@@ -795,6 +821,12 @@ function dressProps(world, map, atlas, env, moods, list) {
         let count = Math.floor(n) + (r() < n - Math.floor(n) ? 1 : 0);
         while (count-- > 0) put(k, ...at(), s * r.range(0.8, 1.15));
       }
+      for (const [k, n, s, where] of CIV_PROPS[civs?.[i]] ?? []) {
+        if (where === "hills" && kind !== KIND.HILLS) continue;
+        if (where === "coast" && !nearSea(world, x, y)) continue;
+        if (HELLISH.has(world.ground[i])) continue;
+        if (r() < n) put(k, ...at(), s * r.range(0.85, 1.1));
+      }
       // Only worked land carries agricultural props; nearby bare terrain stays open.
       const imp = map.improvement[i] >= 0 ? tname("ImprovementType", map.improvement[i]) : "";
       if (FARMED.test(imp)) {
@@ -803,6 +835,17 @@ function dressProps(world, map, atlas, env, moods, list) {
       }
     }
   }
+}
+
+/** Whether a land plot touches the sea (or a lake). */
+function nearSea(world, x, y) {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const j = world.index(x + dx, y + dy);
+      if ((dx || dy) && j >= 0 && world.isWater(j)) return true;
+    }
+  }
+  return false;
 }
 
 /** The look target's land ends at its water in dark, wet stones: a loose row of them in the
@@ -921,12 +964,12 @@ function resourceClearings(world, atlas, props, resources) {
 /** The static cards (cities, standing improvements, resources and their banners, the land's prop
  *  cards) and the light beams over mana nodes and towers; `claims` names what the 3D dressing no
  *  longer models (with prop cards: its trees, plants and rocks). */
-export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
+export function dressSpriteStatic(world, map, atlas, env = null, moods = null, civs = null) {
   const list = [];
   const beams = [];
   const claims = { city: new Set(), improvement: new Set(), bonus: new Set() };
   if (env && Object.keys(CARDS).length) {
-    dressProps(world, map, atlas, env, moods, list);
+    dressProps(world, map, atlas, env, moods, civs, list);
     dressShores(world, map, atlas, list);
     claims.trees = claims.flora = claims.rocks = true;
   }

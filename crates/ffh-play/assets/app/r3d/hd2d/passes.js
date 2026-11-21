@@ -148,6 +148,8 @@ export class Hd2dPasses {
         uND: pl.t.nd,
         uEmit: pl.t.emit,
         uMood: fx.mood,
+        uMood2: fx.mood2 ?? fx.mood,
+        uMood2On: fx.mood2 ? 1 : 0,
         uTan: fr.tan,
         uInvView: fr.invView,
         uMoodAmount: cfg.mood ?? 0,

@@ -389,10 +389,10 @@ void main() {
   o = vec4(e + c * smoothstep(uThreshold, uThreshold * 1.8, l) * 0.6, 1.0);
 }`;
 
-/** The region moods (display colour, before the finish pass's grade): the per-plot mood channel
- *  (r hell, g corruption, b lush, a gloom; LINEAR between plot centres, its lookup warped by noise
- *  so a region's edge is organic, not the plot grid) grades the land under each pixel, found from
- *  the depth. Sprites and units (the keep mask, alpha 1) take a lighter grade: they must read on
+/** The region moods (display colour, before the finish pass's grade): the per-plot mood channels
+ *  (uMood: r hell, g corruption, b lush, a gloom; uMood2: r frost, g arcane, b holy, a ash; LINEAR
+ *  between plot centres, their lookup warped by noise so a region's edge is organic, not the plot
+ *  grid) grade the land under each pixel, found from the depth. Sprites and units (the keep mask, alpha 1) take a lighter grade: they must read on
  *  every ground. */
 export const MOOD_FS = `
 in vec2 vUv;
@@ -400,6 +400,8 @@ uniform sampler2D uSrc;
 uniform sampler2D uND;
 uniform sampler2D uEmit;
 uniform sampler2D uMood;
+uniform sampler2D uMood2;
+uniform float uMood2On;
 uniform vec2 uTan;
 uniform mat4 uInvView;
 uniform float uMoodAmount;
@@ -427,16 +429,24 @@ void main() {
   if (uWrapX > 0.5) m.x = mod(m.x, uMapSize.x);
   vec2 warp = vec2(mnoise(m, 0.8), mnoise(m + 7.3, 0.8)) - 0.5;
   vec4 md = texture(uMood, (m + warp * 0.7) / uMapSize);
+  vec4 md2 = texture(uMood2, (m + warp * 0.7) / uMapSize) * uMood2On;
   // Off the map (north and south, or east and west of a map that does not wrap) the land has no
   // mood: the clamped lookup would raise a region's colour into a wall over the void.
   vec2 inside = min(m, uMapSize - m);
-  md *= smoothstep(-0.2, 0.3, uWrapX > 0.5 ? inside.y : min(inside.x, inside.y));
+  float onMap = smoothstep(-0.2, 0.3, uWrapX > 0.5 ? inside.y : min(inside.x, inside.y));
+  md *= onMap;
+  md2 *= onMap;
   // Figures and banners (keep mask 1) take only a little of the grade, and only its light: they
   // must read on every ground, a red figure on hell's red included. Buildings' cards (0.9) take it
   // whole, as the land they stand on.
   bool figure = src.a > 0.99;
   float k = uMoodAmount;
   float hell = md.r * k, corrupt = md.g * k, lush = md.b * k, gloom = md.a * k;
+  float frost = md2.r * k, arcane = md2.g * k, holy = md2.b * k, ash = md2.a * k;
+  // Which way the surface under the pixel faces (1: the ground, up): the snow's dusting and the
+  // ley lines lie on the ground only: not on a card (its keep mask is 0.9 or more) nor on the
+  // water (its keep mask is its glints', mostly 0; the ground's is about 0.87).
+  float upward = smoothstep(0.5, 0.85, (mat3(uInvView) * nd.xyz).y) * step(src.a, 0.885) * smoothstep(0.6, 0.8, src.a);
   float L = lum(col);
   // Lush: deeper greens, golden light, a sap-green cast in the shade (richer in value, not in
   // saturation: the land's palette below keeps foliage an olive).
@@ -483,12 +493,44 @@ void main() {
   // Gloom (the dark elves, the vampires): cool, dim, half the colour gone.
   vec3 glo = sat(col, 0.62) * vec3(0.84, 0.88, 1.04) * 0.88;
   col = mix(col, glo, gloom);
+  // Frost (the Illians, the Doviello): the colour drained toward a cold blue-grey, the light
+  // whitened, and snow dusting the ground in drifts (a world-anchored noise, thicker where the
+  // frost is deeper), what glows left to glow.
+  float Lf = lum(col);
+  vec3 fro = mix(vec3(Lf), col, 0.5) * vec3(0.9, 0.97, 1.1);
+  fro = mix(fro, fro * 0.85 + vec3(0.12, 0.14, 0.17), smoothstep(0.3, 0.8, Lf));
+  float drift = smoothstep(0.62 - 0.22 * frost, 0.8 - 0.2 * frost, mnoise(m + warp * 0.4 + 23.0, 2.6));
+  fro = mix(fro, vec3(0.84, 0.88, 0.95) * (0.82 + 0.18 * Lf), drift * upward * 0.75 * (1.0 - hot));
+  col = mix(col, fro, frost);
+  // The arcane (the Amurites, the Luchuirp, the Runes of Kilmorph): a cool, clear lift, bright
+  // accents pushed to cyan, and thin ley lines glowing on the ground (isolines of a world-anchored
+  // noise, broken into lengths, pulsing slowly).
+  vec3 arc = sat(col, 0.78) * vec3(0.86, 0.96, 1.14) + vec3(0.0, 0.01, 0.03);
+  arc = mix(arc, col * vec3(0.78, 1.08, 1.28), accent);
+  col = mix(col, arc, arcane);
+  float ley = 1.0 - smoothstep(0.0, 0.018, abs(mnoise(m + 61.0, 0.55) - 0.5));
+  float leyOpen = smoothstep(0.45, 0.6, mnoise(m - 13.0, 1.1));
+  float leyPulse = 0.7 + 0.3 * sin(uTime * 0.9 + m.x * 0.6 + m.y * 0.4);
+  col += vec3(0.25, 0.75, 1.0) * ley * leyOpen * leyPulse * upward * smoothstep(0.3, 0.8, arcane) * 0.5;
+  // Holy light (the Mercurians, the Elohim, the Order): warm, the highlights lifted toward a soft
+  // overexposure, the shade kept clean (warmed, not lifted).
+  vec3 hol = col * mix(vec3(1.04, 1.0, 0.9), vec3(1.2, 1.12, 0.92), smoothstep(0.25, 0.75, L));
+  hol += vec3(0.08, 0.07, 0.035) * smoothstep(0.35, 0.85, L);
+  col = mix(col, hol, holy);
+  // Ash (the Khazad, the Clan of Embers, the Infernals): sooty, warm grey, the shade deepened;
+  // what glows keeps its heat.
+  float La = lum(col);
+  vec3 asc = mix(vec3(La), col, 0.3) * vec3(0.8, 0.76, 0.72);
+  asc = mix(asc * vec3(0.72, 0.68, 0.66), asc, smoothstep(0.05, 0.45, La));
+  asc = mix(asc, col, hot);
+  col = mix(col, asc, ash);
   // Each mood's air: a tinted haze thickening with distance.
   float far = smoothstep(uFarDepth * 0.35, uFarDepth, nd.w);
   vec3 air = vec3(0.0);
-  float wsum = corrupt + hell + gloom + 1e-4;
+  float wsum = corrupt + hell + gloom + frost + arcane + holy + ash + 1e-4;
   air += vec3(0.3, 0.16, 0.42) * corrupt + vec3(0.36, 0.16, 0.1) * hell + vec3(0.26, 0.3, 0.4) * gloom;
-  col = mix(col, air / wsum, clamp(far * (corrupt + hell + gloom), 0.0, 1.0) * 0.1);
+  air += vec3(0.66, 0.72, 0.82) * frost + vec3(0.28, 0.42, 0.62) * arcane + vec3(0.72, 0.64, 0.46) * holy + vec3(0.32, 0.3, 0.28) * ash;
+  col = mix(col, air / wsum, clamp(far * (wsum - 1e-4), 0.0, 1.0) * 0.1);
   // The land's palette (docs/HD2D.md §6): a little chroma taken from the land and the water, foliage
   // nudged toward olive, the shade a dark olive rather than black; the accents (what glows, gold,
   // banners) keep theirs. (Until 2026-11-14 it took a third of the land's chroma, after the look
