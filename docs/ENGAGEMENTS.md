@@ -366,8 +366,8 @@ only, and which units: all, large, or those without `bRiver`) is served to the s
 the attacker's rear row before the battle (`pre_battle_damage`), hold its melee in round 1 of the
 first battle there each turn (`hold_melee_rounds`, a `Held` note), give the defenders a last stand
 (`last_stand_damage`) or more damage while the city has never changed hands (`never_lost_damage`),
-change its Sentinels (`sentinel_unit`, `sentinel_ranged_resist`); an improvement narrows the
-attacker (`engagement_attacker_slots_change`); a unit acts otherwise in round 1
+change its Sentinels (`sentinel_unit`, `sentinel_ranged_resist`); an improvement slows the
+attacker's first round (`engagement_attacker_first_round_percent`, the Trench); a unit acts otherwise in round 1
 (`engage_first_round`); promotions give the first STRIKE or CHARGE of each round a pattern
 (`first_melee_pattern`), a heal of the ally behind at each round's end (`heal_behind`, an event with
 pass 0) or an attack of a damage type (`attack_damage_type`). None of them draws a random number.

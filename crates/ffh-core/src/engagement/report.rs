@@ -195,8 +195,8 @@ pub enum SlotSource {
     Minimum,
     /// Phase 7: extra slots used by summons.
     Summons(i32),
-    /// The attacker: the defended plot's improvement (`engagement_attacker_slots_change`, a
-    /// card's: the Trench).
+    /// The attacker: the defended plot's improvement (a card's: the Trench, until 2026-11-21; a
+    /// log of an older battle only: the Trench now slows the attacker's first round).
     Improvement(ImprovementType),
 }
 
