@@ -411,6 +411,9 @@ export class MapHd2d extends Map3D {
    *  strength by zoom (none far out, where the whole map must read), the mood texture. */
   beforeFrame(cam, fr) {
     this.sprites.refresh();
+    // Looking straight down (the city screen, map3d.js `top`) the ground is not foreshortened: its
+    // art pixels square again north-south.
+    this.scene.pixArt = [PIX_TILES[0], PIX_TILES[1] + (PIX_TILES[0] - PIX_TILES[1]) * this.top];
     const v = this.view;
     const o = v.overlay;
     const p = o.hover ?? o.sel ?? null;
@@ -430,7 +433,8 @@ export class MapHd2d extends Map3D {
     ext.frame = {
       cfg: this.qualityCfg(),
       focus: this.focus,
-      tilt: smoothstep(48, 90, this.ts),
+      // (None looking straight down: the ground is all at one depth, and the city's plots must read.)
+      tilt: smoothstep(48, 90, this.ts) * (1 - this.top),
       farDepth: cam.dist * 2.2,
       mood: this.scene.tex.mood,
       mood2: this.scene.tex.mood2,

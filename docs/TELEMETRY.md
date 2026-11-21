@@ -75,7 +75,7 @@ described in docs/AUTOPSY.md.
 | `defend` | `win`, `loss`, `withdraw` | – |
 | `defend_in_city` | `yes`, `no` | defenders lost |
 | `kill_by` / `lost_unit` | unit type of the winner / of a combat unit lost (combat, spell, killed) | – |
-| `engage` / `engage_def` | the attacker's / the defender's engagements by result: `taken` (the plot fell), `cleared` (the defender's line gone, the plot held), `repulsed` (the attacker's line gone), `held` (both lines stand after the last round) (engagement combat, docs/ENGAGEMENTS.md) | rounds |
+| `engage` / `engage_def` | the attacker's / the defender's engagements by result: `taken` (the plot fell), `cleared` (the defender's line gone, the plot held: defenders left, or the attacker lost by HP), `repulsed` (the attacker's line gone), `held` (both lines stand after the last round) (engagement combat, docs/ENGAGEMENTS.md) | rounds |
 | `engage_rounds` | rounds begun: `0`, `1`, `2`, `3`, `4+` | rounds |
 | `engage_slots` / `engage_slots_def` | a side's slots (`00`..`24`) | units committed |
 | `engage_force` | a committed attacker's kind (the action of the row it prefers: `STRIKE`, `SHOOT`, `CHARGE`, `SPELL`, `HEAL`, `BOMBARD`, `STAB`) | – |
@@ -151,7 +151,7 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `cast` and `cast_result`;
 - `combat`;
 - `engagement` (the attacker's: `vs`, the report `id`, `res` (`taken`, `cleared`, `repulsed`,
-  `held`), `att` / `def` committed, `att_lost` / `def_lost`, `rounds`, `city`, `taken` (the
+  `held`), `loser` (`att`, `def`, `none`), `by` (the rule that found it: `Wiped`, `Deaths`, `Damage`, `Even`), `att` / `def` committed, `att_lost` / `def_lost`, `rounds`, `city`, `taken` (the
   launcher moved in), `x`, `y`);
 - `war`, `peace` and `war_plan`;
 - `deal`;

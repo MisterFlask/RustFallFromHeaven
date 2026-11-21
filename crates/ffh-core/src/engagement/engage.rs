@@ -29,8 +29,9 @@
 //!    chance first strikes; per pass the coins; per action the miss, the crit, r, a withdrawal,
 //!    the splash's r's and withdrawals (docs/ENGAGEMENTS.md, "RNG").
 //! 5. *Post-battle* ([`super::apply`], with phase 7's post-battle hook,
-//!    [`Game::engage_post_battle_spells`]) and the report ([`super::report`]), telemetry. The plot
-//!    falls only when no defender is left on it: then the launching group moves in.
+//!    [`Game::engage_post_battle_spells`]) and the report ([`super::report`]), telemetry. Who lost:
+//!    [`engage_verdict`] (all fallen, then more fallen, then more HP lost); the plot falls only
+//!    when the defenders lost and none of them is left on it: then the launching group moves in.
 //!
 //! **Phase 7 hooks** (plan 6.2, 14): the three hooks are empty in phase 6. Each reads the set-up
 //! and returns [`BattleEffect`]s; none writes `Game` or draws a random number, so the preview can
@@ -59,7 +60,7 @@ use super::arrange::Place;
 use super::more_cards::SentinelSource;
 use super::formation::{self, missile_hit, Fate, Fighter, Formation, Ground, HealSpell, Outcome, Pair, Params, Side, Spell, WonderOutcome};
 use super::pick::WarTest;
-use super::report::{BattleLog, BattleReport, CitySnap, EngageResult, LogFate, Outcome as ReportOutcome, PlotSnap, ReportSide};
+use super::report::{BattleLog, BattleReport, CitySnap, DecidedBy, EngageResult, LogFate, Outcome as ReportOutcome, PlotSnap, ReportSide};
 use super::sink::Sink;
 use super::slots::Slots;
 use super::stats::HitCtx;
@@ -113,6 +114,8 @@ pub struct EngageOutcome {
     pub result: EngageResult,
     /// The attacker moved in.
     pub plot_taken: bool,
+    /// The side that lost ([`engage_verdict`]; `None`: neither).
+    pub loser: Option<Side>,
 }
 
 /// A phase 7 effect on a battle (plan 14), returned by the hooks; fighters are set-up indices.
@@ -241,6 +244,33 @@ impl Setup {
         self.fighters[i].spawner.is_some()
     }
 
+    /// Each side's tally of the engagement (`[attacker, defender]`; [`engage_verdict`] reads it):
+    /// its units that fought (`fought`: not sat out, not a unit a kill could have created that none
+    /// did) and of them those that fell (`fell`); and its HP lost, centi-HP: each fighter's HP
+    /// `start` when the engagement began (before the opening) less its HP `end` (0 for a fallen one,
+    /// and for one that `withdrew`: its withdrawal took the place of a killing hit), both by set-up
+    /// index, a heal in the battle taking back what it heals. A Sentinel is no unit: its HP lost
+    /// is the defender's, it is not counted as fighting or falling.
+    pub fn tally(&self, start: &[i32], end: &[i32], fought: impl Fn(usize) -> bool, fell: impl Fn(usize) -> bool, withdrew: impl Fn(usize) -> bool) -> [SideTally; 2] {
+        let mut t = [SideTally::default(); 2];
+        for i in 0..self.fighters.len() {
+            let s = &mut t[self.sides[i].index()];
+            let end = if fell(i) || withdrew(i) { 0 } else { end[i] };
+            s.hp_lost += (start[i] - end) as i64;
+            if i < self.units.len() && fought(i) {
+                s.fought += 1;
+                s.fell += fell(i) as i32;
+            }
+        }
+        t
+    }
+
+    /// The set-up's HP of each fighter (the units' from their damage at the set-up: before the
+    /// opening).
+    pub fn start_hp(&self) -> Vec<i32> {
+        self.fighters.iter().map(|f| f.hp).collect()
+    }
+
     /// Who sits out before the morale check: the units kills may create.
     pub fn initial_sat_out(&self) -> Vec<bool> {
         (0..self.units.len()).map(|i| self.is_on_kill(i)).collect()
@@ -302,6 +332,40 @@ impl Setup {
                 BattleEffect::Cast { .. } => {}
             }
         }
+    }
+}
+
+/// One side's tally of an engagement ([`Setup::tally`]).
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct SideTally {
+    /// Its units that fought, and of them those that fell.
+    pub fought: i32,
+    pub fell: i32,
+    /// Its HP lost, centi-HP.
+    pub hp_lost: i64,
+}
+
+/// Who lost an engagement and by which rule (docs/ENGAGEMENTS.md, "The result"; the owner's
+/// rules, 2026-11-21), the first that tells the sides apart: (1) a side all of whose units that
+/// fought fell loses (both: on to the next rule); (2) the side with more units fallen loses;
+/// (3) the side that lost more HP loses. `None`, [`DecidedBy::Even`]: none tells them apart. The
+/// plot falls only to an attacker whose defenders lost and left no one on it.
+pub fn engage_verdict(t: [SideTally; 2]) -> (Option<Side>, DecidedBy) {
+    let wiped = t.map(|s| s.fought > 0 && s.fell == s.fought);
+    let loser = |o: std::cmp::Ordering| match o {
+        std::cmp::Ordering::Greater => Some(Side::Attacker),
+        std::cmp::Ordering::Less => Some(Side::Defender),
+        std::cmp::Ordering::Equal => None,
+    };
+    if let Some(l) = loser(wiped[0].cmp(&wiped[1])) {
+        return (Some(l), DecidedBy::Wiped);
+    }
+    if let Some(l) = loser(t[0].fell.cmp(&t[1].fell)) {
+        return (Some(l), DecidedBy::Deaths);
+    }
+    match loser(t[0].hp_lost.cmp(&t[1].hp_lost)) {
+        Some(l) => (Some(l), DecidedBy::Damage),
+        None => (None, DecidedBy::Even),
     }
 }
 
@@ -965,7 +1029,7 @@ impl Game {
         }
         self.engage_messages(id);
         self.house_battle_deed(id, house);
-        Ok(EngageOutcome { report: id, result: post.result, plot_taken: post.plot_taken })
+        Ok(EngageOutcome { report: id, result: post.result, plot_taken: post.plot_taken, loser: post.loser })
     }
 
     /// The defended plot as it is now (the report's `place`).
@@ -1070,6 +1134,10 @@ impl Game {
                 // Card: the field's Sentinels too (more_cards.rs).
                 sentinels: e.setup.sentinel_range().len() as i32,
                 sentinels_breached: e.setup.sentinel_range().filter(|&i| matches!(f.fate[i], LogFate::Fell { .. })).count() as i32,
+                hp_lost: post.hp_lost.map(|x| x.clamp(i32::MIN as i64, i32::MAX as i64) as i32),
+                loser: post.loser,
+                decided_by: post.decided_by,
+                pushed: post.pushed,
             },
             log: log.map(Box::new),
         }
@@ -1091,34 +1159,69 @@ impl Game {
             (0, _) => String::new(),
             (n, b) => format!(", {b} of {n} Sentinels breached"),
         };
+        let pushed = r.outcome.pushed;
         let took = match (&r.outcome.city_captured, r.outcome.plot_taken) {
             (Some(_), _) => format!("took {place}"),
+            (None, true) if pushed > 0 => format!("pushed {pushed} back and took the plot"),
             (None, true) => "took the plot".to_string(),
+            _ if pushed > 0 => format!("pushed {pushed} back"),
             _ => "cleared it".to_string(),
         };
-        // The recipient's result: its side took or cleared the plot, or held it.
-        let attacker_won = matches!(result, EngageResult::Taken | EngageResult::Cleared);
-        let mark = |won: bool| if won { LogMark::Kill } else { LogMark::Loss };
+        // The plot is empty, but the attackers lost: it does not fall.
+        let empty = r.outcome.defenders_left == 0;
+        // The recipient's result: its side won (the other lost more HP), lost, or neither.
+        let loser = r.outcome.loser;
+        let mark = |side: Side| match loser {
+            Some(l) if l == side => LogMark::Loss,
+            Some(_) => LogMark::Kill,
+            None => LogMark::Event,
+        };
+        let tally = r.tally();
+        let verdict = |side: Side| {
+            let (mine, theirs) = (tally[side.index()], tally[side.other().index()]);
+            let word = match loser {
+                Some(l) if l == side => "lost",
+                Some(_) => "won",
+                None => "drawn",
+            };
+            match r.outcome.decided_by {
+                DecidedBy::Wiped if loser == Some(side) => format!("{word}: all {} of yours fell", mine.fought),
+                DecidedBy::Wiped => format!("{word}: all {} of theirs fell", theirs.fought),
+                DecidedBy::Deaths => format!("{word}, {} fell to {}", mine.fell, theirs.fell),
+                _ => format!("{word}, {} HP lost to {}", (mine.hp_lost + 50) / 100, (theirs.hp_lost + 50) / 100),
+            }
+        };
         let mut msgs: Vec<(PlayerId, LogMark, String)> = Vec::new();
         for &p in &att.players {
             let verb = match result {
                 EngageResult::Taken => took.clone(),
+                EngageResult::Cleared if empty => "left no defender, but did not win: the plot does not fall".to_string(),
                 EngageResult::Cleared => "broke their line, but the plot holds".to_string(),
                 EngageResult::Repulsed => "were repulsed".to_string(),
                 EngageResult::Held => "could not break their line".to_string(),
             };
             let them = self.player_get_civilization_adjective(def.shown_player);
-            msgs.push((p, mark(attacker_won), format!("Battle at {place}: your {} attacked {} {them} and {verb}; {} fell, {} killed{walls} (report #{id})", att.committed, def.committed, att.fallen, def.fallen)));
+            msgs.push((
+                p,
+                mark(Side::Attacker),
+                format!("Battle at {place} ({}): your {} attacked {} {them} and {verb}; {} fell, {} killed{walls} (report #{id})", verdict(Side::Attacker), att.committed, def.committed, att.fallen, def.fallen),
+            ));
         }
         for &p in &def.players {
             let verb = match result {
+                EngageResult::Taken if pushed > 0 => "were pushed back",
                 EngageResult::Taken => "were overrun",
+                EngageResult::Cleared if empty => "are all gone, but the attackers did not win: the plot does not fall",
                 EngageResult::Cleared => "lost their line, but the plot holds",
                 EngageResult::Repulsed => "drove them off",
                 EngageResult::Held => "held",
             };
             let them = self.player_get_civilization_adjective(att.shown_player);
-            msgs.push((p, mark(!attacker_won), format!("Battle at {place}: {} {them} attacked your {}, which {verb}; {} fell, {} killed{walls} (report #{id})", att.committed, def.committed, def.fallen, att.fallen)));
+            msgs.push((
+                p,
+                mark(Side::Defender),
+                format!("Battle at {place} ({}): {} {them} attacked your {}, which {verb}; {} fell, {} killed{walls} (report #{id})", verdict(Side::Defender), att.committed, def.committed, def.fallen, att.fallen),
+            ));
         }
         for (p, mark, text) in msgs {
             self.log.msg_marked(turn, Some(p), at, mark, LogTag::Battle(id), || text);

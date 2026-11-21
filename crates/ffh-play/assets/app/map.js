@@ -455,8 +455,8 @@ export class MapView {
     if (plot) this.overlay.city.onPlot(plot);
   }
 
-  /** Centres city overlay `o`'s city at the largest zoom step that shows all its plots in the room
-   *  the screen's panels leave (CITY_FRAME). */
+  /** Frames city overlay `o`'s plots: the largest zoom step that shows them all in the room the
+   *  screen's panels leave (CITY_FRAME), their middle at that room's middle. */
   frameCity(o) {
     if (!this.map) return;
     // The plots' extent on screen, in tiles: north up for the square renderers; for the isometric
@@ -480,11 +480,17 @@ export class MapView {
     const fits = (ts) => tw * ts <= w && th * ts <= h;
     const zs = this.zooms();
     const ts = zs.filter(fits).at(-1) ?? zs[0];
+    // The view's centre from the city's, in tiles on screen (right, down): the plots' middle, less
+    // the room's offset from the screen's middle (the panels above take more than those below).
+    const u = (ext.x0 + ext.x1) / 2;
+    const v = (ext.y0 + ext.y1) / 2 - (CITY_FRAME.top - CITY_FRAME.bottom) / 2 / ts;
+    const cx = o.x + 0.5 + (this.iso ? u + 2 * v : u);
+    const cy = o.y + 0.5 + (this.iso ? u - 2 * v : -v);
     if (ts !== this.cam.ts) {
       this.cancelGlide();
-      this.cam = T.clampCamera({ ...this.cam, ts, cx: o.x + 0.5, cy: o.y + 0.5 }, this.map);
+      this.cam = T.clampCamera({ ...this.cam, ts, cx, cy }, this.map);
       this.request();
-    } else this.glideTo(o.x + 0.5, o.y + 0.5);
+    } else this.glideTo(cx, cy);
   }
 
   // ------------------------------------------------------------------------------------------

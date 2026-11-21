@@ -625,6 +625,28 @@ flag.
   Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
   Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
   battle's hit, against the plot's own defence, as before the formation battles). Save format 10.
+  (Who wins and when the plot falls changed on 2026-11-21: the next entry.)
+- **A battle has a loser; the losing defenders are pushed back** (the owner's rules, 2026-11-21;
+  docs/ENGAGEMENTS.md, "The engagement", step 6). The loser is found by the first of three rules
+  that tells the sides apart: (1) a side all of whose units in the battle fell loses; (2) the side
+  with more units fallen loses; (3) the side that lost more HP loses (every one of its units' HP
+  when the engagement began less its HP at the end: a fallen unit's all of it, a withdrawn one's
+  all it had left, as its withdrawal took the place of a killing hit; heals in the battle taken
+  back; a city's Sentinels, which count in this rule only, on the defender's side; the opening's
+  defensive strikes and pre-battle damage included); none: no loser. (The first version that day
+  had rule 3 alone; it let a line that wiped out wounded defenders lose.) When the defenders lost outside a city, every defender left on the plot (the
+  line's survivors, those that sat out, the reserve) is pushed back to a plot next to it, the
+  farthest from the attacker's plot among those it could withdraw to, a group together with its
+  non-combatants; one with nowhere to go stays. The plot falls only when the defenders lost and
+  none of them is left: then the launching group moves in. Otherwise nobody moves, even on a plot
+  the battle emptied (the attackers lost: the next attack walks in). In a city nobody is pushed
+  back, and the city falls as before when no defender is left, but only to a won battle. Before:
+  there was no winner by damage, and the plot fell whenever no defender was left. Why: the
+  owner's design, a battle won or lost by what each side lost. The preview and the AI's
+  forecasts use the same rule (the chance to win, and the plot falls); the winner of a battle for
+  the Dawn Vow is the side that did not lose. A unit that withdraws before taking damage counts
+  as losing all it had, so a fast raider cannot win by chipping a stack and escaping. Save formats
+  57 and 58.
 - **Unit stats** (docs/UNIT_STATS.md; the owner's design, 2026-11-05). Every land unit type has a
   stat sheet (`stats`: HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed),
   and promotions name the stats they change (`stat_changes`: points and percentages). A physical
@@ -756,6 +778,19 @@ flag.
     as one chain, Hellfire 80, Wrath 90, Apocalypse 100. They no longer all come in every game.
     A card is shown to everyone when the counter is within 5 of its slot and plays when the
     counter reaches it. FFH2's message at 10 (`EVENTTRIGGER_ARMAGEDDON`) is gone.
+  - **The doom clock** (the owner's decision, 2026-11-21): the Armageddon counter also rises
+    with time, by its limit spread evenly over 300 turns at Normal speed (scaled by the speed's
+    `victory_delay_percent`: 201 Quick, 450 Epic, 900 Marathon), each game turn before the deck is
+    checked (`doom_clock_tick`, `deck/doom.rs`). FFH2 had no timed rise: the counter moved only
+    on events, and AI games reached 1-13 by turn 300 (12 games, 4 civilizations, Small map), so
+    most of the deck never played. Now the clock alone brings it to 100 (the deck's ending) by
+    turn 300; events bring that sooner, and only what lowers the counter puts it off. The
+    counter's tooltip gives the clock's rate (`doom_clock_calc`).
+    With it, only the players of the game's start raise the counter's limit
+    (`GLOBAL_COUNTER_LIMIT_PER_PLAYER`, `player_init`): in FFH2 every player born later raised it
+    too, which lowered the counter's percentage, and the deck's own civilizations, the Sundering's
+    factions and revolts (4 civilizations alive at the start, up to 18 by turn 300) held the
+    counter at 57-84 at turn 300 with the clock running.
   - **No random events.** The weighted roll for a random event each turn is gone, and with it
     every random event and quest. The triggers rules code fires (the Adaptive and Insane traits,
     lairs, Aeron's Chosen, alignment picks) still fire. Crime, which only enabled random

@@ -852,6 +852,15 @@ impl Game {
                     .i("vs", pd.0 as i64)
                     .i("id", r.id as i64)
                     .s("res", result)
+                    .s(
+                        "loser",
+                        match r.outcome.loser {
+                            Some(Side::Attacker) => "att",
+                            Some(Side::Defender) => "def",
+                            None => "none",
+                        },
+                    )
+                    .s("by", r.outcome.decided_by.name())
                     .i("att", n_att as i64)
                     .i("def", n_def as i64)
                     .i("att_lost", r.sides[0].fallen as i64)

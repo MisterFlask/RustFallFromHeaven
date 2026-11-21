@@ -23,7 +23,7 @@ use std::sync::Arc;
 use ffh_core::army::{March, RecruitDest};
 use ffh_core::controller::{AiHook, Controller};
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
-use ffh_core::engagement::report::{BattleLog, BattleReport, LogEvent, LogFate, SatOutWhy};
+use ffh_core::engagement::report::{BattleLog, BattleReport, DecidedBy, LogEvent, LogFate, SatOutWhy};
 use ffh_core::engagement::formation::{GroundRule, Params};
 use ffh_core::engagement::{EngageResult, FighterIdx, Side};
 use ffh_core::game::Game;
@@ -289,47 +289,85 @@ fn axemen_storm_a_walled_city_of_archers() {
     assert!(checked > 50, "{checked} actions checked");
 }
 
-/// The plot falls only when no defender is left on it (spec 1.7): eight weak warriors in one army
-/// stand in two squads; one fights, the other is the reserve; the attackers wipe the line out,
-/// and the plot holds (nobody moves, the survivors keep their damage). With six only (one squad),
-/// the same battle takes the plot and the launcher's group moves in. Every battle.
+/// Who lost and what it does to the plot (docs/ENGAGEMENTS.md, "The result"): six axemen at
+/// +400% against half-hurt warriors in a forest lose far less HP for any seed. Six warriors (one
+/// squad): the survivors are pushed back and the launcher moves in. Eight in one army (two squads:
+/// one fights, the other is the reserve) on open ground: the reserve is pushed back off the plot
+/// with the line, away from the attackers, and the launcher moves in. Twelve in a city (two
+/// squads): nobody is pushed back, the reserve holds the plot and nobody moves. Every battle.
 #[test]
-fn the_plot_falls_only_when_no_defender_is_left() {
-    for (n, falls) in [(8, false), (6, true)] {
+fn the_plot_falls_to_a_won_battle_with_no_defender_left() {
+    for (n, city) in [(6, false), (8, false), (12, true)] {
         let mut w = world();
         let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-        w.g.players[p1].human = true;
-        let warriors = w.units(p1, "UNIT_WARRIOR", to, n);
-        for &d in &warriors {
-            w.g.units[d].damage = 95;
+        w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
+        if city {
+            w.city(p1, to, 0);
         }
-        assert_eq!(w.army(p1, &warriors).len(), if falls { 1 } else { 2 });
+        w.g.players[p1].human = true;
+        let defenders = w.units(p1, "UNIT_WARRIOR", to, n);
+        for &d in &defenders {
+            w.g.units[d].damage = 50;
+        }
+        assert_eq!(w.army(p1, &defenders).len(), if n > 6 { 2 } else { 1 });
         let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
         for &a in &axemen {
             w.g.unit_change_extra_combat_percent(a, 400);
+            w.g.units[a].stat_pct[StatType::Defense.idx()] = 1000;
         }
         w.army(p0, &axemen);
         for seed in 0..4 {
             let mut f = w.fork(seed);
             let (_, reports) = f.attack(axemen[0]);
             let r = &reports[0];
-            let committed = r.sides[1].committed;
-            assert_eq!((r.sides[0].slots, r.sides[1].slots, r.sides[0].committed), (6, 6, 6), "seed {seed}");
-            assert!(committed > 0 && committed <= 6, "seed {seed}: one squad: {committed}");
-            assert_eq!(r.sides[1].fallen + r.sides[1].escaped, committed, "seed {seed}: the line is wiped out: {:?}", r.sides[1]);
             assert!(check_reach(r.log.as_ref().unwrap()) > 0);
-            if falls {
-                assert_eq!(committed, 6, "seed {seed}");
-                assert_eq!(r.outcome.result, EngageResult::Taken, "seed {seed}");
-                assert!(r.outcome.plot_taken && r.outcome.defenders_left == 0);
-                assert_eq!(f.g.unit_plot(axemen[0]), to, "seed {seed}: the launcher moved in");
-            } else {
-                assert_eq!(r.outcome.result, EngageResult::Cleared, "seed {seed}");
-                assert!(!r.outcome.plot_taken && r.outcome.defenders_left == n as i32 - committed, "seed {seed}: {:?}", r.outcome);
+            assert_eq!(r.outcome.loser, Some(Side::Defender), "seed {seed}: {:?}", r.outcome);
+            assert!(r.outcome.hp_lost[1] > r.outcome.hp_lost[0], "seed {seed}: {:?}", r.outcome);
+            let left: Vec<UnitId> = defenders.iter().copied().filter(|&d| f.alive(d)).collect();
+            if city {
+                assert!(matches!(r.outcome.result, EngageResult::Cleared | EngageResult::Held), "seed {seed}");
+                assert!(!r.outcome.plot_taken && r.outcome.pushed == 0 && r.outcome.defenders_left == n as i32 - r.sides[1].fallen, "seed {seed}: {:?}", r.outcome);
+                assert!(left.iter().all(|&d| f.g.unit_plot(d) == to), "seed {seed}: nobody is pushed back from a city");
                 assert!(axemen.iter().all(|&a| f.g.unit_plot(a) == from), "seed {seed}: nobody moves");
-                assert!(f.g.map.plots[to].units.iter().all(|&u| f.g.units[u].owner == p1));
+            } else {
+                assert_eq!(r.outcome.result, EngageResult::Taken, "seed {seed}");
+                assert!(r.outcome.plot_taken && r.outcome.defenders_left == 0, "seed {seed}: {:?}", r.outcome);
+                assert_eq!(r.outcome.pushed, left.len() as i32, "seed {seed}: every survivor is pushed back");
+                let (tx, ty) = f.g.map.xy(to);
+                for &d in &left {
+                    let at = f.g.unit_plot(d);
+                    let (x, y) = f.g.map.xy(at);
+                    assert!(at != to && at != from && f.g.step_distance(x, y, tx, ty) == 1, "seed {seed}: pushed next to the plot, not onto the attackers");
+                }
+                assert_eq!(f.g.unit_plot(axemen[0]), to, "seed {seed}: the launcher moved in");
             }
         }
+    }
+}
+
+/// A battle lost by HP does not take the plot: one healthy
+/// warrior with Defense raised so far that it is hardly hurt, against a dying attacker that a
+/// sure withdrawal saves (it loses all the HP it had left). The warrior stays, the attacker
+/// stays; and the same rule holds for every report of the game's battles. Every battle.
+#[test]
+fn a_battle_lost_by_hp_does_not_take_the_plot() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let d = w.unit(p1, "UNIT_WARRIOR", to);
+    w.g.units[d].stat_pct[StatType::Defense.idx()] = 100_000;
+    let a = w.unit(p0, "UNIT_HORSEMAN", from);
+    w.g.unit_change_extra_withdrawal(a, 100);
+    w.g.units[a].damage = 70;
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        let (_, reports) = f.attack(a);
+        let r = &reports[0];
+        assert_eq!(r.outcome.loser, Some(Side::Attacker), "seed {seed}: {:?}", r.outcome);
+        assert_eq!((r.outcome.loser, r.outcome.decided_by), ffh_core::engagement::engage_verdict(r.tally()));
+        assert_eq!(r.outcome.decided_by, DecidedBy::Damage, "seed {seed}: nobody fell, the HP decide");
+        assert!(!r.outcome.plot_taken && r.outcome.pushed == 0, "seed {seed}");
+        assert!(f.alive(d) && f.g.unit_plot(d) == to, "seed {seed}: the winner holds");
+        assert!(f.alive(a) && f.g.unit_plot(a) == from, "seed {seed}: the loser stays where it was");
     }
 }
 
@@ -556,12 +594,14 @@ fn an_attacker_withdraws_and_stays_in_its_army() {
     }
 }
 
-/// Two sides that can hardly hurt each other fight every round and both lines hold: the plot
-/// does not change hands and nobody moves. Every battle.
+/// Two sides that can hardly hurt each other fight every round and both lines hold: the city
+/// does not change hands and nobody moves (in a city nobody is pushed back, whoever lost the
+/// hundredths of HP). Every battle.
 #[test]
 fn a_held_line_keeps_the_plot() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.city(p1, to, 0);
     let d = w.unit(p1, "UNIT_WARRIOR", to);
     let a = w.unit(p0, "UNIT_WARRIOR", from);
     for u in [a, d] {
@@ -672,6 +712,8 @@ fn a_werewolf_converts_once_after_its_last_kill() {
 fn blitz_attacks_twice() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    // In a city: the warrior is not pushed back by a lost battle, and is there to attack again.
+    w.city(p1, to, 0);
     let d = w.unit(p1, "UNIT_WARRIOR", to);
     let a = w.unit(p0, "UNIT_HORSEMAN", from);
     w.promote(a, "PROMOTION_BLITZ");
@@ -816,11 +858,13 @@ fn a_marching_recruit_defends_and_keeps_its_march() {
 }
 
 /// The report counts the defender's units still on the plot (its reserve and its line's
-/// survivors), also for a hidden-nationality attack at peace. Every battle.
+/// survivors), also for a hidden-nationality attack at peace. In a city, where nobody is pushed
+/// back. Every battle.
 #[test]
 fn the_report_counts_the_reserve_left() {
     let mut w = world_with(false);
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.city(p1, to, 0);
     let warriors = w.units(p1, "UNIT_WARRIOR", to, 11);
     for &d in &warriors {
         w.g.units[d].damage = 60;
@@ -890,6 +934,8 @@ fn captures_and_slaves_are_outside_the_army() {
     w.g.units[wolf].damage = 95;
     let tamer = w.unit(p0, "UNIT_AXEMAN", from);
     w.promote(tamer, "PROMOTION_SUBDUE_ANIMAL");
+    // The wolf can hardly hurt it: the tamer wins the battle and moves in.
+    w.g.units[tamer].stat_pct[StatType::Defense.idx()] = 100_000;
     let army = w.g.units[tamer].army;
     assert!(army.is_some());
     let wolf_type = w.g.d.t::<UnitType>("UNIT_WOLF");
@@ -953,7 +999,9 @@ fn captures_and_slaves_are_outside_the_army() {
 fn a_hidden_attacker_with_no_free_plot_dies_after_the_battle() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    // Eleven weak warriors: ten fight, one stays in reserve and keeps `to` taken.
+    // A city (nobody is pushed back from it) and eleven weak warriors in it: one stays in
+    // reserve and keeps `to` taken.
+    w.city(p1, to, 0);
     for d in w.units(p1, "UNIT_WARRIOR", to, 11) {
         w.g.units[d].damage = 90;
     }
@@ -1228,4 +1276,61 @@ fn wading_cuts_the_first_round_of_units_that_do_not_cross_rivers() {
         }
     }
     assert!(cut > 0 && spared > 0 && same > 0, "compared: {cut} cut, {spared} spared, {same} the same");
+}
+
+/// Who lost (docs/ENGAGEMENTS.md, "The result"): the first rule that tells the sides apart, (1)
+/// all of a side's units that fought fell, (2) more of them fell, (3) more HP lost; none: no loser.
+#[test]
+fn the_verdict_is_all_fallen_then_more_fallen_then_more_hp() {
+    use ffh_core::engagement::{engage_verdict, SideTally};
+    let t = |fought, fell, hp_lost| SideTally { fought, fell, hp_lost };
+    // (1) beats (2) and (3): the defenders' two fell, the attackers lost three of five and more HP.
+    assert_eq!(engage_verdict([t(5, 3, 90_000), t(2, 2, 2_000)]), (Some(Side::Defender), DecidedBy::Wiped));
+    assert_eq!(engage_verdict([t(2, 2, 100), t(5, 0, 50_000)]), (Some(Side::Attacker), DecidedBy::Wiped));
+    // Both all fell: (2) decides.
+    assert_eq!(engage_verdict([t(3, 3, 30_000), t(1, 1, 9_000)]), (Some(Side::Attacker), DecidedBy::Deaths));
+    // (2) beats (3): one fell against two, whatever the HP.
+    assert_eq!(engage_verdict([t(5, 1, 40_000), t(5, 2, 10_000)]), (Some(Side::Defender), DecidedBy::Deaths));
+    // (3): as many fell.
+    assert_eq!(engage_verdict([t(5, 1, 40_000), t(5, 1, 10_000)]), (Some(Side::Attacker), DecidedBy::Damage));
+    assert_eq!(engage_verdict([t(5, 0, 0), t(3, 0, 1)]), (Some(Side::Defender), DecidedBy::Damage));
+    // Nothing tells them apart.
+    assert_eq!(engage_verdict([t(4, 1, 700), t(4, 1, 700)]), (None, DecidedBy::Even));
+    // A side with no unit that fought (a walled city held by its Sentinels alone) is not all fallen.
+    assert_eq!(engage_verdict([t(3, 0, 5_000), t(0, 0, 1_000)]), (Some(Side::Attacker), DecidedBy::Damage));
+    // A withdrawn unit did not fall: not all fallen.
+    assert_eq!(engage_verdict([t(2, 1, 9_000), t(1, 0, 3_000)]), (Some(Side::Attacker), DecidedBy::Deaths));
+}
+
+/// Wiping out a wounded line wins, however little HP it had left: six axemen at +400% against six
+/// warriors at 5% HP in a forest (one squad a side). Whenever every warrior fell and no axeman did, the
+/// defenders lost by rule 1 and the launcher moved in. Every battle.
+#[test]
+fn wiping_out_a_wounded_line_wins() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
+    let warriors = w.units(p1, "UNIT_WARRIOR", to, 6);
+    for &d in &warriors {
+        w.g.units[d].damage = 95;
+    }
+    w.army(p1, &warriors);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    for &a in &axemen {
+        w.g.unit_change_extra_combat_percent(a, 400);
+    }
+    w.army(p0, &axemen);
+    let mut wiped = 0;
+    for seed in 0..6 {
+        let mut f = w.fork(seed);
+        let (_, reports) = f.attack(axemen[0]);
+        let r = &reports[0];
+        assert_eq!((r.outcome.loser, r.outcome.decided_by), ffh_core::engagement::engage_verdict(r.tally()), "seed {seed}");
+        if r.sides[1].fallen == r.sides[1].committed && r.sides[0].fallen == 0 {
+            wiped += 1;
+            assert_eq!((r.outcome.loser, r.outcome.decided_by), (Some(Side::Defender), DecidedBy::Wiped), "seed {seed}: {:?}", r.outcome);
+            assert!(r.outcome.plot_taken && f.g.unit_plot(axemen[0]) == to, "seed {seed}");
+        }
+    }
+    assert!(wiped > 0, "the axemen never wiped the line out");
 }

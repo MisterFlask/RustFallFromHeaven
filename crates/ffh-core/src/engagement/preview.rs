@@ -13,10 +13,11 @@
 //! resolver, all on an [`Rng`] seeded from the plan (both formations, the plots, the turn), so
 //! the same plan always shows the same numbers. A move that declares war previews the battle after
 //! the declaration: the opening's strikes test war as that fight does. It gives each side's
-//! expected units fallen and escaped, the chance the defender's line is wiped out and the chance
-//! the plot falls (its line wiped out with no defender left on the plot: none in reserve, none
-//! that sat out), the chance the attacker's line is wiped out, and per committed fighter its
-//! chance to fall and to escape.
+//! expected units fallen and escaped, the chance the defender's line is wiped out, the chance the
+//! attacker wins (the defenders lose: [`super::engage::engage_verdict`]) and the
+//! chance the plot falls (the defenders lost, their line wiped out with no defender left on the
+//! plot: none in reserve, none that sat out), the chance the attacker's line is wiped out, and per
+//! committed fighter its chance to fall and to escape.
 //!
 //! **Frozen** ([`Game::engage_forecast_frozen`]): when a human attacker's attack whose battle gets
 //! a log is made, its plan is recomputed (the same seed: the numbers it saw) into the log
@@ -101,6 +102,9 @@ pub struct Forecast {
     pub wiped_permille: i32,
     pub falls_permille: i32,
     pub repulsed_permille: i32,
+    /// The chance (per mille) the attacker wins: the defenders lose ([`super::engage::engage_verdict`];
+    /// the last battle's, for [`Game::engage_forecast_waves`]).
+    pub won_permille: i32,
     /// Expected units fallen and escaped per side (attacker, defender), x100.
     pub lost_x100: [i32; 2],
     pub escaped_x100: [i32; 2],
@@ -179,6 +183,8 @@ struct SampledBattle {
     end_hp: Vec<i32>,
     sat: Vec<bool>,
     down: [bool; 2],
+    /// The side that lost ([`super::engage::engage_verdict`]).
+    loser: Option<Side>,
 }
 
 /// FNV-1a over the words: the preview RNG's seed.
@@ -238,6 +244,7 @@ impl Forecast {
             wiped_permille: self.wiped_permille,
             falls_permille: self.falls_permille,
             repulsed_permille: self.repulsed_permille,
+            won_permille: self.won_permille,
             lost_x100: self.lost_x100,
             per: self.per.iter().filter_map(|x| Some(ForecastFighter { b: index_of(x.unit)?, fall_pct: x.fall_pct, escape_pct: x.escape_pct })).collect(),
         }
@@ -383,6 +390,12 @@ impl Game {
         Ok(Plan { def_number, squads: Vec::new(), squad: 0, pool, formation, auto, def_formation, view, setup, scratch: Some(scratch), summons })
     }
 
+    /// Whether every one of `units` would be pushed back somewhere by a lost battle outside a city
+    /// (apply.rs, step 7b), an attack from `from`.
+    pub(crate) fn engage_all_pushable(&self, units: &[UnitId], from: Option<PlotIdx>) -> bool {
+        units.iter().all(|&u| self.engage_push_plot(&[u], from).is_some())
+    }
+
     /// The seed of a set-up's forecast: both formations (sorted), the plots, the turn.
     fn engage_forecast_seed(&self, setup: &Setup) -> u32 {
         let mut words: Vec<u32> = Vec::with_capacity(3 * setup.units.len() + 6);
@@ -410,15 +423,20 @@ impl Game {
         let n_all = setup.fighters.len();
         let n_att = setup.n_att;
         let mut sat = setup.initial_sat_out();
+        let hp_now = |ov: &UnitOverlay| -> Vec<i32> {
+            (0..n_all)
+                .map(|i| match (i < n, sentinel_hp) {
+                    (true, _) => hp_from_damage(ov.damage(self, setup.units[i]), setup.fighters[i].max_hp),
+                    (false, Some(f)) => f(i),
+                    (false, None) => setup.fighters[i].hp,
+                })
+                .collect()
+        };
+        // The HP when the engagement begins (who lost counts from it).
+        let start = hp_now(ov);
         self.engage_morale_rolls(&setup.units, n_att, &mut sat, rng);
         self.engage_opening_rolls(&setup.units, n_att, &sat, &view.on_plot, ov, rng);
-        let mut hp: Vec<i32> = (0..n_all)
-            .map(|i| match (i < n, sentinel_hp) {
-                (true, _) => hp_from_damage(ov.damage(self, setup.units[i]), setup.fighters[i].max_hp),
-                (false, Some(f)) => f(i),
-                (false, None) => setup.fighters[i].hp,
-            })
-            .collect();
+        let mut hp = hp_now(ov);
         let mut effects = pre.to_vec();
         effects.extend(self.engage_opening_spells(setup, &hp));
         // Card: Thunderhead Tower (docs/CARDS.md), as the real fight.
@@ -444,7 +462,12 @@ impl Game {
             };
             end_hp[map[k]] = e.hp;
         }
-        SampledBattle { fate, end_hp, sat, down: out.down }
+        // A unit a kill could have created that none did never fought (as the real fight counts).
+        let entered: Vec<usize> = out.spawned.iter().filter_map(|sp| sp.unit.map(|u| map[u as usize])).collect();
+        let fought = |i: usize| fate[i] != SampleFate::Off && (i >= n || !setup.is_on_kill(i) || entered.contains(&i));
+        let tally = setup.tally(&start, &end_hp, fought, |i| fate[i] == SampleFate::Fell, |i| fate[i] == SampleFate::Withdrew);
+        let loser = super::engage::engage_verdict(tally).0;
+        SampledBattle { fate, end_hp, sat, down: out.down, loser }
     }
 
     /// `runs` battles of `setup` (the real fight's morale check, opening and battle) on a private
@@ -456,10 +479,12 @@ impl Game {
         let mut rng = Rng::new(self.engage_forecast_seed(setup));
         let pre = self.engage_pre_battle(setup);
         let fresh = UnitOverlay::with_declared(view.declared.as_ref());
-        // The plot falls when the defender's line is wiped out and no defender is left: none in
-        // reserve and none that sat out (withdrawn defenders flee).
+        // The plot falls when the defenders lost and none is left: in a city their line wiped out
+        // with none in reserve and none that sat out (withdrawn defenders flee); elsewhere the
+        // survivors are pushed back, so when each of them has somewhere to go.
         let reserve = !setup.def_reserve().is_empty();
-        let (mut wiped, mut falls, mut repulsed) = (0i64, 0i64, 0i64);
+        let pushable = !setup.in_city && self.engage_all_pushable(&setup.candidates, setup.ctx.from);
+        let (mut wiped, mut falls, mut repulsed, mut won) = (0i64, 0i64, 0i64, 0i64);
         let mut fell = vec![0i64; n_all];
         let mut escaped = vec![0i64; n_all];
         for _ in 0..runs {
@@ -472,12 +497,17 @@ impl Game {
                     _ => {}
                 }
             }
+            let defenders_lost = b.loser == Some(Side::Defender);
+            if defenders_lost {
+                won += 1;
+            }
             if b.down[1] {
                 wiped += 1;
-                let sat_def = setup.of(Side::Defender).any(|i| b.sat[i]);
-                if !reserve && !sat_def {
-                    falls += 1;
-                }
+            }
+            let sat_def = setup.of(Side::Defender).any(|i| b.sat[i]);
+            let emptied = if setup.in_city { b.down[1] && !reserve && !sat_def } else { b.down[1] && !reserve && !sat_def || pushable };
+            if defenders_lost && emptied {
+                falls += 1;
             }
             if b.down[0] {
                 repulsed += 1;
@@ -491,6 +521,7 @@ impl Game {
             wiped_permille: per_mille(wiped),
             falls_permille: per_mille(falls),
             repulsed_permille: per_mille(repulsed),
+            won_permille: per_mille(won),
             lost_x100: [side_sum(&fell, Side::Attacker), side_sum(&fell, Side::Defender)],
             escaped_x100: [side_sum(&escaped, Side::Attacker), side_sum(&escaped, Side::Defender)],
             per: (0..n)
@@ -638,7 +669,9 @@ impl Game {
     /// in its auto formation, then the units of the pool not in it (the reserve, which has not
     /// attacked) in theirs, and so on, every unit once, at most [`FORECAST_MAX_WAVES`] battles in
     /// all; then the next entry. In each run the battles are fought in that order until the plot
-    /// falls: the defenders that fell or fled are gone, the survivors keep their damage (and the
+    /// falls (a battle the defenders lose with none of them left; one they win leaves the plot
+    /// empty, and the next battle, if any, takes it unopposed): the defenders that fell or fled
+    /// are gone, the survivors keep their damage (and the
     /// strikers used up stay used up), the city's Sentinels their HP; each battle meets the
     /// defenders left (the defender's formation of them as the rules form it from the game's
     /// state: the damage of earlier battles of the run does not reorder it).
@@ -706,13 +739,14 @@ impl Game {
         let runs = runs.max(1);
         // Per unit: (side, fell, escaped, committed in some run).
         let mut stat: std::collections::BTreeMap<UnitId, (Side, i64, i64)> = std::collections::BTreeMap::new();
-        let (mut wiped, mut falls, mut repulsed) = (0i64, 0i64, 0i64);
+        let (mut wiped, mut falls, mut repulsed, mut won) = (0i64, 0i64, 0i64, 0i64);
         for _ in 0..runs {
             let mut ov = UnitOverlay::with_declared(view0.declared.as_ref());
             let mut alive: Vec<UnitId> = view0.candidates.clone();
             let mut gone: Vec<UnitId> = Vec::new();
             let mut walls: std::collections::BTreeMap<usize, i32> = std::collections::BTreeMap::new();
             let mut last = [false, false];
+            let mut last_won = false;
             let mut fell_plot = false;
             for w in 0..waves.len() {
                 let key = (w, alive.clone());
@@ -763,13 +797,25 @@ impl Game {
                     walls.insert(k, b.end_hp[n + j]);
                 }
                 last = b.down;
-                if alive.is_empty() && b.down[1] {
+                last_won = b.loser == Some(Side::Defender);
+                // The defenders lost outside a city: the survivors are pushed back, and the plot
+                // falls when each has somewhere to go.
+                if last_won && !s.in_city && !alive.is_empty() && self.engage_all_pushable(&alive, s.ctx.from) {
+                    alive.clear();
+                }
+                // The defenders lost with none left: the plot falls. Won by them, it is empty:
+                // the next battle (another order) walks in.
+                if alive.is_empty() && (b.down[1] || (last_won && !s.in_city)) && (last_won || w + 1 < waves.len()) {
                     fell_plot = true;
+                    last_won = true;
                     break;
                 }
             }
             if fell_plot {
                 falls += 1;
+            }
+            if last_won {
+                won += 1;
             }
             if fell_plot || last[1] {
                 wiped += 1;
@@ -791,6 +837,7 @@ impl Game {
             wiped_permille: per_mille(wiped),
             falls_permille: per_mille(falls),
             repulsed_permille: per_mille(repulsed),
+            won_permille: per_mille(won),
             lost_x100: [side_sum(Side::Attacker, 1), side_sum(Side::Defender, 1)],
             escaped_x100: [side_sum(Side::Attacker, 2), side_sum(Side::Defender, 2)],
             per,

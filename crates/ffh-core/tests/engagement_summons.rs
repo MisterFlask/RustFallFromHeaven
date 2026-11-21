@@ -158,8 +158,9 @@ fn a_defending_caster_summons_and_its_summon_does_not_hold_the_plot() {
     let r = &reports[0];
     assert_eq!(fighters(&w.g, r, "UNIT_EARTH_ELEMENTAL", Side::Defender), 1, "the Earth Elemental, large: the side's two extra slots");
     assert_eq!(w.count("UNIT_EARTH_ELEMENTAL"), 0);
-    let mage_alive = w.g.units.contains(mage) && !w.g.unit_is_dead(mage);
-    assert_eq!(r.outcome.defenders_left, mage_alive as i32, "only the mage can be left: the summon leaves after the battle");
+    // A lost battle pushes the mage back: only it can be left, if it won or had nowhere to go.
+    let mage_here = w.g.units.contains(mage) && !w.g.unit_is_dead(mage) && w.g.unit_plot(mage) == to;
+    assert_eq!(r.outcome.defenders_left, mage_here as i32, "only the mage can be left: the summon leaves after the battle");
 }
 
 #[test]

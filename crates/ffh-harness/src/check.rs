@@ -263,6 +263,14 @@ pub fn check(g: &Game) {
         if r.outcome.result == ffh_core::engagement::EngageResult::Taken && r.outcome.defenders_left != 0 {
             fail(format!("battle report #{}: the plot fell with {} defenders left", r.id, r.outcome.defenders_left));
         }
+        // The loser is the verdict's on the report's own tally; the plot falls only to a won battle.
+        let verdict = ffh_core::engagement::engage_verdict(r.tally());
+        if (r.outcome.loser, r.outcome.decided_by) != verdict {
+            fail(format!("battle report #{}: {:?} lost by {:?}, the tally {:?} says {verdict:?}", r.id, r.outcome.loser, r.outcome.decided_by, r.tally()));
+        }
+        if r.outcome.plot_taken && r.outcome.loser != Some(ffh_core::engagement::Side::Defender) {
+            fail(format!("battle report #{}: the plot was taken by a side that did not win", r.id));
+        }
         for (i, s) in r.sides.iter().enumerate() {
             // A walled city without soldiers fights with its Sentinels alone (docs/SIEGES.md):
             // its side commits no unit.
