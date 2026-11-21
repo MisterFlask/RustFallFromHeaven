@@ -75,8 +75,9 @@ export function offRowText(u, row) {
   return `${ROWS[row]}: ${rowWords(acts[row])}. Best: ${ROWS[best]}, ${rowWords(acts[best])}.`;
 }
 
-/** The tooltip of a unit on the board (units.js sets the unit tooltip of the strip). */
-let unitTip = (u) => dname("UnitType", u.type);
+/** The tooltip of a unit on the board, `(u, hint)`: units.js sets the unit card (unit_card.js)
+ *  the strip shows, with `hint` what a drag or a tap does. */
+let unitTip = (u, hint) => [dname("UnitType", u.type), h("div.tip-hint", hint)];
 
 export function setSquadUnitTip(f) {
   unitTip = f;
@@ -144,7 +145,9 @@ export function squadBoard(squads, { unitOf, changed }) {
             "aria-label": `${name}, ${ROWS[row].toLowerCase()}, lane ${(c % LANES) + 1}`,
             class: [span > 1 ? "large" : "", off ? "off" : "", picked === id ? "picked" : ""].filter(Boolean).join(" "),
             style: { gridRow: String(row + 1), gridColumn: `${(c % LANES) + 2} / span ${span}` },
-            tip: () => [unitTip(u), off ? h("div.tip-stats.warn", off) : null, h("div.tip-hint", coarse() ? "Tap it, then tap a cell: it moves there (onto a unit: they swap)." : "Drag it to a cell (onto a unit: they swap), to another squad or to New squad.")],
+            // The card with the board's squad and cell (the card's row plan and its line for a
+            // unit outside its best row read them).
+            tip: () => unitTip({ ...u, squad: { id: s.id, num: s.num, cell: c, auto: s.auto } }, coarse() ? "Tap it, then tap a cell: it moves there (onto a unit: they swap)." : "Drag it to a cell (onto a unit: they swap), to another squad or to New squad."),
           },
           u.type !== null ? unitFigure(u.type, u.owner, span > 1 ? 40 : 30) ?? h("span.sq-abbr", name.slice(0, 2)) : h("span.sq-abbr", "?"),
           u.level !== undefined ? h("span.sq-lv", String(u.level)) : null,

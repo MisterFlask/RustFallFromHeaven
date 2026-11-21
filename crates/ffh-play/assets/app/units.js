@@ -156,8 +156,8 @@ function reply() {
 export function initUnits(view, panelEl) {
   mapView = view;
   panel = panelEl;
-  // The squad board's units show the strip's tooltip.
-  setSquadUnitTip((u) => chipTip({ ...u, ...(reply()?.units?.find((d) => d.id === u.id) ?? {}) }));
+  // The squad board's units show the unit card, as the strip's do.
+  setSquadUnitTip((u, hint) => cardOf({ ...(reply()?.units?.find((d) => d.id === u.id) ?? {}), ...u }, hint));
   on("applied", (c, reply) => {
     if (c?.units && S.sel && c.units.some((u) => S.sel.units.includes(u))) advance = { x: S.sel.x, y: S.sel.y };
     // Engagement combat: the battle the command launched (several units may fall at once, and
