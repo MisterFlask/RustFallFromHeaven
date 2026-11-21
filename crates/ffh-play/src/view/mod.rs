@@ -44,6 +44,7 @@ pub mod rituals;
 pub mod sea;
 pub mod seas;
 pub mod speech;
+pub mod squads;
 pub mod text;
 pub mod units;
 
@@ -449,6 +450,9 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("garrison", g.unit_garrison_city(u));
         j.set("army_unit", g.unit_is_army_unit(u));
         j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
+        // Squads (docs/ENGAGEMENTS.md, "Squads"): its squad, its number on the plot, its cell and
+        // whether the squad is Auto (null: in no squad).
+        j.set("squad", squads::unit_squad(g, u));
         // The sea (docs/NAVAL.md): in boats, and a warship's wear (the Sea layer's pip).
         sea::unit_fields(g, u, &mut j);
     }

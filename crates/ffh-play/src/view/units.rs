@@ -668,6 +668,9 @@ pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
         "busy" => selection::is_busy(g, units),
         "actions" => Json::Arr(if marching.is_some() { Vec::new() } else { actions(v, units) }),
         "marching" => marching,
+        // Squads (docs/ENGAGEMENTS.md, "Squads"): the human's squads on the selection's plot, for
+        // the squad board (`view::squads::plot_squads`).
+        "squads" => crate::view::squads::plot_squads(v, plot, None),
     })
 }
 
