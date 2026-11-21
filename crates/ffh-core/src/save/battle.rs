@@ -12,12 +12,13 @@ use crate::engagement::report::*;
 
 persist_enum!(Side { 0 => Attacker, 1 => Defender });
 persist_enum!(EngageResult { 0 => Taken, 1 => Cleared, 2 => Repulsed, 3 => Held });
+persist_enum!(DecidedBy { 0 => Wiped, 1 => Deaths, 2 => Damage, 3 => Even });
 
 persist_struct!(BattleReport { id, turn, plot, from, place, sides, outcome, log });
 persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost, summons, shore });
 persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city });
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
-persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached, hp_lost, loser, pushed });
+persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached, hp_lost, loser, decided_by, pushed });
 
 persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, tactics, fighters, pairs, events, forecast });
 persist_struct!(Ground { city, forest, hills });
@@ -384,7 +385,7 @@ mod tests {
                 city: Some(CitySnap { id: CityId(3), name: "Strages".to_string(), owner: PlayerId(2), size: 7, defense_pct: 60 }),
             },
             sides: [side(1, 8), side(2, 2)],
-            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0, sentinels: 2, sentinels_breached: 1, hp_lost: [4200, 9100], loser: Some(Side::Defender), pushed: 2 },
+            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0, sentinels: 2, sentinels_breached: 1, hp_lost: [4200, 9100], loser: Some(Side::Defender), decided_by: DecidedBy::Deaths, pushed: 2 },
             log: Some(Box::new(log)),
         }
     }
