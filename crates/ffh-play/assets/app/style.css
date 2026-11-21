@@ -285,6 +285,57 @@ button.calc .target-line { text-decoration: underline dotted color-mix(in srgb, 
 .tip-combat .odds { font-size: 15px; color: var(--c-vellum); display: flex; align-items: center; gap: 6px; }
 .tip-combat .odds.bad { color: var(--c-scarlet); }
 .tip-combat .mods { font-size: 12px; color: var(--dim); }
+/* The unit card (unit_card.js): a unit's tooltip as a small character screen. The header (portrait,
+   name, level, HP and XP bars) over a gilt rule, the eight battle numbers as tiles (a number the
+   unit does not use greyed in place), the three rows of a battle (the best one gilt, the one it
+   stands in outlined), its promotions, its state as chips, the click's hint. */
+.unit-card {
+  --uc-gold: var(--c-gold); --uc-rule: var(--c-ochre); --uc-tile: var(--c-coal); --uc-edge: var(--c-iron);
+  width: 20rem; max-width: 100%; display: flex; flex-direction: column; gap: 6px;
+  font-family: var(--font); font-size: 13px; line-height: 1.3; color: var(--c-bone);
+}
+.uc-head { display: flex; gap: 8px; align-items: stretch; padding-bottom: 6px; border-bottom: 1px solid var(--uc-rule); }
+.uc-portrait {
+  flex: none; width: 64px; height: 64px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  background: radial-gradient(circle at 50% 70%, var(--c-navy), var(--c-deep) 55%, var(--c-soot)); border: 1px solid var(--uc-rule);
+}
+.uc-portrait > * { max-width: 100%; max-height: 100%; }
+.uc-portrait .figure { margin-bottom: 3px; image-rendering: auto; }
+.uc-abbr { align-self: center; font-size: 20px; color: var(--c-vellum); }
+.uc-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.uc-name { color: var(--c-vellum); font-size: 16px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.uc-sub { font-size: 12px; color: var(--c-stone); }
+.uc-bar { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 6px; font-size: 11px; }
+.uc-bar-k { color: var(--c-stone); font-weight: 700; letter-spacing: 0.05em; }
+.uc-bar-track { position: relative; height: 7px; overflow: hidden; background: var(--c-void); border: 1px solid var(--uc-edge); }
+.uc-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--c-needle); }
+.uc-bar.low .uc-bar-fill { background: var(--c-crimson); }
+.uc-bar.xp .uc-bar-fill { background: var(--c-tide); }
+.uc-bar-v { min-width: 3.4em; text-align: right; color: var(--c-vellum); font-variant-numeric: tabular-nums; }
+.uc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.uc-stat { display: flex; flex-direction: column; align-items: center; padding: 1px 0 2px; background: var(--uc-tile); border: 1px solid var(--uc-edge); }
+.uc-stat-k { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--c-sand); }
+.uc-stat-v { font-size: 15px; line-height: 1.2; color: var(--c-vellum); font-variant-numeric: tabular-nums; }
+.uc-stat.off { opacity: 0.45; }
+.uc-stat.off .uc-stat-k, .uc-stat.off .uc-stat-v { color: var(--c-ash); }
+.uc-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-stone); margin-bottom: -3px; }
+.uc-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.uc-row { padding: 1px 4px 2px; text-align: center; background: var(--uc-tile); border: 1px solid var(--uc-edge); }
+.uc-row-k { font-size: 11px; color: var(--c-stone); }
+.uc-row-v { color: var(--c-vellum); }
+.uc-row-v.none { color: var(--c-ash); }
+.uc-row.best { border-color: var(--uc-gold); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--uc-gold) 35%, transparent); }
+.uc-best { color: var(--uc-gold); }
+.uc-row.here { outline: 1px dashed var(--c-frost); outline-offset: 1px; }
+.uc-row-here { font-size: 10px; color: var(--c-frost); }
+.uc-warn { font-size: 12px; color: var(--c-scarlet); }
+.uc-promos { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.uc-promo-name { font-size: 11px; color: var(--c-sand); }
+.uc-promo-name + .uc-promo-name::before { content: "· "; color: var(--c-ash); }
+.uc-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.uc-chips .badge { margin-left: 0; }
+.badge.squad { color: var(--c-vellum); border-color: var(--c-tide); }
+.uc-hint { padding-top: 4px; border-top: 1px solid var(--uc-edge); font-size: 11px; color: var(--c-ash); }
 
 #side { background: var(--panel); border-left: 1px solid var(--c-ash); box-shadow: inset 2px 0 0 var(--c-soot), inset 3px 0 0 var(--c-iron); overflow: auto; padding: 10px 12px; }
 .panel-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--c-ash); }
