@@ -28,7 +28,6 @@ use ffh_data::*;
 
 use super::arrange::Place;
 use super::formation::Side;
-use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
 use crate::ids::*;
@@ -91,8 +90,8 @@ impl Game {
     /// The units the battle of `att` (the attacker's formation) against `candidates` on `ctx`
     /// calls (module comment), in the order they are called: each side's summons, then the units
     /// its kills may create. `sentinels`: as [`Game::engage_setup`]'s.
-    pub(crate) fn engage_summon_calls(&self, ctx: &HitCtx, slots: &Slots, att: &[Place], candidates: &[UnitId], sentinels: bool) -> Vec<SummonCall> {
-        let Ok((slots, _, def)) = self.engage_def_layout(ctx, slots.clone(), candidates, sentinels) else { return Vec::new() };
+    pub(crate) fn engage_summon_calls(&self, _ctx: &HitCtx, att: &[Place], plan: &super::engage::DefPlan) -> Vec<SummonCall> {
+        let (slots, def) = (&plan.slots, &plan.def);
         let lanes = self.engage_lanes(&slots);
         let mut out: Vec<SummonCall> = Vec::new();
         for (side, formation, enemies) in [(Side::Attacker, att, def.len()), (Side::Defender, &def[..], att.len())] {

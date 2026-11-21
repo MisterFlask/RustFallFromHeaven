@@ -54,7 +54,7 @@ persist_struct!(RowActions { kind, count });
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote, ArmyId, SeaId, HouseId,
+    PlayerVote, ArmyId, SeaId, HouseId, SquadId,
 );
 
 // ---- this game's own rules (docs/CULTURE.md) ----
@@ -93,8 +93,32 @@ persist_struct!(Contract { kind, until, deal });
 
 use crate::culture::{ChannelTarget, CultureChannel};
 persist_enum!(ChannelTarget { 0 => House(house), 1 => Player(player) });
-use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Station};
+use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Squad, SquadBody, Station};
 persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, tactic, tactic_next, unsupplied_turns, domain, station, carried });
+persist_struct!(Squad { id, owner, body, hand_set, fought_turn, fought });
+impl Persist for SquadBody {
+    fn write(&self, w: &mut Writer) {
+        match *self {
+            SquadBody::Army(a) => {
+                0u8.write(w);
+                a.write(w);
+            }
+            SquadBody::Garrison(c) => {
+                1u8.write(w);
+                c.write(w);
+            }
+            SquadBody::Loose => 2u8.write(w),
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        match u8::read(r)? {
+            0 => Ok(SquadBody::Army(ArmyId::read(r)?)),
+            1 => Ok(SquadBody::Garrison(CityId::read(r)?)),
+            2 => Ok(SquadBody::Loose),
+            t => Err(LoadError::Corrupt(format!("squad body tag {t}"))),
+        }
+    }
+}
 impl Persist for ArmyDomain {
     fn write(&self, w: &mut Writer) {
         match self {
@@ -422,7 +446,7 @@ persist_struct!(Unit {
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
-    stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
+    squad, squad_cell, stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
     battle_summon, sea_turns, sea_out_of_range, intercepted, shore_fired, reinforced,
 });
 

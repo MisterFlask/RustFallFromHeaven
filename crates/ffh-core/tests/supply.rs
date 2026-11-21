@@ -390,7 +390,7 @@ fn a_starving_army_deals_less_damage() {
     let a = w.army(p0, 20, 5, 3);
     let defenders: Vec<UnitId> = (0..2).map(|_| w.unit(p1, "UNIT_WARRIOR", 21, 5)).collect();
     w.g.player_army_sync(p1);
-    let inp = PreviewInput { player: p0, from: w.at(20, 5), to: w.at(21, 5), formation: None, war: WarTest::AtWar };
+    let inp = PreviewInput { player: p0, from: w.at(20, 5), to: w.at(21, 5), squad: None, war: WarTest::AtWar };
     let fed = w.g.engage_preview(&inp).expect("a preview");
     assert!(fed.starving.is_empty());
     w.g.armies[a].unsupplied_turns = 3;
@@ -686,11 +686,11 @@ fn a_starving_garrison_carries_its_battle_penalty_in_a_sally_and_sentinels_are_e
     for _ in 0..3 { w.unit(w.p1, "UNIT_WARRIOR", 6, 5); }
     for _ in 0..3 { w.g.player_update_supply(w.p0); }
     assert_eq!(w.g.cities[w.city].sentinel_damage, sentinels, "Starvation does not damage Sentinels");
-    let inp = PreviewInput { player: w.p0, from: w.at(5, 5), to: w.at(6, 5), formation: None, war: WarTest::AtWar };
+    let inp = PreviewInput { player: w.p0, from: w.at(5, 5), to: w.at(6, 5), squad: None, war: WarTest::AtWar };
     let preview = w.g.engage_preview(&inp).expect("sally forecast");
     assert!(!preview.starving.is_empty());
     assert!(preview.starving.iter().all(|&(u, pct)| defenders.contains(&u) && pct == -25));
-    let inp = PreviewInput { player: w.p1, from: w.at(6, 5), to: w.at(5, 5), formation: None, war: WarTest::AtWar };
+    let inp = PreviewInput { player: w.p1, from: w.at(6, 5), to: w.at(5, 5), squad: None, war: WarTest::AtWar };
     let preview = w.g.engage_preview(&inp).expect("assault forecast");
     assert!(preview.starving.iter().all(|&(u, pct)| defenders.contains(&u) && pct == -25), "only physical garrison units receive the penalty");
 }

@@ -3,9 +3,9 @@
 // Copyright Firaxis Games 2005
 //
 // Terrain Infos
-// iEngagementSlotsChange is this game's own (GAMEOPTION_ENGAGEMENTS): it changes each side's
-//     engagement slots on a flat plot without a feature that sets its own change (open land +2);
-//     hills use the define ENGAGEMENT_SLOTS_HILLS instead.
+// engagement_open and engagement_mire are this game's own (docs/ENGAGEMENTS.md, "The ground"):
+//     a flat plot of an open terrain without a forest or jungle is open ground (charges, large
+//     units stronger); a marsh stops charges and weakens large units.
 [
   {
     "type": "TERRAIN_GRASS",
@@ -17,7 +17,7 @@
     "movement": 1,
     "see_from": 1,
     "see_through": 1,
-    "engagement_slots_change": 2,
+    "engagement_open": true,
     "button": "Art/Interface\\Buttons\\WorldBuilder\\Terrain_Grass.dds",
     "normalize": true,
     "plot_counter_up": 9,
@@ -33,7 +33,7 @@
     "movement": 1,
     "see_from": 1,
     "see_through": 1,
-    "engagement_slots_change": 2,
+    "engagement_open": true,
     "button": "Art/Interface\\Buttons\\WorldBuilder\\Terrain_Plains.dds",
     "normalize": true,
     "plot_counter_up": 9,
@@ -50,7 +50,7 @@
     "see_through": 1,
     "build_modifier": 25,
     "defense": -25,
-    "engagement_slots_change": 2,
+    "engagement_open": true,
     "button": "Art/Interface\\Buttons\\WorldBuilder\\Terrain_Desert.dds",
     "normalize": true,
     "plot_counter_up": 9,
@@ -61,6 +61,7 @@
   {
     "type": "TERRAIN_MARSH",
     "description": "TXT_KEY_TERRAIN_MARSH",
+    "engagement_mire": true,
     "civilopedia": "TXT_KEY_TERRAIN_MARSH_PEDIA",
     "yields": [1, 0, 0],
     "river_yield_change": [0, 0, 1],
@@ -85,7 +86,7 @@
     "see_from": 1,
     "see_through": 1,
     "build_modifier": 25,
-    "engagement_slots_change": 2,
+    "engagement_open": true,
     "button": "Art/Interface\\Buttons\\WorldBuilder\\Terrain_Tundra.dds",
     "normalize": true,
     "plot_counter_up": 100
@@ -99,7 +100,7 @@
     "see_from": 1,
     "see_through": 1,
     "build_modifier": 50,
-    "engagement_slots_change": 2,
+    "engagement_open": true,
     "button": "Art/Interface\\Buttons\\WorldBuilder\\Terrain_Ice.dds",
     "normalize": true,
     "plot_counter_up": 100,
@@ -117,7 +118,7 @@
     "see_through": 1,
     "build_modifier": 25,
     "defense": -25,
-    "engagement_slots_change": 2,
+    "engagement_open": true,
     "button": "Art/Interface\\Buttons\\WorldBuilder\\Terrain_Desert.dds",
     "plot_counter_down": 10,
     "terrain_down": "TERRAIN_DESERT",
@@ -148,7 +149,7 @@
     "movement": 1,
     "see_from": 1,
     "see_through": 1,
-    "engagement_slots_change": 2,
+    "engagement_open": true,
     "button": "Art/Interface\\Buttons\\WorldBuilder\\Terrain_Plains.dds",
     "plot_counter_down": 10,
     "terrain_down": "TERRAIN_PLAINS",

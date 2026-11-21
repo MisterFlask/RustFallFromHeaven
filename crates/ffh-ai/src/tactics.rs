@@ -100,7 +100,7 @@ pub fn turn(g: &mut Game, p: PlayerId) {
     }
     let d = g.d;
     let ty = |c: Choice| d.ty::<BattleTacticType>(c.type_name());
-    let lanes = lanes_for(d.defines.engagement_slots_base);
+    let lanes = lanes_for(d.defines.engagement_squad_places);
     let tel = g.telemetry.on();
     for a in g.players[p].armies.clone() {
         // (A fleet has no battle tactic: docs/NAVAL.md, 7.1.)

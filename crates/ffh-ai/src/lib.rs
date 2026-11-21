@@ -66,6 +66,7 @@ pub mod research;
 pub mod research_path;
 pub mod sea_ice;
 pub mod sites;
+pub mod squads;
 pub mod supply;
 pub mod switches;
 pub mod tactics;
@@ -162,6 +163,7 @@ impl Controller for Ai {
             crusade::host_turn(g, p);
             supply::turn(g, p);
             tactics::turn(g, p);
+            squads::turn(g, p);
             return;
         }
         let turn = g.game_turn();
@@ -244,7 +246,9 @@ impl Controller for Ai {
             campaign::plan(g, &mut v);
             casting::barrage(g, &v);
         }
+        squads::turn(g, p); // squads of one sorted before the turn's attacks (docs/ENGAGEMENTS.md)
         units::play(self, g, &mut v);
+        squads::turn(g, p); // and for the battles it defends
         if !v.barbarian {
             tactics::turn(g, p); // battle tactics, once the stacks of the turn are made (docs/TACTICS.md)
             cards::end_turn(g, p); // the cards' content that acts once the units have moved

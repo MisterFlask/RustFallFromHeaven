@@ -74,7 +74,7 @@ pub enum Query {
     /// `formation` (else the rules' auto formation): the pool, both formations, the slots and
     /// lanes, the ground, the defenders seen and their formation, and the forecast
     /// (`view::battles::engage_preview`).
-    EngagePreview { by: crate::command::EngageBy, to: (i32, i32), formation: Option<Vec<ffh_core::engagement::Place>> },
+    EngagePreview { by: crate::command::EngageBy, to: (i32, i32), squad: Option<ffh_core::ids::SquadId> },
     /// A battle report's log (the battle screens replay it), as the human may see it.
     BattleLog { report: u32 },
     /// The human's kept battle reports (summaries, newest first).
@@ -338,7 +338,7 @@ impl Query {
             "engage_preview" => Query::EngagePreview {
                 by: crate::command::EngageBy::from_json(j)?,
                 to: crate::command::plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
-                formation: crate::command::formation_field(j, "formation")?,
+                squad: j.opt("squad")?,
             },
             // `report`, not `id`: `id` is the envelope's request id (as `inspect`'s `oid`).
             "battle_log" => Query::BattleLog { report: j.req("report")? },
@@ -395,8 +395,8 @@ impl Query {
             Query::EmpireCities { order, data, army } => j.with("order", Json::idx(*order)).with("data", *data).with("army", *army),
             Query::Grant { city } => j.with("city", *city),
             Query::House { house } => j.with("house", *house),
-            Query::EngagePreview { by, to, formation } => {
-                by.put(j).with("to", crate::command::plot_json(to.0, to.1)).with("formation", formation.as_deref().map(crate::command::formation_json))
+            Query::EngagePreview { by, to, squad } => {
+                by.put(j).with("to", crate::command::plot_json(to.0, to.1)).with("squad", *squad)
             }
             Query::BattleLog { report } => j.with("report", *report),
             Query::Trade { with } => j.with("with", *with),
@@ -506,7 +506,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::Court => view::persons::court(&v),
         Query::Grant { city } => view::persons::grant(&v, *city)?,
         Query::House { house } => view::persons::house(&v, *house)?,
-        Query::EngagePreview { by, to, formation } => view::battles::engage_preview(&v, by, *to, formation.as_deref())?,
+        Query::EngagePreview { by, to, squad } => view::battles::engage_preview(&v, by, *to, *squad)?,
         Query::BattleLog { report } => view::battles::battle_log(&v, *report)?,
         Query::BattleReports => view::battles::battle_reports(&v),
         Query::Trade { with } => view::diplo::trade(&v, *with)?,
@@ -585,13 +585,9 @@ mod tests {
             Query::Court,
             Query::Grant { city: CityId(4) },
             Query::House { house: HouseId(2) },
-            Query::EngagePreview { by: crate::command::EngageBy::Army(ArmyId(2)), to: (3, 4), formation: None },
-            Query::EngagePreview {
-                by: crate::command::EngageBy::Units(vec![UnitId(1)]),
-                to: (3, 4),
-                formation: Some(vec![ffh_core::engagement::Place { unit: UnitId(1), lane: 2, row: 1 }]),
-            },
-            Query::EngagePreview { by: crate::command::EngageBy::From(2, 4), to: (3, 4), formation: None },
+            Query::EngagePreview { by: crate::command::EngageBy::Army(ArmyId(2)), to: (3, 4), squad: None },
+            Query::EngagePreview { by: crate::command::EngageBy::Units(vec![UnitId(1)]), to: (3, 4), squad: Some(ffh_core::ids::SquadId(3)) },
+            Query::EngagePreview { by: crate::command::EngageBy::From(2, 4), to: (3, 4), squad: None },
             Query::BattleLog { report: 7 },
             Query::BattleReports,
             Query::Trade { with: PlayerId(2) },

@@ -87,6 +87,11 @@ entity_id!(
 );
 
 entity_id!(
+    /// This game's squads (`Game::squads`, docs/ENGAGEMENTS.md, "Squads").
+    SquadId(u32)
+);
+
+entity_id!(
     /// This game's Houses (`Game::houses`, docs/PERSONS.md).
     HouseId(u32)
 );

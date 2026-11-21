@@ -20,7 +20,7 @@ persist_struct!(CitySnap { id, name, owner, size, defense_pct });
 persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached });
 
 persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, tactics, fighters, pairs, events, forecast });
-persist_struct!(Ground { city, forest, hills });
+persist_struct!(Ground { city, forest, hills, open, marsh, crossing, trench_pct });
 persist_enum!(GroundRule {
     0 => CityShots { pct },
     1 => ForestRanged { pct },
@@ -28,6 +28,11 @@ persist_enum!(GroundRule {
     3 => HillsDefenderRanged { pct },
     4 => Charge { pct },
     5 => NoFlanking,
+    6 => ForestStab { pct },
+    7 => LargeDealt { pct },
+    8 => Wading { pct },
+    9 => Trench { pct },
+    10 => Uphill { pct },
 });
 persist_struct!(SideSlots { base, changes, total, river_only });
 persist_struct!(SlotChange { src, delta });
@@ -321,7 +326,7 @@ mod tests {
         let log = BattleLog {
             slots: [slots, SideSlots { base: 8, changes: vec![], total: 8, river_only: 0 }],
             lanes: [4, 3],
-            ground: Ground { city: true, forest: false, hills: true },
+            ground: Ground { city: true, forest: false, hills: true, open: false, marsh: false, crossing: false, trench_pct: 0 },
             rules: vec![
                 GroundRule::CityShots { pct: 50 },
                 GroundRule::ForestRanged { pct: 50 },

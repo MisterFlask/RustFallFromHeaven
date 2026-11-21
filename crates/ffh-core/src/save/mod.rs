@@ -189,7 +189,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `HouseOrigin::Courted`; no `City::culture_channel`, `culture_diverted`, `culture_pressure`,
 ///   `culture_revolt_level`, no `LoyaltyCause::Offered`; `MEMORY_BOUGHT_HOUSE` renamed
 ///   `MEMORY_SPLIT_HOUSE`; `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL` gone (`TradeableItem::NUM` 17).
-pub const FORMAT_VERSION: u32 = 56;
+/// - 57: squads (docs/ENGAGEMENTS.md, "Squads"): `Game::squads`, `Unit::squad`, `squad_cell`;
+///   engagement slots no longer vary by ground.
+pub const FORMAT_VERSION: u32 = 57;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -343,6 +345,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         plot_groups,
         deals,
         armies,
+        squads,
         houses,
         battle_reports,
         battle_report_next,
@@ -467,6 +470,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     plot_groups.grow(slots);
     deals.grow(slots);
     armies.grow(slots);
+    squads.grow(slots);
     houses.grow(slots);
     battle_reports.grow(slots);
     battle_report_next.grow(slots);
@@ -590,6 +594,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         plot_groups,
         deals,
         armies,
+        squads,
         houses,
         battle_reports,
         battle_report_next,
@@ -713,6 +718,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     plot_groups.write(w);
     deals.write(w);
     armies.write(w);
+    squads.write(w);
     houses.write(w);
     battle_reports.write(w);
     battle_report_next.write(w);
@@ -833,6 +839,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         plot_groups: Persist::read(r)?,
         deals: Persist::read(r)?,
         armies: Persist::read(r)?,
+        squads: Persist::read(r)?,
         houses: Persist::read(r)?,
         battle_reports: Persist::read(r)?,
         battle_report_next: Persist::read(r)?,

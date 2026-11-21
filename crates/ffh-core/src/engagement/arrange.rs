@@ -31,7 +31,7 @@
 //! cells of one row), at most the attacker's slots, and the units without `bRiver` at most its
 //! ordinary slots.
 
-use super::formation::{auto_arrange_around, kind_pick_order, lanes_for, sentinel_cells, Candidate, Side};
+use super::formation::{auto_arrange_around, kind_pick_order, sentinel_cells, Candidate, Side};
 use ffh_data::BattleTacticType;
 use super::slots::Slots;
 use super::stats::HitCtx;
@@ -49,10 +49,9 @@ pub struct Place {
 }
 
 impl Game {
-    /// Each side's lanes (attacker, defender) for its slots: `max(2, ceil((slots + 2) / 3))`, the
-    /// defender's cells counting its Sentinels (card: the field's too, `more_cards.rs`).
-    pub fn engage_lanes(&self, slots: &Slots) -> [u8; 2] {
-        [lanes_for(slots.max(Side::Attacker)), lanes_for(slots.max(Side::Defender) + slots.sentinels as i32 + slots.field_sentinels as i32)]
+    /// Each side's lanes (attacker, defender): a squad's, whatever the slots (`squads.rs`).
+    pub fn engage_lanes(&self, _slots: &Slots) -> [u8; 2] {
+        [crate::army::SQUAD_LANES; 2]
     }
 
     /// The cells of the defender's Sentinels (docs/SIEGES.md), in the order the city's standing
@@ -177,53 +176,5 @@ impl Game {
         let pos = |u: UnitId| pool.iter().position(|&x| x == u);
         out.sort_by_key(|p| pos(p.unit));
         out
-    }
-
-    /// The defender's formation on `ctx.to` from its `candidates` (spec 1.8): the rules' auto
-    /// formation in the defenders' tactic (docs/TACTICS.md).
-    pub fn engage_defense_formation(&self, candidates: &[UnitId], slots: &Slots, ctx: &HitCtx) -> Vec<Place> {
-        self.engage_auto_formation(candidates, Side::Defender, slots, ctx)
-    }
-
-    /// Checks a formation the attacker chose (the `engage` command's, an AI's; module comment)
-    /// against its `pool` ([`Game::engage_attackers`]) and its slots. The error is the reason the
-    /// UI shows.
-    pub fn engage_validate_formation(&self, pool: &[UnitId], formation: &[Place], slots: &Slots) -> Result<(), &'static str> {
-        if formation.is_empty() {
-            return Err("no units to attack with");
-        }
-        let lanes = self.engage_lanes(slots)[Side::Attacker.index()];
-        let mut grid = vec![[false; ROWS]; lanes as usize];
-        let (mut used, mut non_river) = (0, 0);
-        for (i, p) in formation.iter().enumerate() {
-            if formation[..i].iter().any(|q| q.unit == p.unit) {
-                return Err("a unit is in the formation twice");
-            }
-            if !pool.contains(&p.unit) {
-                return Err("a unit in the formation cannot attack this plot");
-            }
-            let size = self.unit_engage_size(p.unit);
-            let last = p.lane as i32 + size - 1;
-            if p.row as usize >= ROWS || last >= lanes as i32 {
-                return Err("a unit stands outside the battlefield");
-            }
-            for l in p.lane as usize..=last as usize {
-                if grid[l][p.row as usize] {
-                    return Err("two units stand in one cell");
-                }
-                grid[l][p.row as usize] = true;
-            }
-            used += size;
-            if !self.unit_is_river(p.unit) {
-                non_river += size;
-            }
-        }
-        if used > slots.max(Side::Attacker) {
-            return Err("more units than the battle has slots for");
-        }
-        if non_river > slots.att() {
-            return Err("the river slots are only for units that cross rivers freely");
-        }
-        Ok(())
     }
 }

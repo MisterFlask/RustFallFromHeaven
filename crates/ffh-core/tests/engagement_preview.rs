@@ -6,7 +6,7 @@
 use std::time::Instant;
 
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
-use ffh_core::engagement::{EngagePreview, ForecastSight, ForecastTurn, HitCtx, Place, PreviewInput, Side, WarTest};
+use ffh_core::engagement::{EngagePreview, ForecastSight, ForecastTurn, HitCtx, PreviewInput, Side, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::rng::Rng;
@@ -81,7 +81,7 @@ impl World {
         self.g.map.plots[at].feature_type = Some(self.g.d.t::<FeatureType>("FEATURE_FOREST"));
     }
 
-    fn input(&self) -> PreviewInput<'static> {
+    fn input(&self) -> PreviewInput {
         PreviewInput::new(self.p0, self.from, self.to)
     }
 }
@@ -133,15 +133,6 @@ fn the_preview_is_a_function_of_its_inputs_and_changes_nothing() {
         assert!(side_lost(s) <= f.lost_x100[i] as i64, "{s:?}: {} > {}", side_lost(s), f.lost_x100[i]);
         assert!(f.lost_x100[i] + f.escaped_x100[i] <= 100 * f.per.iter().filter(|x| x.side == s).count() as i32);
     }
-    // A different formation is a different plan: the axemen behind, the archers in front.
-    let mut other = a.formation.clone();
-    let (i, j) = (0, other.len() - 1);
-    let (ci, cj) = ((other[i].lane, other[i].row), (other[j].lane, other[j].row));
-    (other[i].lane, other[i].row) = cj;
-    (other[j].lane, other[j].row) = ci;
-    let c = w.g.engage_preview(&PreviewInput { formation: Some(&other), ..inp }).unwrap();
-    assert_eq!(c.formation, other);
-    assert_eq!(c.auto, a.auto);
     assert!(state(&w.g) == before);
     // The preview's RNG is its own (seeded from the plan): the game's RNGs elsewhere, the same
     // numbers.
@@ -167,13 +158,10 @@ fn the_preview_fields() {
     assert_eq!(a.defenders.len(), defs.len() - 1);
     assert!(a.defenders.len() as i32 > a.slots.def());
     assert_eq!(a.def_formation.len() as i32, a.slots.def());
-    // Formations the rules refuse.
-    let twice = [Place { unit: att[0], lane: 0, row: 0 }, Place { unit: att[0], lane: 1, row: 0 }];
-    assert!(w.g.engage_preview(&PreviewInput { formation: Some(&twice), ..w.input() }).is_err());
-    let theirs = [Place { unit: defs[0], lane: 0, row: 0 }];
-    assert!(w.g.engage_preview(&PreviewInput { formation: Some(&theirs), ..w.input() }).is_err());
-    let off = [Place { unit: att[0], lane: 3, row: 0 }];
-    assert!(w.g.engage_preview(&PreviewInput { formation: Some(&off), ..w.input() }).is_err(), "three lanes in a forest");
+    // A squad that cannot attack there is refused: the defender's.
+    let theirs = w.g.units[defs[0]].squad.expect("a squad");
+    assert!(w.g.engage_preview(&PreviewInput { squad: Some(theirs), ..w.input() }).is_err());
+    let _ = att;
     // Fewer defenders than slots and a crushing attack: the plot falls in most battles.
     let mut w2 = world();
     let strong = w2.units(w2.p0, "UNIT_AXEMAN", w2.from, 8);
@@ -216,30 +204,26 @@ fn a_declare_war_preview_is_the_battle_after_the_declaration() {
     let (t0, t1) = (w.g.players[p0].team, w.g.players[p1].team);
     let declare = PreviewInput { war: WarTest::DeclareWar(t1), ..w.input() };
     let proposed = w.g.engage_preview(&declare).expect("a declare-war preview");
-    // The plan: four of the auto formation's other units where it put them, and both catapults
-    // in free cells of the rear row.
-    let mut formation: Vec<Place> = proposed.auto.iter().copied().filter(|p| !cats.contains(&p.unit)).take(4).collect();
-    for &c in &cats {
-        let lane = (0..proposed.lanes[0]).find(|&l| !formation.iter().any(|p| p.row == 2 && p.lane == l)).expect("a free rear cell");
-        formation.push(Place { unit: c, lane, row: 2 });
-    }
-    let with_cats = PreviewInput { formation: Some(&formation), ..declare };
+    // The plan: the squad holding the catapults.
+    let squad = proposed.squads.iter().find(|s| s.places.iter().any(|p| cats.contains(&p.unit))).and_then(|s| s.squad).expect("the catapults' squad");
+    let with_cats = PreviewInput { squad: Some(squad), ..declare };
     let before = w.g.engage_preview(&with_cats).unwrap();
     assert_eq!(before.declare_war, Some(t1));
-    assert_eq!(before.formation, formation);
+    let formation = before.formation.clone();
 
     // Declared: the same numbers.
     w.g.team_declare_war(t0, t1, false, None);
     let at_war = PreviewInput { war: WarTest::AtWar, ..declare };
     assert_eq!(w.g.engage_preview(&at_war).unwrap().auto, proposed.auto, "the auto formation");
-    let after = w.g.engage_preview(&PreviewInput { formation: Some(&formation), ..at_war }).unwrap();
+    let after = w.g.engage_preview(&PreviewInput { squad: Some(squad), ..at_war }).unwrap();
     assert_eq!(EngagePreview { declare_war: None, ..before.clone() }, after);
 
     // The attack freezes the plan the player saw before declaring.
     let grp = w.g.units[cats[0]].group.unwrap();
     let next = w.g.battle_report_next;
     let (x, y) = w.g.map.xy(to);
-    w.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(formation.clone())).expect("the attack");
+    let _ = formation;
+    w.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(squad)).expect("the attack");
     let r = w.g.battle_reports.iter().find(|r| r.id >= next).expect("an engagement");
     let fc = r.log.as_ref().unwrap().forecast.as_ref().expect("the plan is frozen");
     let f = &before.forecast;
@@ -263,7 +247,7 @@ fn the_battle_log_keeps_the_plan() {
     let before = w.g.battle_report_next;
     let (x, y) = w.g.map.xy(to);
     // The plan's Attack: the `engage` command's formation.
-    w.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(pv.formation.clone())).expect("the attack");
+    w.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, pv.squads[pv.squad].squad).expect("the attack");
     let r = w.g.battle_reports.iter().find(|r| r.id >= before).expect("an engagement");
     let log = r.log.as_ref().expect("a human's battle is logged");
     assert!(log.ordered[0]);

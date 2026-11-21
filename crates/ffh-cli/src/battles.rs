@@ -276,6 +276,26 @@ fn stage(s: &Spec) -> (Game, PlotIdx, PlotIdx, UnitId, Vec<(UnitId, u8)>) {
     (g, from, to, first.expect("an attacker"), rows)
 }
 
+/// A hand-set squad of the attacker's auto formation with `rows` applied (module comment): the
+/// squad of its first unit, holding exactly those units in those cells.
+fn squad_with(g: &mut Game, from: PlotIdx, to: PlotIdx, rows: &[(UnitId, u8)]) -> Option<SquadId> {
+    let f = formation_with(g, from, to, rows);
+    g.player_army_sync(PlayerId(0));
+    let s = g.units[f.first()?.unit].squad?;
+    for u in g.map.plots[from].units.clone() {
+        if g.units[u].squad == Some(s) && !f.iter().any(|p| p.unit == u) {
+            g.units[u].squad = None;
+        }
+    }
+    for p in &f {
+        g.units[p.unit].squad = Some(s);
+        g.units[p.unit].squad_cell = p.row * 3 + p.lane;
+    }
+    g.squads[s].hand_set = true;
+    g.player_army_sync(PlayerId(0));
+    Some(s)
+}
+
 /// The attacker's auto formation with `rows` applied (module comment).
 fn formation_with(g: &Game, from: PlotIdx, to: PlotIdx, rows: &[(UnitId, u8)]) -> Vec<Place> {
     let ctx = HitCtx::new(from, to);
@@ -409,12 +429,12 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
             };
             let before = g.battle_report_next;
             let grp = g.units[lead].group.expect("a group");
-            let formation = if rows.is_empty() {
+            let squad = if rows.is_empty() {
                 None
             } else {
-                Some(formation_with(&g, from, to, &rows))
+                squad_with(&mut g, from, to, &rows)
             };
-            if let Err(e) = g.group_attack_force(grp, tx, ty, MOVE_DIRECT_ATTACK, formation) {
+            if let Err(e) = g.group_attack_force(grp, tx, ty, MOVE_DIRECT_ATTACK, squad) {
                 eprintln!("{}: refused: {e}", spec.name);
                 break;
             }

@@ -38,21 +38,33 @@ use crate::unit::{Declared, UnitOverlay};
 
 /// What a preview is of.
 #[derive(Copy, Clone, Debug)]
-pub struct PreviewInput<'a> {
+pub struct PreviewInput {
     pub player: PlayerId,
     pub from: PlotIdx,
     pub to: PlotIdx,
-    /// The attacker's formation (`None`: the rules' auto formation).
-    pub formation: Option<&'a [Place]>,
+    /// The attacking squad (`None`: the strongest, as the real fight picks it; `squads.rs`).
+    pub squad: Option<SquadId>,
     /// The war the attack assumes ([`WarTest::DeclareWar`] for a move that declares it).
     pub war: WarTest,
 }
 
-impl<'a> PreviewInput<'a> {
-    /// `player`'s attack from `from` on `to` at war, in the auto formation.
-    pub fn new(player: PlayerId, from: PlotIdx, to: PlotIdx) -> PreviewInput<'a> {
-        PreviewInput { player, from, to, formation: None, war: WarTest::AtWar }
+impl PreviewInput {
+    /// `player`'s attack from `from` on `to` at war, with its strongest squad.
+    pub fn new(player: PlayerId, from: PlotIdx, to: PlotIdx) -> PreviewInput {
+        PreviewInput { player, from, to, squad: None, war: WarTest::AtWar }
     }
+}
+
+/// An attacking squad a preview offers (docs/ENGAGEMENTS.md, "Squads").
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PreviewSquad {
+    /// The squad (`None`: units in no squad, formed for the battle).
+    pub squad: Option<SquadId>,
+    pub body: crate::army::SquadBody,
+    /// Its number within its body (1-based; 0 for units in no squad).
+    pub number: u32,
+    /// Its units that can attack, in their cells.
+    pub places: Vec<Place>,
 }
 
 /// A fighter of the forecast.
@@ -114,6 +126,13 @@ pub struct EngagePreview {
     pub formation: Vec<Place>,
     pub auto: Vec<Place>,
     pub reserve: Vec<UnitId>,
+    /// The attacker's squads that can attack (`squads.rs`), and which of them fights (an index;
+    /// the order's, else the strongest).
+    pub squads: Vec<PreviewSquad>,
+    pub squad: usize,
+    /// The defenders' squad that fights (`None`: units in no squad), and its number in its body.
+    pub def_squad: Option<SquadId>,
+    pub def_squad_number: u32,
     /// The defender's candidates the attacker's team sees, their formation, and those not in it.
     pub defenders: Vec<UnitId>,
     pub def_formation: Vec<Place>,
@@ -181,6 +200,8 @@ fn seed_of(words: &[u32]) -> u32 {
 /// auto formation, the defender's formation, the view of the defense and the battle's set-up;
 /// with summons (summons.rs), the copy of the game they were made in, whose set-up it is.
 struct Plan {
+    squads: Vec<PreviewSquad>,
+    squad: usize,
     pool: Vec<UnitId>,
     formation: Vec<Place>,
     auto: Vec<Place>,
@@ -275,6 +296,17 @@ impl Game {
             ground: s.ground,
             rules: s.ground.rules(&s.params),
             pool: plan.pool.clone(),
+            squads: plan.squads.clone(),
+            squad: plan.squad,
+            def_squad: s.squads[Side::Defender.index()],
+            def_squad_number: s.squads[Side::Defender.index()].map_or(0, |id| {
+                let owner = self.squads.get(id).map(|q| q.owner);
+                owner.map_or(0, |o| {
+                    let layouts = self.squad_layouts_at(o, inp.to);
+                    let nums = Game::squad_numbers(&layouts);
+                    layouts.iter().position(|l| l.squad == Some(id)).map_or(0, |i| nums[i])
+                })
+            }),
             formation,
             auto: plan.auto.clone(),
             reserve,
@@ -302,17 +334,27 @@ impl Game {
     }
 
     fn engage_preview_plan(&self, inp: &PreviewInput) -> Result<Plan, &'static str> {
+        self.engage_preview_plan_with(inp, None)
+    }
+
+    /// [`Game::engage_preview_plan`]; `places`: the attacker's formation as the real fight
+    /// committed it (a frozen forecast), in place of the input's squad.
+    fn engage_preview_plan_with(&self, inp: &PreviewInput, places: Option<&[Place]>) -> Result<Plan, &'static str> {
         let (p, from, to) = (inp.player, inp.from, inp.to);
         let ctx = HitCtx::new(from, to);
         let slots = self.engage_slots(&ctx);
         let pool = self.engage_attackers(p, from, to, inp.war);
-        let auto = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
-        let formation = match inp.formation {
-            Some(f) => {
-                self.engage_validate_formation(&pool, f, &slots)?;
-                f.to_vec()
-            }
-            None => auto.clone(),
+        let field = self.engage_attacking_squads(from, &pool, &ctx);
+        let squads: Vec<PreviewSquad> = field.iter().map(|f| PreviewSquad { squad: f.squad, body: f.body, number: f.number, places: f.places.clone() }).collect();
+        let strongest = self.engage_strongest_squad(&field, Side::Attacker, &ctx);
+        let auto = strongest.map_or_else(Vec::new, |i| field[i].places.clone());
+        let squad = match inp.squad {
+            Some(s) => field.iter().position(|f| f.squad == Some(s)).ok_or("that squad cannot attack there")?,
+            None => strongest.unwrap_or(0),
+        };
+        let formation = match places {
+            Some(f) => f.to_vec(),
+            None => field.get(squad).map_or_else(Vec::new, |f| f.places.clone()),
         };
         if formation.is_empty() {
             return Err("no unit can attack there");
@@ -322,28 +364,31 @@ impl Game {
         }
         let force: Vec<UnitId> = formation.iter().map(|q| q.unit).collect();
         let view = self.engage_def_view(p, to, &force, inp.war);
-        self.engage_plan_finish(ctx, slots, pool, formation, auto, view)
+        let mut plan = self.engage_plan_finish(ctx, slots, pool, formation, auto, view)?;
+        plan.setup.squads[Side::Attacker.index()] = field.get(squad).and_then(|f| f.squad);
+        plan.squads = squads;
+        plan.squad = squad;
+        Ok(plan)
     }
 
     /// The rest of a plan once the attacker's pool and formation and the view of the defense are
     /// known: the defender's formation, the summons (in a copy of the game) and the battle's
     /// set-up. Shared by the preview and the hypothetical forecast ([`Game::engage_forecast_if`]).
     fn engage_plan_finish(&self, ctx: HitCtx, slots: Slots, pool: Vec<UnitId>, formation: Vec<Place>, auto: Vec<Place>, view: DefView) -> Result<Plan, &'static str> {
-        // Card: the field's Sentinels take cells of the defender's grid (more_cards.rs).
-        let mut slots = slots;
-        self.engage_add_field_sentinels(&mut slots, &view.candidates, ctx.to);
-        let def_formation = self.engage_defense_formation(&view.candidates, &slots, &ctx);
+        // The defender's squad against this formation, its cells, the Sentinels (squads.rs).
+        let def_plan = self.engage_def_plan(&ctx, slots, &formation, &view.candidates, true)?;
+        let def_formation = def_plan.def.clone();
         // The summons (summons.rs) are made for the battle: the plan makes them in a copy of the
         // game, as the real fight will (the same units, the same ids), and is that copy's.
-        let summons = self.engage_summon_calls(&ctx, &slots, &formation, &view.candidates, true);
+        let summons = self.engage_summon_calls(&ctx, &formation, &def_plan);
         if summons.is_empty() {
-            let setup = self.engage_setup(ctx, slots, formation.clone(), view.candidates.clone(), true, &[])?;
-            return Ok(Plan { pool, formation, auto, def_formation, view, setup, scratch: None, summons });
+            let setup = self.engage_setup_plan(ctx, def_plan, formation.clone(), view.candidates.clone(), &[])?;
+            return Ok(Plan { squads: Vec::new(), squad: 0, pool, formation, auto, def_formation, view, setup, scratch: None, summons });
         }
         let mut scratch = Box::new(Game::load(self.d, &self.save()).expect("a game loads its own save"));
         let made = scratch.engage_call_summons(&summons);
-        let setup = scratch.engage_setup(ctx, slots, formation.clone(), view.candidates.clone(), true, &made)?;
-        Ok(Plan { pool, formation, auto, def_formation, view, setup, scratch: Some(scratch), summons })
+        let setup = scratch.engage_setup_plan(ctx, def_plan, formation.clone(), view.candidates.clone(), &made)?;
+        Ok(Plan { squads: Vec::new(), squad: 0, pool, formation, auto, def_formation, view, setup, scratch: Some(scratch), summons })
     }
 
     /// The seed of a set-up's forecast: both formations (sorted), the plots, the turn.
@@ -477,8 +522,8 @@ impl Game {
         if !self.players[p].human {
             return None;
         }
-        let inp = PreviewInput { player: p, from, to, formation: Some(formation), war: WarTest::AtWar };
-        let plan = self.engage_preview_plan(&inp).ok()?;
+        let inp = PreviewInput { player: p, from, to, squad: None, war: WarTest::AtWar };
+        let plan = self.engage_preview_plan_with(&inp, Some(formation)).ok()?;
         let runs = self.d.defines.engagement_preview_runs.max(1);
         let g = plan.scratch.as_deref().unwrap_or(self);
         Some(g.engage_forecast_sampled(&plan.setup, &plan.view, runs))

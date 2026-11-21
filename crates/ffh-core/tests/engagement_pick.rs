@@ -245,7 +245,6 @@ fn a_river_crossing_keeps_slots_for_units_that_cross_rivers() {
     let auto = w.auto(&pool, Side::Attacker);
     let pick: Vec<UnitId> = auto.iter().map(|p| p.unit).collect();
     assert_eq!((pick.len(), w.count(&pick, "UNIT_AXEMAN"), w.count(&pick, "UNIT_LIZARDMAN")), (10, 8, 2));
-    assert_eq!(w.g.engage_validate_formation(&pool, &auto, &s), Ok(()));
     // The defender has no river slots.
     assert_eq!(w.pick(&axemen, Side::Defender).len(), 10);
 
@@ -278,53 +277,6 @@ fn the_lanes_follow_the_slots() {
     let s = w.slots();
     assert_eq!((s.max(Side::Attacker), s.def(), s.sentinels), (4, 4, 2));
     assert_eq!(w.g.engage_lanes(&s), [2, 3]);
-}
-
-#[test]
-fn formations_are_validated() {
-    let mut w = world();
-    let (p0, from) = (w.p0, w.from);
-    w.g.map.plots[from].river_crossing[DirectionType::DIRECTION_EAST.idx()] = true;
-    let s = w.slots();
-    assert_eq!((s.att(), s.att_river(), w.g.engage_lanes(&s)[0]), (8, 2, 4));
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 10);
-    let lizard = w.unit(p0, "UNIT_LIZARDMAN", from);
-    let giant = w.unit(p0, "UNIT_HILL_GIANT", from);
-    assert!(w.g.unit_engage_large(giant) && w.g.unit_engage_size(giant) == 2);
-    let outsider = w.unit(p0, "UNIT_AXEMAN", w.to);
-    let pool: Vec<UnitId> = axemen.iter().copied().chain([lizard, giant]).collect();
-    let at = |u: UnitId, lane: u8, row: u8| Place { unit: u, lane, row };
-    // The first n axemen in the front row, then the middle, then the rear (4 lanes).
-    let rows = |n: usize| -> Vec<Place> { (0..n).map(|i| at(axemen[i], (i % 4) as u8, (i / 4) as u8)).collect() };
-    let v = |f: &[Place]| w.g.engage_validate_formation(&pool, f, &s);
-    assert!(v(&[]).is_err(), "empty");
-    assert_eq!(v(&rows(8)), Ok(()));
-    assert!(v(&[at(axemen[0], 0, 0), at(axemen[0], 1, 0)]).is_err(), "twice");
-    assert!(v(&[at(axemen[0], 0, 0), at(outsider, 1, 0)]).is_err(), "not in the pool");
-    assert!(v(&[at(axemen[0], 4, 0)]).is_err(), "outside the lanes");
-    assert!(v(&[at(axemen[0], 0, 3)]).is_err(), "outside the rows");
-    assert!(v(&[at(axemen[0], 1, 0), at(axemen[1], 1, 0)]).is_err(), "two in one cell");
-    // A large unit fills its lane and the next: not at the last lane, not over another unit.
-    assert_eq!(v(&[at(giant, 2, 0), at(axemen[0], 1, 0)]), Ok(()));
-    assert!(v(&[at(giant, 3, 0)]).is_err(), "a large unit needs two lanes");
-    assert!(v(&[at(giant, 1, 0), at(axemen[0], 2, 0)]).is_err(), "its second cell is taken");
-    // Nine without bRiver in eight ordinary slots; the river slot to the Lizardman is fine; a
-    // large unit counts two.
-    assert!(v(&rows(9)).is_err(), "nine without bRiver in eight ordinary slots");
-    let mut f = rows(8);
-    f.push(at(lizard, 0, 2));
-    assert_eq!(v(&f), Ok(()));
-    let mut f = rows(7);
-    f.push(at(giant, 0, 2));
-    assert!(v(&f).is_err(), "seven and a giant fill nine ordinary slots");
-    let mut f = rows(6);
-    f.push(at(giant, 2, 1));
-    assert_eq!(v(&f), Ok(()));
-    let mut more: Vec<UnitId> = w.units(p0, "UNIT_LIZARDMAN", from, 2);
-    more.extend(pool.iter().copied());
-    let mut f = rows(8);
-    f.extend([at(more[0], 0, 2), at(more[1], 1, 2), at(lizard, 2, 2)]);
-    assert!(w.g.engage_validate_formation(&more, &f, &s).is_err(), "more than the slots");
 }
 
 #[test]
@@ -365,7 +317,6 @@ fn the_auto_formation_takes_one_of_each_kind_first_and_puts_each_in_the_row_it_p
     let auto = w.auto(&pool, Side::Attacker);
     let pick: Vec<UnitId> = auto.iter().map(|p| p.unit).collect();
     assert_eq!(kinds(&pick), [5, 1, 1, 1, 1, 1]);
-    assert_eq!(w.g.engage_validate_formation(&pool, &auto, &w.slots()), Ok(()));
     // The rows they prefer: the anti-flanker and the horseman in the front row; the archer and
     // the assassin in the middle; the adept in the rear; the front's four cells full, the other
     // strikers in the next row of their rank order with room.
@@ -402,7 +353,6 @@ fn the_auto_formation_takes_one_of_each_kind_first_and_puts_each_in_the_row_it_p
     let g = auto.iter().find(|p| p.unit == giant).expect("the giant is strong enough to be taken");
     assert_eq!((g.lane, g.row), (1, 0));
     assert_eq!(auto.iter().map(|p| w.g.unit_engage_size(p.unit)).sum::<i32>(), 10);
-    assert_eq!(w.g.engage_validate_formation(&pool2, &auto, &w.slots()), Ok(()));
 }
 
 #[test]

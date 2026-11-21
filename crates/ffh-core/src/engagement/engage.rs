@@ -92,11 +92,11 @@ pub(crate) struct EngageOrder {
     pub to: PlotIdx,
     /// The group that gave the order: it advances when the plot falls.
     pub launcher: Option<GroupId>,
-    /// The attacker's formation (checked against the pool and the slots); `None`: the rules' auto
-    /// formation. Not saved: an order lives for the call.
-    pub formation: Option<Vec<Place>>,
+    /// The attacker's squad (docs/ENGAGEMENTS.md, "Squads"; `squads.rs`); `None`: its strongest
+    /// squad. Not saved: an order lives for the call.
+    pub squad: Option<SquadId>,
     /// A forced attack (`unit_attack`: Taunt, events): these units, auto-arranged, whatever their
-    /// moves and attacks this turn (as today's `attack`); `formation` is not read.
+    /// moves and attacks this turn (as today's `attack`); `squad` is not read.
     pub forced: Option<Vec<UnitId>>,
     /// Write the battle log: `None` decides by whether a human could see the battle.
     pub log: Option<bool>,
@@ -167,6 +167,20 @@ pub(crate) struct Setup {
     pub called: Vec<bool>,
     /// The ships that fire into the battle before round 1 (docs/NAVAL.md, 4.7; `shore.rs`).
     pub shore: Vec<super::shore::ShoreShip>,
+    /// The squads that fight (attacker, defender; `None`: units in no squad), whose battles this
+    /// turn are counted (`Game::squad_note_battle`).
+    pub squads: [Option<SquadId>; 2],
+}
+
+/// The defender's side of a battle before its summons ([`Game::engage_def_plan`]): the slots with
+/// the field's Sentinels, the defended city's standing Sentinels, the defending squad's formation
+/// and the squad.
+#[derive(Clone, Debug)]
+pub(crate) struct DefPlan {
+    pub slots: Slots,
+    pub walls: Option<(CityId, Vec<usize>)>,
+    pub def: Vec<Place>,
+    pub squad: Option<SquadId>,
 }
 
 impl Setup {
@@ -463,6 +477,7 @@ impl Game {
         f.tag = u.0;
         (f.lane, f.row) = place;
         f.large = self.unit_engage_large(u);
+        f.river = self.unit_is_river(u);
         f.hp = hp_from_damage(self.units[u].damage, max_hp);
         f.speed = self.unit_engage_speed(u);
         f.first_strikes = self.unit_first_strikes(u);
@@ -550,7 +565,26 @@ impl Game {
         if att.is_empty() {
             return Err("no unit can attack there");
         }
-        let (slots, walls, def) = self.engage_def_layout(&ctx, slots, &candidates, sentinels)?;
+        let plan = self.engage_def_plan(&ctx, slots, &att, &candidates, sentinels)?;
+        self.engage_setup_plan(ctx, plan, att, candidates, summons)
+    }
+
+    /// [`Game::engage_setup`] on the defender's plan `plan` (its squad chosen).
+    pub(crate) fn engage_setup_plan(&self, ctx: HitCtx, plan: DefPlan, att: Vec<Place>, candidates: Vec<UnitId>, summons: &[CalledUnit]) -> Result<Setup, &'static str> {
+        let squad = plan.squad;
+        let mut setup = self.engage_setup_placed(ctx, plan.slots, plan.walls, att, plan.def, candidates, summons)?;
+        setup.squads[Side::Defender.index()] = squad;
+        Ok(setup)
+    }
+
+    /// [`Game::engage_setup`] with the defender's slots, walls and formation given.
+    pub(crate) fn engage_setup_placed(&self, ctx: HitCtx, slots: Slots, walls: Option<(CityId, Vec<usize>)>, att: Vec<Place>, def: Vec<Place>, candidates: Vec<UnitId>, summons: &[CalledUnit]) -> Result<Setup, &'static str> {
+        if att.is_empty() {
+            return Err("no unit can attack there");
+        }
+        if def.is_empty() && walls.is_none() {
+            return Err("there is nobody to fight there");
+        }
         // The units called into the battle (summons.rs), each in its side's formation.
         let mut att = att;
         let mut def = def;
@@ -562,7 +596,7 @@ impl Game {
         }
         let params = Params::from_defines(&self.d.defines);
         let in_city = self.plot_is_city(ctx.to, false, None);
-        let ground = self.engage_ground(ctx.to);
+        let ground = self.engage_ground(&ctx);
         let lanes = self.engage_lanes(&slots);
         att.sort_by_key(|p| (p.lane, p.row));
         def.sort_by_key(|p| (p.lane, p.row));
@@ -653,7 +687,7 @@ impl Game {
             let (att_teams, def_teams) = self.engage_side_teams(ctx.to, &units, n_att);
             self.engage_shore_ships(ctx.to, &att_teams, &def_teams)
         };
-        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks, field, called, shore };
+        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks, field, called, shore, squads: [None, None] };
         // The great-person cards' battle effects (docs/CARDS.md; `arms.rs`).
         self.engage_arms_setup(&mut setup);
         Ok(setup)
@@ -661,9 +695,9 @@ impl Game {
 
     /// The defender's side of a set-up before its summons ([`Game::engage_setup`] and the
     /// summons' plan share it): the slots with (`sentinels`) the field's Sentinels, the defended
-    /// city's standing Sentinels, and the defender's formation of `candidates`. `Err`: nobody to
-    /// fight (no unit and no Sentinel).
-    pub(crate) fn engage_def_layout(&self, ctx: &HitCtx, slots: Slots, candidates: &[UnitId], sentinels: bool) -> Result<(Slots, Option<(CityId, Vec<usize>)>, Vec<Place>), &'static str> {
+    /// city's standing Sentinels, and the defending squad against `att` (`squads.rs`) in its
+    /// cells. `Err`: nobody to fight (no unit and no Sentinel).
+    pub(crate) fn engage_def_plan(&self, ctx: &HitCtx, slots: Slots, att: &[Place], candidates: &[UnitId], sentinels: bool) -> Result<DefPlan, &'static str> {
         // Card: the defender's Sentinels from the field, a Bastion's, a Cairn's (more_cards.rs).
         let mut slots = slots;
         if sentinels {
@@ -675,11 +709,17 @@ impl Game {
         if candidates.is_empty() && walls.is_none() {
             return Err("there is nobody to fight there");
         }
-        let def = self.engage_defense_formation(candidates, &slots, ctx);
+        let squads = self.engage_field_squads(ctx.to, candidates, Side::Defender, ctx);
+        let (def, squad) = if squads.is_empty() {
+            (Vec::new(), None)
+        } else {
+            let i = self.engage_pick_defending_squad(ctx, &slots, &walls, att, candidates, &squads);
+            (self.engage_squad_places(&squads[i], &self.engage_sentinel_cells(&slots)), squads[i].squad)
+        };
         if def.is_empty() && walls.is_none() {
             return Err("there is nobody to fight there");
         }
-        Ok((slots, walls, def))
+        Ok(DefPlan { slots, walls, def, squad })
     }
 
     /// Phase 7 hook (plan 6.2, 14): the effects on the battle of `setup` before it (its units
@@ -742,32 +782,28 @@ impl Game {
     }
 
     fn engage_inner(&mut self, ord: EngageOrder) -> Result<EngageOutcome, &'static str> {
-        let EngageOrder { p, from, to, launcher, formation, forced, log, surprise } = ord;
+        let EngageOrder { p, from, to, launcher, squad, forced, log, surprise } = ord;
         let ctx = HitCtx::new(from, to);
 
         // 1. Set-up.
         let slots = self.engage_slots(&ctx);
-        let (pool, att, ordered) = match forced {
+        let (pool, att, ordered, att_squad) = match forced {
             Some(units) => {
                 let pool: Vec<UnitId> = units
                     .into_iter()
                     .filter(|&u| self.units.contains(u) && !self.unit_is_dead(u) && self.unit_can_attack(u) && self.unit_engages_on_land(u))
                     .collect();
                 let f = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
-                (pool, f, false)
+                (pool, f, false, None)
             }
             None => {
                 let pool = self.engage_attackers(p, from, to, WarTest::AtWar);
-                match formation {
-                    Some(f) => {
-                        self.engage_validate_formation(&pool, &f, &slots)?;
-                        (pool, f, true)
-                    }
-                    None => {
-                        let f = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
-                        (pool, f, false)
-                    }
-                }
+                let squads = self.engage_attacking_squads(from, &pool, &ctx);
+                let i = match squad {
+                    Some(s) => squads.iter().position(|q| q.squad == Some(s)).ok_or("that squad cannot attack there")?,
+                    None => self.engage_strongest_squad(&squads, Side::Attacker, &ctx).ok_or("no unit can attack there")?,
+                };
+                (pool, squads[i].places.clone(), squad.is_some(), squads[i].squad)
             }
         };
         if att.is_empty() {
@@ -786,10 +822,14 @@ impl Game {
         let wants_log = log.unwrap_or_else(|| self.engage_seen_by_human(&force, p, to));
         let frozen = if wants_log { self.engage_forecast_frozen(p, from, to, &att) } else { None };
         // The summons the battle calls (summons.rs).
-        let calls = self.engage_summon_calls(&ctx, &slots, &att, &candidates, true);
+        let plan = self.engage_def_plan(&ctx, slots, &att, &candidates, true)?;
+        let calls = self.engage_summon_calls(&ctx, &att, &plan);
         let summons = self.engage_call_summons(&calls);
-        let setup = match self.engage_setup(ctx, slots, att, candidates, true, &summons) {
-            Ok(s) => s,
+        let setup = match self.engage_setup_plan(ctx, plan, att, candidates, &summons) {
+            Ok(mut s) => {
+                s.squads[Side::Attacker.index()] = att_squad;
+                s
+            }
             Err(e) => {
                 let made: Vec<UnitId> = summons.iter().map(|c| c.place.unit).collect();
                 self.engage_dismiss_summons(&made);
@@ -913,6 +953,10 @@ impl Game {
 
         // 5. After the battle, the report, telemetry.
         let post = self.engage_post(&mut e, &fought, &mut sink);
+        // The squads' battles this turn (the defender fields those that fought the fewest).
+        for sq in e.setup.squads.into_iter().flatten() {
+            self.squad_note_battle(sq);
+        }
         let report = self.engage_report(&e, &fought, &post, sink.map(|s| s.finish(&fought)));
         let id = self.battle_report_add(report);
         if self.telemetry.on() {
@@ -1331,7 +1375,7 @@ impl Game {
         }
         let Some(from) = self.unit_plot_opt(u) else { return true };
         let launcher = self.units[u].group.filter(|&g| self.groups.contains(g));
-        let _ = self.engage(EngageOrder { p, from, to, launcher, formation: None, forced: Some(vec![u]), log: None, surprise: false });
+        let _ = self.engage(EngageOrder { p, from, to, launcher, squad: None, forced: Some(vec![u]), log: None, surprise: false });
         true
     }
 }
@@ -1376,7 +1420,7 @@ mod tests {
     }
 
     fn order(from: PlotIdx, to: PlotIdx, log: bool) -> EngageOrder {
-        EngageOrder { p: PlayerId(0), from, to, launcher: None, formation: None, forced: None, log: Some(log), surprise: false }
+        EngageOrder { p: PlayerId(0), from, to, launcher: None, squad: None, forced: None, log: Some(log), surprise: false }
     }
 
     fn clone(g: &Game) -> Game {

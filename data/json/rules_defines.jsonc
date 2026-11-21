@@ -119,17 +119,12 @@
   //      engage_row_order in units.jsonc; plot
   //      changes: iEngagementSlotsChange of terrains and features; formation battles, revision 4:
   //      docs/ENGAGEMENTS.md) ====
-  // SLOTS_BASE: units each side commits to an engagement (a large unit counts two), before the
-  //      defended plot's changes; a side's grid has 3 rows and max(2, ceil((slots + 2) / 3)) lanes
-  "ENGAGEMENT_SLOTS_BASE": 8,
-  // SLOTS_MIN: the fewest slots a side has
-  "ENGAGEMENT_SLOTS_MIN": 3,
-  // the slots change of a hills plot (hills are a plot type, not a terrain); a feature's change
-  //      adds to it, the terrain's does not
-  "ENGAGEMENT_SLOTS_HILLS": -2,
-  // SLOTS_RIVER: attacker slots lost attacking across a river; units that cross rivers freely
-  //      (bRiver) may fill them
-  "ENGAGEMENT_SLOTS_RIVER": 2,
+  // SQUAD_PLACES: the places of a squad (docs/ENGAGEMENTS.md, "Squads"): a grid of 3 rows by 3
+  //      lanes; a large unit counts two. One battle is one squad against one squad
+  "ENGAGEMENT_SQUAD_PLACES": 6,
+  // DEFENSE_PICK_RUNS: battles the defender's choice of squad plays per squad it can field (on a
+  //      private RNG; the squad with the best result for the defender fights)
+  "ENGAGEMENT_DEFENSE_PICK_RUNS": 6,
   // SUMMON_EXTRA_SLOTS: summons a side may add in battle beyond its slots (phase 7)
   "ENGAGEMENT_SUMMON_EXTRA_SLOTS": 2,
   // BASE_DAMAGE: B in a hit's expected damage B x A / (A + Dv), in HP, before the action's
@@ -190,6 +185,13 @@
   "ENGAGEMENT_FOREST_RANGED_PERCENT": 50,
   "ENGAGEMENT_HILLS_ATTACKER_PERCENT": 85,
   "ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT": 125,
+  // the ground's lines (docs/ENGAGEMENTS.md, "The ground"): STAB in a forest or jungle; a large
+  //      unit's hits on open flat land, and in a forest, jungle or marsh; the hits in round 1 of
+  //      an attacker crossing a river that does not cross rivers freely (bRiver)
+  "ENGAGEMENT_FOREST_STAB_PERCENT": 150,
+  "ENGAGEMENT_OPEN_LARGE_PERCENT": 120,
+  "ENGAGEMENT_ROUGH_LARGE_PERCENT": 75,
+  "ENGAGEMENT_WADING_PERCENT": 50,
   // AUTO_MIN_HP_PCT: the auto-pick skips units below this percent of their HP while healthier
   //      ones of the same kind (the action of the row a unit prefers) are left
   "ENGAGEMENT_AUTO_MIN_HP_PERCENT": 50,

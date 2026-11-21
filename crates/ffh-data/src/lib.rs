@@ -858,22 +858,6 @@ impl GameData {
         rows_charge(&self.engage_rows(t))
     }
 
-    /// The change to each side's engagement slots on a plot (added to `ENGAGEMENT_SLOTS_BASE`):
-    /// `ENGAGEMENT_SLOTS_HILLS` on hills, plus the feature's `iEngagementSlotsChange` where it is
-    /// non-zero, else, on a flat plot, the terrain's. So the terrain's "open land" change counts only
-    /// on a flat plot without a forest or jungle, and a feature replaces it.
-    pub fn engagement_slots_change(&self, terrain: TerrainType, feature: Option<FeatureType>, hills: bool) -> i32 {
-        let feature_change = feature.map_or(0, |f| self.features[f].engagement_slots_change);
-        let cover = if feature_change != 0 {
-            feature_change
-        } else if hills {
-            0
-        } else {
-            self.terrains[terrain].engagement_slots_change
-        };
-        (if hills { self.defines.engagement_slots_hills } else { 0 }) + cover
-    }
-
     /// Verifies that data-defined tables whose order is hard-coded in C++ enums match.
     fn check_enum_orders(&mut self) {
         fn check(w: &mut Vec<String>, reg: &Registry, class: &str, names: &[&str]) {

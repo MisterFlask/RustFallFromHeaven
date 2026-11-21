@@ -91,6 +91,11 @@ fn rule_json(r: &GroundRule) -> Option<Json> {
             "side" => reach.side.map(side_ix),
             "kinds" => reach.kinds.map(|ks| Json::Arr(ks.iter().map(|&k| Json::from(kind_name(k))).collect())),
             "first_round" => reach.first_round,
+            "units" => match reach.units {
+                ffh_core::engagement::formation::RuleUnits::All => "all",
+                ffh_core::engagement::formation::RuleUnits::Large => "large",
+                ffh_core::engagement::formation::RuleUnits::NotRiver => "not_river",
+            },
         })
     };
     match *r {
@@ -99,7 +104,21 @@ fn rule_json(r: &GroundRule) -> Option<Json> {
         GroundRule::HillsAttacker { pct } => j("HillsAttacker", pct),
         GroundRule::HillsDefenderRanged { pct } => j("HillsDefenderRanged", pct),
         GroundRule::Charge { pct } if pct != 100 => j("ChargeFirstRound", pct),
-        GroundRule::Charge { .. } | GroundRule::NoFlanking => None,
+        GroundRule::ForestStab { pct } => j("ForestStab", pct),
+        GroundRule::LargeDealt { pct } => j("LargeDealt", pct),
+        GroundRule::Wading { pct } => j("Wading", pct),
+        GroundRule::Trench { pct } => j("Trench", pct),
+        GroundRule::Uphill { pct } if pct != 100 => j("Uphill", pct),
+        GroundRule::Charge { .. } | GroundRule::Uphill { .. } | GroundRule::NoFlanking => None,
+    }
+}
+
+/// A squad's body as the plan names it: "3rd Army", "the garrison of Cevedes", "loose".
+fn squad_body_label(g: &Game, body: ffh_core::army::SquadBody) -> String {
+    match body {
+        ffh_core::army::SquadBody::Army(a) => g.armies.get(a).map_or_else(String::new, |a| a.name.clone()),
+        ffh_core::army::SquadBody::Garrison(c) => format!("{} garrison", city_name(g, c)),
+        ffh_core::army::SquadBody::Loose => String::new(),
     }
 }
 
@@ -108,7 +127,7 @@ fn rules_json(rules: &[GroundRule]) -> Json {
 }
 
 fn ground_json(g: &ffh_core::engagement::Ground, rules: &[GroundRule]) -> Json {
-    crate::jobj! { "city" => g.city, "forest" => g.forest, "hills" => g.hills, "flanking" => g.flanking(), "rules" => rules_json(rules) }
+    crate::jobj! { "city" => g.city, "forest" => g.forest, "hills" => g.hills, "open" => g.open, "marsh" => g.marsh, "crossing" => g.crossing, "flanking" => g.flanking(), "rules" => rules_json(rules) }
 }
 
 /// The rule values the screens word (the tooltips' and the rules' sentences): the magic bolt's
@@ -837,15 +856,13 @@ fn attack_origin(v: &Viewer, by: &EngageBy) -> Result<PlotIdx, QueryErr> {
     }
 }
 
-/// `engage_preview`: the plan of an attack on `to` by `by` in `formation` (else the rules' auto
-/// formation; module comment). Pure. A plot the viewer does not see, or one not next to the
-/// attackers, has no plan: the reply is its `errors` (and `declare_war`) alone, so the query tells
-/// no more of the fog than the `combat` query does (G5); so has an attack the rules refuse (nobody
-/// can attack there). A formation the rules refuse (off its side's grid, two units in a cell, more
-/// slots than the side has, a unit that cannot cross the river in a river slot) gets the plan in
-/// the rules' auto formation with no forecast (`forecast` null) and why in `errors`: the plan
-/// shows the refusal over the formation it sent.
-pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Option<&[Place]>) -> Result<Json, QueryErr> {
+/// `engage_preview`: the plan of an attack on `to` by `by` with `squad` (else the strongest squad
+/// that can attack; docs/ENGAGEMENTS.md, "Squads"). Pure. A plot the viewer does not see, or one
+/// not next to the attackers, has no plan: the reply is its `errors` (and `declare_war`) alone, so
+/// the query tells no more of the fog than the `combat` query does (G5); so has an attack the
+/// rules refuse (nobody can attack there). A squad that cannot attack there gets the plan of the
+/// strongest squad with no forecast (`forecast` null) and why in `errors`.
+pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), squad: Option<SquadId>) -> Result<Json, QueryErr> {
     let g = v.g;
     let h = v.h;
     let from = attack_origin(v, by)?;
@@ -867,10 +884,10 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
         return Ok(err_reply(errors));
     }
     let war = rival.or(colours).map_or(WarTest::AtWar, WarTest::DeclareWar);
-    let inp = PreviewInput { player: h, from, to: dest, formation, war };
+    let inp = PreviewInput { player: h, from, to: dest, squad, war };
     let (pv, refused) = match g.engage_preview(&inp) {
         Ok(pv) => (pv, None),
-        Err(e) if formation.is_some() => match g.engage_preview(&PreviewInput { formation: None, ..inp }) {
+        Err(e) if squad.is_some() => match g.engage_preview(&PreviewInput { squad: None, ..inp }) {
             Ok(pv) => (pv, Some(e)),
             Err(_) => return Ok(err_reply(vec![e.to_string()])),
         },
@@ -958,6 +975,16 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
         "fighters" => Json::Arr(fighters_json),
         "formation" => formation_json(&pv.formation),
         "auto_formation" => formation_json(&pv.auto),
+        // The attacker's squads that can attack, the one this plan fights with (an index), and the
+        // defenders' squad that answers it (docs/ENGAGEMENTS.md, "Squads").
+        "squads" => Json::Arr(pv.squads.iter().map(|s| crate::jobj! {
+            "squad" => s.squad,
+            "number" => s.number,
+            "body" => squad_body_label(g, s.body),
+            "formation" => formation_json(&s.places),
+        }).collect()),
+        "squad" => pv.squad,
+        "def_squad" => crate::jobj! { "squad" => pv.def_squad, "number" => pv.def_squad_number },
         "reserve" => bs(&pv.reserve, Side::Attacker),
         "def_formation" => formation_json(&pv.def_formation),
         "def_reserve" => bs(&pv.def_reserve, Side::Defender),

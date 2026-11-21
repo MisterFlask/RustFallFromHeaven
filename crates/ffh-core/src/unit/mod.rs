@@ -562,6 +562,10 @@ pub struct Unit {
     /// A recruit marching to its army or garrison (docs/ARMIES.md): the rules move it, it takes
     /// no orders, it is in no army and no garrison until it arrives.
     pub march: Option<crate::army::March>,
+    /// The squad it stands in and its cell there (`row * 3 + lane`; docs/ENGAGEMENTS.md,
+    /// "Squads"; settled by `player_squad_sync`).
+    pub squad: Option<SquadId>,
+    pub squad_cell: u8,
     // ---- This game's own: engagement combat (docs/ENGAGEMENTS.md) ----
     /// Its own changes to its battle stats (docs/UNIT_STATS.md), by `StatType::idx`: points
     /// (`stat_flat`) and percentages (`stat_pct`), from its promotions' `stat_changes` and every
@@ -777,6 +781,8 @@ impl Unit {
             ai_allowed_patrol: true,
             ai_allowed_explore: true,
             army: None,
+            squad: None,
+            squad_cell: 0,
             march: None,
             stat_flat: [0; StatType::NUM],
             stat_pct: [0; StatType::NUM],

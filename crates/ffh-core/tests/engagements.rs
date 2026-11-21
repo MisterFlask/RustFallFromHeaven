@@ -19,7 +19,7 @@ use ffh_core::army::{March, RecruitDest};
 use ffh_core::controller::{AiHook, Controller};
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
 use ffh_core::engagement::report::{BattleLog, BattleReport, LogEvent, LogFate, SatOutWhy};
-use ffh_core::engagement::{EngageResult, Place, Side};
+use ffh_core::engagement::{EngageResult, Side};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::rng::Rng;
@@ -303,69 +303,68 @@ fn the_plot_falls_only_when_no_defender_is_left() {
     }
 }
 
-/// An ordered formation is the one fought: every unit stands where the order put it, the log says
-/// the formation was ordered, a large unit fills two cells and counts two slots; an order that
-/// breaks the grid is refused and changes nothing. Without one, the rules' auto formation. Every
-/// battle.
+/// A hand-set squad is the one fought, cell for cell (docs/ENGAGEMENTS.md, "Squads"): the log
+/// says the squad was ordered, a large unit fills two cells; a squad that cannot attack there is
+/// refused and changes nothing. Without an order, the strongest squad, as the layout has it.
+/// Every battle.
 #[test]
-fn the_ordered_formation_is_the_one_fought() {
+fn the_ordered_squad_is_the_one_fought() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.g.players[p1].human = true;
     w.units(p1, "UNIT_WARRIOR", to, 2);
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 3);
-    let archers = w.units(p0, "UNIT_ARCHER", from, 2);
+    let archer = w.unit(p0, "UNIT_ARCHER", from);
     let giant = w.unit(p0, "UNIT_WAR_ELEPHANT", from);
-    let all: Vec<UnitId> = axemen.iter().chain(&archers).copied().chain([giant]).collect();
+    let all: Vec<UnitId> = axemen.iter().copied().chain([archer, giant]).collect();
     let army = w.g.army_form(p0, &all).expect("an army");
     let grp = w.g.armies[army].group.expect("the army's group");
     let (x, y) = w.g.map.xy(to);
-    // The archers in front, the axemen behind, the war elephant (an animal is no army unit) in the rear across lanes 2 and 3.
-    let order = vec![
-        Place { unit: archers[0], lane: 0, row: 0 },
-        Place { unit: archers[1], lane: 3, row: 0 },
-        Place { unit: axemen[0], lane: 0, row: 1 },
-        Place { unit: axemen[1], lane: 1, row: 1 },
-        Place { unit: axemen[2], lane: 2, row: 1 },
-        Place { unit: giant, lane: 2, row: 2 },
-    ];
+    // One squad of 6 places: the archer in front, the axemen behind, the war elephant (an animal
+    // is no army unit, so it may stand in the army's squad) in the rear across lanes 1 and 2.
+    let order = [(archer, 0u8, 0u8), (axemen[0], 0, 1), (axemen[1], 1, 1), (axemen[2], 2, 1), (giant, 1, 2)];
+    let squad = w.g.units[axemen[0]].squad.expect("a squad");
+    for &(u, lane, row) in &order {
+        w.g.units[u].squad = Some(squad);
+        w.g.units[u].squad_cell = row * 3 + lane;
+    }
+    w.g.squads[squad].hand_set = true;
+    w.g.player_army_sync(p0);
+    for &(u, lane, row) in &order {
+        assert_eq!((w.g.units[u].squad, w.g.units[u].squad_cell), (Some(squad), row * 3 + lane), "{u:?}");
+    }
     let mut f = w.fork(3);
-    f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(order.clone())).expect("the attack");
+    f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(squad)).expect("the attack");
     let r = f.g.battle_reports.last().expect("a report").clone();
     let log = r.log.as_ref().unwrap();
     assert!(log.ordered[0] && !log.ordered[1]);
-    for p in &order {
-        let lf = log.fighters.iter().find(|lf| lf.unit == p.unit).expect("in the log");
-        assert_eq!(lf.place, Some((p.lane, p.row)), "{:?}", p.unit);
+    for &(u, lane, row) in &order {
+        let lf = log.fighters.iter().find(|lf| lf.unit == u).expect("in the log");
+        assert_eq!(lf.place, Some((lane, row)), "{u:?}");
     }
     let g = log.fighters.iter().find(|lf| lf.unit == giant).unwrap();
     assert!(g.large && g.max_hp == 150, "a large unit: two cells and 150% of its role's HP ({})", g.max_hp);
-    assert_eq!((r.sides[0].committed, r.sides[0].used), (6, 7));
+    assert_eq!((r.sides[0].committed, r.sides[0].used), (5, 6));
     check_reach(log);
 
-    // A formation off the grid, or with two units in a cell: refused, nothing changed.
+    // A squad that cannot attack there (the defender's): refused, nothing changed.
     let mut f = w.fork(3);
+    f.g.player_army_sync(p1);
+    let theirs = f.g.map.plots[to].units.iter().find_map(|&u| f.g.units[u].squad).expect("their squad");
     let before = f.g.save();
-    let bad = vec![Place { unit: giant, lane: 3, row: 2 }];
-    assert!(f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(bad)).is_err());
-    let bad = vec![Place { unit: axemen[0], lane: 1, row: 0 }, Place { unit: axemen[1], lane: 1, row: 0 }];
-    assert!(f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(bad)).is_err());
+    assert!(f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(theirs)).is_err());
     assert!(f.g.save() == before, "a refused order changes nothing");
 
-    // No order: the auto formation (the large unit first, in the centre of the front row).
+    // No order: the strongest squad, as its cells say.
     let mut f = w.fork(3);
     f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, None).expect("the attack");
     let r = f.g.battle_reports.last().unwrap().clone();
     let log = r.log.as_ref().unwrap();
     assert!(!log.ordered[0]);
-    let ctx = ffh_core::engagement::HitCtx::new(from, to);
-    let auto = w.g.engage_auto_formation(&all, Side::Attacker, &w.g.engage_slots(&ctx), &ctx);
-    assert_eq!(auto.len(), all.len());
-    for p in &auto {
-        let lf = log.fighters.iter().find(|lf| lf.unit == p.unit).expect("in the log");
-        assert_eq!(lf.place, Some((p.lane, p.row)));
+    for &(u, lane, row) in &order {
+        let lf = log.fighters.iter().find(|lf| lf.unit == u).expect("in the log");
+        assert_eq!(lf.place, Some((lane, row)));
     }
-    assert_eq!(log.fighters.iter().find(|lf| lf.unit == giant).and_then(|lf| lf.place), Some((1, 0)));
 }
 
 /// Attacking catapults never take a defender past their combat limit, and leave once every
@@ -1007,12 +1006,12 @@ fn a_forced_ai_attack_runs_the_preamble() {
     w.g.controllers[p0] = hook.clone();
     let grp = w.g.units[a].group.unwrap();
     let (x, y) = w.g.map.xy(to);
-    let r = w.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(vec![Place { unit: a, lane: 1, row: 0 }]));
+    let r = w.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, None);
     assert_eq!(hook.0.load(Ordering::SeqCst), 1, "the pre-attack casting hook ran once");
     assert!(w.g.teams[t0].at_war[t2], "the AI declared war on the plot's owner");
     assert_eq!(r, Ok((true, false)));
     assert_eq!(w.g.battle_reports.len(), 1);
-    assert_eq!(w.g.battle_reports[0].sides[0].committed, 1, "the formation given");
+    assert_eq!(w.g.battle_reports[0].sides[0].committed, 3, "the squad of the three axemen");
 }
 
 /// A Fireball's kill counts as an engagement's kill does in telemetry (`kill_by`).

@@ -191,7 +191,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
     let log = BattleLog {
         slots: [0, 1].map(|_| SideSlots { base: 8, changes: vec![SlotChange { src: SlotSource::Hills, delta: -2 }], total: 6, river_only: 0 }),
         lanes: [3, 3],
-        ground: Ground { city: false, forest: false, hills: true },
+        ground: Ground { city: false, forest: false, hills: true, open: false, marsh: false, crossing: false, trench_pct: 0 },
         rules: vec![GroundRule::HillsAttacker { pct: 75 }, GroundRule::HillsDefenderRanged { pct: 125 }, GroundRule::Charge { pct: 200 }],
         ordered: [false, false],
         tactics: [ffh_data::BattleTacticType(0); 2],

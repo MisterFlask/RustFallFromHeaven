@@ -50,10 +50,12 @@ use crate::ids::*;
 mod fleet;
 mod march;
 mod requisition;
+mod squad;
 mod supply;
 
 pub use fleet::{ArmyDomain, EscortTarget, Station};
 pub use march::March;
+pub use squad::{Squad, SquadBody, SquadDest, SquadLayout, SQUAD_CELLS, SQUAD_LANES};
 pub use supply::{SupplyLine, SupplyShipRefusal, SupplySource, SupplyState};
 
 /// A persistent army (`Game::armies`).
@@ -276,6 +278,12 @@ impl Game {
     /// army units outside a garrison has one army; the oldest group with units of an army keeps it;
     /// a disbanded army in the city it marched to joins its garrison; armies without units go.
     pub fn player_army_sync(&mut self, p: PlayerId) {
+        self.player_army_sync_armies(p);
+        // The squads follow the armies (squad.rs).
+        self.player_squad_sync(p);
+    }
+
+    fn player_army_sync_armies(&mut self, p: PlayerId) {
         if self.player_is_barbarian(p) {
             return;
         }

@@ -145,15 +145,27 @@ pub struct Ground {
     pub city: bool,
     /// A forest or jungle: arrows and stones fly short on both sides; no flanking.
     pub forest: bool,
-    /// Hills: the attacker's hits are weaker, the defender's arrows and stones stronger.
+    /// Hills: the attacker's hits are weaker, the defender's arrows and stones stronger; the
+    /// attacker charges uphill (no first-round bonus).
     pub hills: bool,
+    /// Open ground (a flat plot of an open terrain without a forest or jungle): large units hit
+    /// harder.
+    pub open: bool,
+    /// A marsh: no flanking; large units hit softer.
+    pub marsh: bool,
+    /// The attacker crosses a river: its units that do not cross rivers freely hit softer in
+    /// round 1 (wading).
+    pub crossing: bool,
+    /// Card: the Trench (`engagement_attacker_first_round_percent`): the attacker's hits in round
+    /// 1 deal this percent (0: no trench).
+    pub trench_pct: i32,
 }
 
 impl Ground {
     /// Whether flanking works here (no city, no forest or jungle): a charge reaches anyone and
     /// is harder in the first round.
     pub fn flanking(&self) -> bool {
-        !self.city && !self.forest
+        !self.city && !self.forest && !self.marsh
     }
 
     /// The ground's rules that apply here, in the order [`GroundRule`] lists them (the battle
@@ -170,10 +182,26 @@ impl Ground {
             out.push(GroundRule::HillsAttacker { pct: p.hills_attacker_pct });
             out.push(GroundRule::HillsDefenderRanged { pct: p.hills_defender_ranged_pct });
         }
-        if self.flanking() {
-            out.push(GroundRule::Charge { pct: 100 + p.charge_bonus });
-        } else {
+        if self.forest {
+            out.push(GroundRule::ForestStab { pct: p.forest_stab_pct });
+        }
+        if self.open {
+            out.push(GroundRule::LargeDealt { pct: p.open_large_pct });
+        } else if self.forest || self.marsh {
+            out.push(GroundRule::LargeDealt { pct: p.rough_large_pct });
+        }
+        if self.crossing {
+            out.push(GroundRule::Wading { pct: p.wading_pct });
+        }
+        if self.trench_pct != 0 {
+            out.push(GroundRule::Trench { pct: self.trench_pct });
+        }
+        if !self.flanking() {
             out.push(GroundRule::NoFlanking);
+        } else if self.hills {
+            out.push(GroundRule::Uphill { pct: 100 + p.charge_bonus });
+        } else {
+            out.push(GroundRule::Charge { pct: 100 + p.charge_bonus });
         }
         out
     }
@@ -192,8 +220,29 @@ pub enum GroundRule {
     HillsDefenderRanged { pct: i32 },
     /// Flanking works: a charge reaches anyone, and its first-round hits deal `pct`.
     Charge { pct: i32 },
-    /// No flanking (a city, a forest or jungle): a charge is a strike.
+    /// No flanking (a city, a forest or jungle, a marsh): a charge is a strike.
     NoFlanking,
+    /// A forest or jungle: STAB deals `pct` on both sides.
+    ForestStab { pct: i32 },
+    /// A large unit's hits deal `pct` (open ground more, a forest, jungle or marsh less).
+    LargeDealt { pct: i32 },
+    /// Across a river: the attacker's units that do not cross rivers freely deal `pct` in round 1.
+    Wading { pct: i32 },
+    /// The Trench: the attacker's hits deal `pct` in round 1.
+    Trench { pct: i32 },
+    /// Hills: flanking works, but only the defender's charges get the first-round bonus (`pct`):
+    /// the attacker charges uphill.
+    Uphill { pct: i32 },
+}
+
+/// Which units a [`GroundRule`] changes the hits of ([`RuleReach::units`]).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum RuleUnits {
+    All,
+    /// Large units only.
+    Large,
+    /// Units that do not cross rivers freely (`bRiver`).
+    NotRiver,
 }
 
 /// Which hits a [`GroundRule`] changes ([`GroundRule::reach`]).
@@ -205,6 +254,8 @@ pub struct RuleReach {
     pub kinds: Option<&'static [ActionKind]>,
     /// It changes the hits of the first round only.
     pub first_round: bool,
+    /// Whose hits among the side's units.
+    pub units: RuleUnits,
 }
 
 impl RuleReach {
@@ -225,7 +276,12 @@ impl GroundRule {
             | GroundRule::ForestRanged { pct }
             | GroundRule::HillsAttacker { pct }
             | GroundRule::HillsDefenderRanged { pct }
-            | GroundRule::Charge { pct } => Some(pct),
+            | GroundRule::Charge { pct }
+            | GroundRule::ForestStab { pct }
+            | GroundRule::LargeDealt { pct }
+            | GroundRule::Wading { pct }
+            | GroundRule::Trench { pct }
+            | GroundRule::Uphill { pct } => Some(pct),
             GroundRule::NoFlanking => None,
         }
     }
@@ -244,8 +300,17 @@ impl GroundRule {
             GroundRule::HillsDefenderRanged { .. } => (Some(Side::Defender), Some(RANGED), false),
             GroundRule::Charge { .. } => (None, Some(&[K::Charge]), true),
             GroundRule::NoFlanking => (None, Some(&[]), false),
+            GroundRule::ForestStab { .. } => (None, Some(&[K::Stab]), false),
+            GroundRule::LargeDealt { .. } => (None, None, false),
+            GroundRule::Wading { .. } | GroundRule::Trench { .. } => (Some(Side::Attacker), None, true),
+            GroundRule::Uphill { .. } => (Some(Side::Defender), Some(&[K::Charge]), true),
         };
-        RuleReach { side, kinds, first_round }
+        let units = match self {
+            GroundRule::LargeDealt { .. } => RuleUnits::Large,
+            GroundRule::Wading { .. } => RuleUnits::NotRiver,
+            _ => RuleUnits::All,
+        };
+        RuleReach { side, kinds, first_round, units }
     }
 }
 
@@ -285,6 +350,12 @@ pub struct Params {
     pub forest_ranged_pct: i32,
     pub hills_attacker_pct: i32,
     pub hills_defender_ranged_pct: i32,
+    /// The ground's lines (docs/ENGAGEMENTS.md, "The ground"): STAB in a forest or jungle; a
+    /// large unit's hits on open ground and in a forest, jungle or marsh; wading.
+    pub forest_stab_pct: i32,
+    pub open_large_pct: i32,
+    pub rough_large_pct: i32,
+    pub wading_pct: i32,
 }
 
 impl Default for Params {
@@ -313,6 +384,10 @@ impl Default for Params {
             forest_ranged_pct: 50,
             hills_attacker_pct: 75,
             hills_defender_ranged_pct: 125,
+            forest_stab_pct: 150,
+            open_large_pct: 120,
+            rough_large_pct: 75,
+            wading_pct: 50,
         }
     }
 }
@@ -355,6 +430,10 @@ impl Params {
             forest_ranged_pct: d.engagement_forest_ranged_percent,
             hills_attacker_pct: d.engagement_hills_attacker_percent,
             hills_defender_ranged_pct: d.engagement_hills_defender_ranged_percent,
+            forest_stab_pct: d.engagement_forest_stab_percent,
+            open_large_pct: d.engagement_open_large_percent,
+            rough_large_pct: d.engagement_rough_large_percent,
+            wading_pct: d.engagement_wading_percent,
         }
     }
 }
@@ -420,6 +499,8 @@ pub struct Fighter {
     pub row: u8,
     /// Two cells side by side (`lane` and `lane + 1`).
     pub large: bool,
+    /// It crosses rivers freely (`bRiver`): no wading.
+    pub river: bool,
     /// Maximum HP (100% of the damage field).
     pub max_hp: i32,
     /// HP at the start of the battle, in centi-HP; 1..=`max_hp * 100`.
@@ -516,6 +597,7 @@ impl Fighter {
             lane: 0,
             row: 0,
             large: false,
+            river: false,
             max_hp,
             hp: max_hp * 100,
             speed: 4,
@@ -682,6 +764,30 @@ impl Formation {
         if g.hills && !attacker && shot_or_stone {
             x.mul(p.hills_defender_ranged_pct);
         }
+        if g.forest && kind == ActionKind::Stab {
+            x.mul(p.forest_stab_pct);
+        }
+        if self.fighters[h].large {
+            if g.open {
+                x.mul(p.open_large_pct);
+            } else if g.forest || g.marsh {
+                x.mul(p.rough_large_pct);
+            }
+        }
+    }
+
+    /// The ground's first-round percentages on a hit by `h` in round `round` (wading, the
+    /// Trench), multiplied into `x`.
+    fn ground_round_pcts(&self, h: usize, round: i32, x: &mut Pcts) {
+        if round != 1 || self.fighters[h].side != Side::Attacker {
+            return;
+        }
+        if self.ground.crossing && !self.fighters[h].river {
+            x.mul(self.params.wading_pct);
+        }
+        if self.ground.trench_pct != 0 {
+            x.mul(self.ground.trench_pct);
+        }
     }
 
     /// The expected damage of a hit of `kind` (as it is fought: a charge where flanking does not
@@ -713,8 +819,9 @@ impl Formation {
             x.mul(p.spell_pct);
         }
         self.ground_pcts(h, t, kind, &mut x);
-        // Card: a charge that reaches anywhere (more_cards.rs).
-        if kind == ActionKind::Charge && round == 1 && self.flanks(h) {
+        self.ground_round_pcts(h, round, &mut x);
+        // Card: a charge that reaches anywhere (more_cards.rs). No bonus charging uphill.
+        if kind == ActionKind::Charge && round == 1 && self.flanks(h) && !(self.ground.hills && self.fighters[h].side == Side::Attacker) {
             x.mul(100 + self.params.charge_bonus);
         }
         x.mul(p.pct);

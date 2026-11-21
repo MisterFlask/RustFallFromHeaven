@@ -928,8 +928,9 @@ mod tests {
         assert_eq!(g.plot_movement_cost(pit, rider, from), g.plot_movement_cost(hill, rider, from));
         assert!(g.plot_movement_cost(pit, rider, from) > d.defines.move_denominator, "hills cost more than open ground");
         assert_eq!(g.plot_defense_modifier(pit, None, false), g.plot_defense_modifier(hill, None, false));
-        assert_eq!(g.engage_ground(pit), g.engage_ground(hill));
-        assert!(g.engage_ground(pit).hills);
+        let ground = |to| g.engage_ground(&crate::engagement::HitCtx { to, from: None, cover: false });
+        assert_eq!(ground(pit), ground(hill));
+        assert!(ground(pit).hills);
         let team = g.players[p0].team;
         assert_eq!(g.plot_see_from_level(pit, team), g.plot_see_from_level(hill, team));
     }

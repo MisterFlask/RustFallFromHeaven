@@ -806,7 +806,7 @@ pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> us
             // A target off the map (at an edge) is `invalid`.
             ask(Query::Path { units: units.clone(), x: x + 3, y, flags: 0 }, May::BeInvalid);
             ask(Query::Combat { units: units.clone(), x: x + 1, y }, May::BeInvalid);
-            ask(Query::EngagePreview { by: crate::command::EngageBy::Units(units.clone()), to: (x + 1, y), formation: None }, May::BeInvalid);
+            ask(Query::EngagePreview { by: crate::command::EngageBy::Units(units.clone()), to: (x + 1, y), squad: None }, May::BeInvalid);
             if some_units.is_empty() {
                 some_units = units.clone();
             }

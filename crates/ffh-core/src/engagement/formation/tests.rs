@@ -90,10 +90,10 @@ fn hurt(mut f: Fighter, hp: i32) -> Fighter {
     f
 }
 
-const OPEN: Ground = Ground { city: false, forest: false, hills: false };
-const FOREST: Ground = Ground { city: false, forest: true, hills: false };
-const CITY: Ground = Ground { city: true, forest: false, hills: false };
-const HILLS: Ground = Ground { city: false, forest: false, hills: true };
+const OPEN: Ground = Ground { city: false, forest: false, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };
+const FOREST: Ground = Ground { city: false, forest: true, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };
+const CITY: Ground = Ground { city: true, forest: false, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };
+const HILLS: Ground = Ground { city: false, forest: false, hills: true, open: false, marsh: false, crossing: false, trench_pct: 0 };
 
 fn battle(ground: Ground, fighters: Vec<Fighter>) -> Formation {
     let b = Formation::new(Params::default(), ground, [4, 4], fighters, |_, _| EQ);
@@ -359,8 +359,8 @@ fn the_ground() {
         (FOREST, [EVEN / 2, EVEN / 2, EVEN, EVEN, EVEN / 2, EVEN / 2, EVEN]),
         (HILLS, [1500, 1500, 1500, 1500, 2500, 2500, EVEN]),
         // several multiply: 2000 x 50% x 75% = 750; 2000 x 50% x 125% = 1250
-        (Ground { forest: true, hills: true, city: false }, [750, 750, 1500, 1500, 1250, 1250, EVEN]),
-        (Ground { city: true, hills: true, forest: false }, [750, 1500, 1500, 1500, 2500, 2500, EVEN]),
+        (Ground { forest: true, hills: true, city: false, open: false, marsh: false, crossing: false, trench_pct: 0 }, [750, 750, 1500, 1500, 1250, 1250, EVEN]),
+        (Ground { city: true, hills: true, forest: false, open: false, marsh: false, crossing: false, trench_pct: 0 }, [750, 1500, 1500, 1500, 2500, 2500, EVEN]),
     ] {
         let b = battle(g, fs.clone());
         let got = [
@@ -397,7 +397,7 @@ fn ground_rules_reach_what_the_resolver_applies() {
     let params = Params::default();
     let mut seen = Vec::new();
     for bits in 0..8 {
-        let g = Ground { city: bits & 1 != 0, forest: bits & 2 != 0, hills: bits & 4 != 0 };
+        let g = Ground { city: bits & 1 != 0, forest: bits & 2 != 0, hills: bits & 4 != 0, open: false, marsh: false, crossing: false, trench_pct: 0 };
         let rules = g.rules(&params);
         let b = battle(g, fs.clone());
         for (h, t, side) in [(0, 1, Attacker), (1, 0, Defender)] {
@@ -888,7 +888,7 @@ fn the_draw_order() {
 fn random_battle(seed: u32) -> Formation {
     let mut g = Rng::new(seed);
     let mut r = |n: i32| g.get_i(n, "test");
-    let ground = Ground { city: r(3) == 0, forest: r(3) == 0, hills: r(3) == 0 };
+    let ground = Ground { city: r(3) == 0, forest: r(3) == 0, hills: r(3) == 0, open: false, marsh: false, crossing: false, trench_pct: 0 };
     let lanes = [2 + r(4) as u8, 2 + r(4) as u8];
     let mut fighters = Vec::new();
     for side in [Side::Attacker, Side::Defender] {

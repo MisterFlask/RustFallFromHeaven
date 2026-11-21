@@ -12,7 +12,7 @@
 //! | Arcane Fortress | `sentinel_ranged_resist` | the Sentinels' `ranged_resist`; [`Game::city_sentinel_ranged_resist`] for map bombards |
 //! | Living Walls | `sentinel_unit` | [`Game::city_sentinel_stat`] |
 //! | Moat | `hold_melee_rounds` | the attackers' `hold_melee_rounds` in the first battle at the city each turn |
-//! | Trench | `engagement_attacker_slots_change` | [`Game::engage_arms_attacker_slots`] |
+//! | Trench | `engagement_attacker_first_round_percent` | [`Game::engage_arms_attacker_first_round`] |
 //! | Siege Colossus | `engage_first_round`, `bombard_range`, `bombard_besieges` | the fighter's `first_round`; [`Game::unit_bombard_plots`] |
 //! | Last Stand Hymn | `last_stand_damage` | the defenders' `last_stand_pct` |
 //! | Wardance | `first_melee_pattern` | the fighter's `first_melee_pattern` |
@@ -24,7 +24,7 @@ use ffh_data::*;
 
 use super::engage::Setup;
 use super::formation::{FighterIdx, Side};
-use super::report::{LogEvent, SlotChange, SlotSource};
+use super::report::LogEvent;
 use super::sink::Sink;
 use crate::game::Game;
 use crate::ids::*;
@@ -179,12 +179,12 @@ impl Game {
         }
     }
 
-    /// The attacker's slot change on plot `to` from its improvement
-    /// (`engagement_attacker_slots_change`, the Trench), if any.
-    pub fn engage_arms_attacker_slots(&self, to: PlotIdx) -> Option<SlotChange> {
+    /// The percent the attacker's hits deal in round 1 of a battle on plot `to` from its
+    /// improvement (`engagement_attacker_first_round_percent`, the Trench), if any.
+    pub fn engage_arms_attacker_first_round(&self, to: PlotIdx) -> Option<i32> {
         let i = self.map.plots[to].improvement_type?;
-        let delta = self.d.improvements[i].engagement_attacker_slots_change;
-        (delta != 0).then_some(SlotChange { src: SlotSource::Improvement(i), delta })
+        let pct = self.d.improvements[i].engagement_attacker_first_round_percent;
+        (pct != 0).then_some(pct)
     }
 
     /// The damage type unit `u`'s physical attack deals (`attack_damage_type`, the Elemental

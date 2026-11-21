@@ -89,8 +89,8 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
         lines.push(txt(d, "TXT_KEY_IMPROVEMENT_VISIBILITY_CHANGE", &[Arg::N(info.visibility_change)]));
     }
     // A great-person card's key (docs/CARDS.md): the Trench.
-    if info.engagement_attacker_slots_change != 0 {
-        lines.push(format!("[ICON_BULLET]In battles on this plot: {:+} slots for the attacker (at least the minimum)", info.engagement_attacker_slots_change));
+    if info.engagement_attacker_first_round_percent != 0 {
+        lines.push(format!("[ICON_BULLET]In battles on this plot: the attacker's hits in round 1 deal {}%", info.engagement_attacker_first_round_percent));
     }
     // A great-person card's keys (docs/CARDS.md): the Cairn.
     if info.engagement_defense != 0 {

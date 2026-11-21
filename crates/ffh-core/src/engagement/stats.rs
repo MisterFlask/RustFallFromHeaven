@@ -233,15 +233,24 @@ impl Game {
         self.unit_battle_spells(u)
     }
 
-    /// The defended plot's ground for a formation battle (spec 1.6): a city on it; a forest or
-    /// jungle (a feature that narrows the field: `iEngagementSlotsChange` below 0, the forests and
-    /// the jungle); hills.
-    pub fn engage_ground(&self, to: PlotIdx) -> Ground {
+    /// The ground of a formation battle on `ctx.to` (docs/ENGAGEMENTS.md, "The ground"): a city
+    /// on it; a forest or jungle (`engagement_forest`); hills; open ground (a flat plot of an
+    /// `engagement_open` terrain without a forest or jungle); a marsh (`engagement_mire`); a river
+    /// the attacker crosses (from `ctx.from`); the plot's Trench.
+    pub fn engage_ground(&self, ctx: &HitCtx) -> Ground {
+        let to = ctx.to;
         let plot = &self.map.plots[to];
+        let forest = plot.feature_type.is_some_and(|f| self.d.features[f].engagement_forest);
+        let hills = self.plot_is_hills(to);
+        let terrain = plot.terrain_type.map(|t| &self.d.terrains[t]);
         Ground {
             city: self.plot_is_city(to, false, None),
-            forest: plot.feature_type.is_some_and(|f| self.d.features[f].engagement_slots_change < 0),
-            hills: self.plot_is_hills(to),
+            forest,
+            hills,
+            open: !forest && !hills && terrain.is_some_and(|t| t.engagement_open),
+            marsh: terrain.is_some_and(|t| t.engagement_mire),
+            crossing: ctx.from.is_some_and(|from| self.plot_is_river_crossing(from, self.direction_xy_plots(from, to))),
+            trench_pct: self.engage_arms_attacker_first_round(to).unwrap_or(0),
         }
     }
 

@@ -76,13 +76,11 @@ pub enum Command {
     GarrisonTactic { city: CityId, tactic: BattleTacticType },
     /// Outpost `city` is raised to a city for its cost in gold (docs/NAVAL.md, 9.2).
     RaiseOutpost { city: CityId },
-    /// Engagement combat (docs/ENGAGEMENTS.md): attack plot `to` (next to the attackers); each side
-    /// fights in the formation its tactic gives (docs/TACTICS.md). `formation` is refused for the
-    /// human ("An army fights in its tactic."; the rules' own entry still takes one: the lab, tests).
-    /// `by`: an army, the selected units (either one's group launches the attack and moves in when
+    /// Engagement combat (docs/ENGAGEMENTS.md): attack plot `to` (next to the attackers) with
+    /// `squad` (`None`: the strongest squad that can; docs/ENGAGEMENTS.md, "Squads"). `by`: an army, the selected units (either one's group launches the attack and moves in when
     /// the plot falls) or a plot. `declare_war` as `move`'s (`None` asks, `Some(false)` is the
     /// popup's "no").
-    Engage { by: EngageBy, to: (i32, i32), formation: Option<Vec<Place>>, declare_war: Option<bool> },
+    Engage { by: EngageBy, to: (i32, i32), squad: Option<SquadId>, declare_war: Option<bool> },
     /// Where city `city`'s trained land combat units go: production order `index`'s, or the
     /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
     /// garrison (for the city). A unit bound elsewhere marches there.
@@ -531,7 +529,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("army_station", &["army", "station"]),
     ("garrison_tactic", &["city", "tactic"]),
     ("raise_outpost", &["city"]),
-    ("engage", &["army", "units", "from", "to", "formation", "declare_war"]),
+    ("engage", &["army", "units", "from", "to", "squad", "declare_war"]),
     ("recruit_dest", &["city", "index", "dest"]),
     ("govern_role", &["city", "role"]),
     ("govern_priorities", &["roles"]),
@@ -850,7 +848,7 @@ impl Command {
             "engage" => Command::Engage {
                 by: EngageBy::from_json(j)?,
                 to: plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
-                formation: formation_field(j, "formation")?,
+                squad: j.opt("squad")?,
                 declare_war: j.opt("declare_war")?,
             },
             "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
@@ -971,10 +969,10 @@ impl Command {
             Command::ArmyStation { army, station } => j.with("army", *army).with("station", station_json(*station)),
             Command::GarrisonTactic { city, tactic } => j.with("city", *city).with("tactic", Json::idx(*tactic)),
             Command::RaiseOutpost { city } => j.with("city", *city),
-            Command::Engage { by, to, formation, declare_war } => by
+            Command::Engage { by, to, squad, declare_war } => by
                 .put(j)
                 .with("to", plot_json(to.0, to.1))
-                .with("formation", formation.as_deref().map(formation_json))
+                .with("squad", *squad)
                 .with("declare_war", *declare_war),
             Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
             Command::GovernRole { city, role } => j.with("city", *city).with("role", Json::idx(*role)),
@@ -1160,7 +1158,7 @@ pub enum Action {
     Army(Command),
     /// `engage` after the checks: declare war on `war` first, then attack `to` from `from`
     /// (`group_attack_force`, launched by `by`'s group).
-    Engage { by: EngageBy, from: PlotIdx, to: PlotIdx, formation: Option<Vec<Place>>, war: Option<TeamId> },
+    Engage { by: EngageBy, from: PlotIdx, to: PlotIdx, squad: Option<SquadId>, war: Option<TeamId> },
     Research { tech: Option<TechType>, shift: bool },
     ResearchPath { path: ResearchPathType },
     Revolution { civics: IdxVec<CivicOptionType, Option<CivicType>> },
@@ -1811,11 +1809,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
-        Command::Engage { by, to, formation, declare_war } => {
-            // Battle tactics (docs/TACTICS.md): the grid of one battle is never edited by hand.
-            if formation.is_some() {
-                return Err(cannot("An army fights in its tactic."));
-            }
+        Command::Engage { by, to, squad, declare_war } => {
             let dest = on_map(g, to.0, to.1)?;
             let from = match by {
                 EngageBy::Army(a) => {
@@ -1864,7 +1858,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if g.engage_defenders(dest, h, &pool, test).is_empty() {
                 return Err(cannot("there is nobody to fight there"));
             }
-            Plan::Apply(Action::Engage { by: by.clone(), from, to: dest, formation: None, war })
+            Plan::Apply(Action::Engage { by: by.clone(), from, to: dest, squad: *squad, war })
         }
 
         Command::RecruitDest { city, index, dest } => {
@@ -2438,10 +2432,10 @@ fn largest_army_on(g: &Game, h: PlayerId, plot: PlotIdx) -> Option<ArmyId> {
 
 /// The `engage` command after `validate` (docs/ENGAGEMENTS.md): the war declaration, the
 /// launching group (the army's, the selection's, else the group of the largest army on the plot,
-/// else of the formation's first unit or the pool's), then one engagement through
+/// else of the squad's first unit or the pool's), then one engagement through
 /// `group_attack_force` (`MOVE_DIRECT_ATTACK`: the plot is next to it; a refusal changes nothing)
-/// in the formation given (else the rules' auto formation).
-fn engage(g: &mut Game, h: PlayerId, by: &EngageBy, from: PlotIdx, to: PlotIdx, formation: Option<Vec<Place>>, war: Option<TeamId>) {
+/// with the squad given (else the strongest).
+fn engage(g: &mut Game, h: PlayerId, by: &EngageBy, from: PlotIdx, to: PlotIdx, squad: Option<SquadId>, war: Option<TeamId>) {
     let team = g.players[h].team;
     if let Some(t) = war {
         g.team_declare_war(team, t, false, None);
@@ -2452,17 +2446,17 @@ fn engage(g: &mut Game, h: PlayerId, by: &EngageBy, from: PlotIdx, to: PlotIdx, 
         EngageBy::Units(units) => join_selection(g, units),
         EngageBy::From(..) => {
             let army = largest_army_on(g, h, from);
-            let first = formation.as_ref().and_then(|f| f.first()).map(|p| p.unit).or(pool.first().copied());
+            let first = squad.and_then(|s| pool.iter().copied().find(|&u| g.units[u].squad == Some(s))).or(pool.first().copied());
             army.and_then(|a| g.armies[a].group).or_else(|| first.and_then(|u| g.units[u].group))
         }
     };
     let Some(grp) = launcher.filter(|&gr| g.groups.contains(gr)) else { return };
-    if formation.is_none() {
+    if squad.is_none() {
         // Alertness: an attack ordered on a plot the player sees, as a move's mission records it.
         g.groups[grp].last_plot_visible = g.plot_is_visible(to, team);
     }
     let (x, y) = g.map.xy(to);
-    let _ = g.group_attack_force(grp, x, y, ffh_core::defs::MOVE_DIRECT_ATTACK, formation);
+    let _ = g.group_attack_force(grp, x, y, ffh_core::defs::MOVE_DIRECT_ATTACK, squad);
 }
 
 /// Applies a validated action for `h`.
@@ -2527,7 +2521,7 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
         Action::Army(c) => {
             let _ = apply_army(g, h, c);
         }
-        Action::Engage { by, from, to, formation, war } => engage(g, h, by, *from, *to, formation.clone(), *war),
+        Action::Engage { by, from, to, squad, war } => engage(g, h, by, *from, *to, *squad, *war),
         Action::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
             g.city_do_task(*city, *task, *data1, *data2, *option, *alt, *shift, *ctrl);
         }
@@ -2649,14 +2643,9 @@ mod tests {
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Group(GroupId(7))) },
             Command::GarrisonTactic { city: CityId(3), tactic: BattleTacticType(0) },
             Command::RaiseOutpost { city: CityId(3) },
-            Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), formation: None, declare_war: None },
-            Command::Engage {
-                by: EngageBy::Units(vec![UnitId(3), UnitId(4)]),
-                to: (4, 5),
-                formation: Some(vec![Place { unit: UnitId(4), lane: 1, row: 0 }, Place { unit: UnitId(3), lane: 0, row: 2 }]),
-                declare_war: Some(true),
-            },
-            Command::Engage { by: EngageBy::From(3, 5), to: (4, 5), formation: None, declare_war: Some(false) },
+            Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), squad: None, declare_war: None },
+            Command::Engage { by: EngageBy::Units(vec![UnitId(3), UnitId(4)]), to: (4, 5), squad: Some(SquadId(2)), declare_war: Some(true) },
+            Command::Engage { by: EngageBy::From(3, 5), to: (4, 5), squad: None, declare_war: Some(false) },
             Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: None },
