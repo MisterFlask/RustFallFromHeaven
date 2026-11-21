@@ -264,42 +264,84 @@ fn axemen_storm_a_walled_city_of_archers() {
     assert!(checked > 50, "{checked} actions checked");
 }
 
-/// The plot falls only when no defender is left on it (spec 1.7): in a forest (6 slots) eight
-/// weak warriors put six in the line and keep two in reserve; the attackers wipe the line out,
-/// and the plot holds (nobody moves, the survivors keep their damage). With six only, the same
-/// battle takes the plot and the launcher's group moves in. Every battle.
+/// Who lost and what it does to the plot (docs/ENGAGEMENTS.md, "The result"): six axemen at
+/// +400% against half-hurt warriors in a forest (6 slots) lose far less HP for any seed. Six warriors:
+/// the line is wiped out and the launcher moves in. Eight (six in the line, two in reserve) on
+/// open ground: the reserve is pushed back off the plot, away from the attackers, and the
+/// launcher moves in. Twelve in a city (more than its slots): nobody is pushed back, the reserve
+/// holds the plot and nobody moves. Every battle.
 #[test]
-fn the_plot_falls_only_when_no_defender_is_left() {
-    for (n, falls) in [(8, false), (6, true)] {
+fn the_plot_falls_to_a_won_battle_with_no_defender_left() {
+    for (n, city) in [(6, false), (8, false), (12, true)] {
         let mut w = world();
         let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
         w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
+        if city {
+            w.city(p1, to, 0);
+        }
         w.g.players[p1].human = true;
-        for d in w.units(p1, "UNIT_WARRIOR", to, n) {
-            w.g.units[d].damage = 95;
+        let defenders = w.units(p1, "UNIT_WARRIOR", to, n);
+        for &d in &defenders {
+            w.g.units[d].damage = 50;
         }
         let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
         for &a in &axemen {
             w.g.unit_change_extra_combat_percent(a, 400);
+            w.g.units[a].stat_pct[StatType::Defense.idx()] = 1000;
         }
         for seed in 0..4 {
             let mut f = w.fork(seed);
             let (_, reports) = f.attack(axemen[0]);
             let r = &reports[0];
-            assert_eq!((r.sides[0].slots, r.sides[1].slots, r.sides[1].committed), (6, 6, 6), "seed {seed}");
-            assert_eq!(r.sides[1].fallen + r.sides[1].escaped, 6, "seed {seed}: the line is wiped out: {:?}", r.sides[1]);
+            let committed = r.sides[1].committed;
+            assert_eq!(r.sides[1].fallen + r.sides[1].escaped, committed, "seed {seed}: the line is wiped out: {:?}", r.sides[1]);
             assert!(check_reach(r.log.as_ref().unwrap()) > 0);
-            if falls {
-                assert_eq!(r.outcome.result, EngageResult::Taken, "seed {seed}");
-                assert!(r.outcome.plot_taken && r.outcome.defenders_left == 0);
-                assert_eq!(f.g.unit_plot(axemen[0]), to, "seed {seed}: the launcher moved in");
-            } else {
+            assert_eq!(r.outcome.loser, Some(Side::Defender), "seed {seed}: {:?}", r.outcome);
+            assert!(r.outcome.hp_lost[1] > r.outcome.hp_lost[0], "seed {seed}: {:?}", r.outcome);
+            let left: Vec<UnitId> = defenders.iter().copied().filter(|&d| f.alive(d)).collect();
+            if city {
                 assert_eq!(r.outcome.result, EngageResult::Cleared, "seed {seed}");
-                assert!(!r.outcome.plot_taken && r.outcome.defenders_left == 2, "seed {seed}: {:?}", r.outcome);
+                assert!(!r.outcome.plot_taken && r.outcome.pushed == 0 && r.outcome.defenders_left == n as i32 - committed, "seed {seed}: {:?}", r.outcome);
+                assert!(left.iter().all(|&d| f.g.unit_plot(d) == to), "seed {seed}: nobody is pushed back from a city");
                 assert!(axemen.iter().all(|&a| f.g.unit_plot(a) == from), "seed {seed}: nobody moves");
-                assert!(f.g.map.plots[to].units.iter().all(|&u| f.g.units[u].owner == p1));
+            } else {
+                assert_eq!(r.outcome.result, EngageResult::Taken, "seed {seed}");
+                assert!(r.outcome.plot_taken && r.outcome.defenders_left == 0, "seed {seed}: {:?}", r.outcome);
+                assert_eq!(r.outcome.pushed, left.len() as i32, "seed {seed}: every survivor is pushed back");
+                let (tx, ty) = f.g.map.xy(to);
+                for &d in &left {
+                    let at = f.g.unit_plot(d);
+                    let (x, y) = f.g.map.xy(at);
+                    assert!(at != to && at != from && f.g.step_distance(x, y, tx, ty) == 1, "seed {seed}: pushed next to the plot, not onto the attackers");
+                }
+                assert_eq!(f.g.unit_plot(axemen[0]), to, "seed {seed}: the launcher moved in");
             }
         }
+    }
+}
+
+/// A battle lost by HP does not take the plot, even when no defender is left on it: one healthy
+/// warrior with Defense raised so far that it is hardly hurt, against a dying attacker that a
+/// sure withdrawal saves (it loses all the HP it had left). The warrior stays, the attacker
+/// stays; and the same rule holds for every report of the game's battles. Every battle.
+#[test]
+fn a_battle_lost_by_hp_does_not_take_the_plot() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let d = w.unit(p1, "UNIT_WARRIOR", to);
+    w.g.units[d].stat_pct[StatType::Defense.idx()] = 100_000;
+    let a = w.unit(p0, "UNIT_HORSEMAN", from);
+    w.g.unit_change_extra_withdrawal(a, 100);
+    w.g.units[a].damage = 70;
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        let (_, reports) = f.attack(a);
+        let r = &reports[0];
+        assert_eq!(r.outcome.loser, Some(Side::Attacker), "seed {seed}: {:?}", r.outcome);
+        assert_eq!(r.outcome.loser, ffh_core::engagement::engage_loser(r.outcome.hp_lost.map(i64::from)));
+        assert!(!r.outcome.plot_taken && r.outcome.pushed == 0, "seed {seed}");
+        assert!(f.alive(d) && f.g.unit_plot(d) == to, "seed {seed}: the winner holds");
+        assert!(f.alive(a) && f.g.unit_plot(a) == from, "seed {seed}: the loser stays where it was");
     }
 }
 
@@ -635,6 +677,8 @@ fn a_werewolf_converts_once_after_its_last_kill() {
 fn blitz_attacks_twice() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    // In a city: the warrior is not pushed back by a lost battle, and is there to attack again.
+    w.city(p1, to, 0);
     let d = w.unit(p1, "UNIT_WARRIOR", to);
     let a = w.unit(p0, "UNIT_HORSEMAN", from);
     w.promote(a, "PROMOTION_BLITZ");
@@ -847,6 +891,8 @@ fn captures_and_slaves_are_outside_the_army() {
     w.g.units[wolf].damage = 95;
     let tamer = w.unit(p0, "UNIT_AXEMAN", from);
     w.promote(tamer, "PROMOTION_SUBDUE_ANIMAL");
+    // The wolf can hardly hurt it: the tamer wins the battle and moves in.
+    w.g.units[tamer].stat_pct[StatType::Defense.idx()] = 100_000;
     let army = w.g.units[tamer].army;
     assert!(army.is_some());
     let wolf_type = w.g.d.t::<UnitType>("UNIT_WOLF");
@@ -910,7 +956,9 @@ fn captures_and_slaves_are_outside_the_army() {
 fn a_hidden_attacker_with_no_free_plot_dies_after_the_battle() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    // Eleven weak warriors: ten fight, one stays in reserve and keeps `to` taken.
+    // A city (nobody is pushed back from it) and eleven weak warriors in it: one stays in
+    // reserve and keeps `to` taken.
+    w.city(p1, to, 0);
     for d in w.units(p1, "UNIT_WARRIOR", to, 11) {
         w.g.units[d].damage = 90;
     }

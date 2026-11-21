@@ -64,15 +64,15 @@ const STAT: &[&str] = &["base_x100", "terms", "total_x100"];
 const PAIR: &[&str] = &["h", "t", "a_x100", "dv_x100", "mean", "ma_x100", "md_x100", "spell_pct", "magic_mean", "a_extra", "dv_extra"];
 const GROUND: &[&str] = &["city", "forest", "hills", "flanking", "rules"];
 const PARAMS: &[&str] = &["bolt_pct", "splash_pct", "first_strike_speed", "extra_action_tier", "extra_actions"];
-const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "lines_down", "sides"];
+const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "pushed", "hp_lost", "loser", "calc", "lines_down", "sides"];
 const LINE: &[&str] = &["committed", "sat_out", "fallen", "escaped", "standing"];
-const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "has_log", "sides"];
+const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "pushed", "hp_lost", "loser", "has_log", "sides"];
 const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "slots", "lanes", "used", "committed", "sat_out", "lost", "lost_types", "escaped", "standing", "shore"];
 const PLAN: &[&str] = &[
     "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "formation", "auto_formation", "reserve", "def_formation", "def_reserve", "summons", "tactics",
     "starving", "shore", "shore_unseen", "forecast", "declare_war", "errors",
 ];
-const FORECAST: &[&str] = &["runs", "line_wiped_permille", "plot_falls_permille", "attackers_wiped_permille", "lost_x100", "escaped_x100", "per"];
+const FORECAST: &[&str] = &["runs", "line_wiped_permille", "plot_falls_permille", "attackers_wiped_permille", "attackers_win_permille", "lost_x100", "escaped_x100", "per"];
 const HIT: &[&str] = &["target", "dmg", "expected", "r", "crit", "miss", "killed", "withdrew", "splash"];
 /// The action kinds as the screens name them.
 const KINDS: &[&str] = &["Strike", "Charge", "Stab", "Shoot", "Spell", "Bombard", "Heal", "None"];
@@ -91,6 +91,7 @@ const AFTER: &[(&str, &[&str])] = &[
     ("Xp", &["kind", "unit", "amount", "from"]),
     ("KillEffect", &["kind", "killer", "victim", "effect"]),
     ("Flee", &["kind", "unit", "to"]),
+    ("PushBack", &["kind", "units", "to"]),
     ("MoveIn", &["kind", "units", "city"]),
     ("Cast", &["kind", "actor", "spell", "targets", "effect", "hits"]),
 ];
@@ -170,9 +171,14 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let msgs = q(&s, r#"{"q":"log","since":0}"#);
     let tagged = arr(&msgs, "entries").into_iter().find(|e| e.get("kind").and_then(Json::as_str) == Some("engagement")).expect("a message of kind engagement");
     assert_eq!(int(&tagged, "report"), id as i64);
-    // Its mark is the attacker's result: a kill when it took or cleared the plot, else a loss.
-    let won = matches!(s.g.battle_report(id).unwrap().outcome.result, ffh_core::engagement::report::EngageResult::Taken | ffh_core::engagement::report::EngageResult::Cleared);
-    assert_eq!(tagged.get("mark").and_then(Json::as_str), Some(if won { "kill" } else { "loss" }), "{tagged:?}");
+    // Its mark is the attacker's result: a kill when the defenders lost more HP, a loss when it
+    // did, none when both lost the same.
+    let mark = match s.g.battle_report(id).unwrap().outcome.loser {
+        Some(ffh_core::engagement::Side::Defender) => Some("kill"),
+        Some(ffh_core::engagement::Side::Attacker) => Some("loss"),
+        None => None,
+    };
+    assert_eq!(tagged.get("mark").and_then(Json::as_str), mark, "{tagged:?}");
 
     // The battle lists: `battle_reports` and the view's `battles`, as summaries.
     let list = q(&s, r#"{"q":"battle_reports"}"#);

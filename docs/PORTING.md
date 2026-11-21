@@ -597,6 +597,26 @@ flag.
   Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
   Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
   battle's hit, against the plot's own defence, as before the formation battles). Save format 10.
+  (Who wins and when the plot falls changed on 2026-11-21: the next entry.)
+- **A battle is lost by the side that loses more HP; the losing defenders are pushed back** (the
+  owner's rule, 2026-11-21; docs/ENGAGEMENTS.md, "The engagement", step 6). Each side's HP lost
+  is every one of its units' HP when the engagement began less its HP at the end: a fallen unit's
+  all of it, a withdrawn one's all it had left (its withdrawal took the place of a killing hit),
+  heals in the battle taken back, a city's Sentinels on the defender's side, the opening's
+  defensive strikes and pre-battle damage included. The side that lost more lost the battle (a
+  tie: neither). When the defenders lost outside a city, every defender left on the plot (the
+  line's survivors, those that sat out, the reserve) is pushed back to a plot next to it, the
+  farthest from the attacker's plot among those it could withdraw to, a group together with its
+  non-combatants; one with nowhere to go stays. The plot falls only when the defenders lost and
+  none of them is left: then the launching group moves in. Otherwise nobody moves, even on a plot
+  the battle emptied (the attackers lost: the next attack walks in). In a city nobody is pushed
+  back, and the city falls as before when no defender is left, but only to a won battle. Before:
+  there was no winner by damage, and the plot fell whenever no defender was left. Why: the
+  owner's design, a battle won or lost by the damage each side took. The preview and the AI's
+  forecasts use the same rule (the chance to win, and the plot falls); the winner of a battle for
+  the Dawn Vow is the side that did not lose. A unit that withdraws before taking damage counts
+  as losing all it had, so a fast raider cannot win by chipping a stack and escaping. Save format
+  57.
 - **Unit stats** (docs/UNIT_STATS.md; the owner's design, 2026-11-05). Every land unit type has a
   stat sheet (`stats`: HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed),
   and promotions name the stats they change (`stat_changes`: points and percentages). A physical

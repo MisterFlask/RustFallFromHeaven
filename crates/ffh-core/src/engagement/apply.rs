@@ -31,20 +31,30 @@
 //!    (`Unit::battle_heal_turn`). Then phase 7's post-battle hook
 //!    ([`Game::engage_post_battle_spells`], empty).
 //! 7. Withdrawn defenders (outside cities only) flee to the nearest valid plot (or die with none);
-//!    a marching one keeps its march. (The round model's Fear rout after a won battle is gone:
-//!    formation battles are not won by damage.)
+//!    a marching one keeps its march. (The round model's Fear rout after a won battle is gone.)
+//! 7b. **Push-back** (the owner's rule, 2026-11-21): when the defenders lost (step 9) outside a
+//!    city, their units left on the plot (the line's survivors, those that sat out, the reserve)
+//!    are pushed back to a plot next to it, the farthest from the attacking plot of those every
+//!    unit of the group can withdraw to (not the attacking plot); a group goes together, with its
+//!    members that do not defend; a group with no plot for all goes unit by unit; a unit with
+//!    nowhere to go stays (and the plot does not fall). In a city nobody is pushed.
 //! 8. **Attack cost**: every committed attacker (sat-out ones included) has made its attack
 //!    (`made_attack`, `attacks_made`) and pays today's attack move cost unless it moves in.
 //!    Withdrawn attackers stay in their group and army; the survivors stay on their plot.
-//! 9. **The result** (spec 1.7): the plot falls only when no defender is left on it (in the line
-//!    or in reserve, a city's Sentinels standing included): then the launcher's group moves in (a
-//!    city is captured as today), and only it; its mission queue is cleared. Otherwise nobody
-//!    moves. A kill a Sentinel makes or suffers has no per-kill effect (no unit made it).
+//! 9. **The result** (spec 1.7; the owner's rule, 2026-11-21): the side whose units lost more HP
+//!    in the engagement lost it ([`super::engage::engage_loser`]: each fighter's HP when the
+//!    engagement began less its HP at the end, a fallen one's all of it and a withdrawn one's all
+//!    it had left (its withdrawal took the place of a killing hit), the Sentinels the defender's;
+//!    a tie has no loser). The plot falls only when the defenders lost and none of
+//!    them is left on it (in the line or in reserve, a city's Sentinels standing included): then
+//!    the launcher's group moves in (a city is captured as today), and only it; its mission queue
+//!    is cleared. Otherwise nobody moves. A kill a Sentinel makes or suffers has no per-kill
+//!    effect (no unit made it).
 //! 10. The armies of every player involved are settled (`player_army_sync`).
 
 use ffh_data::*;
 
-use super::engage::{damage_from_hp, Eng, Fought};
+use super::engage::{damage_from_hp, engage_loser, Eng, Fought};
 use super::formation::{FighterIdx, Side};
 use super::report::{EngageResult, HealSource, KillKind, LogEvent, Stage, XpSource};
 use super::sink::Sink;
@@ -65,8 +75,12 @@ pub(crate) struct Post {
     pub xp: Vec<i32>,
     /// Per committed unit: its kills.
     pub kills: Vec<i32>,
-    /// Defenders that fled (withdrawals).
+    /// Defenders that fled (withdrawals), and the defender's units pushed back (step 7b).
     pub fled: i32,
+    pub pushed: i32,
+    /// Each side's HP lost (centi-HP) and the loser ([`super::engage::engage_loser`]).
+    pub hp_lost: [i64; 2],
+    pub loser: Option<Side>,
 }
 
 impl Game {
@@ -80,7 +94,12 @@ impl Game {
         let d = self.d;
         let n = e.units.len();
         let to = e.to;
-        let mut post = Post { result: EngageResult::Held, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, xp: vec![0; n], kills: vec![0; n], fled: 0 };
+        // Who lost: the side whose units lost more HP (as fought: before the Font of Rebirth
+        // spares anyone, below).
+        let hp_lost = e.setup.hp_lost(&e.setup.start_hp(), &r.hp, |i| r.withdrew(i));
+        let loser = engage_loser(hp_lost);
+        let defenders_lost = loser == Some(Side::Defender);
+        let mut post = Post { result: EngageResult::Held, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, xp: vec![0; n], kills: vec![0; n], fled: 0, pushed: 0, hp_lost, loser };
         if let Some(s) = sink.as_mut() {
             s.stage(Stage::Post);
         }
@@ -405,7 +424,13 @@ impl Game {
             + e.of(Side::Defender).filter(|&i| r.withdrew(i) && !e.in_city()).count() as i32;
         // Card: the field's Sentinels hold no plot (more_cards.rs).
         let walls_left = e.setup.city_sentinel_range().filter(|&i| !r.killed(i)).count() as i32;
-        let will_advance = walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) - leaving <= 0);
+        // Outside a city the defenders that lost are pushed back (step 7): those that can go leave.
+        let pushed_away = if defenders_lost && !e.in_city() {
+            self.engage_push_set(e, r).into_iter().filter(|&u| self.engage_push_plot(&[u], Some(e.from)).is_some()).count() as i32
+        } else {
+            0
+        };
+        let will_advance = defenders_lost && walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) - leaving - pushed_away <= 0);
         if will_advance {
             let capture = mover.is_some_and(|m| !self.unit_is_no_capture(m));
             for k in r.kills.iter().filter(|k| k.victim < n) {
@@ -467,10 +492,15 @@ impl Game {
         // casts and recalls use their promotion up.
         self.engage_magic_after(e, r);
 
-        // 8. Attack cost; 9. the launcher moves in when no defender is left.
+        // 7b. Defenders that lost outside a city are pushed back (the owner's rule, 2026-11-21).
+        if defenders_lost && !e.in_city() {
+            self.engage_push_back(e, r, &mut post, sink);
+        }
+
+        // 8. Attack cost; 9. the launcher moves in when the defenders lost and none is left.
         let launcher = e.launcher.filter(|&g| self.groups.contains(g));
         let mover = launcher.and_then(|g| self.groups[g].units.iter().copied().find(|&u| self.engage_alive(u)));
-        let advance = walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) == 0);
+        let advance = defenders_lost && walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) == 0);
         for i in e.of(Side::Attacker) {
             let u = e.units[i];
             if !self.engage_alive(u) {
@@ -505,13 +535,14 @@ impl Game {
                 self.group_clear_mission_queue(g);
             }
         }
-        // 9. The result: the plot fell when none of the defender's units is left on it.
+        // 9. The result: the plot fell when the defenders lost and none of their units is left on
+        // it.
         // (A unit a defender's kill created that stays is a defender left too: summons.rs.)
         let mut left: Vec<UnitId> = e.setup.candidates.iter().copied().chain(e.of(Side::Defender).map(|i| e.units[i])).filter(|&u| self.engage_alive(u) && self.unit_plot_opt(u) == Some(to)).collect();
         left.sort();
         left.dedup();
         post.defenders_left = left.len() as i32 + walls_left;
-        post.result = if post.defenders_left == 0 {
+        post.result = if post.defenders_left == 0 && defenders_lost {
             EngageResult::Taken
         } else if r.down[1] {
             EngageResult::Cleared
@@ -522,12 +553,7 @@ impl Game {
         };
         // Card: Founding of the Dawn Knights (docs/CARDS.md): the winners that hold the Vow heal
         // fully after a battle won against units of evil civilizations.
-        let won = match post.result {
-            EngageResult::Taken | EngageResult::Cleared => Some(Side::Attacker),
-            EngageResult::Repulsed => Some(Side::Defender),
-            EngageResult::Held => None,
-        };
-        if let Some(w) = won {
+        if let Some(w) = loser.map(Side::other) {
             let winners: Vec<UnitId> = e.of(w).filter(|&i| r.survived(i)).map(|i| e.units[i]).filter(|&u| self.engage_alive(u)).collect();
             let losers: Vec<PlayerId> = e.of(w.other()).map(|i| e.owners[i]).collect();
             crate::ffh::cards::new_civs::dawn_vow_heal(self, &winners, &losers);
@@ -542,6 +568,100 @@ impl Game {
             self.player_army_sync(p);
         }
         post
+    }
+
+    /// The defender's units a lost battle pushes back (step 7b): its candidates and committed units
+    /// on the plot that are alive, did not fall and are not fleeing (a withdrawal outside a city),
+    /// in id order.
+    fn engage_push_set(&self, e: &Eng, r: &Fought) -> Vec<UnitId> {
+        let n = e.units.len();
+        let gone: Vec<UnitId> = e.of(Side::Defender).filter(|&i| r.killed(i) || (r.withdrew(i) && !e.in_city())).map(|i| e.units[i]).collect();
+        let mut out: Vec<UnitId> = e
+            .setup
+            .candidates
+            .iter()
+            .copied()
+            .chain(e.of(Side::Defender).filter(|&i| i < n).map(|i| e.units[i]))
+            .filter(|&u| !gone.contains(&u) && self.engage_alive(u) && self.unit_plot_opt(u) == Some(e.to))
+            .collect();
+        out.sort();
+        out.dedup();
+        out
+    }
+
+    /// Where the units `members` (on one plot) are pushed back to by an attack from `from`: of the
+    /// plots next to theirs that every one of them could withdraw to (not a foreign city, its
+    /// domain, one it can move into, its area) other than `from`, the farthest from `from`, then
+    /// the first in scan order (no `from`, a forecast's attack from nowhere in particular: the
+    /// first). `None`: nowhere.
+    pub(crate) fn engage_push_plot(&self, members: &[UnitId], from: Option<PlotIdx>) -> Option<PlotIdx> {
+        let &first = members.first()?;
+        let (x, y) = (self.units[first].x, self.units[first].y);
+        let mut best: Option<(i32, PlotIdx)> = None;
+        for i in -1..=1 {
+            for j in -1..=1 {
+                let Some(p) = self.plot_xy(x, y, i, j) else { continue };
+                if Some(p) == from || (i == 0 && j == 0) {
+                    continue;
+                }
+                let ok = members.iter().all(|&u| {
+                    let team = self.unit_get_team(u);
+                    let foreign_city = self.map.plots[p].plot_city.is_some() && self.map.plots[p].owner.map(|o| self.players[o].team) != Some(team);
+                    !foreign_city && self.map.plots[p].area == Some(self.unit_area(u)) && self.plot_is_valid_domain_for_location(p, u) && self.unit_can_move_into(u, p, false, false, false)
+                });
+                if !ok {
+                    continue;
+                }
+                let (px, py) = self.map.xy(p);
+                let far = from.map_or(0, |f| {
+                    let (fx, fy) = self.map.xy(f);
+                    self.plot_distance(fx, fy, px, py)
+                });
+                if best.is_none_or(|b| far > b.0) {
+                    best = Some((far, p));
+                }
+            }
+        }
+        best.map(|b| b.1)
+    }
+
+    /// Step 7b: the defender's units left on the plot after a lost battle outside a city are pushed
+    /// back ([`Game::engage_push_plot`]): a group together (with its members on the plot that do
+    /// not defend), else each unit alone; one with nowhere to go stays.
+    fn engage_push_back(&mut self, e: &Eng, r: &Fought, post: &mut Post, sink: &mut Option<Sink>) {
+        let to = e.to;
+        let mut done: Vec<UnitId> = Vec::new();
+        for u in self.engage_push_set(e, r) {
+            if done.contains(&u) || !self.engage_alive(u) || self.unit_plot_opt(u) != Some(to) {
+                continue;
+            }
+            let group: Vec<UnitId> = match self.units[u].group.filter(|&g| self.groups.contains(g)) {
+                Some(g) => self.groups[g].units.iter().copied().filter(|&m| self.engage_alive(m) && self.unit_plot_opt(m) == Some(to)).collect(),
+                None => vec![u],
+            };
+            done.extend(group.iter().copied());
+            let moves: Vec<(Vec<UnitId>, PlotIdx, bool)> = match self.engage_push_plot(&group, Some(e.from)) {
+                Some(p) => vec![(group, p, true)],
+                None => group.iter().filter_map(|&m| self.engage_push_plot(&[m], Some(e.from)).map(|p| (vec![m], p, false))).collect(),
+            };
+            for (units, p, together) in moves {
+                let (px, py) = self.map.xy(p);
+                for &m in &units {
+                    if !together {
+                        self.unit_join_group(m, None, true);
+                    }
+                    self.unit_set_xy(m, px, py, together);
+                }
+                let moved: Vec<UnitId> = units.into_iter().filter(|&m| self.units.contains(m) && self.unit_plot_opt(m) == Some(p)).collect();
+                post.pushed += moved.len() as i32;
+                if let Some(s) = sink.as_mut() {
+                    let idx: Vec<FighterIdx> = moved.iter().filter_map(|&m| s.index_of(m)).collect();
+                    if !idx.is_empty() {
+                        s.event(LogEvent::PushBack { units: idx, to: p });
+                    }
+                }
+            }
+        }
     }
 
     /// The best battle heal for unit `u` (Q12): the best same-tile heal among its team's units on

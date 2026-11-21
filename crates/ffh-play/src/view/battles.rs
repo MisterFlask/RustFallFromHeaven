@@ -567,6 +567,7 @@ fn log_events(g: &Game, log: &[LogEvent]) -> (Vec<Json>, Vec<Json>) {
             LogEvent::Xp { unit, amount, from } => after.push(k("Xp").with("unit", *unit).with("amount", *amount).with("from", Json::Arr(from.iter().map(xp_source_json).collect()))),
             LogEvent::KillEffect { killer, victim, kind } => after.push(k("KillEffect").with("killer", *killer).with("victim", *victim).with("effect", kill_kind_json(kind))),
             LogEvent::Flee { unit, to } => after.push(k("Flee").with("unit", *unit).with("to", plot_idx_json(g, *to))),
+            LogEvent::PushBack { units, to } => after.push(k("PushBack").with("units", idxs(units)).with("to", plot_idx_json(g, *to))),
             LogEvent::MoveIn { units, city } => after.push(k("MoveIn").with("units", idxs(units)).with("city", *city)),
             // A card's building (the Thunderhead Tower): its strike before the battle, at round 0.
             LogEvent::BuildingStrike { building, hits } => {
@@ -589,14 +590,16 @@ fn log_events(g: &Game, log: &[LogEvent]) -> (Vec<Json>, Vec<Json>) {
 }
 
 /// A forecast as the screens read it: the battles played, each side's units expected to fall
-/// (x100), the chances (per mille) the defenders' line is wiped out, the plot falls and the
-/// attackers' line is wiped out, and per fighter `b` its chance to fall and to escape (percent).
-fn forecast_fields(runs: i32, wiped: i32, falls: i32, repulsed: i32, lost: [i32; 2], per: Vec<Json>) -> Json {
+/// (x100), the chances (per mille) the defenders' line is wiped out, the plot falls, the
+/// attackers' line is wiped out and the attackers win (the defenders lose more HP), and per
+/// fighter `b` its chance to fall and to escape (percent).
+fn forecast_fields(runs: i32, [wiped, falls, repulsed, won]: [i32; 4], lost: [i32; 2], per: Vec<Json>) -> Json {
     crate::jobj! {
         "runs" => runs,
         "line_wiped_permille" => wiped,
         "plot_falls_permille" => falls,
         "attackers_wiped_permille" => repulsed,
+        "attackers_win_permille" => won,
         "lost_x100" => crate::jarr![lost[0], lost[1]],
         "per" => Json::Arr(per),
     }
@@ -609,7 +612,7 @@ fn per_json(b: usize, fall_pct: i32, escape_pct: i32) -> Json {
 /// The plan the attacker saw, frozen into the log.
 fn forecast_json(f: &FrozenForecast) -> Json {
     let per = f.per.iter().map(|p| per_json(p.b as usize, p.fall_pct, p.escape_pct)).collect();
-    forecast_fields(f.runs, f.wiped_permille, f.falls_permille, f.repulsed_permille, f.lost_x100, per)
+    forecast_fields(f.runs, [f.wiped_permille, f.falls_permille, f.repulsed_permille, f.won_permille], f.lost_x100, per)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -695,6 +698,11 @@ pub fn summary_json(v: &Viewer, r: &BattleReport) -> Json {
         "plot_taken" => r.outcome.plot_taken,
         "city_captured" => r.outcome.city_captured,
         "defenders_left" => r.outcome.defenders_left,
+        "pushed" => r.outcome.pushed,
+        // Each side's HP lost (centi-HP, attacker first) and the loser's side index (null: the
+        // same).
+        "hp_lost" => crate::jarr![r.outcome.hp_lost[0], r.outcome.hp_lost[1]],
+        "loser" => r.outcome.loser.map(side_ix),
         "has_log" => r.log.is_some(),
         "sides" => Json::Arr(sides.into_iter().collect()),
     }
@@ -724,17 +732,27 @@ pub fn report_line(v: &Viewer, r: &BattleReport) -> String {
     let me = viewer_side(v, r).unwrap_or(Side::Attacker);
     let outcome = match (me, r.outcome.result) {
         (Side::Attacker, EngageResult::Taken) if r.outcome.city_captured.is_some() => "the city taken",
+        (Side::Attacker, EngageResult::Taken) if r.outcome.pushed > 0 => "they were pushed back, the plot taken",
         (Side::Attacker, EngageResult::Taken) => "the plot taken",
+        (Side::Attacker, EngageResult::Cleared) if r.outcome.defenders_left == 0 => "no defender left, but the battle not won: the plot holds",
         (Side::Attacker, EngageResult::Cleared) => "their line broken, the plot holds",
         (Side::Attacker, EngageResult::Repulsed) => "repulsed",
         (Side::Attacker, EngageResult::Held) => "their line held",
+        (Side::Defender, EngageResult::Taken) if r.outcome.pushed > 0 => "pushed back",
         (Side::Defender, EngageResult::Taken) => "overrun",
+        (Side::Defender, EngageResult::Cleared) if r.outcome.defenders_left == 0 => "no defender left, but the battle not lost: the plot held",
         (Side::Defender, EngageResult::Cleared) => "our line broken, the plot held",
         (Side::Defender, EngageResult::Repulsed) => "they were driven off",
         (Side::Defender, EngageResult::Held) => "held",
     };
     let (mine, theirs) = (&r.sides[side_ix(me)], &r.sides[side_ix(me.other())]);
-    format!("battle #{} at {place}: {outcome}; {} fell, {} of theirs fell", r.id, mine.fallen, theirs.fallen)
+    let verdict = match r.outcome.loser {
+        Some(l) if l == me => "lost",
+        Some(_) => "won",
+        None => "drawn",
+    };
+    let hp = |s: Side| (r.outcome.hp_lost[side_ix(s)] + 50) / 100;
+    format!("battle #{} at {place}: {verdict} ({} HP lost to {}), {outcome}; {} fell, {} of theirs fell", r.id, hp(me), hp(me.other()), mine.fallen, theirs.fallen)
 }
 
 /// `battle_reports`: the viewer's kept reports, newest first.
@@ -810,6 +828,12 @@ pub fn battle_log(v: &Viewer, id: u32) -> Result<Json, QueryErr> {
             "city_captured" => o.city_captured,
             "moved_in" => moved_in.unwrap_or_else(Json::arr),
             "defenders_left" => o.defenders_left,
+            "pushed" => o.pushed,
+            // Each side's HP lost (centi-HP) and the loser's side index (null: the same).
+            "hp_lost" => crate::jarr![o.hp_lost[0], o.hp_lost[1]],
+            "loser" => o.loser.map(side_ix),
+            // How the loser was found, a line each (docs/PLAY_DESIGN.md 4.9).
+            "calc" => Json::Arr(o.verdict_calc().into_iter().map(Json::from).collect()),
             "lines_down" => down.map(|d| crate::jarr![d[0], d[1]]),
             "sides" => Json::Arr(line.collect()),
         },
@@ -922,7 +946,7 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
     let mut per: Vec<Json> = fc.per.iter().filter_map(|p| Some(per_json(b_of(p.unit, p.side)?, p.fall_pct, p.escape_pct))).collect();
     per.extend(pv.sentinels.iter().enumerate().map(|(j, s)| per_json(first_wall + j, s.fall_pct, 0)));
     let forecast = refused.is_none().then(|| {
-        forecast_fields(fc.runs, fc.wiped_permille, fc.falls_permille, fc.repulsed_permille, fc.lost_x100, per).with("escaped_x100", crate::jarr![fc.escaped_x100[0], fc.escaped_x100[1]])
+        forecast_fields(fc.runs, [fc.wiped_permille, fc.falls_permille, fc.repulsed_permille, fc.won_permille], fc.lost_x100, per).with("escaped_x100", crate::jarr![fc.escaped_x100[0], fc.escaped_x100[1]])
     });
     // The units the battle calls (docs/ENGAGEMENTS.md, "Summons"): made for the battle, so no
     // fighter of the plan; each with its caster (`b`), its cell and its forecast.

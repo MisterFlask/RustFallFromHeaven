@@ -11,6 +11,7 @@
 // started before a pause plays out. The breathing and the idle strips run on the page's clock.
 
 import { h } from "./dom.js";
+import { withCalc } from "./calc.js";
 import { initialState, applyEvent, logLines, viewerSide, resultWords, fates, headOf, uname, tacticName } from "./battle_log.js";
 import { loadArt, unitXY, cellXY, pic, deadPic, faceFlip, animated, keyPoses, unitCard, figOf, pixGlyph, GLYPH, btn, add, partsEl } from "./battle_stage.js";
 import { Snap, breath, LEAD } from "./battle_snap.js";
@@ -419,7 +420,7 @@ function syncBanner() {
   if (!W.done) return has?.remove();
   if (has) return;
   const rw = resultWords(W.log);
-  add(W.ctx.ui, h("div.bt-pnl.bt-banner.bt-ribbon#bt-banner", { style: { top: "40px" } }, h(rw.good ? "span.goldlt" : "span", rw.ribbon), h("div.small", rw.line)));
+  add(W.ctx.ui, h("div.bt-pnl.bt-banner.bt-ribbon#bt-banner", { style: { top: "40px" } }, h(rw.good ? "span.goldlt" : "span", rw.ribbon), withCalc(h("div.small", rw.line), rw.calc)));
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -8,7 +8,8 @@ applies only to units in an army). Every game fights engagements, the AI-only ga
 the duel); saves made before do not load (the game options changed). When units attack a land plot, they fight a **formation battle** (revision 4, the
 owner's Ogre Battle-style engagements, 2026-10-31, designed in a browser prototype): each side's
 units stand on a grid of three rows by its lanes and act by row and speed for three rounds;
-the plot falls only when no defender is left on it. The owner's answers on every FfH combat
+the side whose units lose more HP loses the battle; losing defenders outside a city are pushed
+back, and the plot falls when they lost and none of them is left on it. The owner's answers on every FfH combat
 ability (Q1-Q13) and the ground rules G1-G5 are in docs/COMBAT_INVENTORY.md (its answers about
 rounds, stances and targeting are superseded by revision 4: this document).
 
@@ -498,17 +499,32 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    and applied once after the killer's last kill); per engagement the promotions removed by combat,
    the combat-apply promotions and poison; the victims die (immortals are reborn); medics heal once
    a turn per unit (Q12), then phase 7's post-battle hook; withdrawn defenders flee (outside a
-   city); every committed attacker has made its attack (one a turn, Blitz one more, counting
+   city); defenders that lost outside a city are pushed back (step 6); every committed attacker has made its attack (one a turn, Blitz one more, counting
    engagements, bombards and missile strikes) and pays the attack's moves unless it moves in.
-6. **The result** (spec 1.7): defenders stay in place until annihilated. **The plot falls only when
-   no defender is left on it** (in the line or in reserve, or among those that sat out, a city's
-   standing Sentinels included: docs/SIEGES.md): then the
-   launching group moves in (a city is captured as today), and only it. Otherwise nobody moves: the
-   attackers stay on their plot and every survivor keeps its damage. Withdrawn attackers stay with
+6. **The result** (spec 1.7; the owner's rule, 2026-11-21). **The side whose units lost more HP
+   lost the battle** (`engage_loser`, `Setup::hp_lost`): each unit's HP when the engagement began
+   (before the opening) less its HP at the end, a fallen unit's all of it and a withdrawn one's
+   all it had left (its withdrawal took the place of a killing hit), heals in the battle taken
+   back, a Sentinel's on the defender's side; equal HP lost: no loser. The report keeps each side's
+   HP lost and the loser (`Outcome::hp_lost`, `loser`, and the calculation the screens show,
+   `Outcome::verdict_calc`). **Push-back** (`apply.rs`, step 7b): when the defenders lost outside a
+   city, every defender's unit left on the plot (the line's survivors, those that sat out, the
+   reserve; units invisible to the attacker are not met and stay) is pushed back to a plot next
+   to it: of those every unit of its group could withdraw to (not a foreign city, its domain, one
+   it can move into, its area), not the attacker's plot, the farthest from it, then the first in
+   scan order; a group goes together with its members on the plot that do not defend; a group
+   with no plot for all goes unit by unit; a unit with nowhere to go stays (`Outcome::pushed`
+   counts those pushed, the log's `PushBack` events say where). In a city nobody is pushed back.
+   **The plot falls only when the defenders lost and none of them is left on it** (in the line or
+   in reserve, or among those that sat out, a city's standing Sentinels included:
+   docs/SIEGES.md): then the launching group moves in (a city is captured as today), and only it;
+   the non-combatants left on the plot are captured as today. Otherwise nobody moves: the
+   attackers stay on their plot and every survivor keeps its damage, even when the battle emptied
+   the plot and the attackers lost (another attack walks in). Withdrawn attackers stay with
    their army. The result (`report::EngageResult`): `Taken` (the plot fell), `Cleared` (the
-   defender's line is gone, defenders are left on the plot), `Repulsed` (the attacker's line is
-   gone), `Held` (both lines stand after the last round). There is no win, draw or mutual by
-   damage, and no Fear rout (it needed a won battle). The armies of everyone involved are settled.
+   defender's line is gone but the plot did not fall: defenders are left, or the attackers did
+   not win), `Repulsed` (the attacker's line is gone), `Held` (both lines stand after the last
+   round). No Fear rout. The armies of everyone involved are settled.
 7. **The report** (`report.rs`): every engagement's summary (sides with their real and shown
    owners, slots, lanes, the slots used, committed, sat out, fallen by type, escaped, standing; the
    result, the rounds, whether the plot was taken and the city captured, the defenders left) is
@@ -584,7 +600,7 @@ either side, or a human team sees the plot), `report::BattleLog`:
 - the A and Dv of every pair that hit, with the pair-only terms;
 - the plan the attacker saw, for a human attacker (`FrozenForecast`: the preview recomputed with the
   same seed: the chances the defender's line is wiped out, the plot falls, the attacker's line is
-  wiped out, the units lost per side, each fighter's chance to fall and to escape).
+  wiped out, the attacker wins, the units lost per side, each fighter's chance to fall and to escape).
 
 The view (`ffh-play`'s `view/battles.rs`) shapes it as JSON for the battle screens (the contract is
 `crates/ffh-play/assets/app/battle_log.js`'s header; docs/HUMAN.md, `battle_log`): `events` are what
@@ -612,9 +628,13 @@ declare; and the forecast.
   the game's RNG is never drawn (test `the_preview_is_a_function_of_its_inputs_and_changes_nothing`).
   A move that declares war previews the battle after the declaration (its strikers test war as that
   fight does). It gives each side's expected units fallen and escaped (x100), the chance the
-  defender's line is wiped out, the chance the plot falls (the line wiped out with no defender left:
-  none in reserve, none that sat out; withdrawn defenders flee), the chance the attacker's line is
-  wiped out, and per committed fighter its chance to fall and to escape.
+  defender's line is wiped out, the chance the attacker wins (the defenders lose more HP), the
+  chance the plot falls (the attacker wins and no defender is left: in a city the line wiped out
+  with none in reserve and none that sat out, withdrawn defenders fleeing; elsewhere every
+  defender left can be pushed back), the chance the attacker's line is wiped out, and per
+  committed fighter its chance to fall and to escape. `engage_forecast_waves` carries the rule
+  from battle to battle: a lost battle outside a city clears the plot when every defender left can
+  be pushed back; one the defenders won that left the plot empty lets the next battle walk in.
 - The round model's What-if alternatives, the swap search and the moment estimator are gone.
 - **Time** (release, this 4-core shared machine; `preview_timing`, `--ignored`, 2026-10-31): a plan
   of 200 battles takes 5.4 ms for 6 v 6, 6.9 ms for 8 v 8 and 8.6 ms for 10 v 10; the auto formation
@@ -778,7 +798,7 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
 
 - Sat-out attackers are not struck by defensive strikes (they never close in); the Fear source on
   the attacking side must itself fight. A sat-out defender stays on the plot: the plot does not
-  fall while it is there.
+  fall while it is there (outside a city a lost battle pushes it back with the others).
 - A defensive strike that does no damage is still a strike: the striker is used up, as today.
 - Battle XP is shared equally per kill (docs/SIEGES.md, "XP"; until 2026-11-04 it was shared by
   the damage dealt). Withdrawal XP takes the enemy side's least restrictive XP cap.

@@ -4,8 +4,8 @@
 //!
 //! **Formation battles** (revision 4, the owner's Ogre Battle-style engagements; docs/ENGAGEMENTS.md):
 //! when an army attacks a land plot, each side's units stand on a grid of three rows by its lanes
-//! and act by row, role and speed for three rounds; the plot falls only when no defender is left
-//! on it. Their pure resolver is [`formation`] ([`formation::resolve`]: the fighters on their
+//! and act by row, role and speed for three rounds; the side whose units lost more HP lost, and the
+//! plot falls only when its defenders lost and none is left on it. Their pure resolver is [`formation`] ([`formation::resolve`]: the fighters on their
 //! grids, the ground, the rounds and passes, the events and the end state; the rules' auto
 //! formation, [`formation::auto_arrange`]), which knows nothing of `Game`.
 //!
@@ -37,7 +37,7 @@ pub mod summons;
 
 pub use arrange::Place;
 pub use more_cards::SentinelSource;
-pub use engage::{damage_from_hp, hp_from_damage, BattleEffect, EngageOutcome};
+pub use engage::{damage_from_hp, engage_loser, hp_from_damage, BattleEffect, EngageOutcome};
 pub use formation::{BattleRng, FighterIdx, Ground, GroundRule, Pair, RuleReach, Side};
 pub use pick::WarTest;
 pub use preview::{EngagePreview, Forecast, ForecastSight, ForecastTurn, PreviewFighter, PreviewInput, PreviewSentinel, PreviewSummon};
