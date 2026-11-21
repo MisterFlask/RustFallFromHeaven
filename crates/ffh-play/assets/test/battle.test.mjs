@@ -2,8 +2,8 @@
 // revision 4) over the dev fixture (app/battle_fixture.js, made by make_battle_fixtures.mjs from
 // the owner's prototype): the log folded into states (the fold's fates are the outcome's counts,
 // nobody acts or is hit off the field, no two units share a cell after a knock-back), the log's
-// lines, the opening's events, a formation's cells (large units, the slots), the tactics' names,
-// the ground's rules in words, and damage in words (the replay's pace is battle_snap.test.mjs's).
+// lines, the opening's events, a formation's cells (large units, the slots), a starving side's
+// line, the ground's rules in words, and damage in words (the replay's pace is battle_snap.test.mjs's).
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as L from "../app/battle_log.js";
@@ -289,11 +289,7 @@ test("a formation's cells: a large unit's two, the slots", () => {
   assert.equal(grid[ep.row][ep.lane + 1], elephant.b);
 });
 
-test("the tactics: each side's named from the log, none in a log without them; a starving side's line", () => {
-  assert.equal(L.tacticName(field, 0), null, "the fixture has no tactics");
-  const withTactics = { ...field, tactics: ["TACTIC_CHARGE", "TACTIC_LINE"] };
-  assert.equal(L.tacticName(withTactics, 0), "Charge");
-  assert.equal(L.tacticName(withTactics, 1), "Line");
+test("a starving side's line", () => {
   const att = field.fighters.find((f) => f.side === 0);
   const starving = { ...field, events: [{ round: 0, pass: 0, kind: "Starvation", units: [att.b], dealt_pct: -25 }] };
   const line = L.logLines(starving).find((l) => !l.head);

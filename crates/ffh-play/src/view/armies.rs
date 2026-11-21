@@ -246,7 +246,7 @@ fn fleet_wear(v: &Viewer, units: &[UnitId]) -> i32 {
 /// One army or fleet of the human's: name, units, where, in supply, target size, the recruits
 /// marching to it (`marching`: unit ids; each unit's `march` says where and how long), its
 /// requisition, whether it marches to a garrison (disbanded), Upgrade all; `domain` (`land`,
-/// `sea`). A fleet has no supply (`supply` null) and no tactic (null); it has its standing order
+/// `sea`). A fleet has no supply (`supply` null); it has its standing order
 /// (`station`, [`station_view`]) and its `wear`. The Armies screen's (`screen`) adds the recruits
 /// in full (`recruits`) and the requisition's candidates.
 fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
@@ -269,9 +269,6 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "y" => plot.map(|p| g.map.xy(p).1),
         "in_supply" => g.army_in_supply(a),
         "supply" => supply_json(v, a),
-        // Its battle tactic (docs/TACTICS.md) and the one it takes at the start of the next turn.
-        "tactic" => Json::idx(army.tactic),
-        "tactic_next" => Json::idx(army.tactic_next),
         "target_size" => army.target_size,
         "marching" => marching.clone(),
         "requisition" => requisition_json(v, a, screen),
@@ -290,7 +287,7 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
 }
 
 /// One fleet of the human's (docs/NAVAL.md, section 7): as [`army_json`], with its standing order
-/// and wear in place of supply and tactic.
+/// and wear in place of supply.
 fn fleet_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
     let g = v.g;
     let army = &g.armies[a];
@@ -309,8 +306,6 @@ fn fleet_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "y" => plot.map(|p| g.map.xy(p).1),
         "in_supply" => true,
         "supply" => Json::Null,
-        "tactic" => Json::Null,
-        "tactic_next" => Json::Null,
         "station" => station_view(v, a),
         "wear" => wear,
         "wear_text" => if wear > 0 { format!("Wear: -{wear}% strength. Enter a port to clear.") } else { "Wear: none.".to_string() },
@@ -408,9 +403,6 @@ pub fn recruit(v: &Viewer, c: CityId) -> Json {
         "default" => recruit_dest_json(g.cities[c].recruit_default),
         "options" => Json::Arr(options),
         "garrison" => garrison,
-        // The garrison's battle tactic (docs/TACTICS.md) and the one it takes next turn.
-        "garrison_tactic" => Json::idx(g.cities[c].garrison_tactic),
-        "garrison_tactic_next" => Json::idx(g.cities[c].garrison_tactic_next),
         "requisitioned_by" => Json::Arr(requisitioned_by),
     }
 }

@@ -46,7 +46,7 @@ persist_newtype!(
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
     WorldSizeType, YieldType, CulturalActionType, CityRoleType,
-    BuildingTierType, ResearchPathType, BattleTacticType,
+    BuildingTierType, ResearchPathType,
 );
 
 persist_enum!(ActionKind { 0 => None, 1 => Strike, 2 => Charge, 3 => Stab, 4 => Shoot, 5 => Spell, 6 => Bombard, 7 => Heal });
@@ -94,7 +94,7 @@ persist_struct!(Contract { kind, until, deal });
 use crate::culture::{ChannelTarget, CultureChannel};
 persist_enum!(ChannelTarget { 0 => House(house), 1 => Player(player) });
 use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Squad, SquadBody, Station};
-persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, tactic, tactic_next, unsupplied_turns, domain, station, carried });
+persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, unsupplied_turns, domain, station, carried });
 persist_struct!(Squad { id, owner, body, hand_set, fought_turn, fought });
 impl Persist for SquadBody {
     fn write(&self, w: &mut Writer) {
@@ -505,7 +505,7 @@ persist_struct!(City {
     ai_emphasize_avoid_unhealthy_citizens_count, recruit_default, direct_rule, role, role_overridden,
     specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
-    garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane,
+    outpost, lane_cut_turns, lane,
 });
 
 persist_struct!(Player {

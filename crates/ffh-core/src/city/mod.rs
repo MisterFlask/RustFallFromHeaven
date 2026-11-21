@@ -306,11 +306,6 @@ pub struct City {
     /// This game's city works (docs/WORKS.md): the build the city's crews are working on and its
     /// plot; `None` until the city's turn chooses one. Its progress is the plot's.
     pub crew_build: Option<(PlotIdx, BuildType)>,
-    /// This game's battle tactics (docs/TACTICS.md): the tactic of the city's garrison, and the one
-    /// it takes at the start of its owner's next turn processing (`Game::city_set_garrison_tactic`).
-    /// Line for a new city and for a city that changed hands.
-    pub garrison_tactic: BattleTacticType,
-    pub garrison_tactic_next: BattleTacticType,
     /// This game's outposts (docs/NAVAL.md, 9.2; `outposts.rs`): the city is an outpost.
     pub outpost: bool,
     /// An outpost's lane (docs/NAVAL.md, 9.3): the starts of its owner's turns in a row its lane
@@ -539,8 +534,6 @@ impl City {
             muster_production: 0,
             ritual_charges: Vec::new(),
             crew_build: None,
-            garrison_tactic: d.t::<BattleTacticType>("TACTIC_LINE"),
-            garrison_tactic_next: d.t::<BattleTacticType>("TACTIC_LINE"),
             outpost: false,
             lane_cut_turns: 0,
             lane: Vec::new(),

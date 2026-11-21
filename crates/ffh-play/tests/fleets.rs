@@ -1,7 +1,7 @@
 //! Fleets as the human sees and commands them (docs/NAVAL.md, section 7 and 10; the protocol in
 //! docs/HUMAN.md): the Armies screen's Fleets section (a fleet with its standing order, wear and
 //! the seas it may patrol), `army_station` setting and ending a standing order, the unit panel's
-//! fleet actions, and the refusals (no tactic, no standing order for an army); on a situation
+//! fleet actions, and the refusals (no standing order for an army); on a situation
 //! built by hand.
 
 use ffh_core::army::Station;
@@ -128,10 +128,8 @@ fn the_fleets_section_and_the_standing_order() {
     // A move order ends it.
     run(&mut g, &Command::Move { units: vec![ship], x: 8, y: 0, append: false, declare_war: None, confirm_end_siege: false }).unwrap();
     assert_eq!(g.armies[f].station, Station::None);
-    // Refusals: an army takes no standing order, a fleet no tactic.
+    // Refusals: an army takes no standing order.
     assert!(refused(run(&mut g, &Command::ArmyStation { army, station: Station::Patrol(west) })).contains("only a fleet"));
-    let tactic = g.armies[f].tactic;
-    assert!(refused(run(&mut g, &Command::ArmyTactic { army: f, tactic })).contains("no battle tactic"));
 }
 
 #[test]
