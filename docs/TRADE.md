@@ -1,6 +1,7 @@
 # Trade: routes, caravans, cargo
 
-**Status: spec (2026-11-21). Nothing built.** This game's own rules, replacing the trade routes
+**Status: phase 1's rules built (2026-11-21: sections 3, 4.1-4.3, 6, 7; "As built", section 14).
+Not built: cargo (section 5), escort (4.4), the AI (section 8), the client (section 9).** This game's own rules, replacing the trade routes
 inherited from Civ4 (each city's slots filled by the rules with the best-paying partner cities:
 `city_update_trade_routes`). This file is the spec for the implementation, as docs/SUPPLY.md is for
 supply lines and docs/NAVAL.md for the sea. Marked **(default)**: a value or rule chosen for a
@@ -194,22 +195,22 @@ Foreign routes only. Domestic routes carry none **(default)**.
 
 At the start of its owner's turn, for an open route, in hundredths:
 
-`base = length x (origin population + destination population) x TRADE_PAY_PERCENT / 100`
+`base = effective length x (origin population + destination population) x TRADE_PAY_PERCENT / 100`
 
-with the length counted to at most `TRADE_LENGTH_CAP` plots. Then percent terms, summed:
+The effective length counts the route's plots in full up to `TRADE_LENGTH_FULL`, at half (rounded
+down) from there up to `TRADE_LENGTH_CAP`, and nothing beyond:
+`min(L, FULL) + (min(L, CAP) - FULL) / 2` when L is above FULL (at most 16 with the defaults).
+Then percent terms, summed:
 
 | Term | Percent |
 |---|---|
-| foreign | `TRADE_FOREIGN_PERCENT` (+100) |
+| foreign | `TRADE_FOREIGN_PERCENT` (+25) |
 | the path has a water plot | `OVERSEAS_TRADE_MODIFIER` (+25) |
 | the origin's `trade_route_modifier` (buildings) | as the data |
 | foreign: the origin's `foreign_trade_route_modifier` | as the data |
 | growth (6.2) | 0 to `TRADE_GROWTH_MAX` (+50) |
 
 Each living caravan carries half of the result, with its cargo's premium (section 5) on its half.
-
-`TRADE_PAY_PERCENT` and `TRADE_LENGTH_CAP` are set from the first measure of section 10, so that
-a civilization's routes together pay about what its trade routes pay today at the same turn.
 
 ### 6.2 Growth
 
@@ -225,6 +226,7 @@ Kept while closed; 0 after a war between the two owners.
 - The destination city: `TRADE_DEST_PERCENT` (50) of the route's pay before cargo premiums, by
   the living caravans, the same way **(default)**. On a domestic route both cities are the
   owner's.
+- A city's trade is the sum of these, in hundredths, rounded to the nearest whole.
 
 ## 7. What goes
 
@@ -287,16 +289,26 @@ built (CLAUDE.md, "Show UI changes in a screenshot").
 
 ## 10. Measures
 
-Before the numbers are set (CLAUDE.md: a rules change is not gated on the AI, but this one moves
-the economy):
+**Measured before the numbers were set** (2026-11-21, origin/master b325e973; 12 AI games, seeds 1-12, 6 civilizations, standard map, 200 turns; a throwaway `ffh trade-measure`, not kept). Civilizations here stay small: a median of 3 cities at turn 200 (secession splits them: 6 become about 13 a game).
 
-- what share of each civilization's commerce its trade routes supply today, at turns 50, 100,
-  200 (sets `TRADE_PAY_PERCENT`);
-- path lengths between the city pairs a route could link, own and foreign (sets
-  `TRADE_LENGTH_CAP`);
-- tradeable spare copies a civilization, by turn, luxury and strategic (if nearly every caravan
-  can be loaded, the cargo is no choice: lower the premium or limit cargo);
-- team pairs with open borders, by turn (how early a foreign route can exist).
+| | turn 100 | turn 150 | turn 200 |
+|---|---|---|---|
+| commerce a civilization, median | 18 | 23 | 32 |
+| old trade routes' commerce, median (share of commerce) | 3 (14%) | 3 (11%) | 3 (9%) |
+| old pay per filled slot | 1.00 | 1.02 | 1.05 |
+| route limit of 3.1, median (above 2: samples) | 2 (0 of 76) | 2 (2 of 114) | 2 (39 of 160) |
+| plot distance of own city pairs, median / p90 | 5 / 10 | 6 / 12 | 7 / 15 |
+| plot distance of foreign pairs that may trade, median / p90 | 31 / 48 | 25 / 40 | 26 / 44 |
+| civilizations with any foreign city they may trade with | 5 of 76 | 50 of 114 | 65 of 160 |
+| team pairs with open borders | 3 of 204 | 34 of 499 | 51 of 994 |
+| luxuries with a spare copy, mean a civilization | 0.14 | 0.39 | 0.49 |
+| strategic and mana resources with a spare copy, mean | 0.02 | 0.03 | 0.05 |
+
+What the numbers set:
+- An old route paid 1 commerce, and a civilization's routes 3 together. A route that pays 1 is not worth a Caravan, so the new routes pay more than the old: `TRADE_PAY_PERCENT` 500 gives a route between two of a civilization's own cities 7 plots apart with 8 population between them 2.8 commerce a turn to the origin and 1.4 to the destination. Two such routes are about 8 commerce where the old routes gave 3.
+- Foreign cities are four times as far as a civilization's own. With pay in proportion to length and the foreign term at +100 a foreign route paid 10 to 15 times a domestic one. So length counts in full to 8 plots and at half to 24 (`TRADE_LENGTH_FULL`, `TRADE_LENGTH_CAP`), and the foreign term is +25: a foreign route 30 plots long pays about 3 times the domestic route above before growth and cargo.
+- Open borders are rare and late among the AIs (the first pair at a median of turn 119), so most AI routes are domestic until the AI is given a reason to open its borders (section 8).
+- Spare copies are rare: a cargo is usually a civilization's only copy. The premium is not lowered.
 
 With the first build: routes a civilization by turn; caravans killed, by the killer's kind
 (civilization at war, hidden nationality, barbarians, animals) and where (own land, foreign,
@@ -307,12 +319,13 @@ If animals and barbarians kill most early caravans, the guard is too weak.
 
 `INITIAL_TRADE_ROUTES` 2, `CARAVAN_MOVE` 12, `CARAVAN_COST_ROAD` 3, `CARAVAN_COST_LAND` 6,
 `CARAVAN_COST_WATER` 4, `CARAVAN_REFORM_TURNS` 10,
-`TRADE_PLUNDER_TURNS` 10, `TRADE_PAY_PERCENT` and `TRADE_LENGTH_CAP` (from section 10),
-`TRADE_FOREIGN_PERCENT` 100, `TRADE_DEST_PERCENT` 50, `TRADE_GROWTH_PERCENT` 2,
+`TRADE_PLUNDER_TURNS` 10, `TRADE_PAY_PERCENT` 500, `TRADE_LENGTH_FULL` 8, `TRADE_LENGTH_CAP` 24,
+`TRADE_FOREIGN_PERCENT` 25, `TRADE_DEST_PERCENT` 50, `TRADE_GROWTH_PERCENT` 2,
 `TRADE_GROWTH_MAX` 50, `TRADE_CARGO_PERCENT` 50, `TRADE_CARGO_NEW_PERCENT` 150. Data:
 `UNIT_CARAVAN`, `PROMOTION_CARAVAN_GUARD_2` to `_4`. Removed: `MAX_TRADE_ROUTES`, `THEIR_POPULATION_TRADE_PERCENT`,
 `CAPITAL_TRADE_MODIFIER`, `FOREIGN_TRADE_MODIFIER`, `OUR_POPULATION_TRADE_MODIFIER` and its offset,
-`TRADE_PROFIT_PERCENT`, `IGNORE_PLOT_GROUP_FOR_TRADE_ROUTES`.
+`TRADE_PROFIT_PERCENT`, `IGNORE_PLOT_GROUP_FOR_TRADE_ROUTES`, and
+`FOREIGN_TRADE_FULL_CREDIT_PEACE_TURNS` (the peace-turn term's; its only reader went with it).
 
 ## 12. Phases
 
@@ -327,3 +340,107 @@ If animals and barbarians kill most early caravans, the guard is too weak.
   it; the answers are a stronger first guard or animals that leave caravans alone.
 - **Strategic resources as quantities** (docs/DECKS.md, "Stockpiles"): caravans would carry the
   amounts. A later system; resources stay on or off here.
+
+## 14. As built (2026-11-21, phase 1's rules)
+
+Where the code is:
+
+- `crates/ffh-core/src/trade/`: `mod.rs` (the types: `Route`, `CaravanSlot`, `Leg`,
+  `RouteRefusal` with `text` and `key`, `RouteOffer`, `RoutePay`; what a caravan is:
+  `caravan_unit_type`, `unit_is_caravan`, `unit_in_route`, `group_has_route_caravan`; the limits:
+  `player_route_limit`, `player_coastal_route_extra`, `player_routes_used`, `player_routes`,
+  `city_origin_limit`, `city_origin_used`, `city_origin_refusal`, `city_is_route_coastal`,
+  `city_routes_from`, `city_routes_into`; establishing: `unit_can_establish_route`,
+  `unit_establish_origin_refusal`, `unit_establish_refusal`, `unit_establish_route`; the guard:
+  `route_guard_tier`), `path.rs` (`plot_route_cost`, `route_path`, `route_path_seas`,
+  `route_destination_refusal`, `route_offers`: one Dijkstra with the tie rule of 3.5, as
+  `plot_supply_line`), `pay.rs` (`route_effective_length`, `route_pay_percent`,
+  `route_pay_total_x100`, `route_pay`, `city_route_trade_x100`, `city_route_trade_yield`,
+  `trade_refresh_pay`, `trade_stale`, `trade_mission_profit`), `caravans.rs` (`route_caravan_lost`,
+  `route_dissolve`, `routes_on_war`, `player_update_routes`, `player_move_caravans`, and the hooks
+  `unit_route_killed`, `routes_on_city_gone`, `routes_city_changed_hands`).
+- The turn: `player_update_routes` at the owner's turn start, after `player_update_lanes`
+  (`player_do_turn_units`); `player_move_caravans` at its turn end, after `player_fleet_stations`
+  (`player_do_turn`, before its gold and its cities' turn: a first arrival pays that same turn).
+  War: `routes_on_war` in `team_declare_war` right after `at_war` is set (before units are bumped),
+  and in the crusade Host's war. Cities: `city_kill` (through `city_kill_as`, whose
+  `changing_hands` `player_acquire_city` sets) and `player_acquire_city` (the routes into a captured
+  or traded city go to its new id). Kills: `unit_kill`, before the delayed death.
+- The pay refresh runs from `city_set_population` (when a route touches the city), the origin's two
+  modifier changers, `player_change_trade_yield_modifier`, and every change of a route's state. The
+  harness (`ffh_harness::check`) checks `trade_stale`: every city's trade yield and every route's
+  stored pay equal a fresh computation, and routes and caravan units refer to each other.
+- The exemptions of a caravan in a route (`Unit::route`): `unit_in_boats_at` (never in boats: the
+  duel's strength, attrition, the no-heal, the boats' limits), `unit_can_defend` (it defends on
+  water), `plot_verify_unit_valid_plot` (never bumped), `unit_is_immune_to_capture`,
+  `unit_can_load_unit`, `group_can_start_mission`, `unit_can_do_command` (delete included),
+  `group_ready_to_move` (never waiting for orders: the AI and the client skip it),
+  `unit_can_join_group_opt` (it travels alone). Any Caravan: free of unit upkeep
+  (`player_calculate_unit_cost_breakdown`, counted as the summons are), not an army unit
+  (`unit_type_is_army_unit` names it), not brought back by Resurrection (`unit_fallen_record`).
+- Data: `UNIT_CARAVAN` / `UNITCLASS_CARAVAN` (`units.jsonc`, `unit_classes.jsonc`; the barbarians
+  cannot train it; `no_experience`; the Settler's art by `manifest.txt`), `PROMOTION_CARAVAN_GUARD_2`
+  to `_4` (`promotions.jsonc`), the defines of section 11 in `rules_defines.jsonc`;
+  `INITIAL_TRADE_ROUTES` changed in place in `global_defines.jsonc`. Save format 63: `Game::routes`,
+  `Unit::route`; no `City::trade_route`, `trade_cities`.
+- Telemetry counts (`tel_trade`): `trade_route` (domestic / foreign), `trade_caravan_lost_by`
+  (war / hidden / barbarians / other), `trade_caravan_lost_at` (own / foreign / unowned / water /
+  other), `trade_route_turn` (open, or the closing reason's key), `trade_plunder` (gold).
+- Tests: `crates/ffh-core/tests/trade.rs`.
+
+Choices made where this spec was silent (each open to change):
+
+- **Entering land** (3.5): "a team whose borders the owner may enter" is its own, a friend's (a
+  vassal or master), one with open borders, one it is at war with, or the barbarians. A city on the
+  path other than the destination is passed only when its team is its own, a friend's or open
+  borders (never at war, never the barbarians'): entering it would be an attack. The destination
+  city is entered even where its land could not be. A city plot costs as land, a road where it has
+  one.
+- **The first caravan** is the unit that took the order; it is bound for the destination. A
+  caravan formed meanwhile (the second, on arrival) moves from the next turn end. A caravan that
+  re-forms, or forms when its route opens again, is bound for the destination. Entering the city it
+  is bound for ends its move for the turn; it is bound for the other city at once.
+- **Off the path** (4.1): the rejoin is the route search to the nearest plot of the stored path,
+  then the path toward the city it is bound for.
+- **Waiting**: before each step the plot's cost is taken again (a sea closed meanwhile stops it)
+  and the step waits on any unit at war with the owner's team there (`unit_is_enemy`, seen or not:
+  animals, the barbarians and hidden nationality included).
+- **The move** is `group_move` with the caravan as its forced unit (the rules' step: sight,
+  entering a city, the sea patrols' interception, escorts); its movement points are restored after
+  each step and its group is set asleep.
+- **Closed** (3.4): the caravans are removed without a killer; the slots keep their re-form timers,
+  which count down whether the route is open or not; the caravans form when it is open again. At a
+  war declaration every route of both sides' players is checked (a path through a third party's
+  land can change too).
+- **War between the ends**: growth 0, at the declaration and at each turn start while the reason is
+  war. Seizure takes each caravan on a plot owned by a player of the enemy team, credited to that
+  plot's owner (plunder by 4.3).
+- **A captured destination** keeps its route (moved to the new city's id); its caravans standing in
+  the city at that moment go back to wait in the origin. A destination razed or destroyed ends it;
+  an origin captured, traded or destroyed ends it.
+- **Pay** (6.1): the route's whole pay in hundredths, then split: the first caravan gets the
+  remainder of an odd total. The destination's share is `TRADE_DEST_PERCENT` of each living
+  caravan's half. A city adds every route it is the origin or destination of and rounds once.
+  "The path has a water plot" reads the stored path. Nothing is paid before the first arrival or
+  while closed. A route's stored pay (`CaravanSlot::pay_x100`, `Route::dest_pay_x100`) is the pay
+  as of the last refresh, which equals the pay now.
+- **Growth** rises at the owner's turn start after the caravans that may form there have formed.
+- **Plunder** is the caravan's stored pay times `TRADE_PLUNDER_TURNS`, rounded to the nearest gold.
+  The barbarians and a death with no killer gain none. Killer kinds: no killer is `other`; the
+  barbarian player is `barbarians` (animals included: the rules receive only the killing player,
+  not the unit); a killer at war with the owner is `war`; any other is `hidden`.
+- **The guard** (4.2): the highest `tier` of a unit type that is an army unit the origin can train
+  now (`city_can_train`), set when a caravan forms and at each turn start. Each guard promotion is
+  DEF +10, MDEF +10 and HP +33% (percents sum: x1.33, x1.66, x2).
+- **Limits** (3.1): routes from inland cities are limited to the base limit; all routes to the base
+  limit plus `coastal_trade_routes`. Coastal is Civ4's (`city_is_coastal`, the ocean's minimum
+  size). The building key `global_trade_routes` raises `Player::trade_routes` as before.
+- **Refusals**: a foreign destination's refusal names the war, else a no-foreign-trade civic (when
+  open borders or free trade hold), else no open borders. A cargo given is refused (`CargoNotBuilt`)
+  until section 5 is built; the slots keep a `cargo` field for it.
+- **The Great Merchant's trade mission** (`unit_get_trade_gold`) read the old profit of a route
+  from the city to the capital. It now reads one caravan's pay of a route from the city (its
+  owner's) to the capital at growth 0, the plot distance as its length, rounded
+  (`trade_mission_profit`), times the unit's `trade_multiplier`.
+- **Disorder and plunder**: Civ4's trade routes stopped in a city in disorder or plundered; routes do
+  not (`City::plundered` stays, unread by trade).

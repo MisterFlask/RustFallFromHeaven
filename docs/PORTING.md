@@ -91,6 +91,30 @@ went wrong", below.)
 
 ## Changes from FFH2
 
+- **Trade routes are established by hand and carried by caravans** (the owner's design,
+  2026-11-21; docs/TRADE.md, `crates/ffh-core/src/trade/`). Civ4's trade routes are gone: no city
+  fills slots with the best-paying partners (`updateTradeRoutes`, `City::trade_route`,
+  `trade_cities`, the profit rules `getBaseTradeProfit`, `totalTradeModifier` with its population,
+  capital and peace-turn terms, and the defines `MAX_TRADE_ROUTES`, `THEIR_POPULATION_TRADE_PERCENT`,
+  `CAPITAL_TRADE_MODIFIER`, `FOREIGN_TRADE_MODIFIER`, `FOREIGN_TRADE_FULL_CREDIT_PEACE_TURNS`,
+  `OUR_POPULATION_TRADE_MODIFIER` and its offset, `TRADE_PROFIT_PERCENT`,
+  `IGNORE_PLOT_GROUP_FOR_TRADE_ROUTES`). A player has `INITIAL_TRADE_ROUTES` (now 2; FFH2 1) routes
+  plus its techs', civics' and buildings' `trade_routes` and the votes', more from coastal cities by
+  `coastal_trade_routes`; a city is the origin of 1 plus its buildings' `trade_routes`. A Caravan
+  (`UNIT_CARAVAN`, cost 60, no tech, every civilization) in a city of its owner establishes a route
+  to a revealed city of its owner or of a player it may trade with (open borders, vassal or master,
+  no war, no no-foreign-trade civic), over a path of the route's own (roads 3, land 6, water 4 in
+  range and not in a closed sea). Two caravans carry it, moving at the end of their owner's turn by
+  12 path points, taking no orders; it pays from the first arrival: effective length (in full to 8
+  plots, at half to 24) x the two populations x 500 / 100 hundredths, +25% foreign, +25% over water,
+  the origin's `trade_route_modifier` (and `foreign_trade_route_modifier`), +2% growth a turn to
+  +50%; each living caravan half to the origin, 50% of that to the destination, as trade yield
+  (rounded to the nearest whole). A caravan killed gives its killer 10 turns of its pay (not the
+  barbarians), halves the growth and re-forms after 10 turns; a war between the two owners seizes
+  the caravans on the enemy's land, sets growth to 0 and closes the route. A route closes while its
+  destination fails these tests and ends when dissolved, its origin is lost or its destination is
+  destroyed. The Great Merchant's trade mission reads one caravan's pay of a route from the city to
+  the capital (plot distance, growth 0) in place of the old profit.
 - **Raids; fields are not pillaged** (the owner's design, 2026-11-21; docs/RAIDS.md,
   `crates/ffh-core/src/raid.rs`). A land army at war on an enemy city's countryside may take the
   standing Raid order (`Station::Raid`): its moves end, it is supplied whatever its line, and its
