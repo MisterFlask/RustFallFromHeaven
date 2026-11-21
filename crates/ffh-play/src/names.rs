@@ -324,7 +324,6 @@ kinds! {
         GovernorNameType => governor_names,
         BuildingTierType => building_tiers,
         ResearchPathType => research_paths,
-        BattleTacticType => battle_tactics,
         SeaNameType => sea_names,
         KeywordType => keywords,
     }

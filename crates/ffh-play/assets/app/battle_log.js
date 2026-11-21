@@ -35,9 +35,8 @@
 //                 city's Sentinels, docs/SIEGES.md) | "Minimum" | "Summons" (n) | "Improvement" (improvement: the
 //                 attacker, on a plot whose improvement narrows it: a card's Trench), delta}
 //   lanes: [attacker's lanes, defender's lanes]
-//   tactics: [attacker's, defender's] (BattleTacticType: what arranged each side's line; docs/TACTICS.md)
 //   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, lanes, ordered (its formation was given by
-//     the rules' caller (the lab, tests), not its tactic's)} (`player`: the real one on the viewer's side, the one the viewer saw on the
+//     the rules' caller (the lab, tests), not the auto formation's)} (`player`: the real one on the viewer's side, the one the viewer saw on the
 //     other: hidden nationality)
 //   fighters: [Fighter]: both lines, and the units of both sides on the two plots that stayed out of them (the
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
@@ -95,9 +94,9 @@
 //   battle carries `kind: "engagement"` and `report` (its id).
 //
 // EngagePreview (`engage_preview {army | units | from, to}`): plot, from, ground, params, slots, lanes, sides,
-//   fighters (the attacker's pool in the formation its tactic gives; the defenders it sees in their formation as it
+//   fighters (the attacker's pool in the auto formation; the defenders it sees in their formation as it
 //   knows it), formation and auto_formation ([{unit, lane, row}]: the attacker's in `fighters`, the one the
-//   forecast is for), tactics: [attacker's, defender's] (BattleTacticType), starving: [{b, pct}] (fighters of
+//   forecast is for), starving: [{b, pct}] (fighters of
 //   starving armies and the percent change of the damage they deal; docs/SUPPLY.md),
 //   summons: [{caster (b), unit_type, spell (null: on_kill), on_kill (a unit a kill may create), side, lane, row, hp,
 //   max_hp, a_x100, fall_pct}] (the units the battle calls, made for it: no fighter of the plan, not in `per`;
@@ -110,8 +109,8 @@
 //   expected to fall, x100),
 //   line_wiped_permille (the defenders' line wiped out), plot_falls_permille, attackers_wiped_permille?,
 //   per: [{b, fall_pct, escape_pct}]}.
-// The `engage` command: {army | units | from, to, declare_war?} (a `formation` is refused: an army fights in its
-//   tactic); its reply's `r.report` is the battle's.
+// The `engage` command: {army | units | from, to, declare_war?} (a `formation` is refused: an army fights in the
+//   auto formation); its reply's `r.report` is the battle's.
 // Static data (`/api/data`): the names of UnitType, PromotionType, TerrainType, FeatureType,
 //   SpellType, CivilizationType.
 // ---------------------------------------------------------------------------------------------
@@ -443,13 +442,6 @@ export function slotChangeText(c) {
   }
 }
 
-/** The name of side `side`'s battle tactic in a log or a preview (`tactics`; docs/TACTICS.md), or
- *  null when it has none (a fixture). */
-export function tacticName(L, side) {
-  const v = L?.tactics?.[side];
-  return v === null || v === undefined ? null : tyLabel("BattleTacticType", v);
-}
-
 /** "8 slots − 2 for the hill = 6" (the changes that moved the count). */
 export function slotSum(s) {
   const parts = [`${s.base} slots`];
@@ -466,7 +458,7 @@ export const slotCap = (s) => (s?.total ?? 0) + (s?.river_only ?? 0);
 
 // ---------------------------------------------------------------------------------------------
 // A formation: where each unit of a side stands (`Map b -> {lane, row}`). The engine arranges it
-// (each side's tactic, docs/TACTICS.md): the board shows it, nobody edits it.
+// (the auto formation): the board shows it, nobody edits it.
 
 /** The formation of side `side` in `fighters` (their `lane` and `row`). */
 export function placeOf(fighters, side) {

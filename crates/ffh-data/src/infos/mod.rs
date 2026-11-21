@@ -15,7 +15,6 @@ pub mod engagement;
 pub mod battle_cards;
 pub mod battle_magic;
 pub mod battle_kit;
-pub mod battle_tactic;
 pub mod sea;
 pub mod keyword;
 
@@ -34,7 +33,6 @@ pub use engagement::*;
 pub use battle_cards::*;
 pub use battle_magic::*;
 pub use battle_kit::*;
-pub use battle_tactic::*;
 pub use sea::*;
 pub use keyword::*;
 

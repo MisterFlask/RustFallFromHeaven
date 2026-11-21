@@ -125,9 +125,6 @@ pub struct EngagePreview {
     pub forecast: Forecast,
     /// The team an attack would declare war on.
     pub declare_war: Option<TeamId>,
-    /// Each side's battle tactic (attacker, defender; docs/TACTICS.md): what arranges `auto` and
-    /// `def_formation`.
-    pub tactics: [ffh_data::BattleTacticType; 2],
     /// The committed units (either side) that belong to a starving army (docs/SUPPLY.md), each
     /// with the percent change of the damage it deals (`STARVATION_DAMAGE_DEALT_PERCENT`); the
     /// forecast counts it.
@@ -285,7 +282,6 @@ impl Game {
             summons,
             forecast,
             declare_war,
-            tactics: [self.engage_pool_tactic(&plan.pool, Side::Attacker, &HitCtx::new(inp.from, inp.to)), self.engage_pool_tactic(&plan.view.candidates, Side::Defender, &HitCtx::new(inp.from, inp.to))],
             starving: g.engage_dealt_mods(s),
             shore: s.shore.clone(),
         })

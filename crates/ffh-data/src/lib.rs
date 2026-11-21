@@ -212,7 +212,6 @@ game_data! {
     governor_names: GovernorNameType => GovernorNameInfo, governor::read_governor_names;
     building_tiers: BuildingTierType => BuildingTierInfo, building::read_building_tier;
     research_paths: ResearchPathType => ResearchPathInfo, research_path::read_research_path;
-    battle_tactics: BattleTacticType => BattleTacticInfo, battle_tactic::read_battle_tactic;
     sea_names: SeaNameType => SeaNameInfo, sea::read_sea_names;
     // Presentation: the keywords and their reminder texts (docs/PLAY_DESIGN.md).
     keywords: KeywordType => KeywordInfo, keyword::read_keyword;

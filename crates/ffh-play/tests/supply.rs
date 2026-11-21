@@ -1,7 +1,5 @@
-//! Battle tactics (docs/TACTICS.md) and supply lines (docs/SUPPLY.md) through the human's protocol
-//! (docs/HUMAN.md): the `army_tactic` and `garrison_tactic` commands with the views that show them
-//! (the Armies data, the city's garrison, the static data's tactics), and each army's supply in
-//! the view (its state, its line, its words), the path query's supply readout and the lines of
+//! Supply lines (docs/SUPPLY.md) through the human's protocol (docs/HUMAN.md): each army's supply
+//! in the view (its state, its line, its words), the path query's supply readout and the lines of
 //! other players' armies the human sees, both as the human knows them (docs/SUPPLY.md, "Second
 //! pass", A: over revealed plots, around the units it sees), while its own armies' lines stay the
 //! truth. Built on `ffh-play stage supply`.
@@ -12,7 +10,6 @@ use std::sync::Arc;
 
 use ffh_core::ids::*;
 use ffh_data::*;
-use ffh_play::command::{CmdErr, CmdOk, Command};
 use ffh_play::json::Json;
 use ffh_play::{Session, SessionOptions};
 
@@ -24,11 +21,6 @@ fn load(save: &std::path::Path) -> Session {
 
 fn q(s: &Session, line: &str) -> Json {
     s.query_json(&Json::parse(line).unwrap()).unwrap_or_else(|e| panic!("{line}: {e:?}"))
-}
-
-/// Command `line` as the transports take it: refused when malformed, else executed.
-fn cmd(s: &mut Session, line: &str) -> Result<CmdOk, CmdErr> {
-    Command::from_json(ffh_data::global(), &Json::parse(line).unwrap()).and_then(|c| s.execute(&c))
 }
 
 fn arr(j: &Json, key: &str) -> Vec<Json> {
@@ -68,64 +60,6 @@ const DIRS: [(i32, i32); 8] = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1
 /// A free land plot at (x, y): no water, peak, city or unit.
 fn free(g: &ffh_core::game::Game, x: i32, y: i32) -> Option<PlotIdx> {
     g.map.plot_xy(x, y).filter(|&q| !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].plot_city.is_none() && g.map.plots[q].units.is_empty())
-}
-
-fn tactic(name: &str) -> i64 {
-    ffh_data::global().t::<BattleTacticType>(name).idx() as i64
-}
-
-#[test]
-fn the_tactic_commands_set_the_next_tactic_and_the_views_show_both() {
-    let dir = common::TempDir::new("tactics-commands");
-    let st = ffh_play::stage::supply(&dir.0).expect("staged");
-    let mut s = load(&st.save);
-    let h = s.human;
-    let a = st.supplied;
-    let army = view_army(&s, a);
-    assert_eq!((int(&army, "tactic"), int(&army, "tactic_next")), (tactic("TACTIC_LINE"), tactic("TACTIC_LINE")), "an army starts in Line");
-
-    // By name or by index; the change is pending until the human's next turn starts.
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"army_tactic","army":{},"tactic":"TACTIC_CHARGE"}}"#, a.0)), Ok(CmdOk::Applied { .. })));
-    let army = view_army(&s, a);
-    assert_eq!((int(&army, "tactic"), int(&army, "tactic_next")), (tactic("TACTIC_LINE"), tactic("TACTIC_CHARGE")));
-    // Refusals: an unknown tactic, an army not the human's.
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"army_tactic","army":{},"tactic":"TACTIC_SQUARE"}}"#, a.0)), Err(CmdErr::Invalid(_))));
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"army_tactic","army":{},"tactic":99}}"#, a.0)), Err(CmdErr::Invalid(_))));
-    let (ai, ai_army, _) = ai_army(&mut s.g, h);
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"army_tactic","army":{},"tactic":"TACTIC_LINE"}}"#, ai_army.0)), Err(CmdErr::NotOwner)));
-    // The turn start applies it.
-    s.g.player_apply_tactics(h);
-    let army = view_army(&s, a);
-    assert_eq!((int(&army, "tactic"), int(&army, "tactic_next")), (tactic("TACTIC_CHARGE"), tactic("TACTIC_CHARGE")));
-
-    // The garrison's: on the city query's recruitment part.
-    let c = st.capital;
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"garrison_tactic","city":{},"tactic":"TACTIC_VOLLEY"}}"#, c.0)), Ok(CmdOk::Applied { .. })));
-    let city = q(&s, &format!(r#"{{"q":"city","city":{}}}"#, c.0));
-    let rc = city.get("recruit").expect("recruit");
-    assert_eq!((int(rc, "garrison_tactic"), int(rc, "garrison_tactic_next")), (tactic("TACTIC_LINE"), tactic("TACTIC_VOLLEY")));
-    let ai_city = s.g.players[ai].cities[0];
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"garrison_tactic","city":{},"tactic":"TACTIC_LINE"}}"#, ai_city.0)), Err(CmdErr::NotOwner)));
-
-    // The commands round-trip through the protocol (journal and replay take their JSON).
-    for c in [Command::ArmyTactic { army: a, tactic: BattleTacticType::from_usize(2) }, Command::GarrisonTactic { city: c, tactic: BattleTacticType::from_usize(1) }] {
-        assert_eq!(Command::from_json(ffh_data::global(), &c.to_json()).unwrap(), c);
-    }
-}
-
-#[test]
-fn the_static_data_lists_the_four_tactics_with_their_help() {
-    let d = ffh_data::global();
-    let data = ffh_play::view::data::data(d);
-    let list = data.get("tables").and_then(|t| t.get("BattleTacticType")).and_then(Json::as_arr).expect("the tactics' table");
-    let names: Vec<String> = list.iter().map(|t| text(t, "name")).collect();
-    assert_eq!(names, ["Line", "Charge", "Volley", "Vanguard"]);
-    for t in list {
-        let help = text(t, "help");
-        assert!(help.contains("[ICON_BULLET]") && !help.contains('%'), "{help}");
-    }
-    let vanguard = text(&list[3], "help");
-    assert!(vanguard.contains(&format!("level {} or above", d.defines.tactic_veteran_level)), "{vanguard}");
 }
 
 #[test]

@@ -189,7 +189,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `HouseOrigin::Courted`; no `City::culture_channel`, `culture_diverted`, `culture_pressure`,
 ///   `culture_revolt_level`, no `LoyaltyCause::Offered`; `MEMORY_BOUGHT_HOUSE` renamed
 ///   `MEMORY_SPLIT_HOUSE`; `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL` gone (`TradeableItem::NUM` 17).
-pub const FORMAT_VERSION: u32 = 56;
+/// - 57: battle tactics retired (the owner's decision, 2026-11-21): no `Army::tactic`,
+///   `tactic_next`, `City::garrison_tactic`, `garrison_tactic_next`, no battle log `tactics`.
+pub const FORMAT_VERSION: u32 = 57;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

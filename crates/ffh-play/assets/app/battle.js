@@ -5,8 +5,8 @@
 // viewer's preferences, and the sources the plan asks for its preview and the attack.
 //
 // A source: `{preview() -> EngagePreview, attack({declare_war}) -> {log} | null}` (battle_log.js
-// lists the shapes; null: the attack was not made). Each side fights in the formation its tactic
-// gives (docs/TACTICS.md): the plan shows it, nobody arranges it. `apiSource` is the protocol's (`engage_preview`, the
+// lists the shapes; null: the attack was not made). Each side fights in the rules' auto formation:
+// the plan shows it, nobody arranges it. `apiSource` is the protocol's (`engage_preview`, the
 // `engage` command, `battle_log`): the plan opens when the player orders an army or a stack onto an
 // enemy plot (units.js), a battle's log from its message, the turn report or its marker on the map
 // (`openBattleReport`). The dev entry, `?battle=<fixture>` (main.js), opens a fixture of
