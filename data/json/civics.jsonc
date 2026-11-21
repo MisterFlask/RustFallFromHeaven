@@ -16,8 +16,6 @@
     "ai_weight": -1000,
     "num_cities_maintenance_modifier": 40,
     "war_weariness_modifier": -50,
-    // This game's governors (docs/GOVERNORS.md): every city is ruled directly.
-    "direct_rule": true,
     "improvement_yield_changes": "",
     "we_love_the_king": "TXT_KEY_CIVIC_WE_LOVE_DESPOT"
   },
@@ -36,6 +34,8 @@
     "num_cities_maintenance_modifier": -25,
     "war_weariness_modifier": 25,
     "commerce_modifiers": [0, 0, -20],
+    // This game's governors (docs/GOVERNORS.md): every city is run by a governor.
+    "governed": true,
     "improvement_yield_changes": "",
     "we_love_the_king": "TXT_KEY_CIVIC_WE_LOVE_MONARCH"
   },
@@ -52,8 +52,6 @@
     "ai_weight": -300,
     "distance_maintenance_modifier": 25,
     "num_cities_maintenance_modifier": 30,
-    // This game's governors (docs/GOVERNORS.md): every city is ruled directly.
-    "direct_rule": true,
     "capital_yield_modifiers": [0, 50, 0],
     "capital_commerce_modifiers": [50, 0, 0],
     "improvement_yield_changes": "",
@@ -71,6 +69,8 @@
     "upkeep": "UPKEEP_LOW",
     "ai_weight": 300,
     "distance_maintenance_modifier": -40,
+    // This game's governors (docs/GOVERNORS.md): every city is run by a governor.
+    "governed": true,
     "improvement_yield_changes": [{"improvement_type": "IMPROVEMENT_FARM", "improvement_yields": [-1, 0, 2]}],
     "we_love_the_king": "TXT_KEY_CIVIC_WE_LOVE_MONARCH"
   },

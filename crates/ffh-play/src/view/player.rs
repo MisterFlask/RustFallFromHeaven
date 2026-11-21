@@ -177,22 +177,26 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
         }
         let changed = set != g.players[h].civics;
         valid = valid && changed && g.player_can_revolution(h, Some(&set));
-        // This game's governors (docs/GOVERNORS.md): the government decides who runs the cities.
-        let direct_after = set.iter().flatten().any(|&c| d.civics[c].direct_rule);
-        let rule_change = match (g.player_rules_directly(h), direct_after) {
-            (true, false) => Json::from("governed"),
-            (false, true) => Json::from("direct"),
+        // This game's governors (docs/GOVERNORS.md): a governed civic governs every city; leaving
+        // one changes no city.
+        let govern_after = set.iter().flatten().any(|&c| d.civics[c].governed);
+        let rule_change = match (g.player_civics_govern(h), govern_after) {
+            (false, true) => Json::from("governed"),
+            (true, false) => Json::from("stay"),
             _ => Json::Null,
         };
+        let cities = g.players[h].cities.iter().filter(|&&c| g.cities.contains(c) && !g.cities[c].outpost).count();
         let proposed = crate::jobj! {
             "civics" => Json::Arr(set.iter().map(|&c| Json::opt_idx(c)).collect()),
             "changed" => changed,
             "valid" => valid,
             "anarchy" => if changed { g.player_get_civic_anarchy_length(h, &set) } else { 0 },
             "upkeep" => g.player_get_civic_upkeep(h, Some(&set), false),
-            // `governed`: every city will be handed to governors; `direct`: every city will be
-            // ruled directly; null: no change of who runs them.
+            // `governed`: every city will be run by a governor; `stay`: a governed civic is left
+            // and every city stays as it is; null: no change of who runs them. `cities`: the
+            // human's cities (outposts not counted).
             "rule_change" => rule_change,
+            "cities" => cities,
         };
         j.set("proposed", proposed);
     }

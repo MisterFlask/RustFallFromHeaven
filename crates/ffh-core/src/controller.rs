@@ -49,6 +49,18 @@ pub trait Controller: Send + Sync {
     /// cities do on their own besides production, in its turn processing.
     fn govern_cities(&self, _g: &mut Game, _p: PlayerId) {}
 
+    /// This game's governors (docs/GOVERNORS.md): player `p` hands cities to governors or takes
+    /// them back ([`Game::player_set_city_governed`], the human's command too). Called after its
+    /// civics change and in its turn processing, before its cities produce. Default: nothing.
+    fn choose_city_governance(&self, _g: &mut Game, _p: PlayerId) {}
+
+    /// This game's governors: whether the owner of city `c`, just gained (founded, captured,
+    /// traded, flipped, raised from an outpost), hands it to a governor at once (a city gained is
+    /// run by hand). Not asked under a governed civic. Default: no.
+    fn govern_gained_city(&self, _g: &Game, _c: CityId) -> bool {
+        false
+    }
+
     /// The research choice of `CvPlayer::chooseTech(0)`: for a human the BUTTONPOPUP_CHOOSETECH
     /// popup (`None` = not answered now; the popup's answer arrives later as `CvNetResearch`),
     /// for an AI player `CvPlayerAI::AI_chooseResearch` (`chooseTech` deletes an AI player's

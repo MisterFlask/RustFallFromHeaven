@@ -249,6 +249,16 @@ impl Controller for Ai {
         production::choose(self, g, c);
     }
 
+    /// Who runs the AI's cities (docs/GOVERNORS.md): governors unless its government is
+    /// Despotism or God King (`governor::choose_governance`).
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        governor::choose_governance(g, p);
+    }
+
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        governor::wants_governors(g, g.cities[c].owner)
+    }
+
     /// The unit a city trains for an army's requisition (docs/ARMIES.md): siege up to a third
     /// of the army, then the best attacker against cities (`armies::requisition_unit`).
     fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {

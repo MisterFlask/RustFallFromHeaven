@@ -1,6 +1,7 @@
 //! This game's governors through the human's command layer and views (docs/GOVERNORS.md, the
-//! protocol in docs/HUMAN.md), on hand-built situations: the Governors screen under direct rule
-//! and under a governed government, roles and priorities set by commands, empire orders placed
+//! protocol in docs/HUMAN.md), on hand-built situations: the Governors screen of cities run by
+//! hand, of a mixed empire and under a governed government, cities handed over and taken back by
+//! command, roles and priorities set by commands, empire orders placed
 //! and taken off (by their own commands and through the city screen's `push_order` /
 //! `pop_order`), the two steps of an empire order (`empire_items`, `empire_cities`), the Armies
 //! screen's units on order, and the civics preview of who will run the cities.
@@ -17,7 +18,7 @@ use ffh_play::view::{self, Viewer};
 const H: PlayerId = PlayerId(0);
 
 /// A duel map after `game_init`: player 0's first city `a` and a second city `b` 4 to 6 plots
-/// away on the same landmass, the starting units gone, under Despotism (direct rule).
+/// away on the same landmass, the starting units gone, under Despotism (both run by hand).
 fn game() -> (Game, CityId, CityId) {
     let d = ffh_data::global();
     let setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
@@ -121,10 +122,11 @@ fn screen_city(g: &Game, c: CityId) -> Json {
 }
 
 #[test]
-fn direct_rule_shows_the_mode_and_the_civics_preview_says_who_will_run_the_cities() {
+fn cities_run_by_hand_show_the_mode_and_the_civics_preview_says_who_will_run_the_cities() {
     let (mut g, a, b) = game();
     let s = screen(&g);
-    assert!(flag(&s, "direct_rule"), "{s}");
+    assert!(!flag(&s, "civics_govern"), "{s}");
+    assert_eq!(int(&s, "governed"), 0, "{s}");
     assert_eq!(int(&s, "government"), g.d.t::<CivicType>("CIVIC_DESPOTISM").idx() as i64);
     let cities = arr(&s, "cities");
     assert_eq!(cities.len(), 2);
@@ -132,13 +134,24 @@ fn direct_rule_shows_the_mode_and_the_civics_preview_says_who_will_run_the_citie
     assert!(cities.iter().all(|c| !flag(c, "governed") && c.get("card").is_none()), "{s}");
     let gv = view::governors::city(&Viewer::new(&g, H, false), b);
     assert!(!flag(&gv, "governed"), "{gv}");
-    // The civics preview: Aristocracy hands every city to governors; God King changes nothing.
+    // The civics preview: Aristocracy hands both cities to governors; God King changes nothing.
     let aristocracy = g.d.t::<CivicType>("CIVIC_ARISTOCRACY");
     let p = view::player::civics(&Viewer::new(&g, H, false), &[aristocracy]);
-    assert_eq!(p.get("proposed").and_then(|x| x.get("rule_change")).and_then(Json::as_str), Some("governed"), "{p}");
+    let proposed = p.get("proposed").cloned().unwrap();
+    assert_eq!(proposed.get("rule_change").and_then(Json::as_str), Some("governed"), "{p}");
+    assert_eq!(int(&proposed, "cities"), 2, "{p}");
     let god_king = g.d.t::<CivicType>("CIVIC_GOD_KING");
     let p = view::player::civics(&Viewer::new(&g, H, false), &[god_king]);
     assert_eq!(p.get("proposed").and_then(|x| x.get("rule_change")), Some(&Json::Null), "{p}");
+    // Under Aristocracy, Republic's preview: the cities stay governed.
+    government(&mut g, "CIVIC_ARISTOCRACY");
+    let republic = g.d.t::<CivicType>("CIVIC_REPUBLIC");
+    let p = view::player::civics(&Viewer::new(&g, H, false), &[republic]);
+    assert_eq!(p.get("proposed").and_then(|x| x.get("rule_change")).and_then(Json::as_str), Some("stay"), "{p}");
+    government(&mut g, "CIVIC_DESPOTISM");
+    for c in [a, b] {
+        run(&mut g, &Command::GovernCity { city: c, governed: false }).unwrap();
+    }
     // Empire orders need a governed city.
     let w = warrior(&g).idx() as i32;
     assert!(refused(run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w, dest: None })).contains("governed"));
@@ -147,11 +160,45 @@ fn direct_rule_shows_the_mode_and_the_civics_preview_says_who_will_run_the_citie
 }
 
 #[test]
+fn a_city_is_handed_over_and_taken_back_by_command_and_the_screens_show_a_mixed_empire() {
+    let (mut g, a, b) = game();
+    government(&mut g, "CIVIC_REPUBLIC");
+    // Run by hand under Republic; the city screen offers the hand-over.
+    let gv = view::governors::city(&Viewer::new(&g, H, false), b);
+    assert!(!flag(&gv, "governed") && !flag(&gv, "civics_govern") && gv.get("toggle_why") == Some(&Json::Null), "{gv}");
+    run(&mut g, &Command::GovernCity { city: b, governed: true }).unwrap();
+    assert!(g.city_is_governed(b) && !g.city_is_governed(a));
+    // Twice: refused, with the reason.
+    assert!(refused(run(&mut g, &Command::GovernCity { city: b, governed: true })).contains("run by a governor"));
+    // The Governors screen of a mixed empire: one governed with its card, one run by hand.
+    let s = screen(&g);
+    assert_eq!(int(&s, "governed"), 1, "{s}");
+    let (ea, eb) = (screen_city(&g, a), screen_city(&g, b));
+    assert!(!flag(&ea, "governed") && ea.get("card").is_none() && ea.get("toggle_why") == Some(&Json::Null), "{ea}");
+    assert!(flag(&eb, "governed") && eb.get("card").is_some() && eb.get("toggle_why") == Some(&Json::Null), "{eb}");
+    // Empire orders: from the governed city only.
+    let items = view::governors::empire_items(&Viewer::new(&g, H, false), None).unwrap();
+    assert_eq!(int(&items, "governed"), 1, "{items}");
+    // Taken back.
+    run(&mut g, &Command::GovernCity { city: b, governed: false }).unwrap();
+    assert!(!g.city_is_governed(b));
+    // Under City States every city is governed, and taking one back is refused with the civic's reason.
+    government(&mut g, "CIVIC_CITY_STATES");
+    assert!(g.city_is_governed(a) && g.city_is_governed(b));
+    let why = refused(run(&mut g, &Command::GovernCity { city: a, governed: false }));
+    assert_eq!(why, "City States: every city is run by a governor.");
+    let gv = view::governors::city(&Viewer::new(&g, H, false), a);
+    assert!(flag(&gv, "civics_govern") && gv.get("toggle_why").and_then(Json::as_str) == Some(why.as_str()), "{gv}");
+    // Malformed: another's or no city.
+    assert!(matches!(run(&mut g, &Command::GovernCity { city: CityId(9999), governed: true }), Err(CmdErr::Gone)));
+}
+
+#[test]
 fn a_governed_government_gives_every_city_a_role_card_and_roles_and_priorities_are_set_by_commands() {
     let (mut g, a, b) = game();
     government(&mut g, "CIVIC_ARISTOCRACY");
     let s = screen(&g);
-    assert!(!flag(&s, "direct_rule"), "{s}");
+    assert!(flag(&s, "civics_govern"), "{s}");
     let n_roles = g.d.city_roles.len();
     for c in [a, b] {
         let e = screen_city(&g, c);
@@ -254,9 +301,12 @@ fn empire_orders_are_placed_and_taken_off_and_the_city_screen_offers_only_them()
     assert!(flag(&orders[0], "empire") && int(&orders[0], "turns") > 0, "{card}");
     run(&mut g, &Command::EmpireOrderRemove { city: b, index: 0 }).unwrap();
     assert!(refused(run(&mut g, &Command::EmpireOrderRemove { city: b, index: 0 })).contains("governor"));
-    // In the other city too; back under direct rule its empire order is an ordinary order.
+    // In the other city too; taken back (Despotism first: leaving Aristocracy changes no city) its
+    // empire order is an ordinary order.
     run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w.idx() as i32, dest: None }).unwrap();
     government(&mut g, "CIVIC_DESPOTISM");
+    assert!(g.cities[a].order_queue.iter().any(|o| o.empire));
+    run(&mut g, &Command::GovernCity { city: a, governed: false }).unwrap();
     assert!(!g.cities[a].order_queue.iter().any(|o| o.empire));
     assert!(refused(run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w.idx() as i32, dest: None })).contains("governed"));
 }

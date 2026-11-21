@@ -352,9 +352,14 @@ flag.
 - **Governors** (docs/GOVERNORS.md; every game has them, the AI-only ones too; the rules of
   2026-11-10, the owner's design "Governors and army requisition", which replaced the first rules
   of 2026-10-29: four directly ruled cities, a bench, profiles, numeric traits, a swap penalty and
-  cooldown): the government civic decides who runs cities. Under Despotism and God King
-  (`direct_rule`) the player runs every city; under every other government every city is governed,
-  the capital included, and a change of civics hands all cities over or takes them back at once.
+  cooldown). Who runs cities (the owner's decision of 2026-11-21, docs/HOUSES.md rule 13): under
+  City States and Aristocracy (the civics' `governed`, which replaced `direct_rule`) every city is
+  governed, the capital included, and adopting one hands every city over; under any other civic a
+  city is run by hand until its owner hands it to a governor, and the owner takes it back at will,
+  city by city, at no cost (the `govern_city` command); a city gained is run by hand, and leaving
+  a governed civic changes no city. (From 2026-11-10 to 2026-11-21 Despotism and God King ran
+  every city by hand and every other government governed every city.) The AI governs every city
+  unless its government is Despotism or God King, as the rules made it do before.
   A governed city has a role (Growth, Research, Commerce, Culture, Garrison, Production), proposed
   from its building tiers of the role's four key buildings and the owner's up to two empire
   priorities; the player may overrule it with any role the city has 75% suitability for. Its

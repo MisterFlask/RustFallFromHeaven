@@ -790,15 +790,22 @@ async function armiesUi() {
   steps.push(`armies: the panel's army actions, F5 lists ${armies} arm${armies === 1 ? "y" : "ies"}${renamed}; the city's recruitment`);
 }
 
-/** This game's governors (docs/GOVERNORS.md): the game starts in Despotism, which rules every
- *  city directly: the city screen's Governance section says so, and F9's Governors screen is the
- *  mode line and the city list. */
+/** This game's governors (docs/GOVERNORS.md): the game starts in Despotism, where a city is run by
+ *  hand until it is handed to a governor: the city screen's Governance section says so and its
+ *  toggle hands the capital over and takes it back; F9's Governors screen is the mode line and
+ *  the list of the cities run by hand. */
 async function governorsUi() {
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
   await b.eval(`window.ffh.emit("open-city", ${city.id})`);
-  await until2(`!!document.querySelector("#modals .backdrop:not(.under) .section.governance")`, "the city's Governance section");
-  const text = await b.eval(`document.querySelector("#modals .backdrop:not(.under) .section.governance").textContent`);
-  if (!/Ruled directly/.test(text)) throw new Error(`the capital is not ruled directly: ${text}`);
+  const section = `#modals .backdrop:not(.under) .section.governance`;
+  await until2(`!!document.querySelector(${q(section)})`, "the city's Governance section");
+  const text = await b.eval(`document.querySelector(${q(section)}).textContent`);
+  if (!/Run by hand/.test(text)) throw new Error(`the capital is not run by hand: ${text}`);
+  await clickSteady(`${section} button.govern-toggle`);
+  await until2(`/^Governed\\. Role: /.test(document.querySelector(${q(`${section} p`)})?.textContent ?? "")`, "the capital handed to a governor");
+  await until2(`/Run by hand/.test(document.querySelector(${q(`${section} button.govern-toggle`)})?.textContent ?? "")`, "the toggle to take it back");
+  await clickSteady(`${section} button.govern-toggle`);
+  await until2(`/^Run by hand\\./.test(document.querySelector(${q(`${section} p`)})?.textContent ?? "")`, "the capital taken back");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
   await b.key("F9");
@@ -806,11 +813,11 @@ async function governorsUi() {
   const n = await S("S.view.cities.filter((c) => c.owner === S.view.me.player).length");
   await until2(`document.querySelectorAll("#modals table.governors tbody tr").length === ${n}`, "every city listed");
   const mode = await b.eval(`document.querySelector("#modals .governors-mode")?.textContent ?? ""`);
-  if (!/^Government: .+\. Every city is ruled directly\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
+  if (!/^Government: .+\. Governed: 0 of \d+ cit(y|ies)\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
   await shot("governors-screen");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the Governors screen closed");
-  steps.push(`governors: the capital ruled directly; F9 says "${mode}" and lists ${n} cit${n === 1 ? "y" : "ies"}`);
+  steps.push(`governors: the capital run by hand, handed to a governor and taken back from the city screen; F9 says "${mode}" and lists ${n} cit${n === 1 ? "y" : "ies"}`);
 }
 
 /** Governors v2 under a governed government (`stage governors`: Aristocracy, two governed cities,
@@ -818,14 +825,14 @@ async function governorsUi() {
  *  Armies screen's Order unit picks a unit, then the city (the suggestion pre-selected: one click),
  *  and the army shows it on order; a second one is ordered with a click on an outlined city on the
  *  map; the capital's city screen offers empire orders only and says so; the civics screen's
- *  preview of Despotism says every city will be ruled directly. */
+ *  preview of Despotism says the cities stay governed. */
 async function stagedGovernors(bin, saves) {
   const st = await loadStaged(bin, saves, "governors");
   await b.key("F9");
   await until(async () => (await modalTitles()).includes("Governors"), "the Governors screen");
   await until2(`document.querySelectorAll("#modals .role-card").length === 2`, "a role card per governed city");
   const mode = await b.eval(`document.querySelector("#modals .governors-mode")?.textContent ?? ""`);
-  if (!/Every city is governed\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
+  if (!/Every city is run by a governor\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
   const card = await b.eval(`document.querySelector("#modals .role-card").textContent`);
   if (!/Role: /.test(card) || !/Plan: /.test(card) || !/Other roles: /.test(card)) throw new Error(`a role card: ${card}`);
   await click(`#modals label.priority[data-role="1"] input`);
@@ -871,12 +878,12 @@ async function stagedGovernors(bin, saves) {
   await shot("city-governed");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
-  // Civics: Despotism's preview says every city will be ruled directly.
+  // Civics: Despotism's preview says the cities stay governed.
   const despotism = await S(`S.data.tables.CivicType.findIndex((t) => t.type === "CIVIC_DESPOTISM")`);
   await b.key("F3");
   await dialog("Civics");
   await clickSteady(`${TOP} button.civic[data-civic="${despotism}"]`);
-  await until2(`/Every city will be ruled directly\\./.test(document.querySelector(${q(`${TOP} .civic-rule-change`)})?.textContent ?? "")`, "the civics preview of who runs the cities");
+  await until2(`/Your cities stay governed until you take them back\\./.test(document.querySelector(${q(`${TOP} .civic-rule-change`)})?.textContent ?? "")`, "the civics preview of who runs the cities");
   await closeDialog("Civics");
   steps.push(`governors (stage governors): "${mode}"; a priority set, a role card per city; a unit ordered for the army from the Armies screen in one click on the suggestion, a second by a click on an outlined city on the map; the governed city screen; the civics preview`);
 }

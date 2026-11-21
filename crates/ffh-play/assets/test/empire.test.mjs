@@ -2,7 +2,7 @@
 // depth, rows in a band per research path, a tech near its prerequisites.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { treeLayout, treeRelated } from "../app/empire.js";
+import { treeLayout, treeRelated, ruleChangeLine } from "../app/empire.js";
 
 const tech = (id, depth, and = [], or = []) => ({ tech: id, depth, and, or });
 const path = (id, techs, capstones = []) => ({ path: id, techs, capstones });
@@ -104,4 +104,11 @@ test("a tech's path (all its prerequisites) and the techs it leads to", () => {
   assert.deepEqual([...path].sort(), [0, 1, 2, 3, 4]);
   assert.deepEqual([...next], [5]);
   assert.deepEqual([...treeRelated(byId, 5).next], []);
+});
+
+// This game's governors: the civics preview's line of who will run the cities.
+test("the civics preview says who will run the cities", () => {
+  assert.equal(ruleChangeLine({ rule_change: "governed", cities: 7 }), "Your 7 cities will be run by governors.");
+  assert.equal(ruleChangeLine({ rule_change: "governed", cities: 1 }), "Your city will be run by a governor.");
+  assert.equal(ruleChangeLine({ rule_change: "stay", cities: 7 }), "Your cities stay governed until you take them back.");
 });
