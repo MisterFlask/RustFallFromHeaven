@@ -219,21 +219,25 @@ fn archer_in_a_walled_hill_city_fortified() {
     assert_eq!(w.g.engage_job_defense(archer, &w.ctx()), attack.dv);
     assert_eq!(w.g.engage_a_alone(axeman, Side::Attacker, &w.ctx()), apply(400, 10));
 
-    // The walls' Sentinels breached (docs/SIEGES.md) change the slots, not Dv.
-    let walled = w.g.engage_slots(&w.ctx()).att();
+    // The walls' Sentinels breached (docs/SIEGES.md) leave the defender's front row, not Dv; no
+    // side's places change (a squad's, whatever the ground).
+    let walled = w.g.engage_slots(&w.ctx());
+    assert!(walled.sentinels > 0);
     for k in 0..w.g.city_sentinel_count(city) {
         w.g.city_set_sentinel_damage(city, k, 100);
     }
     assert_eq!(w.g.engage_hit(axeman, archer, Side::Attacker, &w.ctx()).dv, attack.dv);
-    assert!(w.g.engage_slots(&w.ctx()).att() > walled);
+    let breached = w.g.engage_slots(&w.ctx());
+    assert_eq!(breached.sentinels, 0);
+    assert_eq!((breached.att(), breached.def()), (walled.att(), walled.def()));
 }
 
 /// A city's defense (its walls, its culture) gives the defenders' Dv nothing (revision 4): a unit
 /// that ignores building defense, the defense half or wholly knocked down: the same Dv. It costs
-/// no slots either (docs/SIEGES.md): its walls' two Sentinels cost each side one slot each, the
-/// defence knocked down or not.
+/// no places either (docs/SIEGES.md): each side has a squad's 6, and the walls' two Sentinels
+/// stand on top of the defender's, the defence knocked down or not.
 #[test]
-fn a_city_s_defense_costs_slots_and_gives_dv_nothing() {
+fn a_city_s_defense_costs_no_places_and_gives_dv_nothing() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let d = w.g.d;
@@ -260,10 +264,11 @@ fn a_city_s_defense_costs_slots_and_gives_dv_nothing() {
             let stat = w.g.engage_stat(defender, Some(hitter), Side::Defender, false, &ctx);
             assert!(!stat.terms.iter().any(|t| t.src == TermSource::CityDefense && t.pct != 0), "{:?}", stat.terms);
         }
-        slots.push(w.g.engage_slots(&ctx).att());
+        let s = w.g.engage_slots(&ctx);
+        slots.push((s.att(), s.def(), s.sentinels));
     }
-    // The slots: the two Sentinels', whatever the defence.
-    assert_eq!(slots, vec![8, 8, 8]);
+    // A squad's places and the two Sentinels, whatever the defence.
+    assert_eq!(slots, vec![(6, 6, 2); 3]);
 }
 
 #[test]
@@ -388,7 +393,8 @@ fn an_attack_from_water_costs_a_unless_amphibious() {
 
 #[test]
 fn a_river_gives_the_defender_no_dv() {
-    // Q9: the river costs the attacker slots instead of the duel's defender bonus.
+    // Q9: no duel's defender bonus for the river; the attacker wades instead (the ground's
+    // Wading, docs/ENGAGEMENTS.md, "The ground").
     let mut w = world();
     let (p0, p1) = (w.p0, w.p1);
     let g = &w.g;

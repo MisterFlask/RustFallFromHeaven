@@ -1,6 +1,6 @@
 //! A caster's summons in its battles (docs/ENGAGEMENTS.md, "Summons"): a temporary summon spell is
 //! never cast on the map; its unit fights in each of its caster's battles, on either side, beside
-//! the caster, within the side's extra summon slots, and is gone once the battle is over; Twincast
+//! the caster (in its squad), within the side's extra summon slots, and is gone once the battle is over; Twincast
 //! calls two; the preview shows the summons and changes nothing.
 //!
 //! Every test asserts what holds in every battle (no seed's story).
@@ -68,6 +68,15 @@ impl World {
         }
     }
 
+    /// `units` (on one plot) form one army, its squads auto-sorted into as few as hold them
+    /// (docs/ENGAGEMENTS.md, "Squads"): six units make one squad.
+    fn army(&mut self, owner: PlayerId, units: &[UnitId]) {
+        self.g.army_form(owner, units).expect("an army");
+        let plot = self.g.unit_plot(units[0]);
+        let squads: Vec<SquadId> = self.g.squad_layouts_at(owner, plot).iter().filter_map(|l| l.squad).collect();
+        self.g.squad_auto_sort(owner, &squads).expect("sorted");
+    }
+
     /// `u`'s group attacks `to`; the reports it added.
     fn attack(&mut self, u: UnitId) -> Vec<BattleReport> {
         let before = self.g.battle_report_next;
@@ -114,9 +123,12 @@ fn a_summon_spell_is_never_cast_on_the_map() {
 fn an_attacking_caster_calls_its_summon_and_it_is_gone_after() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    // The axeman's army first: the mage (no army unit) arrives in its squad (docs/ENGAGEMENTS.md,
+    // "Squads"), so both fight.
+    let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     let mage = w.unit(p0, "UNIT_MAGE", from);
     w.promote(mage, &["PROMOTION_AIR1", "PROMOTION_AIR2", "PROMOTION_AIR3"]);
-    w.unit(p0, "UNIT_AXEMAN", from);
+    assert_eq!(w.g.units[mage].squad, w.g.units[axeman].squad, "one squad");
     w.unit(p1, "UNIT_WARRIOR", to);
     w.unit(p1, "UNIT_WARRIOR", to);
     let reports = w.attack(mage);
@@ -139,7 +151,10 @@ fn a_defending_caster_summons_and_its_summon_does_not_hold_the_plot() {
     let mage = w.unit(p1, "UNIT_MAGE", to);
     w.promote(mage, &["PROMOTION_EARTH1", "PROMOTION_EARTH2", "PROMOTION_EARTH3"]);
     let axemen: Vec<UnitId> = (0..6).map(|_| w.unit(p0, "UNIT_AXEMAN", from)).collect();
+    // One army sorted into one squad of six.
+    w.army(p0, &axemen);
     let reports = w.attack(axemen[0]);
+    assert_eq!(reports[0].sides[0].committed, 6);
     let r = &reports[0];
     assert_eq!(fighters(&w.g, r, "UNIT_EARTH_ELEMENTAL", Side::Defender), 1, "the Earth Elemental, large: the side's two extra slots");
     assert_eq!(w.count("UNIT_EARTH_ELEMENTAL"), 0);

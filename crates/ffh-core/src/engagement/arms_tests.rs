@@ -153,8 +153,10 @@ fn the_thunderhead_tower_strike_is_logged() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.build("BUILDING_THUNDERHEAD_TOWER");
-    w.unit(p0, "UNIT_AXEMAN", from);
+    let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     let catapult = w.unit(p0, "UNIT_CATAPULT", from);
+    // One army: one squad, the catapult in its rear row (docs/ENGAGEMENTS.md, "Squads").
+    w.g.army_form(p0, &[axeman, catapult]).expect("an army");
     w.unit(p1, "UNIT_WARRIOR", to);
     let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, squad: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
     let log = w.g.battle_report(out.report).and_then(|r| r.log.clone()).expect("a log");

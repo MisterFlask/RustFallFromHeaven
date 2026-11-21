@@ -248,6 +248,11 @@ fn a_kills_xp_is_shared_equally() {
         let victim = w.unit(p1, "UNIT_WARRIOR", open);
         w.g.units[victim].damage = 95;
         w.g.player_army_sync(p0);
+        // One army sorted into one squad: the four fight together (docs/ENGAGEMENTS.md, "Squads").
+        w.g.army_form(p0, &axes).expect("an army");
+        let squads: Vec<SquadId> = w.g.squad_layouts_at(p0, from).iter().filter_map(|l| l.squad).collect();
+        w.g.squad_auto_sort(p0, &squads).expect("sorted");
+        assert!(axes.iter().all(|&u| w.g.units[u].squad == w.g.units[axes[0]].squad), "one squad");
         w.g.soren_rand = Rng::new(seed);
         let before: Vec<i32> = axes.iter().map(|&u| w.g.units[u].experience * 100 + w.g.units[u].xp_carry).collect();
         w.attack(axes[0]);

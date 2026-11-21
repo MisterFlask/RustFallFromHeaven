@@ -1,13 +1,18 @@
 //! Engagement combat scenarios (formation battles; docs/ENGAGEMENTS.md):
 //! whole engagements through the rules' entries (`group_attack`, `group_attack_force`,
-//! `unit_attack`) on small staged worlds: slots, lanes, each kind's reach in the log and a city's
-//! capture; the plot that falls only when no defender is left; an ordered formation and the auto
-//! formation; large units; siege units' caps on either side; defensive strikes from the reserve
-//! and splash; fear; withdrawals on both sides; a marching recruit's; a held line; hidden
-//! nationality in the report; the defenders left; an immortal reborn; a conversion once after two
-//! kills; battle XP before the per-kill effects; captures and slaves outside the army; Hidden's
-//! quirk with no free plot; Blitz; Taunt; the AI's preamble; a missile strike and its kill; the
-//! capture of non-combatants; ships keeping the duel; saves.
+//! `unit_attack`) on small staged worlds: a squad's places and lanes, each kind's reach in the log
+//! and a city's capture; the plot that falls only when no defender is left (a squad in reserve);
+//! an ordered squad and the strongest; large units; siege units' caps on either side; defensive
+//! strikes from the reserve and splash; fear; withdrawals on both sides; a marching recruit's; a
+//! held line; hidden nationality in the report; the defenders left; an immortal reborn; a
+//! conversion once after two kills; battle XP before the per-kill effects; captures and slaves
+//! outside the army; Hidden's quirk with no free plot; Blitz; Taunt; the AI's preamble; a missile
+//! strike and its kill; the capture of non-combatants; ships keeping the duel; saves; the ground's
+//! rules in the log, a large unit's hits in a forest and wading across a river.
+//!
+//! Every battle is one squad against one squad (docs/ENGAGEMENTS.md, "Squads"), and units made
+//! one at a time outside a city are one-unit armies: a test whose units fight together forms them
+//! into one army first ([`World::army`]).
 //!
 //! The outcomes are random: a test either asserts what holds in every battle, or runs a handful
 //! of seeds and asserts what must happen in at least one (each says which).
@@ -19,7 +24,8 @@ use ffh_core::army::{March, RecruitDest};
 use ffh_core::controller::{AiHook, Controller};
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
 use ffh_core::engagement::report::{BattleLog, BattleReport, LogEvent, LogFate, SatOutWhy};
-use ffh_core::engagement::{EngageResult, Side};
+use ffh_core::engagement::formation::{GroundRule, Params};
+use ffh_core::engagement::{EngageResult, FighterIdx, Side};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::rng::Rng;
@@ -97,6 +103,17 @@ impl World {
 
     fn units(&mut self, owner: PlayerId, name: &str, at: PlotIdx, n: usize) -> Vec<UnitId> {
         (0..n).map(|_| self.unit(owner, name, at)).collect()
+    }
+
+    /// `units` (army units of `owner` on one plot, made one at a time: one-unit armies each) form
+    /// one army, its squads auto-sorted into as few as hold them (docs/ENGAGEMENTS.md, "Squads"):
+    /// up to six make one squad, which fights together. Its squads on the plot, in order.
+    fn army(&mut self, owner: PlayerId, units: &[UnitId]) -> Vec<SquadId> {
+        self.g.army_form(owner, units).expect("an army");
+        let at = self.g.unit_plot(units[0]);
+        let squads: Vec<SquadId> = self.g.squad_layouts_at(owner, at).iter().filter_map(|l| l.squad).collect();
+        self.g.squad_auto_sort(owner, &squads).expect("sorted");
+        self.g.squad_layouts_at(owner, at).iter().filter_map(|l| l.squad).collect()
     }
 
     fn promote(&mut self, u: UnitId, name: &str) {
@@ -209,11 +226,12 @@ fn check_reach(log: &BattleLog) -> usize {
     checked
 }
 
-/// 8 Axemen against an Axeman and 3 Archers in a city of 50% defence (no wall building, so no
-/// Sentinels: docs/SIEGES.md; tests/sieges.rs has the walls): the attacker commits up to its slots
-/// (the city's defence costs none) on its lanes, every strike and shot falls in its reach, and the
-/// city falls only when none of its defenders is left: then the launcher's group takes it; else
-/// nobody moves. Every battle: the slots, lanes and reach; some seed of eight: the city taken.
+/// A squad of 6 Axemen against an Axeman and 3 Archers, the garrison's one squad, in a city of
+/// 50% defence (no wall building, so no Sentinels: docs/SIEGES.md; tests/sieges.rs has the walls):
+/// each side commits its squad (6 places a side, the city's defence costs none) on its 3 lanes,
+/// every strike and shot falls in its reach, and the city falls only when none of its defenders is
+/// left: then the launcher's group takes it; else nobody moves. Every battle: the places, lanes and
+/// reach; some seed of eight: the city taken.
 #[test]
 fn axemen_storm_a_walled_city_of_archers() {
     let mut w = world();
@@ -223,7 +241,14 @@ fn axemen_storm_a_walled_city_of_archers() {
     w.g.players[p1].human = true; // the battle log is written for a human's battle
     w.unit(p1, "UNIT_AXEMAN", to);
     w.units(p1, "UNIT_ARCHER", to, 3);
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 8);
+    assert_eq!(w.g.squad_layouts_at(p1, to).len(), 1, "the garrison's one squad");
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    // Veterans: six of them can clear the four defenders in a battle's rounds (eight Axemen did
+    // in the old ten slots).
+    for &a in &axemen {
+        w.g.unit_change_extra_combat_percent(a, 100);
+    }
+    assert_eq!(w.army(p0, &axemen).len(), 1);
     let (mut taken, mut checked) = (0, 0);
     for seed in 0..8 {
         let mut f = w.fork(seed);
@@ -232,11 +257,11 @@ fn axemen_storm_a_walled_city_of_archers() {
         assert_eq!(reports.len(), 1, "one order, one engagement");
         let r = &reports[0];
         let log = r.log.as_ref().unwrap();
-        assert_eq!(log.slots[0].total, 10, "10 a side on open land, the city's defence costs none: {:?}", log.slots[0]);
-        assert_eq!((r.sides[0].committed, r.sides[1].committed), (8, 4));
-        assert_eq!((r.sides[0].slots, r.sides[1].slots), (10, 10), "the report keeps the slots");
-        assert_eq!((r.sides[0].lanes, r.sides[1].lanes), (4, 4));
-        assert_eq!(log.lanes, [4, 4]);
+        assert_eq!(log.slots[0].total, 6, "a squad's 6 places, the city's defence costs none: {:?}", log.slots[0]);
+        assert_eq!((r.sides[0].committed, r.sides[1].committed), (6, 4));
+        assert_eq!((r.sides[0].slots, r.sides[1].slots), (6, 6), "the report keeps the slots");
+        assert_eq!((r.sides[0].lanes, r.sides[1].lanes), (3, 3));
+        assert_eq!(log.lanes, [3, 3]);
         assert!(log.ground.city && !log.ground.flanking());
         assert!(r.place.city.is_some());
         assert!(!log.ordered[0], "the rules' auto formation");
@@ -246,7 +271,7 @@ fn axemen_storm_a_walled_city_of_archers() {
             assert_eq!(f.g.cities[c_now].owner, p0, "a taken city is captured");
             assert!(r.outcome.plot_taken && r.outcome.city_captured == Some(c_now));
             assert_eq!((r.sides[1].standing, r.outcome.defenders_left), (0, 0));
-            assert!(f.g.unit_plot_opt(axemen[0]) == Some(to) || !f.alive(axemen[0]));
+            assert!(!f.alive(axemen[0]) || f.g.unit_plot_opt(axemen[0]) == Some(to), "the launcher moved in unless it fell");
             taken += 1;
         } else {
             assert_eq!(f.g.cities[c_now].owner, p1);
@@ -260,42 +285,47 @@ fn axemen_storm_a_walled_city_of_archers() {
             }
         }
     }
-    assert!(taken > 0, "eight axemen never took the city");
+    assert!(taken > 0, "six axemen never took the city");
     assert!(checked > 50, "{checked} actions checked");
 }
 
-/// The plot falls only when no defender is left on it (spec 1.7): in a forest (6 slots) eight
-/// weak warriors put six in the line and keep two in reserve; the attackers wipe the line out,
-/// and the plot holds (nobody moves, the survivors keep their damage). With six only, the same
-/// battle takes the plot and the launcher's group moves in. Every battle.
+/// The plot falls only when no defender is left on it (spec 1.7): eight weak warriors in one army
+/// stand in two squads; one fights, the other is the reserve; the attackers wipe the line out,
+/// and the plot holds (nobody moves, the survivors keep their damage). With six only (one squad),
+/// the same battle takes the plot and the launcher's group moves in. Every battle.
 #[test]
 fn the_plot_falls_only_when_no_defender_is_left() {
     for (n, falls) in [(8, false), (6, true)] {
         let mut w = world();
         let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-        w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
         w.g.players[p1].human = true;
-        for d in w.units(p1, "UNIT_WARRIOR", to, n) {
+        let warriors = w.units(p1, "UNIT_WARRIOR", to, n);
+        for &d in &warriors {
             w.g.units[d].damage = 95;
         }
+        assert_eq!(w.army(p1, &warriors).len(), if falls { 1 } else { 2 });
         let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
         for &a in &axemen {
             w.g.unit_change_extra_combat_percent(a, 400);
         }
+        w.army(p0, &axemen);
         for seed in 0..4 {
             let mut f = w.fork(seed);
             let (_, reports) = f.attack(axemen[0]);
             let r = &reports[0];
-            assert_eq!((r.sides[0].slots, r.sides[1].slots, r.sides[1].committed), (6, 6, 6), "seed {seed}");
-            assert_eq!(r.sides[1].fallen + r.sides[1].escaped, 6, "seed {seed}: the line is wiped out: {:?}", r.sides[1]);
+            let committed = r.sides[1].committed;
+            assert_eq!((r.sides[0].slots, r.sides[1].slots, r.sides[0].committed), (6, 6, 6), "seed {seed}");
+            assert!(committed > 0 && committed <= 6, "seed {seed}: one squad: {committed}");
+            assert_eq!(r.sides[1].fallen + r.sides[1].escaped, committed, "seed {seed}: the line is wiped out: {:?}", r.sides[1]);
             assert!(check_reach(r.log.as_ref().unwrap()) > 0);
             if falls {
+                assert_eq!(committed, 6, "seed {seed}");
                 assert_eq!(r.outcome.result, EngageResult::Taken, "seed {seed}");
                 assert!(r.outcome.plot_taken && r.outcome.defenders_left == 0);
                 assert_eq!(f.g.unit_plot(axemen[0]), to, "seed {seed}: the launcher moved in");
             } else {
                 assert_eq!(r.outcome.result, EngageResult::Cleared, "seed {seed}");
-                assert!(!r.outcome.plot_taken && r.outcome.defenders_left == 2, "seed {seed}: {:?}", r.outcome);
+                assert!(!r.outcome.plot_taken && r.outcome.defenders_left == n as i32 - committed, "seed {seed}: {:?}", r.outcome);
                 assert!(axemen.iter().all(|&a| f.g.unit_plot(a) == from), "seed {seed}: nobody moves");
                 assert!(f.g.map.plots[to].units.iter().all(|&u| f.g.units[u].owner == p1));
             }
@@ -402,26 +432,29 @@ fn siege_units_cap_on_attack_and_fight_to_the_end_on_defense() {
     assert!(lost > 0, "nobody ever fell");
 }
 
-/// Twelve archers on open land (10 defender slots): the two left in reserve still make defensive
-/// strikes, and the catapult (collateral damage) splashes its hits on the target's neighbours.
-/// Some seed of six for each.
+/// Twelve archers in one army, two squads of six: the squad left in reserve still makes defensive
+/// strikes, and the catapult (collateral damage) in the attacking squad splashes its hits on the
+/// target's neighbours. Some seed of six for each.
 #[test]
 fn the_reserve_strikes_and_the_catapult_splashes() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.g.players[p1].human = true;
-    w.units(p1, "UNIT_ARCHER", to, 12);
+    let archers = w.units(p1, "UNIT_ARCHER", to, 12);
+    assert_eq!(w.army(p1, &archers).len(), 2);
     let cat = w.unit(p0, "UNIT_CATAPULT", from);
     // Tough enough to outlive the archers' first volleys (it acts last: speed 1).
     w.g.units[cat].stat_pct[StatType::Defense.idx()] = 2000;
-    w.units(p0, "UNIT_AXEMAN", from, 6);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
+    let squad: Vec<UnitId> = axemen.iter().copied().chain([cat]).collect();
+    assert_eq!(w.army(p0, &squad).len(), 1);
     let (mut strikes, mut collateral) = (0, 0);
     for seed in 0..6 {
         let mut f = w.fork(seed);
         let (_, reports) = f.attack(cat);
         let r = &reports[0];
-        assert_eq!(r.sides[1].committed, 10);
-        assert_eq!(r.outcome.defenders_left, 2 + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: the two in reserve and the line's survivors");
+        assert_eq!((r.sides[0].committed, r.sides[1].committed), (6, 6));
+        assert_eq!(r.outcome.defenders_left, 6 + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: the squad in reserve and the line's survivors");
         let log = r.log.as_ref().unwrap();
         let cat_b = log.fighters.iter().position(|lf| lf.unit == cat).expect("the catapult fights") as u16;
         for ev in &log.events {
@@ -447,6 +480,8 @@ fn fear_sits_attackers_out() {
     let scary = w.unit(p1, "UNIT_AXEMAN", to);
     w.g.units[scary].fear = 1;
     let warriors = w.units(p0, "UNIT_WARRIOR", from, 4);
+    // One squad: all four fight (a unit of another squad would neither fight nor spend its attack).
+    assert_eq!(w.army(p0, &warriors).len(), 1);
     let mut sat = 0;
     for seed in 0..6 {
         let mut f = w.fork(seed);
@@ -480,6 +515,7 @@ fn defensive_withdrawal_only_outside_cities() {
         let runner = w.unit(p1, "UNIT_WARRIOR", to);
         w.g.unit_change_extra_withdrawal(runner, 100);
         let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+        w.army(p0, &axemen);
         for seed in 0..4 {
             let mut f = w.fork(seed);
             let (_, reports) = f.attack(axemen[0]);
@@ -603,10 +639,12 @@ fn an_immortal_is_reborn() {
 fn a_werewolf_converts_once_after_its_last_kill() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    for _ in 0..2 {
-        let v = w.unit(p1, "UNIT_WARRIOR", to);
+    let victims = w.units(p1, "UNIT_WARRIOR", to, 2);
+    for &v in &victims {
         w.g.units[v].damage = 97;
     }
+    // One squad: both stand in the battle.
+    w.army(p1, &victims);
     let wolf = w.unit(p0, "UNIT_RAVENOUS_WEREWOLF", from);
     let werewolf = w.g.d.t::<UnitType>("UNIT_WEREWOLF");
     let mut both = 0;
@@ -764,6 +802,7 @@ fn a_marching_recruit_defends_and_keeps_its_march() {
     w.g.units[recruit].march = Some(March { dest, stalled: 0, left_turn: 0, from_city: c, diverted: false });
     w.g.player_army_sync(p1);
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    w.army(p0, &axemen);
     for seed in 0..4 {
         let mut f = w.fork(seed);
         let (_, reports) = f.attack(axemen[0]);
@@ -782,9 +821,12 @@ fn a_marching_recruit_defends_and_keeps_its_march() {
 fn the_report_counts_the_reserve_left() {
     let mut w = world_with(false);
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    for d in w.units(p1, "UNIT_WARRIOR", to, 11) {
+    let warriors = w.units(p1, "UNIT_WARRIOR", to, 11);
+    for &d in &warriors {
         w.g.units[d].damage = 60;
     }
+    // Eleven in one army: two squads, one fights, the other is the reserve.
+    assert_eq!(w.army(p1, &warriors).len(), 2);
     let a = w.units(p0, "UNIT_AXEMAN", from, 4);
     for &u in &a {
         w.promote(u, "PROMOTION_HIDDEN_NATIONALITY");
@@ -794,8 +836,10 @@ fn the_report_counts_the_reserve_left() {
         let (attacked, reports) = f.attack(a[0]);
         assert!(attacked);
         let r = &reports[0];
-        assert_eq!((r.sides[1].slots, r.sides[1].committed), (10, 10));
-        assert_eq!(r.outcome.defenders_left, 1 + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: {:?}", r.outcome);
+        let committed = r.sides[1].committed;
+        assert_eq!(r.sides[1].slots, 6);
+        assert!(committed == 5 || committed == 6, "seed {seed}: one of the two squads: {committed}");
+        assert_eq!(r.outcome.defenders_left, 11 - committed + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: {:?}", r.outcome);
     }
 }
 
@@ -1001,7 +1045,8 @@ fn a_forced_ai_attack_runs_the_preamble() {
     let d = w.unit(p1, "UNIT_WARRIOR", to);
     w.g.units[d].damage = 50;
     let a = w.unit(p0, "UNIT_AXEMAN", from);
-    w.units(p0, "UNIT_AXEMAN", from, 2);
+    let more = w.units(p0, "UNIT_AXEMAN", from, 2);
+    w.army(p0, &[a, more[0], more[1]]);
     let hook = Arc::new(AttackSpells(AtomicUsize::new(0)));
     w.g.controllers[p0] = hook.clone();
     let grp = w.g.units[a].group.unwrap();
@@ -1031,3 +1076,156 @@ fn a_missile_kill_counts_in_telemetry() {
     assert!(json.contains("\"engage_missile\":{\"kill\":[1,"), "{json}");
 }
 
+
+/// Each action's hit on its target in `log`, by unit: (actor, target, round, kind, expected,
+/// the pair's A and Dv). Misses left out.
+fn target_hits(log: &BattleLog) -> Vec<(UnitId, UnitId, u8, ActionKind, i32, (i32, i32))> {
+    let unit = |i: FighterIdx| log.fighters[i as usize].unit;
+    let pair = |h: FighterIdx, t: FighterIdx| log.pairs.iter().find(|p| p.h == h && p.t == t).map_or((0, 0), |p| (p.a_x100, p.dv_x100));
+    log.events
+        .iter()
+        .filter_map(|e| match e {
+            LogEvent::Action(a) => {
+                let hit = a.hits.first().filter(|h| !h.miss && !h.splash && h.expected > 0)?;
+                Some((unit(a.actor), unit(hit.target), a.round, a.kind, hit.expected, pair(a.actor, hit.target)))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// The ground's rules in a fought battle (docs/ENGAGEMENTS.md, "The ground"): the log lists the
+/// rules of its ground (a forest's stab, ranged and large lines and no flanking; hills' uphill
+/// charge and the attacker's cut; open ground's large line and charge; a marsh's large line),
+/// and a large unit's hits in a forest are 75/120 of its hits on open ground, the same pair, the
+/// same round. Every battle.
+#[test]
+fn the_battle_log_lists_the_grounds_rules_and_a_large_unit_deals_them() {
+    let params = Params::from_defines(&ffh_data::global().defines);
+    let w0 = world();
+    let d = w0.g.d;
+    let forest = d.t::<FeatureType>("FEATURE_FOREST");
+    let marsh = d.t::<TerrainType>("TERRAIN_MARSH");
+    let charge = 100 + params.charge_bonus;
+    // (ground, rules it lists, rules it does not)
+    let grounds: [(&str, Vec<GroundRule>, Vec<GroundRule>); 4] = [
+        ("open", vec![GroundRule::LargeDealt { pct: params.open_large_pct }, GroundRule::Charge { pct: charge }], vec![GroundRule::NoFlanking]),
+        (
+            "forest",
+            vec![
+                GroundRule::ForestRanged { pct: params.forest_ranged_pct },
+                GroundRule::ForestStab { pct: params.forest_stab_pct },
+                GroundRule::LargeDealt { pct: params.rough_large_pct },
+                GroundRule::NoFlanking,
+            ],
+            vec![GroundRule::Charge { pct: charge }],
+        ),
+        (
+            "hills",
+            vec![GroundRule::HillsAttacker { pct: params.hills_attacker_pct }, GroundRule::HillsDefenderRanged { pct: params.hills_defender_ranged_pct }, GroundRule::Uphill { pct: charge }],
+            vec![GroundRule::Charge { pct: charge }, GroundRule::NoFlanking],
+        ),
+        ("marsh", vec![GroundRule::LargeDealt { pct: params.rough_large_pct }, GroundRule::NoFlanking], vec![GroundRule::Charge { pct: charge }]),
+    ];
+    assert_eq!((params.forest_stab_pct, params.rough_large_pct, params.open_large_pct), (150, 75, 120));
+    let mut logs: Vec<Vec<Box<BattleLog>>> = Vec::new();
+    for (name, has, not) in &grounds {
+        let mut w = world();
+        let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+        match *name {
+            "forest" => w.g.map.plots[to].feature_type = Some(forest),
+            "hills" => w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS,
+            "marsh" => w.g.map.plots[to].terrain_type = Some(marsh),
+            _ => {}
+        }
+        w.g.players[p1].human = true;
+        let defs = w.units(p1, "UNIT_WARRIOR", to, 2);
+        for &u in &defs {
+            w.g.units[u].stat_pct[StatType::Defense.idx()] = 400;
+        }
+        w.army(p1, &defs);
+        let giant = w.unit(p0, "UNIT_HILL_GIANT", from);
+        assert!(w.g.unit_engage_large(giant));
+        let mut seen = Vec::new();
+        for seed in 0..3 {
+            let mut f = w.fork(seed);
+            let (_, reports) = f.attack(giant);
+            let log = reports[0].log.clone().expect("a human's battle is logged");
+            assert_eq!(log.rules, log.ground.rules(&params), "{name}");
+            for r in has {
+                assert!(log.rules.contains(r), "{name}: {r:?} in {:?}", log.rules);
+            }
+            for r in not {
+                assert!(!log.rules.contains(r), "{name}: {r:?} not in {:?}", log.rules);
+            }
+            check_reach(&log);
+            seen.push(log);
+        }
+        logs.push(seen);
+    }
+    // The giant's hits, forest against open ground: the same pair (A and Dv), the same round.
+    let mut compared = 0;
+    for (open, wood) in logs[0].iter().zip(&logs[1]) {
+        let open_hits = target_hits(open);
+        for (actor, target, round, kind, e, pair) in target_hits(wood) {
+            if wood.fighters.iter().find(|f| f.unit == actor).is_some_and(|f| f.side == Side::Attacker) {
+                let Some(o) = open_hits.iter().find(|h| (h.0, h.1, h.2, h.3, h.5) == (actor, target, round, kind, pair)) else { continue };
+                assert!((e as i64 * 120 - o.4 as i64 * 75).abs() <= 120, "{kind:?} round {round}: forest {e}, open {}", o.4);
+                compared += 1;
+            }
+        }
+    }
+    assert!(compared > 0, "no hit of the giant to compare");
+}
+
+/// Across a river (docs/ENGAGEMENTS.md, "The ground"): the log lists Wading, and in round 1 the
+/// attacker's units that do not cross rivers freely deal `ENGAGEMENT_WADING_PERCENT` (50) % of
+/// what they deal without the river, the same pair, while a unit with `bRiver` (the Lizardman)
+/// and every hit of round 2 and of the defender deal the same. Every battle.
+#[test]
+fn wading_cuts_the_first_round_of_units_that_do_not_cross_rivers() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let params = Params::from_defines(&w.g.d.defines);
+    w.g.players[p1].human = true;
+    let defs = w.units(p1, "UNIT_AXEMAN", to, 3);
+    for &u in &defs {
+        w.g.units[u].stat_pct[StatType::Defense.idx()] = 400;
+    }
+    w.army(p1, &defs);
+    // The Axemen's army; the Lizardmen (recon: no army units) arrive in its squad.
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 2);
+    assert_eq!(w.army(p0, &axemen).len(), 1);
+    let lizards = w.units(p0, "UNIT_LIZARDMAN", from, 2);
+    assert!(w.g.unit_is_river(lizards[0]) && !w.g.unit_is_river(axemen[0]));
+    assert!(lizards.iter().all(|&u| w.g.units[u].squad == w.g.units[axemen[0]].squad), "one squad");
+    let mut wet = w.fork(0);
+    wet.g.map.plots[from].river_crossing[DirectionType::DIRECTION_EAST.idx()] = true;
+    let wading = GroundRule::Wading { pct: params.wading_pct };
+    assert_eq!(params.wading_pct, 50);
+    let (mut cut, mut spared, mut same) = (0, 0, 0);
+    for seed in 0..4 {
+        let (mut a, mut b) = (w.fork(seed), wet.fork(seed));
+        let (_, dry) = a.attack(axemen[0]);
+        let (_, waded) = b.attack(axemen[0]);
+        let (dry, waded) = (dry[0].log.clone().expect("logged"), waded[0].log.clone().expect("logged"));
+        assert!(waded.ground.crossing && waded.rules.contains(&wading), "{:?}", waded.rules);
+        assert!(!dry.ground.crossing && !dry.rules.contains(&wading));
+        let dry_hits = target_hits(&dry);
+        for (actor, target, round, kind, e, pair) in target_hits(&waded) {
+            let Some(o) = dry_hits.iter().find(|h| (h.0, h.1, h.2, h.3, h.5) == (actor, target, round, kind, pair)) else { continue };
+            if round == 1 && axemen.contains(&actor) {
+                assert!((0..=1).contains(&(o.4 - 2 * e)), "seed {seed}: an axeman wades: {e} of {}", o.4);
+                cut += 1;
+            } else {
+                assert_eq!(e, o.4, "seed {seed}: {actor:?} round {round}");
+                if round == 1 && lizards.contains(&actor) {
+                    spared += 1;
+                } else {
+                    same += 1;
+                }
+            }
+        }
+    }
+    assert!(cut > 0 && spared > 0 && same > 0, "compared: {cut} cut, {spared} spared, {same} the same");
+}

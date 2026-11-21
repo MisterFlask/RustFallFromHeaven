@@ -77,6 +77,17 @@ impl World {
         (0..n).map(|_| self.unit(owner, name, at)).collect()
     }
 
+    /// `owner`'s units on `at` (made one at a time: one-unit armies each) form one army, its
+    /// squads auto-sorted into as few as hold them (docs/ENGAGEMENTS.md, "Squads"): up to six
+    /// make one squad. Its squads, in their order.
+    fn army(&mut self, owner: PlayerId, at: PlotIdx) -> Vec<SquadId> {
+        let units: Vec<UnitId> = self.g.map.plots[at].units.iter().copied().filter(|&u| self.g.units[u].owner == owner && self.g.unit_is_army_unit(u)).collect();
+        self.g.army_form(owner, &units).expect("an army");
+        let squads: Vec<SquadId> = self.g.squad_layouts_at(owner, at).iter().filter_map(|l| l.squad).collect();
+        self.g.squad_auto_sort(owner, &squads).expect("sorted");
+        self.g.squad_layouts_at(owner, at).iter().filter_map(|l| l.squad).collect()
+    }
+
     fn forest(&mut self, at: PlotIdx) {
         self.g.map.plots[at].feature_type = Some(self.g.d.t::<FeatureType>("FEATURE_FOREST"));
     }
@@ -104,19 +115,35 @@ fn the_preview_is_a_function_of_its_inputs_and_changes_nothing() {
     w.units(p1, "UNIT_ARCHER", to, 4);
     w.units(p1, "UNIT_AXEMAN", to, 4);
     w.units(p1, "UNIT_WARRIOR", to, 2);
+    // Each side one army of two squads (11 and 10 units: 6 places a squad).
+    assert_eq!(w.army(p0, from).len(), 2);
+    let def_squads = w.army(p1, to);
+    assert_eq!(def_squads.len(), 2);
     let before = state(&w.g);
     let inp = w.input();
     let a = w.g.engage_preview(&inp).expect("a preview");
     let b = w.g.engage_preview(&inp).unwrap();
     assert_eq!(a, b);
     assert!(state(&w.g) == before, "the preview changed the game");
-    // What it holds: the forest's six slots and three lanes a side, its rules, both formations.
+    // What it holds: a squad's six places and three lanes a side, the forest's rules, both
+    // formations.
     assert_eq!((a.slots.att(), a.slots.def(), a.lanes), (6, 6, [3, 3]));
     assert!(a.ground.forest && !a.ground.flanking());
     assert_eq!(a.rules, a.ground.rules(&ffh_core::engagement::formation::Params::from_defines(&w.g.d.defines)));
-    assert_eq!(a.formation, a.auto, "no formation given: the auto formation");
-    assert_eq!(a.formation.len(), 6);
-    assert_eq!(a.def_formation, w.g.engage_auto_formation(&a.defenders, Side::Defender, &a.slots, &HitCtx::new(from, to)));
+    assert_eq!(a.squads.len(), 2, "the attacker's two squads");
+    assert_eq!(a.formation, a.auto, "no squad given: the strongest");
+    assert_eq!(a.formation, a.squads[a.squad].places);
+    assert!(!a.formation.is_empty() && a.formation.len() <= 6);
+    // The defenders' squad that fights stands in its cells; the other squad is the reserve.
+    let def_squad = a.def_squad.expect("a defending squad");
+    assert!(def_squads.contains(&def_squad));
+    let layout = w.g.squad_layouts_at(p1, to).into_iter().find(|l| l.squad == Some(def_squad)).expect("its layout");
+    let mut cells: Vec<(UnitId, u8, u8)> = layout.units().into_iter().map(|(u, c)| (u, c % 3, c / 3)).collect();
+    let mut def: Vec<(UnitId, u8, u8)> = a.def_formation.iter().map(|p| (p.unit, p.lane, p.row)).collect();
+    cells.sort();
+    def.sort();
+    assert_eq!(def, cells, "the defending squad's cells");
+    assert!(!a.def_reserve.is_empty());
     assert_eq!(a.def_formation.len() + a.def_reserve.len(), a.defenders.len());
     assert!(a.reserve.iter().all(|u| a.pool.contains(u) && !a.formation.iter().any(|p| p.unit == *u)));
     assert_eq!(a.declare_war, None);
@@ -126,7 +153,7 @@ fn the_preview_is_a_function_of_its_inputs_and_changes_nothing() {
     assert!(f.per.iter().all(|x| (0..=100).contains(&x.fall_pct) && (0..=100).contains(&x.escape_pct) && x.fall_pct + x.escape_pct <= 100));
     assert!(f.falls_permille <= f.wiped_permille && f.wiped_permille <= 1000 && f.repulsed_permille <= 1000);
     assert!(f.wiped_permille + f.repulsed_permille <= 1000, "a battle ends when one line is gone");
-    assert_eq!(f.falls_permille, 0, "a reserve of four: the plot never falls in one battle");
+    assert_eq!(f.falls_permille, 0, "a squad in reserve: the plot never falls in one battle");
     let side_lost = |s: Side| f.per.iter().filter(|x| x.side == s).map(|x| x.fall_pct as i64).sum::<i64>();
     for (i, s) in [Side::Attacker, Side::Defender].into_iter().enumerate() {
         // The per-fighter percentages (rounded down) add up to at most the side's expected losses.
@@ -153,11 +180,18 @@ fn the_preview_fields() {
     // One of them hidden from the attacker: not a defender it plans against.
     let hidden = defs[7];
     w.g.unit_set_has_promotion(hidden, w.g.d.t::<PromotionType>("PROMOTION_HIDDEN"), true);
+    w.army(p0, from);
+    assert_eq!(w.army(p1, to).len(), 2, "ten defenders: two squads");
     let a = w.g.engage_preview(&w.input()).unwrap();
     assert!(!a.defenders.contains(&hidden));
+    assert!(!a.def_formation.iter().any(|p| p.unit == hidden));
     assert_eq!(a.defenders.len(), defs.len() - 1);
+    // More defenders than a squad's places: one squad fights, the other is the reserve.
     assert!(a.defenders.len() as i32 > a.slots.def());
-    assert_eq!(a.def_formation.len() as i32, a.slots.def());
+    assert!(!a.def_formation.is_empty() && a.def_formation.len() as i32 <= a.slots.def());
+    assert!(a.def_formation.iter().all(|p| w.g.units[p.unit].squad == a.def_squad));
+    assert!(!a.def_reserve.is_empty());
+    assert_eq!(a.def_formation.len() + a.def_reserve.len(), a.defenders.len());
     // A squad that cannot attack there is refused: the defender's.
     let theirs = w.g.units[defs[0]].squad.expect("a squad");
     assert!(w.g.engage_preview(&PreviewInput { squad: Some(theirs), ..w.input() }).is_err());
@@ -171,6 +205,9 @@ fn the_preview_fields() {
     for u in w2.units(w2.p1, "UNIT_WARRIOR", w2.to, 2) {
         w2.g.units[u].damage = 80;
     }
+    let (p0_2, from_2, p1_2, to_2) = (w2.p0, w2.from, w2.p1, w2.to);
+    w2.army(p0_2, from_2);
+    w2.army(p1_2, to_2);
     let b = w2.g.engage_preview(&w2.input()).unwrap();
     assert!(b.def_reserve.is_empty());
     assert!(b.forecast.falls_permille > 900 && b.forecast.falls_permille == b.forecast.wiped_permille, "{:?}", b.forecast);
@@ -179,6 +216,8 @@ fn the_preview_fields() {
     let mut w3 = world_with(false);
     w3.units(w3.p0, "UNIT_AXEMAN", w3.from, 3);
     w3.units(w3.p1, "UNIT_WARRIOR", w3.to, 2);
+    let (p1_3, to_3) = (w3.p1, w3.to);
+    w3.army(p1_3, to_3);
     assert!(w3.g.engage_preview(&w3.input()).is_err());
     let t1 = w3.g.players[w3.p1].team;
     let c = w3.g.engage_preview(&PreviewInput { war: WarTest::DeclareWar(t1), ..w3.input() }).unwrap();
@@ -302,6 +341,10 @@ fn the_forecast_if_is_the_preview_of_the_battle_it_imagines() {
     w.units(p0, "UNIT_ARCHER", from, 2);
     w.units(p1, "UNIT_ARCHER", to, 2);
     w.units(p1, "UNIT_AXEMAN", to, 2);
+    // One squad a side: the forecast forms the attackers by the auto formation, as an Auto squad
+    // of them stands.
+    assert_eq!(w.army(p0, from).len(), 1);
+    assert_eq!(w.army(p1, to).len(), 1);
     let before = state(&w.g);
     let runs = w.g.d.defines.engagement_preview_runs;
     let pv = w.g.engage_preview(&w.input()).unwrap();
@@ -337,10 +380,16 @@ fn the_forecast_if_is_the_preview_of_the_battle_it_imagines() {
     let att: Vec<UnitId> = w.units(p0, "UNIT_AXEMAN", far, 3).into_iter().chain(w.units(p0, "UNIT_HORSEMAN", far, 2)).collect();
     w.units(p1, "UNIT_ARCHER", to, 1);
     let extra = w.units(p1, "UNIT_AXEMAN", beyond, 2);
+    w.army(p0, far);
+    w.army(p1, beyond);
     let alone = w.g.engage_forecast_if(&att, from, to, &[], runs, ForecastSight::Defender, ForecastTurn::Now).unwrap();
     let with = w.g.engage_forecast_if(&att, from, to, &extra, runs, ForecastSight::Defender, ForecastTurn::Now).unwrap();
+    // The extras are a squad of their own: one of the two squads fights, the other is the
+    // reserve, so the plot never falls in one battle.
     assert!(with.falls_permille < alone.falls_permille, "two more defenders: {} vs {}", with.falls_permille, alone.falls_permille);
-    assert_eq!(with.per.iter().filter(|x| x.side == Side::Defender).count(), 3);
+    assert_eq!(with.falls_permille, 0);
+    let n_def = with.per.iter().filter(|x| x.side == Side::Defender).count();
+    assert!(n_def == 1 || n_def == 2, "the archer's squad or the extras': {n_def}");
     let moves: Vec<i32> = att.iter().map(|&u| w.g.units[u].moves).collect();
     let (fx, fy) = w.g.map.xy(from);
     let (tx, ty) = w.g.map.xy(to);
@@ -348,11 +397,19 @@ fn the_forecast_if_is_the_preview_of_the_battle_it_imagines() {
         w.g.unit_set_xy(u, fx, fy, false);
         w.g.units[u].moves = m;
     }
+    // The attackers moved there: the battle the forecast imagined.
+    let pv = w.g.engage_preview(&w.input()).unwrap();
+    assert_eq!(alone, pv.forecast, "the attackers moved there: the battle the forecast imagined");
     for &u in &extra {
         w.g.unit_set_xy(u, tx, ty, false);
     }
+    // The extras moved there too: one squad fights, the other is the reserve, as the forecast
+    // had it. (Which of the two squads fights can differ: the forecast forms the extras into a
+    // squad of their own, off the plot.)
     let pv = w.g.engage_preview(&w.input()).unwrap();
-    assert_eq!(with, pv.forecast, "the units moved there: the battle the forecast imagined");
+    assert_eq!(pv.forecast.falls_permille, 0);
+    assert_eq!(pv.def_formation.len() + pv.def_reserve.len(), 1 + extra.len());
+    assert!(!pv.def_reserve.is_empty());
     // Sight: a plot the attacker does not see is refused for the attacker, not for the defender.
     let mut w = world();
     let (from, to) = (w.from, w.to);
@@ -377,6 +434,8 @@ fn the_forecast_of_waves_carries_the_battle_on() {
     let att = w.units(p0, "UNIT_AXEMAN", from, 3);
     w.units(p1, "UNIT_ARCHER", to, 2);
     w.units(p1, "UNIT_WARRIOR", to, 2);
+    // The defenders one squad: the plot falls when it is wiped out.
+    assert_eq!(w.army(p1, to).len(), 1);
     let before = state(&w.g);
     let one = w.g.engage_forecast_if(&att, from, to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
     let waves = w.g.engage_forecast_waves(&[(att.clone(), from)], to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
@@ -441,10 +500,10 @@ fn forecast_if_timing() {
     }
 }
 
-/// The time of a preview, 6 v 6, 8 v 8 and 10 v 10 (the attacker's slots cut to the size by a
-/// city's defense, the defender's at ten so all of its units fight), and of the auto formation.
-/// `cargo test --release -p ffh-core --test engagement_preview -- --ignored --nocapture
-/// preview_timing`.
+/// The time of a preview, 2 v 2, 4 v 4 and 6 v 6 (one squad a side: every battle is one squad
+/// against one, at most 6 places a side), with three more attackers in a second squad, and of the
+/// auto formation. `cargo test --release -p ffh-core --test engagement_preview -- --ignored
+/// --nocapture preview_timing`.
 #[test]
 #[ignore]
 fn preview_timing() {
@@ -455,21 +514,19 @@ fn preview_timing() {
         }
         t.elapsed().as_secs_f64() * 1000.0 / reps as f64
     };
-    for size in [6usize, 8, 10] {
+    for size in [2usize, 4, 6] {
         let mut w = world();
         let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-        let (x, y) = w.g.map.xy(to);
-        let c = w.g.player_init_city(p1, x, y, true, true);
-        let total = w.g.city_total_defense(c, false);
-        w.g.cities[c].building_defense += (10 - size as i32) * 25 - total;
         let mix = ["UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_HORSEMAN", "UNIT_SWORDSMAN"];
         let pool: Vec<UnitId> = (0..size + 3).map(|i| w.unit(p0, mix[i % mix.len()], from)).collect();
         for i in 0..size {
             w.unit(p1, mix[(i + 1) % mix.len()], to);
         }
+        w.army(p0, from);
+        assert_eq!(w.army(p1, to).len(), 1);
         let ctx = HitCtx::new(from, to);
         let slots = w.g.engage_slots(&ctx);
-        assert_eq!((slots.att() as usize, slots.def()), (size, 10));
+        assert_eq!((slots.att(), slots.def()), (6, 6));
         let inp = w.input();
         let g = &w.g;
         let plan_ms = time(5, &mut || {
