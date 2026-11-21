@@ -407,6 +407,12 @@ pub struct Player {
     /// Not in C++: its units other than heroes that died in the last
     /// [`crate::unit::fallen::RESURRECTION_TURNS`] turns, the Resurrection spell's targets.
     pub fallen: Vec<crate::unit::fallen::FallenUnit>,
+    /// This game's Houses (docs/HOUSES.md): its Houses, in the order they formed.
+    pub houses: Vec<HouseId>,
+    /// The names its Houses took in this game (without "House"; a name is not used twice).
+    pub house_names: Vec<String>,
+    /// The game turn of its last Houses pass in its turn processing (-1: none yet).
+    pub house_turn: i32,
 }
 
 impl Player {
@@ -669,6 +675,9 @@ impl Player {
             world_ritual_pending: None,
             recovering: Vec::new(),
             fallen: Vec::new(),
+            houses: Vec::new(),
+            house_names: Vec::new(),
+            house_turn: -1,
         }
     }
 
@@ -842,6 +851,10 @@ fn reset_player(g: &mut Game, p: PlayerId) {
     // after its crusade ends: left in the slabs, its old armies were orphans).
     for id in old.armies {
         g.armies.remove(id);
+    }
+    // So are its Houses (docs/HOUSES.md; their cities went with its cities).
+    for id in old.houses {
+        g.houses.remove(id);
     }
 
     let (num_players, num_teams) = (g.num_players(), g.num_teams());

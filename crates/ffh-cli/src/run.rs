@@ -93,6 +93,9 @@ impl Controller for Timed {
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.time(|| self.inner.choose_loan_units(g, p, terms))
     }
+    fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
+        self.time(|| self.inner.choose_house_leader(g, p, offer))
+    }
     fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
         self.time(|| self.inner.requisition_unit(g, c, a))
     }
@@ -309,6 +312,9 @@ impl Controller for CppCitizens {
     }
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.inner.choose_loan_units(g, p, terms)
+    }
+    fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
+        self.inner.choose_house_leader(g, p, offer)
     }
     fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
         self.inner.choose_free_promotion(g, p, u, options)
@@ -1114,6 +1120,9 @@ impl Controller for FreeRider {
     }
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.inner.choose_loan_units(g, p, terms)
+    }
+    fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
+        self.inner.choose_house_leader(g, p, offer)
     }
     fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
         self.inner.requisition_unit(g, c, a)

@@ -79,6 +79,8 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("choose_free_promotion", Policy::Blocking),
     ("choose_free_bonus", Policy::Blocking),
     ("choose_lair_outcome", Policy::Blocking),
+    // (docs/HOUSES.md, rule 5: the leader of a House forming)
+    ("choose_house_leader", Policy::Blocking),
     ("hook", Policy::Advisor),
     ("assign_working_plots", Policy::Advisor),
 ];
@@ -479,6 +481,16 @@ impl Controller for HumanController {
             return advice;
         }
         self.block(g, decision::lair_outcome(g, p, u, tier, options, advice))
+    }
+
+    /// Houses (docs/HOUSES.md, rule 5): the leader of a House forming, blocking; the advice is
+    /// the rules' default pick.
+    fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
+        let advice = self.suggest(g, |g| self.advisor.choose_house_leader(g, p, offer));
+        if !g.players[p].human || offer.cards.len() < 2 {
+            return advice;
+        }
+        self.block(g, decision::house_leader(g, p, offer, advice))
     }
 
     /// The cards (docs/CARDS.md): the Spire of the Archmagi's free promotion, blocking.

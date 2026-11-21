@@ -210,6 +210,22 @@ fn short<'a>(name: &'a str, prefix: &str) -> &'a str {
     name.strip_prefix(prefix).unwrap_or(name)
 }
 
+/// Player `p`'s Houses (docs/HOUSES.md): `{"n":3,"foreign":1,"outsider":0,"unhoused":1,
+/// "Friendly":0,"Pleased":1,"Cautious":2,"Annoyed":0,"Furious":0}`.
+fn houses_json(g: &Game, p: PlayerId) -> String {
+    use ffh_core::houses::HouseState;
+    let houses = g.player_houses(p);
+    let mut by = [0usize; 5];
+    for &h in houses {
+        by[HouseState::ALL.iter().position(|&s| s == g.house_state(h)).unwrap_or(0)] += 1;
+    }
+    let foreign = houses.iter().filter(|&&h| g.house_is_foreign(h)).count();
+    let outsider = houses.iter().filter(|&&h| g.houses[h].outsider).count();
+    let unhoused = g.player_unhoused_cities(p).len();
+    let states: Vec<String> = HouseState::ALL.iter().zip(by).map(|(s, n)| format!("\"{}\":{n}", s.name())).collect();
+    format!("{{\"n\":{},\"foreign\":{foreign},\"outsider\":{outsider},\"unhoused\":{unhoused},{}}}", houses.len(), states.join(","))
+}
+
 fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) -> String {
     let d = g.d;
     let hero = d.ty::<PromotionType>("PROMOTION_HERO");
@@ -516,6 +532,8 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .int("health_margin", health_margin)
             .opt_int("min_health_margin", min_health_margin)
             .int("unhealthy_cities", unhealthy_cities)
+            // This game's Houses (docs/HOUSES.md): by state, and the cities in none.
+            .raw("houses", &houses_json(g, p))
             // Diplomacy and conquest.
             .int("met", met)
             .int("wars", wars)

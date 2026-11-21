@@ -41,6 +41,8 @@ pub enum LogMark {
     Kill,
     /// A unit fled or withdrew.
     Retreat,
+    /// About a House (docs/HOUSES.md, rule 11): the client shows it as an alert.
+    House,
 }
 
 /// What became of a world ritual, in its news.
@@ -71,6 +73,8 @@ pub enum LogTag {
     Battle(u32),
     /// A world ritual's news.
     Ritual(RitualNews),
+    /// About this House (docs/HOUSES.md, rule 11).
+    House(crate::ids::HouseId),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -165,6 +169,14 @@ impl GameLog {
             return;
         }
         self.push(LogEntry { at: Some(at), mark, tag, ..LogEntry::new(turn, player.map(|p| p.0), f()) });
+    }
+
+    /// [`GameLog::msg_marked`] with its plot optional.
+    pub fn msg_tagged(&mut self, turn: i32, player: Option<PlayerId>, at: Option<(i32, i32)>, mark: LogMark, tag: LogTag, f: impl FnOnce() -> String) {
+        if !self.enabled {
+            return;
+        }
+        self.push(LogEntry { at, mark, tag, ..LogEntry::new(turn, player.map(|p| p.0), f()) });
     }
 
     /// An untagged message to `audience` (the `audience_*` methods of `Game` compute one).

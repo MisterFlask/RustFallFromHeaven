@@ -49,6 +49,9 @@ pub fn check(g: &Game) {
         fail(format!("the stored control of seas {stale:?} is stale"));
     }
 
+    // This game's Houses (docs/HOUSES.md).
+    check_houses(g);
+
     // Cities: owner lists, plots, population, team and area counters.
     let mut team_cities = vec![0i32; g.num_teams()];
     let mut team_pop = vec![0i32; g.num_teams()];
@@ -350,6 +353,99 @@ pub fn check(g: &Game) {
             if g.city_is_governed(c) && g.cities[c].role.is_none() {
                 fail(format!("governed city {} of player {} has no role", g.cities[c].name, p.0));
             }
+        }
+    }
+}
+
+/// The Houses (docs/HOUSES.md): records and cities agree, a House holds only its owner's cities of
+/// its origin, at most `HOUSE_MAX_CITIES`, never an outpost; a minor leader leads one House at
+/// most and no living player; every perk is a House perk; and after its owner's turn processing
+/// no city is unhoused but those the rules let wait.
+fn check_houses(g: &Game) {
+    let fail = |msg: String| -> ! { panic!("invariant: Houses: {msg} (turn {})", g.game_turn()) };
+    let d = g.d;
+    let max = d.defines.house_max_cities as usize;
+    let mut leaders = Vec::new();
+    for (h, house) in g.houses.iter() {
+        let p = house.owner;
+        let label = g.house_label(h);
+        if house.id != h {
+            fail(format!("{label} has id {:?} in slot {h:?}", house.id));
+        }
+        if !g.player_has_houses(p) {
+            fail(format!("{label} belongs to player {}, which has no Houses", p.0));
+        }
+        if g.players[p].houses.iter().filter(|&&x| x == h).count() != 1 {
+            fail(format!("{label} is not listed once by its owner {}", p.0));
+        }
+        if house.cities.is_empty() {
+            fail(format!("{label} has no city"));
+        }
+        if house.cities.len() > max {
+            fail(format!("{label} has {} cities", house.cities.len()));
+        }
+        for (i, &c) in house.cities.iter().enumerate() {
+            if house.cities[..i].contains(&c) {
+                fail(format!("{label} lists city {c:?} twice"));
+            }
+            let Some(city) = g.cities.get(c) else { fail(format!("{label} lists dead city {c:?}")) };
+            if city.owner != p {
+                fail(format!("{label} of player {} holds {} of player {}", p.0, city.name, city.owner.0));
+            }
+            if city.outpost {
+                fail(format!("{label} holds the outpost {}", city.name));
+            }
+            if city.house != Some(h) {
+                fail(format!("{label} holds {}, whose House is {:?}", city.name, city.house));
+            }
+            if g.city_origin(c) != Some(house.origin) {
+                fail(format!("{label} holds {}, of another origin", city.name));
+            }
+        }
+        if d.leader_heads[house.leader].minor_leader_of.is_none() {
+            fail(format!("{label}'s leader is no minor leader"));
+        }
+        if leaders.contains(&house.leader) {
+            fail(format!("{label}'s leader leads another House"));
+        }
+        leaders.push(house.leader);
+        if g.player_ids().any(|q| g.players[q].alive && g.player_get_leader_type(q) == Some(house.leader)) {
+            fail(format!("{label}'s leader leads a living player"));
+        }
+        let perk = &d.traits[house.perk];
+        if !perk.is_house_perk() || !(1..=3).contains(&perk.house_perk_tier) {
+            fail(format!("{label}'s perk {} is no House perk", d.type_name(house.perk)));
+        }
+    }
+    for p in g.player_ids() {
+        for &h in &g.players[p].houses {
+            if g.houses.get(h).map_or(true, |house| house.owner != p) {
+                fail(format!("player {} lists House {h:?}, not its own", p.0));
+            }
+        }
+        let has = g.player_has_houses(p);
+        let pass = g.players[p].house_turn;
+        let first = d.defines.house_first_cities as usize;
+        let home_house = has && g.player_has_home_house(p);
+        let waiting = if has { g.player_unhoused_home_cities(p).len() } else { 0 };
+        for &c in &g.players[p].cities {
+            let city = &g.cities[c];
+            if let Some(h) = city.house {
+                if !has || city.outpost || g.houses.get(h).map_or(true, |house| !house.cities.contains(&c)) {
+                    fail(format!("{} of player {} names House {h:?}, which does not hold it", city.name, p.0));
+                }
+                continue;
+            }
+            if !has || city.outpost || pass < 0 || city.game_turn_acquired >= pass {
+                continue;
+            }
+            if g.city_is_home(c) && !home_house && waiting < first {
+                continue;
+            }
+            if g.city_origin(c).is_some_and(|o| !g.house_can_find_leader(o)) {
+                continue;
+            }
+            fail(format!("{} of player {} is in no House after its owner's turn (turn {pass})", city.name, p.0));
         }
     }
 }

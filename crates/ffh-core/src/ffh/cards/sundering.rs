@@ -44,9 +44,10 @@ pub const GRUDGE: i32 = -4;
 /// The civilizations that never split.
 const NEVER_SPLIT: [&str; 2] = ["CIVILIZATION_SHEAIM", "CIVILIZATION_INFERNAL"];
 
-/// Is leader `l` in play this game: the leader of a player that is or was alive?
+/// Is leader `l` in play this game: the leader of a player that is or was alive, or of a House
+/// (docs/HOUSES.md: a House's leader leads nothing else)?
 pub fn leader_in_play(g: &Game, l: LeaderHeadType) -> bool {
-    g.player_ids().any(|p| g.players[p].ever_alive && g.player_get_leader_type(p) == Some(l))
+    g.player_ids().any(|p| g.players[p].ever_alive && g.player_get_leader_type(p) == Some(l)) || g.houses.iter().any(|(_, h)| h.leader == l)
 }
 
 /// Free preferred minor leaders of `civ`, in id order. A read-only query: planning and card
