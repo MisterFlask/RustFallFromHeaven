@@ -1,6 +1,6 @@
 // The HD-2D mode's passes (docs/HD2D.md), plugged into the 3D renderer's pipeline as its `ext`
-// (pipeline.js): the sprite cards in the sun's shadow map and the scene, the light shafts and a wide
-// bloom added before the filmic curve, the region moods graded into the display colour, contact
+// (pipeline.js): the sprite cards in the sun's shadow map and the scene, a wide bloom added before
+// the filmic curve, the region moods graded into the display colour, contact
 // shadows, x-ray ghosts and light beams with the overlays, and the tilt-shift as the frame goes to
 // the canvas. Each is timed like the pipeline's own passes (the panel, tools/r3d-perf.mjs).
 
@@ -19,7 +19,6 @@ export function hd2dPrograms(packed) {
     contact: ["hd2d-contact", C + H.SPRITE_VS, C + H.CONTACT_FS],
     ghost: ["hd2d-ghost", C + H.SPRITE_VS, C + H.SPRITE_GHOST_FS],
     beam: ["hd2d-beam", C + H.SPRITE_VS, C + H.BEAM_FS],
-    rays: ["hd2d-rays", FULLSCREEN_VS, C + H.RAYS_FS],
     bright: ["hd2d-bright", FULLSCREEN_VS, H.BRIGHT_FS],
     compose: ["hd2d-compose", FULLSCREEN_VS, H.COMPOSE_FS],
     mood: ["hd2d-mood", FULLSCREEN_VS, C + H.MOOD_FS],
@@ -49,8 +48,6 @@ export class Hd2dPasses {
     const hw = Math.max(1, w >> 1), hh = Math.max(1, h >> 1);
     const qw = Math.max(1, w >> 2), qh = Math.max(1, h >> 2);
     this.t = {
-      rays: texture(gl, hw, hh, F),
-      rays2: texture(gl, hw, hh, F),
       bright: texture(gl, hw, hh, F),
       bloom: texture(gl, qw, qh, F),
       bloom2: texture(gl, qw, qh, F),
@@ -106,35 +103,14 @@ export class Hd2dPasses {
     gl.depthMask(false);
   }
 
-  /** The HDR passes and the compose (into the pipeline's ldrA): light shafts at half resolution,
-   *  a wide bloom at a quarter, then occlusion, glow, bloom and shafts under the filmic curve. */
+  /** The HDR passes and the compose (into the pipeline's ldrA): a wide bloom at a quarter
+   *  resolution, then occlusion, glow and bloom under the filmic curve. (The light shafts that were
+   *  added here went, the owner's call, 2026-11-21.) */
   post(fr, cfg, ao, glow) {
     const pl = this.pl, gl = this.gl;
     const U = fr.uniforms;
     const { hw, hh, qw, qh } = this.size;
     const fx = this.frame ?? { cfg };
-    let rays = null;
-    if ((cfg.rays ?? 0) > 0) {
-      pl.timed("rays", () => {
-        pl.pass(this.p.rays, this.f.rays, hw, hh, {
-          ...U,
-          uShadowMap: pl.shadowMap,
-          uShadowOn: cfg.shadows ? 1 : 0,
-          uCopyX: 0,
-          uMapSize: fx.mapSize,
-          uWrapX: fx.wrapX,
-          uND: pl.t.nd,
-          uTan: fr.tan,
-          uInvView: fr.invView,
-          uFarDepth: fx.farDepth ?? 40,
-          uAspect: pl.w / Math.max(1, pl.h),
-          uBeamZoom: fx.beamZoom ?? 1,
-        });
-        pl.pass(pl.p.blur, this.f.rays2, hw, hh, { uSrc: this.t.rays, uDir: [1 / hw, 0], uSigma: 1.5 });
-        pl.pass(pl.p.blur, this.f.rays, hw, hh, { uSrc: this.t.rays2, uDir: [0, 1 / hh], uSigma: 1.5 });
-      });
-      rays = this.t.rays;
-    }
     let bloom = null;
     if ((cfg.bloom ?? 0) > 0) {
       pl.timed("bloom", () => {
@@ -150,11 +126,9 @@ export class Hd2dPasses {
         uAO: ao ?? pl.t.color,
         uGlow: glow ?? pl.t.emit,
         uBloom: bloom ?? pl.t.emit,
-        uRays: rays ?? pl.t.emit,
         uAOAmount: ao ? cfg.ssao : 0,
         uGlowAmount: glow ? cfg.glow : 0,
         uBloomAmount: bloom ? cfg.bloom : 0,
-        uRaysAmount: rays ? cfg.rays : 0,
         uExposure: fr.exposure,
       });
     });

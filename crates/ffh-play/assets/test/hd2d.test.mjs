@@ -53,9 +53,19 @@ test("standing hill improvements occupy the crown, with five individually ground
     for (const c of cards) {
       assert.ok(c.w < 0.8, "each building fits the plot");
       assert.ok(Math.abs(c.x - x - 0.5) < 0.5 && Math.abs(-c.z - y - 0.5) < 0.5, "inside the hill plot");
-      assert.ok(Math.abs(c.y - world.heightAt(c.x, -c.z)) < 1e-9, "each foot meets its own terrain");
       assert.ok(c.y > oldBase + 0.04, "stands above the old front-edge hill foot");
       assert.ok(world.riverDist(c.x, -c.z) >= RIVER_BANK, "outside the river channel");
+      if (cards.length === 5) {
+        assert.ok(Math.abs(c.y - world.heightAt(c.x, -c.z)) < 1e-9, "each hut's foot meets its own terrain");
+        continue;
+      }
+      // A work's painted ground (a diamond reaching back from the foot, as deep as the card is wide)
+      // lies on the land. At the summit it lay over the ground falling away behind the foot, which
+      // read as floating: its middle stood well over the land, and the whole of it on average.
+      const half = c.w / 2;
+      const over = [[0, 0], [0, 0.5], [0, 1], [-1, 0.5], [1, 0.5]].map(([u, v]) => c.y - world.heightAt(c.x + u * half, -c.z + v * c.w));
+      assert.ok(over[1] < 0.03, `${type}: the middle of its painted ground is on the land (${over[1].toFixed(3)} over it)`);
+      assert.ok(Math.abs(over.reduce((a, b) => a + b) / over.length) < 0.04, `${type}: its painted ground lies on the land on average`);
     }
     if (cards.length === 5) {
       assert.equal(new Set(cards.map((c) => `${c.x},${c.z}`)).size, 5, "five separate buildings");

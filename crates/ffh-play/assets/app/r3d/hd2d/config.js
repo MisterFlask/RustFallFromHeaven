@@ -11,8 +11,7 @@ export const STORE = "ffh.hd2d.config.4";
 
 /** The light: the sprites are painted lit from the upper left, so the sun stands there -- to the
  *  west and a little north of the view (the camera looks north and never turns), about 45 degrees
- *  up. Shadows fall to the lower right, toward the camera; the light shafts come down from the
- *  upper left. */
+ *  up. Shadows fall to the lower right, toward the camera. */
 export const LIGHT = {
   sunDir: [-0.63, 0.7, -0.33],
   sun: [hexLinear("#ffe4c0"), 2.9],
@@ -78,7 +77,7 @@ export function doomOf(counter) {
 
 /** The HD-2D look over the 3D renderer's painterly switches: a lower camera with a wider lens
  *  (tilted toward the horizon), no grid, the painted grade a little richer, more haze in the
- *  distance, and the mode's own passes: tilt-shift, light shafts, region moods, wide bloom, the
+ *  distance, and the mode's own passes: tilt-shift, region moods, wide bloom, the
  *  light beams over mana, contact shadows; `lean` stands the sprite cards up (0) or turns them to
  *  face the camera (1). */
 export const HD2D = {
@@ -106,8 +105,6 @@ export const HD2D = {
   pitch: 32,
   fov: 30,
   tiltShift: 0.3,
-  // (0.6 before the brighter finish: its gamma lifts the shafts' haze too.)
-  rays: 0.45,
   mood: 1,
   landGrade: 1,
   bloom: 0.8,
@@ -126,12 +123,11 @@ export const HD2D = {
 };
 
 export const DEFAULTS_HD2D = { ...DEFAULTS, ...HD2D, preset: "hd2d" };
-export const PRESETS_HD2D = { hd2d: HD2D, plain: { ...PRESETS.plain, tiltShift: 0, rays: 0, mood: 0, landGrade: 0, bloom: 0, beams: 0, borderGlow: 0, townScale: 1, townLight: 0, townClearing: 0, townBanners: 0 } };
+export const PRESETS_HD2D = { hd2d: HD2D, plain: { ...PRESETS.plain, tiltShift: 0, mood: 0, landGrade: 0, bloom: 0, beams: 0, borderGlow: 0, townScale: 1, townLight: 0, townClearing: 0, townBanners: 0 } };
 
 /** The panel rows of the mode's own switches (after the 3D renderer's). */
 export const PANEL_HD2D = [
   ["tiltShift", "Tilt-shift blur", "range", 0, 1, 0.05],
-  ["rays", "Light shafts", "range", 0, 1.5, 0.05],
   ["mood", "Region moods", "range", 0, 1, 0.05],
   ["landGrade", "Muted land palette", "range", 0, 1, 0.05],
   ["bloom", "Wide bloom", "range", 0, 1.5, 0.05],

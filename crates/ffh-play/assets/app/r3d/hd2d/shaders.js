@@ -1,11 +1,10 @@
 // GLSL of the HD-2D mode (docs/HD2D.md): the sprite cards that stand in the 3D world (the isometric
 // renderer's pixel art, facing the camera), their shadows and x-ray ghosts, the light beams over
-// mana and towers, and the post passes the mode adds to the 3D pipeline -- light shafts through the
-// haze, the region moods, a wide bloom and the tilt-shift blur. The 3D renderer's own shaders
+// mana and towers, and the post passes the mode adds to the 3D pipeline -- the region moods, a wide
+// bloom and the tilt-shift blur. The 3D renderer's own shaders
 // (../shaders.js, COMMON) supply the noise, light, shadow and fog helpers.
 
 import { SCENE_OUT } from "../shaders.js";
-import { CLIFF } from "./config.js";
 
 // --------------------------------------------------------------------------------------------
 // Sprite cards
@@ -312,104 +311,17 @@ void main() {
 // --------------------------------------------------------------------------------------------
 // Post passes
 
-/** Light shafts (half resolution), two parts. The sunlit haze: the sun's light scattered along each
- *  view ray through the air near the ground, through the gaps of a high, slowly drifting cloud layer
- *  and past whatever the props' shadow map says stands in the sun's way (anchored to the world:
- *  it holds still when the view pans). Seen from above, though, a ray crosses too little air for
- *  shafts to show, so the beams themselves are painted, as the look target has them: broad soft
- *  beams fanning down from the sun beyond the upper left of the view, brightest near it, over the
- *  far land; their fan turns slowly with the camera's position (a distant layer, not stuck to the
- *  lens) and breathes with the clouds. */
-export const RAYS_FS = `
-in vec2 vUv;
-uniform sampler2D uND;
-uniform vec2 uTan;
-uniform mat4 uInvView;
-uniform float uFarDepth;
-uniform float uAspect;
-uniform float uBeamZoom; // the painted beams fade out as the camera rises (far zooms)
-out vec4 o;
-float noise1(float x) {
-  float i = floor(x), f = fract(x);
-  float u = f * f * (3.0 - 2.0 * f);
-  return mix(hash12(vec2(i, 3.7)), hash12(vec2(i + 1.0, 3.7)), u);
-}
-// The painted beams at screen point uv: a fan from the light beyond the upper left.
-float beams(vec2 uv) {
-  vec2 d = (uv - vec2(-0.18, 1.32)) * vec2(uAspect, 1.0);
-  float r = length(d);
-  float a = atan(d.y, d.x);
-  float ph = uEye.x * 0.012 - uEye.z * 0.006 + uTime * 0.01;
-  float n = noise1(a * 16.0 + ph * 16.0) * 0.6 + noise1(a * 37.0 + ph * 37.0 + 5.0) * 0.4;
-  float b = smoothstep(0.48, 0.78, n);
-  // Strongest near the light and over the upper (far) part of the view.
-  return b * exp(-r * 1.15) * smoothstep(0.15, 0.85, uv.y) * 0.85 * uBeamZoom;
-}
-float gap(vec3 q) {
-  // Where the ray from q to the sun meets the cloud layer (3 plots up).
-  vec2 m = vec2(q.x - uCopyX, -q.z) + vec2(uSunDir.x, -uSunDir.z) * (3.0 - q.y) / max(uSunDir.y, 0.2);
-  m += vec2(uTime * 0.05, uTime * 0.02);
-  // Gaps a plot or two across, so a view ray crosses several shafts and lit columns stand apart
-  // from shaded ones.
-  float n = mnoise(m, 0.42) * 0.6 + mnoise(m + 17.0, 1.1) * 0.4;
-  return smoothstep(0.52, 0.66, n);
-}
-float occl(vec3 q) {
-  if (uShadowOn < 0.5) return 1.0;
-  vec4 sp = uShadowMat * vec4(q, 1.0);
-  vec3 c = sp.xyz / sp.w * 0.5 + 0.5;
-  if (c.x < 0.0 || c.x > 1.0 || c.y < 0.0 || c.y > 1.0 || c.z > 1.0) return 1.0;
-  return c.z - 0.003 > textureLod(uShadowMap, c.xy, 0.0).r ? 0.0 : 1.0;
-}
-void main() {
-  vec4 nd = texture(uND, vUv);
-  float d = nd.w > 0.0 ? nd.w : uFarDepth;
-  vec3 vp = vec3((vUv * 2.0 - 1.0) * uTan * d, -d);
-  vec3 P = (uInvView * vec4(vp, 1.0)).xyz;
-  vec3 E = uEye;
-  vec3 D = P - E;
-  // The slab of haze: from the ground up to 1.6 plots over the land (which stands LAND_UP over
-  // the sea's level: config.js CLIFF -- the haze lies on the land as it did before the land was
-  // lifted, densest at its level).
-  const float LAND_UP = ${CLIFF.toFixed(3)};
-  float t0 = 0.0, t1 = 1.0;
-  if (abs(D.y) > 1e-4) {
-    float ta = (1.6 + LAND_UP - E.y) / D.y, tb = (-0.1 - E.y) / D.y;
-    t0 = clamp(min(ta, tb), 0.0, 1.0);
-    t1 = clamp(max(ta, tb), 0.0, 1.0);
-  }
-  float len = length(D) * (t1 - t0);
-  float painted = beams(vUv);
-  if (len <= 1e-4) { o = vec4(uSunColor * painted * 0.3, 1.0); return; }
-  const int N = 14;
-  float jit = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
-  float s = 0.0;
-  for (int i = 0; i < N; i++) {
-    float t = mix(t0, t1, (float(i) + jit) / float(N));
-    vec3 q = E + D * t;
-    float dens = exp(-max(q.y - LAND_UP, 0.0) * 1.6);
-    s += gap(q) * occl(q) * dens;
-  }
-  s /= float(N);
-  // Forward scattering: brighter looking toward the sun (the upper left of the view).
-  vec3 V = normalize(D);
-  float ph = 0.55 + 0.9 * pow(max(dot(V, uSunDir) * 0.5 + 0.5, 0.0), 3.0);
-  o = vec4(uSunColor * (s * ph * min(len, 6.0) * 0.035 + painted * 0.3), 1.0);
-}`;
-
-/** The HD-2D compose: the 3D compose (occlusion, glow, exposure, filmic) plus the wide bloom and
- *  the light shafts, added in HDR before the filmic curve. */
+/** The HD-2D compose: the 3D compose (occlusion, glow, exposure, filmic) plus the wide bloom,
+ *  added in HDR before the filmic curve. */
 export const COMPOSE_FS = `
 in vec2 vUv;
 uniform sampler2D uColor;
 uniform sampler2D uAO;
 uniform sampler2D uGlow;
 uniform sampler2D uBloom;
-uniform sampler2D uRays;
 uniform float uAOAmount;
 uniform float uGlowAmount;
 uniform float uBloomAmount;
-uniform float uRaysAmount;
 uniform float uExposure;
 out vec4 o;
 vec3 filmic(vec3 x) {
@@ -438,8 +350,6 @@ void main() {
   vec3 col = c.rgb * ao;
   col += texture(uGlow, vUv).rgb * uGlowAmount;
   col += texture(uBloom, vUv).rgb * uBloomAmount;
-  // The shafts lie in the air before the land, not over the figures (keep mask 1).
-  col += texture(uRays, vUv).rgb * uRaysAmount * (c.a > 0.99 ? 0.35 : 1.0);
   col = filmic(col * uExposure);
   o = vec4(pow(col, vec3(1.0 / 2.2)), c.a);
 }`;
@@ -609,7 +519,7 @@ void main() {
     float leaf = smoothstep(55.0, 80.0, hs.x) * (1.0 - smoothstep(150.0, 175.0, hs.x)) * smoothstep(0.05, 0.2, hs.y);
     vec3 dead = mix(sat(col, 0.35), Ld * vec3(1.25, 0.86, 0.6), 0.6);
     col = mix(col, dead, leaf * d * 0.72 * (1.0 - hot));
-    // The sea: by its keep mask (its glints', mostly 0: not a hue, which the light shafts' colour
+    // The sea: by its keep mask (its glints', mostly 0: not a hue, which the grade's colour
     // moves), not the unknown's light parchment (also 0). It dulls to slate first, then goes to a
     // dark blood-red.
     vec2 hs0 = hueSat(src.rgb);
