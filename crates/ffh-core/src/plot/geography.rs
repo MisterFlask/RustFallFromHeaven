@@ -127,6 +127,13 @@ impl Game {
                 self.teams[team].total_land += land_change;
                 // Score v2 reads total_land (docs/SCORE.md).
                 self.score_dirty = true;
+                // Scored land counts owned land plots held long enough (`plot_set_owner`,
+                // `plot_set_ownership_duration`), so a scored plot turning between water and land
+                // enters or leaves it here. C++ changed only the total land, and a scored water plot
+                // made land was later subtracted from scored land it had never been added to.
+                if self.plot_is_ownership_score(p) {
+                    self.player_change_total_land_scored(owner, land_change);
+                }
             }
 
             if recalculate {
@@ -1738,6 +1745,52 @@ mod tests {
         g.score_dirty = false;
         g.team_set_vassal(TeamId(1), TeamId(0), true, false);
         assert!(g.score_dirty, "a new vassal shares its people and land");
+    }
+
+    /// A plot owned long enough to count as scored land enters scored land when it turns from
+    /// water to land, and leaves it when it turns back, so losing it later subtracts only what
+    /// was added.
+    #[test]
+    fn scored_plot_changing_between_water_and_land_keeps_scored_land() {
+        let d = ffh_data::global();
+        let mut g = game_from_ascii(&["....", ".##.", ".#..", "...."], false, false);
+        assign_test_areas(&mut g);
+        let grass = d.t::<TerrainType>("TERRAIN_GRASS");
+        let coast = d.t::<TerrainType>("TERRAIN_COAST");
+        for q in g.map.plot_ids() {
+            g.map.plots[q].terrain_type = Some(if g.plot_is_water(q) { coast } else { grass });
+        }
+        for p in g.player_ids() {
+            g.players[p].id = p;
+            g.players[p].team = TeamId(p.0);
+        }
+        let p0 = PlayerId(0);
+        g.players[p0].alive = true;
+        g.teams[TeamId(0)].alive_count = 1;
+        let threshold = d.defines.ownership_score_duration_threshold;
+
+        // an owned water plot held long enough: scored, but not land
+        let water = at(&g, 2, 1);
+        g.plot_set_owner(water, Some(p0), false, false);
+        g.plot_set_ownership_duration(water, threshold);
+        assert!(g.plot_is_ownership_score(water));
+        assert_eq!(g.players[p0].total_land_scored, 0, "water is not scored land");
+
+        g.plot_set_plot_type(water, PlotType::PLOT_LAND, false);
+        assert_eq!((g.players[p0].total_land, g.players[p0].total_land_scored), (1, 1), "the plot became scored land");
+
+        g.plot_set_owner(water, None, false, false);
+        assert_eq!((g.players[p0].total_land, g.players[p0].total_land_scored), (0, 0), "losing it takes back what was added");
+
+        // a scored land plot sinking leaves scored land
+        let land = at(&g, 1, 2);
+        g.plot_set_owner(land, Some(p0), false, false);
+        g.plot_set_ownership_duration(land, threshold);
+        assert_eq!(g.players[p0].total_land_scored, 1);
+        g.plot_set_plot_type(land, PlotType::PLOT_OCEAN, false);
+        assert_eq!((g.players[p0].total_land, g.players[p0].total_land_scored), (0, 0), "the plot left scored land");
+        g.plot_set_owner(land, None, false, false);
+        assert_eq!(g.players[p0].total_land_scored, 0);
     }
 
     #[test]
