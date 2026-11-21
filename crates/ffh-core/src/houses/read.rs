@@ -164,8 +164,16 @@ impl Game {
         let total: i32 = parts.iter().map(|p| p.value).sum();
         let state = HouseState::of(self.d, total);
         let mut lines: Vec<String> = parts.iter().map(|p| p.label.clone()).collect();
-        let sum: Vec<String> = parts.iter().map(|p| signed(p.value)).collect();
-        lines.push(format!("Opinion: {} = {total}: {}.", sum.join(" "), state.name()));
+        // `+1 + 2 - 3 + 0`: the first signed, then each with its operator.
+        let mut sum = String::new();
+        for (i, p) in parts.iter().enumerate() {
+            match i {
+                0 => sum.push_str(&signed(p.value)),
+                _ if p.value < 0 => sum.push_str(&format!(" - {}", -p.value)),
+                _ => sum.push_str(&format!(" + {}", p.value)),
+            }
+        }
+        lines.push(format!("Opinion: {sum} = {total}: {}.", state.name()));
         lines.push(format!(
             "States: Friendly {} or more, Pleased {} to {}, Cautious {} to {}, Annoyed {} to {}, Furious {} or less.",
             self.d.defines.house_opinion_friendly,

@@ -122,11 +122,11 @@ export function houseCard(x, { mode = "house", reminders = [], open = null, pick
       : null;
   const choose =
     mode === "pick"
-      ? h("button.primary.hchoose", { "data-pick": x.index, onclick: (ev) => (ev.stopPropagation(), pick?.(x.index)) }, `Choose ${name}`)
+      ? h("button.primary.hchoose", { "data-pick": x.index, onclick: (ev) => (ev.stopPropagation(), pick?.(x.index)), "aria-label": `Choose ${name}` }, "Choose")
       : null;
   return h(
-    `div.hcard.${stateClass(x.state)}${x.outsider ? ".outsider" : ""}${x.advisor ? ".advised" : ""}${off ? ".alarm" : ""}`,
-    { "data-house": mode === "house" ? x.id : null, "data-card": mode === "pick" ? x.index : null },
+    `div.hcard${x.outsider ? ".outsider" : ""}${x.advisor ? ".advised" : ""}${off ? ".alarm" : ""}`,
+    { "data-state": stateName(x.state), "data-house": mode === "house" ? x.id : null, "data-card": mode === "pick" ? x.index : null },
     head,
     h("div.hlines", sec.leaning.map((l) => h(`div.hline${l.startsWith("Outsider:") ? ".houtsider" : ""}`, l))),
     perk,
@@ -150,7 +150,7 @@ function pickView(d, send) {
     body: [
       h("div.hpick-head", (o.head ?? []).map((l, i) => h(i ? "p.hpick-culture" : "p.hpick-forms", l))),
       h(`div.hcards.pick.n${cards.length}`, cards),
-      o.reminders?.length ? h("div.decision-keywords", keywordChips(o.reminders)) : null,
+      o.reminders?.length ? h("div.decision-keywords", keywordChips(o.reminders.filter((r) => r.key !== "KEYWORD_OUTSIDER" || o.foreign))) : null,
     ],
   };
 }

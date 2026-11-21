@@ -140,13 +140,22 @@ async function main() {
       try {
         const page = await openGame(browser, server);
         // (9) A House alert: the forming messages of the turn, the newest first kept.
+        // (Shown again from the log, so that it has not faded by the time the slow page is drawn.)
         const alert = await page.evaluate(() => {
-          const ts = [...document.querySelectorAll("#toasts .toast")];
-          const keep = ts.filter((t) => t.classList.contains("house-alert") && !t.classList.contains("more")).pop();
-          for (const t of ts) if (t !== keep) t.remove();
-          return !!keep;
+          document.querySelectorAll("#toasts .toast").forEach((t) => t.remove());
+          const e = (window.ffh.S.messages ?? []).filter((m) => m.mark === "house").pop();
+          if (!e) return false;
+          window.ffh.houses.houseAlerts([e]);
+          // A copy that no toast timer removes (a software frame of the map takes seconds).
+          const t = document.querySelector("#toasts .house-alert");
+          if (!t) return false;
+          const copy = t.cloneNode(true);
+          copy.classList.add("shot-copy");
+          t.after(copy);
+          t.remove();
+          return true;
         });
-        if (alert) await crop(page, ["#toasts .house-alert"], "09-house-alert.png", { pad: 6, maxW: 560 });
+        if (alert) await crop(page, ["#toasts .house-alert.shot-copy"], "09-house-alert.png", { pad: 6, maxW: 560 });
         else console.log("09-house-alert.png: no toast");
         await page.evaluate(() => document.querySelectorAll("#toasts .toast").forEach((t) => t.remove()));
 
@@ -197,6 +206,10 @@ async function main() {
           await until(() => page.evaluate(() => document.querySelectorAll('.modal[data-tag="houses"] .hcard').length === 4), "the Houses screen", 30000);
           await sleep(800);
           await crop(page, ['.modal[data-tag="houses"]'], "04-houses-screen.png", { pad: 0, maxW: 1000 });
+          await page.evaluate(() => document.querySelector('.modal[data-tag="houses"] .hunhoused').scrollIntoView({ block: "center" }));
+          await sleep(300);
+          await crop(page, ['.modal[data-tag="houses"] .hunhoused'], "04b-houses-unhoused.png", { pad: 8, maxW: 1000 });
+          await page.evaluate(() => document.querySelector('.modal[data-tag="houses"] .modal-body').scrollTo(0, 0));
           const sel = `.modal[data-tag="houses"] .hcard[data-house="${st.houses.pleased.id}"] .hopinion`;
           await hover(page, sel);
           await crop(page, [`.modal[data-tag="houses"] .hcard[data-house="${st.houses.pleased.id}"]`, ".richtip:not([hidden])", ".tip-side:not([hidden])"], "05-opinion-tooltip.png", { pad: 6, maxW: 900 });
