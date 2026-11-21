@@ -336,7 +336,7 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
       h("div.bt-kv", h("span.dim", "Their line wiped out"), h("b", pct(fc.line_wiped_permille ?? 0))),
       h(
         "div.bt-kv",
-        { title: "The side whose units lose more HP loses the battle." },
+        { title: "A side loses when all its units in the line fall; else when more of its units fall; else when its units lose more HP." },
         h("span.dim", "You win"),
         h(`b${(fc.attackers_win_permille ?? 0) >= 500 ? ".good" : ""}`, pct(fc.attackers_win_permille ?? 0)),
       ),

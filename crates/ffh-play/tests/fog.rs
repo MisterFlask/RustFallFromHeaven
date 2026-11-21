@@ -308,6 +308,8 @@ fn a_ritual_under_way_is_seen_and_named() {
     let view = wire(&s, Query::View);
     let j = arr(&view, "cities").iter().find(|j| int(j, "id") == mine.0 as i64).expect("our city");
     assert_eq!(j.get("ritual").and_then(Json::as_str), Some(name.as_str()));
+    // Its type too: the 3D map's look for it (r3d/ritual.js).
+    assert_eq!(j.get("ritual_type").and_then(Json::as_str), Some(s.g.d.type_name(project)));
     let warrior = s.g.d.t::<UnitType>("UNIT_WARRIOR");
     s.g.city_push_order(mine, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, false, true);
     let view = wire(&s, Query::View);

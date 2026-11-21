@@ -14,7 +14,7 @@
 //! the same plan always shows the same numbers. A move that declares war previews the battle after
 //! the declaration: the opening's strikes test war as that fight does. It gives each side's
 //! expected units fallen and escaped, the chance the defender's line is wiped out, the chance the
-//! attacker wins (the defenders' units lose more HP: [`super::engage::engage_loser`]) and the
+//! attacker wins (the defenders lose: [`super::engage::engage_verdict`]) and the
 //! chance the plot falls (the defenders lost, their line wiped out with no defender left on the
 //! plot: none in reserve, none that sat out), the chance the attacker's line is wiped out, and per
 //! committed fighter its chance to fall and to escape.
@@ -90,8 +90,8 @@ pub struct Forecast {
     pub wiped_permille: i32,
     pub falls_permille: i32,
     pub repulsed_permille: i32,
-    /// The chance (per mille) the attacker wins: the defenders' units lose more HP (the last
-    /// battle's, for [`Game::engage_forecast_waves`]).
+    /// The chance (per mille) the attacker wins: the defenders lose ([`super::engage::engage_verdict`];
+    /// the last battle's, for [`Game::engage_forecast_waves`]).
     pub won_permille: i32,
     /// Expected units fallen and escaped per side (attacker, defender), x100.
     pub lost_x100: [i32; 2],
@@ -167,7 +167,7 @@ struct SampledBattle {
     end_hp: Vec<i32>,
     sat: Vec<bool>,
     down: [bool; 2],
-    /// The side whose units lost more HP ([`super::engage::engage_loser`]).
+    /// The side that lost ([`super::engage::engage_verdict`]).
     loser: Option<Side>,
 }
 
@@ -425,7 +425,11 @@ impl Game {
             };
             end_hp[map[k]] = e.hp;
         }
-        let loser = super::engage::engage_loser(setup.hp_lost(&start, &end_hp, |i| fate[i] == SampleFate::Withdrew));
+        // A unit a kill could have created that none did never fought (as the real fight counts).
+        let entered: Vec<usize> = out.spawned.iter().filter_map(|sp| sp.unit.map(|u| map[u as usize])).collect();
+        let fought = |i: usize| fate[i] != SampleFate::Off && (i >= n || !setup.is_on_kill(i) || entered.contains(&i));
+        let tally = setup.tally(&start, &end_hp, fought, |i| fate[i] == SampleFate::Fell, |i| fate[i] == SampleFate::Withdrew);
+        let loser = super::engage::engage_verdict(tally).0;
         SampledBattle { fate, end_hp, sat, down: out.down, loser }
     }
 

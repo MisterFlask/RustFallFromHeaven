@@ -8,8 +8,9 @@ applies only to units in an army). Every game fights engagements, the AI-only ga
 the duel); saves made before do not load (the game options changed). When units attack a land plot, they fight a **formation battle** (revision 4, the
 owner's Ogre Battle-style engagements, 2026-10-31, designed in a browser prototype): each side's
 units stand on a grid of three rows by its lanes and act by row and speed for two rounds (three until 2026-11-21);
-the side whose units lose more HP loses the battle; losing defenders outside a city are pushed
-back, and the plot falls when they lost and none of them is left on it. The owner's answers on every FfH combat
+a side loses when all its units in the battle fall, else when more of them fall, else when they
+lose more HP; losing defenders outside a city are pushed back, and the plot falls when they lost
+and none of them is left on it. The owner's answers on every FfH combat
 ability (Q1-Q13) and the ground rules G1-G5 are in docs/COMBAT_INVENTORY.md (its answers about
 rounds, stances and targeting are superseded by revision 4: this document).
 
@@ -501,13 +502,20 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    a turn per unit (Q12), then phase 7's post-battle hook; withdrawn defenders flee (outside a
    city); defenders that lost outside a city are pushed back (step 6); every committed attacker has made its attack (one a turn, Blitz one more, counting
    engagements, bombards and missile strikes) and pays the attack's moves unless it moves in.
-6. **The result** (spec 1.7; the owner's rule, 2026-11-21). **The side whose units lost more HP
-   lost the battle** (`engage_loser`, `Setup::hp_lost`): each unit's HP when the engagement began
-   (before the opening) less its HP at the end, a fallen unit's all of it and a withdrawn one's
-   all it had left (its withdrawal took the place of a killing hit), heals in the battle taken
-   back, a Sentinel's on the defender's side; equal HP lost: no loser. The report keeps each side's
-   HP lost and the loser (`Outcome::hp_lost`, `loser`, and the calculation the screens show,
-   `Outcome::verdict_calc`). **Push-back** (`apply.rs`, step 7b): when the defenders lost outside a
+6. **The result** (spec 1.7; the owner's rules, 2026-11-21). **Who lost** (`engage_verdict` on
+   each side's `Setup::tally`), by the first rule that tells the sides apart:
+   1. a side all of whose units that fought fell loses (both: the next rule);
+   2. the side with more units fallen loses;
+   3. the side that lost more HP loses: each unit's HP when the engagement began (before the
+      opening) less its HP at the end, a fallen unit's all of it and a withdrawn one's all it had
+      left (its withdrawal took the place of a killing hit), heals in the battle taken back.
+
+   None of them: no loser (`DecidedBy::Even`). The units that fought are the committed ones that did not
+   sit out (a unit a kill could have created that none did never fought); a withdrawn unit did
+   not fall. A Sentinel is no unit: it counts in rule 3 only, on the defender's side (a walled city
+   held by its Sentinels alone has no unit to be all fallen). The report keeps each side's HP lost,
+   the loser and the rule (`Outcome::hp_lost`, `loser`, `decided_by`; the screens show
+   `BattleReport::verdict_calc`, the three rules with each side's numbers). **Push-back** (`apply.rs`, step 7b): when the defenders lost outside a
    city, every defender's unit left on the plot (the line's survivors, those that sat out, the
    reserve; units invisible to the attacker are not met and stay) is pushed back to a plot next
    to it: of those every unit of its group could withdraw to (not a foreign city, its domain, one

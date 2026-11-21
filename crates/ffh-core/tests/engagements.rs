@@ -18,7 +18,7 @@ use std::sync::Arc;
 use ffh_core::army::{March, RecruitDest};
 use ffh_core::controller::{AiHook, Controller};
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
-use ffh_core::engagement::report::{BattleLog, BattleReport, LogEvent, LogFate, SatOutWhy};
+use ffh_core::engagement::report::{BattleLog, BattleReport, DecidedBy, LogEvent, LogFate, SatOutWhy};
 use ffh_core::engagement::{EngageResult, Place, Side};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -318,7 +318,7 @@ fn the_plot_falls_to_a_won_battle_with_no_defender_left() {
     }
 }
 
-/// A battle lost by HP does not take the plot, even when no defender is left on it: one healthy
+/// A battle lost by HP does not take the plot: one healthy
 /// warrior with Defense raised so far that it is hardly hurt, against a dying attacker that a
 /// sure withdrawal saves (it loses all the HP it had left). The warrior stays, the attacker
 /// stays; and the same rule holds for every report of the game's battles. Every battle.
@@ -336,7 +336,8 @@ fn a_battle_lost_by_hp_does_not_take_the_plot() {
         let (_, reports) = f.attack(a);
         let r = &reports[0];
         assert_eq!(r.outcome.loser, Some(Side::Attacker), "seed {seed}: {:?}", r.outcome);
-        assert_eq!(r.outcome.loser, ffh_core::engagement::engage_loser(r.outcome.hp_lost.map(i64::from)));
+        assert_eq!((r.outcome.loser, r.outcome.decided_by), ffh_core::engagement::engage_verdict(r.tally()));
+        assert_eq!(r.outcome.decided_by, DecidedBy::Damage, "seed {seed}: nobody fell, the HP decide");
         assert!(!r.outcome.plot_taken && r.outcome.pushed == 0, "seed {seed}");
         assert!(f.alive(d) && f.g.unit_plot(d) == to, "seed {seed}: the winner holds");
         assert!(f.alive(a) && f.g.unit_plot(a) == from, "seed {seed}: the loser stays where it was");
@@ -822,11 +823,13 @@ fn a_marching_recruit_defends_and_keeps_its_march() {
 }
 
 /// The report counts the defender's units still on the plot (its reserve and its line's
-/// survivors), also for a hidden-nationality attack at peace. Every battle.
+/// survivors), also for a hidden-nationality attack at peace. In a city, where nobody is pushed
+/// back. Every battle.
 #[test]
 fn the_report_counts_the_reserve_left() {
     let mut w = world_with(false);
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.city(p1, to, 0);
     for d in w.units(p1, "UNIT_WARRIOR", to, 11) {
         w.g.units[d].damage = 60;
     }
@@ -1080,3 +1083,57 @@ fn a_missile_kill_counts_in_telemetry() {
     assert!(json.contains("\"engage_missile\":{\"kill\":[1,"), "{json}");
 }
 
+
+/// Who lost (docs/ENGAGEMENTS.md, "The result"): the first rule that tells the sides apart, (1)
+/// all of a side's units that fought fell, (2) more of them fell, (3) more HP lost; none: no loser.
+#[test]
+fn the_verdict_is_all_fallen_then_more_fallen_then_more_hp() {
+    use ffh_core::engagement::{engage_verdict, SideTally};
+    let t = |fought, fell, hp_lost| SideTally { fought, fell, hp_lost };
+    // (1) beats (2) and (3): the defenders' two fell, the attackers lost three of five and more HP.
+    assert_eq!(engage_verdict([t(5, 3, 90_000), t(2, 2, 2_000)]), (Some(Side::Defender), DecidedBy::Wiped));
+    assert_eq!(engage_verdict([t(2, 2, 100), t(5, 0, 50_000)]), (Some(Side::Attacker), DecidedBy::Wiped));
+    // Both all fell: (2) decides.
+    assert_eq!(engage_verdict([t(3, 3, 30_000), t(1, 1, 9_000)]), (Some(Side::Attacker), DecidedBy::Deaths));
+    // (2) beats (3): one fell against two, whatever the HP.
+    assert_eq!(engage_verdict([t(5, 1, 40_000), t(5, 2, 10_000)]), (Some(Side::Defender), DecidedBy::Deaths));
+    // (3): as many fell.
+    assert_eq!(engage_verdict([t(5, 1, 40_000), t(5, 1, 10_000)]), (Some(Side::Attacker), DecidedBy::Damage));
+    assert_eq!(engage_verdict([t(5, 0, 0), t(3, 0, 1)]), (Some(Side::Defender), DecidedBy::Damage));
+    // Nothing tells them apart.
+    assert_eq!(engage_verdict([t(4, 1, 700), t(4, 1, 700)]), (None, DecidedBy::Even));
+    // A side with no unit that fought (a walled city held by its Sentinels alone) is not all fallen.
+    assert_eq!(engage_verdict([t(3, 0, 5_000), t(0, 0, 1_000)]), (Some(Side::Attacker), DecidedBy::Damage));
+    // A withdrawn unit did not fall: not all fallen.
+    assert_eq!(engage_verdict([t(2, 1, 9_000), t(1, 0, 3_000)]), (Some(Side::Attacker), DecidedBy::Deaths));
+}
+
+/// Wiping out a wounded line wins, however little HP it had left: six axemen at +400% against six
+/// warriors at 5% HP in a forest (6 slots). Whenever every warrior fell and no axeman did, the
+/// defenders lost by rule 1 and the launcher moved in. Every battle.
+#[test]
+fn wiping_out_a_wounded_line_wins() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
+    for d in w.units(p1, "UNIT_WARRIOR", to, 6) {
+        w.g.units[d].damage = 95;
+    }
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    for &a in &axemen {
+        w.g.unit_change_extra_combat_percent(a, 400);
+    }
+    let mut wiped = 0;
+    for seed in 0..6 {
+        let mut f = w.fork(seed);
+        let (_, reports) = f.attack(axemen[0]);
+        let r = &reports[0];
+        assert_eq!((r.outcome.loser, r.outcome.decided_by), ffh_core::engagement::engage_verdict(r.tally()), "seed {seed}");
+        if r.sides[1].fallen == r.sides[1].committed && r.sides[0].fallen == 0 {
+            wiped += 1;
+            assert_eq!((r.outcome.loser, r.outcome.decided_by), (Some(Side::Defender), DecidedBy::Wiped), "seed {seed}: {:?}", r.outcome);
+            assert!(r.outcome.plot_taken && f.g.unit_plot(axemen[0]) == to, "seed {seed}");
+        }
+    }
+    assert!(wiped > 0, "the axemen never wiped the line out");
+}

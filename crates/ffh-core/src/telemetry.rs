@@ -860,6 +860,7 @@ impl Game {
                             None => "none",
                         },
                     )
+                    .s("by", r.outcome.decided_by.name())
                     .i("att", n_att as i64)
                     .i("def", n_def as i64)
                     .i("att_lost", r.sides[0].fallen as i64)

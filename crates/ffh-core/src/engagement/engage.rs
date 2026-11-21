@@ -29,9 +29,9 @@
 //!    chance first strikes; per pass the coins; per action the miss, the crit, r, a withdrawal,
 //!    the splash's r's and withdrawals (docs/ENGAGEMENTS.md, "RNG").
 //! 5. *Post-battle* ([`super::apply`], with phase 7's post-battle hook,
-//!    [`Game::engage_post_battle_spells`]) and the report ([`super::report`]), telemetry. The side
-//!    whose units lost more HP lost ([`engage_loser`]); the plot falls only when the defenders lost
-//!    and none of them is left on it: then the launching group moves in.
+//!    [`Game::engage_post_battle_spells`]) and the report ([`super::report`]), telemetry. Who lost:
+//!    [`engage_verdict`] (all fallen, then more fallen, then more HP lost); the plot falls only
+//!    when the defenders lost and none of them is left on it: then the launching group moves in.
 //!
 //! **Phase 7 hooks** (plan 6.2, 14): the three hooks are empty in phase 6. Each reads the set-up
 //! and returns [`BattleEffect`]s; none writes `Game` or draws a random number, so the preview can
@@ -60,7 +60,7 @@ use super::arrange::Place;
 use super::more_cards::SentinelSource;
 use super::formation::{self, missile_hit, Fate, Fighter, Formation, Ground, HealSpell, Outcome, Pair, Params, Side, Spell, WonderOutcome};
 use super::pick::WarTest;
-use super::report::{BattleLog, BattleReport, CitySnap, EngageResult, LogFate, Outcome as ReportOutcome, PlotSnap, ReportSide};
+use super::report::{BattleLog, BattleReport, CitySnap, DecidedBy, EngageResult, LogFate, Outcome as ReportOutcome, PlotSnap, ReportSide};
 use super::sink::Sink;
 use super::slots::Slots;
 use super::stats::HitCtx;
@@ -114,7 +114,7 @@ pub struct EngageOutcome {
     pub result: EngageResult,
     /// The attacker moved in.
     pub plot_taken: bool,
-    /// The side whose units lost more HP ([`engage_loser`]; `None`: the same).
+    /// The side that lost ([`engage_verdict`]; `None`: neither).
     pub loser: Option<Side>,
 }
 
@@ -228,18 +228,25 @@ impl Setup {
         self.fighters[i].spawner.is_some()
     }
 
-    /// Each side's HP lost in the engagement (`[attacker, defender]`, centi-HP): each fighter's HP
-    /// `start` when the engagement began (before the opening) less its HP `end` (0 for a fallen
-    /// one, and for one that `withdrew`: its withdrawal took the place of a killing hit), both by
-    /// set-up index; a Sentinel's on the defender's side. A heal in the battle takes back what it
-    /// heals. [`engage_loser`] reads it.
-    pub fn hp_lost(&self, start: &[i32], end: &[i32], withdrew: impl Fn(usize) -> bool) -> [i64; 2] {
-        let mut lost = [0i64; 2];
+    /// Each side's tally of the engagement (`[attacker, defender]`; [`engage_verdict`] reads it):
+    /// its units that fought (`fought`: not sat out, not a unit a kill could have created that none
+    /// did) and of them those that fell (`fell`); and its HP lost, centi-HP: each fighter's HP
+    /// `start` when the engagement began (before the opening) less its HP `end` (0 for a fallen one,
+    /// and for one that `withdrew`: its withdrawal took the place of a killing hit), both by set-up
+    /// index, a heal in the battle taking back what it heals. A Sentinel is no unit: its HP lost
+    /// is the defender's, it is not counted as fighting or falling.
+    pub fn tally(&self, start: &[i32], end: &[i32], fought: impl Fn(usize) -> bool, fell: impl Fn(usize) -> bool, withdrew: impl Fn(usize) -> bool) -> [SideTally; 2] {
+        let mut t = [SideTally::default(); 2];
         for i in 0..self.fighters.len() {
-            let end = if withdrew(i) { 0 } else { end[i] };
-            lost[self.sides[i].index()] += (start[i] - end) as i64;
+            let s = &mut t[self.sides[i].index()];
+            let end = if fell(i) || withdrew(i) { 0 } else { end[i] };
+            s.hp_lost += (start[i] - end) as i64;
+            if i < self.units.len() && fought(i) {
+                s.fought += 1;
+                s.fell += fell(i) as i32;
+            }
         }
-        lost
+        t
     }
 
     /// The set-up's HP of each fighter (the units' from their damage at the set-up: before the
@@ -312,14 +319,37 @@ impl Setup {
     }
 }
 
-/// Who lost an engagement (docs/ENGAGEMENTS.md, "The result"; the owner's rule, 2026-11-21): the
-/// side whose units lost more HP in it (`lost`, [`Setup::hp_lost`]); `None` when both lost the
-/// same. The plot falls only to an attacker whose defenders lost and left no one on it.
-pub fn engage_loser(lost: [i64; 2]) -> Option<Side> {
-    match lost[0].cmp(&lost[1]) {
+/// One side's tally of an engagement ([`Setup::tally`]).
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct SideTally {
+    /// Its units that fought, and of them those that fell.
+    pub fought: i32,
+    pub fell: i32,
+    /// Its HP lost, centi-HP.
+    pub hp_lost: i64,
+}
+
+/// Who lost an engagement and by which rule (docs/ENGAGEMENTS.md, "The result"; the owner's
+/// rules, 2026-11-21), the first that tells the sides apart: (1) a side all of whose units that
+/// fought fell loses (both: on to the next rule); (2) the side with more units fallen loses;
+/// (3) the side that lost more HP loses. `None`, [`DecidedBy::Even`]: none tells them apart. The
+/// plot falls only to an attacker whose defenders lost and left no one on it.
+pub fn engage_verdict(t: [SideTally; 2]) -> (Option<Side>, DecidedBy) {
+    let wiped = t.map(|s| s.fought > 0 && s.fell == s.fought);
+    let loser = |o: std::cmp::Ordering| match o {
         std::cmp::Ordering::Greater => Some(Side::Attacker),
         std::cmp::Ordering::Less => Some(Side::Defender),
         std::cmp::Ordering::Equal => None,
+    };
+    if let Some(l) = loser(wiped[0].cmp(&wiped[1])) {
+        return (Some(l), DecidedBy::Wiped);
+    }
+    if let Some(l) = loser(t[0].fell.cmp(&t[1].fell)) {
+        return (Some(l), DecidedBy::Deaths);
+    }
+    match loser(t[0].hp_lost.cmp(&t[1].hp_lost)) {
+        Some(l) => (Some(l), DecidedBy::Damage),
+        None => (None, DecidedBy::Even),
     }
 }
 
@@ -1062,6 +1092,7 @@ impl Game {
                 sentinels_breached: e.setup.sentinel_range().filter(|&i| matches!(f.fate[i], LogFate::Fell { .. })).count() as i32,
                 hp_lost: post.hp_lost.map(|x| x.clamp(i32::MIN as i64, i32::MAX as i64) as i32),
                 loser: post.loser,
+                decided_by: post.decided_by,
                 pushed: post.pushed,
             },
             log: log.map(Box::new),
@@ -1101,14 +1132,20 @@ impl Game {
             Some(_) => LogMark::Kill,
             None => LogMark::Event,
         };
+        let tally = r.tally();
         let verdict = |side: Side| {
-            let (mine, theirs) = (r.outcome.hp_lost[side.index()], r.outcome.hp_lost[side.other().index()]);
+            let (mine, theirs) = (tally[side.index()], tally[side.other().index()]);
             let word = match loser {
                 Some(l) if l == side => "lost",
                 Some(_) => "won",
                 None => "drawn",
             };
-            format!("{word}, {} HP lost to {}", (mine + 50) / 100, (theirs + 50) / 100)
+            match r.outcome.decided_by {
+                DecidedBy::Wiped if loser == Some(side) => format!("{word}: all {} of yours fell", mine.fought),
+                DecidedBy::Wiped => format!("{word}: all {} of theirs fell", theirs.fought),
+                DecidedBy::Deaths => format!("{word}, {} fell to {}", mine.fell, theirs.fell),
+                _ => format!("{word}, {} HP lost to {}", (mine.hp_lost + 50) / 100, (theirs.hp_lost + 50) / 100),
+            }
         };
         let mut msgs: Vec<(PlayerId, LogMark, String)> = Vec::new();
         for &p in &att.players {

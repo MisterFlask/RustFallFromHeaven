@@ -108,7 +108,7 @@ went wrong", below.)
   requisition picks by rating; the AI-only gates of Commander Join (rating above 50) and Take
   Equipment (rating more than 20 above the holder's). Crusade and loan **force** (was strength)
   is the rating with the combat bonus, shown on the sheet's scale (an Axeman's 40, was 4).
-  Save format 58.
+  Save format 59.
 - **Fixed mana resources.** Map generation assigns every ordinary mana deposit a uniformly
   random sphere from the 17 standard node types, using the map RNG after start normalization
   and far-shore placement. Same seed, same resources. Ice remains special to Letum Frigus.
@@ -623,13 +623,15 @@ flag.
   Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
   battle's hit, against the plot's own defence, as before the formation battles). Save format 10.
   (Who wins and when the plot falls changed on 2026-11-21: the next entry.)
-- **A battle is lost by the side that loses more HP; the losing defenders are pushed back** (the
-  owner's rule, 2026-11-21; docs/ENGAGEMENTS.md, "The engagement", step 6). Each side's HP lost
-  is every one of its units' HP when the engagement began less its HP at the end: a fallen unit's
-  all of it, a withdrawn one's all it had left (its withdrawal took the place of a killing hit),
-  heals in the battle taken back, a city's Sentinels on the defender's side, the opening's
-  defensive strikes and pre-battle damage included. The side that lost more lost the battle (a
-  tie: neither). When the defenders lost outside a city, every defender left on the plot (the
+- **A battle has a loser; the losing defenders are pushed back** (the owner's rules, 2026-11-21;
+  docs/ENGAGEMENTS.md, "The engagement", step 6). The loser is found by the first of three rules
+  that tells the sides apart: (1) a side all of whose units in the battle fell loses; (2) the side
+  with more units fallen loses; (3) the side that lost more HP loses (every one of its units' HP
+  when the engagement began less its HP at the end: a fallen unit's all of it, a withdrawn one's
+  all it had left, as its withdrawal took the place of a killing hit; heals in the battle taken
+  back; a city's Sentinels, which count in this rule only, on the defender's side; the opening's
+  defensive strikes and pre-battle damage included); none: no loser. (The first version that day
+  had rule 3 alone; it let a line that wiped out wounded defenders lose.) When the defenders lost outside a city, every defender left on the plot (the
   line's survivors, those that sat out, the reserve) is pushed back to a plot next to it, the
   farthest from the attacker's plot among those it could withdraw to, a group together with its
   non-combatants; one with nowhere to go stays. The plot falls only when the defenders lost and
@@ -637,11 +639,11 @@ flag.
   the battle emptied (the attackers lost: the next attack walks in). In a city nobody is pushed
   back, and the city falls as before when no defender is left, but only to a won battle. Before:
   there was no winner by damage, and the plot fell whenever no defender was left. Why: the
-  owner's design, a battle won or lost by the damage each side took. The preview and the AI's
+  owner's design, a battle won or lost by what each side lost. The preview and the AI's
   forecasts use the same rule (the chance to win, and the plot falls); the winner of a battle for
   the Dawn Vow is the side that did not lose. A unit that withdraws before taking damage counts
-  as losing all it had, so a fast raider cannot win by chipping a stack and escaping. Save format
-  57.
+  as losing all it had, so a fast raider cannot win by chipping a stack and escaping. Save formats
+  57 and 58.
 - **Unit stats** (docs/UNIT_STATS.md; the owner's design, 2026-11-05). Every land unit type has a
   stat sheet (`stats`: HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed),
   and promotions name the stats they change (`stat_changes`: points and percentages). A physical

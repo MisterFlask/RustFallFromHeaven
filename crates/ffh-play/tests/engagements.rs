@@ -64,9 +64,9 @@ const STAT: &[&str] = &["base_x100", "terms", "total_x100"];
 const PAIR: &[&str] = &["h", "t", "a_x100", "dv_x100", "mean", "ma_x100", "md_x100", "spell_pct", "magic_mean", "a_extra", "dv_extra"];
 const GROUND: &[&str] = &["city", "forest", "hills", "flanking", "rules"];
 const PARAMS: &[&str] = &["bolt_pct", "splash_pct", "first_strike_speed", "extra_action_tier", "extra_actions"];
-const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "pushed", "hp_lost", "loser", "calc", "lines_down", "sides"];
+const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "pushed", "hp_lost", "loser", "decided_by", "calc", "lines_down", "sides"];
 const LINE: &[&str] = &["committed", "sat_out", "fallen", "escaped", "standing"];
-const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "pushed", "hp_lost", "loser", "has_log", "sides"];
+const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "pushed", "hp_lost", "loser", "decided_by", "has_log", "sides"];
 const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "slots", "lanes", "used", "committed", "sat_out", "lost", "lost_types", "escaped", "standing", "shore"];
 const PLAN: &[&str] = &[
     "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "formation", "auto_formation", "reserve", "def_formation", "def_reserve", "summons", "tactics",

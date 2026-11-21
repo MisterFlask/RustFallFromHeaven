@@ -81,8 +81,8 @@
 //        card's Templar) has pass 0
 //   outcome: {plot_taken, city_captured (the city as the attacker's: its id changes with its owner; null), rounds
 //     (fought), defenders_left (on the plot after the battle, in the line or not), pushed (the defender's units a
-//     lost battle pushed back), hp_lost: [attacker, defender] (centi-HP), loser (the side index whose units lost
-//     more HP; null: the same), calc (how the loser was found, a line each), sides: [{committed, sat_out,
+//     lost battle pushed back), hp_lost: [attacker, defender] (centi-HP), loser (the side index that lost; null:
+//     neither), decided_by ("Wiped" | "Deaths" | "Damage" | "Even": the rule that found it), calc (how the loser was found, a line each), sides: [{committed, sat_out,
 //     fallen, escaped, standing} (counts of the units in the line), ...]}
 //   after: [{kind: "Xp", unit, amount} | {kind: "MoveIn", units, city} | {kind: "Flee", unit, to: {x, y}} |
 //          {kind: "PushBack", units, to: {x, y}} (a lost battle outside a city pushed them back) |
@@ -585,9 +585,10 @@ export function fates(log, st) {
 
 /** The battle's result for the viewer: `{kind, ribbon, line, good, calc}`: kind "taken" (the plot
  *  fell), "repulsed" (no attacker stands: worded from their fates, as all fallen are not all
- *  escaped), "held" (the plot holds). The side whose units lost more HP lost (the outcome's
- *  `loser`, `hp_lost`; docs/ENGAGEMENTS.md, "The result"): the ribbon and `good` follow it, the
- *  line names the HP lost, `calc` is how the loser was found (its tooltip). A log without a
+ *  escaped), "held" (the plot holds). The outcome's `loser` and the rule that found it,
+ *  `decided_by` (docs/ENGAGEMENTS.md, "The result": "Wiped" all of a side's units fell, "Deaths"
+ *  more of them fell, "Damage" more HP lost, "Even" none): the ribbon and `good` follow it, the
+ *  line names the rule's numbers, `calc` is how the loser was found (its tooltip). A log without a
  *  `loser` (saved before the rule) is worded from the plot alone. */
 export function resultWords(log) {
   const me = viewerSide(log);
@@ -600,10 +601,20 @@ export function resultWords(log) {
   const [ha, hd] = (o.hp_lost ?? [0, 0]).map(hp);
   const calc = judged ? (o.calc ?? null) : null;
   const pushedLine = o.pushed ? ` ${o.pushed} defender${o.pushed === 1 ? " is" : "s are"} pushed back.` : "";
+  // Why side `l` lost, by the rule that found it.
+  const fell = (l) => o.sides?.[l]?.fallen ?? fs[l].fallen.length;
+  const who = (l) => (l === 1 ? "defenders" : "attackers");
+  const why = (l) => {
+    const by = o.decided_by ?? "Damage";
+    if (by === "Wiped") return `every one of the ${who(l)} in the line fell`;
+    if (by === "Deaths") return `more ${who(l)} fell (${fell(l)} to ${fell(1 - l)})`;
+    return `the ${who(l)} lost more HP (${l === 1 ? hd : ha} to ${l === 1 ? ha : hd})`;
+  };
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   if (o.plot_taken) {
     const head = city ? `${city} falls` : "The plot falls";
     const line = judged
-      ? `${head}: the defenders lost more HP (${hd} to ${ha}) and none is left; the attackers move in.${pushedLine}`
+      ? `${head}: ${why(1)} and none is left; the attackers move in.${pushedLine}`
       : `${head}: no defender is left, and the attackers move in.`;
     return { kind: "taken", good: me === 0, ribbon: me === 0 ? "VICTORY" : "DEFEAT", line, calc };
   }
@@ -616,10 +627,10 @@ export function resultWords(log) {
   const verdict = !judged
     ? ""
     : o.loser === 0
-      ? ` The attackers lost more HP (${ha} to ${hd}): they stay where they are.`
+      ? ` ${cap(why(0))}: they stay where they are.`
       : o.loser === 1
-        ? ` The defenders lost more HP (${hd} to ${ha}), but ${stand} on ${where}${city ? " (nobody is pushed back from a city)" : ""}: it holds.${pushedLine}`
-        : ` Both sides lost ${ha} HP: the plot holds.`;
+        ? ` ${cap(why(1))}, but ${stand} on ${where}${city ? " (nobody is pushed back from a city)" : ""}: it holds.${pushedLine}`
+        : ` Neither side lost more units or HP: the plot holds.`;
   if (!fs[0].standing.length) {
     // Withdrawn attackers stay with their army, afraid ones sat out: only all fallen is wiped out.
     const a = fs[0];
@@ -632,7 +643,7 @@ export function resultWords(log) {
     const line =
       left === 0
         ? o.loser === 1
-          ? `No defender is left on ${where}; the defenders lost more HP (${hd} to ${ha}).${pushedLine}`
+          ? `No defender is left on ${where}; ${why(1)}.${pushedLine}`
           : `No defender is left on ${where}.${verdict}`
         : o.loser === 1
           ? verdict.trim()
