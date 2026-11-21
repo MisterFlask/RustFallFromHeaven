@@ -403,10 +403,10 @@ fn the_forecast_if_is_the_preview_of_the_battle_it_imagines() {
         w.g.unit_set_xy(u, tx, ty, false);
     }
     // The extras moved there too: one squad fights, the other is the reserve, as the forecast
-    // had it. (Which of the two squads fights can differ: the forecast forms the extras into a
-    // squad of their own, off the plot.)
+    // had it (which of the two fights can differ: the forecast forms the extras into a squad of
+    // their own, off the plot). Outside a city a lost battle pushes the reserve back too.
     let pv = w.g.engage_preview(&w.input()).unwrap();
-    assert_eq!(pv.forecast.falls_permille, 0);
+    assert_eq!(pv.forecast.falls_permille, pv.forecast.won_permille);
     assert_eq!(pv.def_formation.len() + pv.def_reserve.len(), 1 + extra.len());
     assert!(!pv.def_reserve.is_empty());
     // Sight: a plot the attacker does not see is refused for the attacker, not for the defender.

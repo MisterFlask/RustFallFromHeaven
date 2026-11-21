@@ -78,7 +78,9 @@ of up to 6 places, kept between battles (`Game::squads`, `Unit::squad`, `Unit::s
   attacking squad `ENGAGEMENT_DEFENSE_PICK_RUNS` (6) times on a private RNG seeded from the battle
   (no draw of the game's), and the one with the best result for the defender fights (the most
   attacker HP lost less defender HP lost, each unit's loss in permille of its HP; ties: the first).
-  The other candidates are the defender's reserve; the plot falls when no defender is left on it.
+  The other candidates are the defender's reserve. When the defending squad loses outside a city,
+  the reserve is pushed back with the line's survivors ("The result"), so one squad's lost battle
+  moves the whole stack off the plot.
 - *The AI* keeps its squads Auto and auto-sorts each body whose squads could be fewer
   (`squad_bodies_to_sort`) at the start and the end of its turn (`ffh-ai/src/squads.rs`).
 

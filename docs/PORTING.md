@@ -126,7 +126,9 @@ flag.
   battle is one squad against one squad (it was up to 8 units a side, 10 on open land, 6 in forest,
   jungle and on hills): the order names the attacking squad (else the strongest); the defenders
   field, of the squads that fought the fewest battles this turn, the one with the best result over
-  `ENGAGEMENT_DEFENSE_PICK_RUNS` (6) battles on a private RNG. Frontage goes: no slots by terrain,
+  `ENGAGEMENT_DEFENSE_PICK_RUNS` (6) battles on a private RNG. With the same day's result rule (a
+  lost battle outside a city pushes every defender on the plot back), one squad's lost battle moves
+  the whole stack off the plot, its reserve squads too. Frontage goes: no slots by terrain,
   feature or hills (`iEngagementSlotsChange`, `ENGAGEMENT_SLOTS_*` gone), no river slots, no slot
   cost for a city's Sentinels (they stand in the defender's front cells on top of its squad,
   displacing its units to the nearest free cell: walls are stronger than before), no Trench slot

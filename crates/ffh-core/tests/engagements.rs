@@ -492,7 +492,9 @@ fn the_reserve_strikes_and_the_catapult_splashes() {
         let (_, reports) = f.attack(cat);
         let r = &reports[0];
         assert_eq!((r.sides[0].committed, r.sides[1].committed), (6, 6));
-        assert_eq!(r.outcome.defenders_left, 6 + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: the squad in reserve and the line's survivors");
+        // The squad in reserve and the line's survivors: on the plot, or pushed back with the
+        // line when it lost (outside a city).
+        assert_eq!(r.outcome.defenders_left + r.outcome.pushed, 6 + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: {:?}", r.outcome);
         let log = r.log.as_ref().unwrap();
         let cat_b = log.fighters.iter().position(|lf| lf.unit == cat).expect("the catapult fights") as u16;
         for ev in &log.events {
