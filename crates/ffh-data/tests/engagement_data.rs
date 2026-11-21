@@ -457,7 +457,7 @@ fn engagement_defines() {
     assert_eq!((x.sentinel_repair_percent, x.siege_bombard_floor_percent), (10, 50));
     // The owner's choice: an even-strength hit takes 20 HP (six kill a frontline unit).
     assert_eq!((x.engagement_base_damage, x.engagement_damage_rand_min, x.engagement_damage_rand_max), (40, 80, 120));
-    assert_eq!((x.engagement_rounds, x.engagement_first_strike_speed), (3, 2));
+    assert_eq!((x.engagement_rounds, x.engagement_first_strike_speed), (2, 2));
     assert_eq!((x.engagement_extra_action_tier, x.engagement_extra_actions), (4, 1));
     assert_eq!((x.engagement_shoot_miss_percent, x.engagement_bombard_miss_percent), (10, 15));
     assert_eq!((x.engagement_crit_damage_percent, x.engagement_charge_bonus), (150, 100));

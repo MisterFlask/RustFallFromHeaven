@@ -521,7 +521,7 @@ fn an_attacker_withdraws_and_stays_in_its_army() {
     }
 }
 
-/// Two sides that can hardly hurt each other fight the three rounds and both lines hold: the plot
+/// Two sides that can hardly hurt each other fight every round and both lines hold: the plot
 /// does not change hands and nobody moves. Every battle.
 #[test]
 fn a_held_line_keeps_the_plot() {

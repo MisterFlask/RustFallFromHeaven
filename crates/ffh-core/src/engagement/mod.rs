@@ -4,7 +4,7 @@
 //!
 //! **Formation battles** (revision 4, the owner's Ogre Battle-style engagements; docs/ENGAGEMENTS.md):
 //! when an army attacks a land plot, each side's units stand on a grid of three rows by its lanes
-//! and act by row, role and speed for three rounds; the plot falls only when no defender is left
+//! and act by row, role and speed for `ENGAGEMENT_ROUNDS` (2) rounds; the plot falls only when no defender is left
 //! on it. Their pure resolver is [`formation`] ([`formation::resolve`]: the fighters on their
 //! grids, the ground, the rounds and passes, the events and the end state; the rules' auto
 //! formation, [`formation::auto_arrange`]), which knows nothing of `Game`.
