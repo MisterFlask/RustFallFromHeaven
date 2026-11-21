@@ -153,7 +153,8 @@ pub fn card_json(v: &Viewer, card: TechType) -> Json {
 /// `revealed` (shown to everyone), `seen` (not revealed, but the human sees it ahead:
 /// `doom_slot_known`) or `hidden`, and for a slot the human knows its card: `card` (its key, or
 /// null for an empty slot), `name`, `help` (the card's effect), `stage` (0-based) and `stages`;
-/// `calc`: the doom clock's lines (`Game::doom_clock_calc`).
+/// `calc`: the counter's change a turn, worked out (`Game::doom_clock_calc`); `reminders`: the
+/// reminder boxes of the Armageddon counter and the Armageddon card.
 pub fn doom_json(v: &Viewer) -> Json {
     let g = v.g;
     doom_json_with(g, |i| v.reveal || g.doom_slot_known(v.h, i))
@@ -193,7 +194,16 @@ pub fn doom_json_with(g: &Game, known: impl Fn(usize) -> bool) -> Json {
         j
     });
     let calc = Json::Arr(g.doom_clock_calc().into_iter().map(Json::from).collect());
-    crate::jobj! { "counter" => g.get_global_counter(), "slots" => Json::Arr(slots.collect()), "calc" => calc }
+    let reminders = crate::view::keywords::reminders(
+        d,
+        ["KEYWORD_ARMAGEDDON_COUNTER", "KEYWORD_ARMAGEDDON_CARD"].map(|k| d.t::<KeywordType>(k)),
+    );
+    crate::jobj! {
+        "counter" => g.get_global_counter(),
+        "slots" => Json::Arr(slots.collect()),
+        "calc" => calc,
+        "reminders" => reminders,
+    }
 }
 
 #[cfg(test)]

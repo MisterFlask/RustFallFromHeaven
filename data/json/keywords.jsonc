@@ -77,5 +77,16 @@
     "description": "TXT_KEY_KEYWORD_GUARD",
     "reminder": "TXT_KEY_KEYWORD_GUARD_REMINDER",
     "implies": ["KEYWORD_CHANNEL", "KEYWORD_COURT"]
+  },
+  // The Armageddon counter (docs/CARDS.md, section 4): the top bar's counter tooltip carries these.
+  {
+    "type": "KEYWORD_ARMAGEDDON_COUNTER",
+    "description": "TXT_KEY_KEYWORD_ARMAGEDDON_COUNTER",
+    "reminder": "TXT_KEY_KEYWORD_ARMAGEDDON_COUNTER_REMINDER"
+  },
+  {
+    "type": "KEYWORD_ARMAGEDDON_CARD",
+    "description": "TXT_KEY_KEYWORD_ARMAGEDDON_CARD",
+    "reminder": "TXT_KEY_KEYWORD_ARMAGEDDON_CARD_REMINDER"
   }
 ]

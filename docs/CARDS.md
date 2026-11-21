@@ -416,7 +416,10 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   change the difference), through `change_global_counter` (doubled by the double-counter option,
   nothing with the counter off). `clock_turns` is `CLOCK_TURNS` (300) x the speed's
   `victory_delay_percent` / 100: alone it fills the counter at turn 300 at Normal. The counter's
-  tooltip shows its rate (`doom_clock_calc`, sent as `me.doom.calc`).
+  tooltip shows its change a turn, worked out (`doom_clock_calc`, sent as `me.doom.calc`:
+  `Per turn: 100 ÷ 300 turns = +0.33.`). How the counter and the cards work is reminder text, in
+  boxes beside the tooltip (keywords `KEYWORD_ARMAGEDDON_COUNTER` and `KEYWORD_ARMAGEDDON_CARD`,
+  sent as `me.doom.reminders`), never in its body.
 - **The cards** are code: `doom::CARDS` holds FFH2's events (Blight, the Four Horsemen as one
   chain, Hellfire, Wrath, Apocalypse), and `doom_cards::CARDS` the new ones. Each card has a key
   `DOOM_<NAME>`, its thresholds, what each stage does, and an optional condition. Its text is
