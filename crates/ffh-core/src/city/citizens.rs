@@ -445,6 +445,9 @@ impl Game {
             unhappiness -= (city.extra_happiness + player.extra_happiness).min(0);
             unhappiness -= self.d.handicaps[self.city_handicap_type(c)].happy_bonus.min(0);
             unhappiness += self.city_vassal_unhappiness(c).max(0);
+            // This game's Houses (docs/HOUSES.md, rule 8): its state and the outsider.
+            let (state, outsider) = self.city_house_happiness_terms(c);
+            unhappiness -= state.min(0) + outsider.min(0);
         }
 
         unhappiness.max(0)
@@ -471,6 +474,9 @@ impl Game {
         happiness += (city.extra_happiness + player.extra_happiness).max(0);
         happiness += self.d.handicaps[self.city_handicap_type(c)].happy_bonus.max(0);
         happiness += self.city_vassal_happiness(c).max(0);
+        // This game's Houses (docs/HOUSES.md, rule 8).
+        let (state, outsider) = self.city_house_happiness_terms(c);
+        happiness += state.max(0) + outsider.max(0);
 
         if city.happiness_timer > 0 {
             happiness += self.d.defines.temp_happy;

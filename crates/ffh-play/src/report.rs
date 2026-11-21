@@ -156,12 +156,14 @@ impl MessageStore {
 /// A message's JSON with what ffh-core says it is, so that a client marks and links it without
 /// reading its wording: `kind: "engagement"` and its `report` (a battle's message), `kind:
 /// "ritual"` and its `verb` (a world ritual's news, docs/CARDS.md), and `mark: "city" | "loss" |
-/// "kill" | "retreat"` (a located message's map marker; absent: an event).
+/// "kill" | "retreat" | "house"` (a located message's map marker; absent: an event); `kind:
+/// "house"` and its `house` (a House's message, docs/HOUSES.md, rule 11: an alert).
 pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
     let j = match e.tag {
         LogTag::None => j,
         LogTag::Battle(id) => j.with("kind", "engagement").with("report", id),
         LogTag::Ritual(news) => j.with("kind", "ritual").with("verb", news.verb()),
+        LogTag::House(h) => j.with("kind", "house").with("house", h.0),
     };
     match e.mark {
         LogMark::Event => j,
@@ -169,6 +171,7 @@ pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
         LogMark::Loss => j.with("mark", "loss"),
         LogMark::Kill => j.with("mark", "kill"),
         LogMark::Retreat => j.with("mark", "retreat"),
+        LogMark::House => j.with("mark", "house"),
     }
 }
 
@@ -180,6 +183,7 @@ pub fn entry_fields_from(j: &Json, e: &mut LogEntry) {
         Some("loss") => LogMark::Loss,
         Some("kill") => LogMark::Kill,
         Some("retreat") => LogMark::Retreat,
+        Some("house") => LogMark::House,
         _ => LogMark::Event,
     };
     e.tag = match s("kind").as_deref() {
@@ -190,6 +194,7 @@ pub fn entry_fields_from(j: &Json, e: &mut LogEntry) {
             Some("completed") => LogTag::Ritual(RitualNews::Completed),
             _ => LogTag::None,
         },
+        Some("house") => j.get("house").and_then(Json::as_i64).and_then(|id| u32::try_from(id).ok()).map_or(LogTag::None, |id| LogTag::House(ffh_core::ids::HouseId(id))),
         _ => LogTag::None,
     };
 }

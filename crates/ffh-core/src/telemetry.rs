@@ -352,6 +352,24 @@ impl Game {
         }
     }
 
+    /// Telemetry: `house_<kind>` counted by `what` for player `p` (`formed`: home / foreign /
+    /// outsider; `state`: the new state).
+    pub(crate) fn tel_house(&self, p: PlayerId, kind: &'static str, what: &'static str) {
+        if !self.telemetry.on() {
+            return;
+        }
+        let turn = self.game_turn();
+        self.telemetry.with(|t| {
+            let key = match kind {
+                "formed" => "house_formed",
+                "state" => "house_state",
+                _ => "house_ended",
+            };
+            t.count(p, key, what, 1);
+            t.event(|| ev(turn, "house", p).s("how", kind).s("what", what).end());
+        });
+    }
+
     /// A marching recruit (docs/ARMIES.md): `sent` (to an army or a garrison; turns: the estimated
     /// march), `arrived`, `diverted`, `stopped` (no city it can reach), `killed` (turns: since it
     /// set out); counted as `march` by kind, the sum the turns.

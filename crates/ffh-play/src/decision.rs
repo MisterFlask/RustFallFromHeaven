@@ -47,6 +47,9 @@ pub enum DecisionKind {
     FreeBonus { city: CityId },
     /// Two random results from the exploration's rolled tier.
     LairOutcome { unit: UnitId },
+    /// Not in C++ (docs/HOUSES.md, rule 5): the leader of a House forming at `city` (its seat);
+    /// the options are the candidates' cards, in the offer's order.
+    HouseLeader { city: CityId },
 }
 
 impl DecisionKind {
@@ -63,6 +66,7 @@ impl DecisionKind {
             DecisionKind::FreePromotion { .. } => "free_promotion",
             DecisionKind::FreeBonus { .. } => "free_bonus",
             DecisionKind::LairOutcome { .. } => "lair_outcome",
+            DecisionKind::HouseLeader { .. } => "house_leader",
         }
     }
 }
@@ -1008,5 +1012,37 @@ pub fn pending(g: &Game, p: PlayerId, events: &[TriggeredId]) -> Pending {
         ai_groups_idle: ai_groups_waiting(g, p),
         crusade_calls: pending_crusade_calls(g, p),
         cast_due: cast_due(g, p),
+    }
+}
+
+/// A House forming (docs/HOUSES.md, rule 5): one option per candidate, its card's lines as the
+/// help (bare, `[NEWLINE]`-separated), the perk's effects as the tip; the head names the cities
+/// and the culture there.
+pub fn house_leader(g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer, advisor: usize) -> Decision {
+    let seat = offer.cities[0];
+    let options = offer
+        .cards
+        .iter()
+        .map(|card| {
+            let label = match &card.epithet {
+                Some(e) => format!("{}, {e}", card.name),
+                None => card.name.clone(),
+            };
+            let mut o = DecisionOption::new(g.d.type_name(card.candidate.leader).to_string(), label);
+            o.help = card.lines.join("[NEWLINE]");
+            o.tip = card.perk_lines.join("[NEWLINE]");
+            o
+        })
+        .collect();
+    Decision {
+        id: 0,
+        player: p,
+        kind: DecisionKind::HouseLeader { city: seat },
+        title: format!("House {} forms", offer.name),
+        text: offer.head(g).join("[NEWLINE]"),
+        options,
+        advisor: Some(advisor).filter(|&i| i < offer.cards.len()),
+        context: city_context(g, seat, None),
+        keywords: Vec::new(),
     }
 }

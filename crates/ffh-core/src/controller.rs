@@ -202,6 +202,13 @@ pub trait Controller: Send + Sync {
         g.loan_default_units(p, terms.strength)
     }
 
+    /// This game's Houses (docs/HOUSES.md, rule 5): the leader player `p` picks for a House
+    /// forming, an index into `offer.cards`. Called in the owner's turn processing. Default: the
+    /// rule-14 scoring ([`crate::houses::house_pick_default`]).
+    fn choose_house_leader(&self, g: &Game, _p: PlayerId, offer: &crate::houses::HouseOffer) -> usize {
+        crate::houses::house_pick_default(g.d, offer)
+    }
+
     /// Choose one of two rolled results in the exploration's tier. Only the chosen result
     /// takes effect. An invalid index falls back to the first offer.
     fn choose_lair_outcome(&self, _g: &Game, _p: PlayerId, _u: UnitId, _tier: crate::ffh::lairs::LairTier, _options: &[crate::ffh::lairs::LairOutcome]) -> usize {

@@ -180,6 +180,8 @@ impl Game {
             }
         }
         self.city_governance_init(c, true);
+        // This game's Houses (docs/HOUSES.md, rule 4): a city now, it joins a House at once.
+        self.house_city_gained(c);
         self.cities[c].ai_choose_production_dirty = true;
         self.player_update_maintenance(p);
         let around = self.outpost_area_plots(c);

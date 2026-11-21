@@ -202,5 +202,56 @@
   "ANARCHY_LENGTH_PERCENT": 50,
   // ADVANCED_START_POINTS: an advanced start's points, before the world size and game speed
   //      percents
-  "ADVANCED_START_POINTS": 600
+  "ADVANCED_START_POINTS": 600,
+  // ==== Houses (docs/HOUSES.md): a civilization's cities in groups of up to four under a minor
+  //      leader whose opinion of the ruler is happiness there ====
+  // HOUSE_MAX_CITIES: the cities a House holds at most
+  "HOUSE_MAX_CITIES": 4,
+  // HOUSE_JOIN_RANGE: a city joins a House whose seat is at most this many plots away
+  "HOUSE_JOIN_RANGE": 8,
+  // HOUSE_FIRST_CITIES: the unhoused home cities its owner holds when its first House forms
+  "HOUSE_FIRST_CITIES": 3,
+  // HOUSE_CANDIDATES: the leaders offered at a House's forming (a foreign House: one more, the
+  //      outsider)
+  "HOUSE_CANDIDATES": 3,
+  // HOUSE_OUTSIDER_HAPPY: happiness in the cities of a House led by an outsider
+  "HOUSE_OUTSIDER_HAPPY": -3,
+  // HOUSE_HAPPY_<state>: happiness in a House's cities by its state
+  "HOUSE_HAPPY_FRIENDLY": 2,
+  "HOUSE_HAPPY_PLEASED": 1,
+  "HOUSE_HAPPY_CAUTIOUS": 0,
+  "HOUSE_HAPPY_ANNOYED": -2,
+  "HOUSE_HAPPY_FURIOUS": -4,
+  // HOUSE_OPINION_<state>: the least opinion of each state (below ANNOYED: Furious)
+  "HOUSE_OPINION_FRIENDLY": 3,
+  "HOUSE_OPINION_PLEASED": 1,
+  "HOUSE_OPINION_CAUTIOUS": -2,
+  "HOUSE_OPINION_ANNOYED": -5,
+  // HOUSE_PERK_TIER_<n>_TURN: a House formed from this turn on (at Normal speed, scaled by the
+  //      game speed) rolls perks of tier n
+  "HOUSE_PERK_TIER_2_TURN": 100,
+  "HOUSE_PERK_TIER_3_TURN": 200,
+  // Opinion parts (rule 7): (a) alignment, (b) religion, (c) sympathy, (d) wars and alignment
+  "HOUSE_OPINION_ALIGNMENT_SAME": 1,
+  "HOUSE_OPINION_ALIGNMENT_STEP": -2,
+  "HOUSE_OPINION_RELIGION_SAME": 2,
+  "HOUSE_OPINION_RELIGION_OTHER": -1,
+  "HOUSE_OPINION_SYMPATHY_WAR": -3,
+  "HOUSE_OPINION_SYMPATHY_PACT": 2,
+  "HOUSE_OPINION_SYMPATHY_OPEN_BORDERS": 1,
+  "HOUSE_OPINION_WAR_SAME_ALIGNMENT": -1,
+  "HOUSE_OPINION_WAR_OPPOSED_ALIGNMENT": 1,
+  // HOUSE_OPINION_WARS_LIMIT: part (d) is kept within minus and plus this
+  "HOUSE_OPINION_WARS_LIMIT": 2,
+  // The rolls (rule 6): a religion's weight, its extra where a forming city has it, no religion's
+  "HOUSE_RELIGION_WEIGHT": 10,
+  "HOUSE_RELIGION_PRESENT_WEIGHT": 30,
+  "HOUSE_RELIGION_NONE_WEIGHT": 20,
+  // A sympathy's weight 5 + 100 x its culture share there; no sympathy's 20 + 100 x the owner's
+  "HOUSE_SYMPATHY_WEIGHT": 5,
+  "HOUSE_SYMPATHY_NONE_WEIGHT": 20,
+  "HOUSE_SYMPATHY_CULTURE_WEIGHT": 100,
+  // The default pick (rule 14): PERK unless Furious now, plus HAPPY x the happiness now
+  "HOUSE_PICK_PERK_VALUE": 60,
+  "HOUSE_PICK_HAPPY_VALUE": 30
 }

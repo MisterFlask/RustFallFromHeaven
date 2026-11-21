@@ -7,6 +7,7 @@
 pub mod area;
 pub mod army;
 pub mod governors;
+pub mod houses;
 pub mod city;
 pub mod controller;
 pub mod crusade;

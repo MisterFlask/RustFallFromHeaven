@@ -208,6 +208,10 @@ pub fn happy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     add_part(&mut out, "buildings", player.building_happiness);
     add_part(&mut out, "other", city.extra_happiness + player.extra_happiness);
     add_part(&mut out, "difficulty", g.d.handicaps[g.city_handicap_type(c)].happy_bonus);
+    // This game's Houses (docs/HOUSES.md, rule 8): `House Aldric is Pleased`.
+    for (label, n) in g.city_house_happiness_parts(c) {
+        add_part(&mut out, &label, n);
+    }
     if city.happiness_timer > 0 {
         add_part(&mut out, &format!("past events ({} turns)", city.happiness_timer), g.d.defines.temp_happy);
     }
@@ -250,6 +254,11 @@ pub fn unhappy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     step(&mut out, "defied resolution", Some(g.city_defy_resolution_percent_anger(c, 0)), 0);
     step(&mut out, "war weariness", Some(g.city_war_weariness_percent_anger(c)), 0);
     step(&mut out, "being a vassal", None, g.city_vassal_unhappiness(c).max(0));
+    // This game's Houses (docs/HOUSES.md, rule 8): `House Aldric is Annoyed`, `Ruled by an
+    // outsider`.
+    for (label, n) in g.city_house_happiness_parts(c) {
+        step(&mut out, &label, None, -n.min(0));
+    }
     for civic in d.civics.keys() {
         let label = format!("wants {}", crate::names::display(d, civic));
         step(&mut out, &label, Some(g.player_get_civic_percent_anger(owner, civic, false)), 0);
@@ -435,6 +444,14 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         // The terms the totals are made of (labels and counts, each list sums to its total).
         "happy_parts" => parts_json(&happy_parts(g, c)),
         "unhappy_parts" => parts_json(&unhappy_parts(g, c)),
+        // This game's Houses (docs/HOUSES.md): the city's House, its line and how its happiness
+        // is worked out (`calc`); null in no House.
+        "house" => city.house.filter(|&h| g.houses.contains(h)).map(|h| crate::jobj! {
+            "id" => h.0,
+            "line" => g.city_house_line(c).unwrap_or_default(),
+            "happiness" => g.city_house_happiness(c),
+            "calc" => Json::Arr(g.house_opinion_calc(h).into_iter().map(Json::from).collect()),
+        }),
     };
     let health = crate::jobj! {
         "good" => g.city_good_health(c),

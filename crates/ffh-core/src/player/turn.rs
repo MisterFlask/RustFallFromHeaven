@@ -218,6 +218,9 @@ impl Game {
         // This game's fleets (docs/NAVAL.md, 7.2): their standing orders, with the moves their
         // owner left them (after its own orders: an order it gave this turn is not undone).
         self.player_fleet_stations(p);
+        // This game's Houses (docs/HOUSES.md, rule 4): the unhoused cities join or form Houses
+        // (the pick through the controller), and each change of a House's state is told.
+        self.player_houses_turn(p);
         // This game's governors (docs/GOVERNORS.md): the cities in the mode the civics give.
         self.player_governance_turn(p);
         // This game's armies: the requisition, before the cities produce (a new requisition order

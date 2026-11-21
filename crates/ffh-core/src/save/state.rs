@@ -54,8 +54,15 @@ persist_struct!(RowActions { kind, count });
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote, ArmyId, SeaId, SquadId,
+    PlayerVote, ArmyId, SeaId, SquadId, HouseId,
 );
+
+// ---- Houses (docs/HOUSES.md) ----
+use crate::houses::{House, HouseState};
+persist_enum!(HouseState { 0 => Friendly, 1 => Pleased, 2 => Cautious, 3 => Annoyed, 4 => Furious });
+persist_struct!(House {
+    id, owner, name, leader, origin, alignment, religion, sympathy, perk, outsider, formed_turn, cities, told_state,
+});
 
 use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Squad, SquadBody, Station};
 persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, unsupplied_turns, domain, station, carried });
@@ -342,9 +349,9 @@ persist_struct!(CrusadeReport {
     id, kind, target, start_turn, end_turn, reason, pool, wealth, delivered, engaged, refusals, lenders,
 });
 persist_enum!(Audience { 0 => Tools, 1 => Everyone, 2 => Players(players) });
-persist_enum!(LogMark { 0 => Event, 1 => City, 2 => Loss, 3 => Kill, 4 => Retreat });
+persist_enum!(LogMark { 0 => Event, 1 => City, 2 => Loss, 3 => Kill, 4 => Retreat, 5 => House });
 persist_enum!(RitualNews { 0 => Began, 1 => Abandoned, 2 => Completed });
-persist_enum!(LogTag { 0 => None, 1 => Battle(report), 2 => Ritual(news) });
+persist_enum!(LogTag { 0 => None, 1 => Battle(report), 2 => Ritual(news), 3 => House(house) });
 // `LogEntry::at` is presentation only and not saved (it reads back as `None`), so the entry is
 // written by hand rather than with `persist_struct!`.
 impl Persist for LogEntry {
@@ -471,7 +478,7 @@ persist_struct!(City {
     ai_emphasize_avoid_unhealthy_citizens_count, recruit_default, direct_rule, role, role_overridden,
     specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
-    outpost, lane_cut_turns, lane,
+    outpost, lane_cut_turns, lane, house,
 });
 
 persist_struct!(Player {
@@ -530,7 +537,7 @@ persist_struct!(Player {
     tributes, armies, army_count,
     governor_priorities, once_spells, card_traits, alignment_attitude, research_path,
     world_ritual_completions, world_ritual_refunds, world_spell_casts, tithe_target,
-    world_ritual_pending, recovering, fallen,
+    world_ritual_pending, recovering, fallen, houses, house_names, house_turn,
 });
 
 persist_struct!(Team {
