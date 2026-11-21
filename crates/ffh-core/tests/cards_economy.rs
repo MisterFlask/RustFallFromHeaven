@@ -283,17 +283,18 @@ fn agares_well_gives_the_chosen_mana_and_moves_the_counter() {
     let (mut g, p, c) = game();
     let d = g.d;
     card(&mut g, p, "TECH_CARD_AGARES_WELL");
-    let before = g.get_global_counter();
+    // In raw points (`global_counter`): the percentage rounds.
+    let before = g.global_counter;
     let b = build(&mut g, c, "BUILDING_AGARES_WELL");
     // The default controller takes the first choice: Air.
     let air = d.t::<BonusType>("BONUS_MANA_AIR");
     assert_eq!(g.cities[c].free_bonus_choices, vec![(b, air)]);
     assert!(g.city_has_bonus(c, air));
-    assert_eq!(g.get_global_counter(), before + 3);
+    assert_eq!(g.global_counter, before + 3);
     g.city_set_num_real_building(c, b, 0);
     assert!(!g.city_has_bonus(c, air), "gone with the Well");
     assert!(g.cities[c].free_bonus_choices.is_empty(), "chosen again if built again");
-    assert_eq!(g.get_global_counter(), before);
+    assert_eq!(g.global_counter, before);
 }
 
 #[test]

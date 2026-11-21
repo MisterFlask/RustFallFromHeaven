@@ -792,8 +792,13 @@ impl Game {
             }
             // setAlignment: plain store (+ UI dirty bit)
             self.players[p].alignment = d.leader_heads[leader].alignment;
-            // CvGame::changeGlobalCounterLimit
-            self.global_counter_limit += df.global_counter_limit_per_player;
+            // CvGame::changeGlobalCounterLimit. Not in C++ (the owner's decision, 2026-11-21, with
+            // the doom clock): only the players of the game's start raise the limit. A player
+            // born later (the Armageddon deck's civilizations, the Sundering, revolts) would
+            // lower the counter's percentage, so each birth would put Armageddon off.
+            if !self.final_initialized {
+                self.global_counter_limit += df.global_counter_limit_per_player;
+            }
             // FfH: End Add
 
             self.player_update_max_anarchy_turns(p);

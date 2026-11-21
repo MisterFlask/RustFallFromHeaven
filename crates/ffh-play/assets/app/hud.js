@@ -12,6 +12,7 @@ import { renderSpectatorBar, renderAutoplayBar, flagsView } from "./tools.js";
 import { isoSkin, isoIcon } from "./isoui.js";
 import { effectsOf, partsList } from "./infotips.js";
 import { remindersNode } from "./keywords.js";
+import { calcTip } from "./calc.js";
 import { battleLine, battleLinks } from "./engagements.js";
 import { castTargeted, openPlacement, currentMode } from "./units.js";
 import { casterLine, castsDue } from "./ritual_rows.js";
@@ -483,7 +484,8 @@ function placeButton(a, name, yours) {
 
 /** The Armageddon counter's tooltip: the counter, and the Armageddon deck's slots as the player
  *  knows them (`me.doom`, docs/CARDS.md): a slot's card once revealed (or seen ahead), with its
- *  effect; fired slots marked; the others hidden. */
+ *  effect; fired slots marked; the others hidden. Under the title, the doom clock's lines
+ *  (`doom.calc`). */
 export function doomTip(m) {
   const d = m.doom;
   const head = h("div.tip-title", `Armageddon counter ${m.armageddon}`);
@@ -500,7 +502,7 @@ export function doomTip(m) {
       known && s.card && s.help ? h("div.doom-help", markup(s.help)) : null,
     );
   });
-  return [head, h("div.doom-slots", rows), h("div.tip-hint", "A card is revealed to every player when the counter is within 5 of its slot, and plays when the counter reaches it.")];
+  return [head, calcTip(d.calc), h("div.doom-slots", rows), h("div.tip-hint", "A card is revealed to every player when the counter is within 5 of its slot, and plays when the counter reaches it.")];
 }
 
 /** The top bar's gold tooltip: the treasury and where the gold rate comes from. */

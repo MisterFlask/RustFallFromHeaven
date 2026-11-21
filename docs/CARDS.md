@@ -411,6 +411,12 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   its slot. A card whose `valid` fails then is dealt again from its slot's cards, or the slot
   stays empty.
 - **Firing:** once, when the counter first reaches the slot (`doom_do_turn`, each game turn).
+- **The clock** (`doom_clock_tick`, each game turn just before `doom_do_turn`): the counter rises
+  by the clock's share of its limit, `limit x turns / clock_turns` to date (integer, the turn's
+  change the difference), through `change_global_counter` (doubled by the double-counter option,
+  nothing with the counter off). `clock_turns` is `CLOCK_TURNS` (300) x the speed's
+  `victory_delay_percent` / 100: alone it fills the counter at turn 300 at Normal. The counter's
+  tooltip shows its rate (`doom_clock_calc`, sent as `me.doom.calc`).
 - **The cards** are code: `doom::CARDS` holds FFH2's events (Blight, the Four Horsemen as one
   chain, Hellfire, Wrath, Apocalypse), and `doom_cards::CARDS` the new ones. Each card has a key
   `DOOM_<NAME>`, its thresholds, what each stage does, and an optional condition. Its text is

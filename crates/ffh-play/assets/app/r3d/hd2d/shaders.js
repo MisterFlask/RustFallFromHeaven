@@ -33,6 +33,9 @@ in vec4 iScale;
 in vec4 iTint;
 in vec4 iTeam;
 in vec4 aExtra;
+// (A draped card, flag 64 -- hd2d/sprites.js DRAPE_FLAG: each vertex's place in the world, and how
+// far above it, in the card's height, it stands. The painted ground lies on the land.)
+in vec4 aWorld;
 uniform float uMode;
 uniform float uLean;
 uniform float uIdle;
@@ -101,6 +104,16 @@ void main() {
     right = vec3(-s.y, 0.0, s.x);
     p = base + right * (ax * w + sway) + vec3(0.0, y * h, 0.0);
     pu = p;
+    vCard = aPos.xy;
+  } else if ((flags & 64) != 0) {
+    // Draped: the painted ground below the art's diamond's corners lies on the land at the places
+    // the dressing measured (aWorld.w 0), the rest stands from those corners (aWorld.w its height
+    // over them). Its depth: an upright card's above the corners, the ground's (pulled a little
+    // toward the eye, over the terrain's mesh) below them.
+    vec3 g = aWorld.xyz + vec3(uCopyX, 0.0, 0.0);
+    p = g + up * (aWorld.w * h);
+    pu = g + vec3(0.0, aWorld.w * h, 0.0);
+    pu += normalize(uEye - pu) * (iTeam.a + 0.03);
     vCard = aPos.xy;
   } else {
     p = base + right * (ax * w + sway) + up * (y * h);

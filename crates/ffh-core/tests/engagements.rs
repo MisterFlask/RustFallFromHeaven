@@ -563,7 +563,7 @@ fn an_attacker_withdraws_and_stays_in_its_army() {
     }
 }
 
-/// Two sides that can hardly hurt each other fight the three rounds and both lines hold: the plot
+/// Two sides that can hardly hurt each other fight every round and both lines hold: the plot
 /// does not change hands and nobody moves. Every battle.
 #[test]
 fn a_held_line_keeps_the_plot() {
@@ -577,7 +577,7 @@ fn a_held_line_keeps_the_plot() {
     let mut f = w.fork(1);
     let (_, reports) = f.attack(a);
     let r = &reports[0];
-    assert_eq!((r.outcome.result, r.outcome.rounds), (EngageResult::Held, 3));
+    assert_eq!((r.outcome.result, r.outcome.rounds), (EngageResult::Held, f.g.d.defines.engagement_rounds));
     assert!(!r.outcome.plot_taken && f.alive(a) && f.alive(d));
     assert_eq!(f.g.unit_plot(d), to);
 }

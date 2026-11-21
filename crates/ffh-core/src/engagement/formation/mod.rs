@@ -288,13 +288,13 @@ pub struct Params {
 }
 
 impl Default for Params {
-    /// The spec's values (revision 4).
+    /// The spec's values (revision 4; two rounds since 2026-11-21, as `ENGAGEMENT_ROUNDS`).
     fn default() -> Params {
         Params {
             base_damage: 40,
             rand_min: 80,
             rand_max: 120,
-            rounds: 3,
+            rounds: 2,
             first_strike_speed: 2,
             shoot_miss_pct: 10,
             bombard_miss_pct: 15,

@@ -7,7 +7,7 @@ applies only to units in an army). Every game fights engagements, the AI-only ga
 `ffh autoplay`, `ffh-stress` and `ai_metrics.py` too (AI measurements from before 2026-11-03 are of
 the duel); saves made before do not load (the game options changed). When units attack a land plot, they fight a **formation battle** (revision 4, the
 owner's Ogre Battle-style engagements, 2026-10-31, designed in a browser prototype): each side's
-units stand on a grid of three rows by its lanes and act by row and speed for three rounds;
+units stand on a grid of three rows by its lanes and act by row and speed for two rounds (three until 2026-11-21);
 the side whose units lose more HP loses the battle; losing defenders outside a city are pushed
 back, and the plot falls when they lost and none of them is left on it. The owner's answers on every FfH combat
 ability (Q1-Q13) and the ground rules G1-G5 are in docs/COMBAT_INVENTORY.md (its answers about
@@ -256,7 +256,7 @@ the view and the client read these.
 - Anti-flank: whatever a flanker can reach (with any of its actions), anti-flanking units
   in that reach are taken first.
 
-**Order.** `ENGAGEMENT_ROUNDS` (3) rounds; in each, pass k (k from 1 to the most actions any unit
+**Order.** `ENGAGEMENT_ROUNDS` (2) rounds (3 until 2026-11-21, the owner's decision); in each, pass k (k from 1 to the most actions any unit
 on the field has from its row at the round's start) lets every unit on the field with at least k
 actions from its current row act once. Within a pass the faster act first, equal speeds by a coin
 each mover draws at the pass's start (`0..65535`: the prototype's `2^20` does not fit the game's
@@ -533,7 +533,7 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    the report.
 
 It never sets the duel's combat state (`combat_unit`, the attack plot, combat timers), and nothing
-outlives the call. Every loop is bounded (three rounds, passes by the most actions, finite lists),
+outlives the call. Every loop is bounded (`ENGAGEMENT_ROUNDS` rounds, passes by the most actions, finite lists),
 so every engagement ends; a turn holds at most `1 + Blitz` engagements per unit in a pool, since
 each spends an attack of every committed unit.
 

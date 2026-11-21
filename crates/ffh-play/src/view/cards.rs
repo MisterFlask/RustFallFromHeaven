@@ -152,7 +152,8 @@ pub fn card_json(v: &Viewer, card: TechType) -> Json {
 /// counter off; else `{counter, slots}`, each slot `{threshold, state}` with `state` `fired`,
 /// `revealed` (shown to everyone), `seen` (not revealed, but the human sees it ahead:
 /// `doom_slot_known`) or `hidden`, and for a slot the human knows its card: `card` (its key, or
-/// null for an empty slot), `name`, `help` (the card's effect), `stage` (0-based) and `stages`.
+/// null for an empty slot), `name`, `help` (the card's effect), `stage` (0-based) and `stages`;
+/// `calc`: the doom clock's lines (`Game::doom_clock_calc`).
 pub fn doom_json(v: &Viewer) -> Json {
     let g = v.g;
     doom_json_with(g, |i| v.reveal || g.doom_slot_known(v.h, i))
@@ -191,7 +192,8 @@ pub fn doom_json_with(g: &Game, known: impl Fn(usize) -> bool) -> Json {
         }
         j
     });
-    crate::jobj! { "counter" => g.get_global_counter(), "slots" => Json::Arr(slots.collect()) }
+    let calc = Json::Arr(g.doom_clock_calc().into_iter().map(Json::from).collect());
+    crate::jobj! { "counter" => g.get_global_counter(), "slots" => Json::Arr(slots.collect()), "calc" => calc }
 }
 
 #[cfg(test)]

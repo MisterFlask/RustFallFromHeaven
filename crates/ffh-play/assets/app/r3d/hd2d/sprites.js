@@ -157,6 +157,11 @@ export const IDLE = {
 export const IDLE_FRAME = { w: 160, h: 128, n: 4 };
 /** The card flag of an idle strip (iScale.w; SPRITE_VS). */
 export const IDLE_FLAG = 32;
+/** A card drawn draped (SPRITE_VS): its record's `drape` is a grid of vertices in the world
+ *  (dress.js `drapeGrid`), drawn as triangles of their own rather than as an instanced quad. */
+export const DRAPE_FLAG = 64;
+/** A draped vertex: aPos (3), aWorld (4), then the card's instance floats. */
+const DRAPED_FLOATS = 7 + FLOATS;
 
 /** A figure's card over the idle frame instead of its sprite (`info`, the sprite's size): the frame
  *  is wider and taller, the sprite in it centred across and standing on its foot, so the figure
@@ -463,14 +468,19 @@ export class SpriteLayer {
 
   build(name) {
     const gl = this.gl;
-    const list = this.records[name];
+    let list = this.records[name];
     {
       // The array sized once for every sprite these records ask for.
       const fresh = new Set();
-      for (const r of list) if (r.key && !this.atlas.entries.has(r.key)) fresh.add(r.key);
+      for (const r of this.records[name]) if (r.key && !this.atlas.entries.has(r.key)) fresh.add(r.key);
       let layers = 0;
       for (const k of fresh) layers += this.atlas.layersOf(k);
       if (layers) this.atlas.reserve(this.atlas.next + layers);
+    }
+    if (name === "static") {
+      // The draped cards (hill works) go in their own set, drawn as triangles.
+      this.buildDraped(list.filter((r) => r.drape));
+      list = list.filter((r) => !r.drape);
     }
     const arr = new Float32Array(list.length * FLOATS);
     let n = 0;
@@ -518,6 +528,51 @@ export class SpriteLayer {
     }
   }
 
+  /** The draped cards as triangles: each cell of a card's grid two, each vertex carrying its
+   *  place (aPos: the card's u - 0.5 and y; aWorld) and the card's instance floats. */
+  buildDraped(list) {
+    const gl = this.gl;
+    const out = [];
+    for (const r of list) {
+      const e = this.atlas.get(r.key);
+      if (!e) continue;
+      const flags = (r.fade ? 8 : 0) | DRAPE_FLAG;
+      const team = r.team ?? [1, 1, 1];
+      const vis = r.vis ? [r.vis[0], r.vis[1], 1] : [0, 0, 0];
+      const inst = [r.x, r.y, r.z, e.layer, r.w, r.h, r.phase ?? 0, flags, e.u, e.v, r.id ?? 0, r.glow ?? 0, team[0], team[1], team[2], r.bias ?? 0, r.anchor ?? 0.5, ...vis];
+      const { cols, rows, v } = r.drape;
+      const vert = (i, j) => {
+        const k = (j * cols + i) * 6;
+        out.push(v[k] - 0.5, v[k + 1], 0, v[k + 2], v[k + 3], v[k + 4], v[k + 5], ...inst);
+      };
+      for (let j = 0; j + 1 < rows; j++) {
+        for (let i = 0; i + 1 < cols; i++) {
+          vert(i, j); vert(i + 1, j); vert(i + 1, j + 1);
+          vert(i, j); vert(i + 1, j + 1); vert(i, j + 1);
+        }
+      }
+    }
+    let b = this.bufs.draped;
+    if (!b) {
+      b = this.bufs.draped = { vao: gl.createVertexArray(), ibuf: gl.createBuffer(), n: 0, verts: true };
+      gl.bindVertexArray(b.vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, b.ibuf);
+      const stride = DRAPED_FLOATS * 4;
+      gl.enableVertexAttribArray(ATTR.aPos);
+      gl.vertexAttribPointer(ATTR.aPos, 3, gl.FLOAT, false, stride, 0);
+      gl.enableVertexAttribArray(ATTR.aWorld);
+      gl.vertexAttribPointer(ATTR.aWorld, 4, gl.FLOAT, false, stride, 12);
+      ["iPosRot", "iScale", "iTint", "iTeam", "aExtra"].forEach((a, k) => {
+        gl.enableVertexAttribArray(ATTR[a]);
+        gl.vertexAttribPointer(ATTR[a], 4, gl.FLOAT, false, stride, 28 + k * 16);
+      });
+      gl.bindVertexArray(null);
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, b.ibuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(out), gl.DYNAMIC_DRAW);
+    b.n = out.length / DRAPED_FLOATS;
+  }
+
   /** Draws set `name` (each copy of the map in `copies`) with `prog`, which is in use. */
   draw(prog, name, copies) {
     const b = this.bufs[name];
@@ -526,7 +581,8 @@ export class SpriteLayer {
     gl.bindVertexArray(b.vao);
     for (const copy of copies) {
       prog.set({ uCopyX: copy });
-      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, b.n);
+      if (b.verts) gl.drawArrays(gl.TRIANGLES, 0, b.n);
+      else gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, b.n);
     }
     gl.bindVertexArray(null);
   }

@@ -336,11 +336,13 @@ mod tests {
         idle.actions = [row(K::None, 0), row(K::None, 0), row(K::Heal, 1)];
         let b = battle(OPEN, vec![idle, templar, behind, beside]);
         let out = resolve(&b, &mut Mid);
+        let rounds = b.params.rounds;
+        assert!(rounds >= 2);
         let heals: Vec<&Event> = out.events.iter().filter(|e| e.actor == 1).collect();
-        assert_eq!(heals.len(), 3, "one heal a round: {heals:?}");
+        assert_eq!(heals.len() as i32, rounds, "one heal a round: {heals:?}");
         assert!(heals.iter().all(|e| e.pass == 0 && e.heal.map(|h| (h.target, h.amount)) == Some((2, 2000))));
-        assert_eq!(out.fighters[2].hp, 5000 + 3 * 2000);
+        assert_eq!(out.fighters[2].hp, 5000 + rounds * 2000);
         assert_eq!(out.fighters[3].hp, 5000, "the unit beside it is not behind it");
-        assert_eq!(out.fighters[1].healed, 6000);
+        assert_eq!(out.fighters[1].healed, rounds * 2000);
     }
 }

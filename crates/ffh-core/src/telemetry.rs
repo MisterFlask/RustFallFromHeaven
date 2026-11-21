@@ -295,7 +295,7 @@ const SLOT_KEYS: [&str; 25] = [
 ];
 
 /// `engage_rounds` keys: the rounds a battle began (formation battles fight at most
-/// `ENGAGEMENT_ROUNDS`, 3).
+/// `ENGAGEMENT_ROUNDS`, 2).
 const ROUND_KEYS: [&str; 5] = ["0", "1", "2", "3", "4+"];
 
 // ----------------------------------------------------------------------------
