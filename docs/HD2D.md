@@ -275,7 +275,15 @@ with restrained bloom. The flat renderer keeps the sphere colours and two-letter
   off the water and clear of river channels, and the card stands at that ground's mean height. (Until
   then `hilltopFoot` put the foot on the summit at its height: the diamond lay over the land falling
   away behind and beside the summit, and the work floated over its hill, against the sky on a hill
-  at the back of the view.) Tribal villages are
+  at the back of the view.) Placement alone could not hide it: a hill's crown is smaller than a
+  mine's diamond, and the close zooms' lower camera reads an upright card's painted ground as
+  reaching further back. So a hill work drawn from an isometric sprite is **draped**
+  (`drapeGrid`, hd2d/sprites.js `buildDraped`, `SPRITE_VS` flag 64): its card below the diamond's
+  corners is a grid on the land (7 columns, 5 rows, each vertex at `heightAt` there, as the
+  terrain's mesh), and above them it stands from the corners' row. The painted ground follows the
+  dome; seen from the camera's pitch rather than the art's 30°, it foreshortens as the ground does.
+  The HD-2D sites' own art has no painted ground and stands as before. Checked at 56, 96, 128, 168
+  and 220 px a plot. Tribal villages are
   five separate smaller hut cards about a clearing; each hut samples its own ground contact.
   Flat works (farms, pastures, plantations, wineries, quarries) stay the 3D renderer's fields.
   A resource is its family's prop at the plot's front-left; under a standing improvement it lies

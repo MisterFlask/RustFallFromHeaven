@@ -128,6 +128,39 @@ function hillWorkFoot(world, x, y, halfW) {
   return best ?? hilltopFoot(world, x, y, halfW * 0.5);
 }
 
+/** The painted ground of an isometric work's card (`c`, art `art`: its diamond, as wide as the
+ *  art, half as deep, its tip at the opaque bounds' foot) laid on the land: a grid of vertices,
+ *  `cols` across the card and, up it, rows on the ground from the diamond's front tip to its
+ *  corners (each at the height of the ground there, `heightAt`, as the terrain's mesh), then one
+ *  row at the card's top standing over the corners' row. Each vertex: [u across the card, y up it,
+ *  world x, y, z, its height over that place in the card's height] (hd2d/sprites.js buildDraped,
+ *  shaders.js SPRITE_VS). An upright card's painted ground reads as level ground at its foot's
+ *  height, which on a hill's dome hung over the land falling away round it (floating, more so at
+ *  the close zooms' lower camera); laid on the land it follows the dome. */
+export function drapeGrid(world, c, art) {
+  const cols = 7, ground = 5;
+  const tip = (art.h - (art.box?.[3] ?? art.h)) / art.h;
+  const corners = Math.min(0.9, tip + art.w / 4 / art.h);
+  const half = c.w / 2;
+  const v = new Float32Array(cols * (ground + 1) * 6);
+  const anchor = c.anchor ?? 0.5;
+  for (let j = 0; j <= ground; j++) {
+    const top = j === ground;
+    const y = top ? 1 : (corners * j) / (ground - 1);
+    const back = top ? half : Math.min(1, Math.max(0, (y - tip) / (corners - tip))) * half;
+    for (let i = 0; i < cols; i++) {
+      const u = i / (cols - 1);
+      const x = c.x + (u - anchor) * c.w, z = c.z - back;
+      const k = (j * cols + i) * 6;
+      v.set([u, y, x, world.heightAt(x, -z) + DRAPE_LIFT, z, top ? 1 - corners : 0], k);
+    }
+  }
+  return { cols, rows: ground + 1, v };
+}
+/** How far a draped card's ground lies over the land (the terrain's mesh runs straight between its
+ *  vertices, a sixth of a plot apart, a little under the ground's height on a dome). */
+const DRAPE_LIFT = 0.006;
+
 /** A spot of land plot (x, y), plot-local [x east, z south], kept on the plot's own level of land
  *  where the ground steps (world.js `cliff`): drawn toward the plot's middle until it is off the
  *  water, back from the rim of the land's face, and off a neighbouring hill's crown. (A plot's
@@ -995,7 +1028,11 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null, c
         const huts = tribal ? TRIBAL_HUTS : [[0, 0, 1]];
         for (const [ox, oz, scale] of huts) {
           const hx = mx + ox, hy = my - oz;
-          list.push(card(key, art, px * scale, hx, tribal ? H(hx, hy) : base, -hy, { id: idOf(`i${i}`), glow: mana ? 0.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
+          const c = card(key, art, px * scale, hx, tribal ? H(hx, hy) : base, -hy, { id: idOf(`i${i}`), glow: mana ? 0.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] });
+          // A hill work drawn from an isometric sprite lays its painted ground on the hill (not the
+          // HD-2D sites' own art, which has none).
+          if (hill && !tribal && !key.startsWith("bld_site_") && art.box) c.drape = drapeGrid(world, c, art);
+          list.push(c);
         }
         claims.improvement.add(i);
         const tower = /TOWER/.test(imp) && !/WATCH|WARNING/.test(imp);
