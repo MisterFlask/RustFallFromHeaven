@@ -1005,6 +1005,9 @@ html.art #phase-text { color: var(--c-stone); }
 .tip-yields { display: flex; gap: calc(var(--u) * 4); align-items: center; flex-wrap: wrap; }
 .tip-yields .sr, .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .seals { display: flex; flex-wrap: wrap; gap: 2px; margin: 4px 0 2px; }
+/* A seal's count (a hero's Wounds: each counts). */
+.seal { position: relative; display: inline-block; }
+.seal .seal-count { position: absolute; left: -3px; bottom: -3px; font-size: 10px; line-height: 11px; padding: 0 2px; color: #fff; background: #8a1f1f; border: 1px solid #3a0808; border-radius: 3px; pointer-events: none; }
 .unit-name .ui-px { margin-right: 1px; }
 button.action canvas.ui-px { margin-right: 2px; }
 

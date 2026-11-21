@@ -369,9 +369,60 @@ pub fn screen(v: &Viewer) -> Json {
         "seas" => Json::Arr(seas),
         "escort_targets" => Json::Arr(targets),
         "garrisons" => Json::Arr(garrisons.collect()),
+        "recovering" => recovering_json(v),
+        "fallen" => fallen_json(v),
         "supply_budget" => g.d.defines.supply_line_budget,
         "stall_turns" => g.d.defines.army_transit_stall_turns,
     }
+}
+
+/// The human's heroes that died and will return (ffh_core::unit::fallen), the soonest first: the
+/// name, the unit type, the turns left, the Wounds it will have, where it returns (`null`: no
+/// city; it waits for one).
+pub fn recovering_json(v: &Viewer) -> Json {
+    let g = v.g;
+    let turn = g.game_turn();
+    let home = g.player_get_capital_city(v.h).or_else(|| g.players[v.h].cities.first().copied());
+    let mut list: Vec<&ffh_core::unit::fallen::FallenUnit> = g.players[v.h].recovering.iter().collect();
+    list.sort_by_key(|r| (r.returns, r.id));
+    Json::Arr(
+        list.into_iter()
+            .map(|r| {
+                crate::jobj! {
+                    "name" => { let n = r.display_name(g.d); crate::names::text(g.d, &n).to_string() },
+                    "type" => Json::idx(r.unit_type),
+                    "level" => r.level,
+                    "turns" => (r.returns - turn).max(0),
+                    "wounds" => r.wounds + 1,
+                    "city" => home.map(|c| city_name(g, c)),
+                }
+            })
+            .collect(),
+    )
+}
+
+/// The human's other dead within Resurrection's reach (ffh_core::unit::fallen), the latest first:
+/// the name, the unit type, its level, the turn it died and the turns it stays in reach.
+pub fn fallen_json(v: &Viewer) -> Json {
+    let g = v.g;
+    let turn = g.game_turn();
+    let reach = ffh_core::crusade::speed_turns(g, ffh_core::unit::fallen::RESURRECTION_TURNS);
+    Json::Arr(
+        g.players[v.h]
+            .fallen
+            .iter()
+            .rev()
+            .map(|r| {
+                crate::jobj! {
+                    "name" => { let n = r.display_name(g.d); crate::names::text(g.d, &n).to_string() },
+                    "type" => Json::idx(r.unit_type),
+                    "level" => r.level,
+                    "died" => r.died,
+                    "turns" => (r.died + reach - turn).max(0),
+                }
+            })
+            .collect(),
+    )
 }
 
 /// The city screen's recruitment: the city's default destination and the destinations it may

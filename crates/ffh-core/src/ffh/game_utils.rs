@@ -83,7 +83,8 @@ impl Game {
             if !self.is_unit_class_maxed_out(hero, 0) {
                 return true;
             }
-            if player.unit_class_count[hero] > 0 {
+            // (A hero recovering from its death is not dead: unit/fallen.rs.)
+            if self.player_hero_class_alive(owner, hero) {
                 return true;
             }
         }

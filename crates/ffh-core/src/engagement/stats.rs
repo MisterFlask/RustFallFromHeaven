@@ -557,7 +557,7 @@ impl Game {
         let mut rest = total;
         for p in self.d.promotions.keys() {
             if held[p] {
-                rest -= log.push(self.d.promotions[p].stat_changes[s.idx()].percent, || TermSource::Promotion(p));
+                rest -= log.push(self.d.promotions[p].stat_changes[s.idx()].percent * self.unit_promotion_stacks(u, p), || TermSource::Promotion(p));
             }
         }
         log.push(rest, || TermSource::Own);

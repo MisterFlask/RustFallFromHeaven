@@ -52,8 +52,8 @@ fn table_sizes() {
     assert_eq!(own(d.unit_classes.len(), "unit_classes"), 248);
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md) and
     // PROMOTION_SUMMONERS_BOND (the Summoner trait's), less Extension I and II (docs/ENGAGEMENTS.md,
-    // "Summons").
-    assert_eq!(own(d.promotions.len(), "promotions"), 261);
+    // "Summons"), and this game's PROMOTION_WOUNDED (a hero's Wounds, docs/PORTING.md).
+    assert_eq!(own(d.promotions.len(), "promotions"), 262);
     // 267 and this game's SPELL_FIREBALL_BARGE, 40 sphere spells in battle and Wonder's 10
     // outcomes (docs/ENGAGEMENTS.md, "Battle spells").
     // (Less the Work Boat's Pirate Cove and the Doviello Worker's upgrade, docs/WORKS.md.)
@@ -346,7 +346,8 @@ fn promotions() {
     assert_eq!(medic.tech_prereq, Some(d.t::<TechType>("TECH_NEVER")));
 
     let hero = promo("PROMOTION_HERO");
-    assert_eq!(hero.free_xp_per_turn, 1);
+    // (No free XP a turn: a dead hero returns, docs/PORTING.md, "Changes from FFH2".)
+    assert_eq!(hero.free_xp_per_turn, 0);
     assert_eq!(hero.min_level, -1);
     assert_eq!(hero.resist_magic, 20);
 

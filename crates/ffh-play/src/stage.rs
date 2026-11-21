@@ -1471,3 +1471,54 @@ pub fn siege(dir: &Path, kind: &str) -> Result<Json, String> {
         "unit" => if attacker { besiegers[0] } else { defenders[0] },
         "withdraw" => crate::jarr![ax, ay], "defenders" => defenders, "besiegers" => besiegers })
 }
+
+/// A saved game at a human control point (turn 4 of a duel as the Bannor, seed 11) with the dead
+/// the rules remember (ffh_core::unit::fallen): Donal Lugh died this turn and recovers, a Champion
+/// and an Axeman died and are within Resurrection's reach; in the capital stand a hero with two
+/// Wounds (`wounded`) and an Adept with Life III (`caster`), who can cast Resurrection.
+pub fn heroes(dir: &Path) -> Result<Json, String> {
+    let d = ffh_data::global();
+    let mut s = duel_as(dir, 11, 4, Some("CIVILIZATION_BANNOR"))?;
+    let h = s.human;
+    let g = &mut s.g;
+    let capital = *g.players[h].cities.first().ok_or("no capital")?;
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    let unit = |g: &mut ffh_core::game::Game, name: &str| g.player_init_unit(h, d.t::<UnitType>(name), cx, cy, None, None);
+    let promote = |g: &mut ffh_core::game::Game, u: UnitId, names: &[&str]| {
+        for n in names {
+            g.unit_set_has_promotion(u, d.t::<PromotionType>(n), true);
+        }
+    };
+    let kill = |g: &mut ffh_core::game::Game, u: UnitId| {
+        let max = g.d.defines.max_hit_points;
+        g.unit_set_damage(u, max, None);
+        if g.units.contains(u) {
+            g.unit_do_delayed_death(u);
+        }
+    };
+    let donal = unit(g, "UNIT_DONAL");
+    promote(g, donal, &["PROMOTION_COMBAT1", "PROMOTION_COMBAT2"]);
+    g.unit_set_level(donal, 5);
+    g.unit_set_experience(donal, 26, -1);
+    kill(g, donal);
+    let champion = unit(g, "UNIT_CHAMPION");
+    promote(g, champion, &["PROMOTION_COMBAT1", "PROMOTION_SHOCK"]);
+    g.unit_set_level(champion, 3);
+    g.unit_set_experience(champion, 10, -1);
+    kill(g, champion);
+    let axeman = unit(g, "UNIT_AXEMAN");
+    kill(g, axeman);
+    if g.players[h].recovering.len() != 1 || g.players[h].fallen.len() != 2 {
+        return Err("the staged dead are not remembered".into());
+    }
+    let wounded = unit(g, "UNIT_SPHENER");
+    promote(g, wounded, &["PROMOTION_COMBAT1", "PROMOTION_COMBAT2", "PROMOTION_COMBAT3"]);
+    g.unit_set_level(wounded, 6);
+    g.unit_set_experience(wounded, 37, -1);
+    g.unit_set_wounds(wounded, 2);
+    g.unit_set_damage(wounded, 40, None);
+    let caster = unit(g, "UNIT_ADEPT");
+    promote(g, caster, &["PROMOTION_LIFE1", "PROMOTION_LIFE2", "PROMOTION_LIFE3"]);
+    let paths = s.save("heroes").map_err(|e| format!("save: {e:?}"))?;
+    Ok(crate::jobj! { "stage" => "heroes", "save" => paths.save.display().to_string(), "capital" => capital, "wounded" => wounded, "caster" => caster, "x" => cx, "y" => cy })
+}

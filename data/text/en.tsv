@@ -11288,6 +11288,7 @@ TXT_KEY_PROMOTION_WOODSMAN1	Woodsman I
 TXT_KEY_PROMOTION_WOODSMAN2	Woodsman II
 TXT_KEY_PROMOTION_WOODSMAN3	Woodsman III
 TXT_KEY_PROMOTION_WORK_RATE_MODIFY	[ICON_BULLET]%D1% to work rate
+TXT_KEY_PROMOTION_WOUNDED	Wounded
 TXT_KEY_QUEST_MESSAGE_LOG	Quests
 TXT_KEY_QUICK_SAVING	Quick Saving...
 TXT_KEY_RECIP_BUDDY_PROMPT	[COLOR_SELECTED_TEXT]%s1_Name[COLOR_REVERT] must be a buddy to receive messages from you.[NEWLINE][NEWLINE]Would you to add [COLOR_SELECTED_TEXT]%s2_Name[COLOR_REVERT] to your buddy list?
@@ -11814,7 +11815,7 @@ TXT_KEY_SPELL_REPAIR_PEDIA	[TAB]"Gornbad Hurt."[PARAGRAPH:1]"Yes, I know Gornbad
 TXT_KEY_SPELL_RESIST	[ICON_BULLET]Can be resisted
 TXT_KEY_SPELL_RESIST_WITH_MODIFY	[ICON_BULLET]Can be resisted (%D1%)
 TXT_KEY_SPELL_RESSURECTION	Resurrection
-TXT_KEY_SPELL_RESSURECTION_HELP	[ICON_BULLET]Resurrects the civilization's hero.[NEWLINE][ICON_BULLET]Cast on a graveyard it raises a champion for the player.
+TXT_KEY_SPELL_RESSURECTION_HELP	[ICON_BULLET]Returns a unit of yours that died in the last 20 turns, with its promotions and experience. Not a hero.[NEWLINE][ICON_BULLET]Cast on a graveyard it raises a champion for the player.
 TXT_KEY_SPELL_REVEAL	Reveal
 TXT_KEY_SPELL_REVEAL_HELP	[ICON_BULLET]Allows the caster to disable the invisibility from Nox Noctis.
 TXT_KEY_SPELL_REVELATION	Revelation

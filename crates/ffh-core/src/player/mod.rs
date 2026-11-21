@@ -419,6 +419,12 @@ pub struct Player {
     pub house: Option<HouseId>,
     /// The tribute a new House of this player takes, percent (`persons::TRIBUTE_DEFAULT`).
     pub house_tribute: i32,
+    /// Not in C++: its heroes that died and will return to its capital (`unit/fallen.rs`), in
+    /// the order they died.
+    pub recovering: Vec<crate::unit::fallen::FallenUnit>,
+    /// Not in C++: its units other than heroes that died in the last
+    /// [`crate::unit::fallen::RESURRECTION_TURNS`] turns, the Resurrection spell's targets.
+    pub fallen: Vec<crate::unit::fallen::FallenUnit>,
 }
 
 impl Player {
@@ -686,6 +692,8 @@ impl Player {
             house_names: Vec::new(),
             house: None,
             house_tribute: crate::persons::TRIBUTE_DEFAULT,
+            recovering: Vec::new(),
+            fallen: Vec::new(),
         }
     }
 

@@ -50,7 +50,7 @@ is the only thing that stops a wasteful cast: moving them needs the same conditi
 | # | where | what the AI does differently | `ffh-ai` relies on it |
 |---|---|---|---|
 | a | `group/movement.rs:376-410` (`CvSelectionGroup::groupAttack`) | an AI group attacking an enemy city whose defences fall in 1-7 bombard turns bombards with every unit and ends the head's moves instead of attacking (a human attacks); the pre-attack AI casting there is omitted | yes: `campaign.rs` holds siege units back while walls stand |
-| b | `movement.rs:907-923` (`AI_getBestGroupAttacker`) | for an AI group, war wizards need 95% odds and heroes 85% to be chosen as the attacker, units above level 4 count half below 95% | implicitly (assaults) |
+| b | `movement.rs:907-923` (`AI_getBestGroupAttacker`) | for an AI group, war wizards need 95% odds and heroes 60% (FfH: 85%; a dead hero returns, `unit/fallen.rs`) to be chosen as the attacker, units above level 4 count half below 95% | implicitly (assaults) |
 | c | `movement.rs:984-996` (`AI_getBestGroupSacrifice`) | AI war wizards, heroes and units above level 4 are never sacrificed below 68% odds | as b |
 | d | `player/civics_religion.rs:832` (`canDoReligion`) | an AI cannot "do" a religion its leader weights below 0 (a human: only at -100 or less); feeds conversion and forced-religion deals | yes: `empire.rs` filters religions through `player_can_convert` |
 | e | `civics_religion.rs:858-872` (`canConvert`) | an AI cannot convert to a religion weighted below 0 (the favourite-religion part is inert) | yes |

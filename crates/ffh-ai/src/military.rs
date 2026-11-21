@@ -231,7 +231,7 @@ pub(crate) fn field_rule(e: &crate::forecast::Est, kill_pct: i32, rule: Rule) ->
 }
 
 /// A hero or a veteran of ours (`campaign::precious_bar`) whose chance to fall
-/// in the forecast `f` is above what its bar allows (a hero at 85% falls at most 15% of the
+/// in the forecast `f` is above what its bar allows (a hero at 60% falls at most 40% of the
 /// time): `(unit, fall percent, bar)`. Under engagements every unit of the plot fights, heroes
 /// included, so the gate reads each one's fall instead of the first attacker's odds.
 fn precious_falls(g: &Game, p: PlayerId, f: &ffh_core::engagement::Forecast) -> Option<(UnitId, i32, i32)> {

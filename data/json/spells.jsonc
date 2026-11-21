@@ -2377,8 +2377,12 @@
     "display_when_disabled": true,
     "has_casted": true,
     "delay": 7,
+    // This game's (docs/PORTING.md, "Changes from FFH2"): a unit of the caster's civilization
+    // that died in the last 20 turns, not a hero (unit/fallen.rs); heroes return on their own.
+    "target": "choice",
+    "py_targets": "targetsRessurection(pCaster)",
+    "py_target_label": "labelRessurection(pCaster, iChoice)",
     "py_result": "spellRessurection(pCaster)",
-    "py_requirement": "reqRessurection(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Ressurection.dds"
   },
   {

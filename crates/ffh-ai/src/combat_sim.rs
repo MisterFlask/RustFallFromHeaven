@@ -268,7 +268,7 @@ pub enum Order {
     /// below their odds last.
     Strike,
     /// A stack's group attack (`military::assault`): the attacker the rules pick
-    /// (`AI_getBestGroupAttacker`: the best odds, heroes below 85% and units above level 4 below
+    /// (`AI_getBestGroupAttacker`: the best odds, heroes below 60% and units above level 4 below
     /// 95% after the others); a hero or veteran below its odds there ends it (`campaign::precious_bar`).
     Group,
 }

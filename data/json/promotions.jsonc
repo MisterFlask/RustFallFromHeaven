@@ -1682,7 +1682,6 @@
     "description": "TXT_KEY_PROMOTION_HERO",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Hero.dds",
-    "free_xp_per_turn": 1,
     "min_level": -1,
     "resist_magic": 20
   },
@@ -3517,6 +3516,18 @@
     "dispellable": true,
     "mutation": true,
     "prereq_alive": true,
+    "ai_weight": -100,
+    "min_level": -1
+  },
+  {
+    // This game's (docs/PORTING.md, "Changes from FFH2"): a hero that died and returned
+    // (unit/fallen.rs). Its stat changes apply once per Wound (`Unit::wounds`), about one
+    // Combat promotion's worth each.
+    "type": "PROMOTION_WOUNDED",
+    "stat_changes": {"attack": {"percent": -20}, "defense": {"percent": -20}, "magic": {"percent": -10}, "magic_defense": {"percent": -20}},
+    "description": "TXT_KEY_PROMOTION_WOUNDED",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Withered.dds",
     "ai_weight": -100,
     "min_level": -1
   },

@@ -437,6 +437,9 @@ impl Game {
                 return;
             }
         }
+        // This game's (unit/fallen.rs): a hero killed by harm returns later; another unit is
+        // remembered for Resurrection. Read before its equipment drops.
+        let fallen = self.unit_fallen_record(u);
         if self.telemetry.on() {
             self.tel_unit_died(u);
         }
@@ -534,6 +537,13 @@ impl Game {
         self.ev_unit_lost(u);
 
         self.player_delete_unit(owner, u);
+
+        // A captured unit is not remembered: it lives on as its captor's.
+        if let Some((p, rec)) = fallen {
+            if capturing_player.is_none() || capture_unit_type.is_none() {
+                self.player_add_fallen(p, rec);
+            }
+        }
 
         // FfH: Modified by Kael 01/19/2008 (barbarians may capture too)
         if let (Some(capturer), Some(capture_unit)) = (capturing_player, capture_unit_type) {

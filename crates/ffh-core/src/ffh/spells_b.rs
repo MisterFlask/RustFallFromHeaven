@@ -26,6 +26,7 @@ use crate::ffh::game_utils::py_div;
 use crate::ffh::pycall::PyCall;
 use crate::game::Game;
 use crate::ids::*;
+use crate::structs::SpellTarget;
 use crate::utils::is_world_unit_class;
 use ffh_data::*;
 
@@ -99,7 +100,6 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
         "reqRecruitMercenary" => req_recruit_mercenary,
         "reqReligiousFervor" => req_religious_fervor,
         "reqRepair" => req_repair,
-        "reqRessurection" => req_ressurection,
         "reqReveal" => req_reveal,
         "reqRevelry" => req_revelry,
         "reqRevelation" => req_revelation,
@@ -671,64 +671,47 @@ fn spell_repair(g: &mut Game, caster: UnitId, call: &PyCall) {
     }
 }
 
-/// `reqRessurection(caster)`.
-fn req_ressurection(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    let p = g.units[caster].owner;
-    let Some(hero) = g.cf_get_hero(p) else { return false };
-    if !g.is_unit_class_maxed_out(hero, 0) {
-        return false;
-    }
-    for p2 in g.player_ids() {
-        if g.players[p2].unit_class_count[hero] > 0 {
-            return false;
-        }
-    }
-    let spell = g.d.t::<SpellType>("SPELL_RESSURECTION");
-    for u in py_unit_list(g, p) {
-        if g.units[u].delayed_spell == Some(spell) {
-            return false;
-        }
-    }
-    true
+/// `targetsRessurection(caster)` (this game's, unit/fallen.rs): each dead unit of the caster's
+/// owner Resurrection can bring back, numbered by the id it had.
+fn targets_ressurection(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarget> {
+    g.resurrection_candidates(caster).into_iter().map(|r| SpellTarget::Choice(r.id.0 as i32)).collect()
 }
 
-/// `spellRessurection(caster)`.
-fn spell_ressurection(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let d = g.d;
-    let plot = g.unit_plot(caster);
+/// `labelRessurection(caster, iChoice)`: the dead unit's name, level and the turn it died.
+fn label_ressurection(g: &Game, caster: UnitId, target: SpellTarget, _call: &PyCall) -> String {
+    let SpellTarget::Choice(i) = target else { return String::new() };
     let p = g.units[caster].owner;
-    // The requirement guarantees a hero class.
-    let Some(hero) = g.cf_get_hero(p) else { return };
-    let unit = civ_unit(g, p, hero);
-    let barn = d.t::<UnitType>("EQUIPMENT_PIECES_OF_BARNAXUS");
-    let barn_prom = d.t::<PromotionType>("PROMOTION_PIECES_OF_BARNAXUS");
-    if unit == Some(d.t::<UnitType>("UNIT_BARNAXUS")) {
-        for p2 in g.player_ids() {
-            if g.players[p2].alive {
-                for u in py_unit_list(g, p2) {
-                    // (A kill takes the victim's cargo with it at once.)
-                    if !g.units.contains(u) {
-                        continue;
-                    }
-                    if g.units[u].has_promotion[barn_prom] {
-                        g.unit_set_has_promotion(u, barn_prom, false);
-                    }
-                    if g.units[u].unit_type == barn {
-                        g.unit_kill(u, true, None);
-                    }
-                }
-            }
-        }
+    let Some(r) = g.players[p].fallen.iter().find(|r| r.id.0 as i32 == i) else { return String::new() };
+    let d = g.d;
+    let name = r.display_name(d);
+    let kind = d.text.name(&d.units[r.unit_type].base.description);
+    let who = if r.name.is_empty() { name } else { format!("{name} ({kind})") };
+    let promotions: Vec<&str> = r.promotions.iter().filter(|&&p| !d.promotions[p].race).map(|&p| d.text.name(&d.promotions[p].base.description)).collect();
+    let with = if promotions.is_empty() { String::new() } else { format!(" ({})", promotions.join(", ")) };
+    format!("{who}, level {}{with}, died turn {}", r.level, r.died)
+}
+
+/// `py_targets` functions of this file.
+pub fn find_targets(name: &str) -> Option<TargetsFn> {
+    match name {
+        "targetsRessurection" => Some(targets_ressurection),
+        _ => None,
     }
-    // A civilization without the hero's unit would make the C++ `initUnit(NO_UNIT)` fail.
-    let Some(unit) = unit else { return };
-    let (x, y) = g.map.xy(plot);
-    let new_unit = g.player_init_unit(p, unit, x, y, None, NORTH);
-    for promotion in d.promotions.keys() {
-        if g.units[new_unit].has_promotion[promotion] && d.promotions[promotion].equipment {
-            g.unit_set_has_promotion(new_unit, promotion, false);
-        }
+}
+
+/// `py_target_label` functions of this file.
+pub fn find_target_label(name: &str) -> Option<TargetLabelFn> {
+    match name {
+        "labelRessurection" => Some(label_ressurection),
+        _ => None,
     }
+}
+
+/// `spellRessurection(caster)`. This game's (unit/fallen.rs): the chosen dead unit returns on the
+/// caster's plot (FFH2's brought back the civilization's dead hero; heroes return on their own).
+fn spell_ressurection(g: &mut Game, caster: UnitId, _call: &PyCall) {
+    let Some(SpellTarget::Choice(i)) = g.spell_target else { return };
+    g.resurrect_fallen(caster, i);
 }
 
 /// `spellRessurectionGraveyard(caster)`.
@@ -2400,7 +2383,7 @@ mod tests {
         let req = [
             "reqMarchOfTheTrees", "reqPromoteSettlement",
             "reqRally", "reqRebuildBarnaxus", "reqRecruitMercenary", "reqReligiousFervor", "reqRepair",
-            "reqRessurection", "reqReveal", "reqRevelry", "reqRevelation", "reqRoar",
+            "reqReveal", "reqRevelry", "reqRevelation", "reqRoar",
             "reqRobGrave", "reqSanctify", "reqSanctuary", "reqSandLion", "reqScorch", "reqSironasTouch",
             "reqSpreadTheCouncilOfEsus", "reqSpring", "reqSprint", "reqSteal",
             "reqTakeEquipmentBuilding", "reqTakeEquipmentPromotion", "reqTakeEquipmentUnit", "reqTaunt",
@@ -2435,6 +2418,9 @@ mod tests {
             assert!(find_plot_fn(name).is_some(), "{name}");
         }
         assert!(find_vote_fn("voteFundDissidents").is_some());
-        assert_eq!(req.len() + spell.len() + plot.len() + 1, 95);
+        assert!(find_targets("targetsRessurection").is_some());
+        assert!(find_target_label("labelRessurection").is_some());
+        // (reqRessurection gone: Resurrection's targets are its choice, unit/fallen.rs.)
+        assert_eq!(req.len() + spell.len() + plot.len() + 1, 94);
     }
 }

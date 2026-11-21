@@ -458,6 +458,10 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
     if g.unit_attack_engages(u) {
         j.set("engages", true);
     }
+    // A hero's Wounds (ffh_core::unit::fallen): the line and its calculation, when it has some.
+    if let Some((text, calc)) = g.unit_wounds_calc(u) {
+        j.set("wounds", crate::jobj! { "n" => unit.wounds, "text" => text, "calc" => Json::Arr(calc.into_iter().map(Json::from).collect()) });
+    }
     // Reinforced (Ritual: Upgrade, the Luchuirp's golems): its line, when it has stacks.
     if unit.reinforced > 0 {
         j.set("reinforced", reinforced_line(unit.reinforced));

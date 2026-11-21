@@ -21,6 +21,7 @@ import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
 import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
+import { withCalc } from "./calc.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -997,6 +998,8 @@ function showTip() {
         promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
         // Ritual: Upgrade's stacks on a golem (the view's line).
         u.reinforced ? h("div.dim", u.reinforced) : null,
+        // A hero's Wounds (one for each time it died and returned).
+        u.wounds ? h("div.warn", u.wounds.text) : null,
         // A great person of ours holding a card (docs/CARDS.md).
         u.card !== null && u.card !== undefined ? h("div.tip-card", `Card: ${dname("TechType", u.card)}`) : null,
         // This game's armies: a recruit of ours marching to its destination.
@@ -1370,6 +1373,19 @@ function describe(a) {
 function cardBadge(u) {
   if (u.card === null || u.card === undefined) return null;
   return h("span.badge.card", { tip: infoTip("TechType", u.card, { title: `Card: ${dname("TechType", u.card)}` }) }, `card: ${dname("TechType", u.card)}`);
+}
+
+/** The promotions with Wounded first (a hero's long row of seals may not all show). */
+function woundsFirst(promotions) {
+  const w = tidx("PromotionType", "PROMOTION_WOUNDED");
+  return [...promotions.filter((p) => p === w), ...promotions.filter((p) => p !== w)];
+}
+
+/** Promotion `p`'s seal for unit `u` (its tooltip the promotion's help); Wounded carries the
+ *  unit's count of Wounds (each counts: ffh-core's unit/fallen.rs). */
+function sealEl(p, u, size) {
+  const n = p === tidx("PromotionType", "PROMOTION_WOUNDED") ? u?.wounds?.n ?? 0 : 0;
+  return h("span.seal", { "data-promotion": p, tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: size }), n > 1 ? h("b.seal-count", `×${n}`) : null);
 }
 
 /** The card the lead unit holds, for the panel (the `group` query's `card_detail`): its name, suit
@@ -1764,6 +1780,9 @@ export function renderPanel() {
   if (engage && !isoSkin()) status.push(engage);
   const army = armyLine();
   if (army) status.push(army);
+  // A hero's Wounds: the line, its calculation in the tooltip.
+  const wounded = lead ? (details.get(lead.id) ?? lead).wounds ?? lead.wounds : null;
+  if (wounded) status.push(withCalc(h("div.warn.wounds-line", wounded.text), wounded.calc));
   // A great person's card (docs/CARDS.md).
   const card = cardLine(lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null);
   if (card) status.push(card);
@@ -1794,7 +1813,7 @@ export function renderPanel() {
   // The lead unit's promotions as their seals (docs/ART.md 11.5), with the level as pips.
   const leadDetails = details.get(S.sel.units[0]);
   const seals = look.art && leadDetails?.promotions?.length
-    ? h("div.seals", leadDetails.promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: isoSkin() ? 2 : 1 }))))
+    ? h("div.seals", woundsFirst(leadDetails.promotions).map((p) => sealEl(p, leadDetails, isoSkin() ? 2 : 1)))
     : null;
   if (isoSkin()) return renderCard({ own, ordered, r, details, lead, promotions: leadDetails?.promotions, tools, status, hint, way, others, x, y });
   fill(panel, head, hint, way, list, seals, tools, status, actions, others);
@@ -1830,7 +1849,8 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
       )
     : null;
   // The lead unit's promotions as their seals (docs/ART.md 11.5).
-  const seals = look.art && promotions?.length ? h("div.seals", promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: 2 })))) : null;
+  const lead2 = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
+  const seals = look.art && promotions?.length ? h("div.seals", woundsFirst(promotions).map((p) => sealEl(p, lead2, 2))) : null;
   // The plot's units, transports with their cargo after them.
   const strip =
     own.length > 1

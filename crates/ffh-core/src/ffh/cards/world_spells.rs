@@ -640,7 +640,8 @@ pub fn call_of_the_faithful(g: &Game, p: PlayerId) -> Option<(CityId, Vec<UnitTy
     let heroes: Vec<UnitType> = [info.religion_hero1, info.religion_hero2]
         .into_iter()
         .flatten()
-        .filter(|&class| !g.player_ids().any(|o| g.players[o].unit_class_count[class] > 0))
+        // (A hero recovering from its death is not missing: unit/fallen.rs.)
+        .filter(|&class| !g.hero_class_alive(class))
         .filter_map(|class| civ.and_then(|civ| d.civ_unit(civ, class)).or(d.unit_classes[class].default_unit_index))
         .collect();
     if heroes.is_empty() {

@@ -7,9 +7,12 @@
 //! by `magic::choose_turn_spell` instead, which keeps these terms for the spells it does not
 //! model; its summons attack as FfH's do ([`summons_attack`]).
 
+use std::sync::OnceLock;
+
 use ffh_core::defs::*;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_core::structs::SpellTarget;
 use ffh_data::*;
 
 use crate::production::building_value;
@@ -30,6 +33,9 @@ pub fn end_turn(g: &mut Game, v: &View) {
         // choices themselves change nothing). `fresh`: nothing was cast since.
         let castable = castable_spells(g, u);
         let mut fresh = true;
+        if resurrect(g, u) {
+            continue;
+        }
         if magic {
             // C++ quirk: a unit another unit's spell has just killed (delayed death: Form Wolf
             // Pack's second wolf) still casts, as in FfH's loop below.
@@ -572,4 +578,31 @@ fn summon_cast(g: &mut Game, v: &View, u: UnitId, known: Option<&[SpellType]>) {
     if let Some(s) = best {
         cast_and_act(g, v, u, s, "summon", 0);
     }
+}
+
+/// Resurrection (this game's: a chosen dead unit of ours, `ffh_core::unit::fallen`): a caster in
+/// one of our cities brings back the most valuable one (its cost, then its level), if it is worth
+/// the caster's seven turns: a unit of cost 60 or more, or of level 3 or more.
+fn resurrect(g: &mut Game, u: UnitId) -> bool {
+    static SPELL: OnceLock<Option<SpellType>> = OnceLock::new();
+    let Some(spell) = *SPELL.get_or_init(|| g.d.ty::<SpellType>("SPELL_RESSURECTION")) else { return false };
+    let d = g.d;
+    let unit = &g.units[u];
+    if !d.spells[spell].promotion_prereq1.is_some_and(|pr| unit.has_promotion[pr]) || unit.has_casted || unit.delayed_spell.is_some() {
+        return false;
+    }
+    if !g.unit_plot_opt(u).is_some_and(|q| g.map.plots[q].plot_city.is_some_and(|c| g.cities[c].owner == unit.owner)) {
+        return false;
+    }
+    let value = |r: &ffh_core::unit::fallen::FallenUnit| d.units[r.unit_type].production_cost.max(0) + 20 * r.level;
+    let Some(best) = g.resurrection_candidates(u).into_iter().filter(|r| d.units[r.unit_type].production_cost >= 60 || r.level >= 3).max_by_key(|r| (value(r), r.id)) else { return false };
+    let (target, worth) = (SpellTarget::Choice(best.id.0 as i32), value(best));
+    if !g.unit_can_cast_at(u, spell, target) {
+        return false;
+    }
+    let p = g.units[u].owner;
+    crate::trace!(g, p, "resurrection: value {worth}");
+    g.tel_cast_reason(u, "resurrection", worth as i64);
+    g.unit_cast_at(u, spell, target);
+    true
 }

@@ -34,6 +34,7 @@ mod lifecycle;
 mod missions;
 mod movement;
 mod promotions;
+pub mod fallen;
 
 use crate::defs::{GROUPFLAG_NONE, INVALID_PLOT_COORD};
 use crate::engagement::report::{Term, TermSource};
@@ -604,6 +605,9 @@ pub struct Unit {
     /// Not in C++: stacks of Reinforced (Ritual: Upgrade, the Luchuirp's): +10% maximum HP each
     /// in a battle (`unit_engage_max_hp`). Kept by a conversion only to another golem.
     pub reinforced: i32,
+    /// Not in C++: a hero's Wounds, one for each time it died and returned (`unit/fallen.rs`):
+    /// `PROMOTION_WOUNDED`'s stat changes apply this many times while it holds it.
+    pub wounds: i32,
 }
 
 impl Unit {
@@ -792,6 +796,7 @@ impl Unit {
             intercepted: false,
             shore_fired: false,
             reinforced: 0,
+            wounds: 0,
         }
     }
 }

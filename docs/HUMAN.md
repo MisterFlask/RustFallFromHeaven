@@ -806,6 +806,15 @@ then in no fleet; in port at once) and its requisition as an army's (the coastal
 ship each would train and its turns of sailing; the ships sailing to it). No supply, no tactic.
 The unit panel of ships offers the fleet's actions (form a new fleet, split, join or merge, disband,
 upgrade all; no garrison), and a whole fleet selected shows its line with its standing order.
+Below the garrisons, when there are some, **Heroes recovering**: each hero of yours that died
+(docs/PORTING.md, "Changes from FFH2"), with its level, where and in how many turns it returns
+(`returns to Torrolerial in 15 turns`) and the Wounds it will have; then **Fallen, within
+Resurrection's reach**: your other units that died in the last 20 turns, with their level, the
+turn they died and the turns they stay in reach. A hero's death is an alert (`Donal Lugh has
+fallen. Returns to the capital in 15 turns, Wounded.`), its return a message. A Wounded unit's
+panel shows `Wounds: 2. Attack -40%, ...` (its tooltip: each stat's `-20% × 2 = -40%.`) and its
+Wounded seal the count (`×2`). Resurrection (Life III) is cast at a choice: the list of the dead
+it can bring back (`Champion, level 3, died turn 4`).
 **Governors** (`F9`, the menu's Governors): the mode
 line ("Government: Aristocracy. Every city is governed."; under Despotism or God King "... ruled
 directly." and the city list alone); then the six roles as priority toggles (at most two; "Priority:

@@ -108,6 +108,9 @@ export function isoBuildingIcon(type, { px = 32, title, cls } = {}) {
 
 const ROMAN = ["", "I", "II", "III", "IV", "V"];
 
+/** The promotions whose seal is another's icon (they have none of their own). */
+const ISO_PROMO_ALIAS = { WOUNDED: "WITHERED" };
+
 /** A promotion as the skin's seal: its family's M7 icon (`ui_promo_<family>`: PROMOTION_ and the
  *  level digit dropped) on a gilt disc, the level (the type name's last digit) as a badge, a red rim
  *  for an affliction (`harmful`, the 2D art's affliction family); `px` the seal's CSS px. Null when
@@ -115,7 +118,8 @@ const ROMAN = ["", "I", "II", "III", "IV", "V"];
 export function isoPromotionIcon(type, { px = 32, title, harmful = false } = {}) {
   const m = /^PROMOTION_(.+?)(\d)?$/.exec(type ?? "");
   if (!m) return null;
-  const im = isoIcon(`promo_${m[1].toLowerCase()}`, { px: px >= 32 ? 32 : 16 });
+  // A promotion without an icon of its own borrows one (Wounded: Withered's).
+  const im = isoIcon(`promo_${(ISO_PROMO_ALIAS[m[1]] ?? m[1]).toLowerCase()}`, { px: px >= 32 ? 32 : 16 });
   if (!im) return null;
   const el = h(`span.iso-seal${harmful ? ".bad" : ""}`, { style: { width: `${px}px`, height: `${px}px` } }, im);
   const lv = m[2] ? ROMAN[Number(m[2])] ?? m[2] : "";

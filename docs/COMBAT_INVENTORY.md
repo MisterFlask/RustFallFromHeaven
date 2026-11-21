@@ -919,6 +919,10 @@ gains Immortal from its first win over a living unit (`PromotionFromCombat`).
 **Proposal.** KEEP: killed in an engagement it is reborn as today, after the engagement, and counts
 as a casualty in the battle report.
 
+**Since 2026-11-21** (docs/PORTING.md, "Changes from FFH2"): every hero, immortal or not,
+returns to its capital 15 turns after a death by harm, with one more Wound
+(`unit/fallen.rs`); immortality is spent first, at once, as above.
+
 | Promotion | XML values | Under engagements |
 |---|---|---|
 | `PROMOTION_IMMORTAL` | bImmortal | KEEP: killed in an engagement, it returns as today |

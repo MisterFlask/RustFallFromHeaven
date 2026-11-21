@@ -347,6 +347,9 @@ persist_struct!(Crusade {
     victim_plots, had_units, dissolving, defend, engaged, ai,
 });
 persist_struct!(LentRecord { crusade, lender, strength, turn, credited, engaged });
+
+use crate::unit::fallen::FallenUnit;
+persist_struct!(FallenUnit { id, unit_type, name, ai_type, experience, level, promotions, religion, wounds, died, returns });
 persist_struct!(LenderReport { player, called, obligation, refused, delivered, credit, late_credit, spoils, cities });
 persist_struct!(CrusadeReport {
     id, kind, target, start_turn, end_turn, reason, pool, wealth, delivered, engaged, refusals, lenders,
@@ -423,7 +426,7 @@ persist_struct!(Unit {
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
     stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
-    battle_summon, sea_turns, sea_out_of_range, intercepted, shore_fired, reinforced,
+    battle_summon, sea_turns, sea_out_of_range, intercepted, shore_fired, reinforced, wounds,
 });
 
 use crate::ffh::cards::map_rules::{PackedBuilding, PackedCity};
@@ -540,7 +543,7 @@ persist_struct!(Player {
     tributes, armies, army_count,
     governor_priorities, once_spells, card_traits, alignment_attitude, research_path,
     world_ritual_completions, world_ritual_refunds, world_spell_casts, tithe_target,
-    world_ritual_pending, houses, house_names, house, house_tribute,
+    world_ritual_pending, houses, house_names, house, house_tribute, recovering, fallen,
 });
 
 persist_struct!(Team {

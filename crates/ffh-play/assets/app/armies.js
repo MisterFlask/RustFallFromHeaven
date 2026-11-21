@@ -466,10 +466,46 @@ export async function openArmies({ select, centerOn } = {}) {
       fleets.length ? h("div.army-list.fleet-list", fleets) : h("p.dim", "None."),
       h("h4", "Garrisons"),
       garrisons.length ? h("ul.garrisons", garrisons) : h("p.dim", "No cities."),
+      ...fallenSections(r),
     );
   };
   await load();
   return m.done;
+}
+
+/** The dead the rules remember: heroes on their way back to the capital (ffh-core's
+ *  unit/fallen.rs), then the other dead within Resurrection's reach. Shown only when there are some. */
+function fallenSections(r) {
+  const out = [];
+  const back = r.recovering ?? [];
+  if (back.length) {
+    out.push(
+      h("h4", `Heroes recovering (${back.length})`),
+      h(
+        "ul.fallen-list.recovering",
+        back.map((x) =>
+          h(
+            "li",
+            h("b", x.name),
+            h("span.dim", ` · level ${x.level}`),
+            ` · ${x.city ? `returns to ${x.city} in ${x.turns === 1 ? "1 turn" : `${x.turns} turns`}` : "returns when you have a city"}`,
+            h("span.warn", ` · Wounds after: ${x.wounds}`),
+          ),
+        ),
+      ),
+    );
+  }
+  const dead = r.fallen ?? [];
+  if (dead.length) {
+    out.push(
+      h("h4", { title: "A Life III caster's Resurrection brings one back, with its promotions and experience." }, `Fallen, within Resurrection's reach (${dead.length})`),
+      h(
+        "ul.fallen-list",
+        dead.map((x) => h("li", h("b", x.name), h("span.dim", ` · level ${x.level} · died turn ${x.died} · ${x.turns === 1 ? "1 turn" : `${x.turns} turns`} left`))),
+      ),
+    );
+  }
+  return out;
 }
 
 const key = (dest) => JSON.stringify(dest ?? null);

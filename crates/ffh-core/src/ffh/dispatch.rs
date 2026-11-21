@@ -103,8 +103,8 @@ impl Tables {
         let mut un = Vec::new();
         let spell_result = bind(d.spells.len(), &mut un, "SpellInfo.PyResult", |k: SpellType| d.spells[k].py_result.clone(), |n| sa::find_spell(n).or_else(|| sb::find_spell(n)).or_else(|| cards::find_spell(n)).or_else(|| wrs::find_spell(n)));
         let spell_requirement = bind(d.spells.len(), &mut un, "SpellInfo.PyRequirement", |k: SpellType| d.spells[k].py_requirement.clone(), |n| sa::find_req(n).or_else(|| sb::find_req(n)).or_else(|| cards::find_req(n)).or_else(|| wrs::find_req(n)));
-        let spell_targets = bind(d.spells.len(), &mut un, "SpellInfo.PyTargets", |k: SpellType| d.spells[k].py_targets.clone(), |n| cards::find_targets(n).or_else(|| wrs::find_targets(n)));
-        let spell_target_label = bind(d.spells.len(), &mut un, "SpellInfo.PyTargetLabel", |k: SpellType| d.spells[k].py_target_label.clone(), |n| cards::find_target_label(n).or_else(|| wrs::find_target_label(n)));
+        let spell_targets = bind(d.spells.len(), &mut un, "SpellInfo.PyTargets", |k: SpellType| d.spells[k].py_targets.clone(), |n| cards::find_targets(n).or_else(|| wrs::find_targets(n)).or_else(|| sb::find_targets(n)));
+        let spell_target_label = bind(d.spells.len(), &mut un, "SpellInfo.PyTargetLabel", |k: SpellType| d.spells[k].py_target_label.clone(), |n| cards::find_target_label(n).or_else(|| wrs::find_target_label(n)).or_else(|| sb::find_target_label(n)));
         let spell_miscast = bind(d.spells.len(), &mut un, "SpellInfo.PyMiscast", |k: SpellType| d.spells[k].py_miscast.clone(), |n| sa::find_unit_fn(n).or_else(|| sb::find_unit_fn(n)).or_else(|| cards::find_unit_fn(n)));
         let promotion_per_turn = bind(d.promotions.len(), &mut un, "PromotionInfo.PyPerTurn", |k: PromotionType| d.promotions[k].py_per_turn.clone(), |n| sa::find_unit_fn(n).or_else(|| sb::find_unit_fn(n)).or_else(|| cards::find_unit_fn(n)));
         let improvement_on_move = bind(d.improvements.len(), &mut un, "ImprovementInfo.PythonOnMove", |k: ImprovementType| d.improvements[k].python_on_move.clone(), |n| sa::find_plot_fn(n).or_else(|| sb::find_plot_fn(n)));

@@ -172,6 +172,9 @@ impl Game {
         // A world spell left pending at its completion (no unit, its requirement unmet) takes
         // effect once it can (docs/CARDS.md, "World rituals").
         crate::ffh::world_rituals::check_pending(self, p);
+        // Heroes that died return; the dead out of Resurrection's reach are forgotten
+        // (unit/fallen.rs).
+        self.player_do_fallen(p);
 
         let turn = self.game_turn();
         self.ev_begin_player_turn(turn, p);

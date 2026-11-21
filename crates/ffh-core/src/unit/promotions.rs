@@ -1775,7 +1775,12 @@ impl Game {
             self.unit_change_extra_friendly_heal(u, info.friendly_heal_change * change);
             self.unit_change_same_tile_heal(u, info.same_tile_heal_change * change);
             self.unit_change_adjacent_tile_heal(u, info.adjacent_tile_heal_change * change);
-            self.unit_apply_stat_changes(u, &info.stat_changes, change);
+            // (A Wounded unit's Wounds each count, unit/fallen.rs; losing it heals them all.)
+            let stacks = self.unit_promotion_stacks(u, promotion);
+            self.unit_apply_stat_changes(u, &info.stat_changes, change * stacks);
+            if change < 0 && Some(promotion) == crate::unit::fallen::wounded_promotion(d) {
+                self.units[u].wounds = 0;
+            }
             // Its spells' damage outside battles, apart from its battle magic.
             self.units[u].spell_damage_modify += info.spell_damage_modify * change;
             // This game's engagement combat (Q1): the defence percentage, never read by the duel.

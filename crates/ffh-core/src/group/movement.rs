@@ -986,7 +986,9 @@ impl Game {
                             value = 0; //Need to put the min to 1 to prevent WoC
                         }
 
-                        if unit_ai == Some(UnitAIType::UNITAI_HERO) && odds < 85 {
+                        // This game's: 60, not FfH's 85 -- a dead hero returns, Wounded
+                        // (unit/fallen.rs), so it is risked like other veterans.
+                        if unit_ai == Some(UnitAIType::UNITAI_HERO) && odds < 60 {
                             value = 0;
                         }
                         if self.units[loop_unit].level > 4 && odds < 95 {

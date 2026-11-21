@@ -91,6 +91,27 @@ went wrong", below.)
 
 ## Changes from FFH2
 
+- **Heroes return after they die; Resurrection brings back other units** (the owner's decision,
+  2026-11-21; `crates/ffh-core/src/unit/fallen.rs`). A hero (a unit with the Hero promotion)
+  killed by harm (its HP to 0: a battle, a spell's damage) returns to its owner's capital (its
+  first city without one; it waits while there is none) 15 turns later at normal speed, scaled to
+  the game speed, with its promotions, experience and level, at 25% health and with one more Wound. A
+  Wound is the Wounded promotion, counted once per Wound for the rest of the game: -20% attack,
+  -20% defense, -10% magic and -20% magic defense each, about one Combat promotion's worth.
+  Losing the promotion (an effect that removes it) heals every Wound. A hero lost another way
+  (upgraded, disbanded, captured, its civilization destroyed) is gone as before; a lent hero
+  returns to its lender. FfH's immortality comes first: an immortal hero is reborn at once,
+  spending it, and recovers on its next death. The Hero promotion no longer gives 1 XP a turn
+  (to 100): its only purpose was levelling heroes without risking them. **Resurrection** (Life
+  III, still 7 turns' delay) no longer brings back the civilization's dead hero: its caster
+  chooses one of its civilization's units that died by harm in the last 20 turns (scaled to the
+  speed), not a hero, a summon, equipment or a unit with an instance limit, which returns on the
+  caster's plot with its promotions and experience; a captured unit is not remembered. Call of
+  the Faithful and the Shrine of the Champion count a recovering hero as alive. The AI risks
+  heroes more: the group's attacker rule takes a hero at 60% odds (FfH: 85%), and the AI's
+  precious-unit bar for heroes is 60% plus 1% a level and 5% a Wound, at most 90% (was 85% plus
+  1% a level, at most 99%); it casts Resurrection from a city on its most valuable dead unit of
+  cost 60 or level 3 and more.
 - **Fixed mana resources.** Map generation assigns every ordinary mana deposit a uniformly
   random sphere from the 17 standard node types, using the map RNG after start normalization
   and far-shore placement. Same seed, same resources. Ice remains special to Letum Frigus.

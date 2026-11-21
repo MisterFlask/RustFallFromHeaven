@@ -665,6 +665,19 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]May attack units of a civ you are at peace with, without a declaration: war follows at the battle, whose defenders get no defensive strikes and no fortification. Ends after its first battle, or at the end of the turn");
     }
+    // This game's (ffh_core::unit::fallen): a hero returns after it dies; Wounds stack.
+    if base.type_ == "PROMOTION_HERO" {
+        use ffh_core::unit::fallen::{HERO_RECOVERY_TURNS, HERO_RETURN_DAMAGE};
+        b.push_str(NEWLINE);
+        b.push_str(&format!(
+            "[ICON_BULLET]Killed: returns to its capital after {HERO_RECOVERY_TURNS} turns (normal speed), with its promotions and experience, at {}% health, with one more Wound",
+            100 - HERO_RETURN_DAMAGE * 100 / d.defines.max_hit_points.max(1)
+        ));
+    }
+    if base.type_ == "PROMOTION_WOUNDED" {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Counts once for each Wound");
+    }
     for (n, key) in [
         (*resist_magic, "TXT_KEY_PROMOTION_RESIST"),
         (*caster_resist_modify, "TXT_KEY_PROMOTION_CASTER_RESIST_MODIFY"),
@@ -809,7 +822,9 @@ mod tests {
 
         // Given, never chosen: no requirements.
         let hero = of("PROMOTION_HERO");
-        assert!(hero.contains("[ICON_BULLET]+1 XP per turn until +100 XP"), "{hero}");
+        // (No free XP: a dead hero returns instead, ffh_core::unit::fallen.)
+        assert!(!hero.contains("XP per turn"), "{hero}");
+        assert!(hero.contains("[ICON_BULLET]Killed: returns to its capital after 15 turns"), "{hero}");
         assert!(hero.contains("[ICON_BULLET]+20% to resist spells"), "{hero}");
         assert!(!hero.contains("Requires") && !hero.contains("Available To"), "{hero}");
         // For no unit combat: no unit chooses it either.

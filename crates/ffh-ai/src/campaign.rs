@@ -1081,9 +1081,9 @@ pub fn act(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, early: bool) -> 
 
 /// The odds (per mille) below which a precious unit attacks only last in a strike, and a stack it
 /// would lead into an assault holds (0: any odds). More Naval AI's `AI_getBestGroupAttacker`
-/// (Sephi's block): a hero at 85% plus its level, a unit above level 4 at 70% plus 3% a level (at
-/// most 95%). A hero is a unique unit years of play went into; a high-level veteran is worth
-/// several new units. Neither leads an attack it may well lose, nor is sacrificed to wear defenders
+/// (Sephi's block): a hero at 60% plus 1% a level and 5% a Wound (to 90%), a unit above level 4 at 70% plus 3% a level (at
+/// most 95%). A hero returns after it dies, Wounded (`ffh_core::unit::fallen`); a high-level
+/// veteran is worth several new units. Neither leads an attack it may well lose, nor is sacrificed to wear defenders
 /// down; in a strike that takes the city, they finish what the others began.
 pub(crate) fn precious_bar(g: &Game, u: UnitId) -> i32 {
     static HERO: std::sync::OnceLock<Option<PromotionType>> = std::sync::OnceLock::new();
@@ -1092,7 +1092,9 @@ pub(crate) fn precious_bar(g: &Game, u: UnitId) -> i32 {
     let hero = unit.ai_type == Some(UnitAIType::UNITAI_HERO) || hero_promotion.is_some_and(|h| unit.has_promotion[h]);
     let level = unit.level.max(0);
     if hero {
-        (850 + 10 * level).min(990)
+        // A dead hero returns, Wounded (`ffh_core::unit::fallen`): risked more than FfH's 85%
+        // allowed, a Wound's worth more carefully each time.
+        (600 + 10 * level + 50 * unit.wounds).min(900)
     } else if level > 4 {
         (700 + 30 * level).min(950)
     } else {

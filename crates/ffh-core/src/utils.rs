@@ -1785,8 +1785,9 @@ mod tests {
         // Golem, which has no unit combat; -37 pairs and -654 in all: Extension I and II gone,
         // docs/ENGAGEMENTS.md, "Summons"; -1 pair and -783 in all: the Worker, the Mud Golem (its
         // free Golem promotion) and the Work Boat gone, docs/WORKS.md; +261 in all and no pair:
-        // the Colonist, docs/NAVAL.md 9.2.)
-        assert_eq!((n, own_promotions * own_units), (26591, 84825));
+        // the Colonist, docs/NAVAL.md 9.2; +325 in all and no pair: PROMOTION_WOUNDED, which no
+        // unit combat allows, unit/fallen.rs.)
+        assert_eq!((n, own_promotions * own_units), (26591, 85150));
         let archer = d.t::<UnitType>("UNIT_ARCHER");
         let skirmisher = d.t::<UnitType>("UNIT_SKIRMISHER");
         let takes = |u: UnitType| d.promotions.keys().filter(|&p| p.idx() < own_promotions && is_promotion_valid(d, p, u, false)).collect::<Vec<_>>();
