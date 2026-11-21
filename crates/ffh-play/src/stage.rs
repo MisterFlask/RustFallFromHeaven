@@ -754,7 +754,10 @@ fn governors_scene(dir: &Path, mixed: bool) -> Result<StagedGovernors, String> {
             .filter(|&(x, y)| g.players[h].cities.iter().all(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) >= 4))
             .min_by_key(|&(x, y)| (g.plot_distance(x, y, cx, cy), x, y))
             .ok_or("no site for a third city")?;
-        hand_run = Some(g.player_init_city(h, third.0, third.1, true, true));
+        let third = g.player_init_city(h, third.0, third.1, true, true);
+        // Its own production (else its screen opens as the production prompt).
+        g.city_push_order(third, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, false, false);
+        hand_run = Some(third);
         let republic = d.t::<CivicType>("CIVIC_REPUBLIC");
         let option = d.civics[republic].civic_option_type.ok_or("no civic option")?;
         g.player_set_civics(h, option, Some(republic));

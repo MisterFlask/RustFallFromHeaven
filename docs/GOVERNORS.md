@@ -4,8 +4,8 @@ This game's own rules, not FFH2's. A city is run by its owner by hand or by a go
 States and Aristocracy every city is governed; under any other civic the owner hands cities to
 governors, and takes them back, city by city. Over its governed cities the player sets empire
 priorities, may overrule a city's role, and places empire orders (armies' units, settlers,
-wonders, rituals) at the cities it picks; it never picks an ordinary building there. This file is the rules as they play, what was decided
-beyond the design, and what is left. A city granted to a House (docs/PERSONS.md) is the House's
+wonders, rituals) at the cities it picks; it never picks an ordinary building there. This file is
+the rules as they play, what was decided beyond the design, and what is left. A city granted to a House (docs/PERSONS.md) is the House's
 player's since the second build (2026-11-18): the House is a vassal civilization of its own and
 governs its cities itself; the first build's order quota is gone. Its liege reaches its cities only
 by the levy (docs/ARMIES.md, "Requisition").
@@ -61,6 +61,8 @@ government is about them). A civic may carry `governed`; City States and Aristoc
 - *A city gained* (founded, captured, traded, flipped, an outpost raised) is run by hand, unless
   a governed civic governs it. An outpost has no governor (docs/NAVAL.md, 9.2).
 - Barbarian cities are never governed.
+
+Whatever hands a city over or takes it back (the owner, a governed civic adopted), the same rule:
 
 - *Handed over*: the city's queue keeps its requisition orders and the orders that may be empire
   orders (they become empire orders); its other orders are dropped. Its default recruitment
