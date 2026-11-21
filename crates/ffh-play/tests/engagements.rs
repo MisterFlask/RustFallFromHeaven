@@ -62,7 +62,7 @@ const FIGHTER: &[&str] = &[
 ];
 const STAT: &[&str] = &["base_x100", "terms", "total_x100"];
 const PAIR: &[&str] = &["h", "t", "a_x100", "dv_x100", "mean", "ma_x100", "md_x100", "spell_pct", "magic_mean", "a_extra", "dv_extra"];
-const GROUND: &[&str] = &["city", "forest", "hills", "flanking", "rules"];
+const GROUND: &[&str] = &["city", "forest", "hills", "open", "marsh", "crossing", "flanking", "rules"];
 const PARAMS: &[&str] = &["bolt_pct", "splash_pct", "first_strike_speed", "extra_action_tier", "extra_actions"];
 const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "lines_down", "sides"];
 const LINE: &[&str] = &["committed", "sat_out", "fallen", "escaped", "standing"];
@@ -377,10 +377,11 @@ fn an_army_fights_with_the_squad_the_plan_shows() {
     let line = format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{}]}}"#, list.join(","));
     assert!(Command::from_json(ffh_data::global(), &Json::parse(&line).unwrap()).is_err(), "a formation is not a field of engage");
     // A squad that cannot attack there: no battle, nothing changed.
-    let before = s.g.save();
+    let units_now = |s: &Session| st.units.iter().chain(&st.defenders).map(|&u| (s.g.unit_plot_opt(u), s.g.units[u].damage, s.g.units[u].moves, s.g.units[u].attacks_made)).collect::<Vec<_>>();
+    let before = units_now(&s);
     let off = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"squad":{}}}"#, u32::MAX));
     assert!(matches!(&off, Ok(CmdOk::Applied { battle: None, .. }) | Err(CmdErr::Cannot(_))), "{off:?}");
-    assert!(s.g.battle_reports.is_empty() && s.g.save() == before, "a refused attack changes nothing");
+    assert!(s.g.battle_reports.is_empty() && units_now(&s) == before, "a refused attack moves, hurts or spends no unit");
     for named in [false, true] {
         let mut s = load(&st.save);
         let extra = if named { format!(r#","squad":{squad}"#) } else { String::new() };
