@@ -1175,7 +1175,7 @@ impl Game {
             return domain_a < domain_b;
         }
 
-        let (combat_a, combat_b) = (self.unit_base_combat_str(first), self.unit_base_combat_str(second));
+        let (combat_a, combat_b) = (self.unit_attack_rating(first), self.unit_attack_rating(second));
         if combat_a != combat_b {
             return combat_a > combat_b;
         }

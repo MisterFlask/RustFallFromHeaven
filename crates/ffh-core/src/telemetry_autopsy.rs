@@ -113,16 +113,16 @@ impl Game {
     }
 
     /// A unit's strength x100: the rules' contribution value of a unit
-    /// ([`Game::crusade_unit_strength`]: the better of its attack and defense strengths, with its
+    /// ([`Game::crusade_unit_force`]: the better of its attack and defence ratings, with its
     /// general combat bonus, scaled by its hit points).
     fn tel_au_strength(&self, u: UnitId) -> i64 {
-        self.crusade_unit_strength(u) as i64
+        self.crusade_unit_force(u) as i64
     }
 
     /// [`Game::tel_au_strength`] at full hit points.
     fn tel_au_full_strength(&self, u: UnitId) -> i64 {
-        let base = self.unit_base_combat_str(u).max(self.unit_base_combat_str_defense(u)) as i64;
-        base * (100 + self.units[u].extra_combat_percent as i64).max(10)
+        let base = self.unit_rating(u) as i64;
+        base * (100 + self.units[u].extra_combat_percent as i64).max(10) / 10
     }
 
     fn tel_au_plot_owner(&self, plot: PlotIdx) -> i64 {
@@ -514,7 +514,7 @@ impl Game {
         let info = &self.d.units[ut];
         if info.cargo_space > 0 && info.domain_cargo == Some(DomainType::DOMAIN_LAND) {
             0
-        } else if info.combat > 0 {
+        } else if info.fights() {
             1
         } else {
             2
@@ -926,7 +926,7 @@ impl Game {
                     out_of_port.push(u);
                 }
             }
-            if war == 1 && self.d.units[ut].combat > 0 {
+            if war == 1 && self.d.units[ut].fights() {
                 let (x, y) = self.map.xy(plot);
                 let mut near = false;
                 for dx in -1..=1 {

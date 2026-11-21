@@ -10,7 +10,7 @@
 import { improvementContainsMana } from "../mana-art.js";
 import { S, tname, me, isBarbarian } from "../state.js";
 import * as T from "../tiles.js";
-import { stackState, unitStrength } from "../stacks.js";
+import { stackState, unitRating } from "../stacks.js";
 import { rng, hash32, hashf } from "./noise.js";
 import { hexLinear, clamp, smoothstep } from "./math.js";
 import { KIND, FEAT, GROUND, SEA, DRAFT, RIVER_HALF, RIVER_WANDER, RIVER_BANK } from "./world.js";
@@ -819,14 +819,14 @@ export function dressUnits(world, map) {
   const sel = S.sel?.units ?? [];
   // The stack's face is its best defender, as on every map (F4): a foreign stack's units[0] could be
   // a worker hiding the armed unit behind it. headUnit picks the strongest (stacks.js).
-  const strength = (u) => unitStrength(S.data, u);
+  const rating = (u) => unitRating(S.data, u);
   // The same ctx the art view builds, so stackState also gives the activity mark and hero for the
-  // player's own stacks (F19). combat here is a proxy string (fights when its strength > 0); the
+  // player's own stacks (F19). combat here is a proxy string (fights when its rating > 0); the
   // hero pip needs the art catalog and is left for later.
   const sctx = {
     me: mine,
     selected: sel,
-    unitInfo: (t) => { const s = strength({ type: t }); return { hero: false, combat: s > 0 ? "COMBAT" : "NONE", strength: s }; },
+    unitInfo: (t) => { const s = rating({ type: t }); return { hero: false, combat: s > 0 ? "COMBAT" : "NONE", rating: s }; },
     activity: (a) => tname("ActivityType", a),
     automated: (g) => { const grp = S.groups?.get?.(g); return !!grp && grp.automated !== null && grp.automated !== undefined; },
   };
@@ -842,7 +842,7 @@ export function dressUnits(world, map) {
     const stands = onCity ? garrisonOf(world, u0.x, u0.y) : COMPANY.map(([u, v]) => [spot[0] + u, spot[1] + v]);
     const team = hexRgb(teamColour(top.owner));
     // Company behind the head, strongest first (the badge count is unchanged).
-    const order = [top, ...units.filter((u) => u !== top).sort((a, b) => strength(b) - strength(a))].slice(0, 3);
+    const order = [top, ...units.filter((u) => u !== top).sort((a, b) => rating(b) - rating(a))].slice(0, 3);
     let anchor = null;
     order.forEach((u, k) => {
       const name = tname("UnitType", u.type);

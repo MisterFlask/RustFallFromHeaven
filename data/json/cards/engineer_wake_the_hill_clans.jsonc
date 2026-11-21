@@ -84,7 +84,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 7,
       "combat_limit": 100,
       "xp_value_attack": 8,
       "xp_value_defense": 4,
@@ -92,7 +91,6 @@
       "culture_garrison": 4,
       "asset": 8,
       "power": 16,
-      "combat_defense": 7,
       "tier": 3
     },
     {
@@ -137,7 +135,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 10,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -146,7 +143,6 @@
       "asset": 20,
       "power": 40,
       "free_promotions": {"PROMOTION_HERO": true},
-      "combat_defense": 10,
       "tier": 4
     }
   ],

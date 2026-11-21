@@ -1,9 +1,9 @@
 //! FFH2 game data: loads `data/json/*.jsonc` (JSON with comments) into typed info tables.
 //!
 //! The tables are a port of the DLL's `CvInfos.cpp`; the data began as FFH2 0.41's XML.
-//! Field names mirror the C++ members (`m_iCombat` -> `combat`,
+//! Field names mirror the C++ members (`m_iMoves` -> `moves`,
 //! `m_piYieldChange` -> `yield_change`), so ported rules code maps
-//! `kInfo.getCombat()` to `info.combat`.
+//! `kInfo.getMoves()` to `info.moves`.
 
 pub mod defines;
 pub mod defines_gen;
@@ -619,20 +619,20 @@ impl GameData {
 
     /// Whether spell `s` is a battle summon (`SpellInfo::battle_summon`): it creates a temporary
     /// unit (`create_unit_type` without `permanent_unit_create`) of a land type with a stat sheet
-    /// and strength (attack, defence or a typed strength) that is not a missile (`bSuicide`).
+    /// that fights ([`UnitInfo::fights`]) and is not a missile (`bSuicide`).
     fn spell_summons_in_battle(&self, s: SpellType) -> bool {
         let info = &self.spells[s];
         let Some(t) = info.create_unit_type else { return false };
         let ty = &self.units[t];
-        !info.permanent_unit_create && self.type_engages_on_land(t) && ty.stats.is_some() && !ty.suicide && (ty.combat > 0 || ty.combat_defense > 0 || ty.damage_type_combat.iter().any(|&x| x > 0))
+        !info.permanent_unit_create && self.type_engages_on_land(t) && ty.stats.is_some() && !ty.suicide && ty.fights()
     }
 
-    /// A battle summon's strength, to choose a caster's strongest summon: its type's attack and
-    /// defence (the stat sheet's) plus ten times its typed strength, then its HP.
+    /// A battle summon's might, to choose a caster's strongest summon: its type's attack and
+    /// defence (the stat sheet's) plus its typed attack points, then its HP.
     pub fn battle_summon_strength(&self, s: SpellType) -> (i32, i32) {
         let Some(t) = self.spells[s].create_unit_type else { return (0, 0) };
-        let typed: i32 = self.units[t].damage_type_combat.iter().sum();
-        (self.unit_stat(t, StatType::Attack) + self.unit_stat(t, StatType::Defense) + 10 * typed, self.unit_stat(t, StatType::Hp))
+        let typed: i32 = self.units[t].damage_type_attack.iter().sum();
+        (self.unit_stat(t, StatType::Attack) + self.unit_stat(t, StatType::Defense) + typed, self.unit_stat(t, StatType::Hp))
     }
 
     /// The battle summons a unit of type `unit_type` holding the promotions `has_promotion` accepts

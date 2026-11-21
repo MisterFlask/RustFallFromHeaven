@@ -248,7 +248,7 @@ impl Seen {
 
     /// Our combat units on plot `(x, y)` outside group `group`.
     fn guards(&self, d: &GameData, x: i32, y: i32, group: i64) -> usize {
-        self.units.iter().filter(|u| u.owner == self.me && u.x == x && u.y == y && u.group != group && d.units[u.unit_type].combat > 0).count()
+        self.units.iter().filter(|u| u.owner == self.me && u.x == x && u.y == y && u.group != group && d.units[u.unit_type].attack_rating() > 0).count()
     }
 
     /// A unit of a player at war with us on plot `i`.
@@ -525,7 +525,7 @@ impl Bot {
             let enabled: Vec<(i64, i64)> = arr(&cq, "buildable").iter().filter(|b| flag(b, "enabled")).map(|b| (int(b, "order"), int(b, "type"))).collect();
             let train = OrderType::ORDER_TRAIN.idx() as i64;
             let trains = |pred: &dyn Fn(i64) -> bool| enabled.iter().filter(|(o, t)| *o == train && pred(*t)).map(|&(_, t)| t).collect::<Vec<_>>();
-            let guards = arr(&cq, "garrison").iter().filter(|u| int(u, "owner") == me && d.units[UnitType::from_usize(int(u, "type") as usize)].combat > 0).count();
+            let guards = arr(&cq, "garrison").iter().filter(|u| int(u, "owner") == me && d.units[UnitType::from_usize(int(u, "type") as usize)].attack_rating() > 0).count();
             let mut choice = None;
             // A city with fewer than two combat units (the capital three, from turn 30: the
             // barbarians come) first trains the strongest it can.
@@ -533,10 +533,10 @@ impl Bot {
             if guards < wanted {
                 let best = trains(&|t| {
                     let u = &d.units[UnitType::from_usize(t as usize)];
-                    u.combat > 0 && u.domain_type == Some(DomainType::DOMAIN_LAND)
+                    u.attack_rating() > 0 && u.domain_type == Some(DomainType::DOMAIN_LAND)
                 })
                 .into_iter()
-                .max_by_key(|&t| (d.units[UnitType::from_usize(t as usize)].combat, std::cmp::Reverse(t)));
+                .max_by_key(|&t| (d.units[UnitType::from_usize(t as usize)].rating(), std::cmp::Reverse(t)));
                 if let Some(t) = best {
                     choice = Some((start.wrapping_sub(1), OrderType::ORDER_TRAIN, t));
                 }
@@ -666,7 +666,7 @@ impl Bot {
                     return Some(c);
                 }
             }
-            if info.combat <= 0 {
+            if info.attack_rating() <= 0 {
                 return None;
             }
             // Attack an adjacent enemy at good odds.
@@ -714,7 +714,7 @@ impl Bot {
                                 && (u.x, u.y) == (x, y)
                                 && seen.ready.contains(&u.group)
                                 && !handled.contains(&u.id)
-                                && info.combat > 0
+                                && info.attack_rating() > 0
                                 && info.domain_type == Some(DomainType::DOMAIN_LAND)
                         })
                         .map(|u| u.id)

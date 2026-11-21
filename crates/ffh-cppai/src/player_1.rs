@@ -684,7 +684,7 @@ impl Cai {
             }
 
             let mut curr_combat = g.unit_curr_combat_str(head, None, None, None);
-            let best_combat = g.best_land_unit_combat() * 100;
+            let best_combat = ((g.best_land_unit_rating() / 10).max(1)) * 100;
 
             if g.unit_no_defensive_bonus(head) {
                 curr_combat *= 3;

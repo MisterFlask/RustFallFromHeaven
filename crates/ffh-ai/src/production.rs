@@ -47,7 +47,7 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
     if !g.player_is_barbarian(p) && garrison(g, p, plot).0 == 0 {
         let spare = g.map.plots[plot].units.iter().copied().find(|&u| {
             let unit = &g.units[u];
-            unit.owner == p && unit.march.is_none() && g.d.units[unit.unit_type].combat > 0 && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && matches!(unit.ai_type, Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_COUNTER) | Some(UnitAIType::UNITAI_RESERVE))
+            unit.owner == p && unit.march.is_none() && g.d.units[unit.unit_type].attack_rating() > 0 && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && matches!(unit.ai_type, Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_COUNTER) | Some(UnitAIType::UNITAI_RESERVE))
         });
         if let Some(u) = spare {
             g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_CITY_DEFENSE);
@@ -162,7 +162,7 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
         let threat = local_threat(g, p, plot, 2);
         let (defenders, defense) = garrison(g, p, plot);
         // (A unit an army requisitioned goes to the army: not a fighter for the city.)
-        let building_fighter = own_production_unit(g, c).is_some_and(|u| g.d.units[u].combat > 0);
+        let building_fighter = own_production_unit(g, c).is_some_and(|u| g.d.units[u].attack_rating() > 0);
         if threat == 0 {
             // A long build in a city that should have a second defender by now (decide puts
             // the defender first).
@@ -200,7 +200,7 @@ fn decide_city(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str, Op
 /// Would clearing city `c`'s queue get a fighter: does [`decide_city`] put one first? (It does not
 /// read the queue.)
 fn switch_gets_fighter(ai: &Ai, g: &Game, c: CityId) -> bool {
-    matches!(decide_city(ai, g, c), Some((Choice::Train(u, _), _, _)) if g.d.units[u].combat > 0)
+    matches!(decide_city(ai, g, c), Some((Choice::Train(u, _), _, _)) if g.d.units[u].attack_rating() > 0)
 }
 
 /// Last resort when the priority list found nothing: the cheapest useful building, else the
@@ -267,7 +267,7 @@ pub fn garrison(g: &Game, p: PlayerId, plot: PlotIdx) -> (i32, i32) {
             continue;
         }
         let info = &g.d.units[unit.unit_type];
-        if info.combat_defense <= 0 && info.combat <= 0 {
+        if !info.fights() {
             continue;
         }
         if matches!(unit.ai_type, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER) | Some(UnitAIType::UNITAI_CITY_SPECIAL)) || info.only_defensive {
@@ -1072,7 +1072,7 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
         if let Some(u) = g.city_production_unit(c) {
             let info = &d.units[u];
             let limited = info.unit_class_type.is_some_and(|k| ffh_core::utils::is_limited_unit_class(d, k));
-            if info.combat == 0 || limited || f.at_war || threat > 0 || garrison(g, p, plot).0 == 0 {
+            if info.attack_rating() == 0 || limited || f.at_war || threat > 0 || garrison(g, p, plot).0 == 0 {
                 continue;
             }
         } else if let Some(b) = g.city_production_building(c) {
@@ -1192,7 +1192,7 @@ pub(crate) fn siege_engine(info: &UnitInfo) -> bool {
 
 fn role_ok(d: &GameData, info: &UnitInfo, role: Role) -> bool {
     let has = |a: UnitAIType| info.unit_ai_type[a];
-    let fighter = info.combat > 0 && !info.found && !is_hero(d, info) && info.default_unit_ai_type != Some(UnitAIType::UNITAI_MAGE);
+    let fighter = info.attack_rating() > 0 && !info.found && !is_hero(d, info) && info.default_unit_ai_type != Some(UnitAIType::UNITAI_MAGE);
     match role {
         Role::Defense => {
             fighter && (has(UnitAIType::UNITAI_CITY_DEFENSE) || has(UnitAIType::UNITAI_CITY_COUNTER) || has(UnitAIType::UNITAI_ATTACK) || has(UnitAIType::UNITAI_COUNTER))
@@ -1201,12 +1201,12 @@ fn role_ok(d: &GameData, info: &UnitInfo, role: Role) -> bool {
         // (An animal is trained only where a building trains it: the Beast Market's, docs/CARDS.md.)
         Role::Attack | Role::CityAttack => fighter && !info.only_defensive && (has(UnitAIType::UNITAI_ATTACK) || has(UnitAIType::UNITAI_ATTACK_CITY) || info.animal) && !siege_engine(info),
         Role::Settler => has(UnitAIType::UNITAI_SETTLE) && info.found,
-        Role::Hero => is_hero(d, info) && (info.combat > 0 || born_caster(d, info)),
-        Role::SeaHero => is_hero(d, info) && info.combat > 0,
+        Role::Hero => is_hero(d, info) && (info.attack_rating() > 0 || born_caster(d, info)),
+        Role::SeaHero => is_hero(d, info) && info.attack_rating() > 0,
         Role::Mage => info.default_unit_ai_type == Some(UnitAIType::UNITAI_MAGE) || has(UnitAIType::UNITAI_WARWIZARD),
         Role::Explore => has(UnitAIType::UNITAI_EXPLORE),
         Role::Transport => info.cargo_space > 0 && info.domain_cargo == Some(DomainType::DOMAIN_LAND) && info.special_cargo.is_none(),
-        Role::SeaExplore => info.combat > 0 && (has(UnitAIType::UNITAI_EXPLORE_SEA) || has(UnitAIType::UNITAI_ATTACK_SEA)),
+        Role::SeaExplore => info.attack_rating() > 0 && (has(UnitAIType::UNITAI_EXPLORE_SEA) || has(UnitAIType::UNITAI_ATTACK_SEA)),
         Role::Siege => fighter && (has(UnitAIType::UNITAI_ATTACK_CITY) || has(UnitAIType::UNITAI_COLLATERAL)) && (info.bombard_rate > 0 || info.collateral_damage > 0),
     }
 }
@@ -1282,9 +1282,8 @@ fn enabler_building(g: &Game, c: CityId, threat: i32) -> Option<BuildingType> {
 
 /// Defense strength of a unit type in a city (FfH units have a separate defense value).
 pub(crate) fn type_city_defense(info: &UnitInfo) -> i64 {
-    let dmg: i32 = info.damage_type_combat.iter().sum();
-    let base = if info.combat_defense > 0 { info.combat_defense } else { info.combat };
-    let mut v = ((base + dmg) * 100) as i64 * (100 + info.city_defense_modifier.max(-50)) as i64 / 100;
+    let base = if info.defense_rating() > 0 { info.defense_rating() } else { info.attack_rating() };
+    let mut v = (base * 10) as i64 * (100 + info.city_defense_modifier.max(-50)) as i64 / 100;
     v += v * (info.first_strikes * 2 + info.chance_first_strikes) as i64 / 20;
     v
 }
@@ -1329,8 +1328,8 @@ pub(crate) fn best_unit_where(g: &Game, c: CityId, role: Role, keep: impl Fn(Uni
                 v += info.collateral_damage as i64 * 2;
                 v
             }
-            Role::Transport => info.cargo_space as i64 * 100 + info.moves as i64 * 30 + info.combat as i64 * 5,
-            Role::SeaExplore => info.moves as i64 * 60 + info.combat as i64 * 10 + 50 * i64::from(info.unit_ai_type[UnitAIType::UNITAI_EXPLORE_SEA]),
+            Role::Transport => info.cargo_space as i64 * 100 + info.moves as i64 * 30 + info.attack_rating() as i64 / 2,
+            Role::SeaExplore => info.moves as i64 * 60 + info.attack_rating() as i64 + 50 * i64::from(info.unit_ai_type[UnitAIType::UNITAI_EXPLORE_SEA]),
             Role::Settler => 100,
             Role::Mage | Role::Explore => 100 + info.moves as i64 * 10 + info.tier as i64 * 50,
         } + info.ai_weight as i64;

@@ -91,6 +91,24 @@ went wrong", below.)
 
 ## Changes from FFH2
 
+- **Land units have no strength** (docs/UNIT_STATS.md, section 10; the owner's decision,
+  2026-11-21). `iCombat` and `iCombatDefense` are gone from every land unit; the stat sheet is the
+  only source of its attack and defence, and the rules that read strength read the sheet's
+  ratings (ATK, DEF, the higher of the two) on its scale, ten a strength point. Ships keep
+  strength and the naval duel. Typed attack and affinities are in points (x10). What plays
+  differently, for the 120 land units whose sheet is not their old strength x10 and for the
+  rounding: Ira -30 ATK and DEF after a fight its opponent survives, while ATK < 320 (FfH: -3
+  strength under 32); the Repentant Angel -50 while ATK > 50 (-5 above 5); a Flesh Golem +10 ATK
+  (DEF) when the merged unit's is higher (+1 strength), its trophy at ATK 150 (15); defensive
+  strike and spell damage resistance take DEF / 5 (2 x defence strength); the Fear check
+  `(rating - the source's) / 10 + 20 + levels` (strengths), its source the highest rating;
+  Kidnap's chance ATK x 8 / 10 % (strength x 8); Domination's target rating + (100 - resist)
+  (10 x strength); Pillar of Fire's and the Citadel event's targets half the ratings (5 x
+  strength); Rantine's Convert City, The Cull's order, the best land unit, upgrade and
+  requisition picks by rating; the AI-only gates of Commander Join (rating above 50) and Take
+  Equipment (rating more than 20 above the holder's). Crusade and loan **force** (was strength)
+  is the rating with the combat bonus, shown on the sheet's scale (an Axeman's 40, was 4).
+  Save format 58.
 - **Fixed mana resources.** Map generation assigns every ordinary mana deposit a uniformly
   random sphere from the 17 standard node types, using the map RNG after start normalization
   and far-shore placement. Same seed, same resources. Ice remains special to Letum Frigus.

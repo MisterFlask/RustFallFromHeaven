@@ -343,7 +343,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         promotion_combat_type,
         promotion_combat_mod,
         bonus_affinity,
-        damage_type_combat,
+        damage_type_attack,
         damage_type_resist,
         first_melee_pattern,
         heal_behind,
@@ -547,8 +547,8 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
     }
     for dt in d.damages.keys() {
         let damage = display(d, dt);
-        if damage_type_combat[dt] != 0 {
-            line(b, d, "TXT_KEY_DAMAGE_TYPE_COMBAT", &[Arg::N(damage_type_combat[dt]), Arg::S(&damage)]);
+        if damage_type_attack[dt] != 0 {
+            line(b, d, "TXT_KEY_DAMAGE_TYPE_COMBAT", &[Arg::N(damage_type_attack[dt]), Arg::S(&damage)]);
         }
         if damage_type_resist[dt] == 100 {
             line(b, d, "TXT_KEY_PROMOTION_DAMAGE_TYPE_IMMUNE", &[Arg::S(&damage)]);

@@ -379,7 +379,7 @@ impl Game {
                 }
                 let by = e.of(e.side(t).other()).find(|&h| {
                     let hu = e.units[h];
-                    r.dealt(h, t) > 0 && self.units.contains(hu) && self.units[hu].damage_type_combat[DamageType::DAMAGE_POISON] > 0
+                    r.dealt(h, t) > 0 && self.units.contains(hu) && self.units[hu].damage_type_attack[DamageType::DAMAGE_POISON] > 0
                 });
                 let Some(h) = by else { continue };
                 if self.unit_is_alive(tu) && self.units[tu].damage > 0 {

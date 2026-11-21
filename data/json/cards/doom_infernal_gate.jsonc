@@ -38,7 +38,6 @@
       "min_area_size": -1,
       "moves": 2,
       "nuke_range": -1,
-      "combat": 7,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -46,10 +45,9 @@
       "asset": 14,
       "power": 28,
       "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_DEMON": true},
-      "combat_defense": 6,
       "tier": 4,
       "weapon_tier": 3,
-      "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+      "damage_type_attacks": {"DAMAGE_UNHOLY": 20}
     }
   ],
   "promotions": [

@@ -29,10 +29,10 @@ pub struct TechUnlocks {
 }
 
 fn unit_power(u: &UnitInfo) -> i32 {
-    if u.combat <= 0 {
+    if u.attack_rating() <= 0 {
         return 0;
     }
-    let mut p = u.combat * 100;
+    let mut p = u.attack_rating() * 10;
     p += p * (u.moves.max(1) - 1) / 4;
     p += p * (u.first_strikes * 2 + u.chance_first_strikes) / 20;
     p += p * u.withdrawal_probability / 200;

@@ -489,7 +489,7 @@ impl Cai {
             let Some(conscript_unit) = g.city_conscript_unit(c) else {
                 return;
             };
-            if g.d.units[conscript_unit].combat > 5 {
+            if g.d.units[conscript_unit].attack_rating() / 10 > 5 {
                 if force {
                     g.city_conscript(c);
                     return;
@@ -709,7 +709,7 @@ impl Cai {
 
             if let Some(unit) = production_unit {
                 if d.units[unit].domain_type == Some(DomainType::DOMAIN_LAND) {
-                    if d.units[unit].combat > 0 {
+                    if d.units[unit].attack_rating() > 0 {
                         if danger {
                             min_turns = min_turns.min(3);
                             essential = true;

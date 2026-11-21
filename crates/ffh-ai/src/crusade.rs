@@ -51,7 +51,7 @@ fn gold_per_strength_x100(g: &Game, p: PlayerId) -> i64 {
     for &u in &g.players[p].units {
         if g.units.contains(u) && g.crusade_unit_lendable(u) {
             cost += g.d.units[g.units[u].unit_type].production_cost.max(0) as i64;
-            strength += g.crusade_unit_strength(u) as i64;
+            strength += g.crusade_unit_force(u) as i64;
         }
     }
     if strength <= 0 {
@@ -190,7 +190,7 @@ fn lend_value(o: &Outlook, s: i64) -> LendValue {
 
 /// Strength `p` may lend at most (the rest is the home-defence floor and garrisons).
 fn lendable_strength(g: &Game, p: PlayerId) -> i64 {
-    spare_units(g, p).iter().map(|&u| g.crusade_unit_strength(u) as i64).sum()
+    spare_units(g, p).iter().map(|&u| g.crusade_unit_force(u) as i64).sum()
 }
 
 /// `Controller::crusade_pledge`: the best amount to pledge, or a refusal.
@@ -235,9 +235,9 @@ pub fn spare_units(g: &Game, p: PlayerId) -> Vec<UnitId> {
     }
     let mut candidates: Vec<UnitId> = g.players[p].units.iter().copied().filter(|&u| g.units.contains(u) && g.crusade_unit_lendable(u)).collect();
     // Garrisons keep their best defenders.
-    candidates.sort_by_key(|&u| (std::cmp::Reverse(g.units[u].base_combat_defense), u));
+    candidates.sort_by_key(|&u| (std::cmp::Reverse(g.unit_defense_rating(u)), u));
     let mut out = Vec::new();
-    let total: i64 = candidates.iter().map(|&u| g.crusade_unit_strength(u) as i64).sum();
+    let total: i64 = candidates.iter().map(|&u| g.crusade_unit_force(u) as i64).sum();
     let mut kept: i64 = 0;
     for u in candidates {
         let plot = g.unit_plot(u);
@@ -245,23 +245,23 @@ pub fn spare_units(g: &Game, p: PlayerId) -> Vec<UnitId> {
         if let Some(k) = keep_in_city.get_mut(&plot) {
             if *k > 0 {
                 *k -= 1;
-                kept += g.crusade_unit_strength(u) as i64;
+                kept += g.crusade_unit_force(u) as i64;
                 continue;
             }
         }
         if matches!(ai, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_SPECIAL) | Some(UnitAIType::UNITAI_MAGE) | Some(UnitAIType::UNITAI_WARWIZARD) | Some(UnitAIType::UNITAI_MEDIC) | Some(UnitAIType::UNITAI_TERRAFORMER) | Some(UnitAIType::UNITAI_MANA_UPGRADE) | Some(UnitAIType::UNITAI_WORKER) | Some(UnitAIType::UNITAI_SETTLE)) {
-            kept += g.crusade_unit_strength(u) as i64;
+            kept += g.crusade_unit_force(u) as i64;
             continue;
         }
         out.push(u);
     }
     // Home-defence floor: a share of the whole army stays.
     let floor = total * HOME_FLOOR_PERCENT / 100;
-    out.sort_by_key(|&u| (!is_army_unit(g, u), std::cmp::Reverse(g.crusade_unit_strength(u)), u));
-    let mut lendable: i64 = out.iter().map(|&u| g.crusade_unit_strength(u) as i64).sum();
+    out.sort_by_key(|&u| (!is_army_unit(g, u), std::cmp::Reverse(g.crusade_unit_force(u)), u));
+    let mut lendable: i64 = out.iter().map(|&u| g.crusade_unit_force(u) as i64).sum();
     while kept < floor && !out.is_empty() {
         let u = out.pop().expect("non-empty");
-        let s = g.crusade_unit_strength(u) as i64;
+        let s = g.crusade_unit_force(u) as i64;
         kept += s;
         lendable -= s;
     }
@@ -306,7 +306,7 @@ pub fn pick_units(g: &Game, p: PlayerId, strength: i64) -> Vec<UnitId> {
     let mut out = Vec::new();
     let mut left = strength;
     while left > 0 && !spare.is_empty() {
-        let s = |u: UnitId| g.crusade_unit_strength(u) as i64;
+        let s = |u: UnitId| g.crusade_unit_force(u) as i64;
         let i = match spare.iter().enumerate().filter(|&(_, &u)| s(u) >= left).min_by_key(|&(_, &u)| (s(u), u)) {
             Some((i, _)) => i,
             None => 0, // (strongest first: `spare_units` sorts army units by strength)
@@ -699,12 +699,12 @@ pub fn host_turn(g: &mut Game, p: PlayerId) {
     let mut garrison: Vec<UnitId> = Vec::new();
     for &c in &g.players[p].cities.clone() {
         let cp = g.city_plot(c);
-        if let Some(&u) = units.iter().filter(|&&u| g.unit_plot(u) == cp).max_by_key(|&&u| (g.units[u].base_combat_defense, u)) {
+        if let Some(&u) = units.iter().filter(|&&u| g.unit_plot(u) == cp).max_by_key(|&&u| (g.unit_defense_rating(u), u)) {
             garrison.push(u);
         }
     }
     let field: Vec<UnitId> = units.iter().copied().filter(|u| !garrison.contains(u)).collect();
-    let lead = field.iter().copied().max_by_key(|&u| (g.crusade_unit_strength(u), std::cmp::Reverse(u))).unwrap_or(units[0]);
+    let lead = field.iter().copied().max_by_key(|&u| (g.crusade_unit_force(u), std::cmp::Reverse(u))).unwrap_or(units[0]);
     let here = g.unit_plot(lead);
     let goal = objective(g, idx, here);
     let avg_health = if field.is_empty() { 100 } else { field.iter().map(|&u| health_percent(g, u)).sum::<i32>() / field.len() as i32 };
@@ -724,7 +724,7 @@ pub fn host_turn(g: &mut Game, p: PlayerId) {
     let mustered: i64 = field.iter().filter(|&&u| {
         let (x, y) = (g.units[u].x, g.units[u].y);
         g.plot_distance(x, y, rx, ry) <= 2
-    }).map(|&u| g.crusade_unit_strength(u) as i64).sum();
+    }).map(|&u| g.crusade_unit_force(u) as i64).sum();
     let near_goal = goal.is_some_and(|q| {
         let (qx, qy) = g.map.xy(q);
         field.iter().any(|&u| g.plot_distance(g.units[u].x, g.units[u].y, qx, qy) <= 2)

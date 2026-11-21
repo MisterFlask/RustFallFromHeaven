@@ -80,7 +80,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 5,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -90,9 +89,8 @@
       "free_promotions": {"PROMOTION_UNDEAD": true, "PROMOTION_HERO": true, "PROMOTION_IMMORTAL": true},
       "battle_spell": "SPELL_DEATH_GRIP",
       "free_xp": true,
-      "combat_defense": 5,
       "tier": 4,
-      "damage_type_combats": {"DAMAGE_DEATH": 2}
+      "damage_type_attacks": {"DAMAGE_DEATH": 20}
     }
   ],
   "buildings": [

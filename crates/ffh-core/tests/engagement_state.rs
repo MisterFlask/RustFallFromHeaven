@@ -67,7 +67,7 @@ fn land_attacks_on_land_are_engagements() {
         let water = g.map.plot_xy(wx, wy).unwrap();
         assert!(!g.engage_applies(u, water), "an attack on water is a duel");
         // A ship attacking land is not an engagement.
-        let ship = g.d.units.keys().find(|&t| g.d.units[t].domain_type == Some(DomainType::DOMAIN_SEA) && g.d.units[t].combat > 0).unwrap();
+        let ship = g.d.units.keys().find(|&t| g.d.units[t].domain_type == Some(DomainType::DOMAIN_SEA) && g.d.units[t].strength > 0).unwrap();
         let s = g.player_init_unit(PlayerId(0), ship, wx, wy, None, None);
         assert!(!g.engage_applies(s, land));
     }

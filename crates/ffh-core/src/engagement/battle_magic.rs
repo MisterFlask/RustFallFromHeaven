@@ -104,7 +104,7 @@ impl Game {
         }
         let sum = |f: &dyn Fn(&PromotionInfo) -> i32| held.iter().map(|&p| f(&d.promotions[p])).sum::<i32>();
         let stat = |s: StatType| (sum(&|i| i.stat_changes[s.idx()].flat), sum(&|i| i.stat_changes[s.idx()].percent));
-        let typed = sum(&|i| i.damage_type_combat.iter().sum::<i32>());
+        let typed = sum(&|i| i.damage_type_attack.iter().sum::<i32>());
         let pct = |with: i32, without: i32| (without.max(1) as i64 * 100 / with.max(1) as i64) as i32;
         let (fa, pa) = stat(StatType::Attack);
         let (fd, pd) = stat(StatType::Defense);

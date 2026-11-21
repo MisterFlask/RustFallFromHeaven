@@ -191,7 +191,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `MEMORY_SPLIT_HOUSE`; `TRADE_SECEDE` and `TRADE_HOUSE_VASSAL` gone (`TradeableItem::NUM` 17).
 /// - 57: an engagement is lost by the side whose units lost more HP (docs/ENGAGEMENTS.md, "The
 ///   result"): `Outcome::hp_lost`, `loser`.
-pub const FORMAT_VERSION: u32 = 57;
+/// - 58: land units have no strength (docs/UNIT_STATS.md, "Ratings"): no `Unit::base_combat`,
+///   `base_combat_defense`; typed and affinity amounts in attack points (ten a strength point).
+pub const FORMAT_VERSION: u32 = 58;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -678,7 +678,7 @@ impl Cai {
 
                 if let Some(pu) = production_unit {
                     if g.city_production(c) > 0 {
-                        if g.d.units[pu].combat > 0 {
+                        if g.d.units[pu].attack_rating() > 0 {
                             // BETTER AI (better AI gold management) Sephi: do not force Hurry, ever
                             self.city_ai_do_hurry(g, c, false);
                             return true;

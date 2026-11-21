@@ -1273,7 +1273,7 @@ impl Game {
                 return false;
             };
 
-            if d.units[unit_type].combat > 0
+            if d.units[unit_type].attack_rating() > 0
                 && !d.units[unit_type].only_defensive
                 && (self.is_game_multi_player() || self.elapsed_game_turns < 20)
             {

@@ -1516,7 +1516,8 @@ fn req_take_equipment_promotion(g: &Game, caster: UnitId, call: &PyCall) -> bool
         return false;
     }
     if !g.players[p].human {
-        if g.unit_base_combat_str(caster) - 2 <= g.unit_base_combat_str(holder) {
+        // FfH: strength more than 2 above the holder's; rating more than 20 (docs/PORTING.md).
+        if g.unit_rating(caster) - 20 <= g.unit_rating(holder) {
             return false;
         }
         // (`promotion` is set: the holder has it.)
@@ -1824,7 +1825,7 @@ fn spell_veil_of_night(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let hidden_nationality = g.d.t::<PromotionType>("PROMOTION_HIDDEN_NATIONALITY");
     let p = g.units[caster].owner;
     for u in py_unit_list(g, p) {
-        if g.unit_base_combat_str(u) > 0 {
+        if g.unit_can_fight(u) {
             g.unit_set_has_promotion(u, hidden_nationality, true);
         }
     }

@@ -681,7 +681,7 @@ impl Game {
     pub(crate) fn tel_unit_died(&self, u: UnitId) {
         let p = self.units[u].owner;
         let ty = self.tel_name_unit(self.units[u].unit_type);
-        let combat = self.d.units[self.units[u].unit_type].combat > 0;
+        let combat = self.d.units[self.units[u].unit_type].fights();
         self.telemetry.with(|t| {
             let cause = t.kill_cause.remove(&u).or_else(|| t.ctx.last().copied()).unwrap_or("other");
             t.count(p, "died", cause, 0);

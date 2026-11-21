@@ -865,19 +865,6 @@ impl Game {
         self.units[u].damage >= self.unit_max_hit_points(u)
     }
 
-    /// C++ `CvUnit::baseCombatStr` (CvUnit.cpp:8958-8971).
-    pub fn unit_base_combat_str(&self, u: UnitId) -> i32 {
-        // FfH: base strength plus damage-type strength, floored at 0.
-        let unit = &self.units[u];
-        (unit.base_combat + unit.total_damage_type_combat).max(0)
-    }
-
-    /// C++ `CvUnit::baseCombatStrDefense` (CvUnit.cpp:8979-8987).
-    pub fn unit_base_combat_str_defense(&self, u: UnitId) -> i32 {
-        let unit = &self.units[u];
-        (unit.base_combat_defense + unit.total_damage_type_combat).max(0)
-    }
-
     /// C++ `CvUnit::isFortifyable` (CvUnit.cpp:10016-10024).
     pub fn unit_is_fortifyable(&self, u: UnitId) -> bool {
         if !self.unit_can_fight(u)
@@ -1406,8 +1393,8 @@ impl Game {
     }
 
     /// A promotion's `stat_changes` (docs/UNIT_STATS.md), `change` times (1 gained, -1 lost): the
-    /// unit's battle stats, and its strength outside land battles from its attack and defence
-    /// (their points in tens; the attack's percentage, C++ `iCombatPercent`).
+    /// unit's battle stats (its ratings follow), and the attack's percentage as the duel's
+    /// (C++ `iCombatPercent`).
     pub fn unit_apply_stat_changes(&mut self, u: UnitId, changes: &[StatChange; StatType::NUM], change: i32) {
         let unit = &mut self.units[u];
         for s in StatType::ALL {
@@ -1415,8 +1402,6 @@ impl Game {
             unit.stat_pct[s.idx()] += changes[s.idx()].percent * change;
         }
         unit.extra_combat_percent += changes[StatType::Attack.idx()].percent * change;
-        unit.base_combat += changes[StatType::Attack.idx()].flat / 10 * change;
-        unit.base_combat_defense += changes[StatType::Defense.idx()].flat / 10 * change;
     }
 
     /// C++ `CvUnit::changeExtraCityAttackPercent` (CvUnit.cpp:12311-12319).
@@ -1855,7 +1840,7 @@ impl Game {
                 }
             }
             for damage_type in d.damages.keys() {
-                self.unit_change_damage_type_combat(u, damage_type, info.damage_type_combat[damage_type] * change);
+                self.unit_change_damage_type_attack(u, damage_type, info.damage_type_attack[damage_type] * change);
             }
             for bonus in d.bonuses.keys() {
                 self.unit_change_bonus_affinity(u, bonus, info.bonus_affinity[bonus] * change);
@@ -2100,7 +2085,7 @@ mod tests {
             .units
             .keys()
             .find(|&t| {
-                d.units[t].no_defensive_bonus && d.units[t].domain_type == Some(DomainType::DOMAIN_LAND) && d.units[t].combat > 0
+                d.units[t].no_defensive_bonus && d.units[t].domain_type == Some(DomainType::DOMAIN_LAND) && d.units[t].attack_rating() > 0
             })
             .unwrap();
         let name = d.type_name(no_bonus).to_string();
@@ -2242,9 +2227,9 @@ mod tests {
         assert!(!g.unit_can_acquire_promotion(u, diseased));
 
         // Removing a promotion the unit does not have changes nothing.
-        let before = (g.units[u].extra_combat_percent, g.units[u].blitz_count, g.units[u].base_combat);
+        let before = (g.units[u].extra_combat_percent, g.units[u].blitz_count, g.units[u].stat_flat);
         g.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_COMBAT1"), false);
-        assert_eq!(before, (g.units[u].extra_combat_percent, g.units[u].blitz_count, g.units[u].base_combat));
+        assert_eq!(before, (g.units[u].extra_combat_percent, g.units[u].blitz_count, g.units[u].stat_flat));
     }
 
     #[test]

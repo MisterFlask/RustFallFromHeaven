@@ -76,6 +76,21 @@ def child(e, key):
     return e.get(key)
 
 
+def attack(e):
+    """A unit type's attack on the stat sheet's scale (docs/UNIT_STATS.md, section 10): its sheet's,
+    or a ship's strength x10, plus its typed attack points."""
+    st = e.get("stats")
+    base = num(st, "attack") if isinstance(st, dict) else 10 * num(e, "strength")
+    return base + sum(int(b) for _, b in pairs(e, "damage_type_attacks"))
+
+
+def defense(e):
+    """As `attack`, its defence."""
+    st = e.get("stats")
+    base = num(st, "defense") if isinstance(st, dict) else 10 * num(e, "strength_defense")
+    return base + sum(int(b) for _, b in pairs(e, "damage_type_attacks"))
+
+
 def pairs(e, key):
     """A list or a per-type object: [(first value, second value or '1')]."""
     c = child(e, key)
@@ -324,7 +339,7 @@ def siege_engine(e):
 
 def roles(e):
     has = u_ai(e)
-    combat = num(e, "combat")
+    combat = attack(e)
     found = num(e, "found")
     dom = txt(e, "domain")
     da = txt(e, "default_unit_ai")
@@ -366,7 +381,7 @@ def roles(e):
 def field_role(e):
     da = txt(e, "default_unit_ai")
     dom = txt(e, "domain")
-    combat = num(e, "combat")
+    combat = attack(e)
     if dom == "DOMAIN_SEA":
         if "UNITAI_WORKER_SEA" in u_ai(e) and combat == 0:
             return "SeaWorker (workers.rs)"
@@ -391,7 +406,7 @@ def field_role(e):
         return m[da]
     if num(e, "found"):
         return "Settler"
-    if combat > 0 or num(e, "combat_defense") > 0:
+    if combat > 0 or defense(e) > 0:
         return "Army (military.rs, campaign.rs)" + (" -- or Garrison when production trained it as a defender (UNITAI_CITY_DEFENSE)" if "Defense" in roles(e) else "")
     if on_list(e, "builds"):
         return "Worker"
@@ -503,10 +518,10 @@ def unit_facts(u):
         replaces = f"replaces {nm(dflt)} (`{dflt}`) for its civilization(s)"
     lines = []
     lines.append(f"- class `{cls}`{' (' + class_limits(ce) + ')' if ce is not None and class_limits(ce) else ''}; combat type `{txt(e, 'unit_combat') or 'NONE'}`; domain `{txt(e, 'domain')}`; tier {num(e, 'tier')}")
-    s = f"- strength {num(e, 'combat')}/{num(e, 'combat_defense')} (attack/defense), moves {num(e, 'moves')}"
-    dmg = pairs(e, "damage_type_combats")
+    s = f"- attack {attack(e)}, defense {defense(e)}, moves {num(e, 'moves')}"
+    dmg = pairs(e, "damage_type_attacks")
     if dmg:
-        s += ", extra damage " + ", ".join(f"{b} {a}" for a, b in dmg)
+        s += ", typed attack " + ", ".join(f"{b} {a}" for a, b in dmg)
     for tag, label in [("first_strikes", "first strikes"), ("chance_first_strikes", "chance first strikes"), ("withdrawal_prob", "withdraw %"), ("collateral_damage", "collateral"), ("bombard_rate", "bombard"), ("city_attack", "city attack %"), ("city_defense", "city defense %"), ("cargo", "cargo"), ("work_rate", "work rate")]:
         if num(e, tag):
             s += f", {label} {num(e, tag)}"

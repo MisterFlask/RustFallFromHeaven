@@ -292,8 +292,8 @@ CvUnit promotions, experience and levels, leaders (great generals), upgrades, an
 | `CvUnit::currHitPoints` | CvUnit.cpp:8935-8938 | 4 | `unit_curr_hit_points` | ported |
 | `CvUnit::isHurt` | CvUnit.cpp:8941-8944 | 4 | `unit_is_hurt` | ported |
 | `CvUnit::isDead` | CvUnit.cpp:8947-8950 | 4 | `unit_is_dead` | ported |
-| `CvUnit::baseCombatStr` | CvUnit.cpp:8958-8971 | 14 | `unit_base_combat_str` | ported |
-| `CvUnit::baseCombatStrDefense` | CvUnit.cpp:8979-8987 | 9 | `unit_base_combat_str_defense` | ported |
+| `CvUnit::baseCombatStr` | CvUnit.cpp:8958-8971 | 14 | `unit_attack_rating` | replaced: land units have no strength (docs/UNIT_STATS.md, section 10) |
+| `CvUnit::baseCombatStrDefense` | CvUnit.cpp:8979-8987 | 9 | `unit_defense_rating` | replaced (as above) |
 | `CvUnit::isFortifyable` | CvUnit.cpp:10016-10024 | 9 | `unit_is_fortifyable` | ported |
 | `CvUnit::fortifyModifier` | CvUnit.cpp:10027-10044 | 18 | `unit_fortify_modifier` | ported |
 | `CvUnit::experienceNeeded` | CvUnit.cpp:10047-10065 | 19 | `unit_experience_needed` | ported |
@@ -602,7 +602,7 @@ FfH2 additions to CvUnit: spells (`canCast`, `cast`, ...), summons, damage types
 | `CvUnit::setWeapons` | CvUnit.cpp:16562-16617 | 56 | `unit_set_weapons` | ported |
 | `CvUnit::changeBonusAffinity` | CvUnit.cpp:16619-16626 | 8 | `unit_change_bonus_affinity` | ported |
 | `CvUnit::updateBonusAffinity` | CvUnit.cpp:16633-16648 | 16 | `unit_update_bonus_affinity` | ported |
-| `CvUnit::changeDamageTypeCombat` | CvUnit.cpp:16650-16657 | 8 | `unit_change_damage_type_combat` | ported |
+| `CvUnit::changeDamageTypeCombat` | CvUnit.cpp:16650-16657 | 8 | `unit_change_damage_type_attack` | ported (attack points, x10) |
 | `CvUnit::getDamageTypeResist` | CvUnit.cpp:16669-16681 | 13 | `unit_get_damage_type_resist` | ported |
 | `CvUnit::changeDamageTypeResist` | CvUnit.cpp:16683-16689 | 7 | `unit_change_damage_type_resist` | ported |
 | `CvUnit::countUnitsWithinRange` | CvUnit.cpp:16691-16726 | 36 | `unit_count_units_within_range` | ported |
@@ -695,7 +695,7 @@ FfH2 additions to CvUnit: spells (`canCast`, `cast`, ...), summons, damage types
 | `CvUnit::getExtraFeatureDefensePercent` | CvUnit.cpp:13169-13174 | `unit.extra_feature_defense_percent[feature]` |
 | `CvUnit::getExtraUnitCombatModifier` | CvUnit.cpp:13190-13195 | `unit.extra_unit_combat_modifier[unit_combat]` |
 | `CvUnit::isHasPromotion` | CvUnit.cpp:13402-13407 | `unit.has_promotion[promotion]` |
-| `CvUnit::setBaseCombatStr` | CvUnit.cpp:8953-8956 | `unit.base_combat` |
+| `CvUnit::setBaseCombatStr` | CvUnit.cpp:8953-8956 | `unit_change_attack_points` (no strength field) |
 | `CvUnit::setBaseCombatStrDefense` | CvUnit.cpp:8974-8977 | `unit.base_combat_defense` |
 | `CvUnit::combatLimit` | CvUnit.cpp:9787-9795 | `unit.combat_limit` |
 | `CvUnit::cargoSpace` | CvUnit.cpp:10573-10576 | `unit.cargo_capacity` |
@@ -734,8 +734,8 @@ FfH2 additions to CvUnit: spells (`canCast`, `cast`, ...), summons, damage types
 | `CvUnit::setSummoner` | CvUnit.cpp:15838-15841 | `unit.summoner` |
 | `CvUnit::getWorkRateModify` | CvUnit.cpp:15843-15846 | `unit.work_rate_modify` |
 | `CvUnit::getBonusAffinity` | CvUnit.cpp:16628-16631 | `unit.bonus_affinity[bonus]` |
-| `CvUnit::getDamageTypeCombat` | CvUnit.cpp:16659-16662 | `unit.damage_type_combat[damage_type]` |
-| `CvUnit::getTotalDamageTypeCombat` | CvUnit.cpp:16664-16667 | `unit.total_damage_type_combat` |
+| `CvUnit::getDamageTypeCombat` | CvUnit.cpp:16659-16662 | `unit.damage_type_attack[damage_type]` (x10) |
+| `CvUnit::getTotalDamageTypeCombat` | CvUnit.cpp:16664-16667 | `unit.total_damage_type_attack` (x10) |
 | `CvUnit::isTerraformer` | CvUnit.cpp:16800-16803 | `unit.terraformer` |
 | `CvUnitAI::AI_getUnitAIType` | CvUnitAI.cpp:1425-1428 | `unit.ai_type` |
 | `CvUnitAI::AI_getBirthmark` | CvUnitAI.cpp:1385-1388 | `unit.ai_birthmark` |

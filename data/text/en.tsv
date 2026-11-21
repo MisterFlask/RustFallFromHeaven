@@ -5561,7 +5561,7 @@ TXT_KEY_COMMERCE_GOLD	Gold
 TXT_KEY_COMMERCE_RESEARCH	Research
 TXT_KEY_COMPRESS_FAILED	Failed to compress game data
 TXT_KEY_CONCEPT_AFFINITY	Affinity
-TXT_KEY_CONCEPT_AFFINITY_PEDIA	[H1]Affinity[\H1][PARAGRAPH:2]Some creatures have affinity for a particular mana type. This means that they gain a strength bonus equal to their affinity amount for each source of that type of mana you control. So a creature that has Nature Affinity: 1 gets +1 for every nature mana you own. A creature with Death Affinity: 2 gets +2 strength for every death mana you control.
+TXT_KEY_CONCEPT_AFFINITY_PEDIA	[H1]Affinity[\H1][PARAGRAPH:2]Some creatures have affinity for a particular mana type. This means that they gain attack and defense equal to their affinity amount for each source of that type of mana you control (attack of the mana's damage type, for a mana that has one). So a creature that has Nature Affinity: 10 gets +10 attack and defense for every nature mana you own. A creature with Death Affinity: 20 gets +20 death attack for every death mana you control.
 TXT_KEY_CONCEPT_AIR_COMBAT	Air Combat
 TXT_KEY_CONCEPT_AIR_COMBAT_PEDIA_SR	[H1]Air Combat[\H1][PARAGRAPH:2]Air Units assigned to the "Intercept" Mission will now defend against attacks by other Air Units in a similar manner as land-based units. Upon being attacked, the two units will fight until one of the units is defeated or withdraws. Defending air units can also protect against multiple attacks in the same round. Fighters and Jet Fighters make particularly good defenders, as when they are at full health, they have a 100%% interception rate. Air units also gain experience - and [LINK=CONCEPT_AIR_PROMOTIONS]promotions[\LINK] - by surviving combat.[PARAGRAPH:1]There is now also a limit to the number of Air Units you may garrison in a city or Fort.  With an Airport, that number can be increased.
 TXT_KEY_CONCEPT_AIR_PROMOTIONS	Air Unit Promotions
@@ -5785,7 +5785,7 @@ TXT_KEY_DAMAGE_PHYSICAL_TAG	Physical
 TXT_KEY_DAMAGE_POISON	Poison
 TXT_KEY_DAMAGE_POISON_DAMAGE	poison damage.
 TXT_KEY_DAMAGE_POISON_TAG	Poison
-TXT_KEY_DAMAGE_TYPE_COMBAT	[ICON_BULLET]%D1 %s2 combat
+TXT_KEY_DAMAGE_TYPE_COMBAT	[ICON_BULLET]%D1 %s2 attack
 TXT_KEY_DAMAGE_UNHOLY	Unholy
 TXT_KEY_DAMAGE_UNHOLY_DAMAGE	unholy damage.
 TXT_KEY_DAMAGE_UNHOLY_TAG	Unholy
@@ -8645,7 +8645,7 @@ TXT_KEY_IMPROVEMENT_PREREQ_CIVILIZATION	[ICON_BULLET]Requires %s1_civilization c
 TXT_KEY_IMPROVEMENT_PYRE_OF_THE_SERAPHIC	Pyre of the Seraphic
 TXT_KEY_IMPROVEMENT_PYRE_OF_THE_SERAPHIC_PEDIA	What was once a grand temple of Bhall now has no references to her name. The inscriptions have been worn off, the murals covered in crude orcish paintings. But the fire that burns atop the temple cannot be extinguished, and the Clan is said to sacrifice angels to Bhall at the Pyre.
 TXT_KEY_IMPROVEMENT_QUARRY	Quarry
-TXT_KEY_IMPROVEMENT_RANGE_DEFENSE_MODIFIER	[ICON_BULLET]%D1% strength to all units within %D2 tiles
+TXT_KEY_IMPROVEMENT_RANGE_DEFENSE_MODIFIER	[ICON_BULLET]%D1% defense to all units within %D2 tiles
 TXT_KEY_IMPROVEMENT_REMNANTS_OF_PATRIA	Remnants of Patria
 TXT_KEY_IMPROVEMENT_REMNANTS_OF_PATRIA_PEDIA	Once mankind was joined in a single empire. These jade statues are the last symbols of this great empire, and will remind your people of what mankind is capable of.
 TXT_KEY_IMPROVEMENT_REQUIRES_RIVER	[ICON_BULLET]Requires River
@@ -10074,7 +10074,7 @@ TXT_KEY_MISSION_FORTIFY	Fortify
 TXT_KEY_MISSION_FORTIFY_HELP	The unit "digs in" to better withstand enemy attack. A unit gets a 5%% defensive bonus for each turn it is fortified, to a maximum bonus of 25%%.
 TXT_KEY_MISSION_GATE	Gate Mode:
 TXT_KEY_MISSION_HEAL	Fortify Until Healed
-TXT_KEY_MISSION_HEAL_HELP	The unit remains inactive until it reaches full strength.
+TXT_KEY_MISSION_HEAL_HELP	The unit remains inactive until it reaches full health.
 TXT_KEY_MISSION_HURRY_PRODUCTION	Hurry Production
 TXT_KEY_MISSION_HURRY_PRODUCTION_HELP	This order will hurry production on the city's current effort. It consumes the Great Person.
 TXT_KEY_MISSION_INFILTRATE	Infiltrate Player's City
@@ -10956,7 +10956,7 @@ TXT_KEY_PROMOTION_COMBAT6	Combat VI
 TXT_KEY_PROMOTION_COMBAT_APPLY	[ICON_BULLET]Passes the %s1_promotion promotion to enemies in combat
 TXT_KEY_PROMOTION_COMBAT_CAPTURE_PERCENT	[ICON_BULLET]%D1% chance of converting defeated living units
 TXT_KEY_PROMOTION_COMBAT_HEAL_PERCENT	[ICON_BULLET]Heals %D1% after combat
-TXT_KEY_PROMOTION_COMBAT_PERCENT_IN_BORDERS	[ICON_BULLET]%D1% strength when within the player's borders
+TXT_KEY_PROMOTION_COMBAT_PERCENT_IN_BORDERS	[ICON_BULLET]%D1% attack and defense when within the player's borders
 TXT_KEY_PROMOTION_COMMAND1	Command I
 TXT_KEY_PROMOTION_COMMAND2	Command II
 TXT_KEY_PROMOTION_COMMAND3	Command III
@@ -11551,7 +11551,7 @@ TXT_KEY_SPELL_ADD_PROMOTION_CASTER	[ICON_BULLET]Adds the [LINK=literal]%s1_promo
 TXT_KEY_SPELL_ADD_TO_CITY	Add to City
 TXT_KEY_SPELL_ADD_TO_CITY_HELP	[ICON_BULLET]Adds a population point to the city
 TXT_KEY_SPELL_ADD_TO_FLESH_GOLEM	Add to Flesh Golem
-TXT_KEY_SPELL_ADD_TO_FLESH_GOLEM_HELP	[ICON_BULLET]Adds the unit's promotions to a Flesh Golem[NEWLINE][ICON_BULLET]If the caster has a higher strength than the flesh golem the flesh golem's strength is raised by 1
+TXT_KEY_SPELL_ADD_TO_FLESH_GOLEM_HELP	[ICON_BULLET]Adds the unit's promotions to a Flesh Golem[NEWLINE][ICON_BULLET]If the caster's attack is higher than the Flesh Golem's: +10 attack to the Flesh Golem[NEWLINE][ICON_BULLET]If the caster's defense is higher than the Flesh Golem's: +10 defense to the Flesh Golem
 TXT_KEY_SPELL_ADD_TO_FREAK_SHOW	Add to Freak Show
 TXT_KEY_SPELL_ADD_TO_FREAK_SHOW_HELP	[ICON_BULLET]Adds the unit to the freak show
 TXT_KEY_SPELL_ADD_TO_WOLF_PACK	Add to Wolf Pack
@@ -11971,7 +11971,7 @@ TXT_KEY_SPELL_WATER_WALKING_PEDIA	[TAB]"The magic helps, sure. But the real tric
 TXT_KEY_SPELL_WHITEOUT	Whiteout
 TXT_KEY_SPELL_WHITEOUT_HELP	[ICON_BULLET]Can only be used in a Snow terrain tile
 TXT_KEY_SPELL_THE_CULL	The Cull
-TXT_KEY_SPELL_THE_CULL_HELP	Target: a plot with 2 or more of your land combat units. The weaker half (lowest strength, then lowest experience; rounded down) is killed. The survivors divide the experience of the killed units, plus 5 for each unit killed.
+TXT_KEY_SPELL_THE_CULL_HELP	Target: a plot with 2 or more of your land combat units. The weaker half (lowest of the higher of attack and defense, then lowest experience; rounded down) is killed. The survivors divide the experience of the killed units, plus 5 for each unit killed.
 TXT_KEY_SPELL_WITHER	Wither
 TXT_KEY_SPELL_WITHER_PEDIA	[TAB]"I felt the life seep from my body, the essence ooze from my bones. I met her only once, she gazed into me, forgotten, lost, and then I felt it too. The endlessness of weakness, the trepidation of uncertainty. And ever lasting, ever growing fatigue. Things became dimmer, I saw more and more of less and less. I could feel my heart slowing, and my mind collapsing. I withered away, at her slightest of commands."[PARAGRAPH:1]-Tyrell of Condia, Last Words
 TXT_KEY_SPELL_WONDER	Wonder
@@ -13057,7 +13057,7 @@ TXT_KEY_UNIT_CIRCLE_OF_URD	Circle of Urd
 TXT_KEY_UNIT_CIRCLE_OF_URD_PEDIA	Doviello Berserkers carry crude weapons into battle, a throwing rock bigger than a man's head or a stout branch. They use these makeshift weapons because they are temporary. The first opponent killed became the weapon of choice. Grabbed by the ankles they would be swung like a meaty flail. Blood sprayed over opponents and every swing would lose more and more of the corpse until another was needed to replace the first. At this point in the battle the "weapons" were always readily available. Occasionally an opponent would be grabbed while still alive. The effect of being beaten by a bloody body that was screaming at you while it happened is traumatizing to even the most hardened warrior. Few armies were willing to face them.-from "Pack of Wolves" by Dentaro
 TXT_KEY_UNIT_CITY_ATTACK_MOD	[ICON_BULLET]%D1_Change%% City Attack
 TXT_KEY_UNIT_CITY_DEFENSE_MOD	[ICON_BULLET]%D1_Change%% City Defense
-TXT_KEY_UNIT_CITY_STRENGTH_MOD	[ICON_BULLET]%D1_Change%% City Strength
+TXT_KEY_UNIT_CITY_STRENGTH_MOD	[ICON_BULLET]%D1_Change%% City Attack and Defense
 TXT_KEY_UNIT_CLOCKWORK_GOLEM	Clockwork Golem
 TXT_KEY_UNIT_CLOCKWORK_GOLEM_PEDIA	It takes the fine tools of a Machinist shop and a sturdy metal such as iron or mithril to produce the intricate detail required in this masterpiece of Luchuirp construction, but the performance is remarkable. Tiny springs and gears plus careful enchantment spells give it reflexes that can rival even a wild beast, enabling the Clockwork golem to damage any units near its target once it gets going. Repairs are not covered by warranty, however, so it is advisable to bring along a dwarven adept for repairs.
 TXT_KEY_UNIT_CLOCKWORK_GOLEM_STRATEGY	Clockwork Golems are functionally identical to Berserkers, causing collateral damage to four other units when attacking stacks. They require the Machinery technology instead of Rage, however, and start with higher strength. Being golems prevents leveling up to take promotions.
@@ -13394,7 +13394,7 @@ TXT_KEY_UNIT_HIGH_PRIEST_OF_WINTER	High Priest of Winter
 TXT_KEY_UNIT_HIGH_PRIEST_STRATEGY	High Priests can only be upgraded from the priests of the various religions (they can never be built). Their specific spells depend on the priest they were upgraded from, and they start with the Medic III promotion. This is a national unit, and so there is a limit of four total at any time.
 TXT_KEY_UNIT_HILLS_ATTACK	[ICON_BULLET]%D1_Change%% Hills Attack
 TXT_KEY_UNIT_HILLS_DEFENSE	[ICON_BULLET]%D1_Change%% Hills Defense
-TXT_KEY_UNIT_HILLS_STRENGTH	[ICON_BULLET]%D1_Change%% Hills Strength
+TXT_KEY_UNIT_HILLS_STRENGTH	[ICON_BULLET]%D1_Change%% Hills Attack and Defense
 TXT_KEY_UNIT_HILL_GIANT	Hill Giant
 TXT_KEY_UNIT_HILL_GIANT_PEDIA	Primitive and violent, the Hill Giants are the terrors of the hinterland. They seldom if ever stray into civilized lands, but they eat careless explorers for breakfast. Literally.
 TXT_KEY_UNIT_HINDU_MISSIONARY	Hindu Missionary
@@ -13891,7 +13891,7 @@ TXT_KEY_UNIT_STEPHANOS	Stephanos
 TXT_KEY_UNIT_STEPHANOS_PEDIA	[TAB]Khord leapt over embankment and slammed his warhammer into the ground. The blow resonated through serpent's canyon and served as a beacon for the Grigori soldiers behind him and running along the canyon walls. Even the horsemen had trouble keeping up with him across the rough ground. The Dumannios moon provided reasonable light in all but the canyon's shadows, which were lost to darkness.[PARAGRAPH:1]Khord cleared another ridge and came to the canyons dead end. He had worried that their prey had escaped by magic or hiding in one of the many shadowed outcroppings along the canyon walls. But this wasn't an opponent who was accustomed to hiding.[PARAGRAPH:1]The Grigori infantry fell silent behind Khord, finally stopping their forced run. The box canyon had a rise in its center, a stone mound more primitive cultures would attribute to a natural altar of Kilmorph. Stephanos sat on his horse atop the mound.[PARAGRAPH:1]Shadows fluttered across the Grigori soldiers as Khord's brother Cabal and his hunters jumped off the canyons walls. In flight the ravens feathers woven into their cloaks made a sound like hundreds of ravens as they transformed in flight from men to birds and back again. They became a black cloud reaching down to the canyon floor where they reappeared in formation with their weapons ready and raven mask drawn down protectively in front of their faces.[PARAGRAPH:1]Stephanos's white horse glowed in the moonlight and appeared unafraid of the army of men arrayed against his rider. Stephanos himself looked like a glorious conqueror returning from battle to meet the adulation of crowds, not a refugee forced into a dead end. He looked up smiling, you could almost hear the distant triumphant cheers that followed him.[PARAGRAPH:1]Cabal rushed out screaming "Attack, don't let him speak."[PARAGRAPH:1]Unfortunately no one in the canyon heard anything beyond "don't". At a glance from Stephanos a dull throb pushed through the air, a blanket of sound that cut Cabal off from the rest of the men and sent everyone else stumbling as their ears reacted to the change in pressure. By the time they had recovered Stephanos had already started addressing the men.[PARAGRAPH:1]"Of the empires of men I value the Grigori the most. For they have recognized that the gods are not worthy of their worship. To you as men, I offer my admiration. But, of your leader, I can only say that he does not carry his goal far enough. He sulks in Erebus when he should be leading the revolution. It is not enough to refuse to obey the petulant war games the gods have planned for men, but we must overthrow those games as well."[PARAGRAPH:1]The men stood quiet. Stephanos's voice echoed through the canyon and as Khord looked around he saw that in the brief interlude between Stephanos's sentences other men nodded as if confirming statements Khord couldn't hear. Stephanos's mouth also continued to move even when Khord couldn't hear him speak, his lips drawn back in a deformed smile and his long thin tongue slipped easily about as he spoke.[PARAGRAPH:1]Khord would have remained entranced by the words except that he caught sight of his brother laying on the ground by the canyons walls. Blood ran from his ears and he was gasping as if under a great force, yet the men around stood listening to Stephanos. Khord willed himself to run to his brothers side but it was as if his body was asleep. He was able to move his mouth enough to bite down on his tongue, and that pain woke up his body and allow him to stumble forward.[PARAGRAPH:1]Above him Stephanos continued.[PARAGRAPH:1]"Cassiel tells us that the gods are corrupt. But then why does he command us to live peacefully within this jail they have built for us. If your king was corrupt would to follow the governor that still requires your gentle supplication to his orders, no matter how benign? Or would you march upon the palace and pull it down around him? We have been told this is impossible, but who has said this? The king and the governor they sent to control us!"[PARAGRAPH:1]Khord fell down beside his brother. Stephanos's words still resonated within him and each one called for his joints to stop moving, his mind to stop questioning and his soul to accept. Belief's he held for his entire life seemed little more than fairy tales compared to the immutable force of Stephanos's speech. It was becoming the foundation of everything he believed and everything else would have to be reevaluated to conform to this new ideology.[PARAGRAPH:1]Cabal was close to death, his hair was matted with blood and it pooled on the canyon floor. Cabal looked up at his brother and summoned enough strength for one last action, to reach up and box both sides of Khord's head.[PARAGRAPH:1]Khord howled in pain. His ears range from the blow. He yelled again when he saw Cabal's eyes close for the last time. He was overcome first with despair, and then with anger. Stephanos stopped speaking, or so he thought. When he looked he saw that Stephanos was still speaking, Khord just couldn't hear him beyond the ringing of his ears.[PARAGRAPH:1]Rushing forward Khord once again called upon the magic of his warhammer. Aiming not for Stephanos, but the earthen mound his horse stood upon, he struck it with enough force to shatter the rock and send the crack of the hammers impact echoing through the canyon.[PARAGRAPH:1]In that instant the men awoke from their trances. Stephanos's horse stepped back away from the crumbling rock and Khord climbed up the mound to attack Stephanos directly. Spurred on by the death of his brother he charged, yelling for his men to join with him.[PARAGRAPH:1]They did join the fight, but not as Khord wanted. Before he got to Stephanos nearly a dozen arrows had pierced him. His own men were quickly on him and dragged him down from the mound, chopping him to pieces on the canyon floor. When it was over Stephanos rode out of the canyon with his new army of Grigori soldiers behind him.
 TXT_KEY_UNIT_STONESKIN_OGRE	Stoneskin Ogre
 TXT_KEY_UNIT_STONESKIN_OGRE_STRATEGY	Ogres have tremendous regenerative ability and a very high tolerance for pain. Long lived ogres will typically be covered in scars, but these old wounds give them a thick layer of calluses, further reducing their susceptibility to pain. Their reflexes tend to be dulled somewhat, but killing a Stone-skin ogre is a tremendously difficult task. Even wounding one is rare, and is not recommended without a great withdrawal rate.
-TXT_KEY_UNIT_STRENGTH	[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Strength
+TXT_KEY_UNIT_STRENGTH	[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Attack and Defense
 TXT_KEY_UNIT_STYGIAN_GUARD	Stygian Guard
 TXT_KEY_UNIT_STYGIAN_GUARD_STRATEGY	Stygian Guards require a Temple to the Overlords and Copper to train. They are Immune to Disease, like all Demons, and heal faster than men, as indicated by their March promotion.
 TXT_KEY_UNIT_SUBMARINE	Submarine

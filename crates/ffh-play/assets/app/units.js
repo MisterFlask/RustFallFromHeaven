@@ -984,7 +984,7 @@ function showTip() {
   }
   const units = unitsAt(x, y);
   if (units.length) {
-    // The plot query's units carry their strength, level and promotions (C++ plot help).
+    // The plot query's units carry their attack and defence, level and promotions (C++ plot help).
     const known = new Map((p && p.x === x && p.y === y ? (p.units ?? []) : []).map((u) => [u.id, u]));
     const shown = units.slice(0, 8).map((u0) => {
       const u = { ...u0, ...(known.get(u0.id) ?? {}) };
@@ -992,7 +992,7 @@ function showTip() {
       return h(
         "div.tip-unit",
         `${dname("UnitType", u.type)}`,
-        u.strength !== undefined ? ` ${u.strength}${u.defense_strength !== undefined && u.defense_strength !== u.strength ? `/${u.defense_strength}` : ""}⚔` : "",
+        ratingShort(u) ? ` ${ratingShort(u)}` : "",
         h("span.dim", ` ${playerName(u.owner)}${u.level > 1 ? `, level ${u.level}` : ""}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`),
         promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
         // Ritual: Upgrade's stacks on a golem (the view's line).
@@ -1205,7 +1205,7 @@ function actionLabel(a) {
       return a.label;
     case "upgrade": {
       const u = info("UnitType", a.unit);
-      return `Upgrade: ${dname("UnitType", a.unit)} (${a.price} gold${u ? `; ${u.combat}/${u.combat_defense} strength, ${u.moves} moves` : ""})`;
+      return `Upgrade: ${dname("UnitType", a.unit)} (${a.price} gold${u ? `; ${ratingShort(u)}, ${u.moves} moves` : ""})`;
     }
   }
   return a.kind;
@@ -1604,11 +1604,21 @@ function unitChip(u, selected, lead) {
   );
 }
 
+/** A unit's fighting numbers in short (the view's `attack`, `defense`, `strength`;
+ *  docs/UNIT_STATS.md, "Ratings"): a ship's strength (and defence when it differs) with ⚔, a land
+ *  unit's "ATK 40 · DEF 40"; "" without them or for a unit that does not fight. */
+export function ratingShort(u) {
+  const sd = u.defense_strength ?? u.strength_defense;
+  if (u.strength !== undefined) return `${u.strength}${sd !== undefined && sd !== u.strength ? `/${sd}` : ""}⚔`;
+  if (u.attack || u.defense) return `ATK ${u.attack ?? 0} · DEF ${u.defense ?? 0}`;
+  return "";
+}
+
 /** A strip unit's tooltip: its name, numbers, state and what a click does. */
 function chipTip(u) {
   const act = activityOf(u);
   const numbers = [
-    u.strength !== undefined ? `${u.strength} strength` : null,
+    ratingShort(u) || null,
     `${Math.round((100 * u.hp) / Math.max(1, u.max_hp))}% health${u.siege?.turn > 0 ? ` (${u.siege.label}: no healing)` : u.besieged ? " (besieged: city healing suppressed)" : ""}`,
     u.moves !== undefined ? `${moves(u.moves)}/${moves(u.max_moves)} moves` : null,
     u.level !== undefined ? `level ${u.level}${u.xp !== undefined && u.xp_needed ? ` (${u.xp}/${u.xp_needed} xp)` : ""}` : null,
@@ -1658,6 +1668,7 @@ function unitRow(u, selected) {
     look.art || isoSkin()
       ? h(
           "span.unit-stats",
+          // A ship's strength; a land unit's battle numbers are in its row badge.
           u.strength !== undefined ? h("span.stat-n", pix(String(u.strength)), icon8("strength", "⚔", "Strength")) : null,
           barEl(u.hp / Math.max(1, u.max_hp), u.hp * 4 < u.max_hp ? "hp_low" : "hp", { w: 14, title: `${Math.round((100 * u.hp) / u.max_hp)}% health` }),
           u.moves !== undefined ? h("span.stat-n", pix(`${moves(u.moves)}/${moves(u.max_moves)}`), icon8("moves", "➜", "Moves")) : null,
@@ -1817,6 +1828,7 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
   const plate = d
     ? h(
         "div.iso-plate",
+        // A ship's strength (land units have none: their battle line follows).
         d.strength !== undefined ? stat("strength", "Strength", h("span.value", String(d.strength))) : null,
         d.moves !== undefined ? stat("moves", "Movement", h("span.value", `${moves(d.moves)}/${moves(d.max_moves)}`)) : null,
         d.max_hp ? stat("hp", "Health", isoBar(d.hp / Math.max(1, d.max_hp), { w: 64, kind: d.hp * 4 < d.max_hp ? "low" : "hp" }), `Health: ${Math.round((100 * d.hp) / d.max_hp)}%`) : null,
@@ -1974,21 +1986,21 @@ async function renderPlotInfo(x, y, selUnits = S.sel?.units ?? null) {
   const units = list.map((u) =>
     h(
       "div.plot-unit",
-      `${dname("UnitType", u.type)} (${ownerText(u)}) ⚔${u.strength} ${Math.round((100 * u.hp) / u.max_hp)}%`,
+      `${dname("UnitType", u.type)} (${ownerText(u)})${ratingShort(u) ? ` ${ratingShort(u)}` : ""} ${Math.round((100 * u.hp) / u.max_hp)}%`,
       u.level > 1 ? h("span.dim", ` L${u.level}`) : null,
       role(u) || orders(u) ? h("div.dim.small", [role(u) ? `AI: ${role(u)}` : null, orders(u) ? `orders: ${orders(u)}` : null].filter(Boolean).join(" · "), ` · #${u.id}${u.group !== undefined && u.group !== null ? ` g${u.group}` : ""}`) : null,
     ),
   );
   // The stack at a glance: how many, how many can fight, by owner.
-  const fighters = list.filter((u) => (u.strength ?? 0) > 0);
+  const fighters = list.filter((u) => (u.rating ?? 0) > 0);
   const owners = [...new Set(list.map((u) => u.owner))];
-  const strongest = fighters.reduce((b, u) => (!b || u.strength > b.strength ? u : b), null);
+  const strongest = fighters.reduce((b, u) => (!b || u.rating > b.rating ? u : b), null);
   const summary = list.length
     ? h(
         "p.stack-summary",
         `${list.length} unit${list.length > 1 ? "s" : ""}`,
         fighters.length !== list.length ? `, ${fighters.length} can fight` : "",
-        strongest ? ` · strongest ${dname("UnitType", strongest.type)} ⚔${strongest.strength}` : "",
+        strongest ? ` · strongest ${dname("UnitType", strongest.type)} ${ratingShort(strongest)}` : "",
         owners.length > 1 ? ` · ${owners.map((o) => `${playerName(o)} ${list.filter((u) => u.owner === o).length}`).join(", ")}` : "",
       )
     : null;

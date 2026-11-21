@@ -779,7 +779,7 @@ impl Cai {
         if g.unit_get_domain_type(u) == DomainType::DOMAIN_AIR {
             g.unit_air_base_combat_str(u)
         } else {
-            g.unit_base_combat_str(u)
+            g.unit_attack_rating(u) / 10
         }
     }
 

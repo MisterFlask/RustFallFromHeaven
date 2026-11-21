@@ -1280,7 +1280,7 @@ impl Cai {
                 value += yields[YieldType::YIELD_COMMERCE.idx()] * 5;
 
                 if g.unit_no_defensive_bonus(u) {
-                    value *= 0.max((g.unit_base_combat_str(u) * 120) - g.best_land_unit_combat());
+                    value *= 0.max(((g.unit_attack_rating(u) / 10) * 120) - (g.best_land_unit_rating() / 10).max(1));
                 } else {
                     value *= g.plot_defense_modifier(loop_plot, Some(team), false);
                 }

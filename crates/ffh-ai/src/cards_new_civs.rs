@@ -65,7 +65,7 @@ fn defenders(g: &Game, p: PlayerId, plot: PlotIdx) -> Vec<UnitId> {
         .units
         .iter()
         .copied()
-        .filter(|&u| g.units[u].owner == p && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && g.d.units[g.units[u].unit_type].combat > 0)
+        .filter(|&u| g.units[u].owner == p && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && g.d.units[g.units[u].unit_type].attack_rating() > 0)
         .collect()
 }
 
@@ -79,7 +79,7 @@ fn enemies_near(g: &Game, p: PlayerId, plot: PlotIdx) -> i32 {
             let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
             for &u in &g.map.plots[q].units {
                 let o = g.units[u].owner;
-                if g.at_war(team, g.players[o].team) && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && g.d.units[g.units[u].unit_type].combat > 0 {
+                if g.at_war(team, g.players[o].team) && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && g.d.units[g.units[u].unit_type].attack_rating() > 0 {
                     n += 1;
                 }
             }
@@ -135,7 +135,7 @@ fn mirror_gate(g: &mut Game, p: PlayerId) {
                 continue;
             }
             let target = SpellTarget::City(short);
-            let mover = held.iter().copied().filter(|&u| g.unit_can_cast_at(u, spell, target)).max_by_key(|&u| (d.units[g.units[u].unit_type].combat, std::cmp::Reverse(u)));
+            let mover = held.iter().copied().filter(|&u| g.unit_can_cast_at(u, spell, target)).max_by_key(|&u| (d.units[g.units[u].unit_type].attack_rating(), std::cmp::Reverse(u)));
             if let Some(u) = mover {
                 crate::trace!(g, p, "sends a defender through the Mirror Gate to {}", g.cities[short].name);
                 g.tel_cast_reason(u, "card", 0);

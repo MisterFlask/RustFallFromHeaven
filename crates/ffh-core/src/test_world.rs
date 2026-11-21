@@ -78,10 +78,10 @@ pub(crate) fn world() -> (Game, Vec<UnitId>, Vec<PlotIdx>) {
         .keys()
         .filter(|&t| {
             let info = &d.units[t];
-            info.domain_type == Some(DomainType::DOMAIN_LAND) && (info.combat > 0 || info.combat_defense > 0 || info.damage_type_combat.iter().any(|&x| x != 0))
+            info.domain_type == Some(DomainType::DOMAIN_LAND) && info.fights()
         })
         .collect();
-    let ships: Vec<UnitType> = d.units.keys().filter(|&t| d.units[t].domain_type == Some(DomainType::DOMAIN_SEA) && d.units[t].combat > 0).collect();
+    let ships: Vec<UnitType> = d.units.keys().filter(|&t| d.units[t].domain_type == Some(DomainType::DOMAIN_SEA) && d.units[t].strength > 0).collect();
     let promotions: Vec<PromotionType> = d.promotions.keys().collect();
     // Promotions with a terrain, hills, feature, city, unit combat, promotion or Homeland term.
     let combat_promotions: Vec<PromotionType> = [

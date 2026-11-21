@@ -90,23 +90,30 @@ fn unit_available(g: &Game, p: PlayerId, ctx: &Ctx, u: UnitType, extra: &[TechTy
     info.prereq_and_techs.iter().all(|&t| has(t)) && !g.player_is_barbarian(p)
 }
 
-fn unit_defense(info: &UnitInfo) -> i64 {
-    if info.combat <= 0 || !(info.unit_ai_type[UnitAIType::UNITAI_CITY_DEFENSE] || info.unit_ai_type[UnitAIType::UNITAI_ATTACK] || info.unit_ai_type[UnitAIType::UNITAI_CITY_COUNTER]) {
+fn unit_defense(d: &GameData, info: &UnitInfo) -> i64 {
+    if info.attack_rating() <= 0 || !(info.unit_ai_type[UnitAIType::UNITAI_CITY_DEFENSE] || info.unit_ai_type[UnitAIType::UNITAI_ATTACK] || info.unit_ai_type[UnitAIType::UNITAI_CITY_COUNTER]) {
         return 0;
     }
-    let base = if info.combat_defense > 0 { info.combat_defense } else { info.combat } + info.damage_type_combat.iter().sum::<i32>();
-    (base * (100 + info.city_defense_modifier.max(0))) as i64
+    let mut base = if info.defense_rating() > 0 { info.defense_rating() } else { info.attack_rating() };
+    // An archery unit defends a city better than its DEF says: it shoots the attackers from the
+    // back row before they reach the walls. Ad hoc x5/3, what FfH's defence strength gave an
+    // Archer over a Warrior (5 to 3) when this goal was measured (docs/UNIT_STATS.md, 10).
+    if info.unit_combat_type.is_some() && info.unit_combat_type == d.ty::<UnitCombatType>("UNITCOMBAT_ARCHER") {
+        base = base * 5 / 3;
+    }
+    // The rating is ten a strength point: the scale stays FfH's strength x (100 + city defense).
+    (base * (100 + info.city_defense_modifier.max(0)) / 10) as i64
 }
 
 fn unit_attack(info: &UnitInfo) -> i64 {
-    if info.combat <= 0 || info.only_defensive || !(info.unit_ai_type[UnitAIType::UNITAI_ATTACK] || info.unit_ai_type[UnitAIType::UNITAI_ATTACK_CITY]) {
+    if info.attack_rating() <= 0 || info.only_defensive || !(info.unit_ai_type[UnitAIType::UNITAI_ATTACK] || info.unit_ai_type[UnitAIType::UNITAI_ATTACK_CITY]) {
         return 0;
     }
     // Siege engines are researched as siege (`goal_bonus`), not as attackers.
     if crate::production::siege_engine(info) {
         return 0;
     }
-    let base = info.combat + info.damage_type_combat.iter().sum::<i32>();
+    let base = info.attack_rating() / 10;
     (base * 100 + base * 100 * (info.moves.max(1) - 1) / 4) as i64
 }
 
@@ -115,7 +122,7 @@ fn best_military(g: &Game, p: PlayerId, ctx: &Ctx, extra: &[TechType]) -> (i64, 
     let mut att = 0;
     for u in g.d.units.keys() {
         if unit_available(g, p, ctx, u, extra) {
-            def = def.max(unit_defense(&g.d.units[u]));
+            def = def.max(unit_defense(g.d, &g.d.units[u]));
             att = att.max(unit_attack(&g.d.units[u]));
         }
     }
@@ -126,7 +133,7 @@ fn best_military(g: &Game, p: PlayerId, ctx: &Ctx, extra: &[TechType]) -> (i64, 
 /// `military_value` -- which scores attacker/defender strength -- misses it, yet it is what cracks
 /// walls. Detected data-drivenly (no unit name), mirroring production's `Role::Siege`.
 fn is_siege_unit(info: &UnitInfo) -> bool {
-    info.combat > 0
+    info.attack_rating() > 0
         && (info.bombard_rate > 0 || info.collateral_damage > 0)
         && (info.unit_ai_type[UnitAIType::UNITAI_ATTACK_CITY] || info.unit_ai_type[UnitAIType::UNITAI_COLLATERAL])
 }
@@ -338,7 +345,7 @@ const SECOND_GOAL_PCT: i64 = 50;
 /// cities after turn 60, or a war)...
 const DEFENSE_PRESSURE: i64 = 4;
 /// ... while the best city defender we could train is below this (`unit_defense`: an archer,
-/// 5 defense +25% in cities, is 625; warriors 375, axemen 400) ...
+/// DEF 30 x5/3 for shooting, +25% in cities, is 625; warriors 375, axemen 400) ...
 const DEFENSE_MIN: i64 = 600;
 /// ... the cheapest researchable tech that brings one gets this score whatever its cost (plan
 /// steps score a few hundred thousand), so it is researched next.

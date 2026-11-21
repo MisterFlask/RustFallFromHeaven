@@ -69,9 +69,9 @@ fn old_max_combat_str(
     // everything else the defense strength)
     // C++ quirk: `pAttacker == this` cannot hold any more here (it was reset above).
     let mut str_ = if (attacker.is_none() && plot.is_none()) || attacker == Some(u) {
-        g.unit_base_combat_str(u)
+        g.unit_attack_rating(u)
     } else {
-        g.unit_base_combat_str_defense(u)
+        g.unit_defense_rating(u)
     };
 
     if str_ == 0 {
@@ -327,20 +327,20 @@ fn old_max_combat_str(
     // FfH Defense Str: Modified by Kael 08/18/2007 (strength in hundredths, damage types
     // reduced by the opponent's resistances)
     set_detail!(modifier_total, modifier);
-    set_detail!(base_combat_str, str_);
+    set_detail!(base_combat_str, str_ / 10);
 
-    str_ *= 100;
+    str_ *= 10;
     // C++ quirk: for an unknown defender `pAttacker` is this unit again, so its own
     // resistances reduce its damage-type strength.
-    let our_damage_type_combat = &g.units[u].damage_type_combat;
+    let our_damage_type_combat = &g.units[u].damage_type_attack;
     for opponent in [attacker, defender].into_iter().flatten() {
         for damage_type in d.damages.keys() {
-            let damage_type_combat = our_damage_type_combat[damage_type];
-            if damage_type_combat != 0 {
+            let damage_type_attack = our_damage_type_combat[damage_type];
+            if damage_type_attack != 0 {
                 let resist = g.unit_get_damage_type_resist(opponent, damage_type);
                 if resist != 0 {
-                    str_ -= damage_type_combat * 100;
-                    str_ += damage_type_combat * (100 - resist);
+                    str_ -= damage_type_attack * 10;
+                    str_ += damage_type_attack * (100 - resist) / 10;
                 }
             }
         }

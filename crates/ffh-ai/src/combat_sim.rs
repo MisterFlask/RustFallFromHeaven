@@ -279,7 +279,7 @@ pub enum Order {
 pub(crate) fn worth(g: &Game, u: UnitId) -> i64 {
     let unit = &g.units[u];
     let info = &g.d.units[unit.unit_type];
-    let base = (info.production_cost as i64).max(info.combat as i64 * 15).max(10);
+    let base = (info.production_cost as i64).max(info.attack_rating() as i64 * 3 / 2).max(10);
     base * (10 + unit.experience.max(0) as i64) / 10
 }
 
@@ -428,7 +428,7 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
         best_gain = best_gain.max(gain);
         // Collateral damage on the others (CvUnit::collateralCombat).
         if g.unit_collateral_damage(a) > 0 && alive.len() > 1 {
-            let cs = g.unit_base_combat_str(a) * g.unit_collateral_damage(a) / 100;
+            let cs = g.unit_attack_rating(a) / 10 * g.unit_collateral_damage(a) / 100;
             let limit = g.unit_collateral_damage_limit(a);
             let mut n = (alive.len() as i32 - 1).min(g.unit_collateral_damage_max_units(a));
             let mut others: Vec<usize> = alive.iter().copied().filter(|&o| o != j).collect();
@@ -438,7 +438,7 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
                     break;
                 }
                 n -= 1;
-                let ts = g.unit_base_combat_str(ds[o].0);
+                let ts = g.unit_attack_rating(ds[o].0) / 10;
                 let sf = (cs + ts + 1) / 2;
                 if ts + sf <= 0 {
                     continue;

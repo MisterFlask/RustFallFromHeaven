@@ -681,7 +681,7 @@ fn the_brood_nests_in_the_forests_and_hatches_where_a_nest_still_stands() {
     let queen = w.hero(np, "UNIT_SPIDER_QUEEN");
     assert!(d.units[w.g.units[queen].unit_type].large);
     assert_eq!((w.stat(queen, StatType::Hp), w.stat(queen, StatType::Attack)), (160, 90));
-    assert!(w.g.units[queen].damage_type_combat[DamageType::DAMAGE_POISON] > 0, "poisoned hits");
+    assert!(w.g.units[queen].damage_type_attack[DamageType::DAMAGE_POISON] > 0, "poisoned hits");
     assert!(!w.g.units.contains(baby) || w.g.unit_plot(baby) != sites[0], "the barbarian spider is not in the city");
     // The Brood trains Giant Spiders at 60 hammers; nobody else trains them.
     let spider = d.t::<UnitType>("UNIT_BROOD_SPIDER");

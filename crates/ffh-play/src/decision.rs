@@ -410,9 +410,9 @@ pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanPropo
         kind: DecisionKind::Loan { from: proposal.from },
         title: format!("Troops: {} proposes a loan", crate::view::player_name(g, proposal.from)),
         text: format!(
-            "You {} troops of strength {} for {} turns, to {mission}. You give: {}. You get: {}.{}",
+            "You {} troops of force {} for {} turns, to {mission}. You give: {}. You get: {}.{}",
             if lends { "lend" } else { "borrow" },
-            ffh_core::crusade::strength_text(t.strength),
+            ffh_core::crusade::force_text(t.strength),
             t.duration,
             items(give),
             items(get),

@@ -223,7 +223,7 @@ mod tests {
         for part in ["+25% Tile Defense", "+1[ICON_HAPPY] in nearby cities", "+6 to unit visibility range", "World Improvement", "Provides "] {
             assert!(mirror.contains(part), "{part}: {mirror}");
         }
-        assert!(effects_of("IMPROVEMENT_ODIOS_PRISON").contains("+25% strength to all units within 3 tiles"));
+        assert!(effects_of("IMPROVEMENT_ODIOS_PRISON").contains("+25% defense to all units within 3 tiles"));
         let maelstrom = effects_of("IMPROVEMENT_MAELSTROM");
         assert!(maelstrom.contains("sinks (26%)"), "{maelstrom}");
         let pool = effects_of("IMPROVEMENT_POOL_OF_TEARS");

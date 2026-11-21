@@ -1062,7 +1062,7 @@ impl Cai {
                 if info.prereq_and_tech == Some(tech) {
                     let mut naval_value = 0;
 
-                    let combat_ratio = (info.combat * 100) / g.best_land_unit_combat().max(1);
+                    let combat_ratio = ((info.attack_rating() / 10) * 100) / (g.best_land_unit_rating() / 10).max(1);
                     if combat_ratio > 50 {
                         value += ((if war_plan { 100 } else { 50 }) * (combat_ratio - 40)) / 50;
                     }
@@ -2013,13 +2013,13 @@ impl Cai {
         if info.domain_type == Some(DomainType::DOMAIN_AIR) {
             value *= info.air_combat;
         } else {
-            value *= info.combat;
+            value *= info.attack_rating() / 10;
 
             value *= ((info.first_strikes * 2) + info.chance_first_strikes) * (g.d.defines.combat_damage / 5) + 100;
             value /= 100;
         }
 
-        value /= g.best_land_unit_combat();
+        value /= (g.best_land_unit_rating() / 10).max(1);
 
         value
     }

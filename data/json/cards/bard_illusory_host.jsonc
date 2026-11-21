@@ -94,7 +94,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 4,
       "combat_limit": 100,
       "xp_value_attack": 8,
       "xp_value_defense": 4,
@@ -104,7 +103,6 @@
       "free_promotions": {},
       "free_xp": true,
       "never_obsolete": true,
-      "combat_defense": 4,
       "min_level": 4,
       "tier": 3
     }

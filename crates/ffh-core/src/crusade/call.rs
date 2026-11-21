@@ -156,7 +156,7 @@ impl Game {
         };
         call.answer = Some(answer);
         self.log.msg(turn, Some(p), || match answer {
-            Pledge::Strength(s) => format!("Crusade {}: pledged strength {}", id.0, strength_text(s)),
+            Pledge::Strength(s) => format!("Crusade {}: pledged force {}", id.0, force_text(s)),
             Pledge::Refuse => format!("Crusade {}: refused the call", id.0),
         });
         true

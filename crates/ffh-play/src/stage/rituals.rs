@@ -385,7 +385,7 @@ fn ritual_civ_staged_with(dir: &Path, civ: &str, due: bool, tech: bool, no_targe
     let mut unit = None;
     if no_target {
         // One unit left: the strongest (no plot holds two).
-        let keep = g.players[h].units.iter().copied().max_by_key(|&u| (d.units[g.units[u].unit_type].combat, std::cmp::Reverse(u)));
+        let keep = g.players[h].units.iter().copied().max_by_key(|&u| (d.units[g.units[u].unit_type].rating(), std::cmp::Reverse(u)));
         for u in g.players[h].units.clone() {
             if Some(u) != keep && g.units.contains(u) {
                 g.unit_kill(u, false, None);

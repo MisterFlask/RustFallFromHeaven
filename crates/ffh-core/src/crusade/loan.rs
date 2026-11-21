@@ -43,7 +43,7 @@ pub struct LoanTerms {
     /// The borrower's enemy the general fights.
     pub target: TeamId,
     pub mission: LoanMission,
-    /// Combat strength lent ([`Game::crusade_unit_strength`] units).
+    /// Force lent ([`Game::crusade_unit_force`] units).
     pub strength: i32,
     /// Turns the units serve.
     pub duration: i32,
@@ -139,7 +139,7 @@ impl Game {
             .iter()
             .copied()
             .filter(|&u| self.units.contains(u) && self.crusade_unit_lendable(u))
-            .map(|u| (self.crusade_unit_strength(u), u))
+            .map(|u| (self.crusade_unit_force(u), u))
             .collect();
         units.sort_by_key(|&(s, u)| (std::cmp::Reverse(s), u));
         let mut out = Vec::new();
@@ -201,11 +201,11 @@ impl Game {
         units.retain(|&u| self.units.contains(u) && self.units[u].owner == t.lender && self.crusade_unit_lendable(u));
         units.sort();
         units.dedup();
-        let chosen: i32 = units.iter().map(|&u| self.crusade_unit_strength(u)).sum();
+        let chosen: i32 = units.iter().map(|&u| self.crusade_unit_force(u)).sum();
         if chosen < t.strength && named.is_none() {
             units = self.loan_default_units(t.lender, t.strength);
         }
-        let chosen: i32 = units.iter().map(|&u| self.crusade_unit_strength(u)).sum();
+        let chosen: i32 = units.iter().map(|&u| self.crusade_unit_force(u)).sum();
         if units.is_empty() || chosen < t.strength {
             return Err(LoanError::NotEnoughUnits);
         }
@@ -258,7 +258,7 @@ impl Game {
                 }
             }
         }
-        self.log.msg(turn, Some(t.borrower), || format!("Loan: player {} lends strength {} for {} turns against team {}", t.lender, strength_text(chosen), t.duration, t.target));
+        self.log.msg(turn, Some(t.borrower), || format!("Loan: player {} lends force {} for {} turns against team {}", t.lender, force_text(chosen), t.duration, t.target));
         Ok(id)
     }
 

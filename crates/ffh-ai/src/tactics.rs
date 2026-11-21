@@ -227,7 +227,7 @@ mod tests {
         let p0 = PlayerId(0);
         let c = g.player_init_city(p0, 4, 5, true, true);
         let d = g.d;
-        let charger = d.units.keys().find(|&t| g.d.units[t].combat > 0 && d.engage_kind(t) == ActionKind::Charge && g.d.units[t].domain_type == Some(DomainType::DOMAIN_LAND)).expect("a charger");
+        let charger = d.units.keys().find(|&t| g.d.units[t].attack_rating() > 0 && d.engage_kind(t) == ActionKind::Charge && g.d.units[t].domain_type == Some(DomainType::DOMAIN_LAND)).expect("a charger");
         let units: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(p0, charger, 7, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
         let a = g.army_form(p0, &units).unwrap();
         let w = d.t::<UnitType>("UNIT_WARRIOR");

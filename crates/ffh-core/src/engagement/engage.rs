@@ -1147,12 +1147,12 @@ impl Game {
         }
     }
 
-    /// The strongest committed unit among `units[range]` with Fear that fights (plan 6.3): by base
-    /// strength, then level, then the lowest id.
+    /// The strongest committed unit among `units[range]` with Fear that fights (plan 6.3): by
+    /// rating, then level, then the lowest id.
     pub(crate) fn engage_fear_source(&self, units: &[UnitId], range: std::ops::Range<usize>, sat_out: &[bool]) -> Option<usize> {
         range.filter(|&i| !sat_out[i] && self.unit_is_fear(units[i])).max_by_key(|&i| {
             let u = units[i];
-            (self.unit_base_combat_str(u), self.units[u].level, std::cmp::Reverse(u))
+            (self.unit_rating(u), self.units[u].level, std::cmp::Reverse(u))
         })
     }
 
@@ -1170,13 +1170,15 @@ impl Game {
                 continue;
             }
             let su = units[src];
-            let (src_str, src_level) = (self.unit_base_combat_str(su), self.units[su].level);
+            let (src_rating, src_level) = (self.unit_rating(su), self.units[su].level);
             for i in rollers {
                 let u = units[i];
                 if sat_out[i] || self.unit_is_immune_to_fear(u) {
                     continue;
                 }
-                let chance = (self.unit_base_combat_str(u) + 20 + self.units[u].level - src_str - src_level).max(4);
+                // FfH: own strength - the source's + 20 + the levels' difference; the ratings'
+                // difference / 10 (docs/PORTING.md).
+                let chance = ((self.unit_rating(u) - src_rating) / 10 + 20 + self.units[u].level - src_level).max(4);
                 let roll = rng.rand(40, "Im afeared!");
                 let passed = roll <= chance;
                 if !passed {

@@ -57,7 +57,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 4,
       "combat_limit": 100,
       "xp_value_attack": 8,
       "xp_value_defense": 4,
@@ -66,9 +65,8 @@
       "culture_garrison": 3,
       "asset": 4,
       "power": 8,
-      "combat_defense": 4,
       "tier": 2,
-      "damage_type_combats": {"DAMAGE_POISON": 1}
+      "damage_type_attacks": {"DAMAGE_POISON": 10}
     },
     {
       "type": "UNIT_SPIDER_QUEEN",
@@ -99,7 +97,6 @@
       "min_area_size": -1,
       "moves": 1,
       "nuke_range": -1,
-      "combat": 9,
       "combat_limit": 100,
       "xp_value_attack": 32,
       "xp_value_defense": 16,
@@ -108,9 +105,8 @@
       "asset": 18,
       "power": 36,
       "free_promotions": {"PROMOTION_HERO": true},
-      "combat_defense": 7,
       "tier": 4,
-      "damage_type_combats": {"DAMAGE_POISON": 1}
+      "damage_type_attacks": {"DAMAGE_POISON": 10}
     }
   ],
   "buildings": [

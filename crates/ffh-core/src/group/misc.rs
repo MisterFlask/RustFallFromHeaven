@@ -1134,7 +1134,7 @@ fn ai_group_second_val(game: &Game, u: UnitId) -> i32 {
     if game.unit_get_domain_type(u) == DomainType::DOMAIN_AIR {
         game.unit_air_base_combat_str(u)
     } else {
-        game.unit_base_combat_str(u)
+        game.unit_attack_rating(u)
     }
 }
 

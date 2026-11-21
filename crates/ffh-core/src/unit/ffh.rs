@@ -1919,34 +1919,47 @@ impl Game {
         resist
     }
 
-    /// C++ `CvUnit::changeBaseCombatStr` (CvUnit.cpp:15897-15900).
-    /// Its battle attack follows, ten points a strength point (docs/UNIT_STATS.md).
-    pub fn unit_change_base_combat_str(&mut self, u: UnitId, change: i32) {
-        // C++ `setBaseCombatStr(m_iBaseCombat + iChange)`.
-        self.units[u].base_combat += change;
-        self.units[u].stat_flat[StatType::Attack.idx()] += change * 10;
+    /// The unit's attack or defence before typed points (docs/UNIT_STATS.md, "Ratings"): its
+    /// type's sheet value (a ship's strength x10) plus its own points (`stat_flat`).
+    pub(crate) fn unit_own_rating(&self, u: UnitId, s: StatType) -> i32 {
+        let unit = &self.units[u];
+        let info = &self.d.units[unit.unit_type];
+        let base = match info.stats {
+            Some(sheet) => sheet[s.idx()],
+            None => 10 * if s == StatType::Attack { info.strength } else { info.strength_defense },
+        };
+        base + unit.stat_flat[s.idx()]
     }
 
-    /// C++ `CvUnit::changeBaseCombatStrDefense` (CvUnit.cpp:15902-15905).
-    /// Its battle defence follows, ten points a strength point (docs/UNIT_STATS.md).
-    pub fn unit_change_base_combat_str_defense(&mut self, u: UnitId, change: i32) {
-        // C++ `setBaseCombatStrDefense(m_iBaseCombatDefense + iChange)`.
-        self.units[u].base_combat_defense += change;
-        self.units[u].stat_flat[StatType::Defense.idx()] += change * 10;
+    /// The unit's attack rating (docs/UNIT_STATS.md, "Ratings"): its type's sheet attack (a ship's
+    /// strength x10) plus its own points and its typed attack points, at least 0. No percentage
+    /// and no situational modifier: what FfH's base strength (`baseCombatStr`) was, on the
+    /// sheet's scale (ten a strength point).
+    pub fn unit_attack_rating(&self, u: UnitId) -> i32 {
+        (self.unit_own_rating(u, StatType::Attack) + self.units[u].total_damage_type_attack).max(0)
     }
 
-    /// C++ `CvUnit::setBaseCombatStr`: through [`Self::unit_change_base_combat_str`], so its battle
-    /// attack follows.
-    pub fn unit_set_base_combat_str(&mut self, u: UnitId, value: i32) {
-        let change = value - self.units[u].base_combat;
-        self.unit_change_base_combat_str(u, change);
+    /// The unit's defence rating: as [`Self::unit_attack_rating`], with its defence (FfH's
+    /// `baseCombatStrDefense`, which counts the typed points too).
+    pub fn unit_defense_rating(&self, u: UnitId) -> i32 {
+        (self.unit_own_rating(u, StatType::Defense) + self.units[u].total_damage_type_attack).max(0)
     }
 
-    /// C++ `CvUnit::setBaseCombatStrDefense`: through
-    /// [`Self::unit_change_base_combat_str_defense`], so its battle defence follows.
-    pub fn unit_set_base_combat_str_defense(&mut self, u: UnitId, value: i32) {
-        let change = value - self.units[u].base_combat_defense;
-        self.unit_change_base_combat_str_defense(u, change);
+    /// The unit's rating: the higher of its attack and defence ratings. The number rules compare
+    /// units' might by (the strongest, the weakest first, the Fear check); never shown.
+    pub fn unit_rating(&self, u: UnitId) -> i32 {
+        self.unit_attack_rating(u).max(self.unit_defense_rating(u))
+    }
+
+    /// Changes the unit's own attack points (Python effects, affinities; C++
+    /// `changeBaseCombatStr`, in strength points there).
+    pub fn unit_change_attack_points(&mut self, u: UnitId, change: i32) {
+        self.units[u].stat_flat[StatType::Attack.idx()] += change;
+    }
+
+    /// Changes the unit's own defence points (C++ `changeBaseCombatStrDefense`).
+    pub fn unit_change_defense_points(&mut self, u: UnitId, change: i32) {
+        self.units[u].stat_flat[StatType::Defense.idx()] += change;
     }
 
     /// C++ `CvUnit::getExtraSpellMove` (CvUnit.cpp:16090-16104).
@@ -1981,7 +1994,8 @@ impl Game {
         }
         let mut damage = damage;
 
-        let mut resist = self.unit_base_combat_str_defense(u) * 2;
+        // FfH: 2 x its defence strength; its defence rating / 5 (docs/PORTING.md).
+        let mut resist = self.unit_defense_rating(u) / 5;
         resist += self.units[u].level * 2;
         if let Some(city) = live_plot_city(self, self.unit_plot(u)) {
             resist += self.city_defense_modifier(city, false) / 4;
@@ -2143,13 +2157,13 @@ impl Game {
         let old_amount = self.units[u].bonus_affinity_amount[bonus];
         match self.d.bonuses[bonus].damage_type {
             None => {
-                self.unit_change_base_combat_str(u, new_amount - old_amount);
-                self.unit_change_base_combat_str_defense(u, new_amount - old_amount);
+                self.unit_change_attack_points(u, new_amount - old_amount);
+                self.unit_change_defense_points(u, new_amount - old_amount);
             }
             Some(damage_type) => {
                 let unit = &mut self.units[u];
-                unit.damage_type_combat[damage_type] += new_amount - old_amount;
-                unit.total_damage_type_combat += new_amount - old_amount;
+                unit.damage_type_attack[damage_type] += new_amount - old_amount;
+                unit.total_damage_type_attack += new_amount - old_amount;
             }
         }
         let unit = &mut self.units[u];
@@ -2157,11 +2171,11 @@ impl Game {
     }
 
     /// C++ `CvUnit::changeDamageTypeCombat` (CvUnit.cpp:16650-16657).
-    pub fn unit_change_damage_type_combat(&mut self, u: UnitId, damage_type: DamageType, change: i32) {
+    pub fn unit_change_damage_type_attack(&mut self, u: UnitId, damage_type: DamageType, change: i32) {
         if change != 0 {
             let unit = &mut self.units[u];
-            unit.damage_type_combat[damage_type] += change;
-            unit.total_damage_type_combat += change;
+            unit.damage_type_attack[damage_type] += change;
+            unit.total_damage_type_attack += change;
         }
     }
 

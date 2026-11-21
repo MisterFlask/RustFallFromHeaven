@@ -200,7 +200,7 @@ impl Game {
                                     Some(a) => {
                                         self.unit_is_target_weakest_unit(a)
                                             && self.unit_get_domain_type(a) == self.unit_get_domain_type(loop_unit)
-                                            && self.unit_base_combat_str_defense(loop_unit) != 0
+                                            && self.unit_defense_rating(loop_unit) != 0
                                             && no_guard
                                     }
                                     None => false,
@@ -208,7 +208,7 @@ impl Game {
                                 if let (true, Some(a)) = (targets_weakest, attacker) {
                                     if let Some(best) = best_unit {
                                         if self.unit_get_domain_type(a) != self.unit_get_domain_type(best)
-                                            || self.unit_base_combat_str_defense(best) == 0
+                                            || self.unit_defense_rating(best) == 0
                                         {
                                             best_unit = None;
                                         }

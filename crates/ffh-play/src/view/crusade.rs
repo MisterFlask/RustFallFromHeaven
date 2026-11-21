@@ -32,7 +32,7 @@ pub fn crusades(v: &Viewer) -> Json {
             crate::jobj! {
                 "unit" => u,
                 "type" => Json::idx(unit.unit_type),
-                "strength" => g.crusade_unit_strength(u),
+                "strength" => g.crusade_unit_force(u),
                 "x" => unit.x,
                 "y" => unit.y,
             }

@@ -191,7 +191,7 @@ impl Game {
     fn unit_is_besieger(&self, u: UnitId, ct: TeamId, at: PlotIdx) -> bool {
         self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
             && !self.unit_is_dead(u)
-            && self.unit_base_combat_str(u) > 0
+            && self.unit_can_fight(u)
             && self.unit_is_enemy(u, Some(ct), Some(at))
             && !self.unit_is_invisible(u, ct, false)
     }
