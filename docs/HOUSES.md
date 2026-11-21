@@ -9,7 +9,8 @@ The owner's design of 2026-11-21. It replaces Houses as vassal civilizations (th
 2026-11-18 to 2026-11-20: grants, the Crown's limit, tribute, the levy, splits, requests,
 ultimatums, break-aways, courting) and cultural channels (Court, Guard, Spread Religion), all
 removed; `git log -- docs/PERSONS.md docs/CULTURE.md` has their history, and docs/AI_LOG.md what
-their games showed. **This file is the contract for the build.** The numbers are first guesses.
+their games showed. **Built on 2026-11-21 as written; "As built" below says where the build
+completed or read a rule.** The numbers are first guesses.
 
 Why (the owner's reasons):
 - *Vassalage and governors were functionally mandatory.* Every government but two forced governors,
@@ -225,6 +226,58 @@ Every game has Houses (no game option).
     - Keywords `House`, `Sympathy`, `Outsider` (`data/json/keywords.jsonc`), their reminders
       beside the tooltips; rules text bare (CLAUDE.md, "Rules text and tooltips").
     - A staged scene for tests and screenshots: `ffh-play stage houses DIR`.
+
+## As built (2026-11-21)
+
+Rules `crates/ffh-core/src/houses/` (`mod.rs` the record, `membership.rs`, `pick.rs`,
+`opinion.rs`, `perks.rs`, `read.rs`); every weight, threshold and range above is a `HOUSE_*`
+define. The harness checks the invariants in every stress game (`crates/ffh-harness/src/check.rs`):
+a House's cities are its owner's, of its origin and at most four, no minor leader leads two Houses
+or a House and a living player, no city is left unhoused after its owner's pass but those rule 4
+makes wait, and a perk is off exactly when its House was Furious at its owner's last pass.
+
+- **Names.** A House's name is drawn from its origin civilization's name list
+  (`governor_names.jsonc`), then the generic list, never twice for one owner in a game.
+- **A leader is in play.** A House's leader is not taken by a breakaway faction or a colony
+  (`sundering::leader_in_play`): a stress game had a revolt take one.
+- **The rolls' order** (rule 6): the regular candidates are drawn, then the outsider (with its
+  tie-break), then for each candidate in order its religion, sympathy and perk; the outsider rolls
+  only its perk. A weighted draw lists none first, then religions or players in id order. The
+  culture total is summed over the union of the forming cities' radius plots.
+- **Opinion** (rule 7). A permanent alliance puts both players in one team, so a favoured teammate
+  counts as the pact case (+2). In a preview, a war declared on a team covers its vassals and ends
+  open borders and the pact with them; pacts drawing third parties in are not modelled. A
+  conversion's preview moves the owner's alignment into the new religion's range, as converting
+  does. A pact is a defensive pact.
+- **Told** (rule 11). A new House is not told its first state. A House leaving Furious is told its
+  new state only; the previews add `Its perk is on again.`
+- **Perks** (rule 9). A percent adds to the other percents of its value (a city's yield, commerce
+  and great-people modifiers; the factor of its distance and city-count maintenance, so -100 makes
+  the part 0 whatever the civics add); experience and production modifiers enter where a
+  building's do; the free promotions are given after a building's, where the promotion admits the
+  unit's combat. A wonder is a world or national wonder (not a team one); a ritual is any project.
+  A House forms with its perk on unless it is Furious then. Twincast (Battle-mages III) normally
+  needs Combat V and Hero: it is the strongest line in the table.
+- **Not housed.** A city gained since its owner's last pass, the home cities waiting for the first
+  House, and a city of an origin with no free leader.
+- **The AI** (rule 14): the pick's score is the controller's default (`house_pick_default`), so
+  every controller without its own answer picks by it, and it is the human's advice; the war term
+  is `house_war_cost` in `crates/ffh-ai/src/diplomacy.rs` (9 a city for a House turned Furious, 3
+  for one turned Annoyed, beside the alignment flavor's 30). The first games and the guardrail:
+  docs/AI_LOG.md.
+- **Governors** (rule 13): `player_set_city_governed`, the command `govern_city`; the controller is
+  asked when civics change, when a city is gained and each turn (`choose_city_governance`,
+  `govern_gained_city`), which keeps the AI's cities governed exactly when the rules used to
+  govern them.
+- **Screens** (rule 15; docs/HUMAN.md has the queries): the pick is the `house_leader` decision
+  with the offer as JSON; the Houses screen is Shift+F9; a House's shield is at the right end of
+  its cities' plates, one of 8 colours by House id, with a mark when Annoyed or Furious; previews
+  stand in the war question, the trade screen (a deal holding peace, open borders or a pact), the
+  cancel-deal question and the religion screen; `ffh-play stage houses|houses-foreign DIR`,
+  `tools/web-houses-smoke.mjs`, `tools/houses-shots.mjs`. The city screen shows its culture a turn
+  again (the Culture section went with the channels).
+- **Left in the data**: the memory types `MEMORY_SPLIT_HOUSE` and `MEMORY_COURTED_HOUSE` are listed
+  by the leaders' data and nothing records or reads them.
 
 ## Open points for the owner
 
