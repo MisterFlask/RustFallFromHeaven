@@ -207,6 +207,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
             wiped_permille: 640,
             falls_permille: 600,
             repulsed_permille: 10,
+            won_permille: 650,
             lost_x100: [30, 64],
             per: vec![ForecastFighter { b: 0, fall_pct: 30, escape_pct: 0 }],
         }),
@@ -218,7 +219,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         from: plot,
         place: PlotSnap { x: g.cities[c].x, y: g.cities[c].y, terrain: g.map.plots[plot].terrain_type, feature: None, hills: false, river_crossing: false, city: None },
         sides: [side(1), side(2)],
-        outcome: Outcome { result: EngageResult::Taken, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, sentinels: 0, sentinels_breached: 0 },
+        outcome: Outcome { result: EngageResult::Taken, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, sentinels: 0, sentinels_breached: 0, hp_lost: [800, 2400], loser: Some(Side::Defender), pushed: 0 },
         log: logged.then(|| Box::new(log)),
     }
 }

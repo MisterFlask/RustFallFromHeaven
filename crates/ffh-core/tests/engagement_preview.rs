@@ -124,9 +124,9 @@ fn the_preview_is_a_function_of_its_inputs_and_changes_nothing() {
     assert_eq!(f.runs, w.g.d.defines.engagement_preview_runs);
     assert_eq!(f.per.len(), a.formation.len() + a.def_formation.len());
     assert!(f.per.iter().all(|x| (0..=100).contains(&x.fall_pct) && (0..=100).contains(&x.escape_pct) && x.fall_pct + x.escape_pct <= 100));
-    assert!(f.falls_permille <= f.wiped_permille && f.wiped_permille <= 1000 && f.repulsed_permille <= 1000);
+    assert!(f.falls_permille <= f.won_permille && f.won_permille <= 1000 && f.wiped_permille <= 1000 && f.repulsed_permille <= 1000);
     assert!(f.wiped_permille + f.repulsed_permille <= 1000, "a battle ends when one line is gone");
-    assert_eq!(f.falls_permille, 0, "a reserve of four: the plot never falls in one battle");
+    assert_eq!(f.falls_permille, f.won_permille, "outside a city a lost battle pushes the reserve back too: the plot falls whenever the defenders lose");
     let side_lost = |s: Side| f.per.iter().filter(|x| x.side == s).map(|x| x.fall_pct as i64).sum::<i64>();
     for (i, s) in [Side::Attacker, Side::Defender].into_iter().enumerate() {
         // The per-fighter percentages (rounded down) add up to at most the side's expected losses.
@@ -185,7 +185,7 @@ fn the_preview_fields() {
     }
     let b = w2.g.engage_preview(&w2.input()).unwrap();
     assert!(b.def_reserve.is_empty());
-    assert!(b.forecast.falls_permille > 900 && b.forecast.falls_permille == b.forecast.wiped_permille, "{:?}", b.forecast);
+    assert!(b.forecast.falls_permille > 900 && b.forecast.falls_permille == b.forecast.won_permille, "{:?}", b.forecast);
     assert_eq!(b.forecast.lost_x100[1], 200 - b.forecast.escaped_x100[1] - 0, "both warriors fall or escape: {:?}", b.forecast);
     // At peace: nothing to fight unless the move declares war.
     let mut w3 = world_with(false);
@@ -355,7 +355,7 @@ fn the_forecast_if_is_the_preview_of_the_battle_it_imagines() {
     let extra = w.units(p1, "UNIT_AXEMAN", beyond, 2);
     let alone = w.g.engage_forecast_if(&att, from, to, &[], runs, ForecastSight::Defender, ForecastTurn::Now).unwrap();
     let with = w.g.engage_forecast_if(&att, from, to, &extra, runs, ForecastSight::Defender, ForecastTurn::Now).unwrap();
-    assert!(with.falls_permille < alone.falls_permille, "two more defenders: {} vs {}", with.falls_permille, alone.falls_permille);
+    assert!(with.lost_x100[0] > alone.lost_x100[0], "two more defenders: {:?} vs {:?}", with, alone);
     assert_eq!(with.per.iter().filter(|x| x.side == Side::Defender).count(), 3);
     let moves: Vec<i32> = att.iter().map(|&u| w.g.units[u].moves).collect();
     let (fx, fy) = w.g.map.xy(from);
@@ -400,12 +400,26 @@ fn the_forecast_of_waves_carries_the_battle_on() {
     assert!((one.lost_x100[0] - waves.lost_x100[0]).abs() <= 40, "{:?} vs {:?}", one.lost_x100, waves.lost_x100);
     assert_eq!(waves, w.g.engage_forecast_waves(&[(att.clone(), from)], to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap());
     assert!(state(&w.g) == before, "the forecast changed the game");
-    // Twelve more axemen: a reserve that attacks once the first formation has fought.
-    let more: Vec<UnitId> = att.iter().copied().chain(w.units(p0, "UNIT_AXEMAN", from, 12)).collect();
-    let first = w.g.engage_forecast_if(&more, from, to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
-    let turn = w.g.engage_forecast_waves(&[(more.clone(), from)], to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
-    assert!(turn.falls_permille > first.falls_permille, "the reserve fights on: {} vs {}", turn.falls_permille, first.falls_permille);
-    assert!(turn.per.iter().filter(|x| x.side == Side::Attacker).count() > first.per.iter().filter(|x| x.side == Side::Attacker).count());
+    // Twenty-four strong axemen against a city (where nobody is pushed back): a reserve that attacks once the
+    // first formation has fought.
+    {
+        let mut w = world();
+        let (tx, ty) = w.g.map.xy(w.to);
+        w.g.player_init_city(w.p1, tx, ty, true, true);
+        let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+        // One defender more than its side's slots: the first battle leaves a reserve on the plot.
+        w.units(p1, "UNIT_WARRIOR", to, 1);
+        let more = w.units(p0, "UNIT_AXEMAN", from, 24);
+        for &a in &more {
+            w.g.unit_change_extra_combat_percent(a, 200);
+        }
+        let def_slots = w.g.engage_preview(&w.input()).unwrap().slots.def();
+        w.units(p1, "UNIT_WARRIOR", to, def_slots as usize);
+        let first = w.g.engage_forecast_if(&more, from, to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
+        let turn = w.g.engage_forecast_waves(&[(more.clone(), from)], to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
+        assert!(turn.falls_permille > first.falls_permille, "the reserve fights on: {} vs {}", turn.falls_permille, first.falls_permille);
+        assert!(turn.per.iter().filter(|x| x.side == Side::Attacker).count() > first.per.iter().filter(|x| x.side == Side::Attacker).count());
+    }
     // A second plot's units attack after the first plot's.
     let (far, _) = far_plots(&w);
     let other = w.units(p0, "UNIT_AXEMAN", far, 3);

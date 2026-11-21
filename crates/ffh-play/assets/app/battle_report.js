@@ -3,6 +3,7 @@
 // escaped gone), whether the plot fell, each side's fallen, escaped and standing, and the whole log.
 
 import { h } from "./dom.js";
+import { withCalc } from "./calc.js";
 import { finalState, fates, resultWords, logLines, viewerSide, uname, hpOf, xpBy, tacticName, shoreShots, shoreText } from "./battle_log.js";
 import { loadArt, unitXY, pic, deadPic, faceFlip, animated, headChip, uiIcon, btn, add, partsEl, hpBar, groundLine } from "./battle_stage.js";
 
@@ -75,7 +76,7 @@ function render(ctx) {
       { left: "6px", top: "4px", width: "380px" },
       h("div.bt-row", uiIcon("attack", 16), h("span.bt-h3", where ? `Battle of ${where}` : `Battle at (${L.plot?.x ?? "?"}, ${L.plot?.y ?? "?"})`)),
       h("div.bt-row", h(`b.bt-spaced.${rw.good ? "goldlt" : "bad"}#bt-result`, { "data-kind": rw.kind }, rw.ribbon), h("span.dim", `${rounds} round${rounds === 1 ? "" : "s"}`)),
-      h("div.small", rw.line),
+      withCalc(h("div.small", rw.line), rw.calc),
     ),
   );
   // ---- top right: the ground, the way on

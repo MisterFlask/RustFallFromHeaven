@@ -30,13 +30,15 @@ use super::formation::{Event, FighterIdx, Ground, GroundRule, Side};
 use crate::game::Game;
 use crate::ids::*;
 
-/// How an engagement ended for the plot (spec 1.7; decided after the post-battle steps).
+/// How an engagement ended for the plot (spec 1.7; decided after the post-battle steps). Who won
+/// is apart: [`Outcome::loser`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum EngageResult {
-    /// The plot fell: no defender is left on it (the launching group moved in, if it could).
+    /// The plot fell: the defenders lost (their units lost more HP) and none is left on it (the
+    /// launching group moved in, if it could).
     Taken,
-    /// The defender's line is gone (every committed defender fell, escaped or sat out), but
-    /// defenders are left on the plot: it holds.
+    /// The defender's line is gone (every committed defender fell, escaped or sat out), but the
+    /// plot did not fall: defenders are left on it, or the attackers lost.
     Cleared,
     /// The attacker's line is gone (every committed attacker fell, escaped or sat out).
     Repulsed,
@@ -137,6 +139,31 @@ pub struct Outcome {
     /// The city's Sentinels that fought, and of them those breached (docs/SIEGES.md).
     pub sentinels: i32,
     pub sentinels_breached: i32,
+    /// Each side's HP lost in the engagement (`[attacker, defender]`, centi-HP; the Sentinels the
+    /// defender's), and the side that lost the more: the battle's loser (`None`: the same).
+    pub hp_lost: [i32; 2],
+    pub loser: Option<Side>,
+    /// The defender's units pushed back off the plot (a lost battle outside a city).
+    pub pushed: i32,
+}
+
+impl Outcome {
+    /// How the loser was found (docs/PLAY_DESIGN.md 4.9: the result's calculation), a line each:
+    /// what HP lost counts, each side's, and the comparison.
+    pub fn verdict_calc(&self) -> Vec<String> {
+        let hp = |c: i32| format!("{:.1}", c as f64 / 100.0);
+        let (a, d) = (hp(self.hp_lost[0]), hp(self.hp_lost[1]));
+        let verdict = match self.loser {
+            Some(Side::Attacker) => format!("Loser: the attackers ({a} > {d})."),
+            Some(Side::Defender) => format!("Loser: the defenders ({d} > {a})."),
+            None => format!("Loser: none ({a} = {d})."),
+        };
+        vec![
+            "HP lost: each unit's HP when the battle began less its HP at the end; all it had left for one that fell or withdrew.".to_string(),
+            format!("Attackers: {a} HP. Defenders: {d} HP."),
+            verdict,
+        ]
+    }
 }
 
 /// The full record of an engagement (spec section 2).
@@ -425,6 +452,8 @@ pub enum LogEvent {
     KillEffect { killer: FighterIdx, victim: FighterIdx, kind: KillKind },
     /// A withdrawn defender outside a city.
     Flee { unit: FighterIdx, to: PlotIdx },
+    /// The defender's units a lost battle outside a city pushed back, and where to (apply.rs, 7b).
+    PushBack { units: Vec<FighterIdx>, to: PlotIdx },
     MoveIn { units: Vec<FighterIdx>, city: Option<CityId> },
     /// The defended city's building struck before the battle (`pre_battle_damage`, a card's: the
     /// Thunderhead Tower): the damage each fighter took, centi-HP.
@@ -490,6 +519,8 @@ pub struct FrozenForecast {
     pub wiped_permille: i32,
     pub falls_permille: i32,
     pub repulsed_permille: i32,
+    /// The chance (per mille) the attacker wins: the defenders' units lose more HP.
+    pub won_permille: i32,
     /// Expected units fallen per side (attacker, defender), x100.
     pub lost_x100: [i32; 2],
     /// Each committed fighter of the plan (both sides).

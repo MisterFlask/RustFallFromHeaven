@@ -1211,6 +1211,12 @@ longer matches the terrain's foreshortening); at 60° it plainly is one. **The s
 settlement sprites tolerate is about 45°**, so the mode's camera keeps between 30 and 42° at every
 zoom.
 
+The one exception is the city screen (2026-11-21, the owner's request): while it is open the camera
+turns to look straight down (`Map3D.top` eases it to 90° and back, map3d.js `camera`), so the
+city's plots read as a square grid and each citizen's plot is plain to see. The cards then lie flat,
+facing up; the tilt-shift is off and the ground's art pixels square again north-south
+(`beforeFrame`). The isometric fallback keeps its view: its art is drawn for that angle.
+
 ## 10. The gaps to the reference
 
 Batches 3 and 4 closed the gaps the second batch's review ranked (the palette, the framing, the

@@ -282,7 +282,7 @@ function render(ctx) {
       h("div.bt-row", h("span.bt-h3.them", pv.sides?.[1 - me]?.label ?? where), h("span.dim", `${slotsUsed(P.def, F)} of ${pv.slots[1 - me].total} slots · ${pv.lanes[1 - me]} lanes`)),
       tacticLine(1 - me),
       theirsOut.length
-        ? h("div.bt-row.small", { title: "Defenders stay in place until annihilated: the plot falls only when none is left" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
+        ? h("div.bt-row.small", { title: pv.plot?.city ? "In a city the defenders stay until none is left" : "A lost battle pushes them back with the line" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
         : null,
       groundLine(pv.ground, pv.plot),
     ),
@@ -336,7 +336,17 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
       h("div.bt-kv", h("span.dim", "Their line wiped out"), h("b", pct(fc.line_wiped_permille ?? 0))),
       h(
         "div.bt-kv",
-        { title: `Defenders stay until annihilated: the plot falls when none is left.${theirsOut.length ? ` ${theirsOut.length} more of theirs wait on the plot to form the next line.` : ""}` },
+        { title: "The side whose units lose more HP loses the battle." },
+        h("span.dim", "You win"),
+        h(`b${(fc.attackers_win_permille ?? 0) >= 500 ? ".good" : ""}`, pct(fc.attackers_win_permille ?? 0)),
+      ),
+      h(
+        "div.bt-kv",
+        {
+          title: pv.plot?.city
+            ? `The city falls when you win and no defender is left in it.${theirsOut.length ? ` ${theirsOut.length} more of theirs wait in it to form the next line.` : ""}`
+            : "The plot falls when you win and every defender left is pushed back off it.",
+        },
         h("span.dim", pv.plot?.city ? `${pv.plot.city.name} falls` : "The plot falls"),
         h(`b${(fc.plot_falls_permille ?? 0) >= 500 ? ".good" : ""}`, pct(fc.plot_falls_permille ?? 0)),
       ),

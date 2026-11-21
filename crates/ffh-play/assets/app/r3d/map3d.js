@@ -139,6 +139,9 @@ export class Map3D {
     this.selSeen = null;
     this.overlaySeen = "";
     this.ts = view.cam.ts;
+    /** How far the camera has turned to look straight down (0 its own pitch, 1 straight down):
+     *  toward 1 while the city screen is open, so the city's plots read as a grid (`camera`). */
+    this.top = 0;
     this.t0 = performance.now();
     this.time = 0;
     this.dirty = true;
@@ -438,13 +441,16 @@ export class Map3D {
     const v = this.view;
     const vw = Math.max(1, v.vw), vh = Math.max(1, v.vh);
     const zt = clamp(Math.log(ts / ZOOMS[0]) / Math.log(ZOOMS[ZOOMS.length - 1] / ZOOMS[0]), 0, 1);
-    // Looking down on the map when far, more over the shoulder when close.
-    const pitch = (this.pitchAt(zt) * Math.PI) / 180;
+    // Looking down on the map when far, more over the shoulder when close; straight down while the
+    // city screen is open (`top`).
+    const t = this.top * this.top * (3 - 2 * this.top);
+    const pitch = (lerp(this.pitchAt(zt), 90, t) * Math.PI) / 180;
     const fov = (this.cfg.fov * Math.PI) / 180;
     const dist = vh / (2 * ts * Math.tan(fov / 2));
     const target = [v.cam.cx, 0.08, -v.cam.cy];
     const eye = [target[0], target[1] + dist * Math.sin(pitch), target[2] + dist * Math.cos(pitch)];
-    const viewM = lookAt(eye, target, [0, 1, 0]);
+    // The view's up is north tilted with the pitch: it stays defined looking straight down.
+    const viewM = lookAt(eye, target, [0, Math.cos(pitch), -Math.sin(pitch)]);
     const proj = perspective(fov, vw / vh, Math.max(0.05, dist * 0.25), dist * 2.5 + 12);
     const viewProj = mul(proj, viewM);
     return { eye, target, view: viewM, proj, viewProj, inv: invert(viewProj), invView: invert(viewM), dist, pitch, fov, vw, vh, tan: [Math.tan(fov / 2) * (vw / vh), Math.tan(fov / 2)] };
@@ -805,6 +811,11 @@ export class Map3D {
       this.ts = this.view.reduceMotion() ? target : lerp(this.ts, target, 0.25);
       this.dirty = true;
     } else this.ts = target;
+    const top = this.view.overlay?.city ? 1 : 0;
+    if (Math.abs(this.top - top) > 0.002) {
+      this.top = this.view.reduceMotion() ? top : lerp(this.top, top, 0.2);
+      this.dirty = true;
+    } else this.top = top;
     const animate = this.cfg.animate && !this.view.reduceMotion();
     if (this.tweens?.size) {
       this.setUnits(this.tweened(performance.now()));

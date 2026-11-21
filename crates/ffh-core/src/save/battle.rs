@@ -17,7 +17,7 @@ persist_struct!(BattleReport { id, turn, plot, from, place, sides, outcome, log 
 persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost, summons, shore });
 persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city });
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
-persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached });
+persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached, hp_lost, loser, pushed });
 
 persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, tactics, fighters, pairs, events, forecast });
 persist_struct!(Ground { city, forest, hills });
@@ -101,6 +101,7 @@ persist_enum!(LogEvent {
     9 => KillEffect { killer, victim, kind },
     10 => Flee { unit, to },
     11 => MoveIn { units, city },
+    12 => PushBack { units, to },
     30 => BuildingStrike { building, hits },
     31 => Starvation { units, dealt_pct },
     32 => ShoreFire { ship, owner, side, hits },
@@ -125,7 +126,7 @@ persist_enum!(KillKind {
     6 => Promotion(p),
 });
 
-persist_struct!(FrozenForecast { runs, wiped_permille, falls_permille, repulsed_permille, lost_x100, per });
+persist_struct!(FrozenForecast { runs, wiped_permille, falls_permille, repulsed_permille, won_permille, lost_x100, per });
 persist_struct!(ForecastFighter { b, fall_pct, escape_pct });
 
 #[cfg(test)]
@@ -302,6 +303,7 @@ mod tests {
             LogEvent::Heal { unit: 0, amount: 500, source: HealSource::Spell(SpellType(6)) },
             LogEvent::Xp { unit: 0, amount: 4, from: vec![XpSource::Kill { victim: 1, share_permille: 750 }, XpSource::Withdrew, XpSource::DefStrike] },
             LogEvent::Flee { unit: 6, to: PlotIdx(12) },
+            LogEvent::PushBack { units: vec![1, 2], to: PlotIdx(13) },
             LogEvent::MoveIn { units: vec![5], city: Some(CityId(3)) },
         ]);
         for kind in ActionKind::ALL {
@@ -345,6 +347,7 @@ mod tests {
                 runs: 200,
                 wiped_permille: 910,
                 falls_permille: 640,
+                won_permille: 700,
                 repulsed_permille: 3,
                 lost_x100: [130, 420],
                 per: vec![ForecastFighter { b: 0, fall_pct: 75, escape_pct: 10 }, ForecastFighter { b: 2, fall_pct: 0, escape_pct: 0 }],
@@ -381,7 +384,7 @@ mod tests {
                 city: Some(CitySnap { id: CityId(3), name: "Strages".to_string(), owner: PlayerId(2), size: 7, defense_pct: 60 }),
             },
             sides: [side(1, 8), side(2, 2)],
-            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0, sentinels: 2, sentinels_breached: 1 },
+            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0, sentinels: 2, sentinels_breached: 1, hp_lost: [4200, 9100], loser: Some(Side::Defender), pushed: 2 },
             log: Some(Box::new(log)),
         }
     }
