@@ -61,9 +61,9 @@ fn check(g: &Game, h: PlayerId, fought: &[UnitId], what: &str, j: &Json) -> usiz
     match j {
         Json::Obj(m) => {
             for (k, v) in m.iter() {
-                // A battle log's events name their fighters by index into its `fighters`
-                // (whose `unit` is checked), not by unit id.
-                if k == "events" && what.starts_with("battle_log") {
+                // A battle log's events and its after-battle lines name their fighters by index
+                // into its `fighters` (whose `unit` is checked), not by unit id.
+                if (k == "events" || k == "after") && what.starts_with("battle_log") {
                     continue;
                 }
                 match (k.as_str(), v) {

@@ -76,6 +76,16 @@ pub enum Command {
     /// the plot falls) or a plot. `declare_war` as `move`'s (`None` asks, `Some(false)` is the
     /// popup's "no").
     Engage { by: EngageBy, to: (i32, i32), squad: Option<SquadId>, declare_war: Option<bool> },
+    /// Squads (docs/ENGAGEMENTS.md, "Squads"): move unit `unit` to `cell` (`row * 3 + lane`; a
+    /// large unit's first; `None`: the first free cell of its best row) of squad `squad` on its
+    /// plot (a unit of the same size there swaps with it), or (`squad` `None`) to a new squad of
+    /// its own. Both squads become hand-set (`Game::squad_move`).
+    SquadMove { unit: UnitId, squad: Option<SquadId>, cell: Option<u8> },
+    /// Squad `squad` is arranged by the auto formation again (`Game::squad_set_auto`).
+    SquadAuto { squad: SquadId },
+    /// Auto-sort (`Game::squad_auto_sort`): the units of `squads` (on one plot) dealt into as few
+    /// squads as hold them, each body's apart, all Auto.
+    SquadSort { squads: Vec<SquadId> },
     /// Where city `city`'s trained land combat units go: production order `index`'s, or the
     /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
     /// garrison (for the city). A unit bound elsewhere marches there.
@@ -444,6 +454,9 @@ pub const COMMAND_NAMES: &[&str] = &[
     "army_station",
     "raise_outpost",
     "engage",
+    "squad_move",
+    "squad_auto",
+    "squad_sort",
     "recruit_dest",
     "govern_role",
     "govern_priorities",
@@ -503,6 +516,9 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("army_station", &["army", "station"]),
     ("raise_outpost", &["city"]),
     ("engage", &["army", "units", "from", "to", "squad", "declare_war"]),
+    ("squad_move", &["unit", "squad", "cell"]),
+    ("squad_auto", &["squad"]),
+    ("squad_sort", &["squads"]),
     ("recruit_dest", &["city", "index", "dest"]),
     ("govern_role", &["city", "role"]),
     ("govern_priorities", &["roles"]),
@@ -702,6 +718,9 @@ impl Command {
             Command::ArmyStation { .. } => "army_station",
             Command::RaiseOutpost { .. } => "raise_outpost",
             Command::Engage { .. } => "engage",
+            Command::SquadMove { .. } => "squad_move",
+            Command::SquadAuto { .. } => "squad_auto",
+            Command::SquadSort { .. } => "squad_sort",
             Command::RecruitDest { .. } => "recruit_dest",
             Command::GovernRole { .. } => "govern_role",
             Command::GovernPriorities { .. } => "govern_priorities",
@@ -820,6 +839,14 @@ impl Command {
                 squad: j.opt("squad")?,
                 declare_war: j.opt("declare_war")?,
             },
+            "squad_move" => Command::SquadMove {
+                unit: j.req("unit")?,
+                // Present: a squad, or null for a new squad (a missing one is not a new squad).
+                squad: if j.req_value("squad")?.is_null() { None } else { Some(j.req("squad")?) },
+                cell: j.opt("cell")?,
+            },
+            "squad_auto" => Command::SquadAuto { squad: j.req("squad")? },
+            "squad_sort" => Command::SquadSort { squads: j.req("squads")? },
             "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
             "govern_role" => Command::GovernRole { city: j.req("city")?, role: names::field(d, j, "role")? },
             "govern_priorities" => Command::GovernPriorities { roles: names::list_field(d, j, "roles")? },
@@ -941,6 +968,9 @@ impl Command {
                 .with("to", plot_json(to.0, to.1))
                 .with("squad", *squad)
                 .with("declare_war", *declare_war),
+            Command::SquadMove { unit, squad, cell } => j.with("unit", *unit).with("squad", *squad).with("cell", *cell),
+            Command::SquadAuto { squad } => j.with("squad", *squad),
+            Command::SquadSort { squads } => j.with("squads", Json::Arr(squads.iter().map(|&s| Json::from(s)).collect())),
             Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
             Command::GovernRole { city, role } => j.with("city", *city).with("role", Json::idx(*role)),
             Command::GovernPriorities { roles } => j.with("roles", Json::Arr(roles.iter().map(|&r| Json::idx(r)).collect())),
@@ -1219,6 +1249,95 @@ fn army_of(g: &Game, h: PlayerId, a: ArmyId) -> Result<(), CmdErr> {
     }
 }
 
+/// A squad of the human's (docs/ENGAGEMENTS.md, "Squads").
+fn squad_of(g: &Game, h: PlayerId, s: SquadId) -> Result<(), CmdErr> {
+    match g.squads.get(s) {
+        None => Err(cannot("no such squad")),
+        Some(sq) if sq.owner != h => Err(CmdErr::NotOwner),
+        Some(_) => Ok(()),
+    }
+}
+
+/// The plot of the human's squad `s`, the human's squad layouts there and its index in them (as
+/// the rules' `squad_find` finds them), or why not.
+fn squad_at(g: &Game, h: PlayerId, s: SquadId) -> Result<(PlotIdx, Vec<ffh_core::army::SquadLayout>, usize), CmdErr> {
+    squad_of(g, h, s)?;
+    let none = || cannot("the squad has no units");
+    let u = g.players[h].units.iter().copied().find(|&u| g.units[u].squad == Some(s) && g.unit_in_squads(u)).ok_or_else(none)?;
+    let plot = g.unit_plot_opt(u).ok_or_else(none)?;
+    let layouts = g.squad_layouts_at(h, plot);
+    let i = layouts.iter().position(|l| l.squad == Some(s)).ok_or_else(none)?;
+    Ok((plot, layouts, i))
+}
+
+/// The cells unit `u` fills in a squad: 2 for a large unit.
+fn squad_size(g: &Game, u: UnitId) -> u8 {
+    1 + g.unit_engage_large(u) as u8
+}
+
+/// Whether a squad of `body` on unit `u`'s plot may hold it (the rules' `squad_body_accepts` for
+/// a layout of that plot: a unit of an army or a garrison stands only in its body's squads, a
+/// unit of none in any).
+fn squad_accepts(g: &Game, body: ffh_core::army::SquadBody, u: UnitId) -> bool {
+    let own = g.unit_squad_body(u);
+    own == ffh_core::army::SquadBody::Loose || own == body
+}
+
+/// Whether `size` cells from `cell` (side by side in one row) are in the grid and free.
+fn squad_fits(l: &ffh_core::army::SquadLayout, cell: u8, size: u8) -> bool {
+    use ffh_core::army::{SQUAD_CELLS, SQUAD_LANES};
+    (cell as usize) < SQUAD_CELLS && cell % SQUAD_LANES + size <= SQUAD_LANES && (0..size).all(|k| l.cells[(cell + k) as usize].is_none())
+}
+
+/// `squad_move`'s checks, before any change (the rules' `Game::squad_move` refuses the same,
+/// after a sync; its texts).
+fn squad_move_check(g: &Game, h: PlayerId, u: UnitId, squad: Option<SquadId>, cell: Option<u8>) -> Result<(), CmdErr> {
+    use ffh_core::army::{SQUAD_CELLS, SQUAD_LANES};
+    unit_of(g, h, u)?;
+    if !g.unit_in_squads(u) {
+        return Err(cannot("that unit stands in no squad"));
+    }
+    let size = squad_size(g, u);
+    if let Some(c) = cell {
+        if c as usize >= SQUAD_CELLS || c % SQUAD_LANES + size > SQUAD_LANES {
+            return Err(cannot("that cell is outside the squad"));
+        }
+    }
+    let plot = g.unit_plot_opt(u).ok_or_else(|| cannot("that unit stands in no squad"))?;
+    let layouts = g.squad_layouts_at(h, plot);
+    let from = layouts.iter().position(|l| l.cell_of(u).is_some()).ok_or_else(|| cannot("that unit stands in no squad"))?;
+    let Some(s) = squad else {
+        if layouts[from].units().len() <= 1 {
+            return Err(cannot("that unit is already a squad of its own"));
+        }
+        return Ok(());
+    };
+    squad_of(g, h, s)?;
+    let Some(i) = layouts.iter().position(|l| l.squad == Some(s)) else {
+        let elsewhere = g.players[h].units.iter().any(|&x| g.units[x].squad == Some(s) && g.unit_in_squads(x));
+        return Err(cannot(if elsewhere { "that squad is on another plot" } else { "the squad has no units" }));
+    };
+    let target = &layouts[i];
+    if !squad_accepts(g, target.body, u) {
+        return Err(cannot("that unit cannot join that squad"));
+    }
+    let places = |l: &ffh_core::army::SquadLayout| -> i32 { l.units().iter().map(|&(x, _)| squad_size(g, x) as i32).sum() };
+    let Some(c) = cell else {
+        // The first free cell of its rows in its rank order (the centre lane first).
+        let lanes: &[u8] = if size > 1 { &[0, 1] } else { &[1, 0, 2] };
+        let free = g.unit_engage_row_order(u).iter().any(|&r| lanes.iter().any(|&l| squad_fits(target, r.min(2) as u8 * SQUAD_LANES + l, size)));
+        return if free { Ok(()) } else { Err(cannot("that squad is full")) };
+    };
+    let mut occupants: Vec<UnitId> = (0..size).filter_map(|k| target.cells[(c + k) as usize]).filter(|&x| x != u).collect();
+    occupants.dedup();
+    match occupants.as_slice() {
+        [] if i != from && places(target) + size as i32 > g.squad_places() => Err(cannot("that squad is full")),
+        [] => Ok(()),
+        &[o] if squad_size(g, o) == size && target.cell_of(o) == Some(c) && squad_accepts(g, layouts[from].body, o) => Ok(()),
+        _ => Err(cannot("there is no room in that cell")),
+    }
+}
+
 /// Applies an army command (the rules check it too; a refusal changes nothing).
 fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
     let r: Result<(), &'static str> = match c {
@@ -1234,6 +1353,9 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyRequisition { army, city, on: false } => g.army_remove_requisition(h, *army, *city),
         Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
         Command::ArmyStation { army, station } => g.army_set_station(h, *army, *station),
+        Command::SquadMove { unit, squad, cell } => g.squad_move(h, *unit, squad.map_or(ffh_core::army::SquadDest::New, ffh_core::army::SquadDest::Squad), *cell),
+        Command::SquadAuto { squad } => g.squad_set_auto(h, *squad),
+        Command::SquadSort { squads } => g.squad_auto_sort(h, squads),
         Command::RaiseOutpost { city } => {
             if g.player_raise_outpost(h, *city) {
                 Ok(())
@@ -1809,6 +1931,28 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 return Err(cannot("there is nobody to fight there"));
             }
             Plan::Apply(Action::Engage { by: by.clone(), from, to: dest, squad: *squad, war })
+        }
+
+        Command::SquadMove { unit, squad, cell } => {
+            squad_move_check(g, h, *unit, *squad, *cell)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::SquadAuto { squad } => {
+            squad_of(g, h, *squad)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::SquadSort { squads } => {
+            let Some(&first) = squads.first() else { return Err(invalid("field `squads`: none")) };
+            for &s in squads {
+                squad_of(g, h, s)?;
+            }
+            let (_, layouts, _) = squad_at(g, h, first)?;
+            if squads.iter().any(|&s| !layouts.iter().any(|l| l.squad == Some(s))) {
+                return Err(cannot("the squads must stand on one plot"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
         }
 
         Command::RecruitDest { city, index, dest } => {
@@ -2594,6 +2738,10 @@ mod tests {
             Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), squad: None, declare_war: None },
             Command::Engage { by: EngageBy::Units(vec![UnitId(3), UnitId(4)]), to: (4, 5), squad: Some(SquadId(2)), declare_war: Some(true) },
             Command::Engage { by: EngageBy::From(3, 5), to: (4, 5), squad: None, declare_war: Some(false) },
+            Command::SquadMove { unit: UnitId(3), squad: Some(SquadId(2)), cell: Some(4) },
+            Command::SquadMove { unit: UnitId(3), squad: None, cell: None },
+            Command::SquadAuto { squad: SquadId(2) },
+            Command::SquadSort { squads: vec![SquadId(2), SquadId(5)] },
             Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: None },

@@ -68,6 +68,13 @@ impl Game {
     /// The rules' auto formation of side `side` from `pool` (module comment), in the pool's order.
     /// Units that never fight land battles (sea and air units) are left out.
     pub fn engage_auto_formation(&self, pool: &[UnitId], side: Side, slots: &Slots, ctx: &HitCtx) -> Vec<Place> {
+        self.engage_auto_formation_by(pool, side, slots, |u| self.engage_strength(u, side, ctx) as i64)
+    }
+
+    /// [`Game::engage_auto_formation`] with each unit's strength `value` (the order within a kind,
+    /// the lanes nearest the centre): an Auto squad's arrangement reads the unit's strength
+    /// (`army/squad.rs`), cheap enough for every layout.
+    pub fn engage_auto_formation_by(&self, pool: &[UnitId], side: Side, slots: &Slots, value: impl Fn(UnitId) -> i64) -> Vec<Place> {
         let min_hp = self.d.defines.engagement_auto_min_hp_percent;
         let mut units: Vec<UnitId> = Vec::with_capacity(pool.len());
         let mut cands: Vec<Candidate> = Vec::with_capacity(pool.len());
@@ -80,7 +87,7 @@ impl Game {
                 pick_order: kind_pick_order(self.unit_engage_kind(u), self.unit_engage_anti_flank(u)),
                 row_order: order.map(|r| r.min(ROWS - 1) as u8),
                 large: self.unit_engage_large(u),
-                value: self.engage_strength(u, side, ctx) as i64,
+                value: value(u),
                 healthy: 100 - self.units[u].damage >= min_hp,
                 river: side == Side::Defender || self.unit_is_river(u),
             });

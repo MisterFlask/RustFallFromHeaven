@@ -29,6 +29,7 @@ import { run } from "./commands.js";
 import { addHelp } from "./help.js";
 import { pickEmpireItem, orderEmpire } from "./governors.js";
 import { houseShield, stateMark } from "./persons.js";
+import { squadBoard } from "./squads.js";
 
 // ---- the rules, in the help display (help.js; the Armies screen's (i) opens it) ---------------
 
@@ -113,6 +114,24 @@ function recruitLine(t, { to = false, go } = {}) {
 }
 
 /** "2 Axeman, 1 Warrior" for a list of unit ids (the view's units). */
+/** The armies whose squad board is open on the Armies screen (kept when the screen is re-read). */
+const squadsOpen = new Set();
+
+/** Squads (docs/ENGAGEMENTS.md, "Squads"): army `a`'s squads as a board under a fold, or null;
+ *  `reload` re-reads the screen after a change. */
+function squadsView(a, reload) {
+  const list = a.squads ?? [];
+  if (!list.length) return null;
+  const d = h(
+    "details.army-squads",
+    { "data-army": a.id, ontoggle: (ev) => (ev.target.open ? squadsOpen.add(a.id) : squadsOpen.delete(a.id)) },
+    h("summary", `Squads: ${list.length}`),
+    squadBoard(list, { unitOf: (id) => S.units.get(id) ?? null, changed: reload }),
+  );
+  if (squadsOpen.has(a.id)) d.open = true;
+  return d;
+}
+
 function composition(ids) {
   const n = new Map();
   for (const id of ids) {
@@ -352,6 +371,7 @@ export async function openArmies({ select, centerOn } = {}) {
           a.disband_to ? null : h("button.small.danger", { onclick: () => disband(a), title: "Its units march to the nearest of your cities and join the garrison there; its requisition ends" }, "Disband"),
         ),
         req,
+        squadsView(a, load),
         a.recruits.length ? h("div", h("b", `Marching to it (${a.recruits.length})`), h("ul.army-transit", a.recruits.map((t) => recruitLine(t, { go: goUnit })))) : null,
       );
     });
