@@ -1044,6 +1044,10 @@ impl Game {
                             }
                         }
                     }
+                    // This game's Houses (docs/HOUSES.md): a House's leader leads nothing else.
+                    if leader_valid && self.houses.iter().any(|(_, h)| h.leader == leader) {
+                        leader_valid = false;
+                    }
 
                     if leader_valid {
                         leaders.push((civ, leader));
