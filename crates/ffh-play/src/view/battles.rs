@@ -703,6 +703,7 @@ pub fn summary_json(v: &Viewer, r: &BattleReport) -> Json {
         // same).
         "hp_lost" => crate::jarr![r.outcome.hp_lost[0], r.outcome.hp_lost[1]],
         "loser" => r.outcome.loser.map(side_ix),
+        "decided_by" => r.outcome.decided_by.name(),
         "has_log" => r.log.is_some(),
         "sides" => Json::Arr(sides.into_iter().collect()),
     }
@@ -751,8 +752,13 @@ pub fn report_line(v: &Viewer, r: &BattleReport) -> String {
         Some(_) => "won",
         None => "drawn",
     };
-    let hp = |s: Side| (r.outcome.hp_lost[side_ix(s)] + 50) / 100;
-    format!("battle #{} at {place}: {verdict} ({} HP lost to {}), {outcome}; {} fell, {} of theirs fell", r.id, hp(me), hp(me.other()), mine.fallen, theirs.fallen)
+    // The rule that found the loser (all fallen, more fallen, more HP lost).
+    let by = match r.outcome.decided_by {
+        ffh_core::engagement::report::DecidedBy::Wiped => "all of a side fell".to_string(),
+        ffh_core::engagement::report::DecidedBy::Deaths => format!("{} fell to {}", mine.fallen, theirs.fallen),
+        _ => format!("{} HP lost to {}", (r.outcome.hp_lost[side_ix(me)] + 50) / 100, (r.outcome.hp_lost[side_ix(me.other())] + 50) / 100),
+    };
+    format!("battle #{} at {place}: {verdict} ({by}), {outcome}; {} fell, {} of theirs fell", r.id, mine.fallen, theirs.fallen)
 }
 
 /// `battle_reports`: the viewer's kept reports, newest first.
@@ -833,7 +839,8 @@ pub fn battle_log(v: &Viewer, id: u32) -> Result<Json, QueryErr> {
             "hp_lost" => crate::jarr![o.hp_lost[0], o.hp_lost[1]],
             "loser" => o.loser.map(side_ix),
             // How the loser was found, a line each (docs/PLAY_DESIGN.md 4.9).
-            "calc" => Json::Arr(o.verdict_calc().into_iter().map(Json::from).collect()),
+            "decided_by" => o.decided_by.name(),
+            "calc" => Json::Arr(r.verdict_calc().into_iter().map(Json::from).collect()),
             "lines_down" => down.map(|d| crate::jarr![d[0], d[1]]),
             "sides" => Json::Arr(line.collect()),
         },
