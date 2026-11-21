@@ -34,7 +34,7 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
 
 ## Courting is a cultural channel (2026-11-20, the fourth build; a rules change, not measured)
 
-**Built, in every game** (docs/PERSONS.md, "The fourth build"; docs/CULTURE.md). A rules change is
+**Built, in every game** (git history of docs/PERSONS.md, "The fourth build"; git history of docs/CULTURE.md). A rules change is
 not gated on the AI (CLAUDE.md). The guardrail ran 12 seeds × 300 turns, 6 civilizations, against
 94be8522 (base → new). Turn 100 is identical: no channel is set before turn 110.
 
@@ -77,7 +77,7 @@ games.
 
 ## Houses without Persons of Note (2026-11-19, the third build; a rules change, not measured)
 
-**Built, in every game** (docs/PERSONS.md, "The third build"). A rules change is not gated on the
+**Built, in every game** (git history of docs/PERSONS.md, "The third build"). A rules change is not gated on the
 AI (CLAUDE.md); the guardrail, 12 seeds x 300 turns against b4779d45, base -> new. Read with care:
 a House is a player and a team of its own, so the per-player means fall with the player count
 (alive at turn 300: 76 -> 195 players, 66 -> 69 of the 72 original civilizations) and two of the
@@ -100,7 +100,7 @@ the players). Nothing broad broke.
 
 ## The memory of wrongs (2026-11-18, the owner's decision; a rules change, not measured)
 
-**Built, in every game** (docs/PERSONS.md rule 15, docs/PORTING.md "Changes from FFH2"). Before
+**Built, in every game** (git history of docs/PERSONS.md, rule 15; docs/PORTING.md "Changes from FFH2"). Before
 it, `relation_parts` had no memory of a war or a conquest: a war counted -2 `at war` while it
 lasted and nothing after (`war between us` reads `ai_at_war_counter`, which nothing counts up),
 and a bought House was the one lasting grudge (`BRIBE_GRUDGE`, an attitude modifier that never

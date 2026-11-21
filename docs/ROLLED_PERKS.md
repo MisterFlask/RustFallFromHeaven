@@ -1,7 +1,19 @@
 # Rolled perks: design brief
 
-Status: design only (2026-11-14, the owner's design). Nothing is built. This file records the
-purpose, the decisions made, what was considered and dropped, and what is still open.
+Status: superseded in its delivery (2026-11-21): perks arrive with Houses (docs/HOUSES.md, rule
+9). The timed offers and the hidden adjustment below are not built. This file records the purpose,
+the decisions made, what was considered and dropped, and what is still open.
+
+## Perks with Houses (2026-11-21)
+
+On 2026-11-21 the owner made perks arrive with Houses (docs/HOUSES.md, rule 9): each House's
+formation offers a pick of three leaders, each with a perk of a different family; the perk is the
+House leader's trait and applies in the House's cities (off while the House is Furious); its tier
+is set by the turn the House forms (tier 1 before turn 100, tier 2 from turn 100, tier 3 from turn
+200). 14 families of three tiers are in the data (`TRAIT_PERK_<FAMILY>_<tier>` in
+`data/json/traits.jsonc`, 42 rows). The timed offers to the player's own leader on turns 100, 200
+and 300 and the hidden adjustment are not built. The purpose and the candidate list below stay as
+the design record.
 
 Not FFH2: a new rules layer of this game. When built it is in every game, not behind an option.
 

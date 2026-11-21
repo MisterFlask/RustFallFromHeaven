@@ -15,7 +15,7 @@ and edge cases were decided, and what is left.
 | 5 Governors | (the "Feed army" mode, replaced by requisition on 2026-10-31) | done |
 | Requisition and marching recruits (2026-10-31) | rules, saves, AI, UI | done |
 | 6 Engagement combat | formation battles (revision 4: no stances), commander | in progress: formation battles in the rules (docs/ENGAGEMENTS.md, 2026-10-31) |
-| 7 FfH layer | Incite Mutiny (cultural action against an army), commander auras | later |
+| 7 FfH layer | Incite Mutiny (a cultural action against an army: there are no cultural actions since 2026-11-21), commander auras | later |
 
 Code: rules `crates/ffh-core/src/army/` (`mod.rs`: armies, garrisons, the sync, the commands,
 supply, destinations; `requisition.rs`; `march.rs`; hooks: the production queue's train order and
@@ -101,20 +101,10 @@ garrison (docs/GOVERNORS.md); their orders bound elsewhere are requisitions and 
 the player places for an army (empire orders, docs/GOVERNORS.md: a unit type, at a chosen city).
 
 **Requisition** (`army/requisition.rs`). An army requisitions soldiers from the cities its owner
-picks for it (`Army::requisition`, in the order they were added): any of the owner's cities,
-directly ruled or governed, the capital included, and the cities of its Houses (the levy,
-docs/PERSONS.md, "The second build", rule 6). A city lost, traded, razed or flipped leaves every
-list, and a House's cities leave its liege's lists when the House ends. Requisition needs a
-target size: an army with none (0) requisitions nothing. (An army has no commander: the persons
-who commanded armies went with docs/PERSONS.md's third build.)
-
-*The levy.* A House's city takes a requisition order as the owner's own cities do: at the front of
-its queue, built with its production (the House's player keeps the order while the army lists the
-city). The unit trained is the army owner's (`city/turn.rs`: created for the army's owner in the
-House's city, a vassal's land being friendly to its master) and marches to the army. Each order
-placed is a grievance of the House (`Levied: -1 (20 turns)`). A House Annoyed or worse takes no
-levy: its cities are passed over (`house_levy_refusal`, `city_levy_refusal` say why; an order
-already placed stays). The Armies screen lists the Houses' cities among the candidates.
+picks for it (`Army::requisition`, in the order they were added): any of the owner's own cities,
+directly ruled or governed, the capital included. A city lost, traded, razed or flipped leaves every
+list. Requisition needs a target size: an army with none (0) requisitions nothing. An army has no
+commander.
 
 - *The shortfall*: the target size less the army's units, its recruits marching to it, its
   requisition orders in production and the other orders bound for it at the head of a city's queue
