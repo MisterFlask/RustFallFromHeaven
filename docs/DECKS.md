@@ -174,8 +174,6 @@ exists. **(new)** marks a lever the engine does not have yet.
 - Governors: the bench, profiles, traits, the four direct-rule slots, the replacement cost.
 - Armies: requisition, target size, supply (within 3 plots of the trade network), marching
   recruits.
-- Cultural channels: Foment Revolt, Spread Religion; falloff with distance squared; resistance
-  from culture and garrison.
 - National units' over-limit price.
 - The score: a share of people, land and knowledge.
 - **Information (new)**: see rivals' gold, deals, cards held, great-people progress; fake what
@@ -243,9 +241,8 @@ A civ can be born in six ways, each a rule a card or a crisis can call:
   own risers and calmers (section 5). The Doviello grow restless without plunder; the Calabim's
   cattle grow restless when fed on. A thin core is the same for every civ, so rivals always
   have a lever on it:
-  - **Core risers:** turns in disorder; another civ's culture on the city's plot; Foment Revolt
-    pressure (the cultural channel's pressure becomes Unrest); espionage (Incite Unrest,
-    section 3.6); a disloyal governor.
+  - **Core risers:** turns in disorder; another civ's culture on the city's plot; espionage
+    (Incite Unrest, section 3.6); a disloyal governor.
   - **Core calmers:** garrison units; a loyal governor; Courthouse, Governor's Manor and
     Dungeon (the crime they reduced did nothing; Unrest gives them a real job); the Vigil
     process and Jesters (section 3.6).
@@ -846,6 +843,7 @@ It takes three Bards; each one spent adds an act. Each act gives +5% culture emp
 
 **Anthem** · II · needs Philosophy · building · [cultural channels]
 This city's cultural channel falls off with distance, not distance squared.
+Cannot be built as written: the game has no cultural channels (removed 2026-11-21).
 *Expert:* aim a Foment Revolt at a rival's far, soft city from deep inside your land.
 
 **Living Legend** · II · needs Arete · building · [new: governor to hero]
@@ -1816,6 +1814,7 @@ every city.
 **Songs of Grievance** · II · needs Drama · building · [history, Vendetta]
 While you hold a claim on a city (section 6.2), your cultural channel aimed at its holder
 counts double against that city.
+Cannot be built as written: the game has no cultural channels (removed 2026-11-21).
 *Expert:* lost cities come back by culture, without a war.
 
 **Hall of Heroes** · II · needs Arete · building · [history]
@@ -2299,13 +2298,14 @@ end. Band: I Ancient, II Classical, III Medieval.
 - *Masquerade* (II): an invisible stack; its first battle from hiding denies defensive strikes.
 - *Lullaby of Ceridwen* (II): the enemy's rear row skips its first action.
 - *The Unfinished Opera* (II): three Bards, three acts of culture.
-- *Anthem* (II): a cultural channel that falls off with distance, not distance squared.
+- *Anthem* (II): a cultural channel that falls off with distance, not distance squared (no
+  cultural channels since 2026-11-21).
 - *Living Legend* (II): governors grow traits; call one to arms as a hero.
 - *Regency Council* (II, civic): six directly ruled cities; weaker governors.
 - *Carnival* (II, civic): the Culture process calms Unrest; longer golden ages.
 - *Patronage* (II, hurry): spend culture to finish production.
 - *Songs of Grievance* (II): your cultural channel counts double against cities you have a claim
-  on.
+  on (no cultural channels since 2026-11-21).
 - *Hall of Heroes* (II): a new unit takes a fallen hero's name and a promotion.
 - *Ballad of the Traitor* (III): invaders in your borders may change sides.
 - *Chorus of the Fallen* (III): your dead raise your side's damage for the rest of the battle.

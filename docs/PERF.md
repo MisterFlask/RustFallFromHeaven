@@ -60,6 +60,12 @@ Whole games, interleaved in one session (3 rounds each):
 (This host ran 20-35% slower in those sessions than on a quiet morning, when D1 took 33 s;
 the ratios hold.)
 
+## Before the game's own systems (master `9be40af`)
+
+`ffh bench`, 8 civs, standard map, 400 turns, CPU-exclusive on this container, before the sprint
+of the owner's design spec "FfH Culture Actions & Army Combat" (2026-10-29): seed 1 19.2 s (48.1
+ms/turn, slowest 197 ms), seed 2 24.1 s (60.3 ms/turn, slowest 235 ms); no crashes.
+
 ## Done (October 2026)
 
 Each change alone against the base, D1, median of 3 interleaved rounds:

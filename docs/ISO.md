@@ -332,8 +332,8 @@ own, processes, the modifier; the `city` query's `commerces`). At the left the c
 each: on a plot with its yields, a specialist with what it gives, without work, angry; pointing at
 one lights its plot on the map), the specialist slots by type (filled, open, free; the types no
 building opens yet in one line), mood and health with the room before trouble (how many more
-citizens before unrest or sickness), culture, great people, the city's numbers, its culture
-channel and buildings; at the right its orders and production. The rest of the interface steps
+citizens before unrest or sickness), culture, great people, the city's numbers and its
+buildings; at the right its orders and production. The rest of the interface steps
 aside, and when the screen closes the camera goes back to where it was. The production popup stays
 a dialog; the flat renderer keeps the grid.
 

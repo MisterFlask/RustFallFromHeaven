@@ -321,18 +321,6 @@ flag.
   answer becomes a thing on the map the Lanun aim and everyone sees; Mother Lode's one-off payout
   becomes a permanent change to the map.
 
-- **Cultural channels** (docs/CULTURE.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): a city may channel half its
-  culture (that culture reaches neither the city's culture, its plots nor the culture victory) into
-  one standing order aimed at a civilization, until its owner changes it: Foment Revolt (revolt
-  pressure on the target's cities: unhappiness, disorder, then the city joins the caster; never a
-  capital) or Spread Religion (a chance a turn to spread a religion of the city to one of the
-  target's cities). The effect falls with the square of the distance; a city resists revolt with
-  part of its own culture and its garrison. Not acts of war; the target's leader remembers them.
-  Every channel is public to the civilizations that have met the caster. Save format 8 (it replaced the cultural
-  queue of timed actions of formats 4-5: Festival, Trade Fair, Incite Unrest, Siphon Knowledge,
-  Foment Revolt, Flip City, Spread Religion, removed on the owner's direction of 2026-10-30).
-  Replaced on 2026-11-20 by the civilization's channel (below: Foment Revolt and the per-city
-  channels retired).
 - **Armies** (docs/ARMIES.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): land combat units (not mages, recon units,
   heroes, summons or animals: animals since 2026-11-10, docs/SUPPLY.md "Second pass" B) serve in named armies, kept one selection group each, or in a city's
   garrison. An army requisitions soldiers from the cities its owner picks for it (any city,
@@ -364,188 +352,60 @@ flag.
   cities. Hand-run civics cost more with size: Despotism city-count maintenance +25% -> +40%; God
   King distance maintenance +10% -> +25% and city-count maintenance +30% (new). A governed city's
   cultural channel is its owner's (2026-10-30). Save format 30.
-- **Persons of Note** (docs/PERSONS.md, "The first build", 2026-11-18; step 1 of 3, the state and
-  the rules that concern only persons and Houses): every living civilization has a cast of
-  persons (its heroes; one veteran a turn, an army unit at level 5 plus its living veterans, who
-  takes the name of a minor leader of its civilization drawn with the game RNG; a great person
-  spent on founding a House). They command armies, head Houses that cities are granted to for
-  good, make demands with a term and carry a loyalty with four states. No consequence on other
-  systems yet (the quota, the head's trait, maintenance, secession come in step 2). The draw of a
-  person is a new RNG use, so AI games play differently from the same seed. Save format 47.
-- **Persons of Note, their consequences** (docs/PERSONS.md, "The first build", 2026-11-18; step 2):
-  a House's city takes empire and requisition orders by its House's quota (none while Restless or
-  Disloyal, none past `house_orders` per city in 30 turns while Loyal, no limit while Devoted);
-  a Restless or Disloyal commander's army takes no order to attack (it moves and defends); a
-  Disloyal head's unit goes to its House's largest city and takes no orders; a head's first
-  leader trait the owner lacks applies in the House's cities (health, happiness, commerce,
-  the extra-yield threshold, trade yield, great people rate, wonder and trait production, free
-  promotions; `city_has_trait` answers for it); a city of a House with a head pays half its
-  number-of-cities maintenance (`PERSON_HOUSE_MAINTENANCE_PERCENT`). At a countdown's end a House
-  secedes with the cities no army holds as a new civilization of the owner's kind (with the other
-  Houses whose countdown runs, rivals apart: a league), at war with its former owner; a commander's
-  sworn units join such a league, seize a city as a new civilization, or the commander resigns.
-  Adopting a direct-rule civic with Houses is the secession of every House at once (civil war). A
-  House can be released as its owner's vassal. Why: an empire shared with holders who withhold
-  and can leave with what they hold (the owner's concept). A Works demand never names a palace.
-  Save format 48.
-- **Persons of Note, the second build: Houses as vassal civilizations** (docs/PERSONS.md, "The
-  second build", the owner's decisions of 2026-11-18; replaces the quota, the head's trait, the
-  half maintenance, heirs, leagues and release above). Vassals change in FFH2's own terms:
-  - *Every vassal is a House*: a player of its own, the vassal of its liege, headed by a person
-    of the liege's cast (the leader of a capitulated civilization included), played by the
-    game's AI. A grant of a Crown city founds one (a new player born of the liege, led by the
-    veteran or great person granted it, who leaves the map) or gives the city to the House's
-    player, garrison included (the liege's units in an army or marching stay).
-  - *Tribute*: a House pays its liege 0 to 50% (default 20%) of its gold commerce (from its
-    treasury) and of its research commerce (to the liege's current research); FFH2's vassals pay
-    nothing. The higher the tribute, the lower its loyalty (`1 - N/10`). The rate in force lags
-    the rate set, both ways: a step of 10% every 5 turns, and the payment and the loyalty follow
-    the rate in force (2026-11-19: the rate was a free, instant loyalty lever, and the raise's
-    modifier of 2026-11-18 that replaced it made it a ratchet).
-  - *The levy*: an army requisitions in its owner's Houses' cities; the unit trained is the
-    liege's. Each order is a grievance (`Levied: -1 (20 turns)`); an Annoyed House takes none.
-  - *Breaking away is war*: a Furious House's countdown, the civil war of direct rule or an
-    accepted offer to secede ends its vassalage with a declaration of war on the liege; its
-    cities where the liege's army units outnumber the House's land combat units go back to the
-    liege first (a tie goes to the House; 2026-11-18, was any army of the liege). Civ4's own vassal
-    revolt rule (`canVassalRevolt`: free when master or vassal lost land) no longer frees a House,
-    and no player cancels a House's vassal deal; its liege can free it (at peace).
-  - *Direct rule*: a liege under a direct-rule civic (Despotism, God King) holds vassals as
-    Houses, but grants no city; adopting direct rule (a change of civics) breaks every House
-    away.
-  - *Side deals*: a House trades only Secede and Become your vassal (new trade items), for gold
-    only (2026-11-18: no gold per turn, which could be paid for one turn and ended by a war on
-    the seceded House), with a civilization that has met it and is not its liege, at war too; it
-    accepts when Cautious or worse and the offer covers `(loyalty + 6) x 25 x its cities` gold.
-    The liege remembers the buyer (`MEMORY_BOUGHT_HOUSE`, below). Only an accepted offer is noted
-    (2026-11-18): a refused one leaves no trace (no memory, no `Offered` entry, no alert).
-  - *The attitude scale*: a House's loyalty (a person's, until the third build) reads Friendly, Pleased, Cautious,
-    Annoyed or Furious; a House's AI attitude toward its liege is its loyalty's.
-  - *The Crown's limit* (rule 14): under a governing civic the Crown holds 3 great cities at the
-    normal city-count maintenance (the capital first; settlements not counted; the Kuriotates 1,
-    the trait key `crown_cities_change`; revised 2026-11-20, below); each further one pays triple. A House of more great
-    cities than `T = max(3, 2 + the realm's great cities / 8)`: `Holds N cities, more than T:
-    -(N - T)`.
-  - *The Kuriotates' city cap* counts the realm: the liege's great cities and its Houses'
-    together; a city moving between a liege and its House keeps its settlement status (revised
-    2026-11-20: "Kuriotates settlements are cities of radius 1", below).
-  Why: a large empire is shared with holders who have a view of how it is ruled, in the game's
-  own idioms (vassalage, attitude, the diplomacy screen, requisition, war). Save format 49.
-- **Houses without Persons of Note** (docs/PERSONS.md, "The third build", part 1, the owner's
-  decisions of 2026-11-19; replaces the persons of the two entries above): the cast is gone, and
-  with it the commanders (an army has no commander, no withheld attack, no secession of sworn
-  units), the veterans' names and the persons' records; **heroes and great people are FFH2's
-  again** (no person, no House founded by a great person). A House's leader is its player's; its
-  requests (the second build's demands, renamed) and its record are its own. A realm without a
-  House founds one with its first grant of a Crown city, its leader drawn with the game RNG from
-  its civilization's free minor leaders, else those of other civilizations of its alignment (none
-  free: no founding); a realm with Houses grants to them. The size grievance (`Holds N cities,
-  more than T`) is gone. The world unit (the mean commerce of the world's civilizations) is
-  computed for part 2's prices. Why: the persons did no work the Houses did not (the owner). Save
-  format 53.
-- **Houses split; ultimatums and contracts replace the countdown** (docs/PERSONS.md, "The third
-  build", rules 4 to 6, part 2A, the owner's decisions of 2026-11-19): a House of 6 great cities
-  or more splits with a chance of 5% a turn, the half of its cities farthest from its capital going
-  to a new cadet House of its civilization (a free minor leader; none free, no split) that
-  inherits nothing. A Furious House no longer counts down 10 turns to breaking away: in its
-  liege's turn it issues an ultimatum, one demand its liege can meet at once (its refused request
-  again, a lower tribute, peace with a civilization that took its cities, war on one that wronged
-  it, a spare resource, else gold a turn scaled to the world's commerce), answered at once by the
-  liege (the AI accepts unless it holds every city of the House or the war is on a stronger
-  civilization). Refused, the House breaks away (the hold contest as before). Accepted, the demand
-  is done and a contract binds for 20 turns: the act that would void it is refused (a tribute
-  above the bound, war on the civilization peace was made with, peace with the one war was declared
-  on, cancelling the resource trade, a change of state religion), the House counts as at least
-  Annoyed for every rule, and gold a turn is an expense in the liege's budget. Why: "a player
-  decision to appease a House vs have a civil war" (the owner), and Houses that grow large divide
-  rather than grow without end. Save format 54.
-- **Courtship, the price on the world unit, shared knowledge, gold tribute** (docs/PERSONS.md, "The
-  third build", rules 7, 8 and 10, part 2B; the owner's decisions of 2026-11-19):
-  - *Courtship*: a civilization that has met a House (not of its liege's team) gives it gifts in
-    the trade table: gold (counted 20 turns) or a resource (while it is given, a third of the
-    requirement); the House accepts any, and a gift makes no peace. The courtship opens when its
-    value reaches 3 turns of the world unit (the mean total commerce of the civilizations); the
-    House takes an offer (Secede, Become your vassal) only from a courtship open 10 turns
-    (`PERSON_COURTSHIP_TURNS`). Its liege is told and remembers it: `MEMORY_COURTED_HOUSE`
-    ("courted our House", -200 on FfH's scale, decay 50, in every leader with memory data; ffh-ai
-    reads it as a relation term). Why: a rival buying a House is telegraphed (the owner).
-  - *The price*: `(loyalty + 6) x P x its cities`, P 54% of the world unit (25 around turn 150,
-    the flat 25 it replaces).
-  - *Knowledge is shared in a realm*: a tech a liege's team or one of its Houses' teams gains by
-    any means, every other team of the realm gains too, not as its first discoverer (no religion,
-    great person or free tech from it); a team joining a realm and the realm share both ways. A
-    card of the deck and a repeatable tech are not shared. FFH2's vassals share nothing.
-  - *Tribute is gold only* (the research part went: with knowledge shared it counted a House's
-    beakers twice). Techs stay the liege's to trade: a House trades none.
-  Save format 55.
-- **Courting is a cultural channel; revolt and the side deals retired** (docs/PERSONS.md, "The
-  fourth build", part 1; docs/CULTURE.md; the owner's decisions of 2026-11-20; replaces the
-  per-city channels above, the courtship and the price of the entry above and the second build's
-  side deals):
-  - *The civilization's channel*: a civilization that can have Houses has at most one channel, a
-    standing order: Court a rival's House, Guard one of its own, or Spread Religion. Every city
-    diverts half its culture (in hundredths; nothing in disorder), which reaches neither its
-    culture nor its plots; the effect falls with the square of the distance between the nearest
-    cities. Public to whoever met the caster; its target (a House's liege) is told.
-  - *Favour and the split*: a Court channel builds the House's favour toward the courter (the
-    inflow times the reach, a 5% fade a turn); at `(L + 6 − 2A, at least 1) × W` (the House's
-    loyalty, its leader's attitude toward the courter, the median culture of the world's
-    civilizations) the half of the House's cities nearest the courter (never its capital; a House
-    of one city whole) go to the courter as a new House of its realm, in peace, the hold contest
-    keeping what the liege's armies outnumber. A liege's Guard channel takes its inflow from every
-    courter's favour. The liege remembers a running Court channel (`MEMORY_COURTED_HOUSE`, a point
-    every 5 turns, up to 8) and a split (`MEMORY_SPLIT_HOUSE`, the former `MEMORY_BOUGHT_HOUSE`
-    renamed, "split our House").
-  - *Gifts* to a House (gold or resources) are ordinary gifts: they raise its leader's attitude
-    toward the giver, which lowers the requirement.
-  - *Retired*: Foment Revolt (revolt pressure, unrest, revolt, the flip, a city's resistance and
-    garrison, the `CULTURE_REVOLT_*` defines, cultural hostility from revolt), the per-city
-    channels, the courtship by gifts and its 10 turns, the price, the side deals (`TRADE_SECEDE`,
-    `TRADE_HOUSE_VASSAL`, removed from the trade items), the AI's buyer and its defenders against
-    revolt.
-  Why: "revolts are meh generally", a city alone makes too little culture to channel, courting a
-  House was all or nothing; the owner merged them into one sliding system (docs/PERSONS.md).
-  Save format 56.
-- **Kuriotates settlements are cities of radius 1; a Kuriotate House holds only settlements**
-  (the owner's decisions of 2026-11-20; docs/PERSONS.md, rule 14 as revised):
+- **Houses** (docs/HOUSES.md; the owner's design of 2026-11-21; being built): a civilization's
+  cities are grouped into Houses, up to four cities each, by their origin (the civilization of
+  their original owner) and their distance to the House's seat; the first House forms at three
+  home cities. A House is a record of its owner, not a player: its cities stay their owner's in
+  every respect. When a House forms its owner picks its leader among three free minor leaders of
+  the origin civilization (a foreign House also offers an outsider of the owner's own
+  civilization), each rolled with a religion, a sympathy for another civilization (weighed by the
+  culture around the forming cities) and a perk. The leader's opinion of its ruler (alignment,
+  religion, the sympathy's civilization at war or allied, the owner's wars against its alignment)
+  is happiness in the House's cities, from +2 Friendly to -4 Furious; a Furious House's perk is off.
+  A perk is a trait of tier 1, 2 or 3 by the turn the House forms, applying in the House's cities
+  (14 families: units' promotions and experience, maintenance, culture, research, gold,
+  production, wonders, rituals, great people). Every civilization but the barbarians, minor
+  civilizations and crusade Hosts has Houses, a vassal included. Why: they replace Houses as
+  vassal civilizations (grants, the Crown's limit of three cities, tribute, the levy, splits,
+  requests, ultimatums, break-aways, courting) and cultural channels, removed on 2026-11-21 (git
+  history of docs/PERSONS.md and docs/CULTURE.md): vassalage and governors had become
+  functionally mandatory, and Houses as players cost more than they gave (the owner).
+- **Culture** is the engine's own rules (FFH2's, with the changes listed here): borders, culture
+  levels, foreign-culture anger, revolt and flip, the culture victory. There are no cultural
+  channels: Court, Guard and Spread Religion were removed on 2026-11-21 (save format 62), Foment
+  Revolt and the per-city channels on 2026-11-20, the cultural queue of timed actions on
+  2026-10-30. A House leader's sympathy is rolled from the culture around its cities when it forms
+  (docs/HOUSES.md, rule 6; being built), so a rival's culture there draws a House toward it.
+- **Vassals are plain vassals**, FFH2's (2026-11-21): no House, tribute, levy or record. FFH2's
+  vassal revolt frees a vassal (`team_can_vassal_revolt`), vassal deals are cancelled as in FFH2
+  (`deal_is_uncancelable_vassal_deal`), techs are not shared between master and vassal, the
+  maintenance is FFH2's distance, city-count and colony maintenance, and a colony and a card's
+  vassal birth are ordinary vassals. Save format 62.
+- **Kuriotates settlements are cities of radius 1** (the owner's decisions of 2026-11-20):
   - *A settlement* is a city of radius 1 (9 plots) under every other rule: FFH2's -75% on every
     yield, its bans on training, building, projects, processes, hurrying and conscripting, its
     exemption from city maintenance (distance and number of cities) and civic upkeep, and its
     divisor of 8 as the city a new religion founds in are gone. The cap stays: past it (3 full
     cities on a standard map) a city founded, taken or raised from an outpost is a settlement.
+    The cap counts the player's own full cities (`player_full_cities`).
   - *No more city-or-settlement question*: FFH2 asked a human Kuriotates player
     (`BUTTONPOPUP_CONFIRMSETTLEMENT`); below the cap a city is always a full city (radius 3).
-  - *Houses*: a House with a city cap (a Kuriotate House) holds only settlements: a city it
-    founds or takes is one, and a full city cannot be granted to it (`A House with a city limit
-    holds only settlements.`). The cap counts the player's own full cities (no longer the realm's).
-    Promote Settlement works for a civilization that is no House.
-  - *The Crown*: the Kuriotates' limit is the usual 3 (Sprawling's `crown_cities_change` -2 and
-    the key are gone); settlements count in the Crown, after its full cities, and in a House's
-    split count.
   Why: settlements were land markers that took plots from the full cities and built nothing
-  (the owner: "regular cities but radius one"); the Kuriotates' sprawl is held by their Houses,
-  three great cities under the boy-king and the tribes around them.
-- **The memory of wrongs** (the owner's decisions of 2026-11-18; docs/PERSONS.md, "The second
-  build"; docs/AI.md, "Relations"):
+  (the owner: "regular cities but radius one").
+- **The memory of wrongs** (the owner's decisions of 2026-11-18; docs/AI.md, "Relations"):
   - *A declared war fades*: every leader forgets a `MEMORY_DECLARED_WAR` at 1 in 50 a turn
     (`memory_decays`; FFH2's leaders never did).
-  - *Two new memories*: `MEMORY_TOOK_CITY` ("took our cities": a city taken in battle, recorded
-    by its former owner in `player_acquire_city` with conquest; not a trade, a card, a grant, a
-    break-away or a held city returning) at -150, and `MEMORY_BOUGHT_HOUSE` ("bought our House":
-    an accepted side deal, recorded by the House's liege toward the buyer; the House was paid; since
-    2026-11-20 `MEMORY_SPLIT_HOUSE`, "split our House": a split by a rival's courtship) at
-    -300, both fading at 1 in 50, in every leader but the barbarians' (the cards' leaders and the
-    Houses' minor leaders included; those without memory data got these three weights alone).
-    An act against a House angers the House and its liege: `player_add_memory` records it for
-    both (a declared war already reaches every player of the side declared on, a House pulled in
-    included, once each). These replace the bought House's attitude modifier (`BRIBE_GRUDGE`).
+  - *A new memory*: `MEMORY_TOOK_CITY` ("took our cities": a city taken in battle, recorded by its
+    former owner in `player_acquire_city` with conquest; not a trade or a card) at -150, fading at
+    1 in 50, in every leader but the barbarians' (the cards' leaders and the minor leaders
+    included). `MEMORY_SPLIT_HOUSE` and `MEMORY_COURTED_HOUSE` stay as memory types in the data
+    (the leaders' files list them); nothing records them since 2026-11-21.
   - *The decay is a rule*: the memory part of C++ `CvPlayerAI::AI_doCounter` runs in every
     player's turn (`player_do_memory_decay`, game RNG; the C++ AI port's copy is removed).
-  - *ffh-ai reads these three memories* (it read none): each a term of the relation, `count x
-    percent / 100` halved to its scale (2 a step), capped at -3: a declared war -1, two -3; a
-    city taken nothing alone, two -1, four -3; a House bought -1.
-  Why: the AI forgot a war the turn it ended and minded no conquest, while a bought House was a
-  grudge for good. Save format 50.
+  - *ffh-ai reads these two memories* (it read none): each a term of the relation, `count x
+    percent / 100` halved to its scale (2 a step, rounded away from zero), capped at -3: a
+    declared war -2, two -3; a city taken -1, two -2, four -3.
+  Why: the AI forgot a war the turn it ended and minded no conquest. Save format 50.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
   every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
   Line, Charge, Volley, Vanguard; four tactics). A side's auto formation in every battle, attacking or
