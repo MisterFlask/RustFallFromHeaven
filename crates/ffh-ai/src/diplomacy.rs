@@ -578,9 +578,38 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
         if (us == good && them == evil) || (us == evil && them == good) { 30 } else { 0 }
     };
     // Greedy gain: a bigger edge, more and closer cities; minus how much we like them; a
-    // flavor nudge toward alignment-opposites.
-    let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor;
+    // flavor nudge toward alignment-opposites; minus what the war would cost our Houses.
+    let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor - house_war_cost(g, p, ot);
     Ok(Target { score, ratio, allies })
+}
+
+/// What a war on team `target` would cost player `p`'s Houses (docs/HOUSES.md, rule 14), per
+/// city of each House the war would make Furious (its perk goes off, -4 happiness), and a third of
+/// that per city of each it would make Annoyed. A nudge beside the alignment flavor (30): a
+/// 4-city House turned Furious weighs about as much. First guesses, not measured (CLAUDE.md, "How
+/// AI changes are checked": a rules change gets a reasonable AI and is not gated on it).
+const HOUSE_WAR_FURIOUS_PER_CITY: i64 = 9;
+const HOUSE_WAR_ANNOYED_PER_CITY: i64 = 3;
+
+/// [`HOUSE_WAR_FURIOUS_PER_CITY`] and [`HOUSE_WAR_ANNOYED_PER_CITY`] over the rules' own preview
+/// of declaring war on `target` (`Game::house_preview`): only the Houses whose state would fall
+/// to Furious or to Annoyed.
+pub(crate) fn house_war_cost(g: &Game, p: PlayerId, target: TeamId) -> i64 {
+    use ffh_core::houses::{HouseAct, HouseState};
+    if g.players[p].houses.is_empty() {
+        return 0;
+    }
+    g.house_preview(p, HouseAct::DeclareWar(target))
+        .iter()
+        .map(|v| {
+            let n = v.cities as i64;
+            match v.after {
+                HouseState::Furious => n * HOUSE_WAR_FURIOUS_PER_CITY,
+                HouseState::Annoyed if v.before < HouseState::Annoyed => n * HOUSE_WAR_ANNOYED_PER_CITY,
+                _ => 0,
+            }
+        })
+        .sum()
 }
 
 /// Does team `target` still pass a gate that would choose it now: the victory
@@ -1846,6 +1875,48 @@ pub fn raze_conquered_city(g: &Game, p: PlayerId, c: CityId) -> bool {
 mod tests {
     use super::*;
     use crate::testkit::one_landmass_game;
+
+    /// A war on a civilization a House of ours favours (docs/HOUSES.md, rule 14) scores lower as
+    /// a target than the same war without the House: by 9 a city of each House it makes Furious,
+    /// 3 of each it makes Annoyed.
+    #[test]
+    fn a_house_that_favours_a_civ_makes_it_a_worse_target() {
+        use ffh_core::houses::HouseState;
+        let mut g = one_landmass_game(19);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        let cities: Vec<CityId> = [(3, 4), (3, 7), (6, 5)].iter().map(|&(x, y)| g.player_init_city(us, x, y, true, true)).collect();
+        g.player_init_city(them, 12, 5, true, true);
+        g.player_houses_turn(us);
+        let h = *g.players[us].houses.first().expect("a House at three cities");
+        assert_eq!(g.houses[h].cities.len(), cities.len());
+        let (team, ot) = (g.players[us].team, g.players[them].team);
+        g.team_meet(team, ot, false);
+        g.teams[team].ai_at_peace_counter[ot] = 50;
+        g.players[us].alignment = Some(AlignmentType::ALIGNMENT_GOOD);
+        g.players[them].alignment = Some(AlignmentType::ALIGNMENT_GOOD);
+        let bar = WarBar { need_ratio: 0, spare_friends: false, ours: 1_000_000 };
+        let score = |g: &Game| territory_check(g, us, &bar, them, false).map(|t| t.score);
+        // Without the House.
+        let houses = std::mem::take(&mut g.players[us].houses);
+        let base = score(&g).expect("a target");
+        g.players[us].houses = houses;
+        // A House of the other alignment, Annoyed now (-4): the war on the civ it favours (-3)
+        // makes it Furious.
+        g.houses[h].religion = None;
+        g.houses[h].outsider = false;
+        g.houses[h].alignment = Some(AlignmentType::ALIGNMENT_EVIL);
+        g.houses[h].sympathy = Some(them);
+        assert_eq!(g.house_state(h), HouseState::Annoyed);
+        assert_eq!(house_war_cost(&g, us, ot), 3 * HOUSE_WAR_FURIOUS_PER_CITY);
+        assert_eq!(score(&g), Ok(base - 3 * HOUSE_WAR_FURIOUS_PER_CITY));
+        // One step away, Cautious (-2): the war makes it Annoyed.
+        g.houses[h].alignment = Some(AlignmentType::ALIGNMENT_NEUTRAL);
+        assert_eq!(g.house_state(h), HouseState::Cautious);
+        assert_eq!(score(&g), Ok(base - 3 * HOUSE_WAR_ANNOYED_PER_CITY));
+        // A House that favours no one does not mind this war.
+        g.houses[h].sympathy = None;
+        assert_eq!(score(&g), Ok(base));
+    }
 
     #[test]
     fn the_trust_spell_raises_attitudes() {

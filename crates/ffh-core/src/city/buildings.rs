@@ -565,6 +565,9 @@ impl Game {
 
         let mut worst_city_maintenance = 0;
         let mut best_capital_maintenance = MAX_INT;
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's percent of this city's part,
+        // added to the empire's.
+        let modifier = self.players[owner].distance_maintenance_modifier + self.city_house_distance_maintenance_modifier(c);
 
         for &loop_city in &self.players[owner].cities {
             let (loop_x, loop_y) = (self.cities[loop_city].x, self.cities[loop_city].y);
@@ -573,7 +576,7 @@ impl Game {
             temp_maintenance *= city.population + 7;
             temp_maintenance /= 10;
 
-            temp_maintenance *= std::cmp::max(0, self.players[owner].distance_maintenance_modifier + 100);
+            temp_maintenance *= std::cmp::max(0, modifier + 100);
             temp_maintenance /= 100;
 
             temp_maintenance *= world.distance_maintenance_percent;
@@ -635,7 +638,8 @@ impl Game {
         // FfH: End Modify
 
         num_cities_maintenance = std::cmp::min(num_cities_maintenance, handicap.max_num_cities_maintenance * 100);
-        num_cities_maintenance *= std::cmp::max(0, self.players[owner].num_cities_maintenance_modifier + 100);
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's percent, added to the empire's.
+        num_cities_maintenance *= std::cmp::max(0, self.players[owner].num_cities_maintenance_modifier + self.city_house_num_cities_maintenance_modifier(c) + 100);
         num_cities_maintenance /= 100;
 
         // FfH: Added by Kael 11/18/2008 (settlements paid none either: they pay now)

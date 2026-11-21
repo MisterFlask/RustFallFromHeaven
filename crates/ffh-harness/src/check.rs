@@ -3,6 +3,7 @@
 //! all of them together.
 
 use ffh_core::game::Game;
+use ffh_core::houses::HouseState;
 use ffh_core::ids::*;
 use ffh_core::Idx;
 
@@ -415,6 +416,11 @@ fn check_houses(g: &Game) {
         let perk = &d.traits[house.perk];
         if !perk.is_house_perk() || !(1..=3).contains(&perk.house_perk_tier) {
             fail(format!("{label}'s perk {} is no House perk", d.type_name(house.perk)));
+        }
+        // The switch (rule 9) changes with the state told, in the same pass: off exactly when
+        // the House was Furious at its owner's last pass (or as it formed).
+        if house.perk_on != (house.told_state != HouseState::Furious) {
+            fail(format!("{label}'s perk is {} but its state at the last pass was {}", if house.perk_on { "on" } else { "off" }, house.told_state.name()));
         }
     }
     for p in g.player_ids() {

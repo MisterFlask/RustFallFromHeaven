@@ -455,23 +455,297 @@ fn the_outsider_has_minus_three_and_no_parts_c_or_d() {
 }
 
 #[test]
-fn the_perk_is_off_while_furious() {
+fn the_perk_switches_at_the_owners_pass() {
     let (mut g, h) = plain_house();
     let c = g.houses[h].cities[0];
     set_state(&mut g, h, HouseState::Annoyed);
     assert_eq!(g.city_house_perk(c), Some(g.houses[h].perk));
+    // Furious now: the perk stays on until the owner's next pass.
     set_state(&mut g, h, HouseState::Furious);
-    assert_eq!(g.city_house_perk(c), None);
-    assert!(!g.house_perk_on(h));
+    assert_eq!(g.city_house_perk(c), Some(g.houses[h].perk));
+    assert!(g.house_perk_on(h));
     // A city in no House has no perk.
     let other = first_city(&mut g, P1);
     assert_eq!(g.city_house_perk(other), None);
-    // The change is told in the owner's turn.
+    // The pass turns it off and tells it.
     g.player_houses_turn(P0);
+    assert_eq!(g.city_house_perk(c), None);
+    assert!(!g.house_perk_on(h));
     assert!(messages(&g, P0).contains(&format!("{} is now Furious: its perk is off.", g.house_label(h))));
+    // Annoyed again: off until the next pass, then on.
+    set_state(&mut g, h, HouseState::Annoyed);
+    assert!(!g.house_perk_on(h));
+    g.player_houses_turn(P0);
+    assert!(g.house_perk_on(h));
+    assert_eq!(g.city_house_perk(c), Some(g.houses[h].perk));
+    assert!(messages(&g, P0).contains(&format!("{} is now Annoyed.", g.house_label(h))));
+}
+
+#[test]
+fn a_house_formed_has_its_switch_by_its_state_then() {
+    let (g, h) = plain_house();
+    assert_eq!(g.houses[h].perk_on, g.houses[h].told_state != HouseState::Furious);
+    assert_eq!(g.houses[h].told_state, g.house_state(h));
+}
+
+// ---------------------------------------------------------------------------------------------
+// The perks' effects (rule 9)
+// ---------------------------------------------------------------------------------------------
+
+fn trait_(g: &Game, name: &str) -> TraitType {
+    g.d.t::<TraitType>(name)
+}
+
+/// House `h` takes perk `name` (by hand), its cities refreshed as a change of perk refreshes them.
+fn give_perk(g: &mut Game, h: HouseId, name: &str) {
+    g.houses[h].perk = trait_(g, name);
+    g.houses[h].perk_on = true;
+    for c in g.houses[h].cities.clone() {
+        g.city_house_perk_changed(c);
+    }
+}
+
+/// House `h`'s perk off (by hand), its cities refreshed.
+fn perk_off(g: &mut Game, h: HouseId) {
+    g.houses[h].perk_on = false;
+    for c in g.houses[h].cities.clone() {
+        g.city_house_perk_changed(c);
+    }
+}
+
+/// A plain House (player 0's three home cities) and a second House of player 0 with one city out
+/// of the first's range, its perk Drillmasters I; and player 1's city in no House.
+fn two_houses() -> (Game, HouseId, HouseId, CityId) {
+    let (mut g, h) = plain_house();
+    let range = g.d.defines.house_join_range;
+    let seat = g.houses[h].cities[0];
+    city_near(&mut g, P0, seat, range + 1, range + 6);
+    g.player_houses_turn(P0);
+    let h2 = *g.players[P0].houses.iter().find(|&&x| x != h).expect("a second House");
+    give_perk(&mut g, h2, "TRAIT_PERK_DRILLMASTERS_1");
+    let none = g.players[P1].cities[0];
+    assert_eq!(g.cities[none].house, None);
+    (g, h, h2, none)
+}
+
+type Read = Box<dyn Fn(&Game, CityId) -> i32>;
+
+#[test]
+fn each_effect_changes_its_value_in_the_house_cities_only() {
+    let (mut g, h, h2, none) = two_houses();
+    // A city of the House that is not its seat.
+    let c = g.houses[h].cities[1];
+    let other = g.houses[h2].cities[0];
+    let three = [c, other, none];
+    let d = g.d;
+    let production = YieldType::YIELD_PRODUCTION;
+    let research = CommerceType::COMMERCE_RESEARCH;
+    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+    let ship = d.t::<UnitType>("UNIT_TRIREME");
+    let horse = d.t::<UnitType>("UNIT_HORSEMAN");
+    let wonder = |national: bool| {
+        d.buildings
+            .keys()
+            .find(|&b| {
+                d.buildings[b].building_class_type.is_some_and(|k| {
+                    let k = &d.building_classes[k];
+                    if national { k.max_global_instances == -1 && k.max_team_instances == -1 && k.max_player_instances != -1 } else { k.max_global_instances != -1 }
+                })
+            })
+            .expect("a wonder")
+    };
+    let (world, national) = (wonder(false), wonder(true));
+    let library = d.t::<BuildingType>("BUILDING_LIBRARY");
+    let project = d.projects.keys().next().unwrap();
+    let info = |name: &str| &d.traits[d.t::<TraitType>(name)];
+    let naval = d.t::<UnitCombatType>("UNITCOMBAT_NAVAL");
+    let mounted = d.t::<UnitCombatType>("UNITCOMBAT_MOUNTED");
+
+    // (perk, what is read, how, the change in the House's city)
+    let cases: Vec<(&str, &str, Read, i32)> = vec![
+        ("TRAIT_PERK_SMITHS_1", "production modifier", Box::new(move |g, c| g.city_base_yield_rate_modifier(c, production, 0)), info("TRAIT_PERK_SMITHS_1").house_yield_modifier[production.idx()]),
+        ("TRAIT_PERK_SCHOLARS_1", "research modifier", Box::new(move |g, c| g.city_total_commerce_rate_modifier(c, research)), info("TRAIT_PERK_SCHOLARS_1").house_commerce_modifier[research.idx()]),
+        ("TRAIT_PERK_LUMINARIES_1", "great people modifier", Box::new(|g, c| g.city_total_great_people_rate_modifier(c)), info("TRAIT_PERK_LUMINARIES_1").house_great_people_rate_modifier),
+        ("TRAIT_PERK_DRILLMASTERS_2", "experience", Box::new(move |g, c| g.city_production_experience(c, Some(warrior))), info("TRAIT_PERK_DRILLMASTERS_2").house_free_experience),
+        ("TRAIT_PERK_SHIPWRIGHTS_1", "naval experience", Box::new(move |g, c| g.city_production_experience(c, Some(ship))), info("TRAIT_PERK_SHIPWRIGHTS_1").house_unit_combat_free_experience[naval]),
+        ("TRAIT_PERK_SHIPWRIGHTS_1", "naval production", Box::new(move |g, c| g.city_production_modifier_unit(c, ship)), info("TRAIT_PERK_SHIPWRIGHTS_1").house_unit_combat_production_modifier[naval]),
+        ("TRAIT_PERK_SHIPWRIGHTS_1", "melee production", Box::new(move |g, c| g.city_production_modifier_unit(c, warrior)), 0),
+        ("TRAIT_PERK_SHIPWRIGHTS_1", "melee experience", Box::new(move |g, c| g.city_production_experience(c, Some(warrior))), 0),
+        ("TRAIT_PERK_HORSEMASTERS_3", "mounted production", Box::new(move |g, c| g.city_production_modifier_unit(c, horse)), info("TRAIT_PERK_HORSEMASTERS_3").house_unit_combat_production_modifier[mounted]),
+        ("TRAIT_PERK_MASTER_BUILDERS_1", "world wonder production", Box::new(move |g, c| g.city_production_modifier_building(c, world)), info("TRAIT_PERK_MASTER_BUILDERS_1").house_wonder_production_modifier),
+        ("TRAIT_PERK_MASTER_BUILDERS_1", "national wonder production", Box::new(move |g, c| g.city_production_modifier_building(c, national)), info("TRAIT_PERK_MASTER_BUILDERS_1").house_wonder_production_modifier),
+        ("TRAIT_PERK_MASTER_BUILDERS_1", "library production", Box::new(move |g, c| g.city_production_modifier_building(c, library)), 0),
+        ("TRAIT_PERK_RITUALISTS_1", "ritual production", Box::new(move |g, c| g.city_production_modifier_project(c, project)), info("TRAIT_PERK_RITUALISTS_1").house_ritual_production_modifier),
+    ];
+    for k in three {
+        // The cities' specialties stay out of the way.
+        g.cities[k].specialty = None;
+    }
+    for (perk, what, read, change) in cases {
+        give_perk(&mut g, h, perk);
+        let with = three.map(|k| read(&g, k));
+        perk_off(&mut g, h);
+        let without = three.map(|k| read(&g, k));
+        assert!(change != 0 || what.starts_with("melee") || what.starts_with("library"), "{perk}: {what} has a value in the data");
+        assert_eq!(with[0] - without[0], change, "{perk}: {what} in the House's city");
+        assert_eq!(with[1], without[1], "{perk}: {what} in another House's city");
+        assert_eq!(with[2], without[2], "{perk}: {what} in a city of no House");
+    }
+}
+
+#[test]
+fn the_maintenance_parts_at_minus_50_and_minus_100() {
+    let (mut g, h, _, _) = two_houses();
+    let c = g.houses[h].cities[1];
+    let distance = |g: &Game| g.city_calculate_distance_maintenance_times100(c);
+    let count = |g: &Game| g.city_calculate_num_cities_maintenance_times100(c);
+    // The empire's own percents at 0, so the perk's part is the whole modifier (they add).
+    g.players[P0].distance_maintenance_modifier = 0;
+    g.players[P0].num_cities_maintenance_modifier = 0;
+    perk_off(&mut g, h);
+    let (d0, n0) = (distance(&g), count(&g));
+    assert!(d0 > 0 && n0 > 0, "a city away from the capital pays both parts ({d0}, {n0})");
+    let stored0 = g.cities[c].maintenance;
+    // Freeholders I: distance -50%.
+    give_perk(&mut g, h, "TRAIT_PERK_FREEHOLDERS_1");
+    assert_eq!(g.d.traits[trait_(&g, "TRAIT_PERK_FREEHOLDERS_1")].house_distance_maintenance_modifier, -50);
+    assert!((distance(&g) * 2 - d0).abs() <= 4, "half the distance part: {} of {d0}", distance(&g));
+    assert_eq!(count(&g), n0);
+    let stored = g.cities[c].maintenance;
+    assert!(stored < stored0, "the stored maintenance follows ({stored} < {stored0})");
+    g.city_update_maintenance(c);
+    assert_eq!(g.cities[c].maintenance, stored, "the stored maintenance is fresh");
+    // Freeholders II: distance -100%.
+    give_perk(&mut g, h, "TRAIT_PERK_FREEHOLDERS_2");
+    assert_eq!(g.d.traits[trait_(&g, "TRAIT_PERK_FREEHOLDERS_2")].house_distance_maintenance_modifier, -100);
+    assert_eq!(distance(&g), 0);
+    // Freeholders III: distance -100%, city-count -50%; and never below 0 with the empire's own.
+    give_perk(&mut g, h, "TRAIT_PERK_FREEHOLDERS_3");
+    assert_eq!(distance(&g), 0);
+    assert!((count(&g) * 2 - n0).abs() <= 4, "half the city-count part: {} of {n0}", count(&g));
+    g.players[P0].distance_maintenance_modifier = -50;
+    assert_eq!(distance(&g), 0);
+    g.players[P0].distance_maintenance_modifier = 0;
+    // Off: as before.
+    perk_off(&mut g, h);
+    assert_eq!((distance(&g), count(&g), g.cities[c].maintenance), (d0, n0, stored0));
+}
+
+#[test]
+fn the_stored_commerce_follows_the_perk() {
+    let (mut g, h, _, _) = two_houses();
+    let c = g.houses[h].cities[0];
+    let research = CommerceType::COMMERCE_RESEARCH.idx();
+    g.cities[c].building_commerce[research] = 10;
+    perk_off(&mut g, h);
+    let without = g.cities[c].commerce_rate[research];
+    let player = g.players[P0].commerce_rate[research];
+    let house_sum = |g: &Game| g.houses[h].cities.iter().map(|&k| g.cities[k].commerce_rate[research]).sum::<i32>();
+    let sum = house_sum(&g);
+    give_perk(&mut g, h, "TRAIT_PERK_SCHOLARS_1");
+    let n = g.d.traits[trait_(&g, "TRAIT_PERK_SCHOLARS_1")].house_commerce_modifier[research];
+    let with = g.cities[c].commerce_rate[research];
+    let base = g.city_base_commerce_rate_times100(c, CommerceType::COMMERCE_RESEARCH);
+    let m = g.city_total_commerce_rate_modifier(c, CommerceType::COMMERCE_RESEARCH);
+    assert!(base >= 1000);
+    assert_eq!(with - without, base * m / 100 - base * (m - n) / 100, "+{n}% of the base research");
+    assert_eq!(g.players[P0].commerce_rate[research] - player, house_sum(&g) - sum, "the empire's total follows");
+    g.city_update_commerces(c);
+    assert_eq!(g.cities[c].commerce_rate[research], with, "the stored rate is fresh");
+}
+
+#[test]
+fn the_switch_moves_the_stored_values_at_the_pass() {
+    let (mut g, h, _, _) = two_houses();
+    let c = g.houses[h].cities[0];
+    let research = CommerceType::COMMERCE_RESEARCH.idx();
+    g.cities[c].building_commerce[research] = 10;
     set_state(&mut g, h, HouseState::Annoyed);
     g.player_houses_turn(P0);
-    assert!(messages(&g, P0).contains(&format!("{} is now Annoyed.", g.house_label(h))));
+    perk_off(&mut g, h);
+    let off = g.cities[c].commerce_rate[research];
+    give_perk(&mut g, h, "TRAIT_PERK_SCHOLARS_1");
+    let on = g.cities[c].commerce_rate[research];
+    assert!(on > off);
+    // Furious: the stored rate keeps the perk until the pass.
+    set_state(&mut g, h, HouseState::Furious);
+    assert_eq!(g.cities[c].commerce_rate[research], on);
+    g.player_houses_turn(P0);
+    assert!(!g.houses[h].perk_on);
+    assert_eq!(g.cities[c].commerce_rate[research], off);
+    // Annoyed again: back at the next pass.
+    set_state(&mut g, h, HouseState::Annoyed);
+    assert_eq!(g.cities[c].commerce_rate[research], off);
+    g.player_houses_turn(P0);
+    assert_eq!(g.cities[c].commerce_rate[research], on);
+}
+
+#[test]
+fn a_city_that_leaves_its_house_loses_the_effects_at_once() {
+    let (mut g, h, _, _) = two_houses();
+    let c = g.houses[h].cities[1];
+    let research = CommerceType::COMMERCE_RESEARCH;
+    g.cities[c].building_commerce[research.idx()] = 10;
+    perk_off(&mut g, h);
+    let (modifier, rate) = (g.city_total_commerce_rate_modifier(c, research), g.cities[c].commerce_rate[research.idx()]);
+    give_perk(&mut g, h, "TRAIT_PERK_SCHOLARS_1");
+    assert!(g.city_total_commerce_rate_modifier(c, research) > modifier);
+    assert!(g.cities[c].commerce_rate[research.idx()] > rate);
+    g.house_city_lost(c);
+    assert_eq!(g.cities[c].house, None);
+    assert_eq!(g.city_house_perk(c), None);
+    assert_eq!(g.city_total_commerce_rate_modifier(c, research), modifier);
+    assert_eq!(g.cities[c].commerce_rate[research.idx()], rate);
+}
+
+#[test]
+fn the_free_promotions_in_order_kept_after_the_perk_goes_off() {
+    let (mut g, h, _, _) = two_houses();
+    let c = g.houses[h].cities[0];
+    give_perk(&mut g, h, "TRAIT_PERK_HORSEMASTERS_2");
+    let mounted = g.d.t::<UnitCombatType>("UNITCOMBAT_MOUNTED");
+    let listed: Vec<PromotionType> = g.d.traits[trait_(&g, "TRAIT_PERK_HORSEMASTERS_2")].house_unit_combat_free_promotions[mounted].clone();
+    assert_eq!(listed, vec![g.d.t::<PromotionType>("PROMOTION_FLANKING1"), g.d.t::<PromotionType>("PROMOTION_MOBILITY1")]);
+    assert_eq!(g.city_house_free_promotions(c, mounted), listed.as_slice());
+    let (x, y) = (g.cities[c].x, g.cities[c].y);
+    let u = g.player_init_unit(P0, g.d.t::<UnitType>("UNIT_HORSEMAN"), x, y, None, None);
+    for &p in &listed {
+        assert!(!g.units[u].has_promotion[p]);
+    }
+    g.city_add_production_experience(c, u, false);
+    for &p in &listed {
+        assert!(g.units[u].has_promotion[p], "{}", g.d.type_name(p));
+    }
+    // A unit of another combat gets none of them.
+    let w = g.player_init_unit(P0, g.d.t::<UnitType>("UNIT_WARRIOR"), x, y, None, None);
+    g.city_add_production_experience(c, w, false);
+    for &p in &listed {
+        assert!(!g.units[w].has_promotion[p]);
+    }
+    // The perk off: the unit keeps them; a unit trained now gets none.
+    perk_off(&mut g, h);
+    for &p in &listed {
+        assert!(g.units[u].has_promotion[p]);
+    }
+    assert!(g.city_house_free_promotions(c, mounted).is_empty());
+    let v = g.player_init_unit(P0, g.d.t::<UnitType>("UNIT_HORSEMAN"), x, y, None, None);
+    g.city_add_production_experience(c, v, false);
+    for &p in &listed {
+        assert!(!g.units[v].has_promotion[p]);
+    }
+}
+
+#[test]
+fn the_perks_part_is_labelled() {
+    let (mut g, h, _, none) = two_houses();
+    let c = g.houses[h].cities[0];
+    give_perk(&mut g, h, "TRAIT_PERK_SCHOLARS_2");
+    let label = format!("{} (Scholars II)", g.house_label(h));
+    assert_eq!(g.city_house_perk_label(c), Some(label.clone()));
+    assert_eq!(g.city_house_percent_part(c, 25), Some(format!("{label}: +25%")));
+    assert_eq!(g.city_house_percent_part(none, 25), None);
+    perk_off(&mut g, h);
+    assert_eq!(g.city_house_perk_label(c), None);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -716,5 +990,18 @@ fn save_and_load_round_trip_a_game_with_houses() {
     for (h, house) in g.houses.iter() {
         assert_eq!(&back.houses[h], house);
     }
+}
+
+#[test]
+fn save_and_load_keep_the_perk_switch() {
+    let (mut g, h) = plain_house();
+    set_state(&mut g, h, HouseState::Furious);
+    g.player_houses_turn(P0);
+    assert!(!g.houses[h].perk_on);
+    let bytes = g.save();
+    let back = Game::load(g.d, &bytes).expect("load");
+    assert!(!back.houses[h].perk_on);
+    assert_eq!(back.city_house_perk(back.houses[h].cities[0]), None);
+    assert_eq!(back.save(), bytes);
 }
 

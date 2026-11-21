@@ -37,7 +37,7 @@ pub struct HouseSummary {
     pub perk_name: String,
     /// The perk's effects, bare (`Mounted Units trained: Flanking I.`).
     pub perk_lines: Vec<String>,
-    /// False while the House is Furious.
+    /// Its switch (`House::perk_on`): off from the owner's turn pass that found it Furious.
     pub perk_on: bool,
     pub formed_turn: i32,
     /// Its cities in join order, the seat first.
@@ -177,9 +177,10 @@ impl Game {
         lines
     }
 
-    /// Whether House `h`'s perk is on (it is not Furious).
+    /// Whether House `h`'s perk is on (its switch: off from the owner's turn pass that found it
+    /// Furious until the pass that finds it not).
     pub fn house_perk_on(&self, h: HouseId) -> bool {
-        self.house_state(h) != HouseState::Furious
+        self.houses[h].perk_on
     }
 
     /// The happiness by city of House `h`: each city and the happiness its House gives it.
@@ -299,7 +300,7 @@ impl Game {
             perk: house.perk,
             perk_name: perk_name(d, house.perk),
             perk_lines: self.house_perk_lines(house.perk),
-            perk_on: state != HouseState::Furious,
+            perk_on: house.perk_on,
             formed_turn: house.formed_turn,
             cities: house.cities.clone(),
             opinion,
@@ -366,9 +367,10 @@ impl Game {
                 signed(happiness_after - happiness_before),
                 if n == 1 { "city" } else { "cities" }
             )];
-            if after == HouseState::Furious {
+            // The switch follows the state at the owner's next turn pass.
+            if after == HouseState::Furious && house.perk_on {
                 lines.push("Its perk goes off.".to_string());
-            } else if before == HouseState::Furious {
+            } else if after != HouseState::Furious && !house.perk_on {
                 lines.push("Its perk is on again.".to_string());
             }
             out.push(HousePreview { house: h, before, after, opinion_before, opinion_after, happiness_before, happiness_after, cities: n, lines });

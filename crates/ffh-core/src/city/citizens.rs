@@ -832,6 +832,9 @@ impl Game {
             modifier += self.d.defines.golden_age_great_people_modifier;
         }
 
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's.
+        modifier += self.city_house_great_people_rate_modifier(c);
+
         (modifier + 100).max(0) * if self.city_has_specialty(c, GREAT_PEOPLE) { 2 } else { 1 }
     }
 
