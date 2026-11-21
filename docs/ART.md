@@ -849,8 +849,12 @@ survey zoom only the chip is drawn. This is the references' "1 Rome" label.
   demon riders, dragons, balors) use the **40x40** frame, feet at (19, 37). Equipment glyphs are
   24x24 (feet 11, 21): items lying on the tile.
 - All units face **right** (east) and are mirrored after a westward move.
-- **One figure per stack**: the head unit (the best defender of a foreign stack, the selected unit
-  of yours), on its team ring (7.4), with up to 2 offset echoes behind it as dark silhouettes.
+- **One figure per stack**: the head unit, on its team ring (7.4), with up to 2 offset echoes
+  behind it as dark silhouettes. The head (`stacks.js` `headUnit`, used by every map): the selected
+  unit; else the front unit of the strongest squad on the tile (of the units that stand in a squad,
+  the lowest rank, then the lowest cell: docs/ENGAGEMENTS.md "Squads"); else, on a tile with no
+  squad, your unit that can move, or the best defender of a foreign stack. The HD-2D map draws the
+  head's whole squad, one figure per unit (docs/HD2D.md, "Squads and banners").
 - **Overlays** (`units/stack.js`), in the corners and on the top edge: the count chip (top-left,
   top-right in a city), a gold hero pip beside it, a 12x1 health bar in a void frame on the top edge
   (only when hurt or selected: cream above 50%, ochre from 25%, crimson below), state marks

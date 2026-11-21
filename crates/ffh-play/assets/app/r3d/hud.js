@@ -321,8 +321,8 @@ function drawHudParts(r3d, cam) {
     // A type tag over the figure at the gameplay zooms, so the unit's kind reads where the figures
     // are too small to tell apart (F6). The type abbreviation fades out above ~150 px, where the
     // figures speak for themselves; below 60 px the far-zoom shield carries the type instead. The
-    // stack count stays solid at every zoom: only up to three figures are ever drawn, so a bigger
-    // stack cannot be counted from the figures, and fading the count would hide a stack's true size
+    // stack count stays solid at every zoom: the figures drawn are one squad (HD-2D) or up to three
+    // (3D), so a bigger stack cannot be counted from them, and fading the count would hide its true size
     // at the closest zooms. The abbreviation and count share one plate but keep their own alpha, so
     // the count never dims while the abbreviation fades.
     const multi = s.units.length > 1;
@@ -370,7 +370,8 @@ function drawHudParts(r3d, cam) {
       const dotX = p.x + ts * 0.14, dotY = p.y - 6, dotR = Math.max(2.5, ts * 0.035);
       g.beginPath();
       g.arc(dotX, dotY, dotR, 0, Math.PI * 2);
-      g.fillStyle = resting ? "#9aa2ac" : top.moves > 0 ? "#4fe06a" : "#d8402c";
+      // (`s.moves`: whether the stack is ready, stacks.js stackReady.)
+      g.fillStyle = resting ? "#9aa2ac" : (s.moves ?? top.moves > 0) ? "#4fe06a" : "#d8402c";
       g.fill();
       g.strokeStyle = "rgba(10,8,6,0.8)";
       g.lineWidth = 1;

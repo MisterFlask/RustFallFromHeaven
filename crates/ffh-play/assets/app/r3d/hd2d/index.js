@@ -378,7 +378,8 @@ export class MapHd2d extends Map3D {
     return {
       x: s.x + 0.5 + s.spot[0],
       y: s.y + 0.5 - s.spot[1] + 0.02,
-      r: 0.26,
+      // (Wide enough for the squad's figures: `reach`, hd2d/dress.js.)
+      r: Math.max(0.26, (s.reach ?? 0) + 0.12),
       color: s.picked ? "#fff2a8" : s.team,
       rim: s.picked ? "#3a2a08" : "#140e0a",
       width: s.picked ? 0.04 : 0.022,

@@ -250,21 +250,36 @@ with restrained bloom. The flat renderer keeps the sphere colours and two-letter
   minification), a soft contact shadow, their outline cast into the sun's shadow map (an upright
   card turned to the sun), a thin team ring round the group (gold and filled when selected), and an
   x-ray silhouette in the owner's colour where scenery hides them (as the 3D figures' ghosts).
-* **Groups and banners** (`dress.js`): a stack is its head unit's sprite (chosen exactly as the
-  isometric map chooses it: `iso.js` `unitSpriteKeys`, so every unit type and every
-  civilization's own look works) drawn three times — two in front, one behind between them, about
-  0.6 of a figure's width apart so each reads as a figure, the one behind 6% smaller — or twice for
-  settlers and workers, or once for a big sprite (wider than 110 or taller than 130 art px), a
-  ship, a flier or an engine. The owner's banner (a gonfalon in the owner's colour with a pale star,
-  gold trim and finial) stands behind the group's left, its cloth above the figures' heads; it
-  ripples. A walking stack's figures glide as the 3D figures do; a figure that last walked west is
-  mirrored (the art faces right).
+* **Squads and banners** (`dress.js`, 2026-11-21): a stack is drawn as one squad (the rules'
+  3 x 3 formation, docs/ENGAGEMENTS.md "Squads"), one figure per unit, each its own sprite (chosen
+  exactly as the isometric map chooses it: `iso.js` `unitSpriteKeys`, so every unit type and every
+  civilization's own look works). No unit is drawn twice. The squad is the head unit's
+  (`stacks.js` `stackFigures`): the strongest squad on the plot (rank 0 of the view's `stand`), or,
+  with a unit selected, that unit's squad. A unit in no squad (a ship, a worker, a settler, a
+  carried unit) is one figure, so a lone worker or a selected worker among soldiers shows alone.
+  Where the figures stand (`squadSpots`, constants `SQUAD`): only the formation's non-empty rows
+  are drawn, the front row nearest the camera, each further row one step behind, the rows centred in
+  depth on the stack's spot. A row's figures stand side by side in lane order, centred, one cell
+  wide each; a large unit is two cells wide and stands at their middle. A row whose cells would line
+  up with the drawn row in front of it is shifted by half a cell, alternately right and left, so the
+  figures behind show between the shoulders of those in front. A squad of up to three cells: a cell
+  0.21 wide, a row 0.17 deep, figures at full scale; of four or more: 0.18, 0.18, figures at 0.9
+  (tuned on `scene=squads`: with rows closer than that the rear row hid behind the front one).
+  Rows behind the front are drawn at 94% of its scale, and stand nearer the eye in depth by 0.7 of
+  their distance behind it (`lift`), so what hides none of the front row hides little of them. The
+  owner's banner (a gonfalon in the
+  owner's colour with a pale star, gold trim and finial) stands behind the squad's left, its cloth
+  above the figures' heads; it ripples. The team ring widens with the squad. Each unit's figure
+  glides when that unit walks, as the 3D figures do; a figure that last walked west is mirrored (the
+  art faces right).
 * **Settlements and buildings**: a city is a town composed of the kit's cards (batch 5, §5c), with
   the owner's banner at its front-left (before batch 5, and still for a family without the kit, it
   was its civilization's village, town or castle sprite by size, `iso.js` `citySprites`, its card's
-  foot on the plot's front edge so its painted ground lay over the plot); its garrison is one figure
-  (80%) in front of it, at the front-left corner or, out of a river, the front-right or the front's middle
-  (the banner's badge carries the count). A standing improvement (`iso.js` `improvementSprites`:
+  foot on the plot's front edge so its painted ground lay over the plot); its garrison is the same
+  squad as on open ground, at 80% (figures and spacing), in front of it, at the front-left corner or,
+  out of a river, the front-right or the front's middle (the badge carries the count); at the
+  front-left it stands mirrored, so its rear rows step out to the left, away from the houses at the
+  town's front (which hid them). A standing improvement (`iso.js` `improvementSprites`:
   cottages, forts, towers, mines, mills, camps, lairs, ruins, mana nodes, boats) is a card likewise,
   smaller than a city, its painted ground thinned out over its foot by a dither fixed to the art's
   texels (it melts into the 3D land instead of ending in the isometric diamond's edge). Its foot
@@ -993,7 +1008,9 @@ another).
   (an elven city on a river bend in the Ljosalfar's forest, snowy peaks, a golden town on the hills,
   the Sheaim's corrupted land with its city, a mana node and a mage's tower, infernal hell land to
   the south-west and south-east, groups of archers, warriors, a hunter, adepts, mages, imps and
-  wolves). The lab waits for the sprites before it is ready.
+  wolves). The lab waits for the sprites before it is ready. `scene=squads&renderer=hd2d&ts=64`
+  lays out stacks as squads side by side: one to six figures, a large unit, two squads on a plot,
+  a foreign squad, a lone worker, and two cities' garrisons.
 * **Film**: `node tools/r3d-lab.mjs --gpu --capture out.mp4 --query "scene=hd2d&renderer=hd2d"`
   renders a scripted pan, zoom in, pan with the pointer wandering (the tilt-shift's band follows
   it), zoom out to the far view and back, each frame at its own time, and encodes it with ffmpeg.
@@ -1012,8 +1029,10 @@ another).
   `--force_high_performance_gpu`, without which a laptop's integrated GPU draws.
 * Browser smoke test (`tools/web-smoke.mjs`): a `?renderer=hd2d` step — the frame is drawn and not
   blank, the sprites load and the units stand as cards, 3D → HD-2D → art.
-* Node tests: `assets/test/hd2d.test.mjs` (every unit type has a sprite; a stack is one to three
-  figures of one sprite and one banner, deterministic; cities, buildings and resources are claimed
+* Node tests: `assets/test/hd2d.test.mjs` (every unit type has a sprite; a stack without squads is
+  its head alone, one with squads its strongest squad, one figure per unit with its own sprite, the
+  front row before the rows behind, no two on one spot, a large unit two cells wide, one banner,
+  deterministic, on `scene=squads`; `squadSpots`' rows and stagger; cities, buildings and resources are claimed
   as cards, a city a town of the kit's cards at the props' density in its owner's colour; towns
   grow with their size, walled ones have walls, a gate and towers, deterministic; the houses round
   a town are its own; nothing stands on, and no mood comes from, an unrevealed plot).

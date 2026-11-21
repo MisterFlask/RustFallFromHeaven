@@ -485,16 +485,29 @@ pub fn reinforced_line(n: i32) -> String {
     format!("Reinforced x{n}: +{}% hit points.", 10 * n)
 }
 
-/// The units the human sees: its own (creation order), then visible foreign ones (id order).
+/// The units the human sees: its own (creation order), then visible foreign ones (id order). A
+/// unit that stands in a squad also carries `stand` (`{rank, cell, large}`: where the map draws
+/// it, [`squads::stands`]).
 pub fn units(v: &Viewer) -> Json {
     let g = v.g;
-    let mut out: Vec<Json> = g.players[v.h].units.iter().map(|&u| unit_json(v, u)).collect();
+    let mut ids: Vec<UnitId> = g.players[v.h].units.clone();
     for (u, unit) in g.units.iter() {
         if unit.owner != v.h && v.unit_visible(u) {
-            out.push(unit_json(v, u));
+            ids.push(u);
         }
     }
-    Json::Arr(out)
+    let stands = squads::stands(v, &ids);
+    Json::Arr(
+        ids.iter()
+            .map(|&u| {
+                let mut j = unit_json(v, u);
+                if let Some(s) = stands.get(&u) {
+                    j.set("stand", s.json());
+                }
+                j
+            })
+            .collect(),
+    )
 }
 
 /// The human's groups.

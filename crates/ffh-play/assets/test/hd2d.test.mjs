@@ -10,13 +10,14 @@ import * as St from "../app/state.js";
 
 const data = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../../r3d-lab/data.json", import.meta.url)), "utf8"));
 St.setData(data);
-const { buildMap, buildView, hd2d, settlements, riverBits, moods: moodScene } = await import("../../r3d-lab/scenes.js");
+const { buildMap, buildView, hd2d, settlements, riverBits, moods: moodScene, squads } = await import("../../r3d-lab/scenes.js");
 const { World, KIND, RIVER_BANK } = await import("../app/r3d/world.js");
 await import("../app/r3d/assets/index.js");
 const { SPRITES } = await import("../app/iso/sprites.js");
 const { CARDS, GROUNDS, IMPROVEMENTS, RESOURCES } = await import("../app/r3d/hd2d/art/index.js");
-const { unitSpriteKeys } = await import("../app/iso.js");
-const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
+const { unitSpriteKeys, civShortName } = await import("../app/iso.js");
+const { stackFigures } = await import("../app/stacks.js");
+const { dressSpriteStatic, dressSpriteUnits, PX, SQUAD, squadSpots } = await import("../app/r3d/hd2d/dress.js");
 const { IDLE, IDLE_FRAME, idleCard } = await import("../app/r3d/hd2d/sprites.js");
 const { plotMoods, moodEmitters, M, CIV_MOOD, RELIGION_MOOD, combine } = await import("../app/r3d/hd2d/mood.js");
 const { CLIFF } = await import("../app/r3d/hd2d/config.js");
@@ -161,21 +162,109 @@ test("every unit type of the game stands as a sprite of the isometric renderer's
   }
 });
 
-test("a stack is a group of one to three figures of its head unit under its owner's banner", () => {
+/** A stack's figures in a dressing: the cards whose uid is one of its units' ids. */
+const figuresOf = (list, st) => {
+  const ids = new Set(st.units.map((u) => String(u.id)));
+  return list.filter((r) => !r.banner && ids.has(r.uid));
+};
+const spriteOf = (u) => unitSpriteKeys(u.type, civShortName(u.owner)).find((k) => atlas.has(k));
+
+test("a stack without squads is one figure, its head, under its owner's banner", () => {
   const s = hd2d(data);
   const w = scene(s);
   const { list, stacks } = dressSpriteUnits(w, s.map, atlas);
   assert.equal(stacks.length, St.S.unitsAt.size);
   for (const st of stacks) {
-    const mine = list.filter((r) => r.uid?.startsWith(`${st.top.id}:`));
-    const figures = mine.filter((r) => !r.banner);
-    assert.ok(figures.length >= 1 && figures.length <= 3, `${figures.length} figures`);
-    assert.equal(new Set(figures.map((r) => r.key)).size, 1, "one unit's sprite");
-    assert.equal(mine.filter((r) => r.banner).length, 1, "one banner");
+    const figures = figuresOf(list, st);
+    assert.equal(figures.length, 1, `${figures.length} figures`);
+    assert.equal(figures[0].uid, String(st.top.id));
+    assert.equal(figures[0].key, spriteOf(st.top));
+    assert.equal(list.filter((r) => r.banner && r.uid === `${st.top.id}:b`).length, 1, "one banner");
+    assert.equal(st.reach, 0);
     for (const r of figures) assert.ok(r.shadow && r.bias > 0, "figures cast shadows and stand before the buildings");
   }
   // The same state, the same cards.
   assert.deepEqual(dressSpriteUnits(w, s.map, atlas).list, list);
+});
+
+test("a stack with squads shows its strongest squad: one figure per unit, in formation", () => {
+  const s = squads(data);
+  const w = scene(s);
+  const { list, stacks } = dressSpriteUnits(w, s.map, atlas);
+  assert.equal(stacks.length, St.S.unitsAt.size);
+  const counts = {};
+  for (const st of stacks) {
+    const want = stackFigures(st.units, st.top);
+    const figures = figuresOf(list, st);
+    counts[`${st.x},${st.y}`] = figures.length;
+    assert.deepEqual(figures.map((r) => r.uid), want.map((u) => String(u.id)), "the figures are the head's squad, one per unit");
+    want.forEach((u, n) => assert.equal(figures[n].key, spriteOf(u), "each its own type's sprite"));
+    assert.equal(list.filter((r) => r.banner && r.uid === `${st.top.id}:b`).length, 1, "one banner");
+    // Front rows nearer the camera than the rows behind; no two figures on one spot.
+    const row = (u) => (u.stand ? Math.floor(u.stand.cell / 3) : 0);
+    for (let a = 0; a < want.length; a++) {
+      for (let b = 0; b < want.length; b++) {
+        if (row(want[a]) < row(want[b])) assert.ok(figures[a].z > figures[b].z, "the front row before the rows behind");
+        if (a < b) assert.ok(Math.hypot(figures[a].x - figures[b].x, figures[a].z - figures[b].z) > 0.05, "two figures on one spot");
+      }
+    }
+    assert.ok(st.reach >= 0 && (want.length > 1 || st.reach === 0));
+  }
+  // Every stack as the scene lays them out (scenes.js squads).
+  assert.deepEqual(counts, { "1,6": 1, "3,6": 2, "5,6": 3, "7,6": 5, "9,6": 6, "1,3": 3, "3,3": 3, "5,3": 4, "7,3": 1, "12,6": 6, "12,3": 2 });
+  // On the two-squad tile only the stronger squad (rank 0) stands; its weaker squad and its worker not.
+  const two = stacks.find((st) => st.x === 3 && st.y === 3);
+  assert.ok(figuresOf(list, two).every((r) => two.units.find((u) => String(u.id) === r.uid).stand.rank === 0));
+  // A large unit takes two cells' width: the War Elephant (cells 0-1) and the swordsman (cell 2) of
+  // a four-cell squad stand a cell and a half apart.
+  const ele = stacks.find((st) => st.x === 1 && st.y === 3);
+  const [e, sw] = figuresOf(list, ele);
+  assert.ok(Math.abs(sw.x - e.x - 1.5 * SQUAD.big.dx) < 1e-9, `${sw.x - e.x}`);
+  // A garrison is the same squad, smaller.
+  const garrison = figuresOf(list, stacks.find((st) => st.x === 12 && st.y === 6));
+  const field = figuresOf(list, stacks.find((st) => st.x === 9 && st.y === 6));
+  assert.ok(Math.abs(garrison[0].h / field[0].h - SQUAD.city * (spriteH(garrison[0]) / spriteH(field[0]))) < 1e-9);
+  // The same state, the same list.
+  assert.deepEqual(dressSpriteUnits(w, s.map, atlas).list, list);
+});
+const spriteH = (r) => atlas.info(r.key).h;
+
+test("squadSpots: rows centred, front nearest the camera, each row's figures side by side, staggered", () => {
+  const f = (cell, large = false) => ({ stand: { rank: 0, cell, ...(large ? { large } : {}) } });
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  const S3 = SQUAD.small, SB = SQUAD.big;
+  assert.deepEqual(squadSpots([f(1)]).map((p) => [p.ox, p.oz]), [[0, 0]], "a lone figure on the spot");
+  // One front row of three: centred, one cell apart, at the full scale.
+  let p = squadSpots([f(2), f(0), f(1)]);
+  assert.deepEqual(p.map((q) => q.row), [0, 0, 0]);
+  [S3.dx, -S3.dx, 0].forEach((x, k) => assert.ok(near(p[k].ox, x) && near(p[k].oz, 0) && p[k].scale === S3.scale));
+  // Front and middle, one each: the rows centred in depth, the one behind shifted half a cell (the
+  // same parity), smaller.
+  p = squadSpots([f(4), f(1)]);
+  assert.ok(near(p[1].oz, S3.dz / 2) && near(p[0].oz, -S3.dz / 2) && p[1].row === 0 && p[0].row === 1);
+  assert.ok(near(p[1].ox, 0) && near(Math.abs(p[0].ox), S3.dx / 2));
+  assert.ok(near(p[0].scale, S3.scale * SQUAD.rear));
+  // Three front, two middle: different parity, so no shift; a squad of five cells takes the big step.
+  p = squadSpots([f(0), f(1), f(2), f(3), f(4)]);
+  assert.ok(near(p[3].ox, -SB.dx / 2) && near(p[4].ox, SB.dx / 2) && near(p[0].ox, -SB.dx));
+  assert.ok(near(p[0].scale, SB.scale));
+  // Three front, three rear (the middle row empty): two drawn rows, one dz apart; the rear shifted.
+  p = squadSpots([f(0), f(1), f(2), f(6), f(7), f(8)]);
+  assert.ok(near(p[0].oz - p[3].oz, SB.dz) && near(p[0].oz, SB.dz / 2));
+  assert.ok(near(Math.abs(p[3].ox - p[0].ox), SB.dx / 2));
+  // Three rows of two: the middle row shifted, the rear one not (it does not line up with the shifted
+  // middle row), so every row shows between the shoulders of the one in front.
+  p = squadSpots([f(0), f(1), f(3), f(4), f(6), f(7)]);
+  const xs = (r) => p.filter((q) => q.row === r).map((q) => q.ox / SB.dx);
+  const phase = (r) => ((xs(r)[0] % 1) + 1) % 1;
+  assert.ok(!near(phase(0), phase(1)) && !near(phase(1), phase(2)));
+  assert.ok(near(p[0].oz, SB.dz) && near(p[4].oz, -SB.dz));
+  // A large unit is two cells wide, standing at their middle.
+  p = squadSpots([f(0, true), f(2)]);
+  assert.ok(near(p[0].ox, -S3.dx / 2) && near(p[1].ox, S3.dx));
+  // A figure without a stand counts as the front row.
+  p = squadSpots([{}, f(4)]);
+  assert.ok(p[0].row === 0 && p[1].row === 1);
 });
 
 test("the figures that breathe have their idle strips, and stand where their sprites would", () => {

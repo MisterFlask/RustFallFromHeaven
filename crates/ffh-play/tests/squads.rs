@@ -111,6 +111,82 @@ fn where_is(list: &[Json], u: UnitId) -> (usize, usize) {
     list.iter().enumerate().find_map(|(i, sq)| cells(sq).iter().position(|&c| c == Some(u.0)).map(|c| (i, c))).expect("in a squad")
 }
 
+/// The view's unit list, by unit id.
+fn listed(v: &Viewer) -> Vec<Json> {
+    view::units(v).as_arr().expect("units").to_vec()
+}
+
+fn listed_unit(list: &[Json], u: UnitId) -> Json {
+    list.iter().find(|j| int(j, "id") == u.0 as i64).unwrap_or_else(|| panic!("unit {} listed", u.0)).clone()
+}
+
+/// Where the map draws each unit (the view's `stand`): every unit of the staged army stands, the
+/// units of one layout share a rank and stand in their layout cells, the plot's ranks run 0..n
+/// with rank 0 the strongest squad; a unit in no squad has no `stand`; a foreign unit the human
+/// sees has one.
+#[test]
+fn units_stand_where_their_squad_layouts_put_them() {
+    let (mut g, _army, units) = game();
+    let (x, y) = (g.units[units[0]].x, g.units[units[0]].y);
+    let settler = g.player_init_unit(H, g.d.t::<UnitType>("UNIT_SETTLER"), x, y, None, None);
+    assert!(!g.unit_in_squads(settler));
+    // A warrior of player 1 next to the army, where the human sees it.
+    let other = PlayerId(1);
+    let (fx, fy) = (-1..=1)
+        .flat_map(|dy| (-1..=1).map(move |dx| (x + dx, y + dy)))
+        .filter(|&q| q != (x, y))
+        .find(|&(fx, fy)| g.map.plot_xy(fx, fy).is_some_and(|q| !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].plot_city.is_none() && g.map.plots[q].units.is_empty()))
+        .expect("land next to the army");
+    let foreign = g.player_init_unit(other, g.d.t::<UnitType>("UNIT_WARRIOR"), fx, fy, None, None);
+    g.player_squad_sync(H);
+
+    let v = Viewer::new(&g, H, false);
+    assert!(v.unit_visible(foreign), "the human sees the foreign warrior");
+    let list = listed(&v);
+    let plot = g.map.plot_xy(x, y).unwrap();
+    let layouts = g.squad_layouts_at(H, plot);
+    assert!(layouts.len() >= 2, "7 units make two squads at least: {layouts:?}");
+
+    let mut ranks: Vec<(i64, i64)> = Vec::new(); // (rank, strength) of each layout
+    for l in &layouts {
+        let mut rank = None;
+        let mut strength = 0i64;
+        let mut seen_cells = Vec::new();
+        for (u, cell) in l.units() {
+            let j = listed_unit(&list, u);
+            let s = j.get("stand").unwrap_or_else(|| panic!("stand in {j}"));
+            assert_eq!(int(s, "cell"), cell as i64, "{j}");
+            assert!(!seen_cells.contains(&cell), "distinct cells: {l:?}");
+            seen_cells.push(cell);
+            let large = g.unit_engage_large(u);
+            assert_eq!(s.get("large").is_some(), large, "{j}");
+            let r = int(s, "rank");
+            assert!(rank.is_none_or(|x| x == r), "one rank per squad: {l:?}");
+            rank = Some(r);
+            strength += g.unit_attack_rating(u) as i64 * (1 + large as i64);
+        }
+        ranks.push((rank.expect("a squad has units"), strength));
+    }
+    // Every staged unit stands.
+    for &u in &units {
+        assert!(listed_unit(&list, u).get("stand").is_some(), "unit {} stands", u.0);
+    }
+    let mut rs: Vec<i64> = ranks.iter().map(|&(r, _)| r).collect();
+    rs.sort();
+    assert_eq!(rs, (0..layouts.len() as i64).collect::<Vec<_>>(), "ranks without gaps: {ranks:?}");
+    let max = ranks.iter().map(|&(_, s)| s).max().unwrap();
+    assert_eq!(ranks.iter().find(|&&(r, _)| r == 0).unwrap().1, max, "rank 0 is the strongest: {ranks:?}");
+
+    // A unit in no squad stands nowhere.
+    assert!(listed_unit(&list, settler).get("stand").is_none());
+    // The foreign warrior is alone on its plot: rank 0.
+    let j = listed_unit(&list, foreign);
+    let s = j.get("stand").unwrap_or_else(|| panic!("stand in {j}"));
+    assert_eq!(int(s, "rank"), 0, "{j}");
+    let fplot = g.map.plot_xy(fx, fy).unwrap();
+    assert_eq!(Some(int(s, "cell") as u8), g.squad_layouts_at(other, fplot)[0].cell_of(foreign), "{j}");
+}
+
 #[test]
 fn squad_commands_change_the_board_the_views_show() {
     let (mut g, army, units) = game();
