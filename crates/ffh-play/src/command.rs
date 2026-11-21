@@ -618,8 +618,9 @@ pub fn recruit_dest_json(dest: Option<ffh_core::army::RecruitDest>) -> Json {
     }
 }
 
-/// A fleet's standing order (docs/NAVAL.md, 7.2) as `army_station` takes it: null (none),
-/// `{"patrol": sea}`, `{"escort": army}` or `{"escort_group": group}`.
+/// A fleet's standing order (docs/NAVAL.md, 7.2) or a land army's Raid (docs/RAIDS.md) as
+/// `army_station` takes it: null (none), `{"patrol": sea}`, `{"escort": army}`,
+/// `{"escort_group": group}` or `{"raid": city}`.
 pub fn station_json(station: ffh_core::army::Station) -> Json {
     use ffh_core::army::{EscortTarget, Station};
     match station {
@@ -627,6 +628,7 @@ pub fn station_json(station: ffh_core::army::Station) -> Json {
         Station::Patrol(s) => crate::jobj! { "patrol" => s.idx() },
         Station::Escort(EscortTarget::Army(a)) => crate::jobj! { "escort" => a },
         Station::Escort(EscortTarget::Group(g)) => crate::jobj! { "escort_group" => g },
+        Station::Raid(c) => crate::jobj! { "raid" => c },
     }
 }
 
@@ -645,8 +647,10 @@ fn station_field(j: &Json) -> Result<ffh_core::army::Station, FieldError> {
                 Ok(Station::Escort(EscortTarget::Army(a)))
             } else if let Some(g) = v.opt::<GroupId>("escort_group")? {
                 Ok(Station::Escort(EscortTarget::Group(g)))
+            } else if let Some(c) = v.opt::<CityId>("raid")? {
+                Ok(Station::Raid(c))
             } else {
-                Err(FieldError::wrong("station", "{\"patrol\": sea}, {\"escort\": army}, {\"escort_group\": group} or null", v))
+                Err(FieldError::wrong("station", "{\"patrol\": sea}, {\"escort\": army}, {\"escort_group\": group}, {\"raid\": city} or null", v))
             }
         }
     }
@@ -1773,8 +1777,16 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::ArmyStation { army, station } => {
             use ffh_core::army::{EscortTarget, Station};
             army_of(g, h, *army)?;
-            if !g.army_is_fleet(*army) {
-                return Err(cannot("only a fleet takes a standing order"));
+            // A land army's Raid (docs/RAIDS.md, section 3).
+            if let Station::Raid(c) = *station {
+                if g.army_is_fleet(*army) {
+                    return Err(cannot("a fleet does not raid"));
+                }
+                if let Some(why) = g.army_raid_refusal(*army, c) {
+                    return Err(cannot(why));
+                }
+            } else if !g.army_is_fleet(*army) && *station != Station::None {
+                return Err(cannot("only a fleet takes this standing order"));
             }
             match *station {
                 Station::Patrol(s) => {
@@ -1792,7 +1804,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                         return Err(CmdErr::NotOwner);
                     }
                 }
-                Station::None => {}
+                Station::None | Station::Raid(_) => {}
             }
             Plan::Apply(Action::Army(cmd.clone()))
         }

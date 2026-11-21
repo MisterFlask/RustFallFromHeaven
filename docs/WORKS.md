@@ -63,6 +63,11 @@ its advance, which carries its supply (docs/ARMIES.md), at the price of its marc
 Boat's spell): on an empty coast plot of theirs without a resource, with no cove within 2 plots
 (`Game::plot_is_pirate_cove_valid`).
 
+**Fields are not pillaged** (docs/RAIDS.md, section 7): an improvement the crews build, or one it
+grows into, on a plot of a city's countryside is raided through its city; on such a plot only the
+road can be pillaged. Forts, the cards' field works, mana nodes and sea improvements are pillaged
+as before.
+
 **Slaves** build nothing. A Slave in a city of its owner adds 25 to the crews' work rate; it is
 still sold, shown in the Freak Show, sent to the arena, or made a Beastman by the Doviello.
 

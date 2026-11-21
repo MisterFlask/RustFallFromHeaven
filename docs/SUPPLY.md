@@ -357,9 +357,9 @@ disbanded at turn 169.
 
 ## 8. Not in this change
 
-- **Raiding** (the owner's discussion, 2026-11-09: recon and light mounted parties that refuse
-  battle, live off plunder, and a standing raid order; pillage that disables). Supply lines give
-  raiders their target; the raiding rules are their own design.
+- **Raiding.** Built as its own design: docs/RAIDS.md (a land army's standing Raid order on an
+  enemy city's countryside). An army holding a Raid order lives off the land: it is supplied
+  whatever its line (its counter is 0; `player_update_supply`).
 - **An army size cap and one army a plot** (the answer to the stack of doom): its own design.
 - **Starving a besieged garrison.** Built; section 3.1.
 - **Sea lanes.** Built with docs/NAVAL.md, phase 2: a ship is a source only with an open lane

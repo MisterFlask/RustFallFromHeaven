@@ -454,7 +454,8 @@ impl Game {
         self.plot_supply_line(self.armies[a].owner, plot)
     }
 
-    /// Army `a`'s supply state, from its counter (`Army::unsupplied_turns`).
+    /// Army `a`'s supply state, from its counter (`Army::unsupplied_turns`; an army holding a
+    /// Raid order has it at 0: docs/RAIDS.md).
     pub fn army_supply_state(&self, a: ArmyId) -> SupplyState {
         self.supply_state(self.armies[a].unsupplied_turns)
     }
@@ -530,7 +531,8 @@ impl Game {
             }
             let Some(plot) = self.army_plot(a) else { continue };
             let before = self.armies[a].unsupplied_turns;
-            let after = if self.plot_supply_line(p, plot).is_some() { 0 } else { before + 1 };
+            // Raiders live off the land (docs/RAIDS.md, section 3): supplied whatever their line.
+            let after = if self.army_raid_city(a).is_some() || self.plot_supply_line(p, plot).is_some() { 0 } else { before + 1 };
             self.armies[a].unsupplied_turns = after;
             let at = self.map.xy(plot);
             let name = self.armies[a].name.clone();

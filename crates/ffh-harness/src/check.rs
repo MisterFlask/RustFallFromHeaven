@@ -199,7 +199,15 @@ pub fn check(g: &Game) {
             match g.armies.get(a) {
                 None => fail(format!("player {} lists dead army {a:?}", p.0)),
                 Some(army) if army.owner != p => fail(format!("player {} lists army {a:?} of player {}", p.0, army.owner.0)),
-                Some(_) => {}
+                // Standing orders (docs/NAVAL.md, 7.2; docs/RAIDS.md): a fleet's Patrol and
+                // Escort, a land army's Raid.
+                Some(army) => {
+                    let fleet = army.domain == ffh_core::army::ArmyDomain::Sea;
+                    let raid = matches!(army.station, ffh_core::army::Station::Raid(_));
+                    if fleet == raid && army.station != ffh_core::army::Station::None {
+                        fail(format!("army {a:?} of player {} ({:?}) has the standing order {:?}", p.0, army.domain, army.station));
+                    }
+                }
             }
         }
         for &u in &g.players[p].units {
@@ -219,6 +227,15 @@ pub fn check(g: &Game) {
         // Requisition orders, then empire orders, lead their city's queue (docs/GOVERNORS.md);
         // empire orders only in governed cities.
         for &c in &g.players[p].cities {
+            // Raids (docs/RAIDS.md): the modifier is none, contested's or overrun's; the counters
+            // within their bounds.
+            let (city, d) = (&g.cities[c], &g.d.defines);
+            if ![0, d.raid_contested_percent, d.raid_take_percent].contains(&city.raid_percent)
+                || !(0..d.raid_strip_turns.max(1)).contains(&city.raid_turns)
+                || !(0..=d.raid_recover_turns.max(0)).contains(&city.raid_stripped)
+            {
+                fail(format!("city {} of player {} has raid percent {}, turns {}, stripped {}", city.name, p.0, city.raid_percent, city.raid_turns, city.raid_stripped));
+            }
             let q = &g.cities[c].order_queue;
             let req = q.iter().take_while(|o| o.requisition).count();
             if q[req..].iter().any(|o| o.requisition) {

@@ -1105,7 +1105,7 @@ pub fn unit_fields(g: &Game, u: UnitId, j: &mut Json) {
         return;
     }
     let Some(at) = g.unit_plot_opt(u) else { return };
-    let ctx = HitCtx { to: at, from: None, cover: false };
+    let ctx = HitCtx::at(at);
     j.set("engage_row_order", Json::Arr(g.unit_engage_row_order(u).iter().map(|&r| Json::from(r)).collect()));
     j.set("engage_attack", g.engage_stat(u, None, Side::Defender, true, &ctx).total_x100);
     j.set("engage_defense", g.engage_job_defense(u, &ctx));

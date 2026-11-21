@@ -91,6 +91,18 @@ went wrong", below.)
 
 ## Changes from FFH2
 
+- **Raids; fields are not pillaged** (the owner's design, 2026-11-21; docs/RAIDS.md,
+  `crates/ffh-core/src/raid.rs`). A land army at war on an enemy city's countryside may take the
+  standing Raid order (`Station::Raid`): its moves end, it is supplied whatever its line, and its
+  units do not besiege the city. At the end of the city owner's turn its guard (garrison and army
+  squads) sallies against each raiding plot by its posture (`City::sally`: Never, Favoured: the
+  forecast wins at least 600 per mille, Always), one battle per enemy squad there, fought from the
+  city in the fields (open ground, no terrain or fortification terms, no moves or attack spent,
+  nobody advances); raiders that lose are pushed back and their orders end. Raiders left take
+  50% of the city's production and commerce (10% when every raiding plot was sallied against) as
+  gold, split between the armies, raised by the pillage gold modifier; 5 overrun turns strip the
+  countryside for 15 turns. A crews' improvement (or what it grows into) on a city's countryside
+  can no longer be pillaged (its road still can).
 - **Heroes return after they die; Resurrection brings back other units** (the owner's decision,
   2026-11-21; `crates/ffh-core/src/unit/fallen.rs`). A hero (a unit with the Hero promotion)
   killed by harm (its HP to 0: a battle, a spell's damage) returns to its owner's capital (its

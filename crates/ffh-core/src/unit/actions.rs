@@ -1395,8 +1395,30 @@ impl Game {
         true
     }
 
-    /// C++ `CvUnit::canPillage` (CvUnit.cpp:5563-5620).
+    /// C++ `CvUnit::canPillage` (CvUnit.cpp:5563-5620). Not in C++ (docs/RAIDS.md, section 7):
+    /// fields are raided, not pillaged: on a plot with fields only its road can be pillaged.
     pub fn unit_can_pillage(&self, u: UnitId, plot: PlotIdx) -> bool {
+        self.unit_can_pillage_as(u, plot, true)
+    }
+
+    /// Why unit `u` cannot pillage `plot` when the reason is the fields rule (docs/RAIDS.md,
+    /// section 7): `Some` only when it could were the plot's fields not fields.
+    pub fn unit_pillage_refusal(&self, u: UnitId, plot: PlotIdx) -> Option<&'static str> {
+        (!self.unit_can_pillage_as(u, plot, true) && self.unit_can_pillage_as(u, plot, false)).then_some("Fields are raided, not pillaged.")
+    }
+
+    /// The improvement unit `u` would pillage on `plot`: none on fields (the road goes instead).
+    fn unit_pillage_improvement(&self, plot: PlotIdx, fields_rule: bool) -> Option<ImprovementType> {
+        let improvement = self.map.plots[plot].improvement_type;
+        if fields_rule && self.plot_is_fields(plot) {
+            None
+        } else {
+            improvement
+        }
+    }
+
+    /// [`Game::unit_can_pillage`]; `fields_rule`: fields cannot be pillaged.
+    fn unit_can_pillage_as(&self, u: UnitId, plot: PlotIdx, fields_rule: bool) -> bool {
         let d = self.d;
 
         if !d.units[self.units[u].unit_type].pillage {
@@ -1407,7 +1429,7 @@ impl Game {
             return false;
         }
 
-        let improvement = self.map.plots[plot].improvement_type;
+        let improvement = self.unit_pillage_improvement(plot, fields_rule);
 
         match improvement {
             None => {
@@ -1485,7 +1507,8 @@ impl Game {
             }
         }
 
-        if let Some(improvement) = self.map.plots[plot].improvement_type {
+        // (Fields are not pillaged: on their plot the road goes. docs/RAIDS.md, section 7.)
+        if let Some(improvement) = self.unit_pillage_improvement(plot, true) {
             temp_improvement = Some(improvement);
 
             if self.plot_get_team(plot) != Some(self.unit_get_team(u)) {

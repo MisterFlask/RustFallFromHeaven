@@ -508,6 +508,12 @@ impl Game {
             modifier += self.players[owner].capital_yield_rate_modifier[y];
         }
 
+        // This game's raids (docs/RAIDS.md, section 5.3): the raid modifier of production and
+        // commerce (food is untouched).
+        if matches!(yield_type, YieldType::YIELD_PRODUCTION | YieldType::YIELD_COMMERCE) {
+            modifier -= city.raid_percent;
+        }
+
         modifier += extra;
 
         // note: player->invalidateYieldRankCache() must be called for anything that is checked here

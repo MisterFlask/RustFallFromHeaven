@@ -106,6 +106,16 @@ pub(crate) struct EngageOrder {
     pub surprise: bool,
 }
 
+/// The attacking side of a sally (docs/RAIDS.md, section 5.1; `raid.rs`): a city's guard squad
+/// and its units in their cells, which fight from the city's plot whatever their moves and
+/// attacks, pay neither, and never advance. The battle is fought in the fields
+/// ([`HitCtx::sally`]).
+#[derive(Clone, Debug)]
+pub(crate) struct SallyForce {
+    pub squad: Option<SquadId>,
+    pub places: Vec<Place>,
+}
+
 /// What an engagement did.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EngageOutcome {
@@ -838,23 +848,37 @@ impl Game {
 
     /// Fights an engagement (module comment). `Err`: refused, nothing changed.
     pub(crate) fn engage(&mut self, ord: EngageOrder) -> Result<EngageOutcome, &'static str> {
+        self.engage_as(ord, None)
+    }
+
+    /// [`Game::engage`]; with `sally`, a city guard's sally into the fields (docs/RAIDS.md,
+    /// section 5.1): `sally` attacks from `ord.from` (the city's plot), `ord.squad` and
+    /// `ord.forced` are not read, there is no launcher and no field Sentinel.
+    pub(crate) fn engage_as(&mut self, ord: EngageOrder, sally: Option<SallyForce>) -> Result<EngageOutcome, &'static str> {
         if !self.telemetry.on() {
-            return self.engage_inner(ord);
+            return self.engage_inner(ord, sally);
         }
         self.tel_ctx_push("combat");
-        let r = self.engage_inner(ord);
+        let r = self.engage_inner(ord, sally);
         self.tel_ctx_pop();
         r
     }
 
-    fn engage_inner(&mut self, ord: EngageOrder) -> Result<EngageOutcome, &'static str> {
+    fn engage_inner(&mut self, ord: EngageOrder, sally: Option<SallyForce>) -> Result<EngageOutcome, &'static str> {
         let EngageOrder { p, from, to, launcher, squad, forced, log, surprise } = ord;
-        let ctx = HitCtx::new(from, to);
+        let is_sally = sally.is_some();
+        let launcher = if is_sally { None } else { launcher };
+        let ctx = if is_sally { HitCtx::sally(from, to) } else { HitCtx::new(from, to) };
 
         // 1. Set-up.
         let slots = self.engage_slots(&ctx);
-        let (pool, att, ordered, att_squad) = match forced {
-            Some(units) => {
+        let forced = if is_sally { None } else { forced };
+        let (pool, att, ordered, att_squad) = match (sally, forced) {
+            (Some(s), _) => {
+                let pool: Vec<UnitId> = s.places.iter().map(|q| q.unit).collect();
+                (pool, s.places, true, s.squad)
+            }
+            (None, Some(units)) => {
                 let pool: Vec<UnitId> = units
                     .into_iter()
                     .filter(|&u| self.units.contains(u) && !self.unit_is_dead(u) && self.unit_can_attack(u) && self.unit_engages_on_land(u))
@@ -862,7 +886,7 @@ impl Game {
                 let f = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
                 (pool, f, false, None)
             }
-            None => {
+            (None, None) => {
                 let pool = self.engage_attackers(p, from, to, WarTest::AtWar);
                 let squads = self.engage_attacking_squads(from, &pool, &ctx);
                 let i = match squad {
@@ -884,9 +908,10 @@ impl Game {
         // The plan as a human attacker saw it (preview.rs), before the summons are made: a
         // preview makes the same summons, with the same ids, in a copy of the game.
         let wants_log = log.unwrap_or_else(|| self.engage_seen_by_human(&force, p, to));
-        let frozen = if wants_log { self.engage_forecast_frozen(p, from, to, &att) } else { None };
-        // The summons the battle calls (summons.rs).
-        let plan = self.engage_def_plan(&ctx, slots, &att, &candidates, true)?;
+        // (A sally has no attack plan a human saw.)
+        let frozen = if wants_log && !is_sally { self.engage_forecast_frozen(p, from, to, &att) } else { None };
+        // The summons the battle calls (summons.rs). No field Sentinels in a sally.
+        let plan = self.engage_def_plan(&ctx, slots, &att, &candidates, !is_sally)?;
         let calls = self.engage_summon_calls(&ctx, &att, &plan);
         let summons = self.engage_call_summons(&calls);
         let setup = match self.engage_setup_plan(ctx, plan, att, candidates, &summons) {
@@ -915,7 +940,12 @@ impl Game {
             units: setup.units.clone(),
             sat_out: setup.initial_sat_out(),
             strikes: 0,
-            place: self.engage_place(from, to),
+            place: {
+                let mut place = self.engage_place(from, to);
+                // (A sally crosses no river: docs/RAIDS.md, section 5.1.)
+                place.river_crossing &= !is_sally;
+                place
+            },
             players: [
                 self.engage_side_players(Side::Attacker, p, to, &att_units, &pool, &def_units),
                 self.engage_side_players(Side::Defender, p, to, &def_units, &setup.candidates, &att_units),

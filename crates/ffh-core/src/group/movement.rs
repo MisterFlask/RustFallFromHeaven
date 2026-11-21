@@ -356,6 +356,8 @@ impl Game {
     /// spells, a war it declared on the plot's owner, which may have pushed the defenders off the
     /// plot).
     pub fn group_attack_force(&mut self, g: GroupId, x: i32, y: i32, flags: i32, squad: Option<SquadId>) -> Result<(bool, bool), &'static str> {
+        // This game's raids (docs/RAIDS.md, section 3): an attack ends the army's Raid order.
+        self.group_attack_ends_raid(g);
         let mut dest_plot = self.map.plot_xy(x, y);
 
         if flags & MOVE_THROUGH_ENEMY != 0 {

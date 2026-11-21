@@ -83,6 +83,10 @@ described in docs/AUTOPSY.md.
 | `engage_withdrew` / `engage_satout` | `att`, `def`: fighters that withdrew / failed the morale check | – |
 | `engage_strike` | `n`: engagements with defensive strikes that hit | strikes that hit |
 | `engage_missile` | `hit`, `kill`, `miss`: missile strikes (Fireball, Meteor) | – |
+| `raid` | `order` (an army took the Raid order: docs/RAIDS.md), `driven_off` (a sally drove it off), counted for the raider; `stripped` (a countryside stripped), counted for the city's owner | – |
+| `raid_end` | why a Raid order ended (`a move order`, `an attack`, `its order`, `driven off`, `the war ended`, `the army left the countryside`, `the city is gone`, `the city changed hands`, `the countryside is stripped`), counted for the raider | – |
+| `raid_sally` | `won`, `lost`, `even`: a guard's sally, by the guard's result, counted for the city's owner | – |
+| `raid_take` / `raid_lost` | `overrun`, `contested`: a raid's take, for each raiding army's owner / for the city's owner | the gold / the production and commerce lost |
 | `died` | cause | – |
 | `casters` | `unit_turns`, `idle_castable` | – |
 | `intent_changes` | intent kind | – |
@@ -166,6 +170,9 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `house` (the Houses, docs/PERSONS.md: `how` granted / request / state / record / seceded / levy /
   ultimatum / split and `what`, as the counts above; `person` before the third build) and `tribute` (a House's
   tribute paid: `gold`; the event's player is the liege);
+- `raid_order` (an army took the Raid order: `vs` the city's owner, `x`, `y`) and `raid_take` (a
+  raid's take, the city owner's event: `state` overrun / contested, `pct`, `lost`, `raiders`,
+  `gold`, `x`, `y`; docs/RAIDS.md);
 - `intent` and `decision`;
 - `prediction`: an AI estimate resolved by the rules (the prediction ledger, docs/CALIBRATION.md).
 

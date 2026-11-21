@@ -235,6 +235,10 @@ pub fn station_view(v: &Viewer, a: ArmyId) -> Json {
             };
             crate::jobj! { "kind" => "escort", "army" => army, "group" => group, "text" => format!("Standing order: Escort of {}.", g.escort_target_name(t)) }
         }
+        Station::Raid(c) => {
+            let name = g.cities.get(c).map_or_else(|| "a city".to_string(), |city| g.d.text.name(&city.name).to_owned());
+            crate::jobj! { "kind" => "raid", "city" => c, "text" => format!("Raiding {name}.") }
+        }
     }
 }
 

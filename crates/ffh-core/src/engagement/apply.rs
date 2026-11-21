@@ -505,9 +505,10 @@ impl Game {
         let launcher = e.launcher.filter(|&g| self.groups.contains(g));
         let mover = launcher.and_then(|g| self.groups[g].units.iter().copied().find(|&u| self.engage_alive(u)));
         let advance = defenders_lost && walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) == 0);
+        // (A sally's guard pays neither its attack nor its moves: docs/RAIDS.md, section 5.1.)
         for i in e.of(Side::Attacker) {
             let u = e.units[i];
-            if !self.engage_alive(u) {
+            if !self.engage_alive(u) || e.ctx().fields {
                 continue;
             }
             self.units[u].made_attack = true;

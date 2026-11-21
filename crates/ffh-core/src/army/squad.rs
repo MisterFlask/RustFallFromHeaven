@@ -511,7 +511,7 @@ impl Game {
         }
         let bodies: BTreeSet<SquadBody> = chosen.iter().map(|l| l.body).collect();
         let cap = self.squad_places();
-        let ctx = HitCtx { to: plot, from: None, cover: false };
+        let ctx = HitCtx::at(plot);
         let mut assign: Vec<(SquadId, Vec<UnitId>)> = Vec::new();
         for body in bodies {
             let mut ids: Vec<SquadId> = chosen.iter().filter(|l| l.body == body).filter_map(|l| l.squad).collect();

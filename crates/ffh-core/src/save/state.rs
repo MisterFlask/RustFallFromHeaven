@@ -150,6 +150,10 @@ impl Persist for Station {
                 3u8.write(w);
                 g.write(w);
             }
+            Station::Raid(c) => {
+                4u8.write(w);
+                c.write(w);
+            }
         }
     }
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
@@ -158,6 +162,7 @@ impl Persist for Station {
             1 => Ok(Station::Patrol(SeaId::read(r)?)),
             2 => Ok(Station::Escort(EscortTarget::Army(ArmyId::read(r)?))),
             3 => Ok(Station::Escort(EscortTarget::Group(GroupId::read(r)?))),
+            4 => Ok(Station::Raid(CityId::read(r)?)),
             t => Err(LoadError::Corrupt(format!("fleet station tag {t}"))),
         }
     }
@@ -508,8 +513,10 @@ persist_struct!(City {
     ai_emphasize_avoid_unhealthy_citizens_count, recruit_default, direct_rule, role, role_overridden,
     specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
-    outpost, lane_cut_turns, lane,
+    outpost, lane_cut_turns, lane, sally, raid_percent, raid_turns, raid_stripped,
 });
+use crate::raid::Sally;
+persist_enum!(Sally { 0 => Never, 1 => Favoured, 2 => Always });
 
 persist_struct!(Player {
     id, personality_type, last_state_religion, parent, team, starting_x, starting_y,

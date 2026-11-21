@@ -42,6 +42,10 @@
 //! nothing (revision 4): a city, a forest or jungle and hills act through the ground's rules of a
 //! formation battle (`formation::Ground`) and the slots.
 //!
+//! A sally into the fields (docs/RAIDS.md; [`HitCtx::fields`]) drops every term of the table that
+//! reads the plot or the approach for both sides: fortification, city, hills, feature and terrain
+//! terms, the landing penalty and a field work's defence.
+//!
 //! **Magic per hit** (SPELL): the caster's magic against the target's magic defence, each its
 //! sheet's plus its own points, x10, under its own percentage alone (no term of the table), and
 //! the target's resistance to the spell's damage type ([`Pair::spell_pct`]).
@@ -76,12 +80,28 @@ pub struct HitCtx {
     /// missile's strike, which comes from outside the field (Q11, as before formation battles).
     /// A formation battle has none (the ground's rules replace cover).
     pub cover: bool,
+    /// A sally into the fields (docs/RAIDS.md, section 5.1): a city's guard on `from` (the city's
+    /// plot, next to `to` or not) against raiders on `to`. Open ground whatever the plot is (no
+    /// river crossing, no Trench); no unit counts its fortification, city, hills, feature or
+    /// terrain terms, attacking or defending, nor the landing penalty or a field work's defence.
+    pub fields: bool,
 }
 
 impl HitCtx {
     /// An attack from `from` on `to`: a formation battle's.
     pub fn new(from: PlotIdx, to: PlotIdx) -> HitCtx {
-        HitCtx { to, from: Some(from), cover: false }
+        HitCtx { to, from: Some(from), cover: false, fields: false }
+    }
+
+    /// A sally of a city's guard from the city's plot `from` against raiders on `to`
+    /// ([`HitCtx::fields`]).
+    pub fn sally(from: PlotIdx, to: PlotIdx) -> HitCtx {
+        HitCtx { fields: true, ..HitCtx::new(from, to) }
+    }
+
+    /// A context with no approach known (`from` none): the view's stats.
+    pub fn at(to: PlotIdx) -> HitCtx {
+        HitCtx { to, from: None, cover: false, fields: false }
     }
 
     /// A missile's strike from `from` on `to`: the plot's own defence counts.
@@ -238,6 +258,11 @@ impl Game {
     /// `engagement_open` terrain without a forest or jungle); a marsh (`engagement_mire`); a river
     /// the attacker crosses (from `ctx.from`); the plot's Trench.
     pub fn engage_ground(&self, ctx: &HitCtx) -> Ground {
+        // A sally is fought in the fields (docs/RAIDS.md, section 5.1): open ground and nothing
+        // else, whatever the raiders' plot is.
+        if ctx.fields {
+            return Ground { open: true, ..Ground::default() };
+        }
         let to = ctx.to;
         let plot = &self.map.plots[to];
         let forest = plot.feature_type.is_some_and(|f| self.d.features[f].engagement_forest);
@@ -460,7 +485,8 @@ impl Game {
         // attacker's against the plot it attacks, a defender's own on the defended plot. No river
         // term (Q9: the river costs slots instead). A missile's strike keeps the duel's sides: the
         // attacker's on its A only, the defender's under its cover (below).
-        if side == Side::Attacker && (attack || !ctx.cover) {
+        // (A sally: none, either side: docs/RAIDS.md, section 5.1.)
+        if side == Side::Attacker && (attack || !ctx.cover) && !ctx.fields {
             let city = match opponent {
                 Some(t) => self.plot_is_city(ctx.to, true, Some(self.unit_get_team(t))),
                 None => self.plot_is_city(ctx.to, true, None),
@@ -468,12 +494,12 @@ impl Game {
             let (plot_terms, terrain_term) = self.combat_attack_plot_terms(u, ctx.to, city, 1, log);
             modifier += plot_terms + terrain_term;
         }
-        if side == Side::Defender && attack && !ctx.cover {
+        if side == Side::Defender && attack && !ctx.cover && !ctx.fields {
             modifier += self.engage_own_defense_terms(u, ctx.to, log);
         }
         if attack {
             // The landing penalty, on the attacker's hits only.
-            if side == Side::Attacker {
+            if side == Side::Attacker && !ctx.fields {
                 if let Some(from) = ctx.from {
                     modifier += term!(log, amphib_attack_modifier, self.unit_amphib_attack_modifier(u, from, ctx.to), TermSource::Amphibious);
                 }
@@ -500,7 +526,7 @@ impl Game {
                         modifier += term!(log, city_barbarian_defense_modifier, pct, TermSource::VsBarbarian);
                     }
                 }
-            } else if side == Side::Defender {
+            } else if side == Side::Defender && !ctx.fields {
                 modifier += self.engage_own_defense_terms(u, ctx.to, log);
                 // Card: the Cairn's defence, on the defender's Dv only (more_cards.rs).
                 if let Some((i, pct)) = self.plot_engagement_defense(ctx.to) {
@@ -590,7 +616,7 @@ mod tests {
         for (i, &h) in units.iter().enumerate() {
             let to = plots[(i * 7) % plots.len()];
             for (from, cover) in [(Some(g.unit_plot(h)), false), (None, false), (Some(g.unit_plot(h)), true)] {
-                let ctx = HitCtx { to, from, cover };
+                let ctx = HitCtx { to, from, cover, fields: false };
                 for &t in units.iter().skip(i % 5).step_by(5) {
                     if t == h {
                         continue;

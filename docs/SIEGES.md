@@ -80,7 +80,9 @@ numbers trimmed if they last too long (docs/ENGAGEMENTS.md, "Open").
 plot next to it holds a land unit at war with the city's owner (`unit_is_enemy`, so barbarians,
 animals and hidden-nationality units count), with strength above 0, that the city's team sees
 **(default)**. A pure test of the map (`Game::city_is_besieged`, `city_besiegers`): no state, nothing
-saved. A lone enemy counts; the defender can sally out and kill it. A great-person card adds one
+saved. A lone enemy counts; the defender can sally out and kill it. The units of an army holding
+a Raid order on the city are not besiegers of it (docs/RAIDS.md: raiders are dispersed): they
+neither stop its healing and repair nor count toward investment. A great-person card adds one
 case (docs/CARDS.md, the Siege Colossus): a unit with `bombard_besieges` that bombards the city
 (from up to its `bombard_range`, 2 plots) makes it count as besieged until the city's next turn
 (`City::besieged_by_bombard`, cleared at the city's turn after the Sentinels' repair). Other cards

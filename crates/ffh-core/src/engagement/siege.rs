@@ -180,7 +180,7 @@ impl Game {
                 continue;
             }
             for &u in &self.map.plots[lp].units {
-                if self.unit_is_besieger(u, ct, lp) {
+                if self.unit_is_besieger(u, c, ct, lp) {
                     out.push(u);
                 }
             }
@@ -188,8 +188,11 @@ impl Game {
         out
     }
 
-    fn unit_is_besieger(&self, u: UnitId, ct: TeamId, at: PlotIdx) -> bool {
+    /// (A unit of an army holding a Raid order on city `c` is dispersed: no besieger of it,
+    /// docs/RAIDS.md, section 3.)
+    fn unit_is_besieger(&self, u: UnitId, c: CityId, ct: TeamId, at: PlotIdx) -> bool {
         self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
+            && self.unit_raid_city(u) != Some(c)
             && !self.unit_is_dead(u)
             && self.unit_can_fight(u)
             && self.unit_is_enemy(u, Some(ct), Some(at))
@@ -207,7 +210,7 @@ impl Game {
         let (x, y) = self.map.xy(plot);
         (0..DirectionType::NUM).any(|i| {
             self.plot_direction(x, y, DirectionType::from_usize(i))
-                .is_some_and(|lp| !self.plot_is_water(lp) && self.map.plots[lp].units.iter().any(|&u| self.unit_is_besieger(u, ct, lp)))
+                .is_some_and(|lp| !self.plot_is_water(lp) && self.map.plots[lp].units.iter().any(|&u| self.unit_is_besieger(u, c, ct, lp)))
         })
     }
 

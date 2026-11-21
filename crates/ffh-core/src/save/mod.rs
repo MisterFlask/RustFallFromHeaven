@@ -199,7 +199,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `tactic_next`, `City::garrison_tactic`, `garrison_tactic_next`, no battle log `tactics`).
 /// - 61: heroes return after they die and Resurrection brings back other units (unit/fallen.rs):
 ///   `Unit::wounds`, `Player::recovering`, `Player::fallen`; `PROMOTION_WOUNDED`.
-pub const FORMAT_VERSION: u32 = 61;
+/// - 62: raids (docs/RAIDS.md): `Station::Raid`; `City::sally`, `raid_percent`, `raid_turns`,
+///   `raid_stripped`.
+pub const FORMAT_VERSION: u32 = 62;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

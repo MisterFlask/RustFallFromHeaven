@@ -362,7 +362,7 @@ impl Game {
         }
         let force: Vec<UnitId> = formation.iter().map(|q| q.unit).collect();
         let view = self.engage_def_view(p, to, &force, inp.war);
-        let mut plan = self.engage_plan_finish(ctx, slots, pool, formation, auto, view)?;
+        let mut plan = self.engage_plan_finish(ctx, slots, pool, formation, auto, view, true)?;
         plan.setup.squads[Side::Attacker.index()] = field.get(squad).and_then(|f| f.squad);
         plan.squads = squads;
         plan.squad = squad;
@@ -372,9 +372,11 @@ impl Game {
     /// The rest of a plan once the attacker's pool and formation and the view of the defense are
     /// known: the defender's formation, the summons (in a copy of the game) and the battle's
     /// set-up. Shared by the preview and the hypothetical forecast ([`Game::engage_forecast_if`]).
-    fn engage_plan_finish(&self, ctx: HitCtx, slots: Slots, pool: Vec<UnitId>, formation: Vec<Place>, auto: Vec<Place>, view: DefView) -> Result<Plan, &'static str> {
+    /// `sentinels`: the field's Sentinels fight (not in a sally: [`Game::engage_sally_forecast`]).
+    #[allow(clippy::too_many_arguments)]
+    fn engage_plan_finish(&self, ctx: HitCtx, slots: Slots, pool: Vec<UnitId>, formation: Vec<Place>, auto: Vec<Place>, view: DefView, sentinels: bool) -> Result<Plan, &'static str> {
         // The defender's squad against this formation, its cells, the Sentinels (squads.rs).
-        let def_plan = self.engage_def_plan(&ctx, slots, &formation, &view.candidates, true)?;
+        let def_plan = self.engage_def_plan(&ctx, slots, &formation, &view.candidates, sentinels)?;
         let def_formation = def_plan.def.clone();
         let def_number = def_plan.number;
         // The summons (summons.rs) are made for the battle: the plan makes them in a copy of the
@@ -588,7 +590,27 @@ impl Game {
         }
         let force: Vec<UnitId> = auto.iter().map(|q| q.unit).collect();
         let view = self.engage_forecast_view(p, target, &force, extra_defenders, WarTest::AtWar);
-        let plan = self.engage_plan_finish(ctx, slots, pool, auto.clone(), auto, view)?;
+        let plan = self.engage_plan_finish(ctx, slots, pool, auto.clone(), auto, view, true)?;
+        let g = plan.scratch.as_deref().unwrap_or(self);
+        let mut forecast = g.engage_forecast_sampled(&plan.setup, &plan.view, runs.max(1));
+        forecast.per.retain(|x| !g.units[x.unit].battle_summon);
+        Ok(forecast)
+    }
+
+    /// The forecast of a sally (docs/RAIDS.md, sections 4 and 5.1) of player `p`'s guard squad
+    /// `att` (its units in their cells) from the city's plot `from` against the raiders on `to`,
+    /// in `runs` battles: the real sally's set-up ([`HitCtx::sally`], no field Sentinels, the
+    /// defending squad and the summons as the real fight picks and calls them), sampled on a
+    /// private RNG seeded from the set-up (no draw of the game's). `Err`: nobody to fight.
+    pub(crate) fn engage_sally_forecast(&self, p: PlayerId, from: PlotIdx, to: PlotIdx, att: Vec<Place>, runs: i32) -> Result<Forecast, &'static str> {
+        if att.is_empty() {
+            return Err("no unit can attack there");
+        }
+        let ctx = HitCtx::sally(from, to);
+        let slots = self.engage_slots(&ctx);
+        let force: Vec<UnitId> = att.iter().map(|q| q.unit).collect();
+        let view = self.engage_def_view(p, to, &force, WarTest::AtWar);
+        let plan = self.engage_plan_finish(ctx, slots, force, att.clone(), att, view, false)?;
         let g = plan.scratch.as_deref().unwrap_or(self);
         let mut forecast = g.engage_forecast_sampled(&plan.setup, &plan.view, runs.max(1));
         forecast.per.retain(|x| !g.units[x.unit].battle_summon);
@@ -727,7 +749,7 @@ impl Game {
         let plan_of = |w: usize, alive: &[UnitId], gone: &[UnitId]| -> Option<(Plan, Vec<BattleEffect>)> {
             let wave = &waves[w];
             let view = DefView { candidates: alive.to_vec(), on_plot: view0.on_plot.iter().copied().filter(|u| !gone.contains(u)).collect(), declared: view0.declared.clone() };
-            let plan = self.engage_plan_finish(wave.ctx, wave.slots.clone(), wave.pool.clone(), wave.formation.clone(), wave.formation.clone(), view).ok()?;
+            let plan = self.engage_plan_finish(wave.ctx, wave.slots.clone(), wave.pool.clone(), wave.formation.clone(), wave.formation.clone(), view, true).ok()?;
             let pre = plan.scratch.as_deref().unwrap_or(self).engage_pre_battle(&plan.setup);
             Some((plan, pre))
         };

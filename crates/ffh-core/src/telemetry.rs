@@ -901,6 +901,67 @@ impl Game {
         self.telemetry.with(|t| t.count(p, "engage_missile", if killed { "kill" } else if hit { "hit" } else { "miss" }, 0));
     }
 
+    // Raids (docs/RAIDS.md).
+
+    /// An army of `p` took the Raid order on city `c` of `owner`.
+    pub(crate) fn tel_raid_order(&self, p: PlayerId, owner: PlayerId, c: CityId) {
+        let turn = self.game_turn();
+        let (x, y) = self.map.xy(self.city_plot(c));
+        self.telemetry.with(|t| {
+            t.count(p, "raid", "order", 0);
+            t.event(|| ev(turn, "raid_order", p).i("vs", owner.0 as i64).i("x", x as i64).i("y", y as i64).end());
+        });
+    }
+
+    /// A Raid order of `p`'s ended, by `why`.
+    pub(crate) fn tel_raid_end(&self, p: PlayerId, why: &'static str) {
+        self.telemetry.with(|t| t.count(p, "raid_end", why, 0));
+    }
+
+    /// A sally of `owner`'s guard was fought: `loser` the side that lost (the guard attacks).
+    pub(crate) fn tel_raid_sally(&self, owner: PlayerId, loser: Option<crate::engagement::Side>) {
+        let key = match loser {
+            Some(crate::engagement::Side::Defender) => "won",
+            Some(crate::engagement::Side::Attacker) => "lost",
+            None => "even",
+        };
+        self.telemetry.with(|t| t.count(owner, "raid_sally", key, 0));
+    }
+
+    /// An army of `p`'s was driven off by a sally.
+    pub(crate) fn tel_raid_driven_off(&self, p: PlayerId) {
+        self.telemetry.with(|t| t.count(p, "raid", "driven_off", 0));
+    }
+
+    /// City `c` of `owner` was stripped.
+    pub(crate) fn tel_raid_stripped(&self, owner: PlayerId) {
+        self.telemetry.with(|t| t.count(owner, "raid", "stripped", 0));
+    }
+
+    /// A raid's take on city `c` of `owner`: its loss for the owner, each army's gold for its own.
+    pub(crate) fn tel_raid_take(&self, owner: PlayerId, c: CityId, contested: bool, calc: &crate::raid::RaidCalc) {
+        let turn = self.game_turn();
+        let key = if contested { "contested" } else { "overrun" };
+        let (x, y) = self.map.xy(self.city_plot(c));
+        self.telemetry.with(|t| {
+            t.count(owner, "raid_lost", key, calc.total as i64);
+            for s in &calc.shares {
+                t.count(s.owner, "raid_take", key, s.gold as i64);
+            }
+            t.event(|| {
+                ev(turn, "raid_take", owner)
+                    .s("state", key)
+                    .i("pct", calc.percent as i64)
+                    .i("lost", calc.total as i64)
+                    .i("raiders", calc.shares.len() as i64)
+                    .i("gold", calc.shares.iter().map(|s| s.gold as i64).sum())
+                    .i("x", x as i64)
+                    .i("y", y as i64)
+                    .end()
+            });
+        });
+    }
+
     pub(crate) fn tel_improvement(&self, u: UnitId, build: BuildType) {
         let p = self.units[u].owner;
         let name = self.d.builds[build].base.type_.as_str();

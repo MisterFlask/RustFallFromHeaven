@@ -50,16 +50,19 @@ pub enum EscortTarget {
     Group(GroupId),
 }
 
-/// A fleet's standing order (docs/NAVAL.md, 7.2).
+/// An army's or a fleet's standing order (docs/NAVAL.md, 7.2; docs/RAIDS.md, section 3).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Station {
     /// Under way, or waiting.
     #[default]
     None,
-    /// Patrol of a named sea.
+    /// A fleet's: Patrol of a named sea.
     Patrol(SeaId),
-    /// Escort of an army or a group.
+    /// A fleet's: Escort of an army or a group.
     Escort(EscortTarget),
+    /// A land army's: the Raid of an enemy city from its countryside (docs/RAIDS.md;
+    /// `raid.rs`). Whether it still holds: [`Game::army_raid_city`].
+    Raid(CityId),
 }
 
 /// The moves that end a fleet's standing order when its owner gives them.
@@ -189,19 +192,39 @@ impl Game {
     }
 
     /// Sets fleet `a`'s standing order (docs/NAVAL.md, 7.2), and carries it out at once (the
-    /// fleet sails, takes the Patrol order, or joins its target if it can this turn).
+    /// fleet sails, takes the Patrol order, or joins its target if it can this turn); or a land
+    /// army's Raid order (docs/RAIDS.md, section 3: [`Game::army_raid_refusal`]; its moves end,
+    /// its units sleep). `Station::None` ends either.
     pub fn army_set_station(&mut self, p: PlayerId, a: ArmyId, station: Station) -> ArmyResult {
         if !self.armies.contains(a) || self.armies[a].owner != p {
-            return Err("no such fleet");
+            return Err("no such army");
         }
-        if self.armies[a].domain != ArmyDomain::Sea {
-            return Err("only a fleet takes a standing order");
-        }
-        if self.armies[a].disband_to.is_some() && station != Station::None {
-            return Err("the fleet is disbanding");
-        }
+        let fleet = self.armies[a].domain == ArmyDomain::Sea;
         match station {
             Station::None => {}
+            Station::Raid(_) if fleet => return Err("a fleet does not raid"),
+            Station::Raid(_) => {}
+            _ if !fleet => return Err("only a fleet takes this standing order"),
+            _ => {}
+        }
+        if self.armies[a].disband_to.is_some() && station != Station::None {
+            return Err(if fleet { "the fleet is disbanding" } else { "the army is disbanding" });
+        }
+        match station {
+            Station::None => {
+                if let Station::Raid(c) = self.armies[a].station {
+                    self.armies[a].station = Station::None;
+                    self.raid_order_ended(a, c, "its order");
+                    return Ok(());
+                }
+            }
+            Station::Raid(c) => {
+                if let Some(why) = self.army_raid_refusal(a, c) {
+                    return Err(why);
+                }
+                self.army_take_raid(a, c);
+                return Ok(());
+            }
             Station::Patrol(s) => {
                 if s.idx() >= self.map.seas.len() {
                     return Err("no such sea");
@@ -243,14 +266,33 @@ impl Game {
     }
 
     /// A mission is pushed for group `g` (`group_push_mission`): a move order ends the standing
-    /// order of the fleet whose group it is.
+    /// order of the army or fleet whose group it is (a Raid with its messages).
     pub(crate) fn group_order_ends_station(&mut self, g: GroupId, mission: MissionType) {
         if !is_move_order(mission) || !self.groups.contains(g) {
             return;
         }
         let Some(head) = self.group_get_head_unit(g) else { return };
         if let Some(a) = self.units[head].army.filter(|&a| self.armies.contains(a) && self.armies[a].group == Some(g)) {
+            let was = self.armies[a].station;
             self.armies[a].station = Station::None;
+            if let Station::Raid(c) = was {
+                self.raid_order_ended(a, c, "a move order");
+            }
+        }
+    }
+
+    /// Group `g` attacks (`group_attack_force`): an attack ends the Raid order of the army whose
+    /// group it is (docs/RAIDS.md, section 3: an attack is a move order).
+    pub(crate) fn group_attack_ends_raid(&mut self, g: GroupId) {
+        if !self.groups.contains(g) {
+            return;
+        }
+        let Some(head) = self.group_get_head_unit(g) else { return };
+        if let Some(a) = self.units[head].army.filter(|&a| self.armies.contains(a) && self.armies[a].group == Some(g)) {
+            if let Station::Raid(c) = self.armies[a].station {
+                self.armies[a].station = Station::None;
+                self.raid_order_ended(a, c, "an attack");
+            }
         }
     }
 
@@ -272,8 +314,14 @@ impl Game {
             return;
         }
         for a in self.players[p].armies.clone() {
-            if self.armies.contains(a) && self.armies[a].station != Station::None {
-                self.army_station_step(a);
+            if !self.armies.contains(a) {
+                continue;
+            }
+            match self.armies[a].station {
+                Station::None => {}
+                // A land army's Raid (docs/RAIDS.md): ended when it no longer holds.
+                Station::Raid(_) => self.army_raid_step(a),
+                _ => self.army_station_step(a),
             }
         }
     }
@@ -291,6 +339,7 @@ impl Game {
         }
         match self.armies[a].station {
             Station::None => {}
+            Station::Raid(_) => self.army_raid_step(a),
             Station::Patrol(s) => self.fleet_patrol_step(a, grp, here, s),
             Station::Escort(target) => {
                 let Some(to) = self.escort_target_plot(target) else {

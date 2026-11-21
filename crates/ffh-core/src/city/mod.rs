@@ -315,6 +315,17 @@ pub struct City {
     /// taken or a lane was traced again), from the water by the outpost to the water by its home
     /// port; empty while cut or missing. The trade network reads it.
     pub lane: Vec<PlotIdx>,
+    /// This game's raids (docs/RAIDS.md, section 4): when the city's guard sallies against
+    /// raiders, set by its owner.
+    pub sally: crate::raid::Sally,
+    /// The raid modifier (percent less) of the city's production and commerce yield rates, set at
+    /// its owner's raid step until the next one: 0, `RAID_CONTESTED_PERCENT` or
+    /// `RAID_TAKE_PERCENT` (section 5.3).
+    pub raid_percent: i32,
+    /// Overrun turns counted toward stripping (section 6).
+    pub raid_turns: i32,
+    /// Turns left until a stripped countryside recovers (0: not stripped; section 6).
+    pub raid_stripped: i32,
 }
 
 impl City {
@@ -537,6 +548,10 @@ impl City {
             outpost: false,
             lane_cut_turns: 0,
             lane: Vec::new(),
+            sally: crate::raid::Sally::Favoured,
+            raid_percent: 0,
+            raid_turns: 0,
+            raid_stripped: 0,
         }
     }
 

@@ -33,6 +33,7 @@ pub mod persons;
 pub mod player;
 pub mod plot;
 pub mod plot_group;
+pub mod raid;
 pub mod rng;
 pub mod save;
 pub mod seas;

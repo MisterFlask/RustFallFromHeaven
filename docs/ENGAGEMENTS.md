@@ -515,6 +515,12 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
 - `unit_attack(u, to)` (Taunt, the Shrine of Camulos, Gift of Kylorin): a one-unit engagement,
   forced (whatever the unit's moves and attacks this turn, as today's `attack`), in the auto
   formation, or a missile's strike; with only non-combatants there, today's attack.
+- A city guard's **sally** against raiders (docs/RAIDS.md, section 5.1; `Game::engage_as` with a
+  `SallyForce`): the guard's squad attacks from the city's plot a plot of its countryside, next to
+  it or not, whatever its units' moves and attacks, and pays neither; nobody advances; the battle
+  is fought in the fields (`HitCtx::sally`: open ground and no other ground rule, no river
+  crossing, no field Sentinels, and no unit counts its fortification, city, hills, feature or
+  terrain terms or the landing penalty).
 
 ## The engagement
 
@@ -551,7 +557,8 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    the combat-apply promotions and poison; the victims die (immortals are reborn); medics heal once
    a turn per unit (Q12), then phase 7's post-battle hook; withdrawn defenders flee (outside a
    city); defenders that lost outside a city are pushed back (step 6); every committed attacker has made its attack (one a turn, Blitz one more, counting
-   engagements, bombards and missile strikes) and pays the attack's moves unless it moves in.
+   engagements, bombards and missile strikes) and pays the attack's moves unless it moves in (a
+   sally's guard pays neither: docs/RAIDS.md).
 6. **The result** (spec 1.7; the owner's rules, 2026-11-21). **Who lost** (`engage_verdict` on
    each side's `Setup::tally`), by the first rule that tells the sides apart:
    1. a side all of whose units that fought fell loses (both: the next rule);

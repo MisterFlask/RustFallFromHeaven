@@ -240,5 +240,19 @@
   "ANARCHY_LENGTH_PERCENT": 50,
   // ADVANCED_START_POINTS: an advanced start's points, before the world size and game speed
   //      percents
-  "ADVANCED_START_POINTS": 600
+  "ADVANCED_START_POINTS": 600,
+  // ==== Raids (docs/RAIDS.md) ====
+  // RAID_TAKE_PERCENT: the modifier (percent less) of an overrun city's production and commerce
+  "RAID_TAKE_PERCENT": 50,
+  // RAID_CONTESTED_PERCENT: the same, contested (every raiding plot sallied against this turn)
+  "RAID_CONTESTED_PERCENT": 10,
+  // RAID_STRIP_TURNS: overrun turns until the countryside is stripped
+  "RAID_STRIP_TURNS": 5,
+  // RAID_RECOVER_TURNS: turns a stripped countryside takes to recover (no raid meanwhile)
+  "RAID_RECOVER_TURNS": 15,
+  // RAID_SALLY_ODDS: the Favoured posture's bar: the guard sallies when its forecast wins at least
+  //      this many per mille
+  "RAID_SALLY_ODDS": 600,
+  // RAID_SALLY_FORECAST_RUNS: sampled battles of a sally forecast
+  "RAID_SALLY_FORECAST_RUNS": 12
 }

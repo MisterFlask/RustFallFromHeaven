@@ -928,7 +928,7 @@ mod tests {
         assert_eq!(g.plot_movement_cost(pit, rider, from), g.plot_movement_cost(hill, rider, from));
         assert!(g.plot_movement_cost(pit, rider, from) > d.defines.move_denominator, "hills cost more than open ground");
         assert_eq!(g.plot_defense_modifier(pit, None, false), g.plot_defense_modifier(hill, None, false));
-        let ground = |to| g.engage_ground(&crate::engagement::HitCtx { to, from: None, cover: false });
+        let ground = |to| g.engage_ground(&crate::engagement::HitCtx::at(to));
         assert_eq!(ground(pit), ground(hill));
         assert!(ground(pit).hills);
         let team = g.players[p0].team;
