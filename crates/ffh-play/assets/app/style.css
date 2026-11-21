@@ -1574,6 +1574,11 @@ tr.empire-city.refused { opacity: 0.75; cursor: not-allowed; }
   border: 1px solid var(--line); background: rgba(10, 18, 34, 0.86); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .sq-unit:focus-visible { outline: 2px solid var(--c-glint); outline-offset: 1px; }
+.sq-unit.ro { cursor: default; touch-action: auto; }
+.sq-owner { margin: 8px 0 4px; font-size: 13px; }
+.sq-owner:first-child { margin-top: 0; }
+.tip-squads-hint { margin-top: 2px; }
+.plot-squads { margin-left: 8px; vertical-align: middle; }
 .sq-unit.picked { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .sq-unit.dragging { opacity: 0.4; }
 .sq-unit .figure { pointer-events: none; margin-bottom: 2px; }

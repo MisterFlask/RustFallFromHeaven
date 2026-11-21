@@ -288,8 +288,9 @@ fn base_move_cost(v: &Viewer, p: PlotIdx) -> i32 {
     cost
 }
 
-/// `plot {x,y}`: the plot as the human knows it; units and live values only while visible.
-pub fn plot(v: &Viewer, x: i32, y: i32, units: &[UnitId]) -> Result<Json, QueryErr> {
+/// `plot {x,y}`: the plot as the human knows it; units and live values only while visible. With
+/// `squads`, every owner's squads there too (`view::squads::owner_squads`).
+pub fn plot(v: &Viewer, x: i32, y: i32, units: &[UnitId], squads: bool) -> Result<Json, QueryErr> {
     let p = plot_at(v, x, y)?;
     let g = v.g;
     let d = g.d;
@@ -375,6 +376,9 @@ pub fn plot(v: &Viewer, x: i32, y: i32, units: &[UnitId]) -> Result<Json, QueryE
             })
             .collect();
         j.set("units", Json::Arr(units));
+        if squads {
+            j.set("squads", crate::view::squads::owner_squads(v, p));
+        }
     }
     Ok(j)
 }

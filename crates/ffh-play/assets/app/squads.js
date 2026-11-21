@@ -31,6 +31,7 @@ addHelp({
       h("li", "!: the unit stands outside the row where it has the most actions."),
       h("li", "Attacking: the battle plan names your squads that can attack; the strongest is picked unless you pick another."),
       h("li", "Defending: of the squads that fought the fewest battles this turn, the one with the best result against the attacking squad fights."),
+      h("li", "Another player's stack: click its plot, then Squads… in the plot panel. Its squads are shown, not changed; each unit's card is its tooltip."),
       h("li", "Unit panel: Squads… opens the board of the plot. Armies screen [F5]: each army's board. Drag a unit to a cell (onto a unit of the same size: they swap), to another squad, or to New squad. On a touch screen: tap the unit, then the cell."),
     ),
   ],
@@ -97,8 +98,12 @@ async function send(c, done) {
 
 /** The squad board for `squads` (a `squads` listing), with `unitOf(id)` the view's unit and
  *  `changed()` called after each command (it re-reads the squads and redraws). `bodies`: show
- *  each squad's body (an army's name, a garrison, Loose) when the squads are of several. */
-export function squadBoard(squads, { unitOf, changed }) {
+ *  each squad's body (an army's name, a garrison, Loose) when the squads are of several.
+ *  `readOnly`: another player's squads (the plot panel's Squads…): the grid and the unit cards,
+ *  no ticks, no Auto, no moves. */
+export function squadBoard(squads, { unitOf, changed, readOnly = false }) {
+  // (Read-only, a squad the owner's next sync creates is shown too: it has no id yet.)
+  if (readOnly) return readOnlyBoard(squads ?? [], unitOf);
   const list = (squads ?? []).filter((s) => s.id !== null && s.id !== undefined);
   for (const id of [...ticked]) if (!list.some((s) => s.id === id)) ticked.delete(id);
   if (picked !== null && !list.some((s) => s.cells.includes(picked))) picked = null;
@@ -209,6 +214,67 @@ export function squadBoard(squads, { unitOf, changed }) {
   );
   wire(root, { list, move, toNew: (unit) => send({ c: "squad_move", unit, squad: null, cell: null }, done), redraw });
   return root;
+}
+
+/** The cells and units of squad `s` on its grid (the read-only board's): each unit once (a large
+ *  unit over its two cells), its level on it, its card as its tooltip. */
+function readOnlyGrid(s, unitOf) {
+  const cells = [];
+  for (let c = 0; c < 9; c++) {
+    const row = Math.floor(c / LANES);
+    cells.push(h("div.sq-cell", { class: row === 0 ? "front" : "", style: { gridRow: String(row + 1), gridColumn: String((c % LANES) + 2) }, "aria-label": `${ROWS[row]}, lane ${(c % LANES) + 1}` }));
+  }
+  const seen = new Set();
+  const tokens = [];
+  s.cells.forEach((id, c) => {
+    if (id === null || id === undefined || seen.has(id)) return;
+    seen.add(id);
+    const u = unitOf(id) ?? { id, type: null };
+    const row = Math.floor(c / LANES);
+    const span = s.cells[c + 1] === id && (c % LANES) < LANES - 1 ? 2 : 1;
+    const name = u.name ?? (u.type !== null ? dname("UnitType", u.type) : `#${id}`);
+    tokens.push(
+      h(
+        "div.sq-unit.ro",
+        {
+          "data-unit": id,
+          "data-squad": s.id,
+          "data-cell": c,
+          tabindex: 0,
+          "aria-label": `${name}${u.level !== undefined ? `, level ${u.level}` : ""}, ${ROWS[row].toLowerCase()}, lane ${(c % LANES) + 1}`,
+          class: span > 1 ? "large" : "",
+          style: { gridRow: String(row + 1), gridColumn: `${(c % LANES) + 2} / span ${span}` },
+          tip: () => unitTip({ ...u, squad: { id: s.id, num: s.num, cell: c, auto: s.auto } }, null),
+        },
+        u.type !== null ? unitFigure(u.type, u.owner, span > 1 ? 40 : 30) ?? h("span.sq-abbr", name.slice(0, 2)) : h("span.sq-abbr", "?"),
+        u.level !== undefined ? h("span.sq-lv", String(u.level)) : null,
+      ),
+    );
+  });
+  const labels = ROWS.map((r, i) => h("div.sq-rlab", { style: { gridRow: String(i + 1), gridColumn: "1" } }, r));
+  return h("div.sq-grid", labels, cells, tokens);
+}
+
+/** The read-only board: each squad's name, its body when the squads are of several, its places
+ *  and its grid. */
+function readOnlyBoard(list, unitOf) {
+  const bodies = new Set(list.map((s) => `${s.kind}:${s.army ?? s.city ?? ""}`));
+  return h(
+    "div.sq-board.ro",
+    { "data-squads": list.length },
+    h(
+      "div.sq-list",
+      list.map((s) =>
+        h(
+          "div.sq-card",
+          { "data-squad": s.id },
+          h("div.sq-head", h("span.sq-name", squadName(s)), h("span.sq-count", { title: "Places: a large unit counts 2." }, `${s.places}/${s.max_places ?? 6}`)),
+          bodies.size > 1 ? h("div.sq-body.dim", s.body) : null,
+          readOnlyGrid(s, unitOf),
+        ),
+      ),
+    ),
+  );
 }
 
 /** The squad and cell a drop on `el` means: `{squad, cell}`, `{fresh: true}` (New squad), or

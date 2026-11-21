@@ -989,29 +989,40 @@ function showTip() {
   }
   const units = unitsAt(x, y);
   if (units.length) {
-    // The plot query's units carry their attack and defence, level and promotions (C++ plot help).
+    // Each unit by name and level, alike units (owner, type, level, health) on one line with a
+    // count; their stats and promotions are on the unit cards of the squad board (a click on a
+    // plot of another player's: the plot panel's Squads…).
     const known = new Map((p && p.x === x && p.y === y ? (p.units ?? []) : []).map((u) => [u.id, u]));
-    const shown = units.slice(0, 8).map((u0) => {
+    const rows = [];
+    for (const u0 of units) {
       const u = { ...u0, ...(known.get(u0.id) ?? {}) };
-      const promos = (u.promotions ?? []).map((pr) => dname("PromotionType", pr));
-      return h(
+      const health = u.hp < u.max_hp ? Math.round((100 * u.hp) / u.max_hp) : 100;
+      // A line that is the unit's own (Wounds, a card, a march) keeps it apart.
+      const own = u.wounds || (u.card !== null && u.card !== undefined) || u.march;
+      const key = own ? null : `${u.owner}|${u.type}|${u.name ?? ""}|${u.level}|${health}`;
+      const same = key && rows.find((r) => r.key === key);
+      if (same) same.n += 1;
+      else rows.push({ key, u, health, n: 1 });
+    }
+    const shown = rows.slice(0, 8).map(({ u, health, n }) =>
+      h(
         "div.tip-unit",
-        `${dname("UnitType", u.type)}`,
-        ratingShort(u) ? ` ${ratingShort(u)}` : "",
-        h("span.dim", ` ${playerName(u.owner)}${u.level > 1 ? `, level ${u.level}` : ""}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`),
-        promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
-        // Ritual: Upgrade's stacks on a golem (the view's line).
-        u.reinforced ? h("div.dim", u.reinforced) : null,
+        u.name ? `${u.name}` : dname("UnitType", u.type),
+        n > 1 ? ` ×${n}` : "",
+        h("span.dim", ` ${playerName(u.owner)}${u.level !== undefined ? `, level ${u.level}` : ""}${health < 100 ? `, ${health}% health` : ""}`),
         // A hero's Wounds (one for each time it died and returned).
         u.wounds ? h("div.warn", u.wounds.text) : null,
         // A great person of ours holding a card (docs/CARDS.md).
         u.card !== null && u.card !== undefined ? h("div.tip-card", `Card: ${dname("TechType", u.card)}`) : null,
         // This game's armies: a recruit of ours marching to its destination.
         u.march ? h("div.tip-march", marchLine(u.march)) : null,
-      );
-    });
+      ),
+    );
     lines.push(...shown);
-    if (units.length > 8) lines.push(h("div.dim", `and ${units.length - 8} more`));
+    const rest = rows.slice(8).reduce((t, r) => t + r.n, 0);
+    if (rest) lines.push(h("div.dim", `and ${rest} more`));
+    // Another player's stack: a click opens the plot panel, whose Squads… shows its squads.
+    if (units.some((u) => u.owner !== me()?.player) && !ownUnitsAt(x, y).length) lines.push(h("div.dim.tip-squads-hint", `${mapView?.touch ? "Tap" : "Click"}: Squads… in the plot panel`));
   }
   // The located messages of the latest turn here (combats, cities taken): what happened on
   // this plot while the AIs moved.
@@ -1474,6 +1485,29 @@ export async function openSquads() {
     m.setBody(r.squads?.length ? squadBoard(r.squads, { unitOf, changed: load }) : h("p.dim", "No squads here."));
   };
   await load();
+  return m;
+}
+
+/** Squads: the squads of every stack on plot (x, y), read-only (the plot query with `squads`), in
+ *  a dialog: each owner's squads under its name, each unit's card as its tooltip. */
+export async function openPlotSquads(x, y) {
+  let r;
+  try {
+    r = await api.query("plot", { x, y, squads: true });
+  } catch (e) {
+    return openModal({ title: `Squads at (${x}, ${y})`, tag: "plot-squads", body: [h("p.warn", errorText(e))], buttons: [{ label: "Close", value: null }], help: "squads" });
+  }
+  // (Wide when the squads would not fit two to a row.)
+  const many = (r.squads ?? []).reduce((n, o) => n + o.squads.length, 0) > 2;
+  const m = openModal({ title: `Squads at (${x}, ${y})`, tag: "plot-squads", wide: many, body: [h("p.dim", "…")], buttons: [{ label: "Close", value: null }], help: "squads" });
+  const details = new Map((r.units ?? []).map((u) => [u.id, u]));
+  const unitOf = (id) => (S.units.get(id) || details.get(id) ? { ...(S.units.get(id) ?? {}), ...(details.get(id) ?? {}) } : null);
+  const owners = r.squads ?? [];
+  m.setBody(
+    owners.length
+      ? owners.flatMap((o) => [h("h4.sq-owner", playerName(o.player)), squadBoard(o.squads, { unitOf, readOnly: true })])
+      : h("p.dim", r.vis === 2 ? "No squads here." : "The plot is not in sight."),
+  );
   return m;
 }
 
@@ -2143,7 +2177,13 @@ async function renderPlotInfo(x, y, selUnits = S.sel?.units ?? null) {
     h("div.panel-head", h("h3", `Plot (${x}, ${y})`), p.vis === 1 ? h("span.dim", " fogged") : null),
     h("table.kv", rows.map(([k, v]) => h("tr", h("th", k), h("td", String(v))))),
     summary,
-    units.length ? h("div.section", h("h4", "Units"), units) : null,
+    units.length
+      ? h(
+          "div.section",
+          h("h4", "Units", p.vis === 2 ? h("button.small.plot-squads", { onclick: () => openPlotSquads(x, y), title: "Every stack's squads here: the grid and each unit's card" }, "Squads…") : null),
+          units,
+        )
+      : null,
     p.explore ? h("div.section.plot-explore", h("h4", p.explore.kind === "hut" ? "Goody hut odds" : "Explore Lair odds"), h("div.small", markup(exploreFull(p.explore, dname)))) : null,
     events,
     flag,

@@ -802,7 +802,7 @@ pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> us
             previews += 1;
             let plot = arr(&gq, "plot");
             let (x, y) = (plot.first().and_then(Json::as_i64).unwrap_or(0) as i32, plot.get(1).and_then(Json::as_i64).unwrap_or(0) as i32);
-            ask(Query::Plot { x, y, units: units.clone() }, May::Answer);
+            ask(Query::Plot { x, y, units: units.clone(), squads: false }, May::Answer);
             // A target off the map (at an edge) is `invalid`.
             ask(Query::Path { units: units.clone(), x: x + 3, y, flags: 0 }, May::BeInvalid);
             ask(Query::Combat { units: units.clone(), x: x + 1, y }, May::BeInvalid);

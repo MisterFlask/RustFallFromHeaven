@@ -70,3 +70,38 @@ pub fn plot_squads(v: &Viewer, plot: PlotIdx, body: Option<SquadBody>) -> Json {
     let nums = Game::squad_numbers(&layouts);
     Json::Arr(layouts.iter().zip(nums).filter(|(l, _)| body.is_none_or(|b| l.body == b)).map(|(l, n)| layout_json(g, l, n)).collect())
 }
+
+/// Every owner's squads on a plot the human sees (the plot query's `squads`, for the read-only
+/// board of another player's stack): `[{player, squads}]`, the owners in the order of their first
+/// unit on the plot, each `squads` as [`plot_squads`] lists them. A unit the human cannot see
+/// leaves its cells empty (null) and its places uncounted; a squad of none the human sees is left
+/// out, and so are units whose owner the human does not know (hidden nationality: `v.unit_owner`).
+pub fn owner_squads(v: &Viewer, plot: PlotIdx) -> Json {
+    let g = v.g;
+    let mut owners: Vec<PlayerId> = Vec::new();
+    for &u in &g.map.plots[plot].units {
+        if g.units.contains(u) && v.unit_visible(u) && v.unit_owner(u) == g.units[u].owner && !owners.contains(&g.units[u].owner) {
+            owners.push(g.units[u].owner);
+        }
+    }
+    let seen = |u: UnitId| g.units.contains(u) && v.unit_visible(u) && v.unit_owner(u) == g.units[u].owner;
+    let out = owners.into_iter().filter_map(|p| {
+        let layouts = g.squad_layouts_at(p, plot);
+        let nums = Game::squad_numbers(&layouts);
+        let squads: Vec<Json> = layouts
+            .iter()
+            .zip(nums)
+            .filter_map(|(l, n)| {
+                let mut l = l.clone();
+                for c in l.cells.iter_mut() {
+                    if c.is_some_and(|u| !seen(u)) {
+                        *c = None;
+                    }
+                }
+                l.cells.iter().any(Option::is_some).then(|| layout_json(g, &l, n))
+            })
+            .collect();
+        (!squads.is_empty()).then(|| crate::jobj! { "player" => p, "squads" => Json::Arr(squads) })
+    });
+    Json::Arr(out.collect())
+}
