@@ -203,7 +203,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `raid_stripped`.
 /// - 63: trade (docs/TRADE.md): `Game::routes`, `Unit::route`; the Civ4 trade routes gone (no
 ///   `City::trade_route`, `trade_cities`).
-pub const FORMAT_VERSION: u32 = 63;
+/// - 64: cargo (docs/TRADE.md, 5): `CaravanSlot::delivering`, `premium`; `RouteRefusal`'s cargo
+///   and refit reasons.
+pub const FORMAT_VERSION: u32 = 64;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

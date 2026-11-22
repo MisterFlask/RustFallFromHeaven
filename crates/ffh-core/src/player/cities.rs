@@ -1092,6 +1092,8 @@ impl Game {
         if let Some(new) = city {
             self.city_update_commerces(new);
         }
+        // This game's trade (docs/TRADE.md, 5): the capital's network holds the caravans' copies.
+        self.trade_refresh_pay();
     }
 
     /// C++ `CvPlayer::findNewCapital`: moves the capital building to the best other city.

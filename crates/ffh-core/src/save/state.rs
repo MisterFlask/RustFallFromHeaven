@@ -103,9 +103,10 @@ persist_enum!(RouteRefusal {
     0 => NotACaravan, 1 => InRoute, 2 => NotInOwnCity, 3 => OriginOutpost, 4 => NoRouteFree, 5 => CoastalOnly,
     6 => OriginFull, 7 => SameCity, 8 => DestinationGone, 9 => NotRevealed, 10 => DestinationOutpost,
     11 => AtWar(p), 12 => NoOpenBorders(p), 13 => NoForeignTrade(p), 14 => NoPath, 15 => AlreadyLinked,
-    16 => CargoNotBuilt,
+    16 => CargoNotBuilt, 17 => CargoDomestic, 18 => CargoNoCopy(b), 19 => CargoSame, 20 => NotInOrigin,
+    21 => RouteGone,
 });
-persist_struct!(CaravanSlot { unit, reform_turns, bound, cargo, lost_turn, lost_to, pay_x100 });
+persist_struct!(CaravanSlot { unit, reform_turns, bound, cargo, lost_turn, lost_to, pay_x100, delivering, premium });
 persist_struct!(Route { id, owner, origin, destination, established, arrived, growth, slots, closed, path, length, dest_pay_x100 });
 persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, unsupplied_turns, domain, station, carried });
 persist_struct!(Squad { id, owner, body, hand_set, fought_turn, fought });

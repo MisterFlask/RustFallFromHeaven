@@ -626,6 +626,7 @@ pub struct Defines {
     pub trade_growth_max: i32,
     pub trade_cargo_percent: i32,
     pub trade_cargo_new_percent: i32,
+    pub trade_mission_percent: i32,
     pub bbai_skip_bombard_base_stack_ratio: i32,  // not in the data: C++ reads 0
     pub bbai_skip_bombard_best_attack_odds: i32,  // not in the data: C++ reads 0
     pub bbai_skip_bombard_min_stack_ratio: i32,  // not in the data: C++ reads 0
@@ -1257,6 +1258,7 @@ impl Defines {
             trade_growth_max: m.int("TRADE_GROWTH_MAX"),
             trade_cargo_percent: m.int("TRADE_CARGO_PERCENT"),
             trade_cargo_new_percent: m.int("TRADE_CARGO_NEW_PERCENT"),
+            trade_mission_percent: m.int("TRADE_MISSION_PERCENT"),
             bbai_skip_bombard_base_stack_ratio: m.int("BBAI_SKIP_BOMBARD_BASE_STACK_RATIO"),
             bbai_skip_bombard_best_attack_odds: m.int("BBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS"),
             bbai_skip_bombard_min_stack_ratio: m.int("BBAI_SKIP_BOMBARD_MIN_STACK_RATIO"),

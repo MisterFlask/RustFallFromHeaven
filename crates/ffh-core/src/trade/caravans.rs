@@ -138,6 +138,7 @@ impl Game {
         let at = self.route_origin_xy(r);
         let why = why.to_string();
         self.log.msg_at(turn, Some(owner), at, || format!("Route {on} to {dn} ended: {why}"));
+        self.cargo_undo_route(r);
         self.routes.remove(r);
         self.trade_refresh_pay();
     }
@@ -244,6 +245,9 @@ impl Game {
     pub fn player_update_routes(&mut self, p: PlayerId) {
         let routes = self.player_routes(p);
         if routes.is_empty() {
+            // (Resources and networks change between turns: every route's cargo and pay are
+            // refreshed at every turn start.)
+            self.trade_refresh_pay();
             return;
         }
         let d = self.d;
@@ -315,6 +319,7 @@ impl Game {
             }
         }
         self.trade_refresh_pay();
+        self.cargo_telemetry(p);
     }
 
     // ---------------------------------------------------------------------------------------

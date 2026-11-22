@@ -113,8 +113,14 @@ went wrong", below.)
   barbarians), halves the growth and re-forms after 10 turns; a war between the two owners seizes
   the caravans on the enemy's land, sets growth to 0 and closes the route. A route closes while its
   destination fails these tests and ends when dissolved, its origin is lost or its destination is
-  destroyed. The Great Merchant's trade mission reads one caravan's pay of a route from the city to
-  the capital (plot distance, growth 0) in place of the old profit.
+  destroyed. A route's path never enters the land of a team at war with its owner. A caravan of
+  a foreign route may carry one of its owner's resources (chosen at the order, changed by a refit
+  that uses up another Caravan): while it lives and the route runs, the owner exports a copy and
+  the destination's owner imports it, as a deal's resource (it cannot be traded on), and the
+  caravan's half pays +50%, or +150% while the recipient has no copy apart from caravans (the
+  oldest route's caravan only). The Great Merchant's trade mission reads 25%
+  (`TRADE_MISSION_PERCENT`) of one caravan's pay of a route from the city to the capital (plot
+  distance, growth 0) in place of the old profit, so its gold stays about where FFH2's was.
 - **Raids; fields are not pillaged** (the owner's design, 2026-11-21; docs/RAIDS.md,
   `crates/ffh-core/src/raid.rs`). A land army at war on an enemy city's countryside may take the
   standing Raid order (`Station::Raid`): its moves end, it is supplied whatever its line, and its

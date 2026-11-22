@@ -1,7 +1,7 @@
 # Trade: routes, caravans, cargo
 
-**Status: phase 1's rules built (2026-11-21: sections 3, 4.1-4.3, 6, 7; "As built", section 14).
-Not built: cargo (section 5), escort (4.4), the AI (section 8), the client (section 9).** This game's own rules, replacing the trade routes
+**Status: rules built (2026-11-21): sections 3, 4.1-4.3, 6, 7 ("As built", section 14) and cargo,
+section 5 (section 15). Not built: escort (4.4), the AI (section 8), the client (section 9).** This game's own rules, replacing the trade routes
 inherited from Civ4 (each city's slots filled by the rules with the best-paying partner cities:
 `city_update_trade_routes`). This file is the spec for the implementation, as docs/SUPPLY.md is for
 supply lines and docs/NAVAL.md for the sea. Marked **(default)**: a value or rule chosen for a
@@ -105,7 +105,8 @@ plot to the destination's, 8 directions, by plot entered:
 | water | `CARAVAN_COST_WATER` (4) |
 
 - It may enter: passable land that is unowned, the owner's team's, or a team's whose borders the
-  owner may enter; passable water in the owner's team's sea range (docs/NAVAL.md, 3.1) whose sea
+  owner may enter (a friend's or open borders; never the land of a team it is at war with, the
+  barbarians' included: a route whose only way crosses it has no path and is closed); passable water in the owner's team's sea range (docs/NAVAL.md, 3.1) whose sea
   is not closed to the owner's team (4.3 there; water with no sea counts as open); the
   destination city and any city of a team whose land it may enter. Never a city of a team whose
   land it may not enter, and no diagonal step the rules refuse a ship (between two land plots).
@@ -321,7 +322,8 @@ If animals and barbarians kill most early caravans, the guard is too weak.
 `CARAVAN_COST_WATER` 4, `CARAVAN_REFORM_TURNS` 10,
 `TRADE_PLUNDER_TURNS` 10, `TRADE_PAY_PERCENT` 500, `TRADE_LENGTH_FULL` 8, `TRADE_LENGTH_CAP` 24,
 `TRADE_FOREIGN_PERCENT` 25, `TRADE_DEST_PERCENT` 50, `TRADE_GROWTH_PERCENT` 2,
-`TRADE_GROWTH_MAX` 50, `TRADE_CARGO_PERCENT` 50, `TRADE_CARGO_NEW_PERCENT` 150. Data:
+`TRADE_GROWTH_MAX` 50, `TRADE_CARGO_PERCENT` 50, `TRADE_CARGO_NEW_PERCENT` 150,
+`TRADE_MISSION_PERCENT` 25 (the Great Merchant's trade mission). Data:
 `UNIT_CARAVAN`, `PROMOTION_CARAVAN_GUARD_2` to `_4`. Removed: `MAX_TRADE_ROUTES`, `THEIR_POPULATION_TRADE_PERCENT`,
 `CAPITAL_TRADE_MODIFIER`, `FOREIGN_TRADE_MODIFIER`, `OUR_POPULATION_TRADE_MODIFIER` and its offset,
 `TRADE_PROFIT_PERCENT`, `IGNORE_PLOT_GROUP_FOR_TRADE_ROUTES`, and
@@ -391,7 +393,9 @@ Where the code is:
 Choices made where this spec was silent (each open to change):
 
 - **Entering land** (3.5): "a team whose borders the owner may enter" is its own, a friend's (a
-  vassal or master), one with open borders, one it is at war with, or the barbarians. A city on the
+  vassal or master) or one with open borders; never one it is at war with or the barbarians'
+  (the coordinator's decision, 2026-11-21: a path through an enemy's corner would feed that enemy
+  caravans for the whole war). Unowned land is entered. A city on the
   path other than the destination is passed only when its team is its own, a friend's or open
   borders (never at war, never the barbarians'): entering it would be an attack. The destination
   city is entered even where its land could not be. A city plot costs as land, a road where it has
@@ -437,11 +441,67 @@ Choices made where this spec was silent (each open to change):
   limit plus `coastal_trade_routes`. Coastal is Civ4's (`city_is_coastal`, the ocean's minimum
   size). The building key `global_trade_routes` raises `Player::trade_routes` as before.
 - **Refusals**: a foreign destination's refusal names the war, else a no-foreign-trade civic (when
-  open borders or free trade hold), else no open borders. A cargo given is refused (`CargoNotBuilt`)
-  until section 5 is built; the slots keep a `cargo` field for it.
+  open borders or free trade hold), else no open borders. The cargo refusals: section 15.
 - **The Great Merchant's trade mission** (`unit_get_trade_gold`) read the old profit of a route
   from the city to the capital. It now reads one caravan's pay of a route from the city (its
-  owner's) to the capital at growth 0, the plot distance as its length, rounded
-  (`trade_mission_profit`), times the unit's `trade_multiplier`.
+  owner's) to the capital at growth 0, the plot distance as its length, times
+  `TRADE_MISSION_PERCENT` (25) / 100, rounded (`trade_mission_profit`), times the unit's
+  `trade_multiplier`: about FFH2's gold.
 - **Disorder and plunder**: Civ4's trade routes stopped in a city in disorder or plundered; routes do
   not (`City::plundered` stays, unread by trade).
+
+## 15. As built: cargo (2026-11-21, phase 2's rules)
+
+Where the code is: `crates/ffh-core/src/trade/cargo.rs` (`CargoState` with `text`, `CargoClass`,
+`CargoOption`, `CargoView`; `bonus_cargo_class`, `player_cargo_copies`,
+`player_has_bonus_apart_from_caravans`, `route_cargo_options`, `route_cargo_refusal`,
+`route_slot_cargo`, `unit_refit_refusal`, `unit_refit_route`; the crate's `cargo_fresh`,
+`cargo_refresh`, `cargo_undo_route`, `cargo_stale`, `cargo_telemetry`). State: `CaravanSlot::delivering`
+(the recipient and the resource as applied: one `player_change_bonus_export` of the owner, one
+`player_change_bonus_import` of the recipient, as a deal's resource) and `CaravanSlot::premium`.
+Save format 64. `RouteRefusal` gains `CargoDomestic`, `CargoNoCopy(bonus)`, `CargoSame`,
+`NotInOrigin`, `RouteGone`; `CargoNotBuilt` is kept and no longer returned.
+
+- **The fresh computation** (`cargo_fresh`): the slots that could deliver (a cargo, the caravan
+  alive, the route open, arrived and foreign) claim their owner's copies in priority order (the
+  older `Route::established`, the lower route id, the lower slot). The owner's copies are its
+  tradeable copies (`player_get_num_tradeable_bonuses`: not imported) with every copy its caravans
+  export now added back, so the count does not depend on its own result. The premium: per recipient
+  and resource, the first delivering slot by the same order gets `TRADE_CARGO_NEW_PERCENT` when the
+  recipient has no copy apart from caravans (its available copies, less the caravans' imports into
+  it, plus its own caravans' exports), every other delivering slot `TRADE_CARGO_PERCENT`.
+- **Applying** (`cargo_refresh`, the first step of `trade_refresh_pay`): each slot's difference from
+  the stored state is applied (the old export and import undone from the stored recipient, the new
+  ones done), so a destination that changes hands moves the import to its new owner. A route that
+  ends undoes its slots first. `trade_stale` (the harness) compares the stored state with a fresh
+  computation.
+- **When it runs**: wherever `trade_refresh_pay` runs (every route event, a population or modifier
+  change), at every player's turn start and turn end, at the end of the game turn, when a deal is
+  made or cancelled, and when a capital changes. A resource gained or lost by any other way during
+  a turn (an improvement built or pillaged, a network cut) reaches the caravans at the end of that
+  player's turn at the latest. The plot group's own recount (`plot_update_plot_group_bonus`) does
+  not call it: it runs in remove-and-add pairs, and a change of an export between them would
+  corrupt the counts.
+- **Pay**: a delivering slot's half is multiplied by (100 + its premium) / 100; the destination's
+  share is taken before (6.3). Plunder reads the stored pay, premium included.
+- **Choosing and refusals**: a cargo on a domestic route is refused (`CargoDomestic`); the same
+  resource on both caravans (`CargoSame`); a resource with no free copy (`CargoNoCopy`): the
+  owner's copies less the slots of its other routes that carry it, delivering or not (each copy is
+  on one caravan). A refit counts its own route's slots as free.
+- **Refit**: a Caravan in no route in the origin city of a route of its owner; both cargos are set
+  (a dead caravan's slot too), the unit is removed with no killer (telemetry cause `trade`), growth
+  is kept.
+- **Options** (`route_cargo_options`): per resource with a free copy, its class (luxury: happiness
+  or health above 0; mana; else strategic), its free copies, `only_copy` (the owner's available
+  copies, its own route's export added back for a refit, less one, is 0 or less) and the premium it
+  would earn now (the new route counts as the youngest).
+- **The view** (`route_slot_cargo`): the cargo, its state (`Delivering`, or why not: caravan lost,
+  route closed, not arrived, domestic, no copy to send) and its premium.
+- **Messages** to the owner, bare: `Gems: delivery stopped. Caravan lost.` /
+  `Gems: delivered to Lanun. Premium +150%.` / `Lanun now has Gems. Premium +50%.` /
+  `Gems to Lanun: premium +150%.` / `Route Ithralia to Vallus refitted.`
+- **Telemetry** at the owner's turn start: `trade_cargo_turn` by class (luxury / strategic / mana),
+  `trade_premium_turn` by level (`new` / `cargo`; the sum is the percents).
+- **An existing route's destination** is not refused as unrevealed at its checks (a city that
+  changes hands is a new city its owner may not have seen): `NotRevealed` applies at establishing
+  only.

@@ -39,10 +39,14 @@ impl Game {
     // ---------------------------------------------------------------------------------------
     // The path (3.5)
 
-    /// Whether `team` may enter the land of `other` for a route: its own or a friend's, open
-    /// borders, at war, the barbarians'.
+    /// Whether `team` may enter the land of `other` for a route: its own, a friend's (a vassal or
+    /// master) or one it has open borders with. Never the land of a team it is at war with (the
+    /// barbarians' included): a path there would feed that enemy caravans for the whole war.
     pub(crate) fn route_may_enter_land(&self, team: TeamId, other: TeamId) -> bool {
-        other == team || self.team_is_friendly_territory(team, Some(other)) || self.team_is_open_borders(team, other) || self.teams[team].at_war[other] || self.team_is_barbarian(other)
+        if self.teams[team].at_war[other] {
+            return false;
+        }
+        other == team || self.team_is_friendly_territory(team, Some(other)) || self.team_is_open_borders(team, other)
     }
 
     /// Whether `team` may pass through city `c` on a route: a city of its own team, a friend's
@@ -215,7 +219,9 @@ impl Game {
             return Some(RouteRefusal::SameCity);
         }
         let team = self.players[owner].team;
-        if !self.city_is_revealed(dest, team, false) {
+        // (An existing route's destination stays known: a city that changed hands is a new city,
+        // which its owner may not have seen yet.)
+        if except.is_none() && !self.city_is_revealed(dest, team, false) {
             return Some(RouteRefusal::NotRevealed);
         }
         if self.cities[dest].outpost {

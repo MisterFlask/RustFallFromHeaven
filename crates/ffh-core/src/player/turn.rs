@@ -331,6 +331,10 @@ impl Game {
         // AI: AI_doTurnPost() (AI diplomacy, AI_launch) -- left to the controller.
         self.ai_hook(p, AiHook::PlayerTurnPost(p));
 
+        // This game's trade (docs/TRADE.md, 5): resources gained or lost this turn change what
+        // caravans deliver.
+        self.trade_refresh_pay();
+
         let turn = self.game_turn();
         self.ev_end_player_turn(turn, p);
     }

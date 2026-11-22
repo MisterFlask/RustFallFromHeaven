@@ -28,7 +28,10 @@ use ffh_data::*;
 use crate::game::Game;
 use crate::ids::*;
 
+mod cargo;
 mod caravans;
+
+pub use cargo::{CargoClass, CargoOption, CargoState, CargoView};
 mod pay;
 mod path;
 
@@ -54,7 +57,7 @@ pub struct CaravanSlot {
     pub reform_turns: i32,
     /// The city it is bound for.
     pub bound: Leg,
-    /// Its cargo (docs/TRADE.md, section 5; not built: always `None`).
+    /// Its cargo (docs/TRADE.md, section 5), fixed at the order (or a refit).
     pub cargo: Option<BonusType>,
     /// The turn it was last killed (-1: never), and by whom (`None`: no killer).
     pub lost_turn: i32,
@@ -62,11 +65,16 @@ pub struct CaravanSlot {
     /// What it pays its owner a turn, in hundredths, as last computed (0 while dead or the route
     /// pays nothing).
     pub pay_x100: i32,
+    /// What it delivers now, as applied (section 5): the recipient and the resource (one export
+    /// of the owner and one import of the recipient); `None` while it delivers nothing.
+    pub delivering: Option<(PlayerId, BonusType)>,
+    /// Its cargo's premium now (percent; 0 while it delivers nothing).
+    pub premium: i32,
 }
 
 impl CaravanSlot {
     fn empty() -> CaravanSlot {
-        CaravanSlot { unit: None, reform_turns: 0, bound: Leg::Out, cargo: None, lost_turn: -1, lost_to: None, pay_x100: 0 }
+        CaravanSlot { unit: None, reform_turns: 0, bound: Leg::Out, cargo: None, lost_turn: -1, lost_to: None, pay_x100: 0, delivering: None, premium: 0 }
     }
 }
 
@@ -147,8 +155,18 @@ pub enum RouteRefusal {
     NoPath,
     /// A route of the owner already links the two cities.
     AlreadyLinked,
-    /// A cargo was given: cargo is not built yet (docs/TRADE.md, section 5).
+    /// Kept for compatibility; no longer returned (cargo is built).
     CargoNotBuilt,
+    /// A cargo on a domestic route.
+    CargoDomestic,
+    /// The owner has no free tradeable copy of that resource.
+    CargoNoCopy(BonusType),
+    /// The same resource on both caravans.
+    CargoSame,
+    /// A refit: the Caravan does not stand in the route's origin, a city of its owner's route.
+    NotInOrigin,
+    /// A refit: the route no longer exists.
+    RouteGone,
 }
 
 impl RouteRefusal {
@@ -173,6 +191,11 @@ impl RouteRefusal {
             RouteRefusal::NoPath => "No path.".to_string(),
             RouteRefusal::AlreadyLinked => "A route already links these cities.".to_string(),
             RouteRefusal::CargoNotBuilt => "Cargo is not built yet.".to_string(),
+            RouteRefusal::CargoDomestic => "A domestic route carries no cargo.".to_string(),
+            RouteRefusal::CargoNoCopy(b) => format!("No free copy of {} to send.", g.d.text.name(&g.d.bonuses[b].base.description)),
+            RouteRefusal::CargoSame => "The two caravans carry different resources.".to_string(),
+            RouteRefusal::NotInOrigin => "A refit is ordered in the route's origin.".to_string(),
+            RouteRefusal::RouteGone => "The route no longer exists.".to_string(),
         }
     }
 
@@ -196,6 +219,11 @@ impl RouteRefusal {
             RouteRefusal::NoPath => "no_path",
             RouteRefusal::AlreadyLinked => "already_linked",
             RouteRefusal::CargoNotBuilt => "cargo_not_built",
+            RouteRefusal::CargoDomestic => "cargo_domestic",
+            RouteRefusal::CargoNoCopy(_) => "cargo_no_copy",
+            RouteRefusal::CargoSame => "cargo_same",
+            RouteRefusal::NotInOrigin => "not_in_origin",
+            RouteRefusal::RouteGone => "route_gone",
         }
     }
 }
@@ -382,15 +410,15 @@ impl Game {
         if let Some(r) = self.route_destination_refusal(owner, origin, dest) {
             return Some(r);
         }
-        if cargo.iter().any(|c| c.is_some()) {
-            return Some(RouteRefusal::CargoNotBuilt);
+        if let Some(r) = self.route_cargo_refusal(owner, origin, dest, None, cargo) {
+            return Some(r);
         }
         None
     }
 
     /// Caravan `u` establishes a route from the city it stands in to `dest` (docs/TRADE.md, 3.2):
     /// it becomes the route's first caravan, bound for the destination; it sets out at the end
-    /// of its owner's turn. `cargo` must be `[None, None]` (cargo is not built).
+    /// of its owner's turn. `cargo`: each caravan's resource (section 5; `route_cargo_refusal`).
     pub fn unit_establish_route(&mut self, u: UnitId, dest: CityId, cargo: [Option<BonusType>; CARAVAN_SLOTS]) -> Result<RouteId, RouteRefusal> {
         if let Some(why) = self.unit_establish_refusal(u, dest, cargo) {
             return Err(why);
