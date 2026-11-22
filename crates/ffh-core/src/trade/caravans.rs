@@ -24,6 +24,7 @@ impl Game {
     /// is halved, the slot re-forms after `CARAVAN_REFORM_TURNS` turns of its owner. The unit
     /// itself is the caller's: this only unlinks it.
     pub fn route_caravan_lost(&mut self, r: RouteId, slot: usize, killer: Option<PlayerId>) {
+        self.caravan_escorts_wait(r, Some(slot as u8), "caravan lost.");
         let d = self.d;
         let turn = self.game_turn();
         let owner = self.routes[r].owner;
@@ -106,6 +107,9 @@ impl Game {
     /// Route `r` closes for `why`: its caravans are taken off the map and wait in the origin.
     pub(crate) fn route_close(&mut self, r: RouteId, why: RouteRefusal) {
         let was_open = self.routes[r].is_open();
+        if was_open {
+            self.caravan_escorts_wait(r, None, "route closed.");
+        }
         self.routes[r].closed = Some(why);
         self.routes[r].path.clear();
         self.routes[r].length = 0;
@@ -139,6 +143,7 @@ impl Game {
         let why = why.to_string();
         self.log.msg_at(turn, Some(owner), at, || format!("Route {on} to {dn} ended: {why}"));
         self.cargo_undo_route(r);
+        self.caravan_escorts_route_ended(r);
         self.routes.remove(r);
         self.trade_refresh_pay();
     }
@@ -384,6 +389,11 @@ impl Game {
                 let goal = self.caravan_target_plot(r, u);
                 let Some(cost) = self.route_step_cost(team, here, next, Some(next) == goal) else { break };
                 if cost > budget || self.route_enemy_on(team, next) {
+                    break;
+                }
+                // An escort travelling with it holds it to its pace (docs/TRADE.md, 4.4).
+                let slot = self.routes[r].slots.iter().position(|s| s.unit == Some(u)).unwrap_or(0) as u8;
+                if self.caravan_held_by_escort(r, slot, here, next) {
                     break;
                 }
                 budget -= cost;

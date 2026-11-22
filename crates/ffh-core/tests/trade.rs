@@ -1202,3 +1202,188 @@ fn cargo_survives_a_save() {
     assert!(h.trade_stale().is_empty());
     assert_eq!(h.save(), bytes);
 }
+
+// ---- Escorts (4.4) ----
+
+use ffh_core::army::{EscortTarget, Station};
+
+impl World {
+    /// The owner's turn end for the trade: every unit of player 0 fresh, the caravans move, then
+    /// their escorts.
+    fn trade_turn(&mut self) {
+        for u in self.g.players[self.p0].units.clone() {
+            self.g.units[u].moves = 0;
+        }
+        self.g.player_move_caravans(self.p0);
+        self.g.player_caravan_escorts(self.p0);
+        self.consistent();
+    }
+
+    fn army_of(&mut self, name: &str, x: i32, y: i32) -> (ArmyId, UnitId) {
+        let u = self.unit(self.p0, name, x, y);
+        let a = self.g.army_form(self.p0, &[u]).expect("an army");
+        (a, u)
+    }
+
+    fn escort(&mut self, a: ArmyId, r: RouteId, slot: u8) {
+        self.g.army_set_station(self.p0, a, Station::Escort(EscortTarget::Caravan(r, slot))).expect("the escort order");
+    }
+}
+
+#[test]
+fn an_army_escorts_a_caravan_over_land_at_its_pace() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let c = w.g.routes[r].slots[0].unit.unwrap();
+    let (army, man) = w.army_of("UNIT_AXEMAN", 2, 3);
+    assert!(w.g.army_escort_caravans(army).contains(&(r, 0)), "a land path: a land army may escort it");
+    w.escort(army, r, 0);
+    assert_eq!(w.g.route_slot_escorts(r, 0), vec![army]);
+    assert_eq!(w.g.escort_target_name(EscortTarget::Caravan(r, 0)), format!("Caravan: {} to {} (1)", w.g.cities[a].name, w.g.cities[b].name));
+    assert_eq!(w.logged("escorts Caravan"), 1);
+    let path = w.g.routes[r].path.clone();
+    let moves = w.g.unit_max_moves(man) / w.g.d.defines.move_denominator;
+    let free = (w.g.d.defines.caravan_move / w.g.d.defines.caravan_cost_land) as i32;
+    for turn in 1..=3 {
+        w.trade_turn();
+        let at = path.iter().position(|&q| q == w.g.unit_plot(c)).unwrap() as i32;
+        assert_eq!(w.g.unit_plot(man), w.g.unit_plot(c), "turn {turn}: together");
+        assert_eq!(at, turn * moves.min(free), "turn {turn}: held to the army's pace");
+    }
+    // Apart: the caravan is not held; the army follows at the turn's end.
+    let (other, _) = w.army_of("UNIT_AXEMAN", 2, 3);
+    w.g.army_set_station(w.p0, army, Station::None).unwrap();
+    let before = path.iter().position(|&q| q == w.g.unit_plot(c)).unwrap() as i32;
+    w.escort(other, r, 0);
+    w.trade_turn();
+    let after = path.iter().position(|&q| q == w.g.unit_plot(c)).unwrap() as i32;
+    assert_eq!(after - before, free.min(path.len() as i32 - 1 - before), "an escort elsewhere does not slow it");
+    assert!(w.g.army_plot(other) != Some(w.g.city_plot(a)), "the escort walks toward it");
+}
+
+#[test]
+fn a_fleet_escorts_the_water_leg_and_an_army_waits_at_the_shore() {
+    let mut w = world();
+    let across = w.g.player_init_city(w.p0, 22, 4, true, true);
+    let r = w.establish(w.port, across);
+    let c = w.g.routes[r].slots[0].unit.unwrap();
+    let (fleet, _) = w.army_of("UNIT_TRIREME", 13, 10);
+    let (army, _) = w.army_of("UNIT_AXEMAN", 12, 10);
+    assert!(w.g.army_escort_caravans(fleet).contains(&(r, 0)), "water on the path: a fleet may escort it");
+    w.escort(fleet, r, 0);
+    w.escort(army, r, 0);
+    let mut was_on_water = false;
+    let mut landed_after_water = false;
+    for _ in 0..30 {
+        w.trade_turn();
+        let here = w.g.unit_plot(c);
+        let fp = w.g.army_plot(fleet).unwrap();
+        let ap = w.g.army_plot(army).unwrap();
+        assert!(w.g.plot_is_water(fp), "the fleet stays on water");
+        assert!(!w.g.plot_is_water(ap), "the army never takes to boats");
+        if w.g.plot_is_water(here) {
+            was_on_water = true;
+            assert_eq!(fp, here, "the fleet is with the caravan at sea");
+        } else if was_on_water {
+            landed_after_water = true;
+        }
+        if w.g.routes[r].slots[0].bound == ffh_core::trade::Leg::Back && landed_after_water && w.g.plot_is_water(here) {
+            assert_eq!(fp, here, "it follows again on the way back");
+            break;
+        }
+    }
+    assert!(was_on_water && landed_after_water);
+}
+
+#[test]
+fn an_escort_waits_for_a_lost_caravan_and_ends_with_the_route() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let (army, man) = w.army_of("UNIT_AXEMAN", 2, 3);
+    w.escort(army, r, 0);
+    w.trade_turn();
+    let c = w.g.routes[r].slots[0].unit.unwrap();
+    w.g.unit_kill(c, false, Some(w.p2));
+    assert_eq!(w.logged("waits"), 1);
+    let at = w.g.unit_plot(man);
+    w.trade_turn();
+    assert_eq!(w.g.unit_plot(man), at, "it waits where it is");
+    assert_eq!(w.g.armies[army].station, Station::Escort(EscortTarget::Caravan(r, 0)), "the order stays");
+    for _ in 0..w.g.d.defines.caravan_reform_turns {
+        w.g.player_update_routes(w.p0);
+    }
+    let again = w.g.routes[r].slots[0].unit.expect("re-formed");
+    w.trade_turn();
+    let origin = w.g.city_plot(a);
+    let (ox, oy) = w.g.map.xy(origin);
+    let (mx, my) = w.g.map.xy(w.g.unit_plot(man));
+    let (cx, cy) = w.g.map.xy(w.g.unit_plot(again));
+    assert!(w.g.plot_distance(mx, my, cx, cy) < w.g.plot_distance(mx, my, ox, oy) + 2, "it heads for the re-formed caravan");
+    assert!(w.g.route_dissolve(r));
+    assert_eq!(w.g.armies[army].station, Station::None, "the route ended: so does the order");
+    assert_eq!(w.logged("ended: the route ended"), 1);
+}
+
+#[test]
+fn a_move_order_ends_an_escort() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let (army, _) = w.army_of("UNIT_AXEMAN", 2, 3);
+    w.escort(army, r, 0);
+    let grp = w.g.armies[army].group.unwrap();
+    w.g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, 2, 6, 0, false, false, None, None, None);
+    assert_eq!(w.g.armies[army].station, Station::None);
+    assert_eq!(w.logged("ended: a move order"), 1);
+    // A land army escorts nothing else.
+    let (other, _) = w.army_of("UNIT_AXEMAN", 4, 4);
+    assert!(w.g.army_set_station(w.p0, other, Station::Escort(EscortTarget::Army(army))).is_err());
+}
+
+#[test]
+fn an_attack_on_an_escorted_caravan_fights_the_army() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let (army, man) = w.army_of("UNIT_AXEMAN", 2, 3);
+    w.escort(army, r, 0);
+    w.trade_turn();
+    let c = w.g.routes[r].slots[0].unit.unwrap();
+    let here = w.g.unit_plot(c);
+    assert_eq!(w.g.unit_plot(man), here);
+    assert!(w.g.map.plots[here].plot_city.is_none());
+    w.war(w.p0, w.p2);
+    let (x, y) = w.g.map.xy(here);
+    let champ = w.unit(w.p2, "UNIT_CHAMPION", x, y + 1);
+    let before = w.g.battle_report_next;
+    let grp = w.g.units[champ].group.unwrap();
+    let (attacked, _) = w.g.group_attack(grp, x, y, MOVE_DIRECT_ATTACK);
+    assert!(attacked);
+    let report = w.g.battle_reports.iter().find(|rep| rep.id >= before).expect("a battle report");
+    assert!(report.sides[1].committed >= 1);
+    // One squad of the plot defends (docs/ENGAGEMENTS.md, "Squads": the best for the defender):
+    // the army's axeman, not the caravan.
+    let hurt = |u: UnitId| !w.g.units.contains(u) || w.g.units[u].damage > 0;
+    assert!(hurt(man), "the army fought");
+    assert!(!hurt(c), "the caravan stood in reserve");
+    w.consistent();
+}
+
+#[test]
+fn an_escort_survives_a_save() {
+    let mut w = world();
+    let across = w.g.player_init_city(w.p0, 22, 4, true, true);
+    let r = w.establish(w.port, across);
+    let (fleet, _) = w.army_of("UNIT_TRIREME", 13, 10);
+    w.escort(fleet, r, 1);
+    let bytes = w.g.save();
+    let h = Game::load(w.g.d, &bytes).unwrap();
+    assert_eq!(h.armies[fleet].station, Station::Escort(EscortTarget::Caravan(r, 1)));
+    assert_eq!(h.save(), bytes);
+}

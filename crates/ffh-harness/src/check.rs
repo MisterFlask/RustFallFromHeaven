@@ -208,10 +208,18 @@ pub fn check(g: &Game) {
                 // Standing orders (docs/NAVAL.md, 7.2; docs/RAIDS.md): a fleet's Patrol and
                 // Escort, a land army's Raid.
                 Some(army) => {
+                    use ffh_core::army::{EscortTarget, Station};
                     let fleet = army.domain == ffh_core::army::ArmyDomain::Sea;
-                    let raid = matches!(army.station, ffh_core::army::Station::Raid(_));
-                    if fleet == raid && army.station != ffh_core::army::Station::None {
+                    let raid = matches!(army.station, Station::Raid(_));
+                    let caravan = matches!(army.station, Station::Escort(EscortTarget::Caravan(..)));
+                    if fleet == raid && army.station != Station::None && !caravan {
                         fail(format!("army {a:?} of player {} ({:?}) has the standing order {:?}", p.0, army.domain, army.station));
+                    }
+                    // A caravan's escort (docs/TRADE.md, 4.4): a route of its owner, a slot of it.
+                    if let Station::Escort(EscortTarget::Caravan(r, slot)) = army.station {
+                        if g.routes.get(r).is_none_or(|route| route.owner != p) || slot as usize >= ffh_core::trade::CARAVAN_SLOTS {
+                            fail(format!("army {a:?} of player {} escorts caravan {slot} of route {r:?}, not its owner's", p.0));
+                        }
                     }
                 }
             }

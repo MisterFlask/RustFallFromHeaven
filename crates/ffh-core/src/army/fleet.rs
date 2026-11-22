@@ -43,11 +43,13 @@ pub enum ArmyDomain {
 }
 
 /// What a fleet escorts: an army or fleet of its owner, or a group (a ship or a unit in boats in
-/// no army).
+/// no army); or what a fleet or a land army escorts: a caravan of a route of its owner, by its
+/// slot (docs/TRADE.md, 4.4: the slot, not the unit, so the escort follows a re-formed caravan).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EscortTarget {
     Army(ArmyId),
     Group(GroupId),
+    Caravan(RouteId, u8),
 }
 
 /// An army's or a fleet's standing order (docs/NAVAL.md, 7.2; docs/RAIDS.md, section 3).
@@ -58,7 +60,8 @@ pub enum Station {
     None,
     /// A fleet's: Patrol of a named sea.
     Patrol(SeaId),
-    /// A fleet's: Escort of an army or a group.
+    /// A fleet's: Escort of an army or a group; a fleet's or a land army's: Escort of a caravan
+    /// (docs/TRADE.md, 4.4).
     Escort(EscortTarget),
     /// A land army's: the Raid of an enemy city from its countryside (docs/RAIDS.md;
     /// `raid.rs`). Whether it still holds: [`Game::army_raid_city`].
@@ -177,6 +180,8 @@ impl Game {
         match target {
             EscortTarget::Army(b) => self.armies.get(b).and_then(|_| self.army_plot(b)),
             EscortTarget::Group(gr) => self.groups.get(gr).and_then(|_| self.group_plot(gr)),
+            // (`None` while the caravan is dead or waits in its origin.)
+            EscortTarget::Caravan(r, slot) => self.routes.get(r).and_then(|route| route.slots.get(slot as usize)).and_then(|s| s.unit).filter(|&u| self.units.contains(u)).and_then(|u| self.unit_plot_opt(u)),
         }
     }
 
@@ -187,6 +192,10 @@ impl Game {
             EscortTarget::Group(gr) => match self.groups.get(gr).and_then(|_| self.group_get_head_unit(gr)) {
                 Some(u) => super::march::with_article(self.d.text.name(&self.d.units[self.units[u].unit_type].base.description)),
                 None => "a group".to_string(),
+            },
+            EscortTarget::Caravan(r, slot) => match self.routes.get(r) {
+                Some(route) => format!("Caravan: {} to {} ({})", self.city_name_or(route.origin), self.city_name_or(route.destination), slot as usize + 1),
+                None => "a caravan".to_string(),
             },
         }
     }
@@ -204,6 +213,8 @@ impl Game {
             Station::None => {}
             Station::Raid(_) if fleet => return Err("a fleet does not raid"),
             Station::Raid(_) => {}
+            // (A land army's only Escort: a caravan's, docs/TRADE.md 4.4.)
+            Station::Escort(EscortTarget::Caravan(..)) => {}
             _ if !fleet => return Err("only a fleet takes this standing order"),
             _ => {}
         }
@@ -246,8 +257,17 @@ impl Game {
                     return Err("no such group to escort");
                 }
             }
+            Station::Escort(EscortTarget::Caravan(r, slot)) => {
+                if !self.routes.contains(r) || self.routes[r].owner != p || slot as usize >= crate::trade::CARAVAN_SLOTS {
+                    return Err("no such caravan to escort");
+                }
+            }
         }
         self.armies[a].station = station;
+        if let Station::Escort(target @ EscortTarget::Caravan(..)) = station {
+            let (turn, at, name, what) = (self.game_turn(), self.army_xy(a), self.armies[a].name.clone(), self.escort_target_name(target));
+            self.log.msg_at(turn, Some(p), at, || format!("{name} escorts {what}."));
+        }
         self.army_station_step(a);
         Ok(())
     }
@@ -278,7 +298,170 @@ impl Game {
             if let Station::Raid(c) = was {
                 self.raid_order_ended(a, c, "a move order");
             }
+            if let Station::Escort(target @ EscortTarget::Caravan(..)) = was {
+                self.caravan_escort_ended(a, target, "a move order");
+            }
         }
+    }
+
+    /// Army `a`'s plot as message coordinates ((-1, -1) off the map).
+    fn army_xy(&self, a: ArmyId) -> (i32, i32) {
+        self.army_plot(a).map_or((-1, -1), |q| self.map.xy(q))
+    }
+
+    /// Army or fleet `a`'s Escort of a caravan ended (`why`: "a move order", "the route ended").
+    pub(crate) fn caravan_escort_ended(&mut self, a: ArmyId, target: EscortTarget, why: &str) {
+        let (turn, at, name, what, owner) = (self.game_turn(), self.army_xy(a), self.armies[a].name.clone(), self.escort_target_name(target), self.armies[a].owner);
+        let why = why.to_string();
+        self.log.msg_at(turn, Some(owner), at, || format!("{name}: escort of {what} ended: {why}."));
+    }
+
+    /// The armies and fleets of route `r`'s owner holding the Escort of its slot `slot`, in id
+    /// order.
+    pub fn route_slot_escorts(&self, r: RouteId, slot: u8) -> Vec<ArmyId> {
+        let Some(route) = self.routes.get(r) else { return Vec::new() };
+        let mut out: Vec<ArmyId> = self.players[route.owner].armies.iter().copied().filter(|&a| self.armies.get(a).is_some_and(|ar| ar.station == Station::Escort(EscortTarget::Caravan(r, slot)))).collect();
+        out.sort();
+        out
+    }
+
+    /// The caravans army or fleet `a` could escort now (docs/TRADE.md, 4.4): the slots of its
+    /// owner's routes; a land army's only where the route's path has a land plot besides its two
+    /// cities, a fleet's only where it has water. In route id order.
+    pub fn army_escort_caravans(&self, a: ArmyId) -> Vec<(RouteId, u8)> {
+        let Some(army) = self.armies.get(a) else { return Vec::new() };
+        let fleet = army.domain == ArmyDomain::Sea;
+        let mut out = Vec::new();
+        for r in self.player_routes(army.owner) {
+            let path = &self.routes[r].path;
+            let fits = if fleet {
+                path.iter().any(|&q| self.plot_is_water(q))
+            } else {
+                path.len() > 2 && path[1..path.len() - 1].iter().any(|&q| !self.plot_is_water(q))
+            };
+            if fits {
+                for slot in 0..crate::trade::CARAVAN_SLOTS as u8 {
+                    out.push((r, slot));
+                }
+            }
+        }
+        out
+    }
+
+    /// The escorts of route `r` wait: its caravan of `slot` (every slot: `None`) is lost or the
+    /// route closed (`why`).
+    pub(crate) fn caravan_escorts_wait(&mut self, r: RouteId, slot: Option<u8>, why: &str) {
+        let turn = self.game_turn();
+        for s in 0..crate::trade::CARAVAN_SLOTS as u8 {
+            if slot.is_some_and(|x| x != s) {
+                continue;
+            }
+            for a in self.route_slot_escorts(r, s) {
+                let (at, name, what, owner) = (self.army_xy(a), self.armies[a].name.clone(), self.escort_target_name(EscortTarget::Caravan(r, s)), self.armies[a].owner);
+                let why = why.to_string();
+                self.log.msg_at(turn, Some(owner), at, || format!("{name} waits: {what}: {why}"));
+            }
+        }
+    }
+
+    /// Route `r` ends: the Escorts of its caravans end.
+    pub(crate) fn caravan_escorts_route_ended(&mut self, r: RouteId) {
+        for s in 0..crate::trade::CARAVAN_SLOTS as u8 {
+            for a in self.route_slot_escorts(r, s) {
+                let target = EscortTarget::Caravan(r, s);
+                self.caravan_escort_ended(a, target, "the route ended");
+                self.armies[a].station = Station::None;
+            }
+        }
+    }
+
+    /// Whether an escort of caravan slot `slot` of route `r` standing with it on `here` holds it
+    /// back from the step to `next` (docs/TRADE.md, 4.4): a step within one domain that the
+    /// escort cannot take this turn (no moves, or it may not enter).
+    pub(crate) fn caravan_held_by_escort(&self, r: RouteId, slot: u8, here: PlotIdx, next: PlotIdx) -> bool {
+        let water = self.plot_is_water(here);
+        if water != self.plot_is_water(next) {
+            return false;
+        }
+        for a in self.route_slot_escorts(r, slot) {
+            let army = &self.armies[a];
+            if (army.domain == ArmyDomain::Sea) != water {
+                continue;
+            }
+            let Some(grp) = army.group.filter(|&gr| self.groups.contains(gr)) else { continue };
+            if self.group_plot(grp) != Some(here) {
+                continue;
+            }
+            let units = &self.groups[grp].units;
+            if units.is_empty() || !units.iter().all(|&u| self.unit_can_move(u)) || !self.group_can_move_into(grp, next, false) || self.group_is_busy(grp) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Player `p`'s escorts of caravans carry out their order at the end of its turn, after its
+    /// caravans moved (`player_move_caravans`): see [`Game::caravan_escort_step`].
+    pub fn player_caravan_escorts(&mut self, p: PlayerId) {
+        for a in self.players[p].armies.clone() {
+            if self.armies.get(a).is_some_and(|ar| matches!(ar.station, Station::Escort(EscortTarget::Caravan(..)))) {
+                self.caravan_escort_step(a);
+            }
+        }
+    }
+
+    /// Army or fleet `a` escorting a caravan: the route gone ends the order; the caravan dead or
+    /// waiting, or on a plot of the other domain: the escort waits where it is, asleep; else it
+    /// joins it if it can this turn, else moves toward it within its own domain (a fleet over
+    /// water in range; an army over land, never in boats).
+    pub fn caravan_escort_step(&mut self, a: ArmyId) {
+        let Some(army) = self.armies.get(a) else { return };
+        let Station::Escort(target @ EscortTarget::Caravan(r, _)) = army.station else { return };
+        let fleet = army.domain == ArmyDomain::Sea;
+        if !self.routes.contains(r) {
+            self.caravan_escort_ended(a, target, "the route ended");
+            self.armies[a].station = Station::None;
+            return;
+        }
+        let Some(grp) = army.group.filter(|&g| self.groups.contains(g)) else { return };
+        if self.group_is_busy(grp) {
+            return;
+        }
+        if !self.groups[grp].mission_queue.is_empty() {
+            self.group_clear_mission_queue(grp);
+        }
+        if let Some(to) = self.escort_target_plot(target) {
+            if self.plot_is_water(to) == fleet && self.group_plot(grp) != Some(to) {
+                let flags = if fleet { MOVE_SEA_RANGE } else { 0 };
+                self.escort_walk(grp, to, flags);
+            }
+        }
+        if self.groups.contains(grp) && self.groups[grp].mission_queue.is_empty() {
+            self.group_set_activity_type(grp, ActivityType::ACTIVITY_SLEEP);
+        }
+    }
+
+    /// Group `grp` walks toward `to` with the moves it has this turn, by the rules' path (search
+    /// `flags`), every step onto a plot of `to`'s domain (land or water). The steps start no other
+    /// escort.
+    fn escort_walk(&mut self, grp: GroupId, to: PlotIdx, flags: i32) {
+        let water = self.plot_is_water(to);
+        let was = self.escorting;
+        self.escorting = true;
+        let mut steps = 0;
+        while self.groups.contains(grp) && steps < 64 {
+            steps += 1;
+            let Some(at) = self.group_plot(grp) else { break };
+            if at == to || !self.groups[grp].units.iter().all(|&u| self.unit_can_move(u)) {
+                break;
+            }
+            let Some(step) = self.group_find_path(grp, at, to, flags).and_then(|path| path.first_plot) else { break };
+            if step == at || self.plot_is_water(step) != water || !self.group_can_move_into(grp, step, false) {
+                break;
+            }
+            self.group_move(grp, step, false, None, false);
+        }
+        self.escorting = was;
     }
 
     /// Group `g` attacks (`group_attack_force`): an attack ends the Raid order of the army whose
@@ -321,6 +504,8 @@ impl Game {
                 Station::None => {}
                 // A land army's Raid (docs/RAIDS.md): ended when it no longer holds.
                 Station::Raid(_) => self.army_raid_step(a),
+                // A caravan's escort: after the caravans move (`player_caravan_escorts`).
+                Station::Escort(EscortTarget::Caravan(..)) => {}
                 _ => self.army_station_step(a),
             }
         }
@@ -340,6 +525,7 @@ impl Game {
         match self.armies[a].station {
             Station::None => {}
             Station::Raid(_) => self.army_raid_step(a),
+            Station::Escort(EscortTarget::Caravan(..)) => self.caravan_escort_step(a),
             Station::Patrol(s) => self.fleet_patrol_step(a, grp, here, s),
             Station::Escort(target) => {
                 let Some(to) = self.escort_target_plot(target) else {
@@ -449,7 +635,9 @@ impl Game {
                 break;
             }
             let Some(step) = self.group_find_path(grp, at, to, 0).and_then(|path| path.first_plot) else { break };
-            if step == at || !self.group_can_move_into(grp, step, false) {
+            // (Every step onto a plot of the target's domain: a land army escorting a caravan
+            // never takes to boats.)
+            if step == at || !self.group_can_move_into(grp, step, false) || self.plot_is_water(step) != self.plot_is_water(to) {
                 break;
             }
             self.group_move(grp, step, false, None, false);
@@ -462,7 +650,12 @@ impl Game {
     /// escorting a target that now stands there move to it when they can reach it this turn
     /// (not for moves made by an escort: no chains, no loops).
     pub(crate) fn group_escort_step(&mut self, g: GroupId, plot: PlotIdx) {
-        if self.escorting || !self.groups.contains(g) || !self.plot_is_water(plot) {
+        if self.escorting || !self.groups.contains(g) {
+            return;
+        }
+        // On land only a caravan's land escorts follow (docs/TRADE.md, 4.4).
+        let water = self.plot_is_water(plot);
+        if !water && !self.players[self.groups[g].owner].armies.iter().any(|&a| self.armies.get(a).is_some_and(|ar| matches!(ar.station, Station::Escort(EscortTarget::Caravan(..))))) {
             return;
         }
         let p = self.groups[g].owner;
@@ -472,6 +665,10 @@ impl Game {
         for f in self.players[p].armies.clone() {
             let Some(army) = self.armies.get(f) else { continue };
             let Station::Escort(target) = army.station else { continue };
+            // In its own domain only: a fleet on water, a land army (a caravan's escort) on land.
+            if (army.domain == ArmyDomain::Sea) != water {
+                continue;
+            }
             if army.group == Some(g) || self.escort_target_plot(target) != Some(plot) {
                 continue;
             }

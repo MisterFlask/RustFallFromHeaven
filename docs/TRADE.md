@@ -1,7 +1,8 @@
 # Trade: routes, caravans, cargo
 
-**Status: rules built (2026-11-21): sections 3, 4.1-4.3, 6, 7 ("As built", section 14) and cargo,
-section 5 (section 15). Not built: escort (4.4), the AI (section 8), the client (section 9).** This game's own rules, replacing the trade routes
+**Status: rules built (2026-11-21): sections 3, 4.1-4.3, 6, 7 ("As built", section 14), cargo,
+section 5 (section 15) and escorts, 4.4 (section 16). Not built: the AI (section 8), the client
+(section 9).** This game's own rules, replacing the trade routes
 inherited from Civ4 (each city's slots filled by the rules with the best-paying partner cities:
 `city_update_trade_routes`). This file is the spec for the implementation, as docs/SUPPLY.md is for
 supply lines and docs/NAVAL.md for the sea. Marked **(default)**: a value or rule chosen for a
@@ -164,8 +165,27 @@ warship on its plot by the best-defender rule. It heals as a unit does.
 
 ### 4.4 Escort
 
-The Escort standing order (docs/NAVAL.md, 7.2) takes a caravan as its target, for a fleet on the
-water legs and for an army on land **(default; phase 3)**.
+1. **The target.** `EscortTarget::Caravan(route, slot)`: a caravan slot of a route of the escort's
+   owner. A fleet or a land army of the route's owner may take `Station::Escort` of it; it is the
+   only Escort a land army takes. The target is the slot, not the unit: while the caravan is dead
+   or waits in the origin (the route closed) the escort waits where it is, asleep, and follows
+   again when the caravan forms. The order ends when the route ends, when its owner gives the
+   escort a move order, or as any Escort ends.
+2. **Following**, in the escort's own domain only (water for a fleet, land for an army): after
+   each step the caravan completes onto a plot of that domain the escort moves to that plot if it
+   can reach it this turn; at the end of its owner's turn, after the caravans move, an escort away
+   from its caravan moves toward it within its domain (a fleet over water in range, an army over
+   land by the rules' path, never in boats). While the caravan is on a plot of the other domain
+   the escort waits where it is.
+3. **Pace.** When a caravan about to step stands on the same plot as an escort of it in that
+   plot's domain, and the next plot is of the same domain, it steps only if that escort can take
+   the step too this turn (moves left, and it may enter); the escort then takes it with it. If it
+   cannot, the caravan stops for the turn. A step into the other domain the caravan takes alone.
+   An escort not on the caravan's plot does not slow it.
+4. **Defence** needs no rule: the units on the caravan's plot defend it (a formation battle on land,
+   the duel at sea behind the warships).
+5. **Messages** when an escort order starts, when it waits because the caravan is lost or the route
+   closed, and when it ends.
 
 ## 5. Cargo
 
@@ -505,3 +525,35 @@ Save format 64. `RouteRefusal` gains `CargoDomestic`, `CargoNoCopy(bonus)`, `Car
 - **An existing route's destination** is not refused as unrevealed at its checks (a city that
   changes hands is a new city its owner may not have seen): `NotRevealed` applies at establishing
   only.
+
+## 16. As built: escorts (2026-11-21, phase 3's rules)
+
+Where the code is: `crates/ffh-core/src/army/fleet.rs`: `EscortTarget::Caravan(RouteId, u8)`;
+`escort_target_plot` (the slot's living caravan's plot, `None` while dead or waiting) and
+`escort_target_name` (`Caravan: Ithralia to Vallus (1)`); `army_set_station` (a land army may take
+this Escort and no other; the route must be its owner's and the slot 0 or 1);
+`army_escort_caravans`, `route_slot_escorts`; `caravan_escort_step`, `player_caravan_escorts` (the
+end-of-turn step, called right after `player_move_caravans` in `player_do_turn`; the fleets' own
+`player_fleet_stations` skips these escorts); `caravan_held_by_escort` (the pace rule, read before
+each caravan step in `player_move_caravans`); `group_escort_step` (now called by `group_move` on
+every plot; on land only for players with an escort of a caravan); the messages
+(`caravan_escort_ended`, `caravan_escorts_wait`, `caravan_escorts_route_ended`, called from
+`route_caravan_lost`, `route_close`, `route_end` and `group_order_ends_station`). Save format 65. The
+harness accepts this Escort for a land army and checks that its route is its owner's.
+
+Choices made where this section was silent (each open to change):
+
+- **Joining** this turn uses the existing follow (`fleet_follow`: a path of one turn), now with
+  every step onto a plot of the target's domain. **Moving toward** the caravan walks the rules' path
+  (`MOVE_SEA_RANGE` for a fleet) step by step with the moves left, stopping before a step onto the
+  other domain; the order queues no mission.
+- **"Can take the step"** for the pace rule: every unit of the escort's group has moves left, the
+  group may enter the plot (`group_can_move_into`) and is not busy.
+- **Defence**: the units of the plot stand in squads (docs/ENGAGEMENTS.md, "Squads"); one squad
+  defends a battle, chosen as the best for the defender, the rest are its reserve. The caravan,
+  loose, keeps a squad of its own, so an escorting army usually fights in its place (the test sees
+  the army's unit fight and the caravan stand in reserve).
+- **Messages**: `1st Army escorts Caravan: A to B (1).` / `1st Army waits: Caravan: A to B (1):
+  caravan lost.` (or `route closed.`) / `1st Army: escort of Caravan: A to B (1) ended: a move
+  order.` (or `the route ended`).
+- Existing escorts (a fleet's of an army or a group) play as before: they follow on water only.

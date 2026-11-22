@@ -205,7 +205,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `City::trade_route`, `trade_cities`).
 /// - 64: cargo (docs/TRADE.md, 5): `CaravanSlot::delivering`, `premium`; `RouteRefusal`'s cargo
 ///   and refit reasons.
-pub const FORMAT_VERSION: u32 = 64;
+/// - 65: escorts of caravans (docs/TRADE.md, 4.4): `EscortTarget::Caravan` (a land army's first
+///   Escort).
+pub const FORMAT_VERSION: u32 = 65;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

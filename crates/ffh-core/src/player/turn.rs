@@ -225,6 +225,8 @@ impl Game {
         self.player_fleet_stations(p);
         // This game's trade (docs/TRADE.md, 4.1): the caravans travel their routes.
         self.player_move_caravans(p);
+        // Their escorts (docs/TRADE.md, 4.4): after them.
+        self.player_caravan_escorts(p);
         // This game's raids (docs/RAIDS.md, section 5): its cities' guards sally against the
         // raiders, and the raiders take their share (before its gold, research and cities).
         self.player_do_raids(p);

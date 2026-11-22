@@ -168,6 +168,11 @@ impl Persist for Station {
                 4u8.write(w);
                 c.write(w);
             }
+            Station::Escort(EscortTarget::Caravan(r, slot)) => {
+                5u8.write(w);
+                r.write(w);
+                slot.write(w);
+            }
         }
     }
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
@@ -177,6 +182,10 @@ impl Persist for Station {
             2 => Ok(Station::Escort(EscortTarget::Army(ArmyId::read(r)?))),
             3 => Ok(Station::Escort(EscortTarget::Group(GroupId::read(r)?))),
             4 => Ok(Station::Raid(CityId::read(r)?)),
+            5 => {
+                let route = RouteId::read(r)?;
+                Ok(Station::Escort(EscortTarget::Caravan(route, u8::read(r)?)))
+            }
             t => Err(LoadError::Corrupt(format!("fleet station tag {t}"))),
         }
     }
