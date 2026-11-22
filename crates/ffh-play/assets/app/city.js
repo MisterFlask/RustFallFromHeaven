@@ -31,6 +31,7 @@ import { stateKey } from "./persons_mark.js";
 import { render as markup } from "./markup.js";
 import { withCalc } from "./calc.js";
 import { raidTone } from "./raids.js";
+import { cityRouteLines } from "./trade_view.js";
 
 // ---- Outposts in the help display (docs/NAVAL.md, section 9) -----------------------------------
 
@@ -547,6 +548,20 @@ function raidView(c) {
   );
 }
 
+/** Trade (docs/TRADE.md, section 9; the city query's `routes`): the routes from the city and into
+ *  it, each with its pay to this city, and how many routes it may be the origin of. */
+function routesView(c) {
+  const lines = cityRouteLines(c.routes);
+  if (!c.routes) return null;
+  return h(
+    "section.section.city-routes",
+    { "aria-label": "Routes" },
+    h("h4", "Routes"),
+    lines.length ? lines.map((l) => h(`p.city-route.${l.kind}${/Closed:/.test(l.text) ? ".warn" : ""}`, l.text)) : h("p.dim", "None."),
+    h("p.small.dim", c.routes.limit),
+  );
+}
+
 /** The sally posture (docs/RAIDS.md, section 4; the city query's `sally`, its owner's): a select
  *  of the three postures sending `city_sally`, the chosen one's rule under it and the shared
  *  rule of a sally. */
@@ -609,7 +624,6 @@ function growthView(c) {
       // Named seas (docs/NAVAL.md 10): the harbour, open or blockaded.
       c.harbour ? h(`span.chip${c.harbour.state === "blockaded" ? ".bad" : ""}.harbour`, { tip: c.harbour.text }, c.harbour.text) : null,
       h("span.chip", { tip: "Upkeep: gold a turn" }, ic("gold"), c.maintenance ? `−${c.maintenance}` : "0"),
-      c.trade_routes ? h("span.chip", { tip: "Trade routes" }, `Trade ${c.trade_routes}`) : null,
       h("span.chip.dim", `Founded turn ${c.founded}`),
     ),
   );
@@ -993,7 +1007,7 @@ function screen(c, { task, choose, remove, overlay, tap, reload }) {
   const plots = overlay ? null : plotGrid(c, task);
   // This game's cultural channel after the city's numbers (its culture among them), above the
   // buildings.
-  const left = h("div.city-col", siegeView(c), raidView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
+  const left = h("div.city-col", siegeView(c), raidView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), routesView(c), cultureView(c, reload), buildingsView(c, reload));
   // What to build first; then the orders, where trained units go (armies.js) and the governance.
   // An outpost builds nothing and has no governor: its lane and Raise to city instead.
   if (c.outpost) return [summaryView(c, reload, overlay), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];

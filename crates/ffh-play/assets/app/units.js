@@ -24,6 +24,8 @@ import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
 import { withCalc, calcTip } from "./calc.js";
 import { raidTone } from "./raids.js";
+import { openEstablish, openRefit } from "./trade.js";
+import { caravanTipLines } from "./trade_view.js";
 import { squadBoard, squadName, roman, stripGroups, setSquadUnitTip } from "./squads.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
@@ -546,6 +548,8 @@ export async function doAction(a) {
   if (a.cmd?.units && unitsKey(a.cmd.units) !== unitsKey(S.sel?.units)) return;
   if (a.cmd?.c === "cast_at" && !(S.sel?.units ?? []).includes(a.cmd.unit)) return;
   if (a.kind === "spell" && a.target_kind) return castTargeted(a);
+  // Trade (docs/TRADE.md 3.2): Establish route opens its dialog (trade.js), which sends the order.
+  if (a.kind === "trade") return a.trade === "refit" ? openRefit(a.unit, a.route) : openEstablish(a.unit);
   if (a.kind === "target") {
     if (!a.any && (a.targets ?? []).length === 0) {
       toast("No target in range.", "error");
@@ -1001,7 +1005,7 @@ function showTip() {
       const u = { ...u0, ...(known.get(u0.id) ?? {}) };
       const health = u.hp < u.max_hp ? Math.round((100 * u.hp) / u.max_hp) : 100;
       // A line that is the unit's own (Wounds, a card, a march) keeps it apart.
-      const own = u.wounds || (u.card !== null && u.card !== undefined) || u.march;
+      const own = u.wounds || (u.card !== null && u.card !== undefined) || u.march || u.caravan;
       const key = own ? null : `${u.owner}|${u.type}|${u.name ?? ""}|${u.level}|${health}`;
       const same = key && rows.find((r) => r.key === key);
       if (same) same.n += 1;
@@ -1019,6 +1023,8 @@ function showTip() {
         u.card !== null && u.card !== undefined ? h("div.tip-card", `Card: ${dname("TechType", u.card)}`) : null,
         // This game's armies: a recruit of ours marching to its destination.
         u.march ? h("div.tip-march", marchLine(u.march)) : null,
+        // Trade (docs/TRADE.md 9): a caravan's route and what killing it brings.
+        u.caravan ? h("div.tip-caravan", caravanTipLines(u).join(" ")) : null,
       ),
     );
     lines.push(...shown);
@@ -1126,6 +1132,7 @@ export function combatLines(c, at = null) {
       box.append(h("div.dim.small", mapView?.pad ? "A: the battle plan" : mapView?.touch ? "Tap again: the battle plan" : "Right-click: the battle plan · Shift+right-click: attack in the rules' formation"));
     }
     if (c.odds === undefined || c.odds === null) {
+      for (const t of c.plunder ?? []) box.append(h("div.tip-plunder", t));
       if (c.declare_war_team !== null && c.declare_war_team !== undefined) box.append(h("div.warn", "Attacking declares war"));
       return box;
     }
@@ -1140,6 +1147,8 @@ export function combatLines(c, at = null) {
   if (mods) box.append(h("div.mods", mods));
   // The sea (docs/NAVAL.md 3.2): a defender in boats has strength 1 and no modifier.
   if (c.defender_in_boats) box.append(h("div.dim", `Defender in boats: strength ${c.embarked_strength ?? 1}, no modifiers.`));
+  // Trade (docs/TRADE.md 9): the caravans there, what killing them brings.
+  for (const t of c.plunder ?? []) box.append(h("div.tip-plunder", t));
   if (c.declare_war_team !== null) box.append(h("div.warn", "Attacking declares war"));
   return box;
 }
@@ -1223,6 +1232,7 @@ function actionLabel(a) {
     case "promotion":
       return dname("PromotionType", a.promotion);
     case "army":
+    case "trade":
       return a.label;
     case "upgrade": {
       const u = info("UnitType", a.unit);
@@ -1258,6 +1268,7 @@ const SECTIONS = [
   ["Religion", (a) => RELIGION.includes(typeOf(a))],
   ["Cargo", (a) => a.kind === "load" || CARGO.includes(typeOf(a))],
   ["Army", (a) => a.kind === "army"],
+  ["Trade", (a) => a.kind === "trade"],
   ["Automation", (a) => a.kind === "automate"],
   ["Spells", (a) => a.kind === "spell"],
   ["Promotions", (a) => a.kind === "promotion"],
@@ -1295,7 +1306,7 @@ function ownHelp(a) {
   }
   if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
-  if (a.kind === "army") return a.help ?? "";
+  if (a.kind === "army" || a.kind === "trade") return a.help ?? "";
   if (a.kind === "mission" && tname("MissionType", a.mission) === "MISSION_BUILD") return info("BuildType", a.data1)?.help ?? "";
   if (a.kind === "mission") return a.help ?? info("MissionType", a.mission)?.help ?? "";
   if (a.kind === "command") return info("CommandType", a.command)?.help ?? "";
@@ -1303,13 +1314,13 @@ function ownHelp(a) {
 }
 
 const actionType = (a) =>
-  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : a.kind === "army" ? a.army : "";
+  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : a.kind === "army" ? a.army : a.kind === "trade" ? `trade_${a.trade}` : "";
 
 /** The kinds the isometric card lists as labelled buttons rather than icon tiles (their icons
  *  would all look alike), with the icon each label carries. */
-const LISTED = ["spell", "promotion", "upgrade", "army"];
-const ARMY_ICONS = { form: "units", split: "units", join: "units", garrison: "defense", disband: "disband", upgrade: "upgrade", raid: "plunder", stop_raid: "cancel" };
-const listedIcon = (a) => (a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : a.kind === "army" ? (ARMY_ICONS[a.army] ?? "units") : "upgrade");
+const LISTED = ["spell", "promotion", "upgrade", "army", "trade"];
+const ARMY_ICONS = { form: "units", split: "units", join: "units", garrison: "defense", disband: "disband", upgrade: "upgrade", raid: "plunder", stop_raid: "cancel", escort_caravan: "commerce", stop_escort: "cancel" };
+const listedIcon = (a) => (a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : a.kind === "army" ? (ARMY_ICONS[a.army] ?? "units") : a.kind === "trade" ? "commerce" : "upgrade");
 
 /** Whether the card lists action `a` as a labelled button: spells, promotions, upgrades and army
  *  actions, and on
@@ -1642,6 +1653,9 @@ function armyLine() {
     // A fleet's standing order (docs/NAVAL.md, 7.2); a land army's Raid (docs/RAIDS.md, 8).
     fleet && a.station?.text ? h("div.dim.fleet-station-line", a.station.text) : null,
     !fleet && a.station?.kind === "raid" ? h("span.warn.raid-station-line", ` · ${a.station.text}`) : null,
+    // Trade (docs/TRADE.md 4.4): a land army's Escort of a caravan, and why it waits.
+    !fleet && a.station?.kind === "escort" ? h("div.dim.escort-station-line", a.station.text) : null,
+    a.station?.kind === "escort" && a.station.wait ? h("div.warn.escort-wait", a.station.wait) : null,
     a.marching.length ? h("span.dim", { title: "Recruits marching to it" }, ` · ${a.marching.length} marching to it`) : null,
     training ? h("span.dim", { title: "Units cities train for it: its requisition's, and those they build next for it" }, ` · ${training} in training`) : null,
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
@@ -1944,6 +1958,9 @@ export function renderPanel() {
   // The sea (docs/NAVAL.md section 10): range, wear, in boats.
   const sea = seaLines(S.sel.units.map((id) => details.get(id)));
   if (sea) status.push(sea);
+  // Trade (docs/TRADE.md 9): a Caravan's route, where it is bound, its plunder; no orders.
+  const tradeInfo = lead ? details.get(lead.id)?.trade : null;
+  if (tradeInfo?.lines?.length) status.push(h("div.trade-lines", tradeInfo.lines.map((t, i) => h(`div${i ? ".trade-line" : ".trade-route-line"}`, t))));
   if (grp?.missions?.length) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
   if (grp && !grp.ready && !march) status.push(h("div.dim", grp.busy ? "Busy" : "Done for this turn"));
   const actions = [];

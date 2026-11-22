@@ -214,7 +214,7 @@ fn display_names_and_text() {
     assert_eq!(names::display(d, d.t::<VoteType>("VOTE_LIBERTY")), "Global Civic: Liberty");
     assert_eq!(
         names::display(d, d.t::<VoteType>("VOTE_SINGLE_CURRENCY")),
-        "Single Currency: +1 Trade Route ([ICON_TRADE]) in all cities"
+        "Single Currency: +1 route for every civilization"
     );
     // An unfilled placeholder (`%D1: "..."`) falls back to the type name, so the two Somnium
     // memories stay readable and distinct.

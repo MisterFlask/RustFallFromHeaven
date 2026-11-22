@@ -562,6 +562,13 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]Can found an outpost: on another landmass than the capital's, next to the ocean.");
     }
+    // Trade (docs/TRADE.md, 3.2): the Caravan.
+    if d.ty::<UnitType>("UNIT_CARAVAN") == Some(u) {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Establishes a [KW=KEYWORD_ROUTE]route[\\KW] from the city of yours it stands in, to a destination you choose. Takes no orders afterwards.");
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]No upkeep. Not an army unit.");
+    }
     // The builds: all of them in a word when it has more than three quarters.
     let my_builds: Vec<String> = builds.iter_enumerated().filter(|(_, &x)| x).map(|(x, _)| display(d, x).into_owned()).collect();
     if my_builds.len() > d.builds.len() * 3 / 4 {

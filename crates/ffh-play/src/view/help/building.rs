@@ -679,15 +679,26 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         (*military_production_modifier, "TXT_KEY_BUILDING_MILITARY_MOD"),
         (*space_production_modifier, "TXT_KEY_BUILDING_SPACESHIP_MOD"),
         (*global_space_production_modifier, "TXT_KEY_BUILDING_SPACESHIP_MOD_ALL_CITIES"),
-        (*trade_routes, "TXT_KEY_BUILDING_TRADE_ROUTES"),
-        (*coastal_trade_routes, "TXT_KEY_BUILDING_COASTAL_TRADE_ROUTES"),
-        (*global_trade_routes, "TXT_KEY_BUILDING_TRADE_ROUTES_ALL_CITIES"),
-        (*trade_route_modifier, "TXT_KEY_BUILDING_TRADE_ROUTE_MOD"),
-        (*foreign_trade_route_modifier, "TXT_KEY_BUILDING_FOREIGN_TRADE_ROUTE_MOD"),
         (*global_population_change, "TXT_KEY_BUILDING_GLOBAL_POP"),
     ] {
         if n != 0 {
             add(&mut h, key, &[Arg::N(n)]);
+        }
+    }
+    // Trade (docs/TRADE.md, section 7): what the keys mean for routes.
+    {
+        use crate::view::trade::{help_line, HelpKey};
+        for (n, key) in [
+            (*trade_routes, HelpKey::Origin),
+            (*coastal_trade_routes, HelpKey::Coastal),
+            (*global_trade_routes, HelpKey::Routes),
+            (*trade_route_modifier, HelpKey::Modifier),
+            (*foreign_trade_route_modifier, HelpKey::Foreign),
+        ] {
+            if n != 0 {
+                h.push_str(NEWLINE);
+                h.push_str(&help_line(key, n));
+            }
         }
     }
     if *free_techs == 1 {
@@ -1162,7 +1173,7 @@ mod tests {
         // The Demon's Altar: the Ashen Veil as state religion, a Temple of the Veil in the city.
         says("BUILDING_DEMONS_ALTAR", &["Requires the Ashen Veil state religion", "Requires Temple of the Veil", "Allows you to sacrifice"]);
         // A coastal building, a victory's, a civilization's own.
-        says("BUILDING_HARBOR", &["+50% Trade Route Yield", "Requires a coastal city (water of at least 10 tiles)"]);
+        says("BUILDING_HARBOR", &["+50% pay of the [KW=KEYWORD_ROUTE]route[\\KW] from this city.", "Requires a coastal city (water of at least 10 tiles)"]);
         says("BUILDING_TOWER_OF_MASTERY", &["Tower of Mastery Victory must be Enabled", "Requires Tower of Alteration (1 Total)"]);
         says("BUILDING_ADVENTURERS_GUILD", &["Unique Building for Grigori"]);
         says("BUILDING_HARBOR_LANUN", &["Unique Building for Lanun", "Replaces Harbor"]);

@@ -13,6 +13,7 @@ import { SEA } from "./world.js";
 import { drawCityWork } from "../citywork.js";
 import { plateTag, plateRing } from "../raids.js";
 import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark } from "../supply.js";
+import { tradeLines, tradeShown } from "../trade.js";
 import { stackWear, drawWearPip, drawHarbourMark } from "../sea.js";
 import { outpostTag } from "../lanes.js";
 import { drawMarksR3d } from "../marks.js";
@@ -307,6 +308,8 @@ function drawHudParts(r3d, cam) {
 
   // Supply lines (docs/SUPPLY.md): under the stack badges, over the ground; not on the city screen.
   if (!screenCity) drawSupply(r3d, cam, g, inView);
+  // Trade routes (docs/TRADE.md, section 9): on the Trade layer, and the Establish preview.
+  if (!screenCity) drawTrade(r3d, cam, g, inView);
   // Area effects and tunnels (marks.js): not on the city screen.
   if (!screenCity) drawMarksR3d(r3d, cam, g, inView, FONT);
 
@@ -494,6 +497,34 @@ function seaHitBoxes(r3d, cam) {
     box(b.id, [{ x: foot.x - hw, y: top.y }, { x: foot.x + hw, y: foot.y + 4 }]);
   }
   return out;
+}
+
+/** The trade routes of the Trade layer and the Establish dialog's preview (trade.js), as the supply
+ *  lines are drawn (each plot's centre on the ground, a 2D overlay: no mesh, no texture);
+ *  `r3d.tradeDrawn` counts what the frame drew. */
+function drawTrade(r3d, cam, g, inView) {
+  const v = r3d.view;
+  const world = r3d.world;
+  const ts = r3d.ts;
+  const drawn = { lines: 0 };
+  r3d.tradeDrawn = drawn;
+  if (!tradeShown(v.layer)) return;
+  const still = v.reduceMotion?.() ?? false;
+  const offset = flowOffset(performance.now(), Math.max(6, ts * 0.12), still);
+  const width = Math.max(2, Math.min(4, ts * 0.035));
+  for (const L of tradeLines()) {
+    for (const seg of L.segments) {
+      const pts = [];
+      for (const [ux, y] of unwrapSegment(seg, r3d.nearX(seg[0][0]), v.map)) {
+        const x = T.wrapCoord(ux, v.map.w, v.map.wrap_x) ?? ux;
+        const p = r3d.project(cam, [ux + 0.5, world.plotHeight(x, y) + 0.03, -(y + 0.5)]);
+        if (p) pts.push(p);
+      }
+      if (pts.length < 2 || !pts.some((p) => inView(p))) continue;
+      drawLine(g, pts, L.color, width * L.width, -offset);
+      drawn.lines++;
+    }
+  }
 }
 
 /** The supply lines and the cut-off armies' markers (supply.js), each plot's centre on the ground;

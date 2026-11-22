@@ -370,6 +370,14 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
         }
     }
 
+    // Trade (docs/TRADE.md, 3.2): a Caravan in no route: Establish route (the dialog), disabled
+    // with the rules' reason where it cannot be the origin of one.
+    if let Some(a) = crate::view::trade::establish_action(v, units) {
+        out.push(a);
+    }
+    // Refit route (docs/TRADE.md, 5): in the origin of a route of the human's.
+    out.extend(crate::view::trade::refit_actions(v, units));
+
     out
 }
 
@@ -629,6 +637,8 @@ fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json,
         if !fleet {
             out.extend(crate::view::raids::actions(v, a, plot));
         }
+        // Trade (docs/TRADE.md 4.4): Escort of a caravan, for an army or a fleet.
+        out.extend(crate::view::trade::escort_actions(v, a));
     }
     out
 }
@@ -671,6 +681,8 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     j.set("card_detail", unit.card.map(|c| crate::view::cards::card_json(v, c)));
     // The sea (docs/NAVAL.md, section 10): range, wear, in boats (null for a land unit on land).
     j.set("sea", crate::view::sea::unit_panel(v, u));
+    // Trade (docs/TRADE.md, section 9): a Caravan's route, its state, its plunder (null otherwise).
+    j.set("trade", crate::view::trade::unit_panel(v, u));
     j
 }
 
@@ -691,8 +703,10 @@ pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
         // The group waits for orders (`pending.ready_groups`).
         "ready" => mirrored.is_some_and(|grp| crate::decision::is_ready_group(g, grp)),
         "busy" => selection::is_busy(g, units),
-        "actions" => Json::Arr(if marching.is_some() { Vec::new() } else { actions(v, units) }),
+        "actions" => Json::Arr(if marching.is_some() || units.iter().any(|&u| g.unit_in_route(u)) { Vec::new() } else { actions(v, units) }),
         "marching" => marching,
+        // Trade (docs/TRADE.md, 4.1): a caravan in a route takes no orders.
+        "in_route" => units.iter().any(|&u| g.unit_in_route(u)).then_some("A caravan in a route takes no orders."),
         // Squads (docs/ENGAGEMENTS.md, "Squads"): the human's squads on the selection's plot, for
         // the squad board (`view::squads::plot_squads`).
         "squads" => crate::view::squads::plot_squads(v, plot, None),
@@ -930,5 +944,7 @@ fn duel_combat(v: &Viewer, units: &[UnitId], x: i32, y: i32) -> Result<Json, Que
         "defender_in_boats" => g.unit_in_boats_at(def, plot),
         "embarked_strength" => g.d.defines.embarked_strength,
         "declare_war_team" => g.unit_get_declare_war_move(att, plot),
+        // Trade (docs/TRADE.md, section 9): what killing each caravan there would bring.
+        "plunder" => crate::view::trade::attack_plunder(v, plot),
     })
 }

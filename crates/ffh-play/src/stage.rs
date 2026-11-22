@@ -13,7 +13,9 @@ use std::sync::Arc;
 mod culture;
 mod persons;
 mod rituals;
+mod trade;
 pub use culture::culture;
+pub use trade::trade as trade_scene;
 pub use persons::{persons, StagedHouse, StagedPersons};
 pub use rituals::{ritual_civ, ritual_due, ritual_notarget, ritual_notech, rituals, rituals_pending, rituals_hurry, tithe, StagedRitualCiv, StagedRituals, StagedTithe};
 

@@ -46,6 +46,7 @@ pub mod sea;
 pub mod seas;
 pub mod speech;
 pub mod squads;
+pub mod trade;
 pub mod text;
 pub mod units;
 
@@ -476,6 +477,16 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
     if unit.reinforced > 0 {
         j.set("reinforced", reinforced_line(unit.reinforced));
     }
+    // Trade (docs/TRADE.md, section 9): a caravan in a route, its route and plunder (visible
+    // caravans only).
+    let caravan = trade::unit_caravan(v, u);
+    if !caravan.is_null() {
+        j.set("caravan", caravan);
+    }
+    // The type whose figure it is drawn with, when not its own (a caravan on water: a ship).
+    if let Some(t) = trade::unit_art(g, u) {
+        j.set("art", Json::idx(t));
+    }
     // A crusade Host's unit (docs/CRUSADE.md): who lent it (the lender's banner is public, as the
     // Host's own owner is).
     if let Some(rec) = unit.lent.as_ref().filter(|_| v.unit_owner(u) == unit.owner) {
@@ -567,6 +578,9 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         "sea_lanes" => seas::lanes_json(v),
         // Outposts' lanes (docs/NAVAL.md, 9.3 and 10): the Sea layer's lines (lanes.js).
         "outpost_lanes" => outposts::lanes(v),
+        // Trade (docs/TRADE.md, section 9): the human's routes, the others' into its cities, its
+        // limits, the Trade layer's lines (trade.js).
+        "trade" => trade::trade_json(v),
         // Area effects (the Lanun's storm, the Weather Engine's, the Pillar of Dawn) and the
         // Khazad's tunnels, as the human sees them (marks.js).
         "area_effects" => marks::area_effects(v),
