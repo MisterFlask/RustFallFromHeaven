@@ -333,6 +333,29 @@ What the numbers set:
 - Open borders are rare and late among the AIs (the first pair at a median of turn 119), so most AI routes are domestic until the AI is given a reason to open its borders (section 8).
 - Spare copies are rare: a cargo is usually a civilization's only copy. The premium is not lowered.
 
+**Measured with the AI of phase 1** (2026-11-21, branch `trade-ai`; the same 12 games: seeds
+1-12, 6 civilizations, standard map, 200 turns; `ffh stats --at 50,100,150,200 --every 1` with
+`FFH_TELEMETRY=1`, the trade fields of the snapshots). Civilizations alive at the checkpoint:
+
+| | turn 50 | turn 100 | turn 150 | turn 200 |
+|---|---|---|---|---|
+| civilizations | 72 | 77 | 118 | 174 |
+| routes a civilization, mean domestic / foreign | 0 / 0 | 0.82 / 0.06 | 0.82 / 0.30 | 0.97 / 0.56 |
+| civilizations with a route | 0 | 47 | 79 | 130 |
+| routes open / all | - | 68 / 68 | 122 / 132 | 232 / 266 |
+| commerce a civilization, median (before: 18 / 23 / 32 at 100 / 150 / 200) | 12 | 19 | 27.5 | 37.5 |
+| routes' trade a civilization, median (before: the old routes' 3 / 3 / 3) | 0 | 2 | 5 | 9.5 |
+| routes' trade, share of all commerce | 0% | 16% | 25% | 35% |
+| team pairs with open borders (before: 3 of 204, 34 of 499, 51 of 994) | 2 of 180 | 7 of 210 | 37 of 545 | 59 of 1196 |
+
+The first route of a game: turns 58 to 86, median 72. Routes established 357 (262 domestic, 95
+foreign), 61 of them replacing a route. Caravans lost 151 in 27,000 caravan-turns in a route
+(5.6 per 1000): to the barbarians and animals 69, to a civilization at war 51, to a killer not at
+war (hidden nationality) 24, no killer 7; on the owner's land 69, foreign land 43, unowned 27,
+water 12. Plunder 3,486 gold in 66 kills. Route-turns: open 14,578; closed for no open borders 629,
+war 318, no path 209, the destination not revealed 161 (a captured destination is a new city the
+owner has not seen yet).
+
 With the first build: routes a civilization by turn; caravans killed, by the killer's kind
 (civilization at war, hidden nationality, barbarians, animals) and where (own land, foreign,
 unowned, water); route-turns closed, by reason; the share of commerce from routes against today's.

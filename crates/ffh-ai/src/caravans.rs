@@ -216,13 +216,14 @@ fn origin_after_dissolving(g: &Game, c: CityId, r: RouteId) -> bool {
 /// The best plan of `p` now (module comment), among origins `keep` accepts: a free route's, else
 /// a replacement's. The worth test against the Caravan's cost is the caller's.
 pub fn plan(ai: &Ai, g: &Game, p: PlayerId, keep: &dyn Fn(CityId) -> bool) -> Option<Plan> {
-    let mut cities: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| g.cities.contains(c) && keep(c)).collect();
+    // (`keep` may search a path: it is asked after the cheap tests.)
+    let mut cities: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
     cities.sort();
     let free = g.player_routes_used(p) < g.player_route_limit(p) + g.player_coastal_route_extra(p);
     let mut best: Option<Plan> = None;
     if free {
         for &c in &cities {
-            if g.city_origin_refusal(c).is_some() {
+            if g.city_origin_refusal(c).is_some() || !keep(c) {
                 continue;
             }
             let Some(o) = best_of(ai, g, c) else { continue };
@@ -235,7 +236,7 @@ pub fn plan(ai: &Ai, g: &Game, p: PlayerId, keep: &dyn Fn(CityId) -> bool) -> Op
     }
     let (least, pays) = least_route(g, p)?;
     for &c in &cities {
-        if !origin_after_dissolving(g, c, least) {
+        if !origin_after_dissolving(g, c, least) || !keep(c) {
             continue;
         }
         let Some(o) = best_of(ai, g, c) else { continue };
