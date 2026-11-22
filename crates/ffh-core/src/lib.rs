@@ -41,6 +41,7 @@ pub mod slab;
 pub mod structs;
 pub mod team;
 pub mod telemetry;
+pub mod trade;
 pub mod tribute;
 #[cfg(test)]
 mod test_world;

@@ -264,7 +264,7 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
     }
     if info.trade_routes != 0 {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_MISC_TRADE_ROUTES", &[Arg::N(info.trade_routes)]));
+        b.push_str(&crate::view::trade::help_line(crate::view::trade::HelpKey::Routes, info.trade_routes));
     }
     if info.health != 0 {
         let icon = if info.health > 0 { "[ICON_HEALTHY]" } else { "[ICON_UNHEALTHY]" };

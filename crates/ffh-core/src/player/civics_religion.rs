@@ -593,7 +593,6 @@ impl Game {
             if old_anarchy != self.player_is_anarchy(p) {
                 self.player_update_commerce(p);
                 self.player_update_maintenance(p);
-                self.player_update_trade_routes(p);
                 self.player_update_corporation(p);
 
                 self.player_ai_make_assign_work_dirty(p);

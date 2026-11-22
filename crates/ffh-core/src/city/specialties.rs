@@ -129,7 +129,6 @@ impl Game {
         self.cities[c].specialty_options.clear();
         self.city_update_yield(c);
         self.city_update_commerces(c);
-        self.city_update_trade_routes(c);
         self.cities[c].ai_assign_work_dirty = true;
         let owner = self.cities[c].owner;
         // Refresh conflicting offers immediately; no command can choose a stale duplicate.

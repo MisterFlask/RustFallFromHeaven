@@ -4802,7 +4802,7 @@ function buildWhale(mb, r) {
 
 markerRecipe("res.whale", 1.2, { variants: 1, build: (mb, r) => buildWhale(mb, r) });
 
-/** Trade goods by kind (param): bolts of silk, dye vats, incense jars, wine, furs, ivory tusks,
+/** Trade goods by kind (param): bolts of silk, dye vats, incense jars, wine, furs,
  *  reagents, gunpowder kegs, ale, fine clothes. */
 function buildGoods(mb, r, variant, kind) {
   switch (kind) {
@@ -4874,12 +4874,6 @@ function buildGoods(mb, r, variant, kind) {
       });
       mb.color = C("#e8e0d0");
       stick(mb, [0.03, 0.03, 0.02], [0.05, 0.034, 0.03], 0.003, 3);
-      break;
-    }
-    case "ivory": {
-      mb.color = C("#e8dcc0");
-      for (const s of [-1, 1]) mb.tube([[s * 0.04, 0.0, -0.02], [s * 0.02, 0.04, 0.0], [-s * 0.005, 0.07, 0.015], [-s * 0.02, 0.085, 0.02]], [0.01, 0.009, 0.006, 0.002], 6);
-      crate(mb, 0.0, 0.04, 0.03, 0.2, "#6a4a30");
       break;
     }
     case "reagents": {
@@ -5366,7 +5360,7 @@ function improvementOf(type, ctx) {
 // ------------------------------------------------------------------------------------------------
 // Catalog: resource markers
 
-const GOODS = { DYE: "dye", SILK: "silk", INCENSE: "incense", WINE: "wine", FUR: "fur", IVORY: "ivory", REAGENTS: "reagents", GUNPOWDER: "gunpowder", ALE: "ale", FINE_CLOTHES: "clothes" };
+const GOODS = { DYE: "dye", SILK: "silk", INCENSE: "incense", WINE: "wine", FUR: "fur", REAGENTS: "reagents", GUNPOWDER: "gunpowder", ALE: "ale", FINE_CLOTHES: "clothes" };
 
 function bonusOf(type, ctx) {
   const t = type.replace("BONUS_", "");
@@ -5391,6 +5385,7 @@ function bonusOf(type, ctx) {
     case "COTTON": return { asset: "res.cotton" };
     case "COW": case "HORSE": case "SHEEP": case "PIG": case "DEER":
       return { asset: `res.${t.toLowerCase()}` };
+    case "IVORY": return { asset: "res.elephants" };
     case "FISH": return { asset: "res.fish" };
     case "CLAM": return { asset: "res.clam" };
     case "PEARL": return { asset: "res.pearl" };

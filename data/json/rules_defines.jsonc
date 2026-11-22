@@ -267,5 +267,44 @@
   "HOUSE_SYMPATHY_CULTURE_WEIGHT": 100,
   // The default pick (rule 14): PERK unless Furious now, plus HAPPY x the happiness now
   "HOUSE_PICK_PERK_VALUE": 60,
-  "HOUSE_PICK_HAPPY_VALUE": 30
+  "HOUSE_PICK_HAPPY_VALUE": 30,
+  // ==== Trade (docs/TRADE.md) ====
+  // CARAVAN_MOVE: the path cost a caravan travels at the end of each of its owner's turns
+  "CARAVAN_MOVE": 12,
+  // CARAVAN_COST_ROAD: a route's path cost to enter land with a road (anyone's)
+  "CARAVAN_COST_ROAD": 3,
+  // CARAVAN_COST_LAND: a route's path cost to enter other land
+  "CARAVAN_COST_LAND": 6,
+  // CARAVAN_COST_WATER: a route's path cost to enter water
+  "CARAVAN_COST_WATER": 4,
+  // CARAVAN_REFORM_TURNS: turns of its owner until a killed caravan forms again in the origin
+  "CARAVAN_REFORM_TURNS": 10,
+  // TRADE_PLUNDER_TURNS: a killed caravan's killer gains this many times its last turn's pay
+  "TRADE_PLUNDER_TURNS": 10,
+  // TRADE_PAY_PERCENT: a route's base pay in hundredths: effective length x the two cities'
+  //      population x this / 100
+  "TRADE_PAY_PERCENT": 500,
+  // TRADE_LENGTH_FULL: a route's plots count in full up to this length
+  "TRADE_LENGTH_FULL": 8,
+  // TRADE_LENGTH_CAP: a route's plots past TRADE_LENGTH_FULL count at half up to this length,
+  //      and nothing beyond it
+  "TRADE_LENGTH_CAP": 24,
+  // TRADE_FOREIGN_PERCENT: percent added to the pay of a route to another player's city
+  "TRADE_FOREIGN_PERCENT": 25,
+  // TRADE_DEST_PERCENT: the destination city's share, in percent of the living caravans' pay
+  "TRADE_DEST_PERCENT": 50,
+  // TRADE_GROWTH_PERCENT: a route's growth each turn it is open with both caravans alive
+  "TRADE_GROWTH_PERCENT": 2,
+  // TRADE_GROWTH_MAX: the most growth a route has (percent added to its pay)
+  "TRADE_GROWTH_MAX": 50,
+  // TRADE_CARGO_PERCENT: percent a delivered cargo adds to its caravan's pay
+  "TRADE_CARGO_PERCENT": 50,
+  // TRADE_CARGO_NEW_PERCENT: the same while the recipient has no other copy
+  "TRADE_CARGO_NEW_PERCENT": 150,
+  // TRADE_MISSION_PERCENT: a Great Merchant's trade mission counts this percent of one caravan's
+  //      pay of a route from the city to the capital (so its gold stays near FFH2's)
+  "TRADE_MISSION_PERCENT": 25,
+  // TRADE_RETRACE_TURNS: a route's path is traced again every this many turns from its
+  //      establishing (and at once when the stored path can no longer be walked)
+  "TRADE_RETRACE_TURNS": 5
 }

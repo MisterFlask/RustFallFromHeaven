@@ -21,6 +21,7 @@ pub mod armies;
 pub mod governor;
 pub mod automation;
 pub mod campaign;
+pub mod caravans;
 pub mod casters;
 pub mod cards;
 pub mod cards_battle_arms;
@@ -117,6 +118,9 @@ pub struct Ai {
     /// Each player's battle forecasts of its turn (`forecast::Cache`), lent to its view while it
     /// plays.
     forecasts: Mutex<std::collections::BTreeMap<PlayerId, forecast::Cache>>,
+    /// Each player's route offers per city for the turn (`caravans::Memo`: saves path searches,
+    /// changes no decision).
+    pub(crate) caravans: Mutex<caravans::Memo>,
 }
 
 impl Ai {
@@ -224,6 +228,7 @@ impl Controller for Ai {
             world_rituals::turn(g, &v); // the civilization's world ritual (docs/CARDS.md)
             lanun_khazad::turn(g, &v); // the Lanun's storm, the Khazad's tunnels (docs/CARDS.md)
             outposts::turn(g, p); // outposts raised to cities (docs/NAVAL.md, 9.2)
+            caravans::turn(self, g, p); // a Caravan for a trade route (docs/TRADE.md, section 8)
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);

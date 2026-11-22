@@ -61,7 +61,9 @@ impl Game {
             let loop_unit = units[i];
             let mut erased = false;
 
-            if self.units.contains(loop_unit) && self.unit_at_plot(loop_unit, p) && !self.unit_is_cargo(loop_unit) && !self.unit_is_combat(loop_unit) {
+            // This game's trade (docs/TRADE.md, 3.4): a caravan of a route is never bumped (its
+            // route closes at its owner's turn start instead).
+            if self.units.contains(loop_unit) && self.unit_at_plot(loop_unit, p) && !self.unit_is_cargo(loop_unit) && !self.unit_is_combat(loop_unit) && !self.unit_in_route(loop_unit) {
                 // This game's (docs/NAVAL.md, 3.2): a unit in boats may stay on water.
                 if (!self.plot_is_valid_domain_for_location(p, loop_unit) && !self.unit_in_boats_at(loop_unit, p))
                     || !self.unit_can_enter_area(loop_unit, self.plot_get_team(p), self.map.plots[p].area, false)
@@ -85,7 +87,7 @@ impl Game {
                 let loop_unit = units[i];
                 let mut erased = false;
 
-                if self.units.contains(loop_unit) && self.unit_at_plot(loop_unit, p) && !self.unit_is_combat(loop_unit) {
+                if self.units.contains(loop_unit) && self.unit_at_plot(loop_unit, p) && !self.unit_is_combat(loop_unit) && !self.unit_in_route(loop_unit) {
                     let plot_team = self.plot_get_team(p);
                     let unit_team = self.unit_get_team(loop_unit);
                     if Some(unit_team) != plot_team

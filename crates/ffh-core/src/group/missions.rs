@@ -351,7 +351,8 @@ impl Game {
     /// C++ `CvSelectionGroup::canStartMission` (`plot = None` means the group's plot; the C++
     /// `bUseCache` UI cache is not ported; non-const in C++, read-only).
     pub fn group_can_start_mission(&self, g: GroupId, mission: MissionType, data1: i32, data2: i32, plot: Option<PlotIdx>, test_visible: bool) -> bool {
-        if self.group_is_busy(g) {
+        // This game's trade (docs/TRADE.md, 4.1): a caravan of a route takes no order.
+        if self.group_is_busy(g) || self.group_has_route_caravan(g) {
             return false;
         }
 

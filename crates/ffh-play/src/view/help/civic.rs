@@ -285,7 +285,7 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         line(&mut b, txt(d, "TXT_KEY_CIVIC_FREE_SPECIALISTS", &[Arg::N(*free_specialist)]));
     }
     if *trade_routes != 0 {
-        line(&mut b, txt(d, "TXT_KEY_CIVIC_TRADE_ROUTES", &[Arg::N(*trade_routes)]));
+        line(&mut b, crate::view::trade::help_line(crate::view::trade::HelpKey::Routes, *trade_routes));
     }
     for (on, key) in [
         (*no_foreign_trade, "TXT_KEY_CIVIC_NO_FOREIGN_TRADE"),
@@ -425,7 +425,7 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         line(&mut b, txt(d, "TXT_KEY_CIVIC_NO_DIPLOMACY_WITH_ENEMIES", &[]));
     }
     if *coastal_trade_routes != 0 {
-        line(&mut b, txt(d, "TXT_KEY_CIVIC_COASTAL_TRADE_ROUTES", &[Arg::N(*coastal_trade_routes)]));
+        line(&mut b, crate::view::trade::help_line(crate::view::trade::HelpKey::Coastal, *coastal_trade_routes));
     }
     if *enslavement_chance != 0 {
         line(&mut b, txt(d, "TXT_KEY_UNIT_ENSLAVEMENT_CHANCE", &[Arg::N(*enslavement_chance)]));

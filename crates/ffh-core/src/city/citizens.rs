@@ -770,6 +770,11 @@ impl Game {
 
             self.player_ai_make_assign_work_dirty(owner);
 
+            // This game's trade (docs/TRADE.md, 6.1): a route's pay reads both cities' population.
+            if self.routes.iter().any(|(_, r)| r.origin == c || r.destination == c) {
+                self.trade_refresh_pay();
+            }
+
             // UI: info/layout dirty bits, plot info bars, selection buttons / city screen.
         }
     }

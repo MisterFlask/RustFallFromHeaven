@@ -867,6 +867,10 @@ pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> us
     }
     // This game's Houses (docs/HOUSES.md, rule 15): the Houses screen.
     ask(Query::Houses, May::Answer);
+    // Trade's Establish dialog of a unit of ours (refused unless it is a Caravan).
+    if let Some(u) = arr(&view, "units").iter().find(|u| int(u, "owner") == me) {
+        ask(Query::RouteOffers { unit: UnitId(int(u, "id") as u32) }, May::BeInvalid);
+    }
     if let Some(u) = arr(&view, "units").iter().find(|u| int(u, "owner") == me) {
         ask(Query::Inspect { kind: "unit".into(), oid: int(u, "id") }, May::Answer);
     }

@@ -2054,8 +2054,8 @@ impl Cai {
             add!("BUILDINGCLASS_TAX_OFFICE", -200 + py_div(900, 27) * base_gold);
             add!("BUILDINGCLASS_GAMBLING_HOUSE", 200 + 15 * pop);
         }
-        let trade_routes = g.city_trade_routes(c);
-        let trade_modifier = g.city_total_trade_modifier(c, None);
+        let trade_routes = g.city_origin_limit(c);
+        let trade_modifier = 100 + g.cities[c].trade_route_modifier;
         add!("BUILDINGCLASS_HARBOR", 100 * trade_routes);
         add!("BUILDINGCLASS_LIGHTHOUSE", trade_modifier + 50 * pop);
         add!("BUILDINGCLASS_INN", 100 * trade_routes + trade_modifier);

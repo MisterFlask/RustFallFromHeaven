@@ -18,6 +18,7 @@ import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { starHit, plateHitAt, plateTip } from "./plates.js";
+import { drawTradeFlat } from "./trade.js";
 import { drawPlateShield, shieldHit, SHIELD } from "./houses_lines.js";
 import { remindersNode } from "./keywords.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
@@ -1206,7 +1207,7 @@ export class MapView {
   chunk(cx, cy, cw, ch) {
     const ts = this.cam.ts;
     // The Sea layer draws over the terrain's chunks (drawSea).
-    const key = `${this.layer === "sea" ? "terrain" : this.layer}|${ts}@${this.dpr}:${cx},${cy}`;
+    const key = `${this.layer === "sea" || this.layer === "trade" ? "terrain" : this.layer}|${ts}@${this.dpr}:${cx},${cy}`;
     let c = this.chunks.get(key);
     if (!c) {
       const canvas = document.createElement("canvas");
@@ -1631,6 +1632,8 @@ export class MapView {
       const p = T.mapToScreen(this.cam, this.map, this.vw, this.vh, m.x, m.y);
       drawMark(g, m, p.sx + ts / 2, p.sy + ts * 0.85, Math.max(9, Math.min(12, ts * 0.2)), FONT);
     }
+    // Trade routes on the Trade layer, and the Establish dialog's preview (trade.js).
+    drawTradeFlat(this, g);
     drawMarksFlat(this, g, FONT); // area effects and tunnels (marks.js)
     const path = o.path;
     if (path?.ok && path.nodes?.length > 1) {

@@ -702,7 +702,8 @@ impl Game {
 
     /// C++ `CvUnit::canLoadUnit` (CvUnit.cpp:4094-4164).
     pub fn unit_can_load_unit(&self, u: UnitId, transport: UnitId, plot: PlotIdx) -> bool {
-        if transport == u {
+        // This game's trade (docs/TRADE.md, 4.1): a caravan of a route is never loaded.
+        if transport == u || self.unit_in_route(u) {
             return false;
         }
 

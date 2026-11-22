@@ -33,7 +33,8 @@ queue (`ffh_harness::check`).
 of a player's warships and ships with cargo room; it shares the sync, the commands, the target
 size, the requisition (coastal cities; the ship sails to it as a recruit marches) and Upgrade all,
 and has no supply line, no squads and no garrison; it holds a standing order (`Army::station`:
-Patrol of a sea, Escort). Everything below about armies is about land armies unless it says
+Patrol of a sea, Escort). A land army's standing orders: Raid (docs/RAIDS.md) and the Escort of a
+caravan (docs/TRADE.md, 4.4). Everything below about armies is about land armies unless it says
 otherwise; the code that only means land armies skips fleets (`Game::army_is_fleet`). An army
 carried by ships stays one army aboard and lands as one group (`Army::carried`).
 

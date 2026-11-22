@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|breakaway|diplomacy|automate|armies|governors|governors-mixed|engagement|supply|election|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice|houses|houses-foreign DIR`,
+//! capture|attack|automoves|load|trade|breakaway|diplomacy|automate|armies|governors|governors-mixed|engagement|supply|election|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice|houses|houses-foreign|trade-ready|trade-routes|trade-closed|trade-raid DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -13,6 +13,8 @@ use std::sync::Arc;
 mod houses;
 mod rituals;
 pub use houses::{houses, StagedHouse, StagedHouses};
+mod trade;
+pub use trade::trade as trade_scene;
 pub use rituals::{ritual_civ, ritual_due, ritual_notarget, ritual_notech, rituals, rituals_pending, rituals_hurry, tithe, StagedRitualCiv, StagedRituals, StagedTithe};
 
 use ffh_core::ids::{PlayerId, UnitId, VoteId};

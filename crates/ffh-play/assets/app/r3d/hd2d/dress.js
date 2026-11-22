@@ -1143,15 +1143,16 @@ export function dressSpriteUnits(world, map, atlas, buoys = null) {
     const i = u0.y * w + u0.x;
     const st = stackState(units, sctx);
     const top = st?.head ?? u0;
+    // (A unit drawn as another type, the view's `art`: a caravan on water is a ship, docs/TRADE.md 2.)
     const domOf = (u) => {
-      const info = S.data?.tables?.UnitType?.[u.type];
+      const info = S.data?.tables?.UnitType?.[u.art ?? u.type];
       return info ? tname("DomainType", info.domain) : null;
     };
     // One figure per unit of the head's squad (stacks.js stackFigures), each its own sprite; one the
     // atlas has no sprite for is left out.
     const figs = [];
     for (const f of stackFigures(units, top)) {
-      const key = first(atlas, unitSpriteKeys(f.type, civShortName(f.owner)));
+      const key = first(atlas, unitSpriteKeys(f.art ?? f.type, civShortName(f.owner)));
       if (key) figs.push({ u: f, key, art: atlas.info(key), dom: domOf(f) });
     }
     if (!figs.length) continue;

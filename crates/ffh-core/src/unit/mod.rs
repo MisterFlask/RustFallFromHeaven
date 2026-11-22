@@ -604,6 +604,9 @@ pub struct Unit {
     /// Not in C++: a hero's Wounds, one for each time it died and returned (`unit/fallen.rs`):
     /// `PROMOTION_WOUNDED`'s stat changes apply this many times while it holds it.
     pub wounds: i32,
+    /// This game's trade (docs/TRADE.md): the route this unit is a caravan of. Set only by the
+    /// trade rules (`trade.rs`); a unit in a route takes no order.
+    pub route: Option<RouteId>,
 }
 
 impl Unit {
@@ -793,6 +796,7 @@ impl Unit {
             shore_fired: false,
             reinforced: 0,
             wounds: 0,
+            route: None,
         }
     }
 }

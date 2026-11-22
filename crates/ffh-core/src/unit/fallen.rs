@@ -157,7 +157,8 @@ impl Game {
     pub(crate) fn unit_fallen_record(&self, u: UnitId) -> Option<(PlayerId, FallenUnit)> {
         let d = self.d;
         let unit = &self.units[u];
-        if !self.unit_is_dead(u) || unit.duration > 0 || unit.battle_summon {
+        // (A Caravan re-forms by the trade rules, docs/TRADE.md 4.3: it is not remembered.)
+        if !self.unit_is_dead(u) || unit.duration > 0 || unit.battle_summon || Some(unit.unit_type) == self.caravan_unit_type() {
             return None;
         }
         let owner = unit.lent.as_ref().map_or(unit.owner, |l| l.lender);

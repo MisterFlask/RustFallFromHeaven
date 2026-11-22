@@ -167,26 +167,6 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::updateTradeRoutes`: clears all routes, then updates cities in order of
-    /// decreasing total trade modifier.
-    pub fn player_update_trade_routes(&mut self, p: PlayerId) {
-        let cities = self.players[p].cities.clone();
-
-        for &c in &cities {
-            self.city_clear_trade_routes(c);
-        }
-
-        // C++ `CLinkList<int> cityList`: each city is inserted before the first listed city
-        // with a smaller total trade modifier, else at the end: a stable sort by descending
-        // modifier (ties keep city order), each modifier computed once.
-        let mut city_list = cities;
-        city_list.sort_by_cached_key(|&c| std::cmp::Reverse(self.city_total_trade_modifier(c, None)));
-
-        for c in city_list {
-            self.city_update_trade_routes(c);
-        }
-    }
-
     // ------------------------------------------------------------------ totals over cities
 
     /// C++ `CvPlayer::calculateTotalYield(eYield)`.
@@ -214,7 +194,8 @@ impl Game {
 
         //FfH: Added by Kael 06/20/2010
         for &u in &pl.units {
-            if self.units[u].duration > 0 {
+            // (This game's trade, docs/TRADE.md 3.2: a Caravan costs no upkeep either.)
+            if self.units[u].duration > 0 || self.unit_is_caravan(u) {
                 free_units += 1;
             }
         }
@@ -1321,7 +1302,7 @@ impl Game {
     pub fn player_change_trade_yield_modifier(&mut self, p: PlayerId, yield_type: YieldType, change: i32) {
         if change != 0 {
             self.players[p].trade_yield_modifier[yield_type.idx()] += change;
-            self.player_update_trade_routes(p);
+            self.trade_refresh_pay();
         }
     }
 
@@ -1341,7 +1322,7 @@ impl Game {
             // `addPlayerAdvanced` puts the Mercurians on their summoner's team) does not process the
             // team's `bTeamShare` buildings for the new member, who still loses them with the
             // team's cities (e.g. Basium converting a teammate's Great Lighthouse city).
-            self.player_update_trade_routes(p);
+            // (Trade, docs/TRADE.md 3.1: the limit is read when a route is established.)
         }
     }
 
@@ -1350,7 +1331,6 @@ impl Game {
         if change != 0 {
             self.players[p].coastal_trade_routes += change;
             // See `player_change_trade_routes` (C++ quirk: can go negative).
-            self.player_update_trade_routes(p);
         }
     }
 
@@ -1359,13 +1339,12 @@ impl Game {
         self.players[p].no_foreign_trade_count > 0
     }
 
-    /// C++ `CvPlayer::changeNoForeignTradeCount` (updates the trade routes of the whole game).
+    /// C++ `CvPlayer::changeNoForeignTradeCount` (a route it closes closes at its owner's next
+    /// turn start: docs/TRADE.md, 3.4).
     pub fn player_change_no_foreign_trade_count(&mut self, p: PlayerId, change: i32) {
         if change != 0 {
             self.players[p].no_foreign_trade_count += change;
             debug_assert!(self.players[p].no_foreign_trade_count >= 0);
-
-            self.update_trade_routes();
         }
     }
 

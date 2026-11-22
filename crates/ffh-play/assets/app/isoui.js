@@ -439,6 +439,7 @@ const RAIL = [
   ["btn-diplo", "diplomacy"],
   ["btn-crusades", "attack"],
   ["btn-seas", "promo_navigation"],
+  ["btn-trade", "commerce"],
 ];
 const SYSTEM = [
   ["btn-tools", "settings"],
@@ -448,7 +449,7 @@ const SYSTEM = [
   ["btn-keys", "help"],
   ["btn-title", "map"],
 ];
-const LAYERS = { terrain: "terrain", political: "political", yield: "yields", sea: "promo_navigation" };
+const LAYERS = { terrain: "terrain", political: "political", yield: "yields", sea: "promo_navigation", trade: "commerce" };
 
 /** Where each moved element came from, to put it back when the skin goes. */
 const homes = new Map();

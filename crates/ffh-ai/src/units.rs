@@ -149,7 +149,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
     for u in g.players[p].units.clone() {
         // (A marching recruit takes no orders, promotions and upgrades included, until it
         // arrives: docs/ARMIES.md.)
-        if !g.units.contains(u) || g.unit_march(u).is_some() || g.units[u].group.is_none() {
+        if !g.units.contains(u) || g.unit_march(u).is_some() || g.units[u].group.is_none() || g.unit_in_route(u) {
             continue;
         }
         upkeep(g, u);
@@ -177,11 +177,17 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         if !alive(g, grp) {
             continue;
         }
+        // A caravan of a trade route moves by the rules and takes no orders (docs/TRADE.md, 4.1):
+        // nothing here touches its group.
+        if g.group_has_route_caravan(grp) {
+            continue;
+        }
         let replan = !g.groups[grp].mission_queue.is_empty()
             && match role {
                 // Settlers re-plan every turn (danger and sites change).
                 Role::Settler => g.groups[grp].mission_queue[0].mission_type == MissionType::MISSION_MOVE_TO,
-                _ => false,
+                // So does a Caravan bound for its origin (caravans.rs: the best offer changes).
+                _ => g.group_get_head_unit(grp).is_some_and(|h| crate::caravans::replans(g, h)),
             };
         // A settler never sleeps through a turn (a site may have opened up); cargo excepted.
         let sleeping_settler = role == Role::Settler
@@ -252,6 +258,14 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         }
         // A colonist goes to its outpost site (docs/NAVAL.md, 8), in boats too.
         if crate::outposts::colonist(g, v, grp, head) {
+            continue;
+        }
+        // A Caravan with no route goes to establish one (docs/TRADE.md, section 8).
+        if crate::caravans::caravan(ai, g, v, grp, head) {
+            continue;
+        }
+        // A land unit of hidden nationality raids caravans (caravans.rs).
+        if crate::caravans::raid(g, v, grp, head) {
             continue;
         }
         // The sea (docs/NAVAL.md, section 8): a group in boats goes on home; a ship out of range,

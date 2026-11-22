@@ -150,6 +150,9 @@ impl Game {
 
         // CvGame::deleteDeal
         self.deals.remove(d);
+        // This game's trade (docs/TRADE.md, 5): a resource the deal carried changes what
+        // caravans deliver and their premiums.
+        self.trade_refresh_pay();
     }
 
     /// C++ `CvDeal::addTrades`: start the trades (`first` given by `first_player`), making peace

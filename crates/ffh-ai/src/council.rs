@@ -286,7 +286,7 @@ pub(crate) fn value(g: &Game, s: &Seen, data: &VoteSelectionSubData, vs: VoteSou
     if info.trade_routes > 0 {
         // MNAI: a large empire gains little from the routes everyone gets.
         let fair = 2 * g.num_cities / (g.count_civ_players_alive() + 1);
-        v += if g.players[p].cities.len() as i32 > fair { -10 } else { 20 * info.trade_routes };
+        v += if g.players[p].cities.len() as i32 > fair { -10 } else { 20 * info.trade_routes * crate::caravans::route_worth_x100(g, p) / crate::caravans::DEFAULT_ROUTE_X100 };
     }
     if info.free_trade {
         let closed = g.civ_team_ids().any(|t| t != team && g.team_is_alive(t) && g.teams[team].has_met[t] && !g.team_is_open_borders(team, t) && g.teams[t].num_cities > 0);

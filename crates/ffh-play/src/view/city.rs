@@ -568,7 +568,9 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
             .filter(|j| !matches!(j, Json::Null))
             .collect(),
         ),
-        "trade_routes" => g.city_trade_routes(c),
+        // Trade (docs/TRADE.md, section 9): the routes from and into the city, each with its pay to
+        // this city.
+        "routes" => crate::view::trade::city(v, c),
         "disorder" => g.city_is_disorder(c),
         "occupation" => city.occupation_timer,
         "food" => crate::jobj! {

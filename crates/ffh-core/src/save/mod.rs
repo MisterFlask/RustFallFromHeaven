@@ -199,17 +199,20 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `tactic_next`, `City::garrison_tactic`, `garrison_tactic_next`, no battle log `tactics`).
 /// - 61: heroes return after they die and Resurrection brings back other units (unit/fallen.rs):
 ///   `Unit::wounds`, `Player::recovering`, `Player::fallen`; `PROMOTION_WOUNDED`.
-/// - 62 (branch claude/modest-sagan-8ynr46): cultural channels and Houses removed: no
-///   `Game::houses`, `Player::culture_memory`, `culture_channel`, `culture_inflow`, `houses`,
-///   `house_names`, `house`, `house_tribute`; `LogMark::House` and `LogTag::House` gone.
 /// - 62 (master): raids (docs/RAIDS.md): `Station::Raid`; `City::sally`, `raid_percent`,
 ///   `raid_turns`, `raid_stripped`.
-/// - 63: Houses as records over their owner's cities (docs/HOUSES.md): `Game::houses`,
-///   `City::house`, `Player::houses`, `house_names`, `house_turn`; `LogMark::House`,
-///   `LogTag::House`.
-/// - 64: a House's perk is a stored switch (`House::perk_on`).
-/// - 65: the merge of raids (master's 62) and Houses (the branch's 62 to 64): both sets of fields.
-pub const FORMAT_VERSION: u32 = 65;
+/// - 63 to 66 (master): trade (docs/TRADE.md): `Game::routes`, `Unit::route` (the Civ4 trade
+///   routes gone: no `City::trade_route`, `trade_cities`); cargo (`CaravanSlot::delivering`,
+///   `premium`; `RouteRefusal`'s cargo and refit reasons); escorts of caravans
+///   (`EscortTarget::Caravan`); `Route::closed_since`.
+/// - 62 to 64 (branch claude/modest-sagan-8ynr46): cultural channels and the House players
+///   removed (no `Player::culture_memory`, `culture_channel`, `culture_inflow`, `house`,
+///   `house_tribute`); Houses as records over their owner's cities (docs/HOUSES.md):
+///   `Game::houses`, `City::house`, `Player::houses`, `house_names`, `house_turn`,
+///   `House::perk_on`; `LogMark::House`, `LogTag::House`.
+/// - 65: the merge of raids and Houses.
+/// - 67: the merge of trade (master's 63 to 66) with raids and Houses: all three sets of fields.
+pub const FORMAT_VERSION: u32 = 67;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -365,6 +368,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         armies,
         squads,
         houses,
+        routes,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -490,6 +494,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     armies.grow(slots);
     squads.grow(slots);
     houses.grow(slots);
+    routes.grow(slots);
     battle_reports.grow(slots);
     battle_report_next.grow(slots);
     map_rand.grow(slots);
@@ -614,6 +619,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         armies,
         squads,
         houses,
+        routes,
         battle_reports,
         battle_report_next,
         map_rand,
@@ -738,6 +744,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     armies.write(w);
     squads.write(w);
     houses.write(w);
+    routes.write(w);
     battle_reports.write(w);
     battle_report_next.write(w);
     map_rand.write(w);
@@ -859,6 +866,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         armies: Persist::read(r)?,
         squads: Persist::read(r)?,
         houses: Persist::read(r)?,
+        routes: Persist::read(r)?,
         battle_reports: Persist::read(r)?,
         battle_report_next: Persist::read(r)?,
         map_rand: Persist::read(r)?,

@@ -28,6 +28,7 @@ import { MANA_SPRITES, improvementContainsMana, manaSpriteKey } from "./mana-art
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { starHit } from "./plates.js";
+import { drawTradeIso } from "./trade.js";
 import { drawPlateShield, shieldHit, SHIELD } from "./houses_lines.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
 import { drawLanesIso, outpostTag } from "./lanes.js";
@@ -143,7 +144,8 @@ function resourceSprite(t) {
   if (/COW|PIG/.test(t)) return "res_cow";
   if (/SHEEP/.test(t)) return "res_sheep";
   if (/HORSE|NIGHTMARE/.test(t)) return "res_horse";
-  if (/DEER|FUR|IVORY|GULAGARM/.test(t)) return "res_deer";
+  if (t === "BONUS_IVORY") return "res_ivory";
+  if (/DEER|FUR|GULAGARM/.test(t)) return "res_deer";
   if (/WHALE/.test(t)) return "res_whale";
   if (/FISH|CLAM|CRAB|PEARL/.test(t)) return "res_fish";
   if (/IRON|COPPER|GUNPOWDER/.test(t)) return "res_iron";
@@ -170,7 +172,7 @@ function citySprites(size, civ) {
  *  stand in for it, before its combat type's (UNIT_COMBAT) and domain's. A sprite named after the
  *  exact type, its class, or `<civilization>_<type>` (unit_ljosalfar_archer) needs no entry here. */
 const UNIT_ALIASES = {
-  beastman: ["warrior"], bloodpet: ["warrior"], berserker: ["axeman"], immortal: ["champion"],
+  caravan: ["settler"], beastman: ["warrior"], bloodpet: ["warrior"], berserker: ["axeman"], immortal: ["champion"],
   dwarven_soldier_runes: ["axeman"], longbowman: ["archer"], firebow: ["archer"], arquebus: ["crossbowman", "archer"],
   marksman: ["crossbowman", "archer"], nightwatch: ["crossbowman", "archer"], crossbowman: ["archer"],
   horse_archer: ["horseman"], chariot: ["horseman"], knight: ["horseman"], frostling_wolf_rider: ["horseman"],
@@ -805,7 +807,7 @@ export class IsoMap {
 
     // The Sea layer is the terrain with the range over the water (drawSea).
     const sea = v.layer === "sea";
-    const layer = sea ? "terrain" : (v.layer ?? "terrain");
+    const layer = sea || v.layer === "trade" ? "terrain" : (v.layer ?? "terrain");
     if (layer === "political") this.drawPolitical(g, f, cells, PLOT);
     else if (layer === "yield") this.drawYields(g, f, cells);
     else {
@@ -851,6 +853,7 @@ export class IsoMap {
     if (city) this.drawCityWork(g, f, cells, city);
     else {
       this.drawSupply(g, f);
+      drawTradeIso(this, g, f); // trade routes on the Trade layer, the Establish preview (trade.js)
       drawMarksIso(this, g, f, HERALD); // area effects and tunnels (marks.js)
       this.drawPath(g, f);
     }
@@ -999,7 +1002,8 @@ export class IsoMap {
     const now = performance.now();
     for (const st of stacks) {
       const { top, c } = st;
-      const key = this.unitKey(top.type, top.owner);
+      // (A caravan on water is drawn as a ship: the view's `art`, docs/TRADE.md 2.)
+      const key = this.unitKey(top.art ?? top.type, top.owner);
       const off = this.slideOffset(top.id, now);
       const gate = cityAt.has(c.k);
       st.flag = null;

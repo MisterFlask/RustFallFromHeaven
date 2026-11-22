@@ -508,6 +508,44 @@ label.requisition-city .badge { margin-left: 4px; }
 .recruit { margin-left: 6px; }
 select.recruit-dest { max-width: 15em; }
 .recruit-default { margin: 4px 0; }
+/* Trade (trade.js; docs/TRADE.md, section 9). */
+.trade-limits { margin: 2px 0 6px; font-weight: bold; }
+.trade-offers { display: grid; gap: 4px; }
+button.trade-offer { display: block; width: 100%; text-align: left; padding: 6px 8px; white-space: normal; }
+button.trade-offer:hover, button.trade-offer:focus { outline: 2px solid var(--c-glow); outline-offset: -2px; }
+/* The Establish dialog stands at the foot of the screen over a clear map: the preview line shows. */
+#modals .backdrop:has(> .modal.trade-establish) { place-items: end center !important; background: transparent !important; padding-bottom: 24px; }
+.trade-list { display: grid; gap: 8px; max-width: 46em; }
+.trade-route { border: 1px solid var(--c-iron); padding: 6px 8px; }
+.trade-route.closed { border-color: var(--c-rust); }
+.trade-route.lost { border-color: var(--c-amber); }
+.trade-route-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.trade-route-head .trade-dissolve { flex: none; }
+.trade-screen .modal-body { overflow-x: hidden; }
+.trade-route, .trade-terms, .trade-state, .trade-caravans li, .trade-into { overflow-wrap: anywhere; white-space: normal; }
+.trade-cargo.delivering { color: var(--c-lichen); }
+.trade-cargo.lost, .trade-cargo.closed, .trade-cargo.no_copy { color: var(--c-amber); }
+.trade-brings { color: var(--c-lichen); }
+.trade-offer-box { display: grid; gap: 4px; }
+.cargo-panel { border: 1px solid var(--c-iron); padding: 6px 8px; display: grid; gap: 6px; }
+.cargo-picker { display: grid; gap: 6px; }
+label.cargo-slot { display: grid; gap: 2px; }
+.cargo-slot-head { font-weight: bold; }
+select.cargo-select { max-width: 100%; }
+.cargo-line { color: var(--dim); }
+.cargo-pay { font-weight: bold; }
+.cargo-go { justify-self: start; }
+.trade-refit-line { margin: 2px 0 6px; }
+.escort-station .small { margin-top: 2px; }
+.trade-route-title { font-weight: bold; text-align: left; }
+.trade-state, .trade-pay, .trade-terms, .trade-growth { margin: 2px 0; }
+ul.trade-caravans, ul.trade-into-list { margin: 2px 0; padding-left: 20px; }
+li.trade-caravan.lost { color: var(--c-amber); }
+li.trade-caravan.waiting { color: var(--dim); }
+.tip-caravan { color: var(--c-sand); }
+.tip-plunder { color: var(--c-gold); }
+.trade-lines { margin: 4px 0; }
+.city-routes p { margin: 2px 0; }
 /* This game's governors (governors.js). */
 table.governors { width: 100%; border-collapse: collapse; }
 table.governors th, table.governors td { text-align: left; padding: 2px 6px; border-bottom: 1px solid var(--c-iron); vertical-align: top; }

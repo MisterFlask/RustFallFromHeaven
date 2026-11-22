@@ -133,7 +133,7 @@ pub(crate) fn civic_value(g: &Game, p: PlayerId, civic: CivicType) -> i32 {
     }
     v += info.non_state_religion_happiness * 10 * n;
     v += info.free_experience * 15 + info.free_specialist * 30 * n;
-    v += info.trade_routes * 25 * n;
+    v += crate::caravans::civic_value(g, p, info.trade_routes, info.coastal_trade_routes); // trade routes (docs/TRADE.md)
     v += info.worker_speed_modifier / 2 + info.military_production_modifier / 2;
     v -= info.war_weariness_modifier / 4;
     let broke = crate::economy::spend_pct(g, p) < 50;

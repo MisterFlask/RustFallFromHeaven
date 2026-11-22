@@ -114,6 +114,9 @@ pub enum Query {
     /// The Houses screen (docs/HOUSES.md, rule 15): the human's Houses as cards and its cities in
     /// no House with the reason (`view::houses::screen`).
     Houses,
+    /// Trade (docs/TRADE.md, section 9): the Establish dialog of Caravan `unit` (each destination
+    /// one path search: on demand, not in the view).
+    RouteOffers { unit: UnitId },
 }
 
 /// The layers of the ASCII map.
@@ -147,7 +150,7 @@ pub const QUERY_NAMES: &[&str] = &[
     "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "armies", "governors", "empire_items", "empire_cities", "engage_preview",
     "battle_log", "battle_reports", "trade", "trade_answer", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
-    "sea", "seas", "place_menu", "houses",
+    "sea", "seas", "place_menu", "houses", "route_offers",
 ];
 
 /// The members of each query besides `q` (in the order of [`QUERY_NAMES`]). A request object may
@@ -192,6 +195,7 @@ pub const QUERY_FIELDS: &[(&str, &[&str])] = &[
     ("seas", &[]),
     ("place_menu", &["spell", "x", "y"]),
     ("houses", &[]),
+    ("route_offers", &["unit"]),
 ];
 
 /// Why a query was refused.
@@ -285,6 +289,7 @@ impl Query {
             Query::Seas => "seas",
             Query::PlaceMenu { .. } => "place_menu",
             Query::Houses => "houses",
+            Query::RouteOffers { .. } => "route_offers",
         }
     }
 
@@ -357,6 +362,7 @@ impl Query {
             "crusades" => Query::Crusades,
             "sea" => Query::Sea { id: SeaId(j.req::<u32>("id")?), units: j.get_or("units", Vec::new())? },
             "seas" => Query::Seas,
+            "route_offers" => Query::RouteOffers { unit: j.req("unit")? },
             "place_menu" => Query::PlaceMenu { spell: crate::names::field(ffh_data::global(), j, "spell")?, x: j.req("x")?, y: j.req("y")? },
             "houses" => Query::Houses,
             other => return Err(invalid(format!("unknown query {other:?}"))),
@@ -394,6 +400,7 @@ impl Query {
             Query::Inspect { kind, oid } => j.with("kind", kind.as_str()).with("oid", *oid),
             Query::Sea { id, units } => j.with("id", id.0 as i64).with("units", ids(units)),
             Query::PlaceMenu { spell, x, y } => j.with("spell", Json::idx(*spell)).with("x", *x).with("y", *y),
+            Query::RouteOffers { unit } => j.with("unit", *unit),
             Query::Ascii { x, y, w, h, layer } => j.with("x", *x).with("y", *y).with("w", *w).with("h", *h).with("layer", layer.name()),
             _ => j,
         }
@@ -531,6 +538,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::Seas => view::seas::seas_screen(&v),
         Query::PlaceMenu { spell, x, y } => view::place::menu(&v, *spell, *x, *y)?,
         Query::Houses => view::houses::screen(&v),
+        Query::RouteOffers { unit } => view::trade::offers(&v, *unit)?,
     };
     Ok(out)
 }
@@ -594,6 +602,7 @@ mod tests {
             Query::Seas,
             Query::PlaceMenu { spell: ffh_data::SpellType::from_usize(4), x: 3, y: 2 },
             Query::Houses,
+            Query::RouteOffers { unit: UnitId(3) },
         ];
         let mut seen: Vec<&str> = Vec::new();
         for q in &qs {

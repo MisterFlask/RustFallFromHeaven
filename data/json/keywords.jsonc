@@ -47,5 +47,12 @@
     "description": "TXT_KEY_KEYWORD_OUTSIDER",
     "reminder": "TXT_KEY_KEYWORD_OUTSIDER_REMINDER",
     "implies": ["KEYWORD_HOUSE"]
+  },
+  // Trade (docs/TRADE.md, section 9): the help lines of the route keys (techs, civics, buildings)
+  //     and the Caravan's name it.
+  {
+    "type": "KEYWORD_ROUTE",
+    "description": "TXT_KEY_KEYWORD_ROUTE",
+    "reminder": "TXT_KEY_KEYWORD_ROUTE_REMINDER"
   }
 ]

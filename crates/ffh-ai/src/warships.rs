@@ -179,6 +179,10 @@ fn prize(g: &Game, team: TeamId, q: PlotIdx) -> i32 {
     if best == 0 && g.plot_get_team(q) == Some(team) && g.plot_get_bonus_type(q, Some(team)).is_some() {
         best = 1;
     }
+    // A caravan of a route (its plunder: caravans.rs).
+    if best == 0 && g.map.plots[q].units.iter().any(|&e| g.unit_in_route(e) && g.unit_get_team(e) != team) {
+        best = 1;
+    }
     best
 }
 
@@ -205,7 +209,10 @@ fn targets(g: &Game, v: &mut View, u: UnitId) -> Vec<(PlotIdx, UnitId, i32)> {
         for dir in 0..DirectionType::NUM {
             let Some(q) = g.plot_direction(x, y, DirectionType::from_usize(dir)) else { continue };
             // Not out of our range: the winner may advance onto it.
-            if out.iter().any(|t| t.0 == q) || !enemy_ships_on(g, team, q) || !g.plot_in_sea_range(team, q) || !g.unit_can_move_into(u, q, true, false, false) {
+            // (An enemy caravan at sea is a target too, and for a ship of hidden nationality the
+            // caravans of every team it is not friends with: caravans.rs.)
+            let caravan = g.plot_is_water(q) && crate::caravans::caravan_on(g, p, q, g.unit_is_hidden_nationality(u)).is_some();
+            if out.iter().any(|t| t.0 == q) || !(enemy_ships_on(g, team, q) || caravan) || !g.plot_in_sea_range(team, q) || !g.unit_can_move_into(u, q, true, false, false) {
                 continue;
             }
             let Some(def) = g.plot_get_best_defender(q, None, Some(p), Some(u), false, false, false) else { continue };
@@ -247,6 +254,7 @@ fn attack(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, q: PlotIdx, odds:
     }
     crate::trace!(g, p, "warship {:?} at {:?} attacks {:?} at odds {} ({})", u, g.map.xy(g.unit_plot(u)), g.map.xy(q), odds, src);
     crate::predict::sea_attack(g, p, u, q, odds, pz, src);
+    crate::caravans::note_attack(g, p, q, g.unit_is_hidden_nationality(u));
     g.tel_decision(p, "warship", src, "attack", odds as i64, String::new);
     move_to(g, grp, q, MOVE_DIRECT_ATTACK);
     true
@@ -755,6 +763,8 @@ pub(crate) fn escort_ends(g: &mut Game, v: &View, grp: GroupId) -> bool {
         Some(EscortTarget::Group(gr)) => g.groups.contains(gr) && g.groups[gr].units.iter().any(|&o| carries_army(g, o)),
         // The rules ended it (its target gone): an asleep former escort wakes.
         None => return false,
+        // (A caravan's escort is not the AI's: it keeps it. A compile fix, docs/TRADE.md 4.4.)
+        Some(EscortTarget::Caravan(..)) => return false,
     };
     let tired = g.groups[grp].units.iter().any(|&o| worn(g, o) || g.unit_is_out_of_sea_range(o) || damage_pct(g, o) >= HEAL_PCT);
     if busy && !tired {
@@ -930,6 +940,17 @@ fn guard(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, seas: &[(SeaId, Pl
                 if !order.contains(&s) {
                     order.push(s);
                 }
+            }
+        }
+    }
+    // Then the seas our open trade routes' paths cross (docs/TRADE.md, section 8).
+    for r in g.player_routes(p) {
+        if !g.routes[r].is_open() {
+            continue;
+        }
+        for s in g.route_path_seas(&g.routes[r].path) {
+            if !order.contains(&s) {
+                order.push(s);
             }
         }
     }

@@ -53,6 +53,8 @@ async function plan(ctx) {
   P.fc = pv.forecast ?? null;
   P.errors = pv.errors ?? [];
   P.declare = pv.declare_war ?? null;
+  // Trade (docs/TRADE.md 9): the caravans there, what killing them brings.
+  P.plunder = pv.plunder ?? [];
   // The units the battle calls (docs/ENGAGEMENTS.md, "Summons"): made for it, no fighter here.
   P.summons = P.fc ? (pv.summons ?? []).filter((x) => !x.on_kill) : [];
   render(ctx);
@@ -427,6 +429,7 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
     const unseen = pv.shore_unseen ? `, ${pv.shore_unseen} unseen` : "";
     body.push(h("div.small.bt-shore", { title: "Each fires one shot before round 1; a shot never takes a unit below 1 HP." }, h("span.dim", "Ships fire from the coast: "), `yours: ${mine.length ? mine.join(", ") : "none"}; theirs: ${theirs.length ? theirs.join(", ") : "none"}${unseen}.`));
   }
+  for (const t of P.plunder ?? []) body.push(h("div.small.bt-plunder", t));
   if (war) body.push(h("div.warn.small", "Attacking declares war."));
   for (const e of P.errors) body.push(h("div.bad.small", e));
   const watch = ctx.prefs.get("watch", "watch");

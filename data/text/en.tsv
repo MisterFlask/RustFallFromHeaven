@@ -5110,7 +5110,7 @@ TXT_KEY_CIVIC_FREE_SPEECH	Free Speech
 TXT_KEY_CIVIC_FREE_SPEECH_STRATEGY	Extra commerce from towns; increases cultural output of all cities
 TXT_KEY_CIVIC_FREE_UNITS	[ICON_BULLET]%D1_Num Free Units
 TXT_KEY_CIVIC_FREE_XP	[ICON_BULLET]New Units Receive %D1_Change Experience Points
-TXT_KEY_CIVIC_FROM_TRADE_ROUTES	[SPACE]from Trade Routes ([ICON_TRADE])
+TXT_KEY_CIVIC_FROM_TRADE_ROUTES	[SPACE]from routes
 TXT_KEY_CIVIC_GOD_KING	God King
 TXT_KEY_CIVIC_GOD_KING_STRATEGY	 +1 Happy from state religion, +50% Hammers and Commerce in capital, +10% Distance cost modifier
 TXT_KEY_CIVIC_GREAT_GENERAL_MOD	[ICON_BULLET]%D1_Mod%% Great General Emergence
@@ -5132,7 +5132,7 @@ TXT_KEY_CIVIC_LARGEST_CITIES_HAPPINESS	[ICON_BULLET]%D1_Change%F2_HappyOrUn in %
 TXT_KEY_CIVIC_LIBERTY	Liberty
 TXT_KEY_CIVIC_LIBERTY_STRATEGY	+100% Culture, +50% War Weariness, -2 Happy per Dungeon, Unlimited Artists
 TXT_KEY_CIVIC_MERCANTILISM	Mercantilism
-TXT_KEY_CIVIC_MERCANTILISM_STRATEGY	No Foreign Trade routes but +20% gold in all cities
+TXT_KEY_CIVIC_MERCANTILISM_STRATEGY	No foreign routes; +20% gold in every city
 TXT_KEY_CIVIC_MILITARY_DISCIPLINE	Military Discipline
 TXT_KEY_CIVIC_MILITARY_DISCIPLINE_STRATEGY	+10% Military production
 TXT_KEY_CIVIC_MILITARY_FOOD	[ICON_BULLET]Military Units Produced with [ICON_FOOD]
@@ -5149,7 +5149,7 @@ TXT_KEY_CIVIC_NO_BUILDING_UNHEALTHY	[ICON_BULLET]No [ICON_UNHEALTHY] from Buildi
 TXT_KEY_CIVIC_NO_CORPORATIONS	[ICON_BULLET]Corporations have no effect
 TXT_KEY_CIVIC_NO_DIPLOMACY_WITH_ENEMIES	[ICON_BULLET]No diplomacy with enemies
 TXT_KEY_CIVIC_NO_FOREIGN_CORPORATIONS	[ICON_BULLET]Foreign Corporations have no effect
-TXT_KEY_CIVIC_NO_FOREIGN_TRADE	[ICON_BULLET]No Foreign Trade Routes ([ICON_TRADE])
+TXT_KEY_CIVIC_NO_FOREIGN_TRADE	[ICON_BULLET]No foreign routes, from or to your cities
 TXT_KEY_CIVIC_NO_MAINT_CORPORATION	[ICON_BULLET]No Maintenance Costs from Corporations
 TXT_KEY_CIVIC_NO_MAINT_CORPORATION_MOD	[ICON_BULLET]%D1_Mod%% Maintenance Costs from Corporations
 TXT_KEY_CIVIC_NO_MAINT_NUM_CITIES	[ICON_BULLET]No Maintenance Costs from Number of Cities
@@ -13702,7 +13702,7 @@ TXT_KEY_UNIT_PIKEMAN	Pikeman
 TXT_KEY_UNIT_PIKEMAN_STRATEGY	This melee combat unit gets a big bonus when fighting mounted enemy units. 
 TXT_KEY_UNIT_PIRATE	Pirate
 TXT_KEY_UNIT_PIRATE_PEDIA	Pirates are the scourge of the seas. Fast, nimble, and totally heartless, they attack without warning and leave nothing alive. These less-than-admirable qualities make them excellent weapons to counter the naval ambitions of one's enemies. Privateers are mercenary pirates, chartered by a civilization with one goal: attack everything not flying the right flag. Used efficiently, pirates can completely disrupt an enemy's naval trade and coastal industry.
-TXT_KEY_UNIT_PIRATE_STRATEGY	Pirates and Privateers are useful units for weakening rivals without declaring war. They can blockade cities, eliminating traderoutes and stealing a small amount of gold, and they can attack any ships without declaring war. Even though they have cargo space, remember that they can only carry other Hidden Nationality units, such as Council of Esus units, unless they declare nationality.
+TXT_KEY_UNIT_PIRATE_STRATEGY	Pirates and Privateers are useful units for weakening rivals without declaring war. They can blockade cities, closing the routes that cross the sea and stealing a small amount of gold, and they can attack any ships without declaring war. Even though they have cargo space, remember that they can only carry other Hidden Nationality units, such as Council of Esus units, unless they declare nationality.
 TXT_KEY_UNIT_PITCH_WAGON	Pitch Wagon
 TXT_KEY_UNIT_PIT_BEAST	Pit Beast
 TXT_KEY_UNIT_PIT_BEAST_STRATEGY	Pit Beasts are abominations made from the pieces of various slain demons. They ache for a chance to avenge their destruction, and will heed any call to return to the mortal realm. As long as they taste blood, they can continue their assault indefinitely.
@@ -13856,6 +13856,12 @@ TXT_KEY_UNIT_SETTLER_HIPPUS	Hippus Settler
 TXT_KEY_UNIT_SETTLER_PEDIA	When a city begins to become crowded, a handful of brave families will chose, or be chosen, to form the nucleus of a new settlement. Pioneering though they may be, settlers are extremely vulnerable, as they consist of as many women and children as they do men, and a wise leader always sends an armed escort. Many a budding city has been wiped out by the savage beasts of the wilderness.
 TXT_KEY_UNIT_SETTLER_STRATEGY	Build [COLOR_UNIT_TEXT]Settlers[COLOR_REVERT] to expand your empire with new cities.
 TXT_KEY_UNIT_COLONIST	Colonist
+TXT_KEY_UNIT_CARAVAN	Caravan
+TXT_KEY_UNIT_CARAVAN_PEDIA	Mules, wagons and a hired guard, and on the water a merchant's hull: the goods of one city carried to another and back, season after season.
+TXT_KEY_UNIT_CARAVAN_STRATEGY	Establishes a trade route from the city it stands in. The route's two caravans travel between the two cities by themselves and pay while they live. A killed caravan re-forms in the origin.
+TXT_KEY_PROMOTION_CARAVAN_GUARD_2	Caravan Guard II
+TXT_KEY_PROMOTION_CARAVAN_GUARD_3	Caravan Guard III
+TXT_KEY_PROMOTION_CARAVAN_GUARD_4	Caravan Guard IV
 TXT_KEY_UNIT_COLONIST_PEDIA	A handful of families sent across the water to hold a shore for its goods: a landing, a stockade and a jetty, supplied by the ships that brought them.
 TXT_KEY_UNIT_COLONIST_STRATEGY	Founds an [COLOR_UNIT_TEXT]Outpost[COLOR_REVERT] on a landmass other than your capital's, next to the sea: population 2 at most, works the 8 plots around it, builds nothing, pays no maintenance. Its resources reach you while its lane to a home port is open.
 TXT_KEY_UNIT_SEVERED_SOUL	Severed Soul
@@ -14128,7 +14134,7 @@ TXT_KEY_VOTE_FORCE_PEACE	Stop the fighting among our brothers in faith.
 TXT_KEY_VOTE_FORCE_WAR	Declare war on the infidels.
 TXT_KEY_VOTE_FREE_RELIGION	U.N. Resolution #427 (Global Civic - Free Religion)
 TXT_KEY_VOTE_FREE_SPEECH	U.N. Resolution #3445 (Global Civic - Free Speech)
-TXT_KEY_VOTE_FREE_TRADE	Open Markets: Trade Routes ([ICON_TRADE]) with all foreign cities
+TXT_KEY_VOTE_FREE_TRADE	Open Markets: routes to the members' cities without open borders
 TXT_KEY_VOTE_FUND_DISSIDENTS	Fund Dissidents: Could cause unhappiness in the cities of non-Undercouncil members
 TXT_KEY_VOTE_GAMBLING_RING	Setup a Gambling Ring: Reduces the production cost of Gambling Houses by 75%
 TXT_KEY_VOTE_LIBERTY	Global Civic: Liberty
@@ -14144,9 +14150,9 @@ TXT_KEY_VOTE_SCREEN_EXIT_NOW	Exit Now
 TXT_KEY_VOTE_SCREEN_SAVE_NAME	Save Game Name
 TXT_KEY_VOTE_SCREEN_SAVE_NOW	Save Now
 TXT_KEY_VOTE_SECRETARY_GENERAL	Elect a Head Councilor-Can propose resolutions
-TXT_KEY_VOTE_SINGLE_CURRENCY	Single Currency: +1 Trade Route ([ICON_TRADE]) in all cities
+TXT_KEY_VOTE_SINGLE_CURRENCY	Single Currency: +1 route for every civilization
 TXT_KEY_VOTE_SLAVE_TRADE	Setup Slave Trade: Members can buy and sell slaves
-TXT_KEY_VOTE_SMUGGLING_RING	Setup Smuggling Ring: +1 Trade Route ([ICON_TRADE]) in all cities, enables the Smugglers' Port building
+TXT_KEY_VOTE_SMUGGLING_RING	Setup Smuggling Ring: +1 route for every civilization, enables the Smugglers' Port building
 TXT_KEY_VOTE_SOURCE_RELIGION	Leaders of %s1_religion have a vision of uniting all %s2_religion_adjective faithful under the %s3_building.
 TXT_KEY_VOTE_UNIVERSAL_SUFFRAGE	U.N. Resolution #3312 (Global Civic - Universal Suffrage)
 TXT_KEY_VOTE_UN_ASSIGN_CITY	Council Mandate for City Ownership
@@ -15008,3 +15014,5 @@ TXT_KEY_KEYWORD_SYMPATHY	Sympathy
 TXT_KEY_KEYWORD_SYMPATHY_REMINDER	The civilization a House's leader favours, rolled when the leader is offered and kept for good; a civilization's culture around the House's cities draws it. Opinion: at war with it -3; a defensive pact or a permanent alliance with it, or it is your vassal or master, +2; else open borders with it +1.
 TXT_KEY_KEYWORD_OUTSIDER	Outsider
 TXT_KEY_KEYWORD_OUTSIDER_REMINDER	A leader of your own civilization offered for a foreign House. Its opinion counts alignment and religion only, and it has no sympathy. Its cities have -3 happiness while it leads.
+TXT_KEY_KEYWORD_ROUTE	Route
+TXT_KEY_KEYWORD_ROUTE_REMINDER	A standing link from one of your cities to another city, established by a Caravan. Two caravans travel it by themselves; each pays while it lives. Pay grows with the path's length and the two cities' population; a foreign route pays more. A city is the origin of 1 route and the destination of any number. A killed caravan gives plunder to its killer and re-forms in the origin.

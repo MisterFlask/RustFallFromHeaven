@@ -652,7 +652,7 @@ fn tech_value_static(g: &Game, p: PlayerId, t: TechType) -> i32 {
         let flavor: i32 = l.flavor_value.iter().zip(info.flavor_value.iter()).map(|(a, b)| a * b).sum();
         value += flavor * 2;
     }
-    value += info.trade_routes * 150 + info.happiness * 80 * num_cities.max(1) + info.health * 50 * num_cities.max(1);
+    value += info.trade_routes * crate::caravans::route_worth_x100(g, p) / 2 + info.happiness * 80 * num_cities.max(1) + info.health * 50 * num_cities.max(1);
     value += info.worker_speed_modifier * 2;
     value
 }

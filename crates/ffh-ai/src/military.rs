@@ -745,6 +745,7 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
     }
     let op_target = v.campaign.ops.first().map(|o| o.plot);
     if let Some(q) = best_adjacent(g, v, grp, here, hurt, op_target) {
+        crate::caravans::note_attack(g, p, q, false);
         assault(g, v, grp, q);
         finish(g, grp);
         return;
@@ -1268,6 +1269,7 @@ fn hunt(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         v.target_claims.push((t.plot, grp));
         crate::trace!(g, v.p, "stack {:?} ({} units) hunts {:?} (value {}, units {}, lair {}, city {})", grp, g.groups[grp].units.len(), g.map.xy(t.plot), t.value, t.units, t.lair, t.city);
         if adjacent {
+            crate::caravans::note_attack(g, v.p, t.plot, false);
             assault(g, v, grp, t.plot);
         } else if t.units == 0 {
             if t.city {
@@ -1313,7 +1315,11 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
                 continue; // civ cities: war logic
             }
             let in_ours = g.map.plots[q].owner == Some(p);
-            if !in_ours && !near(unit.x, unit.y, if city.is_some() { 10 } else { 6 }) {
+            // A caravan of a route is a target wherever a stack reaches it (`hunt` reads the
+            // reach), worth its plunder too (caravans.rs).
+            let loot: i32 = g.map.plots[q].units.iter().filter(|&&o| g.units[o].owner == unit.owner).map(|&o| crate::caravans::plunder(g, o)).max().unwrap_or(0);
+            let caravan = g.map.plots[q].units.iter().any(|&o| g.units[o].owner == unit.owner && g.unit_in_route(o));
+            if !in_ours && !caravan && !near(unit.x, unit.y, if city.is_some() { 10 } else { 6 }) {
                 continue;
             }
             let n = g.map.plots[q].units.iter().filter(|&&o| g.units[o].owner == unit.owner).count() as i32;
@@ -1328,6 +1334,7 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
             if city.is_some() {
                 value += 700;
             }
+            value += (loot * crate::caravans::PLUNDER_VALUE).min(1000);
             out.push(Target { plot: q, value, units: n, city: city.is_some(), lair });
         }
     }

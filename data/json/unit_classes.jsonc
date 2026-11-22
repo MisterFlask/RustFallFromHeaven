@@ -1614,6 +1614,15 @@
     "default_unit": "UNIT_COLONIST"
   },
   {
+    // this game's own (docs/TRADE.md, 3.2)
+    "type": "UNITCLASS_CARAVAN",
+    "description": "TXT_KEY_UNIT_CARAVAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CARAVAN"
+  },
+  {
     "type": "UNITCLASS_SCOUT",
     "description": "TXT_KEY_UNIT_SCOUT",
     "max_global_instances": -1,

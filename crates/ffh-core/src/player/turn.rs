@@ -218,6 +218,10 @@ impl Game {
         // This game's fleets (docs/NAVAL.md, 7.2): their standing orders, with the moves their
         // owner left them (after its own orders: an order it gave this turn is not undone).
         self.player_fleet_stations(p);
+        // This game's trade (docs/TRADE.md, 4.1): the caravans travel their routes.
+        self.player_move_caravans(p);
+        // Their escorts (docs/TRADE.md, 4.4): after them.
+        self.player_caravan_escorts(p);
         // This game's raids (docs/RAIDS.md, section 5): its cities' guards sally against the
         // raiders, and the raiders take their share (before its gold, research and cities).
         self.player_do_raids(p);
@@ -272,8 +276,6 @@ impl Game {
 
         self.player_verify_civics(p);
 
-        self.player_update_trade_routes(p);
-
         self.player_update_war_weariness_percent_anger(p);
 
         // FfH: Added by Kael 11/02/2007
@@ -321,6 +323,10 @@ impl Game {
         // AI: AI_doTurnPost() (AI diplomacy, AI_launch) -- left to the controller.
         self.ai_hook(p, AiHook::PlayerTurnPost(p));
 
+        // This game's trade (docs/TRADE.md, 5): resources gained or lost this turn change what
+        // caravans deliver.
+        self.trade_refresh_pay();
+
         let turn = self.game_turn();
         self.ev_end_player_turn(turn, p);
     }
@@ -337,6 +343,8 @@ impl Game {
         self.player_update_seas(p);
         // The outposts' lanes (docs/NAVAL.md, 9.3): traced after the seas' control.
         self.player_update_lanes(p);
+        // This game's trade routes (docs/TRADE.md, 3.4): checked after the seas' control.
+        self.player_update_routes(p);
 
         // AI: AI_doTurnUnitsPre() (found values, area targets; draws "AI Update Area Targets")
         // -- left to the controller.

@@ -32,6 +32,7 @@ import { run } from "./commands.js";
 import { addHelp } from "./help.js";
 import { pickEmpireItem, orderEmpire } from "./governors.js";
 import { squadBoard } from "./squads.js";
+import { caravanStationValue, caravanStation } from "./trade_view.js";
 
 // ---- the rules, in the help display (help.js; the Armies screen's (i) opens it) ---------------
 
@@ -202,17 +203,24 @@ function requisitionView(a, act) {
  *  or `{escort}`). */
 export function stationControl(f, seas, targets, set) {
   const st = f.station ?? { kind: "none" };
-  const cur = st.kind === "patrol" ? `patrol:${st.sea}` : st.kind === "escort" ? (st.army !== null && st.army !== undefined ? `escort:${st.army}` : `group:${st.group}`) : "none";
+  const cur = caravanStationValue(st) ?? (st.kind === "patrol" ? `patrol:${st.sea}` : st.kind === "escort" ? (st.army !== null && st.army !== undefined ? `escort:${st.army}` : `group:${st.group}`) : "none");
   const opts = [h("option", { value: "none", selected: cur === "none" }, "No standing order")];
   for (const s of seas) opts.push(h("option", { value: `patrol:${s.id}`, selected: cur === `patrol:${s.id}` }, `Patrol: ${s.name}`));
   for (const t of targets) {
     if (t.army === f.id) continue;
     opts.push(h("option", { value: `escort:${t.army}`, selected: cur === `escort:${t.army}` }, `Escort: ${t.name}`));
   }
+  // Trade (docs/TRADE.md 4.4): the caravans it could escort.
+  for (const c of f.escort_caravans ?? []) {
+    const v = `caravan:${c.route}:${c.slot}`;
+    opts.push(h("option", { value: v, selected: cur === v }, `Escort: ${c.name}`));
+  }
   // An order the lists do not hold (a sea now out of range, a ship group): kept as it is.
   if (!opts.some((o) => o.value === cur)) opts.push(h("option", { value: cur, selected: true }, st.text ?? cur));
   const pick = (v) => {
     if (v === "none") return set(null);
+    const caravan = caravanStation(v);
+    if (caravan) return set(caravan);
     const [k, id] = v.split(":");
     if (k === "patrol") return set({ patrol: Number(id) });
     if (k === "escort") return set({ escort: Number(id) });
@@ -220,8 +228,39 @@ export function stationControl(f, seas, targets, set) {
   };
   return h(
     "span.station",
+    { title: (f.escort_caravans ?? []).length ? ESCORT_LINE : null },
     h("span", "Standing order "),
     h("select.fleet-station", { "aria-label": "Standing order", title: "Patrol: the fleet sails to the sea and patrols it. Escort: it follows the army or fleet when that ends a move on water and it can reach it this turn. A move order ends it.", onchange: (ev) => pick(ev.target.value) }, opts),
+  );
+}
+
+/** The pace rule of an Escort of a caravan (docs/TRADE.md 4.4), said where the order is offered. */
+const ESCORT_LINE = "A caravan standing with its escort moves only as far as the escort can.";
+
+/** A land army's Escort of a caravan (docs/TRADE.md 4.4): a selector of the caravans it could
+ *  escort (`a.escort_caravans`), its order's line and why it waits; null when it has none to
+ *  escort and escorts none. */
+export function escortControl(a, set) {
+  const list = a.escort_caravans ?? [];
+  const cur = caravanStationValue(a.station);
+  if (!list.length && !cur) return null;
+  const opts = [h("option", { value: "none", selected: !cur }, "No escort")];
+  for (const c of list) {
+    const v = `caravan:${c.route}:${c.slot}`;
+    opts.push(h("option", { value: v, selected: cur === v }, c.name));
+  }
+  if (cur && !opts.some((o) => o.value === cur)) opts.push(h("option", { value: cur, selected: true }, a.station.text));
+  return h(
+    "div.row.escort-station",
+    h(
+      "label",
+      { title: ESCORT_LINE },
+      "Escort ",
+      h("select.army-escort", { "aria-label": "Escort a caravan", onchange: (ev) => set(ev.target.value === "none" ? null : caravanStation(ev.target.value)) }, opts),
+    ),
+    cur ? h("span.dim", ` ${a.station.text}`) : null,
+    a.station?.wait ? h("span.warn", ` ${a.station.wait}`) : null,
+    h("div.small.dim", ESCORT_LINE),
   );
 }
 
@@ -315,6 +354,8 @@ export async function openArmies({ select, centerOn } = {}) {
         a.station?.kind === "raid"
           ? h("div.row.raid-station", h("span.warn", a.station.text), " ", h("button.small.stop-raid", { onclick: () => act({ c: "army_station", army: a.id, station: null }), title: "End the Raid order. A move order also ends it." }, "Stop raiding"))
           : null,
+        // Trade (docs/TRADE.md 4.4): Escort of a caravan, where the Raid order's line is.
+        a.station?.kind === "raid" ? null : escortControl(a, (station) => act({ c: "army_station", army: a.id, station })),
         h(
           "div.row",
           h(
@@ -392,6 +433,8 @@ export async function openArmies({ select, centerOn } = {}) {
         h("div.dim", composition(f.units) || "—"),
         h(`div.fleet-wear${f.wear ? ".warn" : ".dim"}`, f.wear_text ?? ""),
         f.disband_to ? h("div.dim", f.station?.text ?? "") : h("div.row", stationControl(f, r.seas ?? [], r.escort_targets ?? [], (station) => act({ c: "army_station", army: f.id, station }))),
+        // Trade (docs/TRADE.md 4.4): an Escort of a caravan says what it escorts and why it waits.
+        f.station?.kind === "escort" && f.station.route !== undefined && f.station.route !== null ? h("div.dim.escort-station-line", f.station.text, f.station.wait ? h("span.warn", ` ${f.station.wait}`) : null) : null,
         h(
           "div.row",
           h(

@@ -1033,6 +1033,8 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), squad: Option<S
         "shore_unseen" => pv.shore.iter().filter(|s| !v.unit_visible(s.unit)).count() as i64,
         "forecast" => forecast,
         "declare_war" => rival,
+        // Trade (docs/TRADE.md, section 9): what killing the caravans there would bring.
+        "plunder" => crate::view::trade::attack_plunder(v, dest),
         "errors" => Json::Arr(refused.into_iter().map(Json::from).collect()),
     })
 }

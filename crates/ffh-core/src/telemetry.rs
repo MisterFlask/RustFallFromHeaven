@@ -384,6 +384,21 @@ impl Game {
         });
     }
 
+    /// Trade (docs/TRADE.md, section 10): counted under `cat` by `key`, the sum `value`:
+    /// `trade_route` (domestic / foreign: established), `trade_caravan_lost_by` (war / hidden /
+    /// barbarians / other), `trade_caravan_lost_at` (own / foreign / unowned / water / other),
+    /// `trade_route_turn` (open, or the closing reason's key), `trade_plunder` (gold).
+    pub(crate) fn tel_trade(&self, p: PlayerId, cat: &'static str, key: &'static str, value: i64) {
+        if !self.telemetry.on() {
+            return;
+        }
+        let turn = self.game_turn();
+        self.telemetry.with(|t| {
+            t.count(p, cat, key, value);
+            t.event(|| ev(turn, "trade", p).s("cat", cat).s("key", key).i("value", value).end());
+        });
+    }
+
     /// A requisition order (docs/ARMIES.md): `placed` or `withdrawn`, counted as `requisition`.
     pub(crate) fn tel_requisition(&self, p: PlayerId, kind: &'static str) {
         if !self.telemetry.on() {

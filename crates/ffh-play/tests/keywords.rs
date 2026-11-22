@@ -27,6 +27,8 @@ const FRAGMENTS: &[(&str, &[&str])] = &[
     ("KEYWORD_HOUSE", &["up to 4 of a civilization's cities", "whose seat is nearest"]),
     ("KEYWORD_SYMPATHY", &["the civilization a house's leader favours", "kept for good"]),
     ("KEYWORD_OUTSIDER", &["offered for a foreign house", "counts alignment and religion only"]),
+    // Trade (docs/TRADE.md, section 9).
+    ("KEYWORD_ROUTE", &["two caravans travel it", "each pays while it lives", "the destination of any number", "re-forms in the origin"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.

@@ -263,7 +263,8 @@ pub fn garrison(g: &Game, p: PlayerId, plot: PlotIdx) -> (i32, i32) {
     let mut power = 0;
     for &u in &g.map.plots[plot].units {
         let unit = &g.units[u];
-        if unit.owner != p || unit.march.is_some() {
+        // (A Caravan is no defender: in a route it moves by the rules, else it is bound for one.)
+        if unit.owner != p || unit.march.is_some() || g.unit_is_caravan(u) {
             continue;
         }
         let info = &g.d.units[unit.unit_type];
@@ -1458,7 +1459,7 @@ fn economy_value(g: &Game, c: CityId, b: BuildingType) -> i32 {
     v += slots * 15 * (pop - 4).clamp(0, 8);
     v += info.great_people_rate_change * 40 + info.great_people_rate_modifier * pop / 4;
     v += info.free_specialist * 120;
-    v += info.trade_routes * 60;
+    v += crate::caravans::building_value(g, c, info); // trade routes (docs/TRADE.md)
     v
 }
 
@@ -1567,7 +1568,7 @@ fn generic_building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> 
     }
     v += info.sentinel_repair_change * 2;
     v += info.military_production_modifier * prod / 4;
-    v += info.trade_routes * 60;
+    v += crate::caravans::building_value(g, c, info); // trade routes (docs/TRADE.md)
     // Granary-like food storage: worth more while the city grows.
     v += info.food_kept * food.min(12) / 4;
     v += info.worker_speed_modifier / 2;

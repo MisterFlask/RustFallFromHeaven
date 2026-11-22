@@ -134,7 +134,7 @@ mod tests {
         let t = Text::parse_tsv(&src);
         // Prose keeps its ':' (it is not a forms separator); FfH2's own entries are plain text.
         assert_eq!(t.name("TXT_KEY_VOTE_LIBERTY"), "Global Civic: Liberty");
-        assert!(t.name("TXT_KEY_VOTE_SINGLE_CURRENCY").starts_with("Single Currency: +1 Trade Route"));
+        assert!(t.name("TXT_KEY_VOTE_SINGLE_CURRENCY").starts_with("Single Currency: +1 route"));
         // The stock BtS/Civ4 text FfH2 inherits (tools/vendor_xml.py) does use Civ4 <Text>
         // grammatical forms for a few entries -- the vanilla civ adjectives
         // (`<Text>American:Americans</Text>`) -- and a description reads form 0, as CvGameText does.
