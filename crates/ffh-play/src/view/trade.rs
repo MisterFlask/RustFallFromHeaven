@@ -11,8 +11,12 @@
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::trade::{round_x100, Leg, Route, RouteRefusal};
+use ffh_core::trade::{round_x100, CargoClass, CargoState, Leg, Route, RouteRefusal, CARAVAN_SLOTS};
+use ffh_data::BonusType;
 
+use ffh_core::army::{EscortTarget, Station};
+
+use crate::command::Command;
 use crate::json::Json;
 use crate::query::QueryErr;
 use crate::view::Viewer;
@@ -95,7 +99,30 @@ pub fn unit_caravan(v: &Viewer, u: UnitId) -> Json {
         // The rules give the barbarians nothing; the human is never the barbarians.
         "plunder" => gold,
         "plunder_text" => plunder_line(gold),
+        // Its cargo (docs/TRADE.md, 5): a raider chooses by it. Shown with the caravan only.
+        "cargo_text" => route.slots[slot].cargo.map(|b| format!("Cargo: {}.", bonus_name(g, b))),
     }
+}
+
+/// A resource's name.
+fn bonus_name(g: &Game, b: BonusType) -> String {
+    g.d.text.name(&g.d.bonuses[b].base.description).to_string()
+}
+
+/// Caravan `slot` of route `r`'s cargo line (docs/TRADE.md, 9): `Cargo: Gems. Delivered. Premium
+/// +150%.` / `Cargo: Gems. Caravan lost.` / `Cargo: none.`
+pub fn cargo_line(g: &Game, r: RouteId, slot: usize) -> String {
+    let c = g.route_slot_cargo(r, slot);
+    match c.cargo {
+        None => "Cargo: none.".to_string(),
+        Some(b) if c.state == CargoState::Delivering && c.premium_percent > 0 => format!("Cargo: {}. {} Premium +{}%.", bonus_name(g, b), c.state.text(), c.premium_percent),
+        Some(b) => format!("Cargo: {}. {}", bonus_name(g, b), c.state.text()),
+    }
+}
+
+/// The escorts of caravan `slot` of route `r` (docs/TRADE.md, 4.4): `[{army, name}]`.
+fn escorts_json(g: &Game, r: RouteId, slot: usize) -> Json {
+    Json::Arr(g.route_slot_escorts(r, slot as u8).into_iter().map(|a| crate::jobj! { "army" => a, "name" => g.armies[a].name.as_str() }).collect())
 }
 
 /// The unit panel's lines for caravan `u` of the human's (null otherwise): the route, where it is
@@ -111,7 +138,11 @@ pub fn unit_panel(v: &Viewer, u: UnitId) -> Json {
     let route = &g.routes[r];
     let mut lines = vec![format!("Route: {} to {}.", name(v, route.origin), name(v, route.destination))];
     lines.push(caravan_state(v, route, slot));
+    lines.push(cargo_line(g, r, slot));
     lines.push(plunder_line(plunder(g, r, slot)));
+    for a in g.route_slot_escorts(r, slot as u8) {
+        lines.push(format!("Escort: {}.", g.armies[a].name));
+    }
     lines.push("A caravan in a route takes no orders.".to_string());
     crate::jobj! { "route" => r, "lines" => lines }
 }
@@ -291,8 +322,11 @@ pub fn route_json(v: &Viewer, r: RouteId) -> Json {
                 "state" => kind,
                 "text" => caravan_state(v, route, i),
                 "plunder" => unit.map(|_| plunder(g, r, i)),
-                // Cargo (docs/TRADE.md, section 5): not built; the place for its line.
-                "cargo" => Json::Null,
+                // Cargo (docs/TRADE.md, section 5) and the escorts (4.4).
+                "cargo" => s.cargo.map(|b| Json::idx(b)),
+                "cargo_text" => cargo_line(g, r, i),
+                "cargo_state" => cargo_state_key(g.route_slot_cargo(r, i).state),
+                "escorts" => escorts_json(g, r, i),
             }
         })
         .collect();
@@ -328,6 +362,8 @@ pub fn route_json(v: &Viewer, r: RouteId) -> Json {
 fn into_json(v: &Viewer, r: RouteId) -> Json {
     let g = v.g;
     let route = &g.routes[r];
+    // What it brings: the resources its caravans deliver to the human (docs/TRADE.md, 9).
+    let brought: Vec<String> = route.slots.iter().filter_map(|s| s.delivering.filter(|&(p, _)| p == v.h).map(|(_, b)| bonus_name(g, b))).collect();
     let pay = route.dest_pay_x100;
     let who = player_name(v, route.owner);
     crate::jobj! {
@@ -339,7 +375,77 @@ fn into_json(v: &Viewer, r: RouteId) -> Json {
         "text" => format!("From {} ({who}) to {}.", name(v, route.origin), name(v, route.destination)),
         "pay_x100" => pay,
         "pay" => format!("{} a turn to {}.", pay_text(pay), name(v, route.destination)),
+        "brings" => (!brought.is_empty()).then(|| format!("Brings: {}.", brought.join(", "))),
     }
+}
+
+fn cargo_state_key(s: CargoState) -> &'static str {
+    match s {
+        CargoState::NoCargo => "none",
+        CargoState::Delivering => "delivering",
+        CargoState::CaravanLost => "lost",
+        CargoState::RouteClosed => "closed",
+        CargoState::NotArrived => "not_arrived",
+        CargoState::Domestic => "domestic",
+        CargoState::NoCopy => "no_copy",
+    }
+}
+
+fn class_name(c: CargoClass) -> &'static str {
+    match c {
+        CargoClass::Luxury => "luxury",
+        CargoClass::Mana => "mana",
+        CargoClass::Strategic => "strategic",
+    }
+}
+
+/// The cargo selectors of a route of `owner` from `origin` to `dest` (docs/TRADE.md, 5 and 9; a
+/// refit names its route), null for a domestic destination: `{options: [{bonus, name, class,
+/// premium, only_copy, text, warn}], preselect: [bonus | null, bonus | null], halves: [x100, x100]}`.
+/// `halves` are the two caravans' halves of the pay before premiums (the client shows the pay with
+/// the chosen cargos: each half x (100 + its option's premium) / 100, the rules' rule in
+/// `route_pay`). The preselection (the spec's): the luxuries the recipient lacks (the new
+/// premium), not an only copy, the highest premium first, a different one for each caravan; never a
+/// strategic or mana resource.
+pub fn cargo_json(v: &Viewer, origin: CityId, dest: CityId, route: Option<RouteId>, total_x100: i32) -> Json {
+    let g = v.g;
+    if !g.cities.contains(dest) || g.cities[dest].owner == v.h {
+        return Json::Null;
+    }
+    let rec = civ(g, g.cities[dest].owner);
+    let new_pct = g.d.defines.trade_cargo_new_percent;
+    let opts = g.route_cargo_options(v.h, origin, dest, route);
+    let options: Vec<Json> = opts
+        .iter()
+        .map(|o| {
+            let n = bonus_name(g, o.bonus);
+            let has = if o.premium_percent >= new_pct { format!("{rec} has none.") } else { format!("{rec} has it.") };
+            let text = format!("{n} ({}): {has} +{}% on this caravan.", class_name(o.class), o.premium_percent);
+            crate::jobj! {
+                "bonus" => Json::idx(o.bonus),
+                "name" => n.as_str(),
+                "class" => class_name(o.class),
+                "premium" => o.premium_percent,
+                "only_copy" => o.only_copy,
+                "text" => text,
+                "warn" => o.only_copy.then(|| format!("Your only copy: your cities lose {n}.")),
+            }
+        })
+        .collect();
+    let mut pick: Vec<&ffh_core::trade::CargoOption> = opts.iter().filter(|o| o.class == CargoClass::Luxury && !o.only_copy && o.premium_percent >= new_pct).collect();
+    pick.sort_by_key(|o| (std::cmp::Reverse(o.premium_percent), o.bonus));
+    let mut preselect = [Json::Null, Json::Null];
+    for (i, o) in pick.iter().take(CARAVAN_SLOTS).enumerate() {
+        preselect[i] = Json::idx(o.bonus);
+    }
+    // A refit starts from the route's cargos.
+    if let Some(r) = route.filter(|&r| g.routes.contains(r)) {
+        for (i, p) in preselect.iter_mut().enumerate() {
+            *p = g.routes[r].slots[i].cargo.map_or(Json::Null, |b| Json::idx(b));
+        }
+    }
+    let halves = [total_x100 - total_x100 / 2, total_x100 / 2];
+    crate::jobj! { "options" => Json::Arr(options), "preselect" => Json::Arr(preselect.to_vec()), "halves" => crate::jarr![halves[0], halves[1]] }
 }
 
 /// The limits line: `Routes: 1 of 2.` with ` +1 from a coastal city.` when the player has
@@ -459,6 +565,52 @@ pub fn establish_action(v: &Viewer, units: &[UnitId]) -> Option<Json> {
     Some(j)
 }
 
+/// The routes Caravan `u` of the human's (in no route) could refit where it stands: those of the
+/// human's whose origin is its city (docs/TRADE.md, 5, "Fixed").
+fn refit_routes(v: &Viewer, u: UnitId) -> Vec<RouteId> {
+    let g = v.g;
+    let Some(c) = g.unit_plot_opt(u).and_then(|q| g.map.plots[q].plot_city).filter(|&c| g.cities.contains(c) && g.cities[c].owner == v.h) else { return Vec::new() };
+    g.city_routes_from(c).into_iter().filter(|&r| g.routes[r].owner == v.h).collect()
+}
+
+/// The unit panel's Refit actions of a selection holding a Caravan of the human's in no route in
+/// a city that is the origin of a route of its (docs/TRADE.md, 5): one per route, `{kind: "trade",
+/// trade: "refit", unit, route, label, enabled, why, help}`; the dialog sends `refit_route`.
+pub fn refit_actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
+    let g = v.g;
+    let Some(&u) = units.iter().find(|&&u| g.unit_is_caravan(u) && g.units[u].owner == v.h && !g.unit_in_route(u)) else { return Vec::new() };
+    let routes = refit_routes(v, u);
+    let many = routes.len() > 1;
+    routes
+        .into_iter()
+        .map(|r| {
+            let route = &g.routes[r];
+            // A refit with no cargo is refused only where the route is gone: the cargo choice is the dialog's.
+            let why = g.unit_refit_refusal(u, r, [None, None]);
+            let domestic = g.cities.contains(route.destination) && g.cities[route.destination].owner == route.owner;
+            let why = why.map(|w| w.text(g)).or_else(|| domestic.then(|| RouteRefusal::CargoDomestic.text(g)));
+            let label = if many { format!("Refit route to {}", name(v, route.destination)) } else { "Refit route".to_string() };
+            let mut j = crate::jobj! {
+                "kind" => "trade",
+                "trade" => "refit",
+                "unit" => u,
+                "route" => r,
+                "label" => label,
+                "enabled" => why.is_none(),
+                "help" => REFIT_LINE,
+                "cmd" => Json::Null,
+            };
+            if let Some(w) = why {
+                j.set("why", w);
+            }
+            j
+        })
+        .collect()
+}
+
+/// The Refit dialog's rule line.
+pub const REFIT_LINE: &str = "The route keeps its growth. This Caravan is used up.";
+
 /// `route_offers {unit}`: the Establish dialog of Caravan `unit` of the human's (docs/TRADE.md,
 /// 3.3 and 9): `{unit, origin: {id, name} | null, enabled, why, limits, offers: [{city, name,
 /// owner, civ, foreign, length, pay_x100, dest_pay_x100, seas, text, segments, cmd}]}`, the offers
@@ -498,7 +650,7 @@ pub fn offers(v: &Viewer, u: UnitId) -> Result<Json, QueryErr> {
             if !passes.is_empty() {
                 text.push_str(&format!(" Passes {}.", passes.join(", ")));
             }
-            let cmd = crate::command::Command::EstablishRoute { unit: u, city: c, cargo: [None, None] }.to_json();
+            let cmd = Command::EstablishRoute { unit: u, city: c, cargo: [None, None] }.to_json();
             crate::jobj! {
                 "city" => c,
                 "name" => n,
@@ -513,14 +665,36 @@ pub fn offers(v: &Viewer, u: UnitId) -> Result<Json, QueryErr> {
                 "text" => text,
                 // The preview's line (the plots the human has revealed).
                 "segments" => segments(v, &o.path),
-                // Cargo (docs/TRADE.md, section 5): each caravan's selector goes here; none yet.
-                "cargo" => Json::Null,
+                // Cargo (docs/TRADE.md, section 5): each caravan's selector (null: a domestic route).
+                "cargo" => match origin {
+                    Some(oc) if o.foreign => cargo_json(v, oc, c, None, o.owner_pay_x100),
+                    _ => Json::Null,
+                },
                 "cmd" => cmd,
+            }
+        })
+        .collect();
+    // The routes it could refit here (docs/TRADE.md, 5), each with its cargo selectors.
+    let refits: Vec<Json> = refit_routes(v, u)
+        .into_iter()
+        .map(|r| {
+            let route = &g.routes[r];
+            let water = route.path.iter().any(|&q| g.plot_is_water(q));
+            let total = g.route_pay_total_x100(route.owner, route.origin, route.destination, route.length, water, route.growth);
+            let why = g.unit_refit_refusal(u, r, [None, None]).map(|w| w.text(g));
+            crate::jobj! {
+                "route" => r,
+                "title" => title(v, route),
+                "line" => REFIT_LINE,
+                "why" => why,
+                "cargo" => cargo_json(v, route.origin, route.destination, Some(r), total),
+                "cmd" => Command::RefitRoute { unit: u, route: r, cargo: [None, None] }.to_json(),
             }
         })
         .collect();
     Ok(crate::jobj! {
         "unit" => u,
+        "refits" => Json::Arr(refits),
         "origin" => origin.map_or(Json::Null, |c| crate::jobj! { "id" => c, "name" => name(v, c), "x" => g.cities[c].x, "y" => g.cities[c].y }),
         "enabled" => why.is_none(),
         "why" => why.map(|r| r.text(g)),
@@ -528,6 +702,119 @@ pub fn offers(v: &Viewer, u: UnitId) -> Result<Json, QueryErr> {
         "offers" => Json::Arr(rows),
         "empty" => if why.is_none() && list.is_empty() { Json::from("No destination: a city must be revealed, reachable, and at peace with open borders when foreign.") } else { Json::Null },
     })
+}
+
+/// The unit type whose figure a unit is drawn with when it is not its own (docs/TRADE.md, 2: a
+/// caravan on a water plot is drawn as a merchant ship, the Galley's figure): `None` for its own.
+pub fn unit_art(g: &Game, u: UnitId) -> Option<ffh_data::UnitType> {
+    if !g.unit_in_route(u) || !g.unit_plot_opt(u).is_some_and(|q| g.plot_is_water(q)) {
+        return None;
+    }
+    g.d.ty::<ffh_data::UnitType>("UNIT_GALLEY").or_else(|| g.d.ty::<ffh_data::UnitType>("UNIT_TRIREME"))
+}
+
+/// The rule said where an Escort of a caravan is offered (docs/TRADE.md, 4.4).
+pub const ESCORT_LINE: &str = "A caravan standing with its escort moves only as far as the escort can.";
+
+/// An Escort target's name, as `escort_target_name` words it with the city names resolved
+/// (`Caravan: Ithralia to Vallus (1)`).
+fn caravan_name(v: &Viewer, r: RouteId, slot: u8) -> String {
+    match v.g.routes.get(r) {
+        Some(route) => format!("Caravan: {} to {} ({})", name(v, route.origin), name(v, route.destination), slot as usize + 1),
+        None => "a caravan".to_string(),
+    }
+}
+
+/// The caravans army or fleet `a` could escort, for its selector: `[{route, slot, name}]`
+/// (`army_escort_caravans`, named by `escort_target_name`).
+pub fn escort_choices(v: &Viewer, a: ArmyId) -> Json {
+    let g = v.g;
+    Json::Arr(
+        g.army_escort_caravans(a)
+            .into_iter()
+            .map(|(r, slot)| crate::jobj! { "route" => r, "slot" => slot as i32, "name" => caravan_name(v, r, slot) })
+            .collect(),
+    )
+}
+
+/// Why army or fleet `a`, escorting caravan `slot` of route `r`, waits now, null when it does not
+/// (derived from the route's slot, as the rules' messages say it): `caravan lost`, `route closed`,
+/// `the caravan waits in Ithralia`, `the caravan is at sea` (a land army), `the caravan is on land`
+/// (a fleet).
+fn escort_wait(v: &Viewer, a: ArmyId, r: RouteId, slot: u8) -> Option<String> {
+    let g = v.g;
+    let route = g.routes.get(r)?;
+    let s = route.slots.get(slot as usize)?;
+    let fleet = g.army_is_fleet(a);
+    match s.unit.filter(|&u| g.units.contains(u)) {
+        None if s.lost_turn >= 0 && s.reform_turns > 0 => Some("caravan lost".to_string()),
+        None if !route.is_open() => Some("route closed".to_string()),
+        None => Some(format!("the caravan waits in {}", name(v, route.origin))),
+        Some(u) => {
+            let q = g.unit_plot(u);
+            let water = g.plot_is_water(q);
+            if !fleet && water {
+                Some("the caravan is at sea".to_string())
+            } else if fleet && !water && g.map.plots[q].plot_city.is_none() {
+                Some("the caravan is on land".to_string())
+            } else {
+                None
+            }
+        }
+    }
+}
+
+/// The station of army or fleet `a` while it escorts a caravan (docs/TRADE.md, 4.4), null
+/// otherwise: `{kind: "escort", route, slot, text, wait}` (`Escorting Caravan: Ithralia to Vallus
+/// (1).`; `wait`: `Waits: caravan lost.`).
+pub fn escort_station(v: &Viewer, a: ArmyId) -> Json {
+    let g = v.g;
+    let Station::Escort(EscortTarget::Caravan(r, slot)) = g.armies[a].station else { return Json::Null };
+    crate::jobj! {
+        "kind" => "escort",
+        "route" => r,
+        "slot" => slot as i32,
+        "army" => Json::Null,
+        "group" => Json::Null,
+        "text" => format!("Escorting {}.", caravan_name(v, r, slot)),
+        "wait" => escort_wait(v, a, r, slot).map(|w| format!("Waits: {w}.")),
+    }
+}
+
+/// The unit panel's escort actions of army or fleet `a` (the whole of it selected), each
+/// `(enabled, cmd, extra)` as the other army actions: `Stop escorting` while it escorts a caravan
+/// (`army: "stop_escort"`), and `Escort Caravan: A to B (1)` for each caravan it could escort
+/// (`army: "escort_caravan"`, `route`, `slot`), with the pace rule as `help`.
+pub fn escort_actions(v: &Viewer, a: ArmyId) -> Vec<(bool, Json, Json)> {
+    let g = v.g;
+    let mut out = Vec::new();
+    let held = match g.armies[a].station {
+        Station::Escort(EscortTarget::Caravan(r, slot)) => Some((r, slot)),
+        _ => None,
+    };
+    if let Some((r, slot)) = held {
+        let n = caravan_name(v, r, slot);
+        out.push((
+            true,
+            Command::ArmyStation { army: a, station: Station::None }.to_json(),
+            crate::jobj! { "army" => "stop_escort", "label" => "Stop escorting", "help" => format!("The {} ends its escort of {n}.", g.armies[a].name) },
+        ));
+    }
+    if g.armies[a].disband_to.is_some() {
+        return out;
+    }
+    for (r, slot) in g.army_escort_caravans(a) {
+        if held == Some((r, slot)) {
+            continue;
+        }
+        let n = caravan_name(v, r, slot);
+        out.push((
+            true,
+            Command::ArmyStation { army: a, station: Station::Escort(EscortTarget::Caravan(r, slot)) }.to_json(),
+            crate::jobj! { "army" => "escort_caravan", "label" => format!("Escort {n}"), "help" => ESCORT_LINE, "route" => r, "slot" => slot as i32 },
+        ));
+    }
+    out
 }
 
 /// The attack preview's plunder line for plot `plot` (docs/TRADE.md, section 9): what killing the

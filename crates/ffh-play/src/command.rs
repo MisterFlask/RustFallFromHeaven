@@ -77,6 +77,9 @@ pub enum Command {
     EstablishRoute { unit: UnitId, city: CityId, cargo: [Option<BonusType>; 2] },
     /// Trade (docs/TRADE.md, 3.4): the human's route `route` ends, its caravans removed.
     DissolveRoute { route: RouteId },
+    /// Trade (docs/TRADE.md, 5, "Fixed"): Caravan `unit`, in no route, standing in the origin of
+    /// the human's route `route`, sets both caravans' cargo again and is used up.
+    RefitRoute { unit: UnitId, route: RouteId, cargo: [Option<BonusType>; 2] },
     /// Engagement combat (docs/ENGAGEMENTS.md): attack plot `to` (next to the attackers) with
     /// `squad` (`None`: the strongest squad that can; docs/ENGAGEMENTS.md, "Squads"). `by`: an army, the selected units (either one's group launches the attack and moves in when
     /// the plot falls) or a plot. `declare_war` as `move`'s (`None` asks, `Some(false)` is the
@@ -464,6 +467,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "raise_outpost",
     "establish_route",
     "dissolve_route",
+    "refit_route",
     "engage",
     "squad_move",
     "squad_auto",
@@ -529,6 +533,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("raise_outpost", &["city"]),
     ("establish_route", &["unit", "city", "cargo"]),
     ("dissolve_route", &["route"]),
+    ("refit_route", &["unit", "route", "cargo"]),
     ("engage", &["army", "units", "from", "to", "squad", "declare_war"]),
     ("squad_move", &["unit", "squad", "cell"]),
     ("squad_auto", &["squad"]),
@@ -635,7 +640,8 @@ pub fn recruit_dest_json(dest: Option<ffh_core::army::RecruitDest>) -> Json {
 
 /// A fleet's standing order (docs/NAVAL.md, 7.2) or a land army's Raid (docs/RAIDS.md) as
 /// `army_station` takes it: null (none), `{"patrol": sea}`, `{"escort": army}`,
-/// `{"escort_group": group}` or `{"raid": city}`.
+/// `{"escort_group": group}`, `{"escort_caravan": route, "slot": 0 | 1}` (docs/TRADE.md 4.4: a
+/// fleet or a land army) or `{"raid": city}`.
 pub fn station_json(station: ffh_core::army::Station) -> Json {
     use ffh_core::army::{EscortTarget, Station};
     match station {
@@ -643,8 +649,7 @@ pub fn station_json(station: ffh_core::army::Station) -> Json {
         Station::Patrol(s) => crate::jobj! { "patrol" => s.idx() },
         Station::Escort(EscortTarget::Army(a)) => crate::jobj! { "escort" => a },
         Station::Escort(EscortTarget::Group(g)) => crate::jobj! { "escort_group" => g },
-        // (A compile fix for docs/TRADE.md 4.4; the client's form is the client's to decide.)
-        Station::Escort(EscortTarget::Caravan(r, slot)) => crate::jobj! { "escort_caravan" => r.0, "slot" => slot as i32 },
+        Station::Escort(EscortTarget::Caravan(r, slot)) => crate::jobj! { "escort_caravan" => r, "slot" => slot as i32 },
         Station::Raid(c) => crate::jobj! { "raid" => c },
     }
 }
@@ -664,10 +669,16 @@ fn station_field(j: &Json) -> Result<ffh_core::army::Station, FieldError> {
                 Ok(Station::Escort(EscortTarget::Army(a)))
             } else if let Some(g) = v.opt::<GroupId>("escort_group")? {
                 Ok(Station::Escort(EscortTarget::Group(g)))
+            } else if let Some(r) = v.opt::<RouteId>("escort_caravan")? {
+                let slot: i32 = v.req("slot").map_err(|_| FieldError::wrong("station", "{\"escort_caravan\": route, \"slot\": 0 or 1}", v))?;
+                if !(0..2).contains(&slot) {
+                    return Err(FieldError::wrong("station", "a slot of 0 or 1", v));
+                }
+                Ok(Station::Escort(EscortTarget::Caravan(r, slot as u8)))
             } else if let Some(c) = v.opt::<CityId>("raid")? {
                 Ok(Station::Raid(c))
             } else {
-                Err(FieldError::wrong("station", "{\"patrol\": sea}, {\"escort\": army}, {\"escort_group\": group}, {\"raid\": city} or null", v))
+                Err(FieldError::wrong("station", "{\"patrol\": sea}, {\"escort\": army}, {\"escort_group\": group}, {\"escort_caravan\": route, \"slot\": n}, {\"raid\": city} or null", v))
             }
         }
     }
@@ -755,6 +766,7 @@ impl Command {
             Command::RaiseOutpost { .. } => "raise_outpost",
             Command::EstablishRoute { .. } => "establish_route",
             Command::DissolveRoute { .. } => "dissolve_route",
+            Command::RefitRoute { .. } => "refit_route",
             Command::Engage { .. } => "engage",
             Command::SquadMove { .. } => "squad_move",
             Command::SquadAuto { .. } => "squad_auto",
@@ -874,6 +886,7 @@ impl Command {
             "raise_outpost" => Command::RaiseOutpost { city: j.req("city")? },
             "establish_route" => Command::EstablishRoute { unit: j.req("unit")?, city: j.req("city")?, cargo: cargo_field(d, j)? },
             "dissolve_route" => Command::DissolveRoute { route: j.req("route")? },
+            "refit_route" => Command::RefitRoute { unit: j.req("unit")?, route: j.req("route")?, cargo: cargo_field(d, j)? },
             "engage" => Command::Engage {
                 by: EngageBy::from_json(j)?,
                 to: plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
@@ -1007,6 +1020,7 @@ impl Command {
             Command::RaiseOutpost { city } => j.with("city", *city),
             Command::EstablishRoute { unit, city, cargo } => j.with("unit", *unit).with("city", *city).with("cargo", Json::Arr(cargo.iter().map(|&c| Json::opt_idx(c)).collect())),
             Command::DissolveRoute { route } => j.with("route", *route),
+            Command::RefitRoute { unit, route, cargo } => j.with("unit", *unit).with("route", *route).with("cargo", Json::Arr(cargo.iter().map(|&c| Json::opt_idx(c)).collect())),
             Command::Engage { by, to, squad, declare_war } => by
                 .put(j)
                 .with("to", plot_json(to.0, to.1))
@@ -1409,6 +1423,7 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
             }
         }
         Command::EstablishRoute { unit, city, cargo } => g.unit_establish_route(*unit, *city, *cargo).map(|_| ()).map_err(|_| "The route cannot be established."),
+        Command::RefitRoute { unit, route, cargo } => g.unit_refit_route(*unit, *route, *cargo).map_err(|_| "The route cannot be refitted."),
         Command::DissolveRoute { route } => {
             if g.route_dissolve(*route) {
                 Ok(())
@@ -1835,7 +1850,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 if let Some(why) = g.army_raid_refusal(*army, c) {
                     return Err(cannot(why));
                 }
-            } else if !g.army_is_fleet(*army) && *station != Station::None {
+            } else if !g.army_is_fleet(*army) && *station != Station::None && !matches!(station, Station::Escort(EscortTarget::Caravan(..))) {
                 return Err(cannot("only a fleet takes this standing order"));
             }
             match *station {
@@ -1854,8 +1869,16 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                         return Err(CmdErr::NotOwner);
                     }
                 }
-                // (A compile fix for docs/TRADE.md 4.4: the rules check it.)
-                Station::None | Station::Raid(_) | Station::Escort(EscortTarget::Caravan(..)) => {}
+                // A caravan of a route of the human's (docs/TRADE.md 4.4), as the rules check it.
+                Station::Escort(EscortTarget::Caravan(r, slot)) => {
+                    if !g.routes.get(r).is_some_and(|route| route.owner == h) || slot as usize >= ffh_core::trade::CARAVAN_SLOTS {
+                        return Err(cannot("no such caravan to escort"));
+                    }
+                    if g.armies[*army].disband_to.is_some() {
+                        return Err(cannot(if g.army_is_fleet(*army) { "the fleet is disbanding" } else { "the army is disbanding" }));
+                    }
+                }
+                Station::None | Station::Raid(_) => {}
             }
             Plan::Apply(Action::Army(cmd.clone()))
         }
@@ -1875,6 +1898,19 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 return Err(CmdErr::Gone);
             }
             if let Some(why) = g.unit_establish_refusal(*unit, *city, *cargo) {
+                return Err(cannot(why.text(g)));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::RefitRoute { unit, route, cargo } => {
+            unit_of(g, h, *unit)?;
+            match g.routes.get(*route) {
+                None => return Err(CmdErr::Gone),
+                Some(r) if r.owner != h => return Err(CmdErr::NotOwner),
+                Some(_) => {}
+            }
+            if let Some(why) = g.unit_refit_refusal(*unit, *route, *cargo) {
                 return Err(cannot(why.text(g)));
             }
             Plan::Apply(Action::Army(cmd.clone()))
@@ -2823,10 +2859,12 @@ mod tests {
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Patrol(SeaId(2)) },
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Army(ArmyId(3))) },
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Group(GroupId(7))) },
+            Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Caravan(RouteId(2), 1)) },
             Command::RaiseOutpost { city: CityId(3) },
             Command::EstablishRoute { unit: UnitId(4), city: CityId(2), cargo: [None, None] },
             Command::EstablishRoute { unit: UnitId(4), city: CityId(2), cargo: [Some(BonusType::from_usize(3)), None] },
             Command::DissolveRoute { route: RouteId(1) },
+            Command::RefitRoute { unit: UnitId(4), route: RouteId(1), cargo: [None, Some(BonusType::from_usize(2))] },
             Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), squad: None, declare_war: None },
             Command::Engage { by: EngageBy::Units(vec![UnitId(3), UnitId(4)]), to: (4, 5), squad: Some(SquadId(2)), declare_war: Some(true) },
             Command::Engage { by: EngageBy::From(3, 5), to: (4, 5), squad: None, declare_war: Some(false) },

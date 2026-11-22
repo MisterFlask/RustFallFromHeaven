@@ -115,7 +115,8 @@ fn establish_from_the_unit_panel_through_the_dialog() {
     let lines: Vec<String> = arr(panel.get("trade").unwrap(), "lines").iter().map(|l| l.as_str().unwrap().to_string()).collect();
     assert_eq!(lines[0], format!("Route: {} to {}.", view::city_name(&s.g, capital), view::city_name(&s.g, port)));
     assert!(lines[1].starts_with("In ") && lines[1].contains(", bound for "), "{lines:?}");
-    assert_eq!(lines[2], "Plunder: 0 gold.");
+    assert_eq!(lines[2], "Cargo: none.");
+    assert_eq!(lines[3], "Plunder: 0 gold.");
     assert_eq!(trade_view(&s).get("limits").and_then(|l| l.get("text")).and_then(Json::as_str), Some("Routes: 2 of 2."));
     std::fs::remove_dir_all(root).ok();
 }
@@ -128,8 +129,11 @@ fn establish_and_dissolve_are_refused_with_the_rules_reasons() {
     let est = |u: UnitId, c: CityId| Command::EstablishRoute { unit: u, city: c, cargo: [None, None] };
     assert_eq!(refused(s.execute(&est(u, capital))), "A route links two cities.");
     // A cargo: refused until cargo is built; the member's shape is read.
-    let bonus = ffh_data::BonusType::from_usize(0);
-    assert_eq!(refused(s.execute(&Command::EstablishRoute { unit: u, city: far, cargo: [Some(bonus), None] })), "Cargo is not built yet.");
+    // Cargo (docs/TRADE.md 5): the same resource twice; a cargo on a domestic route.
+    let fur = s.g.d.t::<BonusType>("BONUS_FUR");
+    assert_eq!(refused(s.execute(&Command::EstablishRoute { unit: u, city: far, cargo: [Some(fur), Some(fur)] })), "The two caravans carry different resources.");
+    let port: CityId = st.req("port").unwrap();
+    assert_eq!(refused(s.execute(&Command::EstablishRoute { unit: u, city: port, cargo: [Some(fur), None] })), "A domestic route carries no cargo.");
     let j = Json::parse(&format!(r#"{{"c":"establish_route","unit":{},"city":{}}}"#, u.0, far.0)).unwrap();
     assert_eq!(Command::from_json(s.g.d, &j).unwrap(), est(u, far));
     let bad = Json::parse(&format!(r#"{{"c":"establish_route","unit":{},"city":{},"cargo":[null]}}"#, u.0, far.0)).unwrap();
@@ -190,10 +194,11 @@ fn the_trade_screen_rows_the_cities_and_the_caravans() {
     assert_eq!(text(&f, "growth_text"), format!("Growth: +{growth}% of 50%."));
     let car = arr(&f, "caravans");
     assert_eq!(text(&car[0], "state"), "road");
-    assert!(text(&car[0], "text").starts_with("On the road: plot "), "{}", car[0]);
+    let t0 = text(&car[0], "text");
+    assert!(t0.starts_with("On the road: plot ") || t0.starts_with("In "), "{}", car[0]);
     assert_eq!(text(&car[1], "state"), "lost");
     assert_eq!(text(&car[1], "text"), format!("Lost on turn {} to the barbarians. Re-forms in 10 turns.", s.g.game_turn()));
-    assert_eq!(car[1].get("cargo"), Some(&Json::Null));
+    assert_eq!(car[1].get("cargo"), Some(&Json::idx(s.g.d.t::<BonusType>("BONUS_SILK"))));
     // The domestic route: both caravans on the road, the plunder of each.
     let d = route_row(&s, domestic);
     assert_eq!(text(&d, "title"), format!("{cn} to {pn}."));
@@ -349,4 +354,156 @@ fn help_lines_say_what_the_keys_do_now() {
     let k = ffh_play::view::keywords::in_text(d, &h);
     assert_eq!(k.len(), 1);
     assert_eq!(ffh_play::view::keywords::name(d, k[0]), "Route");
+}
+
+fn find<'a>(list: &'a [Json], key: &str, val: &Json) -> &'a Json {
+    list.iter().find(|j| j.get(key) == Some(val)).unwrap_or_else(|| panic!("{key} = {val} in {list:?}"))
+}
+
+#[test]
+fn cargo_in_the_establish_dialog_and_its_order() {
+    let (mut s, st, root) = staged("trade-ready");
+    let u: UnitId = st.req("caravan").unwrap();
+    let (port, far): (CityId, CityId) = (st.req("port").unwrap(), st.req("far").unwrap());
+    let d = s.g.d;
+    let (fur, gems, dye) = (d.t::<BonusType>("BONUS_FUR"), d.t::<BonusType>("BONUS_GEMS"), d.t::<BonusType>("BONUS_DYE"));
+    let civ = s.g.player_get_civilization_short_description(st.req("rival").unwrap());
+    let o = offers(&s, u);
+    let rows = arr(&o, "offers");
+    let foreign = find(&rows, "city", &Json::from(far));
+    let home = find(&rows, "city", &Json::from(port));
+    assert_eq!(home.get("cargo"), Some(&Json::Null), "a domestic route carries none");
+    let cargo = foreign.get("cargo").unwrap();
+    let opts = arr(cargo, "options");
+    // A resource the recipient lacks (+150%), one it has (+50%), an only copy with its warning.
+    let f = find(&opts, "bonus", &Json::idx(fur));
+    assert_eq!(text(f, "text"), format!("Fur (luxury): {civ} has none. +150% on this caravan."));
+    assert_eq!(f.get("warn"), Some(&Json::Null));
+    let g = find(&opts, "bonus", &Json::idx(gems));
+    assert_eq!(text(g, "text"), format!("Gems (luxury): {civ} has it. +50% on this caravan."));
+    let dy = find(&opts, "bonus", &Json::idx(dye));
+    assert_eq!(dy.get("only_copy"), Some(&Json::from(true)));
+    assert_eq!(text(dy, "warn"), "Your only copy: your cities lose Dye.");
+    // The preselection: a spare luxury the recipient lacks, never an only copy, never mana.
+    assert_eq!(arr(cargo, "preselect"), vec![Json::idx(fur), Json::Null]);
+    let halves: Vec<i64> = arr(cargo, "halves").iter().map(|j| j.as_i64().unwrap()).collect();
+    assert_eq!(halves.iter().sum::<i64>(), foreign.get("pay_x100").and_then(Json::as_i64).unwrap());
+    // Sent with its cargos: the route carries them.
+    let mut cmd = foreign.get("cmd").unwrap().clone();
+    cmd.set("cargo", Json::Arr(vec![Json::idx(fur), Json::idx(gems)]));
+    assert!(matches!(send(&mut s, &cmd).unwrap(), CmdOk::Applied { .. }));
+    let r = s.g.units[u].route.unwrap();
+    assert_eq!(s.g.routes[r].slots[0].cargo, Some(fur));
+    assert_eq!(s.g.routes[r].slots[1].cargo, Some(gems));
+    std::fs::remove_dir_all(root).ok();
+}
+
+#[test]
+fn cargo_lines_escorts_and_what_others_bring() {
+    let (s, st, root) = staged("trade-routes");
+    let (foreign, domestic): (RouteId, RouteId) = (st.req("foreign").unwrap(), st.req("domestic").unwrap());
+    let escort: ArmyId = st.req("escort").unwrap();
+    let f = route_row(&s, foreign);
+    let car = arr(&f, "caravans");
+    assert_eq!(text(&car[0], "cargo_text"), "Cargo: Gems. Delivered. Premium +150%.");
+    assert_eq!(text(&car[0], "cargo_state"), "delivering");
+    assert_eq!(text(&car[1], "cargo_text"), "Cargo: Silk. Caravan lost.");
+    let d = route_row(&s, domestic);
+    let dc = arr(&d, "caravans");
+    assert_eq!(text(&dc[0], "cargo_text"), "Cargo: none.");
+    let esc = arr(&dc[0], "escorts");
+    assert_eq!(esc[0].get("army"), Some(&Json::from(escort)));
+    assert!(arr(&dc[1], "escorts").is_empty());
+    let into = arr(&trade_view(&s), "into");
+    assert_eq!(text(&into[0], "brings"), "Brings: Silk.");
+    // Another player's caravan the human sees: its cargo; one a viewer does not see: nothing.
+    let tu: UnitId = st.req("theirs_unit").unwrap();
+    let v = Viewer::new(&s.g, s.human, false);
+    assert_eq!(text(view::unit_json(&v, tu).get("caravan").unwrap(), "cargo_text"), "Cargo: Silk.");
+    let barbs = s.g.barbarian_player();
+    let blind = Viewer::new(&s.g, barbs, false);
+    if !blind.unit_visible(tu) {
+        assert_eq!(view::trade::unit_caravan(&blind, tu), Json::Null);
+    }
+    // The owner's caravan panel names its cargo and its escort.
+    let mine = s.g.routes[domestic].slots[0].unit.unwrap();
+    let lines: Vec<String> = arr(view::units::unit_details(&v, mine).get("trade").unwrap(), "lines").iter().map(|l| l.as_str().unwrap().to_string()).collect();
+    assert!(lines.contains(&"Cargo: none.".to_string()), "{lines:?}");
+    assert!(lines.contains(&format!("Escort: {}.", s.g.armies[escort].name)), "{lines:?}");
+    // A caravan on water is drawn as a ship; on land as itself.
+    let galley = s.g.d.t::<UnitType>("UNIT_GALLEY");
+    for (_, route) in s.g.routes.iter() {
+        for c in route.caravans() {
+            let water = s.g.plot_is_water(s.g.unit_plot(c));
+            let art = view::unit_json(&v, c).get("art").cloned();
+            assert_eq!(art, water.then(|| Json::idx(galley)), "caravan {}", c.0);
+        }
+    }
+    std::fs::remove_dir_all(root).ok();
+}
+
+#[test]
+fn refit_from_the_unit_panel() {
+    let (mut s, st, root) = staged("trade-routes");
+    let u: UnitId = st.req("refit_caravan").unwrap();
+    let foreign: RouteId = st.req("foreign").unwrap();
+    let theirs: RouteId = st.req("theirs").unwrap();
+    let d = s.g.d;
+    let (fur, gems) = (d.t::<BonusType>("BONUS_FUR"), d.t::<BonusType>("BONUS_GEMS"));
+    let v = Viewer::new(&s.g, s.human, false);
+    let acts = arr(&view::units::group(&v, &[u]).unwrap(), "actions");
+    let est = acts.iter().find(|a| a.get("trade").and_then(Json::as_str) == Some("establish")).unwrap();
+    assert_eq!(est.get("enabled"), Some(&Json::from(false)), "the port is full");
+    let refit = acts.iter().find(|a| a.get("trade").and_then(Json::as_str) == Some("refit")).expect("Refit route");
+    assert_eq!(text(refit, "label"), "Refit route");
+    assert_eq!(refit.get("enabled"), Some(&Json::from(true)));
+    assert_eq!(refit.get("route"), Some(&Json::from(foreign)));
+    let o = offers(&s, u);
+    let rf = &arr(&o, "refits")[0];
+    assert_eq!(text(rf, "line"), "The route keeps its growth. This Caravan is used up.");
+    // It starts from the route's cargos.
+    assert_eq!(arr(rf.get("cargo").unwrap(), "preselect"), vec![Json::idx(gems), Json::idx(d.t::<BonusType>("BONUS_SILK"))]);
+    // Refused: another's route, the same resource twice; then done.
+    assert!(matches!(s.execute(&Command::RefitRoute { unit: u, route: theirs, cargo: [None, None] }), Err(CmdErr::NotOwner)));
+    assert_eq!(refused(s.execute(&Command::RefitRoute { unit: u, route: foreign, cargo: [Some(fur), Some(fur)] })), "The two caravans carry different resources.");
+    let growth = s.g.routes[foreign].growth;
+    let mut cmd = rf.get("cmd").unwrap().clone();
+    cmd.set("cargo", Json::Arr(vec![Json::idx(fur), Json::Null]));
+    assert!(matches!(send(&mut s, &cmd).unwrap(), CmdOk::Applied { .. }));
+    assert_eq!((s.g.routes[foreign].slots[0].cargo, s.g.routes[foreign].slots[1].cargo), (Some(fur), None));
+    assert_eq!(s.g.routes[foreign].growth, growth);
+    assert!(!s.g.units.contains(u), "used up");
+    std::fs::remove_dir_all(root).ok();
+}
+
+#[test]
+fn escort_of_a_caravan_from_the_unit_panel() {
+    let (mut s, st, root) = staged("trade-routes");
+    let escort: ArmyId = st.req("escort").unwrap();
+    let units: Vec<UnitId> = st.req("escort_units").unwrap();
+    let (domestic, theirs): (RouteId, RouteId) = (st.req("domestic").unwrap(), st.req("theirs").unwrap());
+    let (cn, pn) = (view::city_name(&s.g, st.req("capital").unwrap()), view::city_name(&s.g, st.req("port").unwrap()));
+    let station = |s: &Session| -> Json {
+        let all = view::armies::armies(&Viewer::new(&s.g, s.human, false));
+        find(all.as_arr().unwrap(), "id", &Json::from(escort)).get("station").unwrap().clone()
+    };
+    assert_eq!(text(&station(&s), "text"), format!("Escorting Caravan: {cn} to {pn} (1)."));
+    let acts = arr(&view::units::group(&Viewer::new(&s.g, s.human, false), &units).unwrap(), "actions");
+    let army = |k: &str| acts.iter().find(|a| a.get("army").and_then(Json::as_str) == Some(k)).cloned();
+    assert_eq!(text(&army("stop_escort").unwrap(), "label"), "Stop escorting");
+    let other = army("escort_caravan").expect("Escort the other caravan");
+    assert_eq!(text(&other, "label"), format!("Escort Caravan: {cn} to {pn} (2)"));
+    assert_eq!(text(&other, "help"), "A caravan standing with its escort moves only as far as the escort can.");
+    // Taken by its command (a land army: no "only a fleet" refusal), refused for another's route.
+    assert!(matches!(send(&mut s, other.get("cmd").unwrap()).unwrap(), CmdOk::Applied { .. }));
+    assert_eq!(s.g.armies[escort].station, ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Caravan(domestic, 1)));
+    let bad = Command::ArmyStation { army: escort, station: ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Caravan(theirs, 0)) };
+    assert_eq!(refused(s.execute(&bad)), "no such caravan to escort");
+    // Waiting: the caravan lost.
+    let c = s.g.routes[domestic].slots[1].unit.unwrap();
+    s.g.unit_kill(c, false, None);
+    assert_eq!(text(&station(&s), "wait"), "Waits: caravan lost.");
+    let row = route_row(&s, domestic);
+    assert_eq!(arr(&arr(&row, "caravans")[1], "escorts")[0].get("army"), Some(&Json::from(escort)));
+    std::fs::remove_dir_all(root).ok();
 }

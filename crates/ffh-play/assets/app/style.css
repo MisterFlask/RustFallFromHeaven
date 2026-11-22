@@ -567,7 +567,24 @@ button.trade-offer:hover, button.trade-offer:focus { outline: 2px solid var(--c-
 .trade-route { border: 1px solid var(--c-iron); padding: 6px 8px; }
 .trade-route.closed { border-color: var(--c-rust); }
 .trade-route.lost { border-color: var(--c-amber); }
-.trade-route-head { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
+.trade-route-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.trade-route-head .trade-dissolve { flex: none; }
+.trade-screen .modal-body { overflow-x: hidden; }
+.trade-route, .trade-terms, .trade-state, .trade-caravans li, .trade-into { overflow-wrap: anywhere; white-space: normal; }
+.trade-cargo.delivering { color: var(--c-lichen); }
+.trade-cargo.lost, .trade-cargo.closed, .trade-cargo.no_copy { color: var(--c-amber); }
+.trade-brings { color: var(--c-lichen); }
+.trade-offer-box { display: grid; gap: 4px; }
+.cargo-panel { border: 1px solid var(--c-iron); padding: 6px 8px; display: grid; gap: 6px; }
+.cargo-picker { display: grid; gap: 6px; }
+label.cargo-slot { display: grid; gap: 2px; }
+.cargo-slot-head { font-weight: bold; }
+select.cargo-select { max-width: 100%; }
+.cargo-line { color: var(--dim); }
+.cargo-pay { font-weight: bold; }
+.cargo-go { justify-self: start; }
+.trade-refit-line { margin: 2px 0 6px; }
+.escort-station .small { margin-top: 2px; }
 .trade-route-title { font-weight: bold; text-align: left; }
 .trade-state, .trade-pay, .trade-terms, .trade-growth { margin: 2px 0; }
 ul.trade-caravans, ul.trade-into-list { margin: 2px 0; padding-left: 20px; }

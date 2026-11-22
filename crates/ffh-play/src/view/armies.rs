@@ -237,8 +237,8 @@ pub fn station_view(v: &Viewer, a: ArmyId) -> Json {
             let (army, group) = match t {
                 EscortTarget::Army(b) => (Some(b), None),
                 EscortTarget::Group(gr) => (None, Some(gr)),
-                // (A compile fix for docs/TRADE.md 4.4.)
-                EscortTarget::Caravan(..) => (None, None),
+                // A caravan (docs/TRADE.md 4.4): its own line, with why it waits.
+                EscortTarget::Caravan(..) => return crate::view::trade::escort_station(v, a),
             };
             crate::jobj! { "kind" => "escort", "army" => army, "group" => group, "text" => format!("Standing order: Escort of {}.", g.escort_target_name(t)) }
         }
@@ -289,7 +289,10 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
     };
     j.set("domain", "land");
     // Its Raid order (docs/RAIDS.md, section 8): `kind` none or raid, its `text`.
-    j.set("station", crate::view::raids::station(v, a));
+    // Or its Escort of a caravan (docs/TRADE.md 4.4): `kind` escort, `route`, `slot`, `text`, `wait`.
+    let escort = crate::view::trade::escort_station(v, a);
+    j.set("station", if escort.is_null() { crate::view::raids::station(v, a) } else { escort });
+    j.set("escort_caravans", crate::view::trade::escort_choices(v, a));
     if screen {
         j.set("recruits", Json::Arr(marching.into_iter().map(|u| recruit_json(v, u)).collect()));
         // This game's governors (docs/GOVERNORS.md): the empire orders for the army in the human's
@@ -322,6 +325,7 @@ fn fleet_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "in_supply" => true,
         "supply" => Json::Null,
         "station" => station_view(v, a),
+        "escort_caravans" => crate::view::trade::escort_choices(v, a),
         "wear" => wear,
         "wear_text" => if wear > 0 { format!("Wear: -{wear}% strength. Enter a port to clear.") } else { "Wear: none.".to_string() },
         "sea" => plot.and_then(|q| g.map.plots[q].sea).map(|s| g.map.seas[s.idx()].name.clone()),

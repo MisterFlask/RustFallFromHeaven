@@ -171,7 +171,7 @@ function citySprites(size, civ) {
  *  stand in for it, before its combat type's (UNIT_COMBAT) and domain's. A sprite named after the
  *  exact type, its class, or `<civilization>_<type>` (unit_ljosalfar_archer) needs no entry here. */
 const UNIT_ALIASES = {
-  beastman: ["warrior"], bloodpet: ["warrior"], berserker: ["axeman"], immortal: ["champion"],
+  caravan: ["settler"], beastman: ["warrior"], bloodpet: ["warrior"], berserker: ["axeman"], immortal: ["champion"],
   dwarven_soldier_runes: ["axeman"], longbowman: ["archer"], firebow: ["archer"], arquebus: ["crossbowman", "archer"],
   marksman: ["crossbowman", "archer"], nightwatch: ["crossbowman", "archer"], crossbowman: ["archer"],
   horse_archer: ["horseman"], chariot: ["horseman"], knight: ["horseman"], frostling_wolf_rider: ["horseman"],
@@ -1001,7 +1001,8 @@ export class IsoMap {
     const now = performance.now();
     for (const st of stacks) {
       const { top, c } = st;
-      const key = this.unitKey(top.type, top.owner);
+      // (A caravan on water is drawn as a ship: the view's `art`, docs/TRADE.md 2.)
+      const key = this.unitKey(top.art ?? top.type, top.owner);
       const off = this.slideOffset(top.id, now);
       const gate = cityAt.has(c.k);
       st.flag = null;

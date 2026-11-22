@@ -375,6 +375,8 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
     if let Some(a) = crate::view::trade::establish_action(v, units) {
         out.push(a);
     }
+    // Refit route (docs/TRADE.md, 5): in the origin of a route of the human's.
+    out.extend(crate::view::trade::refit_actions(v, units));
 
     out
 }
@@ -635,6 +637,8 @@ fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json,
         if !fleet {
             out.extend(crate::view::raids::actions(v, a, plot));
         }
+        // Trade (docs/TRADE.md 4.4): Escort of a caravan, for an army or a fleet.
+        out.extend(crate::view::trade::escort_actions(v, a));
     }
     out
 }

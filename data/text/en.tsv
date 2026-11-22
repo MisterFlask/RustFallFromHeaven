@@ -5115,7 +5115,7 @@ TXT_KEY_CIVIC_FREE_SPEECH	Free Speech
 TXT_KEY_CIVIC_FREE_SPEECH_STRATEGY	Extra commerce from towns; increases cultural output of all cities
 TXT_KEY_CIVIC_FREE_UNITS	[ICON_BULLET]%D1_Num Free Units
 TXT_KEY_CIVIC_FREE_XP	[ICON_BULLET]New Units Receive %D1_Change Experience Points
-TXT_KEY_CIVIC_FROM_TRADE_ROUTES	[SPACE]from Trade Routes ([ICON_TRADE])
+TXT_KEY_CIVIC_FROM_TRADE_ROUTES	[SPACE]from routes
 TXT_KEY_CIVIC_GOD_KING	God King
 TXT_KEY_CIVIC_GOD_KING_STRATEGY	 +1 Happy from state religion, +50% Hammers and Commerce in capital, +10% Distance cost modifier
 TXT_KEY_CIVIC_GREAT_GENERAL_MOD	[ICON_BULLET]%D1_Mod%% Great General Emergence
@@ -5137,7 +5137,7 @@ TXT_KEY_CIVIC_LARGEST_CITIES_HAPPINESS	[ICON_BULLET]%D1_Change%F2_HappyOrUn in %
 TXT_KEY_CIVIC_LIBERTY	Liberty
 TXT_KEY_CIVIC_LIBERTY_STRATEGY	+100% Culture, +50% War Weariness, -2 Happy per Dungeon, Unlimited Artists
 TXT_KEY_CIVIC_MERCANTILISM	Mercantilism
-TXT_KEY_CIVIC_MERCANTILISM_STRATEGY	No Foreign Trade routes but +20% gold in all cities
+TXT_KEY_CIVIC_MERCANTILISM_STRATEGY	No foreign routes; +20% gold in every city
 TXT_KEY_CIVIC_MILITARY_DISCIPLINE	Military Discipline
 TXT_KEY_CIVIC_MILITARY_DISCIPLINE_STRATEGY	+10% Military production
 TXT_KEY_CIVIC_MILITARY_FOOD	[ICON_BULLET]Military Units Produced with [ICON_FOOD]
@@ -5154,7 +5154,7 @@ TXT_KEY_CIVIC_NO_BUILDING_UNHEALTHY	[ICON_BULLET]No [ICON_UNHEALTHY] from Buildi
 TXT_KEY_CIVIC_NO_CORPORATIONS	[ICON_BULLET]Corporations have no effect
 TXT_KEY_CIVIC_NO_DIPLOMACY_WITH_ENEMIES	[ICON_BULLET]No diplomacy with enemies
 TXT_KEY_CIVIC_NO_FOREIGN_CORPORATIONS	[ICON_BULLET]Foreign Corporations have no effect
-TXT_KEY_CIVIC_NO_FOREIGN_TRADE	[ICON_BULLET]No Foreign Trade Routes ([ICON_TRADE])
+TXT_KEY_CIVIC_NO_FOREIGN_TRADE	[ICON_BULLET]No foreign routes, from or to your cities
 TXT_KEY_CIVIC_NO_MAINT_CORPORATION	[ICON_BULLET]No Maintenance Costs from Corporations
 TXT_KEY_CIVIC_NO_MAINT_CORPORATION_MOD	[ICON_BULLET]%D1_Mod%% Maintenance Costs from Corporations
 TXT_KEY_CIVIC_NO_MAINT_NUM_CITIES	[ICON_BULLET]No Maintenance Costs from Number of Cities
@@ -13671,7 +13671,7 @@ TXT_KEY_UNIT_PIKEMAN	Pikeman
 TXT_KEY_UNIT_PIKEMAN_STRATEGY	This melee combat unit gets a big bonus when fighting mounted enemy units. 
 TXT_KEY_UNIT_PIRATE	Pirate
 TXT_KEY_UNIT_PIRATE_PEDIA	Pirates are the scourge of the seas. Fast, nimble, and totally heartless, they attack without warning and leave nothing alive. These less-than-admirable qualities make them excellent weapons to counter the naval ambitions of one's enemies. Privateers are mercenary pirates, chartered by a civilization with one goal: attack everything not flying the right flag. Used efficiently, pirates can completely disrupt an enemy's naval trade and coastal industry.
-TXT_KEY_UNIT_PIRATE_STRATEGY	Pirates and Privateers are useful units for weakening rivals without declaring war. They can blockade cities, eliminating traderoutes and stealing a small amount of gold, and they can attack any ships without declaring war. Even though they have cargo space, remember that they can only carry other Hidden Nationality units, such as Council of Esus units, unless they declare nationality.
+TXT_KEY_UNIT_PIRATE_STRATEGY	Pirates and Privateers are useful units for weakening rivals without declaring war. They can blockade cities, closing the routes that cross the sea and stealing a small amount of gold, and they can attack any ships without declaring war. Even though they have cargo space, remember that they can only carry other Hidden Nationality units, such as Council of Esus units, unless they declare nationality.
 TXT_KEY_UNIT_PITCH_WAGON	Pitch Wagon
 TXT_KEY_UNIT_PIT_BEAST	Pit Beast
 TXT_KEY_UNIT_PIT_BEAST_STRATEGY	Pit Beasts are abominations made from the pieces of various slain demons. They ache for a chance to avenge their destruction, and will heed any call to return to the mortal realm. As long as they taste blood, they can continue their assault indefinitely.
@@ -14103,7 +14103,7 @@ TXT_KEY_VOTE_FORCE_PEACE	Stop the fighting among our brothers in faith.
 TXT_KEY_VOTE_FORCE_WAR	Declare war on the infidels.
 TXT_KEY_VOTE_FREE_RELIGION	U.N. Resolution #427 (Global Civic - Free Religion)
 TXT_KEY_VOTE_FREE_SPEECH	U.N. Resolution #3445 (Global Civic - Free Speech)
-TXT_KEY_VOTE_FREE_TRADE	Open Markets: Trade Routes ([ICON_TRADE]) with all foreign cities
+TXT_KEY_VOTE_FREE_TRADE	Open Markets: routes to the members' cities without open borders
 TXT_KEY_VOTE_FUND_DISSIDENTS	Fund Dissidents: Could cause unhappiness in the cities of non-Undercouncil members
 TXT_KEY_VOTE_GAMBLING_RING	Setup a Gambling Ring: Reduces the production cost of Gambling Houses by 75%
 TXT_KEY_VOTE_LIBERTY	Global Civic: Liberty

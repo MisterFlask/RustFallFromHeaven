@@ -24,7 +24,7 @@ import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
 import { choosePlacement } from "./place.js";
 import { withCalc, calcTip } from "./calc.js";
 import { raidTone } from "./raids.js";
-import { openEstablish } from "./trade.js";
+import { openEstablish, openRefit } from "./trade.js";
 import { caravanTipLines } from "./trade_view.js";
 import { squadBoard, squadName, roman, stripGroups, setSquadUnitTip } from "./squads.js";
 
@@ -549,7 +549,7 @@ export async function doAction(a) {
   if (a.cmd?.c === "cast_at" && !(S.sel?.units ?? []).includes(a.cmd.unit)) return;
   if (a.kind === "spell" && a.target_kind) return castTargeted(a);
   // Trade (docs/TRADE.md 3.2): Establish route opens its dialog (trade.js), which sends the order.
-  if (a.kind === "trade") return openEstablish(a.unit);
+  if (a.kind === "trade") return a.trade === "refit" ? openRefit(a.unit, a.route) : openEstablish(a.unit);
   if (a.kind === "target") {
     if (!a.any && (a.targets ?? []).length === 0) {
       toast("No target in range.", "error");
@@ -1319,7 +1319,7 @@ const actionType = (a) =>
 /** The kinds the isometric card lists as labelled buttons rather than icon tiles (their icons
  *  would all look alike), with the icon each label carries. */
 const LISTED = ["spell", "promotion", "upgrade", "army", "trade"];
-const ARMY_ICONS = { form: "units", split: "units", join: "units", garrison: "defense", disband: "disband", upgrade: "upgrade", raid: "plunder", stop_raid: "cancel" };
+const ARMY_ICONS = { form: "units", split: "units", join: "units", garrison: "defense", disband: "disband", upgrade: "upgrade", raid: "plunder", stop_raid: "cancel", escort_caravan: "commerce", stop_escort: "cancel" };
 const listedIcon = (a) => (a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : a.kind === "army" ? (ARMY_ICONS[a.army] ?? "units") : a.kind === "trade" ? "commerce" : "upgrade");
 
 /** Whether the card lists action `a` as a labelled button: spells, promotions, upgrades and army
@@ -1653,6 +1653,9 @@ function armyLine() {
     // A fleet's standing order (docs/NAVAL.md, 7.2); a land army's Raid (docs/RAIDS.md, 8).
     fleet && a.station?.text ? h("div.dim.fleet-station-line", a.station.text) : null,
     !fleet && a.station?.kind === "raid" ? h("span.warn.raid-station-line", ` · ${a.station.text}`) : null,
+    // Trade (docs/TRADE.md 4.4): a land army's Escort of a caravan, and why it waits.
+    !fleet && a.station?.kind === "escort" ? h("div.dim.escort-station-line", a.station.text) : null,
+    a.station?.kind === "escort" && a.station.wait ? h("div.warn.escort-wait", a.station.wait) : null,
     a.marching.length ? h("span.dim", { title: "Recruits marching to it" }, ` · ${a.marching.length} marching to it`) : null,
     training ? h("span.dim", { title: "Units cities train for it: its requisition's, and those they build next for it" }, ` · ${training} in training`) : null,
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,

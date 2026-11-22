@@ -483,6 +483,10 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
     if !caravan.is_null() {
         j.set("caravan", caravan);
     }
+    // The type whose figure it is drawn with, when not its own (a caravan on water: a ship).
+    if let Some(t) = trade::unit_art(g, u) {
+        j.set("art", Json::idx(t));
+    }
     // A crusade Host's unit (docs/CRUSADE.md): who lent it (the lender's banner is public, as the
     // Host's own owner is).
     if let Some(rec) = unit.lent.as_ref().filter(|_| v.unit_owner(u) == unit.owner) {

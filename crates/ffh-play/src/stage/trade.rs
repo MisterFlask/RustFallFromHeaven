@@ -141,17 +141,58 @@ fn trade_seed(dir: &Path, kind: &str, seed: u32) -> Result<Option<Json>, String>
         let (x, y) = (g.cities[c].x, g.cities[c].y);
         g.player_init_unit(p, caravan, x, y, None, None)
     };
-    // The foreign routes: the human's from the port, the rival's into the capital.
+    // Resources (docs/TRADE.md, 5): the human's Gems x3 and Fur x2 around the capital, Silk x2
+    // and Dye x1 around the port; the rival's Silk x1 (around its capital). Each on a plot of the city's first ring,
+    // improved, with a road; the techs that reveal and trade them given.
+    // (The rival's Silk around its capital: a resource counts in its capital's network.)
+    let Some(&rival_capital) = g.players[rival].cities.first() else { return Ok(None) };
+    let stock: [(CityId, PlayerId, &str, &str, usize); 5] = [
+        (capital, h, "BONUS_GEMS", "IMPROVEMENT_MINE", 3),
+        (capital, h, "BONUS_FUR", "IMPROVEMENT_CAMP", 2),
+        (port, h, "BONUS_SILK", "IMPROVEMENT_PLANTATION", 2),
+        (port, h, "BONUS_DYE", "IMPROVEMENT_PLANTATION", 1),
+        (rival_capital, rival, "BONUS_SILK", "IMPROVEMENT_PLANTATION", 1),
+    ];
+    let road = d.t::<RouteType>("ROUTE_ROAD");
+    let mut used: Vec<PlotIdx> = Vec::new();
+    for (c, p, b, imp, n) in stock {
+        let (b, imp) = (d.t::<BonusType>(b), d.t::<ImprovementType>(imp));
+        let team = g.players[p].team;
+        for tech in [d.bonuses[b].tech_reveal, d.bonuses[b].tech_city_trade].into_iter().flatten() {
+            g.team_set_has_tech(team, tech, true, Some(p), false, false);
+        }
+        let (cx0, cy0) = (g.cities[c].x, g.cities[c].y);
+        let ring: Vec<PlotIdx> = (0..DirectionType::NUM).filter_map(|i| g.plot_direction(cx0, cy0, DirectionType::from_usize(i))).filter(|&q| !g.plot_is_water(q) && !used.contains(&q) && g.map.plots[q].plot_city.is_none() && g.map.plots[q].owner == Some(p)).collect();
+        if ring.len() < n {
+            return Ok(None);
+        }
+        for &q in &ring[..n] {
+            g.plot_set_bonus_type(q, Some(b));
+            g.plot_set_improvement_type(q, Some(imp));
+            g.plot_set_route_type(q, Some(road), false);
+            used.push(q);
+        }
+    }
+    // A road from the capital to the port: one trade network (the capital's resources and the
+    // port's are the same player's to send).
+    for dx in 1..6 {
+        g.plot_set_route_type(at(dx, 0), Some(road), false);
+    }
+    g.update_plot_groups();
+    let gems = d.t::<BonusType>("BONUS_GEMS");
+    let silk = d.t::<BonusType>("BONUS_SILK");
+    // The foreign routes: the human's from the port (Gems and Silk), the rival's into the capital.
     let u = make(g, h, port);
-    let Ok(foreign) = g.unit_establish_route(u, far, [None, None]) else { return Ok(None) };
+    let Ok(foreign) = g.unit_establish_route(u, far, [Some(gems), Some(silk)]) else { return Err(format!("the foreign route: {:?}", g.unit_establish_refusal(u, far, [Some(gems), Some(silk)]))) };
     let u = make(g, rival, far);
-    let Ok(theirs) = g.unit_establish_route(u, capital, [None, None]) else { return Ok(None) };
+    let Ok(theirs) = g.unit_establish_route(u, capital, [Some(silk), None]) else { return Ok(None) };
     // Turn ends until the human's route has arrived, and the rival's has and its first caravan,
-    // on its way back, stands on the human's land, off its cities.
+    // on its way back, stands on land on the human's side of the strait (its own or no one's), off
+    // the cities.
     let on_land = |g: &Game| -> Option<UnitId> {
         let v = g.routes[theirs].slots[0].unit?;
         let q = g.unit_plot(v);
-        (g.routes[theirs].arrived && !g.plot_is_water(q) && g.map.plots[q].plot_city.is_none() && g.plot_get_team(q) == Some(ht)).then_some(v)
+        (g.routes[theirs].arrived && !g.plot_is_water(q) && g.map.plots[q].plot_city.is_none() && g.plot_get_team(q).is_none_or(|t| t == ht)).then_some(v)
     };
     let mut theirs_unit = None;
     for _ in 0..30 {
@@ -209,6 +250,17 @@ fn trade_seed(dir: &Path, kind: &str, seed: u32) -> Result<Option<Json>, String>
         if let Some(v) = g.routes[foreign].slots[1].unit {
             g.unit_kill(v, false, Some(barbs));
         }
+        // An army of the human's escorting the domestic route's first caravan (docs/TRADE.md 4.4).
+        let (ex, ey) = (g.cities[capital].x, g.cities[capital].y);
+        let warriors: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, d.t::<UnitType>("UNIT_WARRIOR"), ex, ey, None, None)).collect();
+        let escort = g.army_form(h, &warriors).map_err(|e| format!("army: {e}"))?;
+        g.army_set_station(h, escort, ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Caravan(domestic, 0))).map_err(|e| format!("escort: {e}"))?;
+        out.set("escort", escort);
+        out.set("escort_units", warriors);
+        // A Caravan of the human's in the port, the foreign route's origin: Refit route.
+        let (px0, py0) = (g.cities[port].x, g.cities[port].y);
+        let refit = g.player_init_unit(h, caravan, px0, py0, None, None);
+        out.set("refit_caravan", refit);
         // A Warrior of the human next to the rival's caravan.
         let tq = g.unit_plot(theirs_unit);
         let (tx, ty) = g.map.xy(tq);
