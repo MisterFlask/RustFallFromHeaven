@@ -61,3 +61,31 @@ test("the tooltip's caravan lines, the screen's caravan line and a row's tone", 
   assert.equal(V.routeTone({ open: true, caravans: [{ state: "road" }, { state: "lost" }] }), "lost");
   assert.equal(V.routeTone({ open: true, caravans: [{ state: "road" }, { state: "road" }] }), "open");
 });
+
+test("the pay with chosen cargos: each half times its premium, as the rules' route_pay", () => {
+  assert.equal(V.cargoPay([413, 412], [0, 0]), 825);
+  assert.equal(V.cargoPay([413, 412], [150, 0]), Math.floor(413 * 2.5) + 412);
+  assert.equal(V.cargoPay([413, 412], [150, 50]), 1032 + 618);
+  assert.equal(V.payText(1650), "16.5");
+  assert.equal(V.payText(825), "8.3");
+  const options = [{ bonus: 3, premium: 150, warn: null }, { bonus: 5, premium: 50, warn: "Your only copy: your cities lose Silk." }];
+  assert.deepEqual(V.choicePremiums(options, [3, null]), [150, 0]);
+  assert.deepEqual(V.choicePremiums(options, [5, 3]), [50, 150]);
+  assert.equal(V.choiceRefusal([3, 3]), "The two caravans carry different resources.");
+  assert.equal(V.choiceRefusal([3, null]), null);
+  assert.equal(V.choiceRefusal([null, null]), null);
+  assert.deepEqual(V.choiceWarnings(options, [5, 3]), ["Your only copy: your cities lose Silk."]);
+  assert.deepEqual(V.choiceWarnings(options, [3, null]), []);
+});
+
+test("an Escort of a caravan in the stations' selectors", () => {
+  assert.equal(V.caravanStationValue({ kind: "escort", route: 2, slot: 1 }), "caravan:2:1");
+  assert.equal(V.caravanStationValue({ kind: "escort", army: 4, route: null }), null);
+  assert.equal(V.caravanStationValue({ kind: "raid" }), null);
+  assert.deepEqual(V.caravanStation("caravan:2:1"), { escort_caravan: 2, slot: 1 });
+  assert.equal(V.caravanStation("escort:4"), null);
+});
+
+test("the tooltip's caravan lines carry the cargo", () => {
+  assert.deepEqual(V.caravanTipLines({ caravan: { text: "Caravan: A to B.", cargo_text: "Cargo: Gems.", plunder_text: "Plunder: 42 gold." } }), ["Caravan: A to B.", "Cargo: Gems.", "Plunder: 42 gold."]);
+});

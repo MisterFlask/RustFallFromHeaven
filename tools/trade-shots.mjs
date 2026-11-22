@@ -4,7 +4,7 @@
 // HD-2D map (`?renderer=hd2d&force3d=1`; SwiftShader here unless --gpu).
 //
 //   node tools/trade-shots.mjs --bin <built>/ffh-play [--out docs/shots/trade]
-//                              [--assets crates/ffh-play/assets] [--gpu] [--only ready,routes,closed,raid,help]
+//                              [--assets crates/ffh-play/assets] [--gpu] [--only ready,routes,closed,raid,help,checks]
 //
 // - `ready` (`stage trade-ready`, a Caravan in the capital): establish-action.png (the unit panel's
 //   Establish route with its tooltip), establish-dialog.png (the dialog: the limits line, one row
@@ -15,6 +15,14 @@
 //   trade-map.png (the Trade layer: the routes' lines), caravan-tooltip.png (the plot tooltip of
 //   the rival's caravan: its route and plunder), caravan-panel.png (the unit panel of a caravan of
 //   the human's), city-routes.png (the city screen's Routes section).
+//   Cargo and escorts: cargo-dialog.png (a foreign row's selectors: Fur +150%, Gems +50%, the pay
+//   with them), cargo-only-copy.png (Dye on the second caravan: the only-copy warning),
+//   caravan-ship.png (a caravan at sea drawn as a ship), caravan-land.png (the rival's caravan on
+//   land: the Settler's figure) [ready]; refit-action.png and refit-dialog.png (a Caravan in the
+//   port), escort-line.png (the escorting army's line), escort-actions.png (Stop escorting and
+//   Escort with the pace rule), armies-escort.png (the Armies screen's Escort selector) [routes].
+// - `checks` (`stage trade-routes` on `?renderer=flat` and `?renderer=iso`): check-flat-layer.png,
+//   check-iso-layer.png (the Trade layer on the other two maps).
 // - `closed` (`stage trade-closed`): trade-screen-closed.png (a route closed with its reason).
 // - `raid` (`stage trade-raid`, at war): attack-preview.png (the attack preview on a caravan: the
 //   plunder line).
@@ -123,7 +131,7 @@ async function settle(page) {
 const dropToasts = (page) => page.evaluate(() => document.querySelectorAll("#toasts .toast").forEach((t) => t.remove()));
 
 /** Serves staged game `kind` on the HD-2D map and runs `f(page, st)`. */
-async function onStage(browser, bin, saves, kind, f) {
+async function onStage(browser, bin, saves, kind, f, query = "?renderer=hd2d&force3d=1") {
   const st = await stage(bin, kind, path.join(saves, `staged-${kind}`));
   const server = await startServer({ bin, saves, extra: ["--load", st.save, "--assets", ASSETS] });
   try {
@@ -131,7 +139,7 @@ async function onStage(browser, bin, saves, kind, f) {
     page.on("pageerror", (e) => console.error(`page error: ${e.message}`));
     page.on("console", (m) => m.type() === "error" && console.error(`console: ${m.text()}`));
     try {
-      await page.goto(`${server.url}/?renderer=hd2d&force3d=1`);
+      await page.goto(`${server.url}/${query}`);
       await until(() => page.evaluate(() => !!(window.ffh?.ready && window.ffh.S.view && window.ffh.S.map && window.ffh.S.status?.phase === "human")), "the staged game", 240000, 250);
       await sleep(3000);
       await settle(page);
@@ -196,6 +204,39 @@ async function shotsReady(browser, bin, saves) {
     const top = await page.evaluate(() => document.querySelector('.modal[data-tag="establish"]').getBoundingClientRect().top);
     await page.screenshot({ path: path.join(OUT, "establish-preview.png"), clip: { x: 60, y: Math.max(0, top - 460), width: 900, height: 460 + 110 }, timeout: 300000 });
     console.log("establish-preview.png: 900 x 570 CSS px");
+    // The foreign row: its cargo selectors (Fur preselected: +150%), Gems on the second (+50%).
+    await page.click(`.modal[data-tag="establish"] .trade-offer-box[data-city="${st.far}"] .trade-offer`);
+    await until(() => page.evaluate(() => !!document.querySelector('.modal[data-tag="establish"] .cargo-panel')), "the cargo selectors", 10000);
+    const pickBonus = (slot, name) =>
+      page.evaluate(([slot, name]) => {
+        const sel = document.querySelector(`.modal[data-tag="establish"] select.cargo-select[data-slot="${slot}"]`);
+        const o = [...sel.options].find((x) => x.textContent.startsWith(name));
+        sel.value = o.value;
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      }, [slot, name]);
+    await pickBonus(1, "Gems");
+    await sleep(400);
+    await crop(page, ['.modal[data-tag="establish"]'], "cargo-dialog.png", { maxW: 760, maxH: 1000 });
+    // An only copy: its warning.
+    await pickBonus(1, "Dye");
+    await sleep(400);
+    await crop(page, ['.modal[data-tag="establish"] .cargo-panel'], "cargo-only-copy.png", { maxW: 760 });
+    await page.keyboard.press("Escape");
+    await sleep(500);
+    // A caravan on water: drawn as a ship.
+    const ship = await page.evaluate(() => [...window.ffh.S.units.values()].find((u) => u.art !== undefined && u.caravan));
+    if (ship) {
+      await centre(page, ship.x, ship.y, frame());
+      const p = await plotPoint(page, ship.x, ship.y);
+      await cropAt(page, p?.x ?? VIEW.width / 2, (p?.y ?? VIEW.height / 2) - 30, 360, 240, "caravan-ship.png");
+    } else console.log("caravan-ship.png: no caravan on water in the scene");
+    // The rival's caravan on land: the Settler's figure.
+    const tu = await page.evaluate((id) => window.ffh.S.units.get(id), st.theirs_unit);
+    if (tu) {
+      await centre(page, tu.x, tu.y, frame());
+      const p = await plotPoint(page, tu.x, tu.y);
+      await cropAt(page, p?.x ?? VIEW.width / 2, (p?.y ?? VIEW.height / 2) - 30, 360, 240, "caravan-land.png");
+    }
     const drawn = await page.evaluate(() => window.ffh.mapView.r3d?.tradeDrawn ?? window.ffh.mapView.tradeDrawn ?? null);
     console.log(`establish-preview: lines drawn ${JSON.stringify(drawn)}`);
   });
@@ -207,7 +248,7 @@ async function shotsRoutes(browser, bin, saves) {
     await page.evaluate(() => window.ffh.openScreen("trade"));
     await until(() => page.evaluate(() => !!document.querySelector('.modal[data-tag="trade-screen"] .trade-route')), "the Trade screen", 20000);
     await sleep(800);
-    await crop(page, ['.modal[data-tag="trade-screen"]'], "trade-screen.png", { maxW: 820, maxH: 1000 });
+    await crop(page, ['.modal[data-tag="trade-screen"]'], "trade-screen.png", { maxW: 900, maxH: 1200 });
     await page.keyboard.press("Escape");
     await sleep(500);
     // The Trade layer on the map: the routes' lines.
@@ -223,11 +264,48 @@ async function shotsRoutes(browser, bin, saves) {
     await sleep(800);
     await crop(page, TIP, "caravan-tooltip.png", { maxW: 560 });
     await page.mouse.move(4, 4);
+    await page.evaluate(() => window.ffh.units.hoverAt(null, null));
+    await page.evaluate(() => document.querySelectorAll(".tooltip").forEach((t) => (t.hidden = true)));
     // A caravan of the human's: the unit panel.
     const mine = await page.evaluate(() => window.ffh.S.view.trade.routes.flatMap((r) => r.caravans).find((c) => c.unit !== null && c.state === "road")?.unit);
     await selectUnits(page, [mine], "#unit-panel .trade-lines");
-    await crop(page, ["#unit-panel"], "caravan-panel.png", { maxW: 760, maxH: 520 });
+    await crop(page, ["#unit-panel"], "caravan-panel.png", { maxW: 760, maxH: 560 });
     await page.evaluate(() => window.ffh.units.clearSelection?.());
+    // Refit: the Caravan in the port, its action and dialog.
+    const refit = '#unit-panel button.action[data-kind="trade"][data-type="trade_refit"]';
+    await selectUnits(page, [st.refit_caravan], refit);
+    await hover(page, refit);
+    await crop(page, [refit, ...TIP], "refit-action.png", { maxW: 700 });
+    await unhover(page, refit);
+    await page.click(refit);
+    await until(() => page.evaluate(() => !!document.querySelector('.modal[data-tag="refit"] .cargo-picker')), "the Refit dialog", 20000);
+    await sleep(600);
+    await crop(page, ['.modal[data-tag="refit"]'], "refit-dialog.png", { maxW: 760, maxH: 1000 });
+    await page.keyboard.press("Escape");
+    await sleep(500);
+    // Escort: the army's unit panel (its line and the Escort actions), then the Armies screen.
+    await selectUnits(page, st.escort_units, '#unit-panel button.action[data-type="escort_caravan"]');
+    await page.mouse.move(4, 4);
+    await sleep(400);
+    await crop(page, ["#unit-panel .army-line"], "escort-line.png", { maxW: 760 });
+    const esc = '#unit-panel button.action[data-type="escort_caravan"]';
+    await hover(page, esc);
+    await crop(page, ['#unit-panel button.action[data-type="stop_escort"]', esc, ...TIP], "escort-actions.png", { maxW: 760, maxH: 700 });
+    await unhover(page, esc);
+    await page.evaluate(() => {
+      window.ffh.openScreen("armies");
+    });
+    await until(() => page.evaluate(() => !!document.querySelector('.modal[data-tag="armies"] .escort-station')), "the Armies screen's escort", 20000);
+    await sleep(600);
+    await page.evaluate(() => {
+      const c = document.querySelector('.modal[data-tag="armies"] .escort-station').closest(".army-card");
+      c.id = "escort-card";
+      c.scrollIntoView({ block: "center" });
+    });
+    await sleep(300);
+    await crop(page, ["#escort-card .army-title", "#escort-card .escort-station"], "armies-escort.png", { maxW: 760 });
+    await page.keyboard.press("Escape");
+    await sleep(500);
     // The city screen's Routes section (the port: a route from it and one into it).
     await page.evaluate((c) => window.ffh.emit("open-city", c), st.port);
     await until(() => page.evaluate(() => !!document.querySelector(".modal.city-screen section.city-routes")), "the city screen's Routes", 30000);
@@ -278,6 +356,27 @@ async function shotsHelp(browser, bin, saves) {
   });
 }
 
+// ---- `checks`: the Trade layer on the flat and the isometric maps ----
+async function shotsChecks(browser, bin, saves) {
+  for (const r of ["flat", "iso"]) {
+    await onStage(
+      browser,
+      bin,
+      saves,
+      "trade-routes",
+      async (page, st) => {
+        await page.evaluate(() => window.ffh.setLayer("trade"));
+        await centre(page, Math.round((st.cx + st.fx) / 2), st.cy, 2500);
+        await dropToasts(page);
+        await cropAt(page, VIEW.width / 2 - 150, VIEW.height / 2, 780, 440, `check-${r}-layer.png`);
+        const drawn = await page.evaluate(() => window.ffh.mapView.tradeDrawn ?? window.ffh.mapView.iso?.tradeDrawn ?? null);
+        console.log(`check-${r}-layer: ${JSON.stringify(drawn)}`);
+      },
+      `?renderer=${r}`,
+    );
+  }
+}
+
 async function main() {
   const bin = findBin(args.bin);
   const pw = await loadPlaywright();
@@ -291,6 +390,7 @@ async function main() {
     if (want("closed")) await shotsClosed(browser, bin, saves);
     if (want("raid")) await shotsRaid(browser, bin, saves);
     if (want("help")) await shotsHelp(browser, bin, saves);
+    if (want("checks")) await shotsChecks(browser, bin, saves);
   } finally {
     await browser.close();
     fs.rmSync(saves, { recursive: true, force: true });

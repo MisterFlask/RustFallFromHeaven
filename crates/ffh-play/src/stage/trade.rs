@@ -213,6 +213,10 @@ fn trade_seed(dir: &Path, kind: &str, seed: u32) -> Result<Option<Json>, String>
         g.player_update_routes(h);
     }
     g.player_update_routes(rival);
+    // A Scout of the human's on the land bridge over the strait: the caravans at sea there are in
+    // sight (the shots draw one as a ship).
+    let (bx, by) = xy(g, at(9, -4));
+    g.player_init_unit(h, d.t::<UnitType>("UNIT_SCOUT"), bx, by, None, None);
     let ready = make(g, h, capital);
     let mut out = crate::jobj! {
         "stage" => kind,

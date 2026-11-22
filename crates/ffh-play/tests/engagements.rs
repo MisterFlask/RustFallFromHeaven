@@ -70,7 +70,7 @@ const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "vie
 const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "slots", "lanes", "used", "committed", "sat_out", "lost", "lost_types", "escaped", "standing", "shore"];
 const PLAN: &[&str] = &[
     "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "formation", "auto_formation", "squads", "squad", "def_squad", "reserve", "def_formation", "def_reserve", "summons",
-    "starving", "shore", "shore_unseen", "forecast", "declare_war", "errors",
+    "starving", "shore", "shore_unseen", "forecast", "declare_war", "plunder", "errors",
 ];
 const FORECAST: &[&str] = &["runs", "line_wiped_permille", "plot_falls_permille", "attackers_wiped_permille", "attackers_win_permille", "lost_x100", "escaped_x100", "per"];
 const HIT: &[&str] = &["target", "dmg", "expected", "r", "crit", "miss", "killed", "withdrew", "splash"];

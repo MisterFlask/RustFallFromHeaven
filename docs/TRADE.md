@@ -1,8 +1,8 @@
 # Trade: routes, caravans, cargo
 
 **Status: rules built (2026-11-21): sections 3, 4.1-4.3, 6, 7 ("As built", section 14), cargo,
-section 5 (section 15) and escorts, 4.4 (section 16). The client (section 9) is built without
-cargo and escorts (docs/HUMAN.md, "Trade"). Not built: the AI (section 8).** This game's own rules, replacing the trade routes
+section 5 (section 15) and escorts, 4.4 (section 16). The client (section 9) is built,
+cargo, refit and escorts included (docs/HUMAN.md, "Trade"). Not built: the AI (section 8).** This game's own rules, replacing the trade routes
 inherited from Civ4 (each city's slots filled by the rules with the best-paying partner cities:
 `city_update_trade_routes`). This file is the spec for the implementation, as docs/SUPPLY.md is for
 supply lines and docs/NAVAL.md for the sea. Marked **(default)**: a value or rule chosen for a
@@ -314,13 +314,17 @@ the units' `caravan`, the unit panel's lines, the city query's `routes`, the att
 `establish_route` and `dissolve_route` (`command.rs`), the stages `trade-ready|trade-routes|
 trade-closed|trade-raid` (`src/stage/trade.rs`), `tests/trade.rs`; `assets/app/trade.js` (the layer,
 the dialog, the screen) and `trade_view.js` (pure, `test/trade.test.mjs`); the keyword Route
-(`keywords.jsonc`). Not built: the cargo selector and cargo lines (their places are marked
-`cargo` in the JSON and in trade.js), a caravan on water drawn as a ship (the client's sprite lookup is
-by unit type in three renderers, the HD-2D one in its instance build: left for a renderer change),
-the plunder in the battle plan (the attack preview's tooltip has it). At peace a caravan cannot be
-attacked: a move onto its plot is a move, not an attack (the rules' at-peace stacking), so no
-"declares war" notice comes up; declaring war (diplomacy) closes the route and seizes its caravans on
-your land.
+(`keywords.jsonc`). Then (the same day) cargo, refit and escorts: the offers' `cargo` selectors
+and `refits`, the command `refit_route`, each caravan's cargo line and escorts, others' routes'
+`Brings:`, `army_station` with `escort_caravan` for a land army or a fleet, the Escort actions and
+the Armies screen's selectors, the escort's line and why it waits (derived in the view from the
+route's slot), the plunder in the battle plan, a unit's `art` type (a caravan on water drawn with
+the Galley's figure, on land with the Settler's: an alias in the sprite lookup). The pay with the
+chosen cargos is computed in the client (trade_view.js `cargoPay`) from the halves the view sends,
+by the rule of `route_pay`. An attack on a plot holding another
+player's caravan shows the plunder in the attack preview and the battle plan, and `Attacking
+declares war` where it would (the client's notice); declaring war closes the foreign routes between
+the two and seizes the caravans on the declarer's land.
 
 ## 10. Measures
 

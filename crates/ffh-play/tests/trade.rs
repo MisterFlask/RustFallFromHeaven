@@ -258,6 +258,8 @@ fn a_closed_route_names_its_reason_and_draws_no_line() {
     let car = arr(&f, "caravans");
     assert_eq!(text(&car[0], "text"), format!("Waits in {}: the route is closed.", view::city_name(&s.g, port)));
     assert_eq!(text(&car[1], "state"), "lost");
+    assert_eq!(text(&car[0], "cargo_text"), "Cargo: Gems. Route closed.");
+    assert_eq!(text(&car[1], "cargo_text"), "Cargo: Silk. Caravan lost.");
     let t = trade_view(&s);
     assert!(arr(&t, "lines").iter().all(|l| l.get("route") != Some(&Json::from(foreign))));
     let v = Viewer::new(&s.g, s.human, false);

@@ -109,10 +109,22 @@ fn bonus_name(g: &Game, b: BonusType) -> String {
     g.d.text.name(&g.d.bonuses[b].base.description).to_string()
 }
 
+/// Slot `slot` of route `r`'s cargo as the rules read it (`route_slot_cargo`), except that a
+/// caravan waiting in the origin of a closed route (not killed) reads `Route closed.`: the rules
+/// name any absent caravan `Caravan lost.` first.
+fn slot_cargo(g: &Game, r: RouteId, slot: usize) -> ffh_core::trade::CargoView {
+    let mut c = g.route_slot_cargo(r, slot);
+    let s = &g.routes[r].slots[slot];
+    if c.state == CargoState::CaravanLost && !g.routes[r].is_open() && s.reform_turns == 0 {
+        c.state = CargoState::RouteClosed;
+    }
+    c
+}
+
 /// Caravan `slot` of route `r`'s cargo line (docs/TRADE.md, 9): `Cargo: Gems. Delivered. Premium
 /// +150%.` / `Cargo: Gems. Caravan lost.` / `Cargo: none.`
 pub fn cargo_line(g: &Game, r: RouteId, slot: usize) -> String {
-    let c = g.route_slot_cargo(r, slot);
+    let c = slot_cargo(g, r, slot);
     match c.cargo {
         None => "Cargo: none.".to_string(),
         Some(b) if c.state == CargoState::Delivering && c.premium_percent > 0 => format!("Cargo: {}. {} Premium +{}%.", bonus_name(g, b), c.state.text(), c.premium_percent),
@@ -325,7 +337,7 @@ pub fn route_json(v: &Viewer, r: RouteId) -> Json {
                 // Cargo (docs/TRADE.md, section 5) and the escorts (4.4).
                 "cargo" => s.cargo.map(|b| Json::idx(b)),
                 "cargo_text" => cargo_line(g, r, i),
-                "cargo_state" => cargo_state_key(g.route_slot_cargo(r, i).state),
+                "cargo_state" => cargo_state_key(slot_cargo(g, r, i).state),
                 "escorts" => escorts_json(g, r, i),
             }
         })
