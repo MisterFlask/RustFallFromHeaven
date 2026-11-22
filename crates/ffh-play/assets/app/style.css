@@ -256,6 +256,8 @@ html.art #top .sep { display: block; }
 .tip-unique-name { color: var(--c-sand); }
 .tip-effects { font-size: 12px; line-height: 1.4; }
 .tip-combat { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
+/* A calculation after a tooltip's list (the mood's House lines, a perk's parts): ruled off as the combat block is. */
+.tip-sep { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
 /* The rich tooltips of the screens (tips.js): above the dialogs, at the pointer. */
 .richtip { position: fixed; z-index: 60; max-width: 420px; line-height: 1.4; }
 /* The new-game screen: the chosen civilization and leader beside the fields. */

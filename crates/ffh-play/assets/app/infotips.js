@@ -105,7 +105,8 @@ export function moodTip(c, happy, icon, notes = []) {
     h("div.tip-title", happy ? "Mood" : "Health"),
     partsList(groups) ?? h("div.dim", "Nothing either way."),
     // This game's Houses (docs/HOUSES.md, rule 8): how the city's House's lines are worked out.
-    happy && c.happiness?.house?.calc?.length ? calcTip(c.happiness.house.calc) : null,
+    // Ruled off from the parts list above it (style.css `.tip-sep`).
+    happy && c.happiness?.house?.calc?.length ? h("div.tip-sep", calcTip(c.happiness.house.calc)) : null,
     h("div.tip-hint", roomText(c, happy)),
     notes.filter(Boolean).map((n) => h("div.tip-hint", n)),
   ];

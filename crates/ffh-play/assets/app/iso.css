@@ -475,6 +475,7 @@ html.iso .parts-list .pl-head { gap: 6px; margin-top: 6px; padding-bottom: 2px; 
 html.iso .parts-list .pl-head:first-child { margin-top: 0; }
 html.iso .parts-list .pl-total { color: #fff8e4; }
 html.iso .tip-requires { color: #ff8a70; }
+html.iso .tip-sep { border-top: 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px; padding-top: 8px; }
 html.iso .tip-combat { border-top: 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px; padding-top: 8px; }
 html.iso .tip-combat .odds { font-size: 20px; }
 html.iso .tip-combat .mods { font-size: 20px; color: var(--iso-dim); }
@@ -636,6 +637,12 @@ html.iso .modal.city-overlay .city-summary {
 }
 html.iso .modal.city-overlay .city-cols { display: contents; }
 html.iso .modal.city-overlay .city-col { top: calc(var(--iso-top1) + 10px); bottom: var(--iso-gap); width: 360px; overflow: auto; padding: 4px 12px 8px; gap: 6px; }
+/* Under about 1150 px the buttons' plaque (Previous city, Next city, Close; fixed at the bottom
+   centre) reaches under the columns: room at the end of each column's scroll, the plaque's height
+   and a gap, so the last control (the Governance toggle, the House block) scrolls clear of it. */
+@media (max-width: 1150px) {
+  html.iso .modal.city-overlay .city-col { padding-bottom: 64px; }
+}
 html.iso .modal.city-overlay .city-col:first-child { left: var(--iso-gap); }
 html.iso .modal.city-overlay .city-col:last-child { right: var(--iso-gap); top: calc(var(--iso-top) + 10px); }
 html.iso .modal.city-overlay .modal-buttons { bottom: var(--iso-gap); left: 50%; transform: translateX(-50%); padding: 4px 10px; white-space: nowrap; flex-wrap: nowrap; }

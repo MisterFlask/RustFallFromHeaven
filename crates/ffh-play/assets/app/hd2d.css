@@ -132,6 +132,7 @@ html.iso.hd2d .tip-unique {
   background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat top / 100% 1px,
     linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat bottom / 100% 1px;
 }
+html.iso.hd2d .tip-sep { background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat top / 100% 1px; }
 html.iso.hd2d .tip-combat { background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat top / 100% 1px; }
 
 /* --- dialogs: the title on a dark strip at the left, a hairline under it ------------------ */
