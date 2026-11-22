@@ -258,9 +258,12 @@ fn max_premium(g: &Game) -> i32 {
     g.d.defines.trade_cargo_new_percent.max(g.d.defines.trade_cargo_percent).max(0)
 }
 
-/// Whether `worth` repays a Caravan of `cost` hammers within [`REPAY_TURNS`] turns.
-fn repays(worth: i32, cost: i32) -> bool {
-    worth as i64 * REPAY_TURNS as i64 >= cost as i64 * 100
+/// Whether `worth` repays a Caravan of `cost` hammers within [`REPAY_TURNS`] turns, counted at
+/// the game's speed: a slower game trains for more hammers and lasts as many more turns, so the
+/// turns scale with the speed's `train_percent` (on Marathon no route repaid a Caravan otherwise).
+fn repays(g: &Game, worth: i32, cost: i32) -> bool {
+    let turns = REPAY_TURNS as i64 * g.d.game_speeds[g.game_speed_type()].train_percent.max(1) as i64 / 100;
+    worth as i64 * turns >= cost as i64 * 100
 }
 
 /// The best offer of city `c`, its cargo counted (ties: the lower destination id), with its worth
@@ -419,7 +422,7 @@ pub fn ask(ai: &Ai, g: &Game, p: PlayerId) -> Option<(CityId, Plan)> {
     let plan = plan_all(ai, g, p)?;
     let cost = g.player_get_production_needed_unit(p, t);
     crate::trace!(g, p, "caravans: best origin {} to {} worth {} (cost {}, replaces {:?}, cargo {:?})", g.cities[plan.origin].name, g.cities[plan.offer.destination].name, plan.worth, cost, plan.replaces, plan.cargo);
-    if !repays(plan.worth, cost) {
+    if !repays(g, plan.worth, cost) {
         return None;
     }
     // (A ritual in progress would lose its production behind the Caravan, or refuse the empire order.)
@@ -501,7 +504,7 @@ pub fn caravan(ai: &Ai, g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool
         Some(_) => plan(ai, g, p, &reachable),
         None => None,
     }
-    .filter(|pl| repays(pl.worth, cost));
+    .filter(|pl| repays(g, pl.worth, cost));
     let Some(plan) = plan else {
         crate::trace!(g, p, "caravan {:?} at {:?} waits: no plan it repays and walks to", u, g.map.xy(here));
         // Nothing worth a route: wait in the nearest city of ours, deciding again each turn.
@@ -819,7 +822,7 @@ mod tests {
         let (g, p, cities) = three_cities();
         let plan = plan(&ai, &g, p, &|_| true).expect("an offer");
         let t = g.caravan_unit_type().unwrap();
-        assert!(repays(plan.worth, g.player_get_production_needed_unit(p, t)), "a route over 6 or 7 plots between cities of 6 repays a Caravan");
+        assert!(repays(&g, plan.worth, g.player_get_production_needed_unit(p, t)), "a route over 6 or 7 plots between cities of 6 repays a Caravan");
         assert_eq!(ask(&ai, &g, p).map(|(c, pl)| (c, pl.origin)), Some((plan.origin, plan.origin)), "the best origin trains one");
         // The turn step puts it first in the origin's queue, and asks no second one.
         let mut g = g;
