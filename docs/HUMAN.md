@@ -676,8 +676,9 @@ it (with what it needs first), Shift-click to queue it; the "A click:" row (on t
 a second tap researches) switches a plain click to queueing. **Civics** (`F3`): each civic option with its
 civics (the current ones marked, the ones you cannot adopt greyed, their tooltip saying why: the
 tech, a war, an alignment, a state religion); pick civics and the screen shows the
-revolution's anarchy and upkeep (computed by the rules) and, when the government changes who runs
-the cities, "Every city will be handed to governors." or "Every city will be ruled directly.";
+revolution's anarchy and upkeep (computed by the rules) and, when the change adopts or leaves a
+civic that governs every city, "Your 3 cities will be run by governors." or "Your cities stay
+governed until you take them back.";
 then "Revolution!" (with anarchy, it asks first: `Start the revolution? 2 turns of anarchy.`).
 **Religion** (`F7`):
 the religions (founded or not; a religion's tooltip says what it does and, before it is founded,
@@ -726,8 +727,9 @@ panel shows `Wounds: 2. Attack -40%, ...` (its tooltip: each stat's `-20% × 2 =
 Wounded seal the count (`×2`). Resurrection (Life III) is cast at a choice: the list of the dead
 it can bring back (`Champion, level 3, died turn 4`).
 **Governors** (`F9`, the menu's Governors): the mode
-line ("Government: Aristocracy. Every city is governed."; under Despotism or God King "... ruled
-directly." and the city list alone); then the six roles as priority toggles (at most two; "Priority:
+line ("Government: Aristocracy. Every city is run by a governor."; under another civic
+"Government: Republic. Governed: 2 of 3 cities.", the governed cities' cards, then the cities run
+by hand, each with "Hand to a governor", a governed one's card with "Run by hand"); then the six roles as priority toggles (at most two; "Priority:
 +30% weight in role proposals."), the diagnoses ("No city has role Research.", "<City>: role Culture
 at suitability 60%.", "<City>: <order> takes 34 turns.", each city a link to it), **Empire order**
 (any unit, wonder, palace or ritual, through the same city step) and a role card per city: its
