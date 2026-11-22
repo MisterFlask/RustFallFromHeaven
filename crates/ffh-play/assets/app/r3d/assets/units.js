@@ -3431,6 +3431,18 @@ unitRecipe("unit.serpent", {
   },
 });
 
+// The ivory resource marker uses the wild elephant anatomy at adult and calf sizes.
+recipe("res.elephants", {
+  build(mb, r) {
+    const adult = new MeshBuilder();
+    quadruped(adult, BEASTS.elephant, { r, gait: "walk" });
+    place(mb, adult, [0.065, 0, -0.04], 0.85, 0.43);
+    const calf = new MeshBuilder();
+    quadruped(calf, BEASTS.elephant, { r, gait: "walk" });
+    place(mb, calf, [-0.075, 0, 0.045], 0.7, 0.27);
+  },
+});
+
 /** unit.beast: param picks the creature: "beastman" (goat-headed, default), "minotaur",
  *  "werewolf", "ogre", "giant", "ape", "boar", "lion", "tiger", "sandlion", "elephant", "war-elephant", "treant",
  *  "centaur", "lizard" (a giant lizard), "scorpion". Variants recolour and re-pose. */

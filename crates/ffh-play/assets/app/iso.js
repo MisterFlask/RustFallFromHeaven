@@ -144,7 +144,8 @@ function resourceSprite(t) {
   if (/COW|PIG/.test(t)) return "res_cow";
   if (/SHEEP/.test(t)) return "res_sheep";
   if (/HORSE|NIGHTMARE/.test(t)) return "res_horse";
-  if (/DEER|FUR|IVORY|GULAGARM/.test(t)) return "res_deer";
+  if (t === "BONUS_IVORY") return "res_ivory";
+  if (/DEER|FUR|GULAGARM/.test(t)) return "res_deer";
   if (/WHALE/.test(t)) return "res_whale";
   if (/FISH|CLAM|CRAB|PEARL/.test(t)) return "res_fish";
   if (/IRON|COPPER|GUNPOWDER/.test(t)) return "res_iron";

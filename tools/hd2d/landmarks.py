@@ -57,7 +57,8 @@ def main():
     im = Image.open(src).convert('RGBA')
     with tempfile.TemporaryDirectory() as tmp:
         for i, piece in enumerate(sheet['pieces']):
-            if piece.get('skip'):
+            # Standalone replacements still have a type mapping in art.py's index.
+            if piece.get('skip') or piece.get('standalone'):
                 continue
             col, row = i % 3, i // 3
             box = (round(col * im.width / 3), round(row * im.height / 3),

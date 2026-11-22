@@ -617,6 +617,7 @@ export const SPRITES = {
   res_goods: { w: 192, h: 70, box: [64, 0, 132, 67] },
   res_horse: { w: 192, h: 56, box: [61, 0, 135, 53] },
   res_iron: { w: 192, h: 62, box: [66, 5, 126, 59] },
+  res_ivory: { w: 192, h: 64, box: [61, 1, 131, 61] },
   res_mana: { w: 192, h: 90, box: [68, 0, 128, 87] },
   res_marble: { w: 192, h: 62, box: [67, 0, 129, 59] },
   res_mithril: { w: 192, h: 64, box: [67, 0, 129, 61] },

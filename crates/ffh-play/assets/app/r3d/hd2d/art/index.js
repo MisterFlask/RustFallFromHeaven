@@ -170,7 +170,7 @@ export const CARDS = {
   res_site_gulagarm: { w: 58, h: 50, box: [0,  0,  58,  50] },
   res_site_gunpowder: { w: 49, h: 50, box: [0,  0,  49,  50] },
   res_site_incense: { w: 60, h: 50, box: [0,  0,  60,  50] },
-  res_site_ivory: { w: 52, h: 50, box: [0,  0,  52,  50] },
+  res_site_ivory: { w: 58, h: 50, box: [0,  0,  58,  50] },
   res_site_jewels: { w: 56, h: 50, box: [0,  0,  56,  50] },
   res_site_mana_ice: { w: 48, h: 50, box: [0,  0,  48,  50] },
   res_site_nightmare: { w: 49, h: 50, box: [0,  0,  49,  50] },
