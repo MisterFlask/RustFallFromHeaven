@@ -8,13 +8,15 @@
 //! - **Production** ([`production`]): a safe city trains a Caravan when the player has at least
 //!   [`MIN_CITIES`] cities, no Caravan is in training, the routes free outnumber the route-less
 //!   Caravans alive, and this city is, among the cities that can be an origin now, the one with
-//!   the best offer (ties: the lower city id), worth enough to repay the Caravan within
+//!   the best offer (ties: the lower city id; or, while that city is governed or its build has more
+//!   than [`BUSY_TURNS`] turns left, any city on its landmass within [`STAND_IN_DIST`] plots), worth enough to repay the Caravan within
 //!   [`REPAY_TURNS`] turns (one hammer for one commerce). With no route free, it trains one to
 //!   **replace** our least-paying route when its best offer from a city that could be its origin
 //!   once that route is dissolved is worth at least [`REPLACE_FACTOR`] times what that route pays.
 //! - **The Caravan with no route** ([`caravan`]): in the origin of the best offer (on its
 //!   landmass) it establishes it, dissolving the route it replaces in the same decision; elsewhere
-//!   it walks there (an ordinary land move, re-planned each turn); with nothing to do it waits in
+//!   it walks there (an ordinary land move, re-planned each turn, only to an origin it has a path
+//!   to); with nothing to do it waits in
 //!   the nearest city of ours, deciding again each turn.
 //! - **Caravans in a route** take no orders and are left alone by every AI loop
 //!   (`units::play`, the garrison count `production::garrison`).
@@ -52,6 +54,11 @@ pub const REPAY_TURNS: i32 = 30;
 pub const REPLACE_FACTOR: i32 = 2;
 /// The worth of one route (hundredths of commerce a turn) when we have none open to read it from.
 pub const DEFAULT_ROUTE_X100: i32 = 300;
+/// A city on the origin's landmass trains the Caravan while the origin's build has more turns
+/// left than this.
+pub const BUSY_TURNS: i32 = 10;
+/// ... and within this many plots of it (a long walk alone gets the Caravan killed).
+pub const STAND_IN_DIST: i32 = 5;
 /// The value of a caravan as a target per gold of plunder (`military::find_targets`).
 pub const PLUNDER_VALUE: i32 = 5;
 
@@ -268,7 +275,8 @@ pub fn production(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
         return None;
     }
     let t = g.caravan_unit_type()?;
-    if !g.city_can_train(c, t, false, false, false, false) {
+    // (A governed city's ritual in progress takes no empire order in front of it.)
+    if !g.city_can_train(c, t, false, false, false, false) || g.city_is_governed(c) && g.city_ritual_in_progress(c).is_some() {
         return None;
     }
     let (alive, training) = idle_caravans(g, p);
@@ -284,9 +292,18 @@ pub fn production(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     let plan = plan(ai, g, p, &|_| true)?;
     let cost = g.player_get_production_needed_unit(p, t);
     crate::trace!(g, p, "caravans: best origin {} to {} worth {} (cost {}, replaces {:?})", g.cities[plan.origin].name, g.cities[plan.offer.destination].name, plan.worth, cost, plan.replaces);
-    if plan.origin != c || !repays(plan.worth, cost) {
+    // The origin trains it; while the origin is busy for more than BUSY_TURNS turns, or governed (its
+    // builds are its governor's; the AI places orders only in its empire cities), a city near it on
+    // its landmass does, and the Caravan walks there.
+    let (o, here) = (&g.cities[plan.origin], &g.cities[c]);
+    let stand_in = plan.origin != c
+        && g.map.plots[g.city_plot(c)].area == g.map.plots[g.city_plot(plan.origin)].area
+        && g.plot_distance(o.x, o.y, here.x, here.y) <= STAND_IN_DIST
+        && (g.city_is_governed(plan.origin) || !g.cities[plan.origin].order_queue.is_empty() && g.city_production_turns_left(plan.origin) > BUSY_TURNS);
+    if (plan.origin != c && !stand_in) || !repays(plan.worth, cost) {
         return None;
     }
+    crate::trace!(g, p, "caravans: {} at {:?} trains a Caravan", g.cities[c].name, (g.cities[c].x, g.cities[c].y));
     g.tel_decision(p, "caravan", if plan.replaces.is_some() { "ask_replace" } else { "ask" }, if plan.offer.foreign { "foreign" } else { "domestic" }, plan.worth as i64, String::new);
     Some(Choice::Train(t, UnitAIType::UNITAI_UNKNOWN))
 }
@@ -311,8 +328,10 @@ pub fn caravan(ai: &Ai, g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool
     let here = g.unit_plot(u);
     let area = g.map.plots[here].area;
     let on_land = |c: CityId| g.map.plots[g.city_plot(c)].area == area;
+    // (An origin the Caravan can walk to: the route's path may cross land the unit may not enter.)
+    let reachable = |c: CityId| on_land(c) && (g.city_plot(c) == here || g.group_find_path(grp, here, g.city_plot(c), 0).is_some());
     let cost = g.caravan_unit_type().map_or(0, |t| g.player_get_production_needed_unit(p, t));
-    let plan = plan(ai, g, p, &on_land).filter(|pl| repays(pl.worth, cost));
+    let plan = plan(ai, g, p, &reachable).filter(|pl| repays(pl.worth, cost));
     let Some(plan) = plan else {
         // Nothing worth a route: wait in the nearest city of ours, deciding again each turn.
         let in_ours = g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p);
@@ -328,7 +347,7 @@ pub fn caravan(ai: &Ai, g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool
     };
     let origin_plot = g.city_plot(plan.origin);
     if here != origin_plot {
-        crate::trace!(g, p, "caravan {:?} walks to {} for {}", u, g.cities[plan.origin].name, g.cities[plan.offer.destination].name);
+        crate::trace!(g, p, "caravan {:?} at {:?} walks to {} at {:?} for {}", u, g.map.xy(here), g.cities[plan.origin].name, g.map.xy(origin_plot), g.cities[plan.offer.destination].name);
         move_to(g, grp, origin_plot, 0);
         if alive(g, grp) && g.units.contains(u) && g.group_ready_to_move(grp, true) {
             skip(g, grp);

@@ -1,7 +1,7 @@
 # Trade: routes, caravans, cargo
 
 **Status: phase 1's rules built (2026-11-21: sections 3, 4.1-4.3, 6, 7; "As built", section 14).
-Not built: cargo (section 5), escort (4.4), the AI (section 8), the client (section 9).** This game's own rules, replacing the trade routes
+The AI of phase 1 built (section 8, "As built"). Not built: cargo (section 5), escort (4.4), the client (section 9).** This game's own rules, replacing the trade routes
 inherited from Civ4 (each city's slots filled by the rules with the best-paying partner cities:
 `city_update_trade_routes`). This file is the spec for the implementation, as docs/SUPPLY.md is for
 supply lines and docs/NAVAL.md for the sea. Marked **(default)**: a value or rule chosen for a
@@ -256,6 +256,29 @@ A rules change is not gated on the AI (CLAUDE.md): it does something reasonable 
   (`naval::patrol_target`).
 - **Open borders.** The resources it receives from the other's caravans count in what open
   borders are worth to it.
+
+### As built (2026-11-21, the AI of phase 1: `crates/ffh-ai/src/caravans.rs`; docs/AI.md, "Caravans")
+
+- **Establishing**: a Caravan is trained in the city that is the origin of the best offer among the
+  player's cities that can be an origin now, once the player holds 2 cities, while a route is free
+  that no route-less Caravan claims, one in training at a time, when the offer repays the Caravan's
+  hammers within 30 turns (a hammer for a commerce). An offer's worth is its owner's pay plus the
+  destination's share when the destination is ours. The Caravan walks (over land, its own landmass)
+  to that origin and establishes there. Not as section 8 says: the destinations are those the rules'
+  path allows (`route_offers`; the path is the rules', not "as the AI knows the map"), and an offer
+  whose path crosses a sea where an enemy patrols, as the AI sees it, is skipped.
+- **Replacing** (not in section 8): with no route free, an offer worth twice our least-paying route
+  (a closed route counts 0) gets a Caravan; standing in its origin it dissolves that route and
+  establishes the new one in the same decision.
+- **Cargo**: not built (section 5).
+- **Raiding**: as section 8 (an enemy caravan is a hunt and warship target, its plunder in its
+  value; hidden-nationality units attack the caravans of every team that is not theirs, a vassal, a
+  master or one they are Pleased with), with "friend" read as Pleased or better.
+- **Guarding**: the seas of our open routes' paths are a guard need of `warships::guard` (there is no
+  `naval::patrol_target`).
+- **Open borders**: not the cargo's resources (no cargo yet) but the route itself: a better route to
+  one of their cities than our best domestic one (or our least-paying route, with none free) is one
+  attitude step toward open borders, estimated by plot distance.
 
 ## 9. What the player sees
 
