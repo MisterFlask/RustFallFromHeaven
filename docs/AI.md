@@ -1901,6 +1901,62 @@ that cannot be scrapped stay). Telemetry: `supply_state`
 Cutting an invader's line was built and measured, and not kept (2026-11-10; docs/SUPPLY.md,
 "Second pass", C; docs/AI_LOG.md; the last commit with the code: `f5558d91`).
 
+## Caravans (`caravans.rs`)
+
+The AI's side of docs/TRADE.md (section 8), a rules change's AI: ad hoc, not gated on win rates.
+**An offer's worth** is what the route would pay us a turn in hundredths: its owner's pay
+(`RouteOffer::owner_pay_x100`), plus the destination's share when the destination is ours. An offer
+whose path crosses a sea where an enemy patrols, as we see it (`sea_state_known(..).theirs > 0`, the
+outposts' reading), is skipped. **Production** (`production::decide`, after the settlers and the
+Colonist, behind the same `safe` test, before the civilization mechanics and the warships: a route
+is an economy item, so it waits for the garrison and expansion but not for buildings): a city trains
+a Caravan when we hold at least 2 cities, no Caravan is in training, the routes free outnumber our
+route-less Caravans alive, and this city is the origin (among those `city_origin_refusal` accepts
+now) of the best offer, ties to the lower city id, whose worth x 30 >= the Caravan's hammers x 100
+(repaid within 30 turns). While that origin is governed (its builds are its governor's, and the AI
+places empire orders only in its empire cities) or its build has more than 10 turns left
+(`BUSY_TURNS`), a city on its landmass within 5 plots (`STAND_IN_DIST`) trains the Caravan instead
+and it walks there; farther walks got the Caravans killed on the way. A governed city with a ritual
+in progress trains none (it refuses every empire order). **Replacing**: with no route free and no route-less Caravan, the plan is
+the best offer from a city that could be the origin once our least-paying route is dissolved, when
+it is worth at least twice that route; a route pays its stored pay, a closed one 0 at once (`Game`
+keeps no turn of closing), one whose first caravan has not arrived what it will pay at its length.
+**The Caravan with no route** (`units::play`, beside the Colonist): in the plan's origin it
+establishes the route (dissolving the one it replaces in the same decision, after checking the
+destination still passes); elsewhere it walks there, an ordinary land move re-planned each turn,
+only to origins on its own landmass that it has a unit path to (a route's path may cross land a
+unit may not enter: a Caravan bound for such an origin stood still); with no plan it waits in the nearest city of ours and decides
+again each turn (a skip, not sleep: a sleeping group is never asked again). **Caravans in a route**
+take no orders: `units::play` skips their groups before anything touches them (and their
+promotions and upgrades), and `production::garrison` counts no Caravan as a defender.
+
+**Raids.** An enemy caravan (a team at war) on land is a hunt target wherever a stack reaches it
+(`military::find_targets`: not limited to 6 plots of our cities like other units), its value raised
+by 5 per gold of plunder (`TRADE_PLUNDER_TURNS` x its pay, at most +1000); at sea it is a warship's
+target (`warships::targets`, a prize: the 500 bar). A unit of hidden nationality (the AI had no play
+for them; the units with `PROMOTION_HIDDEN_NATIONALITY` free) attacks the caravans of every team that
+is not ours, our vassal, our master or one we are Pleased with: ships through the same warship rule,
+land units through `caravans::raid` (a caravan next to a plot it reaches this turn, alone on its plot
+but for other caravans, at the rules' odds of 650 or more, the most plunder first). **Guarding**: the
+seas our open routes' paths cross are the warships' guard need after our ports' and our outposts'
+lanes (`warships::guard`). **Open borders**: when a route to a city of theirs, were borders open,
+would pay us more than our best domestic pair (with a route free) or our least-paying route (with
+none), that is one attitude step (2 on `diplomacy::relation`'s scale) toward open borders with them,
+in the offer (`diplomacy::trade`), the answer (`judge_offer`) and the review of a human's deal
+(`keep_deal`); never with the team we prepare a war on or our worst enemy. Both sides are estimated
+with the plot distance as the length (`route_pay_total_x100`, over land, growth 0): no path search.
+**Values**: `trade_routes`, `coastal_trade_routes` and `trade_route_modifier` (buildings, civics,
+techs, votes) are valued at what one of our open routes pays now (their mean, 300 hundredths with
+none: `route_worth_x100`); the static building value counts 3 commerce a route.
+
+The memo (`Ai::caravans`) keeps each city's offers for the turn while our routes, the cities, our
+wars and open borders are unchanged: one path search per city and turn, no decision changed.
+Telemetry (`decisions.caravan`): `ask` / `ask_replace` (a Caravan put in production; why `domestic`
+/ `foreign`), `establish`, `replace`, `establish_failed` / `replace_failed` (the refusal's key),
+`offer_skipped` (`patrolled_sea`), `attack` (`war` / `hidden`, plunder as value), `open_borders`
+(`route_reason_offer`, `route_reason_accept`: the route reason turned the answer). Measures:
+docs/TRADE.md, section 10.
+
 ## Governors (`governor.rs`)
 
 This game's own system (docs/GOVERNORS.md). Since governors v2 (2026-11-10) the government civic
@@ -4016,6 +4072,8 @@ only, against opponents without it, and reports that player's wins and share.
     gold/turn), `maint`, `ucost` (unit cost + supply), `civ_upkeep`, `culture` (total, /100),
     `culture_rate`, `espionage_rate`, `max_culture_level`, `legendary_cities`,
     `golden_age_turns`, `anarchy_turns`, `impr` (worked improved plots);
+  - trade (docs/TRADE.md): `trade_yield` (the cities' trade, commerce), `routes_domestic`,
+    `routes_foreign`, `routes_open`, `route_limit`, `caravans_idle` (no route), `caravans_route`;
   - buildings and people: `wonders` (world wonders), `team_wonders`, `nat_wonders`, `buildings`
     (other buildings), `projects` (team project count), `holy_cities`, `gp_created`,
     `gg_created`, `gp_units` (great-person units alive), `gp_settled` (settled great specialists);
@@ -4041,7 +4099,8 @@ only, against opponents without it, and reports that player's wins and share.
     (alive civ teams), `taken_civ`, `taken_barb` (cities taken and kept), `razed` (cities that
     vanished with this player's units on the ruins), `lost_civ`, `lost_barb` (taken or razed by
     them), `lost_other`, `founded`, `cities_lost_rule` (Civ4 `getCitiesLost`), `players_killed`.
-  Game-wide (`world_at`): `game_turn`, `alive_civs`, `war_pairs`, `armageddon` (counter %),
+  Game-wide (`world_at`): `game_turn`, `alive_civs`, `war_pairs`, `team_pairs` (alive civilization
+  teams), `open_border_pairs`, `armageddon` (counter %),
   `religions` (founded so far), `land_plots`, `estimate_end_turn`, and the legacy score's
   `max_*`/`init_*` (population, land, tech, wonders). Players can appear mid-game (the Mercurians join the team of the civ that built the
   Mercurian Gate; the Infernals and empires formed by events get a new team), so aggregate by

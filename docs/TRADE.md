@@ -1,8 +1,8 @@
 # Trade: routes, caravans, cargo
 
 **Status: rules built (2026-11-21): sections 3, 4.1-4.3, 6, 7 ("As built", section 14), cargo,
-section 5 (section 15) and escorts, 4.4 (section 16). Not built: the AI (section 8), the client
-(section 9).** This game's own rules, replacing the trade routes
+section 5 (section 15) and escorts, 4.4 (section 16). The AI is built without cargo (section 8,
+"As built"). Not here yet: the client (section 9; on its branch).** This game's own rules, replacing the trade routes
 inherited from Civ4 (each city's slots filled by the rules with the best-paying partner cities:
 `city_update_trade_routes`). This file is the spec for the implementation, as docs/SUPPLY.md is for
 supply lines and docs/NAVAL.md for the sea. Marked **(default)**: a value or rule chosen for a
@@ -278,6 +278,32 @@ A rules change is not gated on the AI (CLAUDE.md): it does something reasonable 
 - **Open borders.** The resources it receives from the other's caravans count in what open
   borders are worth to it.
 
+### As built (2026-11-21, the AI of phase 1: `crates/ffh-ai/src/caravans.rs`; docs/AI.md, "Caravans")
+
+- **Establishing**: a Caravan is trained in the city that is the origin of the best offer among the
+  player's cities that can be an origin now, once the player holds 2 cities, while a route is free
+  that no route-less Caravan claims, one in training at a time, when the offer repays the Caravan's
+  hammers within 30 turns (a hammer for a commerce). An offer's worth is its owner's pay plus the
+  destination's share when the destination is ours. Not as decided: while that origin is governed or
+  busy for more than 10 turns, a city of its landmass within 5 plots trains it (the best origin
+  often never chose a build); a governed city with a ritual in progress trains none. The Caravan
+  walks (over land, its own landmass, only to an origin it has a unit path to) to that origin and
+  establishes there. Not as section 8 says: the destinations are those the rules'
+  path allows (`route_offers`; the path is the rules', not "as the AI knows the map"), and an offer
+  whose path crosses a sea where an enemy patrols, as the AI sees it, is skipped.
+- **Replacing** (not in section 8): with no route free, an offer worth twice our least-paying route
+  (a closed route counts 0) gets a Caravan; standing in its origin it dissolves that route and
+  establishes the new one in the same decision.
+- **Cargo**: not built (section 5).
+- **Raiding**: as section 8 (an enemy caravan is a hunt and warship target, its plunder in its
+  value; hidden-nationality units attack the caravans of every team that is not theirs, a vassal, a
+  master or one they are Pleased with), with "friend" read as Pleased or better.
+- **Guarding**: the seas of our open routes' paths are a guard need of `warships::guard` (there is no
+  `naval::patrol_target`).
+- **Open borders**: not the cargo's resources (no cargo yet) but the route itself: a better route to
+  one of their cities than our best domestic one (or our least-paying route, with none free) is one
+  attitude step toward open borders, estimated by plot distance.
+
 ## 9. What the player sees
 
 Text is bare (CLAUDE.md, "Rules text and tooltips"). Screenshots of each go to the owner when
@@ -330,6 +356,33 @@ What the numbers set:
 - Foreign cities are four times as far as a civilization's own. With pay in proportion to length and the foreign term at +100 a foreign route paid 10 to 15 times a domestic one. So length counts in full to 8 plots and at half to 24 (`TRADE_LENGTH_FULL`, `TRADE_LENGTH_CAP`), and the foreign term is +25: a foreign route 30 plots long pays about 3 times the domestic route above before growth and cargo.
 - Open borders are rare and late among the AIs (the first pair at a median of turn 119), so most AI routes are domestic until the AI is given a reason to open its borders (section 8).
 - Spare copies are rare: a cargo is usually a civilization's only copy. The premium is not lowered.
+
+**Measured with the AI of phase 1** (2026-11-21, branch `trade-ai`; the same 12 games: seeds
+1-12, 6 civilizations, standard map, 200 turns; `ffh stats --at 50,100,150,200 --every 1` with
+`FFH_TELEMETRY=1`, the trade fields of the snapshots). Civilizations alive at the checkpoint:
+
+| | turn 50 | turn 100 | turn 150 | turn 200 |
+|---|---|---|---|---|
+| civilizations | 72 | 77 | 118 | 174 |
+| routes a civilization, mean domestic / foreign | 0 / 0 | 0.82 / 0.06 | 0.82 / 0.30 | 0.97 / 0.56 |
+| civilizations with a route | 0 | 47 | 79 | 130 |
+| routes open / all | - | 68 / 68 | 122 / 132 | 232 / 266 |
+| commerce a civilization, median (before: 18 / 23 / 32 at 100 / 150 / 200) | 12 | 19 | 27.5 | 37.5 |
+| routes' trade a civilization, median (before: the old routes' 3 / 3 / 3) | 0 | 2 | 5 | 9.5 |
+| routes' trade, share of all commerce | 0% | 16% | 25% | 35% |
+| team pairs with open borders (before: 3 of 204, 34 of 499, 51 of 994) | 2 of 180 | 7 of 210 | 37 of 545 | 59 of 1196 |
+
+(Commerce is the snapshots' `yield_commerce`, gross. Team pairs here are pairs of alive civilization
+teams; the earlier count's rule is not known, so compare the shares: 5.1% before at turn 200, 4.9%
+now.)
+
+The first route of a game: turns 58 to 86, median 72. Routes established 357 (262 domestic, 95
+foreign), 61 of them replacing a route. Caravans lost 151 in 27,000 caravan-turns in a route
+(5.6 per 1000): to the barbarians and animals 69, to a civilization at war 51, to a killer not at
+war (hidden nationality) 24, no killer 7; on the owner's land 69, foreign land 43, unowned 27,
+water 12. Plunder 3,486 gold in 66 kills. Route-turns: open 14,578; closed for no open borders 629,
+war 318, no path 209, the destination not revealed 161 (a captured destination is a new city the
+owner has not seen yet).
 
 With the first build: routes a civilization by turn; caravans killed, by the killer's kind
 (civilization at war, hidden nationality, barbarians, animals) and where (own land, foreign,

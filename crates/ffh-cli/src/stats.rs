@@ -134,6 +134,19 @@ fn city_owners(g: &Game) -> BTreeMap<PlotIdx, PlayerId> {
     m
 }
 
+/// Pairs of alive civilization teams, and those with open borders (docs/TRADE.md, section 10).
+fn civ_team_pairs(g: &Game) -> (i64, i64) {
+    let teams: Vec<TeamId> = g.team_ids().filter(|&t| g.team_is_alive(t) && !g.team_is_barbarian(t)).collect();
+    let (mut n, mut open) = (0, 0);
+    for (i, &a) in teams.iter().enumerate() {
+        for &b in &teams[i + 1..] {
+            n += 1;
+            open += i64::from(g.team_is_open_borders(a, b));
+        }
+    }
+    (n, open)
+}
+
 fn civ_war_pairs(g: &Game) -> Vec<(TeamId, TeamId)> {
     let barb = g.barbarian_team();
     let mut out = Vec::new();
@@ -475,6 +488,14 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .int("food", food)
             .int("food_surplus", food_surplus)
             .int("yield_commerce", yield_commerce)
+            // Trade routes (docs/TRADE.md): the cities' trade yield, the routes by kind.
+            .int("trade_yield", pl.cities.iter().map(|&c| g.cities[c].trade_yield[YieldType::YIELD_COMMERCE.idx()]).sum::<i32>() as i64)
+            .int("routes_domestic", g.player_routes(p).into_iter().filter(|&r| g.cities.contains(g.routes[r].destination) && g.cities[g.routes[r].destination].owner == p).count() as i64)
+            .int("routes_foreign", g.player_routes(p).into_iter().filter(|&r| !(g.cities.contains(g.routes[r].destination) && g.cities[g.routes[r].destination].owner == p)).count() as i64)
+            .int("routes_open", g.player_routes(p).into_iter().filter(|&r| g.routes[r].is_open()).count() as i64)
+            .int("route_limit", (g.player_route_limit(p) + g.player_coastal_route_extra(p)) as i64)
+            .int("caravans_idle", pl.units.iter().filter(|&&u| g.unit_is_caravan(u) && !g.unit_in_route(u)).count() as i64)
+            .int("caravans_route", pl.units.iter().filter(|&&u| g.unit_in_route(u)).count() as i64)
             .int("commerce_total", commerce_total)
             .int("gold_commerce", gold_commerce)
             .int("gold_rate", gold_rate)
@@ -612,6 +633,8 @@ fn world_snapshot(g: &Game) -> String {
     o.int("game_turn", g.game_turn())
         .int("alive_civs", alive_civs as i64)
         .int("war_pairs", civ_war_pairs(g).len() as i64)
+        .int("team_pairs", civ_team_pairs(g).0)
+        .int("open_border_pairs", civ_team_pairs(g).1)
         .int("armageddon", g.get_global_counter())
         .int("religions", g.religion_game_turn_founded.iter().filter(|&&t| t != -1).count() as i64)
         .int("land_plots", g.map.land_plots)

@@ -886,11 +886,17 @@ fn trade(g: &mut Game, p: PlayerId) {
             continue;
         }
         let ot = op.team;
-        if !g.teams[team].has_met[ot] || g.at_war(team, ot) || relation(g, p, other) < 0 || !can_talk(g, p, other) {
+        if !g.teams[team].has_met[ot] || g.at_war(team, ot) || !can_talk(g, p, other) {
             continue;
         }
-        // Open borders (trade routes, passage).
-        if !g.team_is_open_borders(team, ot) && relation(g, p, other) >= 1 {
+        let rel = relation(g, p, other);
+        // Open borders (trade routes, passage). A better route to one of their cities than ours
+        // counts one attitude step toward them (caravans.rs).
+        let route_step = if g.team_is_open_borders(team, ot) { 0 } else { crate::caravans::open_borders_bonus(g, p, other) };
+        if !g.team_is_open_borders(team, ot) && rel + route_step >= 1 {
+            if rel < 1 {
+                g.tel_decision(p, "caravan", "open_borders", "route_reason_offer", 1, String::new);
+            }
             let item = TradeData { item_type: TradeableItem::TRADE_OPEN_BORDERS, data: 0, offering: false, hidden: false };
             if g.player_can_trade_item(p, other, &item, true) && g.player_can_trade_item(other, p, &item, true) {
                 let ours = vec![item.clone()];
@@ -900,6 +906,9 @@ fn trade(g: &mut Game, p: PlayerId) {
                     g.implement_deal(p, other, &ours, &theirs, false);
                 }
             }
+        }
+        if rel < 0 {
+            continue;
         }
         // A resource of theirs we want, paid for with a surplus of ours or with gold.
         resource_trade(g, p, other);
@@ -1708,7 +1717,13 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         return rule(crate::pacts::accept(g, p, from), "defensive pact requires attitude Friendly or a common threat");
     }
     if all(they_give, TradeableItem::TRADE_OPEN_BORDERS) && all(we_give, TradeableItem::TRADE_OPEN_BORDERS) {
-        return rule(!g.at_war(team, their_team) && relation(g, p, from) >= 1, "open borders requires attitude Pleased");
+        // A better route to one of their cities than ours is one attitude step (caravans.rs).
+        let rel = relation(g, p, from);
+        let step = if rel < 1 { crate::caravans::open_borders_bonus(g, p, from) } else { 0 };
+        if tel && rel < 1 && rel + step >= 1 && !g.at_war(team, their_team) {
+            g.tel_decision(p, "caravan", "open_borders", "route_reason_accept", 1, String::new);
+        }
+        return rule(!g.at_war(team, their_team) && rel + step >= 1, "open borders requires attitude Pleased, or one step less with a better trade route to your cities");
     }
     // Technology for technology: worth at least four fifths of what we give, with a civ we do
     // not dislike, and never to the one we are preparing a war against.
@@ -1790,7 +1805,8 @@ pub fn keep_deal(g: &Game, p: PlayerId, other: PlayerId, ours: &[TradeData], the
     }
     let all = |items: &[TradeData], kind: TradeableItem| !items.is_empty() && items.iter().all(|t| t.item_type == kind);
     if all(ours, TradeableItem::TRADE_OPEN_BORDERS) && all(theirs, TradeableItem::TRADE_OPEN_BORDERS) {
-        return if relation >= 1 { Ok(()) } else { Err("open borders requires attitude Pleased".into()) };
+        let step = if relation < 1 { crate::caravans::open_borders_bonus(g, p, other) } else { 0 };
+        return if relation + step >= 1 { Ok(()) } else { Err("open borders requires attitude Pleased".into()) };
     }
     if all(ours, TradeableItem::TRADE_DEFENSIVE_PACT) && all(theirs, TradeableItem::TRADE_DEFENSIVE_PACT) {
         return Ok(());

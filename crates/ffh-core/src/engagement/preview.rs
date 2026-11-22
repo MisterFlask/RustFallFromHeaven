@@ -437,7 +437,10 @@ impl Game {
         // The HP when the engagement begins (who lost counts from it).
         let start = hp_now(ov);
         self.engage_morale_rolls(&setup.units, n_att, &mut sat, rng);
-        self.engage_opening_rolls(&setup.units, n_att, &sat, &view.on_plot, ov, rng);
+        // (In a scratch game the summons called for the battle can take a unit of the view off
+        // the map, a non-combatant on the summoner's plot: it is not there to strike.)
+        let on_plot: Vec<UnitId> = view.on_plot.iter().copied().filter(|&u| self.units.contains(u)).collect();
+        self.engage_opening_rolls(&setup.units, n_att, &sat, &on_plot, ov, rng);
         let mut hp = hp_now(ov);
         let mut effects = pre.to_vec();
         effects.extend(self.engage_opening_spells(setup, &hp));
