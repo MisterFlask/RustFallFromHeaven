@@ -36,6 +36,8 @@ const FRAGMENTS: &[(&str, &[&str])] = &[
     // The Armageddon counter (docs/CARDS.md, section 4).
     ("KEYWORD_ARMAGEDDON_COUNTER", &["100 over 300 turns", "raise or lower it"]),
     ("KEYWORD_ARMAGEDDON_CARD", &["one card or none at each slot", "within 5 of its slot", "reaches its slot"]),
+    // Trade (docs/TRADE.md, section 9).
+    ("KEYWORD_ROUTE", &["two caravans travel it", "each pays while it lives", "the destination of any number", "re-forms in the origin"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.

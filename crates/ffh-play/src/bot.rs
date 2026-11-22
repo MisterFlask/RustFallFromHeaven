@@ -885,6 +885,10 @@ pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> us
         let (x, y) = mine.first().map_or((0, 0), |c| (int(c, "x") as i32, int(c, "y") as i32));
         ask(Query::PlaceMenu { spell, x, y }, May::BeInvalid);
     }
+    // Trade's Establish dialog of a unit of ours (refused unless it is a Caravan).
+    if let Some(u) = arr(&view, "units").iter().find(|u| int(u, "owner") == me) {
+        ask(Query::RouteOffers { unit: UnitId(int(u, "id") as u32) }, May::BeInvalid);
+    }
     if let Some(u) = arr(&view, "units").iter().find(|u| int(u, "owner") == me) {
         ask(Query::Inspect { kind: "unit".into(), oid: int(u, "id") }, May::Answer);
     }

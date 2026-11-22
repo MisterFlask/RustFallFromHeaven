@@ -14119,9 +14119,9 @@ TXT_KEY_VOTE_SCREEN_EXIT_NOW	Exit Now
 TXT_KEY_VOTE_SCREEN_SAVE_NAME	Save Game Name
 TXT_KEY_VOTE_SCREEN_SAVE_NOW	Save Now
 TXT_KEY_VOTE_SECRETARY_GENERAL	Elect a Head Councilor-Can propose resolutions
-TXT_KEY_VOTE_SINGLE_CURRENCY	Single Currency: +1 Trade Route ([ICON_TRADE]) in all cities
+TXT_KEY_VOTE_SINGLE_CURRENCY	Single Currency: +1 route for every civilization
 TXT_KEY_VOTE_SLAVE_TRADE	Setup Slave Trade: Members can buy and sell slaves
-TXT_KEY_VOTE_SMUGGLING_RING	Setup Smuggling Ring: +1 Trade Route ([ICON_TRADE]) in all cities, enables the Smugglers' Port building
+TXT_KEY_VOTE_SMUGGLING_RING	Setup Smuggling Ring: +1 route for every civilization, enables the Smugglers' Port building
 TXT_KEY_VOTE_SOURCE_RELIGION	Leaders of %s1_religion have a vision of uniting all %s2_religion_adjective faithful under the %s3_building.
 TXT_KEY_VOTE_UNIVERSAL_SUFFRAGE	U.N. Resolution #3312 (Global Civic - Universal Suffrage)
 TXT_KEY_VOTE_UN_ASSIGN_CITY	Council Mandate for City Ownership
@@ -14997,3 +14997,5 @@ TXT_KEY_KEYWORD_ARMAGEDDON_COUNTER	Armageddon counter
 TXT_KEY_KEYWORD_ARMAGEDDON_COUNTER_REMINDER	0 to 100. Rises by 100 over 300 turns at Normal speed (201 at Quick, 450 at Epic, 900 at Marathon). Razed cities, the Ashen Veil, the Octopus Overlords, demon units and some rituals and spells raise or lower it.
 TXT_KEY_KEYWORD_ARMAGEDDON_CARD	Armageddon card
 TXT_KEY_KEYWORD_ARMAGEDDON_CARD_REMINDER	Dealt face down at the end of turn 1: one card or none at each slot (10, 20, ... 100). Revealed to every player when the counter is within 5 of its slot. Plays when the counter reaches its slot.
+TXT_KEY_KEYWORD_ROUTE	Route
+TXT_KEY_KEYWORD_ROUTE_REMINDER	A standing link from one of your cities to another city, established by a Caravan. Two caravans travel it by themselves; each pays while it lives. Pay grows with the path's length and the two cities' population; a foreign route pays more. A city is the origin of 1 route and the destination of any number. A killed caravan gives plunder to its killer and re-forms in the origin.

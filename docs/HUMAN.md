@@ -1249,6 +1249,35 @@ tooltip) and in every city of yours a **Sally** section: the posture (Never, Whe
 Always; `city_sally`) with its rule. Staged saves: `raid-order`, `raid-overrun`,
 `raid-contested`.
 
+Trade (docs/TRADE.md, section 9; `src/view/trade.rs`, `app/trade.js`, `app/trade_view.js`; shots
+in `docs/shots/trade/`, `tools/trade-shots.mjs`): a Caravan in no route offers **Establish route**
+(the unit panel's Trade section), disabled with the rules' reason where its plot is no origin
+(`A route starts in one of your cities.`, `No route free.`, ...). It opens the Establish dialog (the
+`route_offers` query: one path search per destination, on demand), standing at the foot of the
+screen over a clear map: the limits line (`Routes: 1 of 2. This city: 0 of 1.`) and one row per
+destination by pay (`Nubia (Calabim). 13 plots. 8.3 a turn. Passes Strait of Lorda: open.`, the
+sea's state as the Sea layer names it); a row under the pointer or the keyboard focus draws its
+path on the map (the preview line, gold); choosing one sends `establish_route`. A caravan in a route
+takes no orders: the unit panel shows its route, its state, `Plunder: 25 gold.` and `A caravan in a
+route takes no orders.`; the plot tooltip of any caravan you see adds `Caravan: Nubia to Thariss.
+Plunder: 42 gold.`; the attack preview on a plot holding caravans adds `Plunder: 18 gold (2
+caravans).`. **The Trade screen** (the menu's Trade, Shift+F5): the limits, one card per route of
+yours (its title, `Open.` or `Closed: no open borders with Calabim.`, `Pay: 2.5 a turn.` with the
+destination's share, the pay's terms, `Growth: +8% of 50%.`, each caravan: `On the road: plot 3 of
+7, bound for Nubia.` / `Lost on turn 4 to the barbarians. Re-forms in 10 turns.` / `Waits in
+Gereth Minar: the route is closed.`, its plunder), **Dissolve** (asked first, `dissolve_route`); a
+title or a caravan centres the map on it; then the routes of others into your cities with what each
+brings. **The Trade layer** (the fifth map layer, Ctrl+5; on by itself while a Caravan is selected or
+the screen or the dialog is open, and back to the layer before after, as the Sea layer's switch):
+each open route's line along its path, yours in vellum, others' in their owner's colour over the
+plots you have revealed, drawn as supply lines are on all three maps (an overlay: no shader, mesh or
+texture). The city screen's **Routes** section lists the routes from the city and into it with the
+pay to that city (`To Nubia (Calabim): 2.5 a turn.`, `From Thariss: 1.6 a turn.`) and `This city: 1
+of 1.`. The help of the techs, civics, buildings and votes with a route key says it bare (`+1
+route.`, `+1 route from a coastal city.`, `This city can be the origin of 1 more route.`, `+50% pay
+of the route from this city.`), the word carrying the Route keyword. Staged saves: `trade-ready`,
+`trade-routes`, `trade-closed`, `trade-raid`.
+
 ## Commands
 
 ```
@@ -1436,7 +1465,10 @@ order, docs/NAVAL.md 7.2: `station` null (none), `{"patrol": sea}` (a sea index;
 range or for a fleet with no warship), `{"escort": army}` (an army or fleet of yours) or
 `{"escort_group": group}`; refused for an army; and a land army's Raid, docs/RAIDS.md:
 `{"raid": city}`, the rules' `army_raid_refusal` as the reason, "The countryside is stripped.";
-null ends it), `city_sally {city, posture}` (a city's sally posture, docs/RAIDS.md section 4:
+null ends it), `establish_route {unit, city, cargo}` (Trade, docs/TRADE.md 3.2: a Caravan of yours
+in a city that can be an origin; `cargo` absent, null or `[null, null]`: cargo is not built, any
+resource is refused `Cargo is not built yet.`; the rules' reason otherwise, `RouteRefusal::text`),
+`dissolve_route {route}` (a route of yours; another's: `not_owner`), `city_sally {city, posture}` (a city's sally posture, docs/RAIDS.md section 4:
 `posture` `Never`, `Favoured` or `Always`, by name, any case; another player's city: `not_owner`;
 `invalid` for another name), `recruit_dest
 {city, index, dest}` (this game's armies: `dest` is `{"garrison": city}`, `{"army": id}` or null
@@ -1623,6 +1655,7 @@ source); and each unit's `army`, `garrison`, `army_unit` and `march` (null, or a
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack; `supply` (docs/SUPPLY.md): with the units of one army of yours selected and a plot you have revealed, whether the army would be supplied there, `{ok, cost, budget, sea_port}` (`cost` null without a line; `sea_port`: at sea, the port it would be in range of, else null; the rules' `plot_supply_line_known` with your team as viewer: what you see, not the truth), else null; `sea` (docs/NAVAL.md section 10), null when the path neither goes in boats nor out of range: `boats_from` (the first node index where a selected land unit would be in boats: water where no ship of its team has room for it; 0 when it is in boats now), `boats_moves` (water plots a turn), `boats_turns` (the turns from the first water node's turn of arrival to the last's), `out_from` (the first revealed water node out of your range for a selection the range rule applies to there), `attrition`, `strength` and `lines` (the preview's words; phase 2 adds the seas entered where an enemy you see patrols, and for an attack on a coastal city its harbour; `sea` is then not null); `supply.sea_why` (no line: why a supply ship of yours there is no source) |
 | `sea {id, units}` | a named sea's panel (docs/NAVAL.md 10; a sea you have revealed a plot of, else `gone`): `name`, `x`, `y`, `plots_text`, `state`, `badge`, `control`, `ours`, `theirs`, `hold`, `sides` (`{label, own, strength, ships, note, party}`), `now`, `if_they` / `if_you` (`{title, lines}` or null), `send` (with warships of yours among `units`: `{label, here, turns, x, y, result, units, enabled, why}`; else null) |
 | `place_menu {spell, x, y}` | a placed world spell's menu on a plot (`view/place.rs`; refused for a plot that is not one of its targets now): `title`, `x`, `y`, `where`, `rows` (one per mana type: `target`, `bonus`, `name`, `owned` ("You own: N."), `passive` (lines; empty: none), `promotions` (tier I to III: `promotion`, `type`, `name`, `tier`, `needs`, `free`, `spells` `[{spell, name, help}]`)) |
+| `route_offers {unit}` | Trade's Establish dialog of a Caravan of yours (docs/TRADE.md 9): `{unit, origin, enabled, why, limits, offers: [{city, name, owner, civ, foreign, length, pay_x100, pay, dest_pay_x100, seas: [{id, name, state, text}], text, segments, cargo, cmd}], empty}`, by pay; a unit that is not a Caravan is `invalid`. The view's `trade` (`{limits, routes, into, lines}`), the units' `caravan` and the city query's `routes` carry the rest. |
 | `seas` | the Seas screen: `{seas: [{id, name, x, y, state, badge, control, ours, theirs, enemy, ports, lanes, lanes_cut}]}` |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides. Under engagement combat, for land units attacking a land plot that holds a defender: `engagement: true`, `defenders` (their number), `declare_war_team` and `on_arrival`. An attack the selection can launch now (the plot is next to it and some unit on its plot can attack the plot now): `on_arrival: false`, `valid: true`, `pool` the units on its plot that can (other armies and the garrison there included). Otherwise (a go-to that ends in an attack, units that have used their moves or their attack): `on_arrival: true`, the duel's `valid` and odds kept, `pool` the selected units that could fight there once they can attack it. The duel's odds and strengths of the strongest pair stay beside them (the forecast of a battle is `engage_preview`'s). Ships, air units and the option off: the duel's preview. The sea (docs/NAVAL.md): each side's details carry `sea_wear` (a warship's wear, negative percent), and `defender_in_boats` with `embarked_strength` says the defender fights in boats |
 | `engage_preview {army \| units \| from, to, squad?}` | engagement combat: the plan of an attack (the battle screens' plan) by `squad` (else the strongest squad that can attack; `squads`: the attacking squads that can, `{squad, number, body, formation}`; `squad`: the index of the one the plan fights with; `def_squad`: `{squad, number}`, the defenders' squad as the real fight picks it), in the battle log's shapes (`assets/app/battle_log.js`'s header lists what the screens read): `plot` and `from`, the `ground` and its rules, `params` (the rule values the screens word), both sides' `slots` and why and their `lanes`, `sides`, `fighters` (the pool, then the defenders you see, each in its cell or `lane` null: its A and Dv, HP, speed, actions per row, spell, dodge, crit bonus, size and specials), `formation` (the attacking squad in its cells), `auto_formation` (the strongest squad's), `reserve` (the pool's units not in it), `def_formation` and `def_reserve` (the defending squad in its cells, as the real fight picks it, and the rest on the plot), `starving` (`[{b, pct}]`: the fighters you see of starving armies and the percent change of the damage they deal), `forecast` (`runs` battles of the real resolver on a private RNG seeded from the plan, never the game's: `lost_x100` and `escaped_x100` per side, `line_wiped_permille`, `plot_falls_permille`, `attackers_wiped_permille`, `attackers_win_permille` (the defenders lose the battle), and `per` fighter its `fall_pct` and `escape_pct`), `declare_war` (the team the attack declares war on), `errors`. A squad that cannot attack there gets the plan of the strongest squad, `forecast` null and why in `errors`; a plot you do not see, one not next to the attackers, or an attack the rules refuse has no plan: the reply is `errors` and `declare_war` alone. Refused without the option |

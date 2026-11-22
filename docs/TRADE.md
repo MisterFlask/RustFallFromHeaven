@@ -1,7 +1,8 @@
 # Trade: routes, caravans, cargo
 
 **Status: phase 1's rules built (2026-11-21: sections 3, 4.1-4.3, 6, 7; "As built", section 14).
-Not built: cargo (section 5), escort (4.4), the AI (section 8), the client (section 9).** This game's own rules, replacing the trade routes
+Not built: cargo (section 5), escort (4.4), the AI (section 8). The client (section 9) is built
+without cargo (2026-11-21: docs/HUMAN.md, "Trade").** This game's own rules, replacing the trade routes
 inherited from Civ4 (each city's slots filled by the rules with the best-paying partner cities:
 `city_update_trade_routes`). This file is the spec for the implementation, as docs/SUPPLY.md is for
 supply lines and docs/NAVAL.md for the sea. Marked **(default)**: a value or rule chosen for a
@@ -286,6 +287,20 @@ built (CLAUDE.md, "Show UI changes in a screenshot").
 - The help text of every tech, civic and building with one of the data keys of section 7 says
   what the key now does (`+1 route.` / `This city can be the origin of 1 more route.` /
   `+50% pay of the route from this city.`).
+
+**As built (the client, 2026-11-21).** `crates/ffh-play`: `src/view/trade.rs` (the view's `trade`,
+the units' `caravan`, the unit panel's lines, the city query's `routes`, the attack preview's
+`plunder`, the Establish action, the `route_offers` query, the help lines), the commands
+`establish_route` and `dissolve_route` (`command.rs`), the stages `trade-ready|trade-routes|
+trade-closed|trade-raid` (`src/stage/trade.rs`), `tests/trade.rs`; `assets/app/trade.js` (the layer,
+the dialog, the screen) and `trade_view.js` (pure, `test/trade.test.mjs`); the keyword Route
+(`keywords.jsonc`). Not built: the cargo selector and cargo lines (their places are marked
+`cargo` in the JSON and in trade.js), a caravan on water drawn as a ship (the client's sprite lookup is
+by unit type in three renderers, the HD-2D one in its instance build: left for a renderer change),
+the plunder in the battle plan (the attack preview's tooltip has it). At peace a caravan cannot be
+attacked: a move onto its plot is a move, not an attack (the rules' at-peace stacking), so no
+"declares war" notice comes up; declaring war (diplomacy) closes the route and seizes its caravans on
+your land.
 
 ## 10. Measures
 
