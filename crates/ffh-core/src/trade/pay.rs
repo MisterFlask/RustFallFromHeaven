@@ -115,15 +115,36 @@ impl Game {
             }
             route.dest_pay_x100 = pay.dest_x100;
         }
-        for c in self.cities.ids() {
-            for i in 0..YieldType::NUM {
-                let y = YieldType::from_usize(i);
-                let v = self.city_route_trade_yield(c, y);
-                if self.cities[c].trade_yield[i] != v {
-                    self.city_set_trade_yield(c, y, v);
-                }
+        // The routes' cities only, each sum in one pass over the routes (a city whose last route
+        // ended is cleared by `route_end`).
+        let mut sums: std::collections::BTreeMap<CityId, i32> = std::collections::BTreeMap::new();
+        for (_, r) in self.routes.iter() {
+            let (o, d) = (r.origin, r.destination);
+            *sums.entry(o).or_insert(0) += r.owner_pay_x100();
+            *sums.entry(d).or_insert(0) += r.dest_pay_x100;
+        }
+        for (c, x100) in sums {
+            if self.cities.contains(c) {
+                self.city_set_route_trade(c, x100);
             }
         }
+    }
+
+    /// Sets city `c`'s trade yield from `x100` hundredths of route trade (6.3).
+    fn city_set_route_trade(&mut self, c: CityId, x100: i32) {
+        for i in 0..YieldType::NUM {
+            let y = YieldType::from_usize(i);
+            let v = self.city_calculate_trade_yield(c, y, round_x100(x100));
+            if self.cities[c].trade_yield[i] != v {
+                self.city_set_trade_yield(c, y, v);
+            }
+        }
+    }
+
+    /// City `c`'s trade yield set afresh from the routes (one city).
+    pub(crate) fn city_refresh_route_trade(&mut self, c: CityId) {
+        let x100 = self.city_route_trade_x100(c);
+        self.city_set_route_trade(c, x100);
     }
 
     /// The disagreements between the stored trade state and a fresh computation (the harness's

@@ -152,7 +152,8 @@ impl Game {
                         Some(old) => match (c, l).cmp(&(old.cost, old.len)) {
                             Ordering::Less => true,
                             Ordering::Greater => false,
-                            Ordering::Equal => old.from.is_some_and(|f| tree.path_to(q) < tree.path_to(f)),
+                            // The same cost and plots: entered from the lower plot index.
+                            Ordering::Equal => old.from.is_some_and(|f| q < f),
                         },
                     };
                     if better {
@@ -190,7 +191,7 @@ impl Game {
         // The first goal settled is the nearest (the search stops there).
         let best = path.iter().copied().filter(|&q| tree.labels[q.idx()].is_some_and(|l| l.done)).min_by(|&a, &b| {
             let (la, lb) = (tree.labels[a.idx()].unwrap(), tree.labels[b.idx()].unwrap());
-            (la.cost, la.len).cmp(&(lb.cost, lb.len)).then_with(|| tree.path_to(a).cmp(&tree.path_to(b)))
+            (la.cost, la.len, a).cmp(&(lb.cost, lb.len, b))
         })?;
         tree.path_to(best)
     }
@@ -274,6 +275,44 @@ impl Game {
         let route = &self.routes[r];
         if let Some(why) = self.route_destination_refusal_no_path(route.owner, route.origin, route.destination, Some(r)) {
             return Err(why);
+        }
+        self.route_path(route.owner, route.origin, route.destination).ok_or(RouteRefusal::NoPath)
+    }
+
+    /// Whether route `r`'s stored path can still be walked (3.5): it runs from the origin's plot to
+    /// the destination's and every step passes the caravans' step test (`route_step_cost`, the
+    /// destination city's case included).
+    pub fn route_path_valid(&self, r: RouteId) -> bool {
+        let route = &self.routes[r];
+        if !self.cities.contains(route.origin) || !self.cities.contains(route.destination) || route.path.len() < 2 {
+            return false;
+        }
+        let (from, to) = (self.city_plot(route.origin), self.city_plot(route.destination));
+        if route.path[0] != from || *route.path.last().expect("a path") != to {
+            return false;
+        }
+        let team = self.players[route.owner].team;
+        route.path.windows(2).all(|w| self.route_step_cost(team, w[0], w[1], w[1] == to).is_some())
+    }
+
+    /// Whether this turn is route `r`'s retrace turn (3.5): every `TRADE_RETRACE_TURNS` turns
+    /// counted from the turn it was established.
+    pub fn route_retrace_turn(&self, r: RouteId) -> bool {
+        let n = self.d.defines.trade_retrace_turns.max(1);
+        let since = self.game_turn() - self.routes[r].established;
+        since > 0 && since % n == 0
+    }
+
+    /// Route `r` checked at its owner's turn start (3.4, 3.5): the cheap tests of 3.3 first; an
+    /// open route keeps its stored path while it can be walked, except on its retrace turn; a
+    /// closed one whose cheap tests pass is traced again.
+    pub(crate) fn route_check_turn(&self, r: RouteId) -> Result<Vec<PlotIdx>, RouteRefusal> {
+        let route = &self.routes[r];
+        if let Some(why) = self.route_destination_refusal_no_path(route.owner, route.origin, route.destination, Some(r)) {
+            return Err(why);
+        }
+        if route.is_open() && !self.route_retrace_turn(r) && self.route_path_valid(r) {
+            return Ok(route.path.clone());
         }
         self.route_path(route.owner, route.origin, route.destination).ok_or(RouteRefusal::NoPath)
     }

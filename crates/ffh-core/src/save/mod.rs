@@ -207,7 +207,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   and refit reasons.
 /// - 65: escorts of caravans (docs/TRADE.md, 4.4): `EscortTarget::Caravan` (a land army's first
 ///   Escort).
-pub const FORMAT_VERSION: u32 = 65;
+/// - 66: `Route::closed_since` (docs/TRADE.md, 3.4).
+pub const FORMAT_VERSION: u32 = 66;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

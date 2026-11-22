@@ -109,6 +109,7 @@ impl Game {
         let was_open = self.routes[r].is_open();
         if was_open {
             self.caravan_escorts_wait(r, None, "route closed.");
+            self.routes[r].closed_since = self.game_turn();
         }
         self.routes[r].closed = Some(why);
         self.routes[r].path.clear();
@@ -144,8 +145,15 @@ impl Game {
         self.log.msg_at(turn, Some(owner), at, || format!("Route {on} to {dn} ended: {why}"));
         self.cargo_undo_route(r);
         self.caravan_escorts_route_ended(r);
+        let ends = [self.routes[r].origin, self.routes[r].destination];
         self.routes.remove(r);
         self.trade_refresh_pay();
+        // Its cities, which the refresh no longer visits when no other route touches them.
+        for c in ends {
+            if self.cities.contains(c) {
+                self.city_refresh_route_trade(c);
+            }
+        }
     }
 
     /// Its owner dissolves route `r` (3.4): it ends. False if there is no such route.
@@ -272,14 +280,17 @@ impl Game {
                     s.reform_turns -= 1;
                 }
             }
-            match self.route_check(r) {
+            match self.route_check_turn(r) {
                 Ok(path) => {
                     let reopened = !self.routes[r].is_open();
                     {
                         let route = &mut self.routes[r];
                         route.length = path.len() as i32 - 1;
-                        route.path = path;
+                        if route.path != path {
+                            route.path = path;
+                        }
                         route.closed = None;
+                        route.closed_since = -1;
                     }
                     if reopened {
                         let (on, dn) = (self.city_name_or(origin), self.city_name_or(self.routes[r].destination));
@@ -315,6 +326,9 @@ impl Game {
                         self.route_close(r, why);
                     } else {
                         self.routes[r].closed = Some(why);
+                        if self.routes[r].closed_since < 0 {
+                            self.routes[r].closed_since = turn;
+                        }
                     }
                     if matches!(why, RouteRefusal::AtWar(_)) {
                         self.routes[r].growth = 0;

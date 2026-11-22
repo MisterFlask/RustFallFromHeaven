@@ -340,7 +340,7 @@ fn the_path_is_the_cheapest_then_the_shortest_then_the_lowest() {
     let a = w.g.player_init_city(w.p0, 4, 4, true, true);
     let b = w.g.player_init_city(w.p0, 7, 5, true, true);
     let path = w.g.route_path(w.p0, a, b).unwrap();
-    // Three steps (dx 3, dy 1); among those, the lowest plot index at the first difference.
+    // Three steps (dx 3, dy 1); among those, each plot entered from the lower plot index.
     assert_eq!(path, vec![w.at(4, 4), w.at(5, 3), w.at(6, 4), w.at(7, 5)]);
     assert_eq!(path_cost(&w.g, t0, &path, w.at(7, 5)), 2 * d.defines.caravan_cost_land + w.g.plot_route_cost(t0, w.at(7, 5)).unwrap());
     // A road elsewhere makes a longer path cheaper when it is.
@@ -1386,4 +1386,107 @@ fn an_escort_survives_a_save() {
     let h = Game::load(w.g.d, &bytes).unwrap();
     assert_eq!(h.armies[fleet].station, Station::Escort(EscortTarget::Caravan(r, 1)));
     assert_eq!(h.save(), bytes);
+}
+
+// ---- Retracing (3.5) ----
+
+impl World {
+    /// One turn start of player 0's routes, a game turn later.
+    fn next_turn_start(&mut self) {
+        self.g.setup.game_turn += 1;
+        self.g.player_update_routes(self.p0);
+        self.consistent();
+    }
+}
+
+#[test]
+fn a_quiet_turn_retraces_nothing() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let n = w.g.d.defines.trade_retrace_turns;
+    let before = ffh_core::trade::route_path_calls();
+    for _ in 1..n {
+        w.next_turn_start();
+    }
+    assert_eq!(ffh_core::trade::route_path_calls(), before, "no search between retrace turns");
+    w.next_turn_start();
+    assert_eq!(ffh_core::trade::route_path_calls(), before + 1, "one on the retrace turn");
+    assert!(w.g.route_path_valid(r));
+    assert_eq!(w.g.routes[r].closed_since, -1);
+}
+
+#[test]
+fn a_road_beside_the_path_is_taken_within_the_retrace_turns() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let old = w.g.routes[r].path.clone();
+    let road = w.g.d.t::<RouteType>("ROUTE_ROAD");
+    for x in 2..=11 {
+        for y in [4] {
+            let q = w.at(x, y);
+            w.g.plot_set_route_type(q, Some(road), false);
+        }
+    }
+    let fresh = w.g.route_path(w.p0, a, b).unwrap();
+    assert_ne!(fresh, old, "the road makes another path cheaper");
+    let n = w.g.d.defines.trade_retrace_turns;
+    let mut taken = None;
+    for turn in 1..=n {
+        w.next_turn_start();
+        if w.g.routes[r].path == fresh {
+            taken = Some(turn);
+            break;
+        }
+        assert_eq!(w.g.routes[r].path, old, "kept while it can be walked");
+    }
+    assert_eq!(taken, Some(n), "taken on the retrace turn");
+}
+
+#[test]
+fn a_blocked_path_is_retraced_at_the_next_turn_start() {
+    let mut w = world();
+    // Through player 2's land under open borders, then the borders close.
+    for y in 1..=14 {
+        let q = w.at(7, y);
+        if !w.g.plot_is_water(q) {
+            w.g.plot_set_owner(q, Some(w.p2), false, true);
+        }
+    }
+    let east = w.g.player_init_city(w.p0, 10, 7, true, true);
+    w.open_borders(w.p0, w.p2, true);
+    let r = w.establish(w.capital, east);
+    w.open_borders(w.p0, w.p2, false);
+    assert!(!w.g.route_path_valid(r), "the stored path crosses closed borders");
+    let before = ffh_core::trade::route_path_calls();
+    w.next_turn_start();
+    assert_eq!(ffh_core::trade::route_path_calls(), before + 1, "traced again at once");
+    assert_eq!(w.g.routes[r].closed, Some(RouteRefusal::NoPath));
+    assert_eq!(w.g.routes[r].closed_since, w.g.game_turn());
+    // A closed route whose cheap tests pass is traced each turn start; it opens with the borders.
+    w.open_borders(w.p0, w.p2, true);
+    w.next_turn_start();
+    assert!(w.g.routes[r].is_open());
+    assert_eq!(w.g.routes[r].closed_since, -1);
+}
+
+#[test]
+fn a_sea_closing_on_the_path_retraces_it() {
+    let mut w = world();
+    let across = w.g.player_init_city(w.p0, 22, 4, true, true);
+    let r = w.establish(w.port, across);
+    let old = w.g.routes[r].path.clone();
+    // Player 2 closes the Gap to player 0.
+    w.war(w.p0, w.p2);
+    let ship = w.unit(w.p2, "UNIT_TRIREME", 17, 1);
+    assert!(w.g.unit_plunder(ship));
+    let gap = w.g.map.plots[w.at(17, 1)].sea.unwrap();
+    assert!(w.g.sea_is_closed_to(gap, w.team(w.p0)));
+    assert!(!w.g.route_path_valid(r));
+    w.next_turn_start();
+    let route = &w.g.routes[r];
+    assert!(route.closed == Some(RouteRefusal::NoPath) || (route.path != old && w.g.route_path_valid(r)), "retraced: another way or no path");
 }

@@ -120,6 +120,8 @@ pub struct Route {
     pub slots: [CaravanSlot; CARAVAN_SLOTS],
     /// Closed, and why (`None`: open).
     pub closed: Option<RouteRefusal>,
+    /// The game turn it last went from open to closed (-1 while open).
+    pub closed_since: i32,
     /// The path traced at the last check: the origin's plot first, the destination's last
     /// (empty while there is none).
     pub path: Vec<PlotIdx>,
@@ -464,6 +466,7 @@ impl Game {
             growth: 0,
             slots: [CaravanSlot::empty(), CaravanSlot::empty()],
             closed: None,
+            closed_since: -1,
             path,
             length,
             dest_pay_x100: 0,

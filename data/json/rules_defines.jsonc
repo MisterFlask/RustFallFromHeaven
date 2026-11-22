@@ -290,5 +290,8 @@
   "TRADE_CARGO_NEW_PERCENT": 150,
   // TRADE_MISSION_PERCENT: a Great Merchant's trade mission counts this percent of one caravan's
   //      pay of a route from the city to the capital (so its gold stays near FFH2's)
-  "TRADE_MISSION_PERCENT": 25
+  "TRADE_MISSION_PERCENT": 25,
+  // TRADE_RETRACE_TURNS: a route's path is traced again every this many turns from its
+  //      establishing (and at once when the stored path can no longer be walked)
+  "TRADE_RETRACE_TURNS": 5
 }

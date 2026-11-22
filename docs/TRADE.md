@@ -111,9 +111,11 @@ plot to the destination's, 8 directions, by plot entered:
   is not closed to the owner's team (4.3 there; water with no sea counts as open); the
   destination city and any city of a team whose land it may enter. Never a city of a team whose
   land it may not enter, and no diagonal step the rules refuse a ship (between two land plots).
-- Ties: the lower cost, then the fewer plots, then the lower plot index at the first difference.
-- It ignores units. It is traced at the start of the owner's turn and stored (`Route::path`); its
-  number of plots, the origin's left out, is the route's **length** that turn.
+- Ties: the lower cost, then the fewer plots, then the lower index of the plot it is entered from.
+- It ignores units. It is traced when the route is established, every `TRADE_RETRACE_TURNS` (5)
+  turns after, and at once when its stored path can no longer be walked (and at each turn start
+  of a closed route whose other tests pass, and at a war declaration); it is stored (`Route::path`)
+  and its number of plots, the origin's left out, is the route's **length**.
 
 ## 4. Caravans
 
@@ -396,7 +398,7 @@ If animals and barbarians kill most early caravans, the guard is too weak.
 `TRADE_PLUNDER_TURNS` 10, `TRADE_PAY_PERCENT` 500, `TRADE_LENGTH_FULL` 8, `TRADE_LENGTH_CAP` 24,
 `TRADE_FOREIGN_PERCENT` 25, `TRADE_DEST_PERCENT` 50, `TRADE_GROWTH_PERCENT` 2,
 `TRADE_GROWTH_MAX` 50, `TRADE_CARGO_PERCENT` 50, `TRADE_CARGO_NEW_PERCENT` 150,
-`TRADE_MISSION_PERCENT` 25 (the Great Merchant's trade mission). Data:
+`TRADE_MISSION_PERCENT` 25 (the Great Merchant's trade mission), `TRADE_RETRACE_TURNS` 5. Data:
 `UNIT_CARAVAN`, `PROMOTION_CARAVAN_GUARD_2` to `_4`. Removed: `MAX_TRADE_ROUTES`, `THEIR_POPULATION_TRADE_PERCENT`,
 `CAPITAL_TRADE_MODIFIER`, `FOREIGN_TRADE_MODIFIER`, `OUR_POPULATION_TRADE_MODIFIER` and its offset,
 `TRADE_PROFIT_PERCENT`, `IGNORE_PLOT_GROUP_FOR_TRADE_ROUTES`, and
@@ -442,7 +444,8 @@ Where the code is:
   `changing_hands` `player_acquire_city` sets) and `player_acquire_city` (the routes into a captured
   or traded city go to its new id). Kills: `unit_kill`, before the delayed death.
 - The pay refresh runs from `city_set_population` (when a route touches the city), the origin's two
-  modifier changers, `player_change_trade_yield_modifier`, and every change of a route's state. The
+  modifier changers, `player_change_trade_yield_modifier`, and every change of a route's state
+  (section 17: it visits the routes' cities only). The
   harness (`ffh_harness::check`) checks `trade_stale`: every city's trade yield and every route's
   stored pay equal a fresh computation, and routes and caravan units refer to each other.
 - The exemptions of a caravan in a route (`Unit::route`): `unit_in_boats_at` (never in boats: the
@@ -610,3 +613,29 @@ Choices made where this section was silent (each open to change):
   caravan lost.` (or `route closed.`) / `1st Army: escort of Caravan: A to B (1) ended: a move
   order.` (or `the route ended`).
 - Existing escorts (a fleet's of an army or a group) play as before: they follow on water only.
+
+## 17. As built: the cost of routes (2026-11-21)
+
+The first games with the AI's routes (12 games, 200 turns, about 250 routes alive at turn 200)
+spent about 2.5 ms a game turn in `player_update_routes`, on a turn of about 23 ms: one
+`route_path` a route a turn, its tie rule comparing whole paths. Changed, with nothing a player
+would notice:
+
+- **The tie rule** (3.5) is constant-time: among equal cost and plots, the label entered from the
+  lower plot index wins. Paths may differ in shape from the earlier rule's.
+- **Retracing** (3.5): `route_check_turn` at the owner's turn start runs the cheap tests of 3.3
+  first; an open route keeps its stored path while `route_path_valid` holds (every step of it
+  passes `route_step_cost`, the destination city's case included), except on its retrace turn
+  (`route_retrace_turn`: every `TRADE_RETRACE_TURNS` (5) turns from `Route::established`). A closed
+  route whose cheap tests pass is traced at each turn start (only the path can be the reason). A
+  war declaration re-checks with a fresh trace (`routes_on_war`, as before). A caravan off the path
+  rejoins as before.
+- **The pay refresh** (`trade_refresh_pay`) sums each city's route trade in one pass over the routes
+  and sets only the routes' cities; `route_end` sets its two cities afterwards (so a city whose
+  last route ended is cleared). `trade_stale` still checks every city.
+- **`Route::closed_since`**: the game turn the route last went from open to closed (-1 while open),
+  set by `route_close` and when a route is first marked closed at a turn start, cleared when it
+  opens. Save format 66.
+- **An instrument** (not game state): `ffh_core::trade::route_path_calls()` and
+  `route_search_calls()` count, per thread, the `route_path` calls and every route search;
+  `FFH_ROUTE_PATHS=A,B ffh autoplay ...` prints them a turn over turns A to B.

@@ -107,7 +107,7 @@ persist_enum!(RouteRefusal {
     21 => RouteGone,
 });
 persist_struct!(CaravanSlot { unit, reform_turns, bound, cargo, lost_turn, lost_to, pay_x100, delivering, premium });
-persist_struct!(Route { id, owner, origin, destination, established, arrived, growth, slots, closed, path, length, dest_pay_x100 });
+persist_struct!(Route { id, owner, origin, destination, established, arrived, growth, slots, closed, closed_since, path, length, dest_pay_x100 });
 persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, unsupplied_turns, domain, station, carried });
 persist_struct!(Squad { id, owner, body, hand_set, fought_turn, fought });
 impl Persist for SquadBody {
