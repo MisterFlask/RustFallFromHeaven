@@ -371,7 +371,7 @@ would open up. Some partial versions exist, and the entry says so.
 - **Prices.** Resources and units with prices that move with supply and demand (the Black
   Market, the Last Market).
 - **Trade as caravans.** Trade routes carried by units or ships that can be raided, escorted
-  or blockaded.
+  or blockaded. (Built: docs/TRADE.md.)
 - **Debt and interest.** Loans, interest, default.
 - **Harvests.** Food that varies by year and season; famine as a pressure.
 

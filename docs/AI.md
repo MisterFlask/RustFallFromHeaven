@@ -1921,7 +1921,7 @@ plan turn (`plan_turn`: every 5 turns with a route free, every 10 with none, sta
 id), with at least 2 cities, none in training, a route free that no route-less Caravan claims (or,
 with none free and none route-less, a replacement), and the best plan (`plan_all`: the best offer
 among the cities `city_origin_refusal` accepts, ties to the lower id) repaying the Caravan within
-30 turns (worth x 30 >= its hammers x 100), the Caravan is put first in the origin's queue (an empire
+30 turns (worth x 30 >= its hammers x 100; the 30 scaled by the game speed's training percent, so a slower game's dearer Caravan still repays), the Caravan is put first in the origin's queue (an empire
 order in a governed city). The build it interrupts keeps its production. When the origin cannot
 train it, is unsafe (no defender, or the threat near it above half its garrison's defence: a
 governed city without a defender drops the empire order for its garrison) or holds a ritual in

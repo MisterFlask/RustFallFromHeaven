@@ -456,6 +456,8 @@ If animals and barbarians kill most early caravans, the guard is too weak.
 
 ## 12. Phases
 
+All three are built (2026-11-21).
+
 1. **Routes and caravans**: sections 3, 4.1 to 4.3, 6 and 7, the AI's establishing and raiding,
    the dialog, the Trade screen and the lines on the map. The old trade routes go in this phase.
 2. **Cargo**: section 5, its AI and its texts.
@@ -463,8 +465,16 @@ If animals and barbarians kill most early caravans, the guard is too weak.
 
 ## 13. Open
 
-- **Animals.** An early caravan on unowned land meets them with the first guard. Section 10 counts
-  it; the answers are a stronger first guard or animals that leave caravans alone.
+- **Animals** are not a problem as measured (section 10): the barbarians and animals together
+  took 56 of the 131 caravans lost in 12 games, 4.8 lost per 1000 caravan-turns in all.
+- **Trade's share of commerce.** A civilization's routes give about a third of its commerce at
+  turn 200 (the old routes: a tenth), and commerce is about a sixth higher. `TRADE_PAY_PERCENT`
+  is the number to lower if that is too much.
+- **Open borders.** Foreign routes need them, and between AIs they are rare: a House cannot sign
+  them (so it trades only with its liege) and the item needs Cartography. Both are rules outside
+  trade, left as they are.
+- **Art.** The Caravan has no sprite of its own: the Settler's figure on land, the Galley's on
+  water; the unit card's portrait is the land figure.
 - **Strategic resources as quantities** (docs/DECKS.md, "Stockpiles"): caravans would carry the
   amounts. A later system; resources stay on or off here.
 
