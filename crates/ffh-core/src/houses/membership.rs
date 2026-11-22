@@ -153,7 +153,7 @@ impl Game {
     /// Furious: its perk is off.` / `House Aldric is now Annoyed.` The perk switches here, and
     /// only here (rule 9): off when the House is Furious now, on when it is not; its cities'
     /// stored values follow.
-    fn player_houses_tell_states(&mut self, p: PlayerId) {
+    pub fn player_houses_tell_states(&mut self, p: PlayerId) {
         for h in self.players[p].houses.clone() {
             if !self.houses.contains(h) {
                 continue;

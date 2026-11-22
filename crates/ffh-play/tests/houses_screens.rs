@@ -135,6 +135,22 @@ fn the_houses_screen_shows_each_house_and_the_city_in_none() {
     }
 }
 
+/// Both staged games, as saved, pass the rules' invariant checks (the harness's, the stress
+/// runs'): every House set by hand is consistent, House `furious`'s perk switch off.
+#[test]
+fn the_staged_games_pass_the_invariant_checks() {
+    for foreign in [false, true] {
+        let (_dir, st) = staged(if foreign { "houses-check-foreign" } else { "houses-check" }, foreign);
+        let s = load(&st.save);
+        ffh_harness::check::check(&s.g);
+        for x in &st.houses {
+            let house = &s.g.houses[x.id];
+            assert_eq!(house.told_state, s.g.house_state(x.id), "House {}", x.role);
+            assert_eq!(house.perk_on, x.state != ffh_core::houses::HouseState::Furious, "House {}", x.role);
+        }
+    }
+}
+
 /// Before a civilization's first House: its cities wait, and the reason counts them.
 #[test]
 fn the_first_house_waits_for_three_cities() {
@@ -346,6 +362,23 @@ fn a_foreign_pick_has_the_outsiders_card() {
     assert_eq!(last.get("outsider").and_then(Json::as_bool), Some(true));
     assert_eq!(strs(last, "lines")[2], "Outsider: -3 happiness in this House's cities. No sympathy.");
     assert!(cards[..cards.len() - 1].iter().all(|c| c.get("outsider").and_then(Json::as_bool) == Some(false)));
+}
+
+/// `houses-foreign`: the captured city's plots hold mostly its former owner's culture, and the
+/// pick's head says so (`Culture here: the <enemy> 80%, yours 20%.`, the enemy first).
+#[test]
+fn a_foreign_pick_shows_the_former_owners_culture() {
+    let (st, _dir, asked, s) = picks("houses-pick-culture", true, |_| None);
+    let offer = asked[0].get("offer").unwrap();
+    let culture = arr(offer, "culture");
+    assert!(!culture.is_empty(), "{offer:?}");
+    assert_eq!(i_of(&culture[0], "player"), Some(st.enemy.0 as i64), "{culture:?}");
+    assert!(i_of(&culture[0], "pct").unwrap() >= 60, "{culture:?}");
+    let mine = culture.iter().find(|c| c.get("yours").and_then(Json::as_bool) == Some(true)).expect("the human's share");
+    assert!(i_of(mine, "pct").unwrap() > 0, "{culture:?}");
+    let head = strs(offer, "head");
+    let line = format!("Culture here: {} {}%", s.g.house_civ_name(st.enemy), i_of(&culture[0], "pct").unwrap());
+    assert!(head.iter().any(|l| l.starts_with(&line)), "{head:?}");
 }
 
 /// A perk's help (the data's TraitType entry) says it is a House perk of its tier and lists its
