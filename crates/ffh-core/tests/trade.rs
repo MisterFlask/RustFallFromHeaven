@@ -1055,7 +1055,7 @@ fn delivery_stops_and_resumes() {
     // The route closed, then open again.
     w.open_borders(w.p0, w.p1, false);
     w.g.player_update_routes(w.p0);
-    assert_eq!(w.g.route_slot_cargo(r, 0).state, CargoState::CaravanLost, "its caravan is off the map");
+    assert_eq!(w.g.route_slot_cargo(r, 0).state, CargoState::RouteClosed, "its caravan waits in the origin");
     assert!(!w.g.city_has_bonus(w.far, g) && w.g.city_has_bonus(w.capital, g), "the copy is back with its owner");
     w.consistent();
     w.open_borders(w.p0, w.p1, true);

@@ -109,16 +109,10 @@ fn bonus_name(g: &Game, b: BonusType) -> String {
     g.d.text.name(&g.d.bonuses[b].base.description).to_string()
 }
 
-/// Slot `slot` of route `r`'s cargo as the rules read it (`route_slot_cargo`), except that a
-/// caravan waiting in the origin of a closed route (not killed) reads `Route closed.`: the rules
-/// name any absent caravan `Caravan lost.` first.
+/// Slot `slot` of route `r`'s cargo as the rules read it (`route_slot_cargo`: a killed caravan
+/// is lost, one waiting in the origin of a closed route reads `Route closed.`).
 fn slot_cargo(g: &Game, r: RouteId, slot: usize) -> ffh_core::trade::CargoView {
-    let mut c = g.route_slot_cargo(r, slot);
-    let s = &g.routes[r].slots[slot];
-    if c.state == CargoState::CaravanLost && !g.routes[r].is_open() && s.reform_turns == 0 {
-        c.state = CargoState::RouteClosed;
-    }
-    c
+    g.route_slot_cargo(r, slot)
 }
 
 /// Caravan `slot` of route `r`'s cargo line (docs/TRADE.md, 9): `Cargo: Gems. Delivered. Premium

@@ -151,7 +151,10 @@ impl Game {
         if s.cargo.is_none() {
             return Some(CargoState::NoCargo);
         }
-        if s.unit.is_none() {
+        // A caravan that was killed is lost whatever its route's state. Otherwise the route's
+        // state comes first: a closed route's caravans wait in the origin, and the second
+        // caravan does not exist before the first arrival; neither is lost.
+        if s.unit.is_none() && s.reform_turns > 0 {
             return Some(CargoState::CaravanLost);
         }
         if !route.is_open() {
@@ -159,6 +162,9 @@ impl Game {
         }
         if !route.arrived {
             return Some(CargoState::NotArrived);
+        }
+        if s.unit.is_none() {
+            return Some(CargoState::CaravanLost);
         }
         if !self.cities.contains(route.destination) || !self.cities.contains(route.origin) || self.cities[route.destination].owner == route.owner {
             return Some(CargoState::Domestic);
