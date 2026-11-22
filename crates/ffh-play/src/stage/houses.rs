@@ -358,8 +358,10 @@ fn staged(dir: &Path, seed: u32, foreign: bool) -> Result<StagedHouses, String> 
     // about `Culture here: the <enemy> 80%, yours 20%.` and the sympathy roll leans to the enemy.
     if foreign {
         let plots: Vec<_> = (0..g.city_num_city_plots(unhoused).max(0) as usize).filter_map(|i| g.city_index_plot(unhoused, i)).collect();
+        // (With no culture of the human's there at all, 20 a plot.)
+        let none = plots.iter().all(|&q| g.map.plots[q].culture[h] <= 0);
         for q in plots {
-            let want = 4 * g.map.plots[q].culture[h].max(0) + 20;
+            let want = if none { 20 } else { 4 * g.map.plots[q].culture[h].max(0) };
             let change = want - g.map.plots[q].culture[enemy];
             if change > 0 {
                 g.plot_change_culture(q, enemy, change, true);
