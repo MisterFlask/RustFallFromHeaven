@@ -2,7 +2,7 @@
 
 **Status: rules built (2026-11-21): sections 3, 4.1-4.3, 6, 7 ("As built", section 14), cargo,
 section 5 (section 15) and escorts, 4.4 (section 16). The client (section 9) is built, cargo,
-refit and escorts included (docs/HUMAN.md, "Trade"). The AI is built without cargo (section 8,
+refit and escorts included (docs/HUMAN.md, "Trade"). The AI is built, cargo included (section 8,
 "As built").** This game's own rules, replacing the trade routes
 inherited from Civ4 (each city's slots filled by the rules with the best-paying partner cities:
 `city_update_trade_routes`). This file is the spec for the implementation, as docs/SUPPLY.md is for
@@ -281,31 +281,43 @@ A rules change is not gated on the AI (CLAUDE.md): it does something reasonable 
 - **Open borders.** The resources it receives from the other's caravans count in what open
   borders are worth to it.
 
-### As built (2026-11-21, the AI of phase 1: `crates/ffh-ai/src/caravans.rs`; docs/AI.md, "Caravans")
+### As built (2026-11-22, the AI: `crates/ffh-ai/src/caravans.rs`; docs/AI.md, "Caravans")
 
-- **Establishing**: a Caravan is trained in the city that is the origin of the best offer among the
-  player's cities that can be an origin now, once the player holds 2 cities, while a route is free
-  that no route-less Caravan claims, one in training at a time, when the offer repays the Caravan's
-  hammers within 30 turns (a hammer for a commerce). An offer's worth is its owner's pay plus the
-  destination's share when the destination is ours. Not as decided: while that origin is governed or
-  busy for more than 10 turns, a city of its landmass within 5 plots trains it (the best origin
-  often never chose a build); a governed city with a ritual in progress trains none. The Caravan
-  walks (over land, its own landmass, only to an origin it has a unit path to) to that origin and
-  establishes there. Not as section 8 says: the destinations are those the rules'
-  path allows (`route_offers`; the path is the rules', not "as the AI knows the map"), and an offer
-  whose path crosses a sea where an enemy patrols, as the AI sees it, is skipped.
+- **Establishing**: a Caravan is asked for once a turn by the AI's own step (`caravans::turn`), on
+  a plan turn: every 5 turns with a route free, every 10 with none, staggered by player id. The
+  player must hold 2 cities, have none in training, and have a route free that no route-less
+  Caravan claims. The plan is the best offer among the cities that can be an origin now. It must
+  repay the Caravan's hammers within 30 turns (a hammer for a commerce). An offer's worth is its
+  owner's pay, plus the destination's share when the destination is ours, plus the premium of the
+  cargo it would carry.
+- **Where it is trained**: the Caravan is put first in the origin's queue (an empire order in a
+  governed city). When the origin cannot train it, is unsafe or holds a ritual in progress, the
+  nearest city of its landmass within 5 plots that can trains it. It walks (over land, its own
+  landmass, only to an origin it has a unit path to) and establishes there.
+- **Not as section 8 says**: the destinations are those the rules' path allows (`route_offers`),
+  and an offer whose path crosses a sea where an enemy patrols, as the AI sees it, is skipped.
 - **Replacing** (not in section 8): with no route free, an offer worth twice our least-paying route
-  (a closed route counts 0) gets a Caravan; standing in its origin it dissolves that route and
-  establishes the new one in the same decision.
-- **Cargo**: not built (section 5).
+  gets a Caravan; standing in its origin it dissolves that route and establishes the new one in the
+  same decision. A closed route counts what it paid open until 10 turns after it closed
+  (`Route::closed_since`), 0 from then, and 0 at once when it closed for war with the
+  destination's owner.
+- **Cargo**: as section 8. Luxuries with a spare copy (never `only_copy`), the highest
+  `premium_percent` first, the two caravans different; a strategic or mana resource only to a
+  vassal, a master or a team at war with a civilization we are at war with, and only a spare. No
+  refit.
 - **Raiding**: as section 8 (an enemy caravan is a hunt and warship target, its plunder in its
   value; hidden-nationality units attack the caravans of every team that is not theirs, a vassal, a
   master or one they are Pleased with), with "friend" read as Pleased or better.
 - **Guarding**: the seas of our open routes' paths are a guard need of `warships::guard` (there is no
   `naval::patrol_target`).
-- **Open borders**: not the cargo's resources (no cargo yet) but the route itself: a better route to
-  one of their cities than our best domestic one (or our least-paying route, with none free) is one
-  attitude step toward open borders, estimated by plot distance.
+- **Open borders**: not the cargo's resources but the routes. Either of two reasons is one
+  attitude step toward open borders, for the side deciding (offering, answering, keeping a deal):
+  - a better route to one of their cities than our best domestic one (or our least-paying route,
+    with none free);
+  - a route of theirs into our cities that would pay our city at least 100 hundredths a turn.
+
+  Both are estimated by plot distance. With the reason a deal is kept whatever the attitude, and
+  open borders are offered again right after a peace.
 
 ## 9. What the player sees
 

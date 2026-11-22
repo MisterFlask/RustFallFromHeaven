@@ -244,6 +244,7 @@ impl Controller for Ai {
             world_rituals::turn(g, &v); // the civilization's world ritual (docs/CARDS.md)
             lanun_khazad::turn(g, &v); // the Lanun's storm, the Khazad's tunnels (docs/CARDS.md)
             outposts::turn(g, p); // outposts raised to cities (docs/NAVAL.md, 9.2)
+            caravans::turn(self, g, p); // a Caravan for a trade route (docs/TRADE.md, section 8)
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);
