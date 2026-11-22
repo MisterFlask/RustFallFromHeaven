@@ -27,6 +27,7 @@ import { SPRITES } from "./iso/sprites.js";
 import { MANA_SPRITES, improvementContainsMana, manaSpriteKey } from "./mana-art.js";
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
+import { drawTradeIso } from "./trade.js";
 import { drawPlateShield } from "./persons_lines.js";
 import { shieldHits, starHit } from "./plates.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
@@ -805,7 +806,7 @@ export class IsoMap {
 
     // The Sea layer is the terrain with the range over the water (drawSea).
     const sea = v.layer === "sea";
-    const layer = sea ? "terrain" : (v.layer ?? "terrain");
+    const layer = sea || v.layer === "trade" ? "terrain" : (v.layer ?? "terrain");
     if (layer === "political") this.drawPolitical(g, f, cells, PLOT);
     else if (layer === "yield") this.drawYields(g, f, cells);
     else {
@@ -851,6 +852,7 @@ export class IsoMap {
     if (city) this.drawCityWork(g, f, cells, city);
     else {
       this.drawSupply(g, f);
+      drawTradeIso(this, g, f); // trade routes on the Trade layer, the Establish preview (trade.js)
       drawMarksIso(this, g, f, HERALD); // area effects and tunnels (marks.js)
       this.drawPath(g, f);
     }

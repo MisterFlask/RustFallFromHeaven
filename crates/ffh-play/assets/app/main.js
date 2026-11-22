@@ -25,6 +25,8 @@ import { openGovernors } from "./governors.js";
 import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as crusade from "./crusade.js";
 import * as seas from "./seas.js";
+import * as trade from "./trade.js";
+import { wantsTrade, autoTradeLayer } from "./trade_view.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
 import { wantsSea, autoSeaLayer } from "./sea.js";
@@ -258,7 +260,9 @@ async function refreshView(st) {
   if (!tools.spectating() && !observing()) checkMoments();
   updateMarkers();
   units.viewChanged();
+  syncTradeLayer();
   syncSeaLayer();
+  trade.viewChanged();
   empire.viewChanged();
   persons.viewChanged();
   renderTop();
@@ -454,6 +458,8 @@ function openScreen(name) {
       return crusade.openCrusades();
     case "seas":
       return seas.openSeasScreen();
+    case "trade":
+      return trade.openTradeScreen();
   }
 }
 
@@ -462,7 +468,10 @@ const F_KEYS = { F1: "cities", F2: "finance", F3: "civics", F4: "diplomacy", F5:
 /** Sets the map's layer. A layer the player picks (`manual`) ends the Sea layer's automatic
  *  switch: it stays when the selection ends. */
 function setLayer(layer, manual = true) {
-  if (manual) seaAuto = null;
+  if (manual) {
+    seaAuto = null;
+    tradeAuto = null;
+  }
   mapView.setLayer(layer);
   for (const b of document.querySelectorAll("#mapwrap .layers button")) b.classList.toggle("active", b.dataset.layer === mapView.layer);
 }
@@ -486,6 +495,25 @@ function syncSeaLayer() {
   seaKey = key;
   const r = autoSeaLayer(mapView.layer, seaAuto, wants);
   seaAuto = r.auto;
+  if (r.layer !== mapView.layer) setLayer(r.layer, false);
+}
+
+/** The Trade layer's automatic switch (trade_view.js `autoTradeLayer`; docs/TRADE.md section 9),
+ *  as the Sea layer's: on by itself while a Caravan is selected or the Trade screen or the
+ *  Establish dialog is open. It runs before the Sea layer's, so a ship selected after a Caravan
+ *  hands the Sea layer the layer the Trade layer replaced. */
+let tradeAuto = null;
+let tradeKey = "";
+
+function syncTradeLayer() {
+  if (!mapView) return;
+  const sel = (S.sel?.units ?? []).map((id) => S.units.get(id)).filter(Boolean);
+  const wants = (!!S.sel && wantsTrade(sel, trade.isCaravan)) || trade.tradeOpen();
+  const key = `${(S.sel?.units ?? []).join(",")}|${wants}`;
+  if (key === tradeKey) return;
+  tradeKey = key;
+  const r = autoTradeLayer(mapView.layer, tradeAuto, wants);
+  tradeAuto = r.auto;
   if (r.layer !== mapView.layer) setLayer(r.layer, false);
 }
 
@@ -561,13 +589,18 @@ function onKey(ev) {
     const lower = k.toLowerCase();
     if (lower === "s" && !ev.shiftKey) return handled(), S.view && screens.saveDialog();
     if (lower === "l" && !ev.shiftKey) return handled(), screens.loadScreen();
-    const layer = { 1: "terrain", 2: "political", 3: "yield", 4: "sea" }[k];
+    const layer = { 1: "terrain", 2: "political", 3: "yield", 4: "sea", 5: "trade" }[k];
     if (layer) return handled(), setLayer(layer);
   }
   // Shift+F9: the Court (the Houses), beside F9's Governors.
   if (k === "F9" && ev.shiftKey && !ctrl && !ev.altKey) {
     handled();
     return openScreen("court");
+  }
+  // Shift+F5: Trade (docs/TRADE.md, section 9), beside F5's Armies.
+  if (k === "F5" && ev.shiftKey && !ctrl && !ev.altKey) {
+    handled();
+    return openScreen("trade");
   }
   if (F_KEYS[k] && !ctrl && !ev.altKey) {
     handled();
@@ -700,6 +733,16 @@ function wire() {
   click("btn-crusades", () => openScreen("crusades"));
   crusade.init({ centerOn: (x, y) => mapView.centerOn(x, y) });
   click("btn-seas", () => openScreen("seas"));
+  click("btn-trade", () => openScreen("trade"));
+  trade.init({
+    centerOn: (x, y) => mapView.centerOn(x, y),
+    select: (ids) => units.select(ids),
+    request: () => mapView.request(),
+    sync: () => {
+      tradeKey = "";
+      syncTradeLayer();
+    },
+  });
   seas.init({ centerOn: (x, y) => mapView.centerOn(x, y), seaLayer: () => setLayer("sea"), focus: (id) => ((mapView.seaPanel = id), mapView.request()) });
   click("btn-tools", () => tools.openOptions());
   click("btn-save", () => S.view && screens.saveDialog());
@@ -798,6 +841,7 @@ function wire() {
   on("center", (x, y) => mapView.centerOn(x, y));
   on("selection", () => {
     if (S.sel) citySel = null;
+    syncTradeLayer();
     syncSeaLayer();
     units.renderPanel();
     renderTop();

@@ -205,7 +205,7 @@ export function applyMapDelta(prev, reply) {
 export const YIELD_COLORS = ["#8fe07a", "#c4c8cc", "#f2dc5a"];
 
 /** The map's layers (the map's own drawing modes, design §5.1 "Layers"). */
-export const LAYERS = ["terrain", "political", "yield", "sea"];
+export const LAYERS = ["terrain", "political", "yield", "sea", "trade"];
 
 /** A stable colour for any string. */
 export function hashColor(s, sat = 40, light = 45) {
