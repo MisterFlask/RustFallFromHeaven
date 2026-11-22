@@ -1490,3 +1490,24 @@ fn a_sea_closing_on_the_path_retraces_it() {
     let route = &w.g.routes[r];
     assert!(route.closed == Some(RouteRefusal::NoPath) || (route.path != old && w.g.route_path_valid(r)), "retraced: another way or no path");
 }
+
+/// A vassal's route crosses its master's land (3.5: a friend's land), and the master's its
+/// vassal's, without open borders.
+#[test]
+fn a_vassals_route_crosses_its_masters_land() {
+    let mut w = world();
+    for y in 1..=14 {
+        let q = w.at(7, y);
+        if !w.g.plot_is_water(q) {
+            w.g.plot_set_owner(q, Some(w.p2), false, true);
+        }
+    }
+    let (t0, t2) = (w.team(w.p0), w.team(w.p2));
+    let land = w.g.d.defines.caravan_cost_land;
+    assert_eq!(w.g.plot_route_cost(t0, w.at(7, 7)), None, "a stranger's land");
+    w.g.teams[t0].vassal[t2] = true;
+    assert_eq!(w.g.plot_route_cost(t0, w.at(7, 7)), Some(land), "the vassal enters its master's land");
+    w.g.teams[t0].vassal[t2] = false;
+    w.g.teams[t2].vassal[t0] = true;
+    assert_eq!(w.g.plot_route_cost(t0, w.at(7, 7)), Some(land), "the master enters its vassal's land");
+}

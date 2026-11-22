@@ -1904,31 +1904,45 @@ Cutting an invader's line was built and measured, and not kept (2026-11-10; docs
 ## Caravans (`caravans.rs`)
 
 The AI's side of docs/TRADE.md (section 8), a rules change's AI: ad hoc, not gated on win rates.
+
 **An offer's worth** is what the route would pay us a turn in hundredths: its owner's pay
-(`RouteOffer::owner_pay_x100`), plus the destination's share when the destination is ours. An offer
+(`RouteOffer::owner_pay_x100`), plus the destination's share when the destination is ours, plus on
+a foreign route its cargo's premium (each loaded caravan's half x its premium / 100). An offer
 whose path crosses a sea where an enemy patrols, as we see it (`sea_state_known(..).theirs > 0`, the
-outposts' reading), is skipped. **Production** (`production::decide`, after the settlers and the
-Colonist, behind the same `safe` test, before the civilization mechanics and the warships: a route
-is an economy item, so it waits for the garrison and expansion but not for buildings): a city trains
-a Caravan when we hold at least 2 cities, no Caravan is in training, the routes free outnumber our
-route-less Caravans alive, and this city is the origin (among those `city_origin_refusal` accepts
-now) of the best offer, ties to the lower city id, whose worth x 30 >= the Caravan's hammers x 100
-(repaid within 30 turns). While that origin is governed (its builds are its governor's, and the AI
-places empire orders only in its empire cities) or its build has more than 10 turns left
-(`BUSY_TURNS`), a city on its landmass within 5 plots (`STAND_IN_DIST`) trains the Caravan instead
-and it walks there; farther walks got the Caravans killed on the way. A governed city with a ritual
-in progress trains none (it refuses every empire order). **Replacing**: with no route free and no route-less Caravan, the plan is
-the best offer from a city that could be the origin once our least-paying route is dissolved, when
-it is worth at least twice that route; a route pays its stored pay, a closed one 0 at once (`Game`
-keeps no turn of closing), one whose first caravan has not arrived what it will pay at its length.
-**The Caravan with no route** (`units::play`, beside the Colonist): in the plan's origin it
-establishes the route (dissolving the one it replaces in the same decision, after checking the
-destination still passes); elsewhere it walks there, an ordinary land move re-planned each turn,
-only to origins on its own landmass that it has a unit path to (a route's path may cross land a
-unit may not enter: a Caravan bound for such an origin stood still); with no plan it waits in the nearest city of ours and decides
-again each turn (a skip, not sleep: a sleeping group is never asked again). **Caravans in a route**
-take no orders: `units::play` skips their groups before anything touches them (and their
-promotions and upgrades), and `production::garrison` counts no Caravan as a defender.
+outposts' reading), is skipped. **Cargo** (`choose_cargo`): each caravan of a foreign route takes a
+luxury of which we have a spare copy (`route_cargo_options`, never `only_copy`), the highest
+`premium_percent` first, the two different; a strategic or mana resource the same way only to our
+vassal or master, or to a team at war with a civilization we are at war with (the barbarians do not
+count). It never refits. The cargo is chosen again when the Caravan establishes; a refused cargo
+establishes the route with none.
+
+**Asking for a Caravan** (`caravans::turn`, once a turn in `play_turn`, beside the outposts): on a
+plan turn (`plan_turn`: every 5 turns with a route free, every 10 with none, staggered by player
+id), with at least 2 cities, none in training, a route free that no route-less Caravan claims (or,
+with none free and none route-less, a replacement), and the best plan (`plan_all`: the best offer
+among the cities `city_origin_refusal` accepts, ties to the lower id) repaying the Caravan within
+30 turns (worth x 30 >= its hammers x 100), the Caravan is put first in the origin's queue (an empire
+order in a governed city). The build it interrupts keeps its production. When the origin cannot
+train it, is unsafe (no defender, or the threat near it above half its garrison's defence: a
+governed city without a defender drops the empire order for its garrison) or holds a ritual in
+progress, the nearest city of its landmass within 5 plots that can trains it, and it walks there.
+(Before 2026-11-22 this was a step of `production::decide`, behind its `safe` test. A city
+decides only when its queue empties, and the AI places empire orders only in its empire cities, so
+the best origin often never asked: in 12 games the first route came at a median of turn 72, now 61.)
+**Replacing**: with no route free, the plan is the best offer from a city that could be the origin
+once our least-paying route is dissolved, when it is worth at least twice what that route pays. A
+route pays its stored pay. A closed one counts what it paid open (its growth, the plot distance as
+its length) until 10 turns after it closed (`Route::closed_since`), 0 from then, and 0 at once when
+it closed for war with the destination's owner. One whose first caravan has not arrived counts what
+it will pay at its length.
+
+**The Caravan with no route** (`units::play`, beside the Colonist): on plan turns, in the plan's
+origin it establishes the route with its cargo (dissolving the one it replaces in the same decision,
+after checking the destination still passes). Elsewhere it walks there: an ordinary land move, only
+to origins on its own landmass that it has a unit path to, kept between plan turns. With no plan it
+waits in the nearest city of ours. **Caravans in a route** take no orders: `units::play` skips their
+groups before anything touches them (and their promotions and upgrades), and `production::garrison`
+counts no Caravan as a defender.
 
 **Raids.** An enemy caravan (a team at war) on land is a hunt target wherever a stack reaches it
 (`military::find_targets`: not limited to 6 plots of our cities like other units), its value raised
@@ -1939,23 +1953,45 @@ is not ours, our vassal, our master or one we are Pleased with: ships through th
 land units through `caravans::raid` (a caravan next to a plot it reaches this turn, alone on its plot
 but for other caravans, at the rules' odds of 650 or more, the most plunder first). **Guarding**: the
 seas our open routes' paths cross are the warships' guard need after our ports' and our outposts'
-lanes (`warships::guard`). **Open borders**: when a route to a city of theirs, were borders open,
-would pay us more than our best domestic pair (with a route free) or our least-paying route (with
-none), that is one attitude step (2 on `diplomacy::relation`'s scale) toward open borders with them,
-in the offer (`diplomacy::trade`), the answer (`judge_offer`) and the review of a human's deal
-(`keep_deal`); never with the team we prepare a war on or our worst enemy. Both sides are estimated
-with the plot distance as the length (`route_pay_total_x100`, over land, growth 0): no path search.
+lanes (`warships::guard`).
+
+**Open borders** (`open_borders_why`): a trade-route reason is one attitude step (2 on
+`diplomacy::relation`'s scale) toward open borders, for the side deciding (offering, answering, or
+keeping a deal). The reason holds when either:
+- a route of ours to their cities would pay us more than our best domestic pair (with a route
+  free) or our least-paying route (with none); or
+- a route of theirs into our cities would pay our city at least 100 hundredths a turn (the
+  destination's share: commerce for nothing).
+
+Both are estimated with the plot distance as the length (`route_pay_total_x100`, over land, growth
+0): no path search. Never with the team we prepare a war on or our worst enemy. With the reason, a
+deal is kept whatever the attitude (`keep_deal`, for a human partner: between AIs only a rules
+denial cancels), and right after a peace the AI offers open borders again when the reason holds.
+The rules let the item be traded once either team has a tech with `open_borders_trading` (FFH2:
+Cartography); telemetry counts the offers that stopped there (`no_tech`). What ended open borders
+between AIs in 12 games: only war declarations (18 deals, `team_declare_war`). The routes closed for
+"no open borders" were routes whose destination changed hands: 34 of 35 closures went to a
+civilization born in the game (a House breaking away).
+
 **Values**: `trade_routes`, `coastal_trade_routes` and `trade_route_modifier` (buildings, civics,
 techs, votes) are valued at what one of our open routes pays now (their mean, 300 hundredths with
 none: `route_worth_x100`); the static building value counts 3 commerce a route.
 
-The memo (`Ai::caravans`) keeps each city's offers for the turn while our routes, the cities, our
-wars and open borders are unchanged: one path search per city and turn, no decision changed.
+**Cost**: the memo (`Ai::caravans`) keeps each city's offers and the player's plan for the turn
+while our routes, the cities, our wars and open borders are unchanged. With the plan turns, the AI's
+caravan work costs about 0.8 ms a game turn at turns 150-199 of seed 5 (6 civilizations, standard
+map), down from 5.1 ms, and route searches fell from 17.4 to 6.9 a game turn, 4.1 of them the
+rules' (`FFH_ROUTE_PATHS=150,199 ffh autoplay --seed 5 --civs 6 --size WORLDSIZE_STANDARD --turns
+200`). A cache of offers across turns keyed by a fingerprint of the map was tried and dropped:
+borders grow nearly every turn, so it never hit.
+
 Telemetry (`decisions.caravan`): `ask` / `ask_replace` (a Caravan put in production; why `domestic`
-/ `foreign`), `establish`, `replace`, `establish_failed` / `replace_failed` (the refusal's key),
-`offer_skipped` (`patrolled_sea`), `attack` (`war` / `hidden`, plunder as value), `open_borders`
-(`route_reason_offer`, `route_reason_accept`: the route reason turned the answer). Measures:
-docs/TRADE.md, section 10.
+/ `foreign`), `ask_refused`, `establish`, `replace`, `establish_failed` / `replace_failed` (the
+refusal's key), `cargo` (why `luxury_new`, `luxury_cargo`, `strategic_*`, `mana_*`: the class and
+the premium level; value the premium), `offer_skipped` (`patrolled_sea`), `attack` (`war` /
+`hidden`, plunder as value), `open_borders` (`route_reason_offer_own` / `_inbound`,
+`route_reason_accept_own` / `_inbound`, `route_reason_signed`, `no_tech`, `item_refused`).
+Measures: docs/TRADE.md, section 10.
 
 ## Governors (`governor.rs`)
 

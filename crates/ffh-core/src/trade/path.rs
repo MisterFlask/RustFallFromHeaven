@@ -46,7 +46,13 @@ impl Game {
         if self.teams[team].at_war[other] {
             return false;
         }
-        other == team || self.team_is_friendly_territory(team, Some(other)) || self.team_is_open_borders(team, other)
+        other == team || self.route_is_friend(team, other) || self.team_is_open_borders(team, other)
+    }
+
+    /// Whether `other` is a friend of `team` for a route (3.5): its vassal or its master
+    /// (`team_is_friendly_territory` gives a vassal its master's land only with open borders).
+    pub(crate) fn route_is_friend(&self, team: TeamId, other: TeamId) -> bool {
+        self.team_is_friendly_territory(team, Some(other)) || self.teams[team].vassal[other]
     }
 
     /// Whether `team` may pass through city `c` on a route: a city of its own team, a friend's
@@ -56,7 +62,7 @@ impl Game {
         if self.teams[team].at_war[other] || self.team_is_barbarian(other) {
             return false;
         }
-        other == team || self.team_is_friendly_territory(team, Some(other)) || self.team_is_open_borders(team, other)
+        other == team || self.route_is_friend(team, other) || self.team_is_open_borders(team, other)
     }
 
     /// The cost for a route of `team` to enter `plot` (3.5), `None` when it cannot. A city plot

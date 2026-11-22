@@ -669,10 +669,6 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
         if let Some(choice) = crate::outposts::production(g, c) {
             return Some((choice, "colonist"));
         }
-        // A Caravan for a trade route (docs/TRADE.md, section 8; caravans.rs).
-        if let Some(choice) = crate::caravans::production(ai, g, c) {
-            return Some((choice, "caravan"));
-        }
     }
     if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some((choice, "civ_mechanics")); } // civ-mechanics
     if let Some(choice) = crate::traits::production(g, c, ctx.threat) { return Some((choice, "trait_play")); } // trait-play
