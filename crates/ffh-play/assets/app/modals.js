@@ -232,7 +232,8 @@ export function showDecision(d, answer) {
   const other = d.context?.other_player;
   const face = other !== null && other !== undefined ? playerPortrait(other, { size: PORTRAIT.medium }) : null;
   const text = h("p.page-text", illuminate(markup(d.text)));
-  // The keywords the decision names (an ultimatum's), their reminders as chips.
+  // The keywords the decision names (none for most; a House's pick sent without its designed
+  // form), their reminders as chips.
   const chips = d.reminders?.length ? h("div.decision-keywords", keywordChips(d.reminders)) : null;
   m = openModal({
     title: d.title,
