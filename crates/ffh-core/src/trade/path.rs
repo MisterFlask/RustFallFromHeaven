@@ -115,6 +115,7 @@ impl Game {
     /// destination city) and never left; `stop` ends the search once the best path to it is
     /// final.
     pub(crate) fn route_search(&self, team: TeamId, start: PlotIdx, goal: &dyn Fn(PlotIdx) -> bool, stop: &dyn Fn(PlotIdx) -> bool) -> Tree {
+        super::count_route_search();
         let n = self.map.num_plots();
         let mut tree = Tree { labels: vec![None; n] };
         let mut heap: BinaryHeap<Reverse<(i32, i32, PlotIdx)>> = BinaryHeap::new();
@@ -171,6 +172,7 @@ impl Game {
     /// origin's plot first, the destination's last; `None` when there is none. Pure: it ignores
     /// units and is not the units' path finder.
     pub fn route_path(&self, owner: PlayerId, origin: CityId, destination: CityId) -> Option<Vec<PlotIdx>> {
+        super::count_route_path();
         if !self.cities.contains(origin) || !self.cities.contains(destination) || origin == destination {
             return None;
         }

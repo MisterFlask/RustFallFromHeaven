@@ -108,7 +108,26 @@ fn cmd_autoplay(args: &[String], verbose: bool) {
     let setup_time = t.elapsed();
     let ai_at_setup = timed.total();
     let t = Instant::now();
-    let played = run::play(&mut g, &cfg, |_, _| {});
+    // FFH_ROUTE_PATHS=A,B: the route searches a game turn, turns A to B (an instrument).
+    let window: Option<(i32, i32)> = std::env::var("FFH_ROUTE_PATHS").ok().and_then(|v| {
+        let (a, b) = v.split_once(',')?;
+        Some((a.trim().parse().ok()?, b.trim().parse().ok()?))
+    });
+    let mut paths: (u64, u64, i32) = (0, 0, 0);
+    let mut last = (ffh_core::trade::route_path_calls(), ffh_core::trade::route_search_calls());
+    let played = run::play(&mut g, &cfg, |_, stat| {
+        let now = (ffh_core::trade::route_path_calls(), ffh_core::trade::route_search_calls());
+        if window.is_some_and(|(a, b)| stat.turn >= a && stat.turn <= b) {
+            paths.0 += now.0 - last.0;
+            paths.1 += now.1 - last.1;
+            paths.2 += 1;
+        }
+        last = now;
+    });
+    if let Some((a, b)) = window {
+        let n = paths.2.max(1) as f64;
+        println!("route searches, turns {a}-{b} ({} turns): route_path {} ({:.1} a turn), all {} ({:.1} a turn)", paths.2, paths.0, paths.0 as f64 / n, paths.1, paths.1 as f64 / n);
+    }
     let stats = played.stats;
     let play_time = t.elapsed();
     let ai_time = timed.total() - ai_at_setup;

@@ -32,6 +32,32 @@ mod cargo;
 mod caravans;
 
 pub use cargo::{CargoClass, CargoOption, CargoState, CargoView};
+
+thread_local! {
+    /// The route searches this thread ran (`route_path` calls; an instrument for tools and tests,
+    /// not game state: it never changes a game's course).
+    static ROUTE_PATHS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    /// Every route search this thread ran (`route_path`, offers, rejoins; the same instrument).
+    static ROUTE_SEARCHES: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+/// Every route search this thread has run (an instrument).
+pub fn route_search_calls() -> u64 {
+    ROUTE_SEARCHES.with(|c| c.get())
+}
+
+pub(crate) fn count_route_search() {
+    ROUTE_SEARCHES.with(|c| c.set(c.get() + 1));
+}
+
+/// The `route_path` calls this thread has made (an instrument: [`ROUTE_PATHS`]).
+pub fn route_path_calls() -> u64 {
+    ROUTE_PATHS.with(|c| c.get())
+}
+
+pub(crate) fn count_route_path() {
+    ROUTE_PATHS.with(|c| c.set(c.get() + 1));
+}
 mod pay;
 mod path;
 
