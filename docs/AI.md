@@ -1913,14 +1913,19 @@ is an economy item, so it waits for the garrison and expansion but not for build
 a Caravan when we hold at least 2 cities, no Caravan is in training, the routes free outnumber our
 route-less Caravans alive, and this city is the origin (among those `city_origin_refusal` accepts
 now) of the best offer, ties to the lower city id, whose worth x 30 >= the Caravan's hammers x 100
-(repaid within 30 turns). **Replacing**: with no route free and no route-less Caravan, the plan is
+(repaid within 30 turns). While that origin is governed (its builds are its governor's, and the AI
+places empire orders only in its empire cities) or its build has more than 10 turns left
+(`BUSY_TURNS`), a city on its landmass within 5 plots (`STAND_IN_DIST`) trains the Caravan instead
+and it walks there; farther walks got the Caravans killed on the way. A governed city with a ritual
+in progress trains none (it refuses every empire order). **Replacing**: with no route free and no route-less Caravan, the plan is
 the best offer from a city that could be the origin once our least-paying route is dissolved, when
 it is worth at least twice that route; a route pays its stored pay, a closed one 0 at once (`Game`
 keeps no turn of closing), one whose first caravan has not arrived what it will pay at its length.
 **The Caravan with no route** (`units::play`, beside the Colonist): in the plan's origin it
 establishes the route (dissolving the one it replaces in the same decision, after checking the
 destination still passes); elsewhere it walks there, an ordinary land move re-planned each turn,
-only to origins on its own landmass; with no plan it waits in the nearest city of ours and decides
+only to origins on its own landmass that it has a unit path to (a route's path may cross land a
+unit may not enter: a Caravan bound for such an origin stood still); with no plan it waits in the nearest city of ours and decides
 again each turn (a skip, not sleep: a sleeping group is never asked again). **Caravans in a route**
 take no orders: `units::play` skips their groups before anything touches them (and their
 promotions and upgrades), and `production::garrison` counts no Caravan as a defender.

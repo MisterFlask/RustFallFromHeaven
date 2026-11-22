@@ -263,8 +263,11 @@ A rules change is not gated on the AI (CLAUDE.md): it does something reasonable 
   player's cities that can be an origin now, once the player holds 2 cities, while a route is free
   that no route-less Caravan claims, one in training at a time, when the offer repays the Caravan's
   hammers within 30 turns (a hammer for a commerce). An offer's worth is its owner's pay plus the
-  destination's share when the destination is ours. The Caravan walks (over land, its own landmass)
-  to that origin and establishes there. Not as section 8 says: the destinations are those the rules'
+  destination's share when the destination is ours. Not as decided: while that origin is governed or
+  busy for more than 10 turns, a city of its landmass within 5 plots trains it (the best origin
+  often never chose a build); a governed city with a ritual in progress trains none. The Caravan
+  walks (over land, its own landmass, only to an origin it has a unit path to) to that origin and
+  establishes there. Not as section 8 says: the destinations are those the rules'
   path allows (`route_offers`; the path is the rules', not "as the AI knows the map"), and an offer
   whose path crosses a sea where an enemy patrols, as the AI sees it, is skipped.
 - **Replacing** (not in section 8): with no route free, an offer worth twice our least-paying route
@@ -347,6 +350,10 @@ What the numbers set:
 | routes' trade a civilization, median (before: the old routes' 3 / 3 / 3) | 0 | 2 | 5 | 9.5 |
 | routes' trade, share of all commerce | 0% | 16% | 25% | 35% |
 | team pairs with open borders (before: 3 of 204, 34 of 499, 51 of 994) | 2 of 180 | 7 of 210 | 37 of 545 | 59 of 1196 |
+
+(Commerce is the snapshots' `yield_commerce`, gross. Team pairs here are pairs of alive civilization
+teams; the earlier count's rule is not known, so compare the shares: 5.1% before at turn 200, 4.9%
+now.)
 
 The first route of a game: turns 58 to 86, median 72. Routes established 357 (262 domestic, 95
 foreign), 61 of them replacing a route. Caravans lost 151 in 27,000 caravan-turns in a route
