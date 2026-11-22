@@ -94,6 +94,9 @@ fn city_json(v: &Viewer, c: CityId, card: bool) -> Json {
         "name" => city_name(g, c),
         "capital" => g.city_is_capital(c),
         "governed" => governed,
+        // Why the city cannot be handed to a governor (run by hand) or taken back (governed) now:
+        // null when it can.
+        "toggle_why" => g.player_check_city_governed(v.h, c, !governed).err(),
         "role" => g.city_role(c).map(Json::idx),
         "role_overridden" => city.role_overridden,
         "proposal" => governed.then(|| Json::idx(g.city_role_proposal(c))),
@@ -106,11 +109,6 @@ fn city_json(v: &Viewer, c: CityId, card: bool) -> Json {
     if card && governed {
         j.set("card", role_card(v, c));
     }
-    // Houses (docs/PERSONS.md, "UI", part E): the city's House (`{id, label, colour,
-    // state, turns}`; null: the Crown's). Left out for a human without Houses.
-    if let Some(house) = crate::view::house_marks::city_house_field(v, c) {
-        j.set("house", house);
-    }
     j
 }
 
@@ -121,8 +119,7 @@ pub fn city(v: &Viewer, c: CityId) -> Json {
     }
     let mut j = city_json(v, c, false);
     j.set("government", government(v.g, v.h).map(Json::idx));
-    // Houses (rule 13, part C): the Crown's: its grant, or why it cannot be granted.
-    crate::view::persons::governance_fields(v, c, &mut j);
+    j.set("civics_govern", v.g.player_civics_govern(v.h));
     j
 }
 
@@ -142,9 +139,10 @@ fn diagnosis_json(g: &Game, d: &GovDiagnosis) -> Json {
     }
 }
 
-/// `governors`: the Governors screen. The government and whether it rules every city directly,
-/// the priorities (with their weight) and the diagnoses, and every city of the human's (the
-/// capital first; a governed city with its role card).
+/// `governors`: the Governors screen. The government and whether its civics govern every city
+/// (`civics_govern`), how many cities are governed, the priorities (with their weight) and the
+/// diagnoses (of the governed cities), and every city of the human's (the capital first; a
+/// governed city with its role card; each with `toggle_why`).
 pub fn screen(v: &Viewer) -> Json {
     let g = v.g;
     let h = v.h;
@@ -152,7 +150,8 @@ pub fn screen(v: &Viewer) -> Json {
     cities.sort_by_key(|&c| (!g.city_is_capital(c), c));
     crate::jobj! {
         "government" => government(g, h).map(Json::idx),
-        "direct_rule" => g.player_rules_directly(h),
+        "civics_govern" => g.player_civics_govern(h),
+        "governed" => g.player_governed_cities(h).len(),
         "min_suitability" => g.d.defines.governor_role_min_suitability,
         "max_priorities" => g.d.defines.governor_max_priorities,
         "priority_weight" => g.d.defines.governor_priority_weight,

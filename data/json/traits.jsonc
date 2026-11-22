@@ -300,5 +300,352 @@
       "UNITCOMBAT_MOUNTED": true,
       "UNITCOMBAT_RECON": true
     }
+  },
+  // ---- This game's House perks (docs/HOUSES.md, rule 9): never a leader's trait, never selectable ----
+  {
+    "type": "TRAIT_PERK_HORSEMASTERS_1",
+    "description": "TXT_KEY_TRAIT_PERK_HORSEMASTERS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "HORSEMASTERS",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_MOUNTED": ["PROMOTION_FLANKING1"]}
+  },
+  {
+    "type": "TRAIT_PERK_HORSEMASTERS_2",
+    "description": "TXT_KEY_TRAIT_PERK_HORSEMASTERS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "HORSEMASTERS",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_MOUNTED": ["PROMOTION_FLANKING1", "PROMOTION_MOBILITY1"]}
+  },
+  {
+    "type": "TRAIT_PERK_HORSEMASTERS_3",
+    "description": "TXT_KEY_TRAIT_PERK_HORSEMASTERS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "HORSEMASTERS",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_MOUNTED": ["PROMOTION_FLANKING1", "PROMOTION_FLANKING2", "PROMOTION_MOBILITY1"]},
+    "house_unit_combat_production_modifier": {"UNITCOMBAT_MOUNTED": 25}
+  },
+  {
+    "type": "TRAIT_PERK_SHIELDWALL_1",
+    "description": "TXT_KEY_TRAIT_PERK_SHIELDWALL_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "SHIELDWALL",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_MELEE": ["PROMOTION_COMBAT1"]}
+  },
+  {
+    "type": "TRAIT_PERK_SHIELDWALL_2",
+    "description": "TXT_KEY_TRAIT_PERK_SHIELDWALL_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "SHIELDWALL",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_MELEE": ["PROMOTION_COMBAT1", "PROMOTION_SHOCK"]}
+  },
+  {
+    "type": "TRAIT_PERK_SHIELDWALL_3",
+    "description": "TXT_KEY_TRAIT_PERK_SHIELDWALL_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "SHIELDWALL",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_MELEE": ["PROMOTION_COMBAT1", "PROMOTION_COMBAT2", "PROMOTION_SHOCK"]},
+    "house_unit_combat_production_modifier": {"UNITCOMBAT_MELEE": 25}
+  },
+  {
+    "type": "TRAIT_PERK_MARKSMEN_1",
+    "description": "TXT_KEY_TRAIT_PERK_MARKSMEN_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "MARKSMEN",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_ARCHER": ["PROMOTION_DRILL1"]}
+  },
+  {
+    "type": "TRAIT_PERK_MARKSMEN_2",
+    "description": "TXT_KEY_TRAIT_PERK_MARKSMEN_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "MARKSMEN",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_ARCHER": ["PROMOTION_DRILL1", "PROMOTION_DRILL2"]}
+  },
+  {
+    "type": "TRAIT_PERK_MARKSMEN_3",
+    "description": "TXT_KEY_TRAIT_PERK_MARKSMEN_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "MARKSMEN",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_ARCHER": ["PROMOTION_DRILL1", "PROMOTION_DRILL2", "PROMOTION_CITY_GARRISON1"]},
+    "house_unit_combat_production_modifier": {"UNITCOMBAT_ARCHER": 25}
+  },
+  {
+    "type": "TRAIT_PERK_BATTLE_MAGES_1",
+    "description": "TXT_KEY_TRAIT_PERK_BATTLE_MAGES_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "BATTLE_MAGES",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_ADEPT": ["PROMOTION_POTENCY"]}
+  },
+  {
+    "type": "TRAIT_PERK_BATTLE_MAGES_2",
+    "description": "TXT_KEY_TRAIT_PERK_BATTLE_MAGES_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "BATTLE_MAGES",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_ADEPT": ["PROMOTION_POTENCY", "PROMOTION_COMBAT1"]}
+  },
+  {
+    "type": "TRAIT_PERK_BATTLE_MAGES_3",
+    "description": "TXT_KEY_TRAIT_PERK_BATTLE_MAGES_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "BATTLE_MAGES",
+    "house_unit_combat_free_promotions": {"UNITCOMBAT_ADEPT": ["PROMOTION_POTENCY", "PROMOTION_COMBAT1", "PROMOTION_TWINCAST"]}
+  },
+  {
+    "type": "TRAIT_PERK_DRILLMASTERS_1",
+    "description": "TXT_KEY_TRAIT_PERK_DRILLMASTERS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "DRILLMASTERS",
+    "house_free_experience": 2
+  },
+  {
+    "type": "TRAIT_PERK_DRILLMASTERS_2",
+    "description": "TXT_KEY_TRAIT_PERK_DRILLMASTERS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "DRILLMASTERS",
+    "house_free_experience": 4
+  },
+  {
+    "type": "TRAIT_PERK_DRILLMASTERS_3",
+    "description": "TXT_KEY_TRAIT_PERK_DRILLMASTERS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "DRILLMASTERS",
+    "house_free_experience": 6
+  },
+  {
+    "type": "TRAIT_PERK_SHIPWRIGHTS_1",
+    "description": "TXT_KEY_TRAIT_PERK_SHIPWRIGHTS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "SHIPWRIGHTS",
+    "house_requires_coastal": true,
+    "house_unit_combat_free_experience": {"UNITCOMBAT_NAVAL": 2},
+    "house_unit_combat_production_modifier": {"UNITCOMBAT_NAVAL": 25}
+  },
+  {
+    "type": "TRAIT_PERK_SHIPWRIGHTS_2",
+    "description": "TXT_KEY_TRAIT_PERK_SHIPWRIGHTS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "SHIPWRIGHTS",
+    "house_requires_coastal": true,
+    "house_unit_combat_free_experience": {"UNITCOMBAT_NAVAL": 4},
+    "house_unit_combat_production_modifier": {"UNITCOMBAT_NAVAL": 50}
+  },
+  {
+    "type": "TRAIT_PERK_SHIPWRIGHTS_3",
+    "description": "TXT_KEY_TRAIT_PERK_SHIPWRIGHTS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "SHIPWRIGHTS",
+    "house_requires_coastal": true,
+    "house_unit_combat_free_experience": {"UNITCOMBAT_NAVAL": 6},
+    "house_unit_combat_production_modifier": {"UNITCOMBAT_NAVAL": 75}
+  },
+  {
+    "type": "TRAIT_PERK_FREEHOLDERS_1",
+    "description": "TXT_KEY_TRAIT_PERK_FREEHOLDERS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "FREEHOLDERS",
+    "house_distance_maintenance_modifier": -50
+  },
+  {
+    "type": "TRAIT_PERK_FREEHOLDERS_2",
+    "description": "TXT_KEY_TRAIT_PERK_FREEHOLDERS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "FREEHOLDERS",
+    "house_distance_maintenance_modifier": -100
+  },
+  {
+    "type": "TRAIT_PERK_FREEHOLDERS_3",
+    "description": "TXT_KEY_TRAIT_PERK_FREEHOLDERS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "FREEHOLDERS",
+    "house_distance_maintenance_modifier": -100,
+    "house_num_cities_maintenance_modifier": -50
+  },
+  {
+    "type": "TRAIT_PERK_PATRONS_1",
+    "description": "TXT_KEY_TRAIT_PERK_PATRONS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "PATRONS",
+    "house_commerce_modifier": [0, 0, 50]
+  },
+  {
+    "type": "TRAIT_PERK_PATRONS_2",
+    "description": "TXT_KEY_TRAIT_PERK_PATRONS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "PATRONS",
+    "house_commerce_modifier": [0, 0, 100]
+  },
+  {
+    "type": "TRAIT_PERK_PATRONS_3",
+    "description": "TXT_KEY_TRAIT_PERK_PATRONS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "PATRONS",
+    "house_commerce_modifier": [0, 0, 150]
+  },
+  {
+    "type": "TRAIT_PERK_SCHOLARS_1",
+    "description": "TXT_KEY_TRAIT_PERK_SCHOLARS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "SCHOLARS",
+    "house_commerce_modifier": [0, 15, 0]
+  },
+  {
+    "type": "TRAIT_PERK_SCHOLARS_2",
+    "description": "TXT_KEY_TRAIT_PERK_SCHOLARS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "SCHOLARS",
+    "house_commerce_modifier": [0, 25, 0]
+  },
+  {
+    "type": "TRAIT_PERK_SCHOLARS_3",
+    "description": "TXT_KEY_TRAIT_PERK_SCHOLARS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "SCHOLARS",
+    "house_commerce_modifier": [0, 40, 0]
+  },
+  {
+    "type": "TRAIT_PERK_MERCHANTS_1",
+    "description": "TXT_KEY_TRAIT_PERK_MERCHANTS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "MERCHANTS",
+    "house_commerce_modifier": [15, 0, 0]
+  },
+  {
+    "type": "TRAIT_PERK_MERCHANTS_2",
+    "description": "TXT_KEY_TRAIT_PERK_MERCHANTS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "MERCHANTS",
+    "house_commerce_modifier": [25, 0, 0]
+  },
+  {
+    "type": "TRAIT_PERK_MERCHANTS_3",
+    "description": "TXT_KEY_TRAIT_PERK_MERCHANTS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "MERCHANTS",
+    "house_commerce_modifier": [40, 0, 0]
+  },
+  {
+    "type": "TRAIT_PERK_SMITHS_1",
+    "description": "TXT_KEY_TRAIT_PERK_SMITHS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "SMITHS",
+    "house_yield_modifier": [0, 10, 0]
+  },
+  {
+    "type": "TRAIT_PERK_SMITHS_2",
+    "description": "TXT_KEY_TRAIT_PERK_SMITHS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "SMITHS",
+    "house_yield_modifier": [0, 15, 0]
+  },
+  {
+    "type": "TRAIT_PERK_SMITHS_3",
+    "description": "TXT_KEY_TRAIT_PERK_SMITHS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "SMITHS",
+    "house_yield_modifier": [0, 25, 0]
+  },
+  {
+    "type": "TRAIT_PERK_MASTER_BUILDERS_1",
+    "description": "TXT_KEY_TRAIT_PERK_MASTER_BUILDERS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "MASTER_BUILDERS",
+    "house_wonder_production_modifier": 25
+  },
+  {
+    "type": "TRAIT_PERK_MASTER_BUILDERS_2",
+    "description": "TXT_KEY_TRAIT_PERK_MASTER_BUILDERS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "MASTER_BUILDERS",
+    "house_wonder_production_modifier": 50
+  },
+  {
+    "type": "TRAIT_PERK_MASTER_BUILDERS_3",
+    "description": "TXT_KEY_TRAIT_PERK_MASTER_BUILDERS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "MASTER_BUILDERS",
+    "house_wonder_production_modifier": 100
+  },
+  {
+    "type": "TRAIT_PERK_RITUALISTS_1",
+    "description": "TXT_KEY_TRAIT_PERK_RITUALISTS_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "RITUALISTS",
+    "house_ritual_production_modifier": 25
+  },
+  {
+    "type": "TRAIT_PERK_RITUALISTS_2",
+    "description": "TXT_KEY_TRAIT_PERK_RITUALISTS_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "RITUALISTS",
+    "house_ritual_production_modifier": 50
+  },
+  {
+    "type": "TRAIT_PERK_RITUALISTS_3",
+    "description": "TXT_KEY_TRAIT_PERK_RITUALISTS_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "RITUALISTS",
+    "house_ritual_production_modifier": 100
+  },
+  {
+    "type": "TRAIT_PERK_LUMINARIES_1",
+    "description": "TXT_KEY_TRAIT_PERK_LUMINARIES_1",
+    "max_cities": -1,
+    "house_perk_tier": 1,
+    "house_perk_family": "LUMINARIES",
+    "house_great_people_rate_modifier": 50
+  },
+  {
+    "type": "TRAIT_PERK_LUMINARIES_2",
+    "description": "TXT_KEY_TRAIT_PERK_LUMINARIES_2",
+    "max_cities": -1,
+    "house_perk_tier": 2,
+    "house_perk_family": "LUMINARIES",
+    "house_great_people_rate_modifier": 100
+  },
+  {
+    "type": "TRAIT_PERK_LUMINARIES_3",
+    "description": "TXT_KEY_TRAIT_PERK_LUMINARIES_3",
+    "max_cities": -1,
+    "house_perk_tier": 3,
+    "house_perk_family": "LUMINARIES",
+    "house_great_people_rate_modifier": 150
   }
 ]

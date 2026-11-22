@@ -128,7 +128,7 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         unit_combat_cost_modifiers,
         no_war_weariness,
         unit_rush_gold,
-        direct_rule,
+        governed,
     } = &d.civics[c];
     let mut b = String::new();
     let line = |b: &mut String, s: String| {
@@ -278,10 +278,8 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         line(&mut b, format!("[ICON_BULLET]Buys units at {unit_rush_gold}[ICON_GOLD] per hammer left, under any Labor civic"));
     }
     // This game's governors (docs/GOVERNORS.md).
-    if *direct_rule {
-        line(&mut b, "[ICON_BULLET]Every city is ruled directly".to_string());
-    } else if civic_option_type.is_some_and(|o| d.civic_options[o].base.type_ == "CIVICOPTION_GOVERNMENT") {
-        line(&mut b, "[ICON_BULLET]Every city is governed".to_string());
+    if *governed {
+        line(&mut b, "[ICON_BULLET]Every city is run by a governor.".to_string());
     }
     if *free_specialist != 0 {
         line(&mut b, txt(d, "TXT_KEY_CIVIC_FREE_SPECIALISTS", &[Arg::N(*free_specialist)]));
@@ -492,7 +490,9 @@ mod tests {
         let god_king = civic("CIVIC_GOD_KING");
         assert!(god_king.starts_with("Reqs [LINK=literal]Mysticism[\\LINK][NEWLINE]"), "{god_king}");
         assert!(god_king.contains("[ICON_BULLET]+25% Maintenance Costs from Distance to Palace"), "{god_king}");
-        assert!(god_king.contains("[ICON_BULLET]Every city is ruled directly"), "{god_king}");
+        assert!(!god_king.contains("governor"), "{god_king}");
+        let city_states = civic("CIVIC_CITY_STATES");
+        assert!(city_states.contains("[ICON_BULLET]Every city is run by a governor."), "{city_states}");
         assert!(god_king.contains("+50%[ICON_PRODUCTION][SPACE]in Capital"), "{god_king}");
 
         let republic = civic("CIVIC_REPUBLIC");

@@ -1341,17 +1341,13 @@ this game, docs/ENTITIES.md). The terms (`relation_parts`, in its order; the hum
 screen shows each as a reason of the attitude): `different alignment` (-2 a step apart) or `same
 alignment` +1; `same state religion` +2 or `different state religion` -1; `war between us` -1
 (the team's war counter; nothing counts it up now); the remembered wrongs (the owner's decision,
-2026-11-18; docs/PERSONS.md rule 15): `declared war on us`, `took our cities`, `split our House`
-(the fourth build, rule 4, 2026-11-20: a rival's courtship split one of our Houses; the second
-build's `bought our House`, renamed in place) and `courted our House` (the fourth build, rule 7: a
-point every 5 turns of a rival's Court channel at one of our Houses, up to 8), each `count x` the
-leader's `memory_attitude_percent / 100` halved (2 a step here, 4 on FfH's scale; rounded half
-away from zero), capped at -3 (a declared war -2, two -3; a city taken -1, two -2, four -3; a
-House split -2; a House courted -1 a point, two -2, three -3),
-fading as the rules decay the memories (1 in 50 a turn); `open borders` +1; `the
-Trust spell` +2; `attitude modifier` (the rules' `ai_attitude_extra`, halved); `alignment
-leaning`; `cultural hostility` / `cultural friendship`; `gifts` and `demands paid`; and in the
-attitude, `at war` -2 while the war lasts. FFH2's other memories are recorded by the rules but
+2026-11-18; docs/PORTING.md, "The memory of wrongs"): `declared war on us` and `took our cities`
+(`MEMORY_TERMS`), each `count x` the leader's `memory_attitude_percent / 100` halved (2 a step
+here, 4 on FfH's scale; rounded half away from zero), capped at -3 (a declared war -2, two -3; a
+city taken -1, two -2, four -3), fading as the rules decay the memories (1 in 50 a turn); `open
+borders` +1; `the Trust spell` +2; `attitude modifier` (the rules' `ai_attitude_extra`, halved);
+`alignment leaning`; `gifts` and `demands paid`; and in the attitude, `at war` -2 while the war
+lasts. FFH2's other memories are recorded by the rules but
 not read. `memory_part` and `memory_added` are what the screens use to say what an act will
 cost (the war question). One war at a
 time; war is **greedy expansion**, not a dice roll: when free to start one (checked every 5
@@ -1664,83 +1660,12 @@ the way) against the best building, while such a city lies within 15 plots on th
 almost never fires: the shrine comes late (after turn 300, a Great Prophet's work), open borders
 are rare by then, and a building nearly always outscores a gold a turn.
 
-## Cultural actions (`culture.rs`)
-
-This game's own system (docs/CULTURE.md; docs/PERSONS.md, "The fourth build", rule 9, 2026-11-20):
-a civilization channels half its culture into one standing order, Court a rival's House, Guard
-one of its own Houses, or Spread Religion. A rules change, so not gated on the AI (CLAUDE.md):
-reasonable choices, not measured ones. Once a turn, after the diplomacy (so the war state is
-current) and the governors' production, the civilization's one channel (`choose`):
-
-- **Nothing** while it pursues a cultural victory (`victory::plan`'s goal): its cities keep their
-  culture; a standing channel stops.
-- **Guard first** (`guard_choice`): a House of ours whose strongest rival favour is past half its
-  requirement, or would reach it within `GUARD_HORIZON` (20) turns at the inflows now without our
-  guard (the rules' `favour_turns`), the soonest first (then the nearest its requirement); a
-  standing guard is kept while its House is still pressed.
-- **Court** (`court_value`): every House of another realm we have met and reach, its liege not
-  spared (`spared`, the revolt AI's rules: a liege we are Pleased or Friendly with, vassals and
-  masters, defensive pact partners, and at peace a liege whose defensive power is above 125% of
-  ours, 150% for a channel that stands). Its value: the cities its split would take now (the rules'
-  `house_split_toward`: the half nearest us, the capital never, those the hold contest keeps left
-  out), each at `city_worth` (the revolt AI's `150 + 50·pop + 20·buildings + 150·wonders + 200·holy
-  cities`), over the turns to the requirement plus five (the rules' prediction,
-  `house_courtship_at`, at our inflow now times our reach: favour gains, fades, the guard and the
-  requirement as the rules run them), at most `COURT_HORIZON` (60) turns; scaled by the leader's
-  lean (halfway from 100% to its `iCulturalAggression`, a quarter more for a conqueror).
-- **Spread Religion** (`religion_value`) as the per-city channels did, at the civilization's
-  inflow: our state religion, or one whose shrine we hold, into a civilization whose cities lack
-  it, the rules' chance a turn times what a spread is worth (in our own city our state religion's
-  happiness and buildings `40 + 6·pop`, a shrine's gold a turn 25; abroad, a civilization without a
-  state religion drawn toward ours, 50 the first city then 20; a co-religionist pleased, 15); into a
-  civilization with another state religion only where we dislike it, and then only a shrine pays.
-- **Against it** the culture spent (`cost`: each city's half, all of a commerce while its borders
-  still grow to its working radius, below `CULTURELEVEL_FLEDGLING`, half after). The same for
-  every option (the inflow is the civilization's), so it decides only whether any channel pays: a
-  new one must beat it by a quarter (at least a commerce).
-- **Stability.** A channel that stands is kept while it is worth 70% of the best and 70% of its
-  cost; a new one must beat the standing one by a quarter. A channel stands its first `MIN_TURNS`
-  (5) turns while the rules allow it (a guard of a pressed House overrides it), and a guard is
-  kept while its House is still pressed by a looser measure (`still_pressed`: a rival favour past a
-  quarter of the requirement, or reaching it within 40 turns).
-- **As liege**, a House of ours whose strongest rival favour is past half its requirement is held
-  by an idle army (`persons::courted_to_hold`, the hold-march). **As a House**, it accepts any gift
-  and nothing else (`diplomacy::judge_offer`). The AI gives no gifts to court (left out).
-- **Memory.** Their cultural acts against us are in the attitude (`relation_parts`): "cultural
-  hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
-  point every 10 turns (a spread into a civilization with a state religion); "courted our House"
-  (a point every 5 turns of a Court channel at one of our Houses) and "split our House".
-- **Governors never channel** (the owner's decision, 2026-10-30): the channel is the
-  civilization's own decision.
-
-Retired with Foment Revolt and the per-city channels (2026-11-20): the revolt simulation, the
-defenders against revolt pressure (`defenders_needed`, the governor's `culture_grave` and its
-`governor_culture_defense`, the armies' `can_spare` check, the human governors' `govern`), and
-the provocation of a city close to flipping (`flips_against` in `territory_check`).
-
-Telemetry: the decisions of kind `culture` (the action, or `stop`; why: `guard`, `court`,
-`religion_home`, `religion_abroad`, `religion_hostile`, `worthless`; the alternatives weighed),
-with the rules' counts `culture_channel`, `culture_channel_end`, `culture_spread` and
-`house_split` `courted...`; `FFH_AI_TRACE` lines `culture:` name the channel and its net value.
-
-First games (2026-11-20; 4 AI games, seeds 1-4, 7 civilizations, standard map, 300 turns,
-telemetry): channels set 66 / 87 / 83 / 66 a game (Court 36 / 44 / 41 / 35, Guard 22 / 33 / 29 /
-24, Spread Religion 8 / 10 / 13 / 7), the first between turns 110 and 145 (when the realms have
-Houses), 1 to 5 standing at any of turns 150, 200, 250, 300; 5 to 9 religions spread a game.
-Courtships that reached the requirement 8 / 6 / 12 / 2 a game, from turn 143: a split
-(`house_split` `courted`) 5 / 6 / 8 / 2, a House gone whole (`courted_whole`) 2 / 0 / 2 / 0,
-every city held (`courted_held`) 1 / 0 / 2 / 0; the third build's own splits 4 / 1 / 0 / 8. The world culture unit W at turns 100, 150, 200, 250, 300: 4 / 3-7 / 9-21 / 6-26 / 18-49
-(the four games). Before the stability rules (`still_pressed`, `MIN_TURNS`) the same games set
-74 to 323 channels a game: a liege dropped its guard as soon as the courter, finding the House
-guarded, went elsewhere, and both turned back the next turn (Guard and Court, or two Courts,
-alternating every turn, a message to the liege each time).
-
 ## Armies (`armies.rs`)
 
 This game's own system (docs/ARMIES.md). The rules' army sync gives every
 group of army units an army, so the AI's movement logic (`military.rs`, `campaign.rs`) drives each
 army unchanged: a city-attack stack is an army, a city's defenders are its garrison. What an
-expert adds is logistics, once a turn before the governed cities and the cultural actions. Since
+expert adds is logistics, once a turn before the governed cities. Since
 the owner's redesign of 2026-10-31 (docs/ARMIES.md, "Requisition", "Marching recruits") the
 reinforcements are requisitioned and march on the map; before, the governed cities nearest the
 enemy fed the main army and every reinforcement travelled off the map.
@@ -1910,8 +1835,7 @@ governed. Three things live here: what a governor builds (the human's governed c
 the AI's), the AI's empire priorities, and the AI's empire orders.
 
 - **The governor's production** (`decide`, called by `production::choose` for a governed city): the
-  garrison the city's danger asks for (the AI's own quota, plus the role's defenders); against revolt pressure aimed at the city, the defenders
-  that hold it off (`culture::defenders_needed`); the best building by `building_value` per turn
+  garrison the city's danger asks for (the AI's own quota, plus the role's defenders); the best building by `building_value` per turn
   of production, up to half again for the role's flavors (`ranked_buildings`); a missionary for a role that weighs religion; the role's process. Never
   a wonder or a palace (those are empire orders). `plan(g, c, n)` is the next `n` buildings in the
   order `decide` picks them (one ranking by the same score, no simulation of what each one changes;
@@ -1939,10 +1863,6 @@ the AI's), the AI's empire priorities, and the AI's empire orders.
   the two roles whose flavors best match the leader's (the sum over flavors of the role's weight
   times the leader's). The AI never overrides a city's proposed role. It does not weigh who
   governs when it chooses civics.
-- **Governors.** Cultural channels are the civilization's, not the governors' (docs/CULTURE.md):
-  its cultural play sets them in governed cities too. A human's governors (`culture::govern`,
-  through `Controller::govern_cities`): defenders against revolt pressure; never a cultural
-  channel.
 
 Two corrections the measurements asked for (`empire orders` placed by asking the ladder every
 turn): the ladder's fillers (`army_interleave`, `army`, `attacker`, `elite`) become empire orders
@@ -1973,91 +1893,19 @@ step fires on a near second as well as on the ladder's first choice). Average po
 300: 52.4 base, 53.1 rules only, 52.6 with empire orders; research 203 / 233 / 183 (wide spread
 between seeds).
 
-## Houses (`persons.rs`)
+## Houses
 
-This game's own system (docs/PERSONS.md; the second build: Houses as vassal civilizations, rule
-12; the third build, rule 11: no persons, the first grant founds a House). A rules change, so not
-gated on the AI (CLAUDE.md): reasonable choices, unmeasured. AI players only (`persons::turn`,
-once a turn after the turn's diplomacy, before the governors' empire orders): a human's grants
-and tribute are the human's. Courting is a cultural channel since the fourth build (2026-11-20):
-the civilization's channel is `culture.rs`'s ("Cultural actions"). (The module keeps the name of the system it began as,
-Persons of Note.)
+Being built (2026-11-21). This game's own system (docs/HOUSES.md); rule 14 there is the AI's
+part, a rules change, so reasonable and not measured (CLAUDE.md, "How AI changes are checked"):
 
-- **Tribute** (`tribute_for`; the owner's decision of 2026-11-18, replacing "20% Pleased, 10%
-  Cautious, 0% Annoyed"; revised 2026-11-19 for rule 4's lag: the rate in force moves a step of
-  10% toward the rate set every 5 turns, both ways). Each House's rate set to the highest whose
-  loyalty once in force (`house_loyalty_at_tribute`, the steady state) is Pleased with a point to
-  spare (2 or more, `TRIBUTE_KEEP_LOYALTY`), else 0%; lowered as soon as the projection at the
-  rate set falls below that. A cut no longer helps at once: the point to spare is what lets the
-  House take a grievance (a levy, a refused request) while the cut arrives. The aim: the AI's
-  Houses rarely reach an ultimatum, and a loyal House is dearer to court (the requirement counts
-  its loyalty). Never a rate a contract's bound refuses (the third build, rule 6:
-  `player_check_house_tribute`). Set through the rules' command, only when it changes.
-- **Ultimatums** (the third build, rules 5 and 11; `consider_ultimatum`, ffh-ai's
-  `Controller::consider_ultimatum`): a Furious House's ultimatum is accepted (its demand done, a
-  contract for 20 turns) unless every city of the House would be held when it broke away
-  (`house_cities_held`: refusing then takes nothing; the House ends) or the demand is war on a
-  civilization whose team has more power than ours (`team_get_power`, vassals included). A
-  reasonable first rule, not a measured one (CLAUDE.md: a rules change is not gated on the AI).
-- **Grants** (`choose_grant`), one a turn: only while the Crown is over its limit (rule 14: 3
-  cities under a governing civic; settlements count, after the full cities; a Kuriotate House
-  takes only settlements, 2026-11-20),
-  never the capital nor the best production city (`kept_city`), the least populous first, so the
-  Crown comes down to its limit (an earlier version also kept the Crown's six most populous
-  cities, which kept AI realms at 2-6 Houses a game across all civilizations; removed 2026-11-18
-  so the AI plays the owner's limit of 3). Since the third build (rule 11, 2026-11-19): each to
-  the House whose capital is nearest the city (`nearest_house`, ties: the lower id); with no
-  House, the grant founds one (`GrantTo::NewHouse`, its leader drawn by the rules; none while no
-  leader is free); a grant whose preview makes a House Furious is passed over for the next city.
-  (The second build's ranking, the persons and great people founding Houses and the size
-  threshold went with the third build.)
-- **The levy** (`levy_city`): the main army's requisition (`armies::requisition_cities`) takes
-  the cities of its Houses that stay Pleased or better after the levy (`Levied -1`: loyalty 2 or
-  more) as candidates beside its own (the House's garrison judges whether the city can spare its
-  production); an order already under way stays when the House turns Cautious, as an order in
-  our own city does.
-- **No buyer** (the fourth build, rule 9, 2026-11-20): the second build's offers (`choose_offer`:
-  Secede and Become your vassal at the House's price) and the third build's courtship by gold
-  (`choose_courtship`) went with the side deals. A House accepts any gift and nothing else
-  (`diplomacy::judge_offer`); the AI gives no gifts to court.
-- **A House's own turn** (`persons::is_house`). A House cannot declare war or make peace (its
-  liege does), so its turn skips the diplomacy (`diplomacy::manage`: peace, vassalage, trades,
-  war planning), the offers to humans, the loans asked of others, the field army targets and the
-  amphibious target (`View::analyze`) and the campaign (`campaign::plan`); it keeps the city
-  management (governors, production, the empire's research, civics and sliders, culture), its
-  defence (the danger map from its enemies' units, the barbarians' included; the rival defenders;
-  the cities in peril) and its units' moves. Measured with a throwaway timer over seeds 1, 4 and 8
-  (300 turns, 7 civilizations, standard, no telemetry): a House's AI turn fell from 1.55 to 1.30
-  ms (seed 4) and from 2.48 to 1.90 ms (seed 8); seed 1 went from 1.93 to 2.23 ms with other
-  Houses in its game (the governors' part doubled). The parts skipped were 0.3 to 0.4 ms of a
-  House's turn; a House's whole AI turn is about 6% of a game's time, so the extra cost of a game
-  with many Houses is in the rules' per-player work, not in their AI.
-- **Civics.** A direct-rule civic (Despotism, God King) is not considered while a House stands
-  and the AI does not rule directly already (`civic_barred`): adopting one is the civil war.
-- **Armies.** A stack with nothing else to do (before gathering, `military::army`) goes to hold
-  a city of a House of ours that is Annoyed or worse as the rules count it, a contract's floor
-  included: one step from an ultimatum, or under one (`house_to_hold`; the third build, rule 11:
-  the trigger moved from the countdown; holding every city of it lets us refuse its ultimatum;
-  `disloyal_house_post`, the march `hold_post`, public for a courted House): the House's most
-  valuable city (the most populous first) that the stack can hold, one not held now where its army units, with ours already there, would outnumber
-  the House's land combat units (rule 7, `city_hold`), within 8 turns; a stack standing in such a
-  city stays when the city is held only with it. A stack that is no army counts for nothing and
-  does not go. (A Furious commander's haven went with the commanders, the third build.) Since the
-  fourth build (rule 9, 2026-11-20), the same march holds a House of ours whose strongest rival
-  favour is past half its requirement (`courted_to_hold`): a split takes the cities its liege's
-  armies do not hold.
-- A war a House of ours requests adds a tenth to that civilization's score in the war planning
-  (`diplomacy::manage`, `war_demanded`), never a war of its own. It never frees a House.
-
-Soak of the second build (before the third build removed the persons; 8 AI games, seeds 1-8, 300 turns, 7 civilizations, standard size; against the rules' build
-whose AI granted any Crown city one a turn and took 20% from every House): no panic, no failed
-check. Per game: Houses founded 2-8 (base 5-12), vassal civilizations made Houses 0 (0-2), cities
-granted to Houses 3-15 (15-31), Houses at the end 2-6 (5-7), player slots at the end 11-20 (15-25),
-levies 0-6 (0), tribute 16-170 gold and 135-1116 research (207-858 and 1609-5276: fewer and smaller
-Houses, mostly Cautious at 20%, so paying 10% or nothing), offers 2 in 8 games, both accepted (2
-break-aways, both bought; base: 11 break-aways, all by the countdown), no countdown break-away.
-Time a turn 5% below the base's on the same seeds, the two run side by side (the games diverge,
-with fewer slots).
+- **The pick**: of a House's candidates, the one with the highest `P + 30 × h`, where `h` is the
+  happiness its opinion now would give (the outsider's -3 included) and `P` is 60, or 0 where it
+  would be Furious now; a tie to the first.
+- **War**: choosing whom to attack, a target loses value for each of the AI's Houses the war would
+  make Furious, and less for each it would make Annoyed (a small term beside the alignment flavor
+  in `diplomacy.rs`).
+- **Governors**: it hands every city to a governor unless its government is Despotism or God
+  King, which is what the rules made it do before.
 
 ## Random events (`events.rs`)
 
@@ -2576,11 +2424,9 @@ buildings among them whose effects are in the rules' code are valued (`code_effe
   fixed (5-7 cities lost by turn 450-500 with or without it). Legends keeps the default timing
   (5 cities, settlements counted; about turn 200).
   **Since 2026-11-20** (a rules change: docs/PORTING.md, "Kuriotates settlements are cities of
-  radius 1"; not measured) a settlement is a city of radius 1 that builds and pays like any, and
-  a Kuriotate House holds only settlements. The defender step went (a settlement trains its
-  own); the spacing is 4 plots (a radius-1 settlement 5 plots out shares no plot with a full
-  city); a House builds no settler for a full city; the liege grants its settlements beyond the
-  Crown's 3 to its Houses (`persons::choose_grant`, only cities the rules let it grant).
+  radius 1"; not measured) a settlement is a city of radius 1 that builds and pays like any. The
+  defender step went (a settlement trains its own); the spacing is 4 plots (a radius-1
+  settlement 5 plots out shares no plot with a full city).
 - **Luchuirp** (round 4, unchanged): Gifts of Nantosuelta leaves a Golden Hammer in each city,
   which can become a free Engineer there (`SPELL_GIVE_HAMMER_TO_CRAFTSMAN`) or +1 strength on a
   unit that takes it (`SPELL_TAKE_GOLDEN_HAMMER_UNIT`). FfH's end-of-turn spell choice valued the

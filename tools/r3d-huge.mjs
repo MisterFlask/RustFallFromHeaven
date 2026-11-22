@@ -9,18 +9,27 @@
 //
 //   node tools/r3d-huge.mjs [--bin FFH_PLAY] [--limit SECONDS] [--gpu] [--w 512 --h 320]
 //        [--world WORLDSIZE_HUGE] [--opponents 8] [--seed 5] [--layer sea] [--query doom=100]
+//        [--load SAVE [--player P]]
 //
 // --limit: 30 by default under SwiftShader (software WebGL, headless Chromium's default here), 10
 // with --gpu (the machine's GPU; see chromiumLaunch in web-lib.mjs for FFH_CHROMIUM_CHANNEL).
 // --layer draws a map layer as well (`sea`: the Sea layer in the world). --query adds to the page's
 // URL (`doom=100`: the map as at Armageddon counter 100, docs/HD2D.md §6).
+// --load plays a saved game instead of a new one (a Huge game played on, whose cities have Houses:
+// `ffh-play soak run --size WORLDSIZE_HUGE --opponents 8 --turns 150 --saves DIR` leaves its
+// autosaves in DIR/auto); with --player P the viewer takes over player P (`--take-over`), so the
+// cities of a civilization of the AI's carry its Houses' shields (`--player` needs an AI-only
+// save: `ffh-play observe --setup '{"seed":5,"world":"WORLDSIZE_HUGE","opponents":8}' --to-turn 150
+// --saves DIR`). After the frame it times the HUD's pass (hud.js `drawHud`, the city plates) as
+// served, and 300 plates with Houses' shields against the same without (a measurement, not a
+// limit).
 
 import path from "node:path";
 import { createRequire } from "node:module";
 import { ROOT, parseArgs, findBin, tempDir, startServer, chromiumLaunch, webglRenderer, skipped } from "./web-lib.mjs";
 
 const NAME = "r3d-huge";
-const args = parseArgs(process.argv.slice(2), { gpu: "flag", bin: "v", limit: "v", w: "v", h: "v", world: "v", opponents: "v", seed: "v", layer: "v", query: "v" });
+const args = parseArgs(process.argv.slice(2), { gpu: "flag", bin: "v", limit: "v", w: "v", h: "v", world: "v", opponents: "v", seed: "v", layer: "v", query: "v", load: "v", player: "v" });
 const limitMs = Number(args.limit ?? (args.gpu ? 10 : 30)) * 1000;
 
 const require = createRequire(import.meta.url);
@@ -38,7 +47,15 @@ try {
 const server = await startServer({
   bin: findBin(args.bin),
   saves: tempDir(NAME),
-  extra: ["--new", "--seed", args.seed ?? "5", "--world", args.world ?? "WORLDSIZE_HUGE", "--opponents", args.opponents ?? "8", "--assets", path.join(ROOT, "crates", "ffh-play", "assets")],
+  extra: [
+    ...(args.load
+      ? args.player !== undefined
+        ? ["--take-over", path.resolve(args.load), "--player", String(args.player)]
+        : ["--load", path.resolve(args.load)]
+      : ["--new", "--seed", args.seed ?? "5", "--world", args.world ?? "WORLDSIZE_HUGE", "--opponents", args.opponents ?? "8"]),
+    "--assets",
+    path.join(ROOT, "crates", "ffh-play", "assets"),
+  ],
 });
 let browser = null;
 const finish = async (code) => {
@@ -131,6 +148,64 @@ try {
   if (crashed) throw new Error("the tab crashed");
   if (errors.length) throw new Error(errors.slice(0, 5).join("\n  "));
   console.log(`${NAME}: ok (${total} ms of ${limitMs} ms)`);
+  // The plates' cost with Houses' shields (docs/HOUSES.md, rule 15: an own city's shield on its
+  // plate): the HUD's pass (hud.js `drawHud`, every plate in view) timed with the Houses as
+  // served, then with 300 plates (the cities in view, copied round to 300 entries at their plots)
+  // all carrying a shield (a third of them Annoyed or Furious, with the state's mark) against the
+  // same 300 without, alternated over three rounds of 50 passes.
+  const plates = await within(
+    page.evaluate(async () => {
+      const { S, mapView: mv } = window.ffh;
+      const r3d = mv.r3d;
+      const { drawHud } = await import("/app/r3d/hud.js");
+      const time = (n) => {
+        drawHud(r3d, r3d.cam);
+        const t = performance.now();
+        for (let i = 0; i < n; i++) drawHud(r3d, r3d.cam);
+        return (performance.now() - t) / n;
+      };
+      const shields = () => (r3d.plateHits ?? []).filter((b) => b?.kind === "house").length;
+      const own = (r3d.cities ?? []).filter((c) => (S.cities.get(c.city.id) ?? c.city).house).length;
+      const asServed = time(50);
+      const servedDrawn = shields();
+      const real = r3d.cities ?? [];
+      if (!real.length) return { cities: 0, own, asServed, servedDrawn };
+      // The cities whose plates are in view (a shield on each, one pass), copied round to 300.
+      const probe = real.map((c, i) => ({ ...c, city: { ...(S.cities.get(c.city.id) ?? c.city), id: -1 - i, house: { id: 0, label: "House", state: "Pleased" } } }));
+      r3d.cities = probe;
+      drawHud(r3d, r3d.cam);
+      const seen = new Set((r3d.plateHits ?? []).filter((b) => b?.kind === "house").map((b) => b.city));
+      const inView = real.filter((_, i) => seen.has(-1 - i));
+      const pool = inView.length ? inView : real;
+      const fake = [];
+      for (let i = 0; i < 300; i++) {
+        const c = pool[i % pool.length];
+        // Ids no view city has, so the HUD reads the entry's own city (`S.cities.get` misses).
+        fake.push({ ...c, city: { ...(S.cities.get(c.city.id) ?? c.city), id: -1 - i, house: null } });
+      }
+      const states = ["Pleased", "Annoyed", "Furious"];
+      const set = (on) => fake.forEach((c, i) => (c.city.house = on ? { id: i % 8, label: "House", state: states[i % 3] } : null));
+      r3d.cities = fake;
+      const rounds = [];
+      try {
+        for (let k = 0; k < 3; k++) {
+          set(true);
+          const on = time(50);
+          const drawn = shields();
+          set(false);
+          rounds.push({ on, off: time(50), drawn });
+        }
+      } finally {
+        r3d.cities = real;
+      }
+      return { cities: real.length, own, asServed, servedDrawn, rounds };
+    }),
+    180000,
+    "the plates' timing",
+  );
+  const f = (x) => x.toFixed(2);
+  console.log(`plates: ${plates.cities} cities on the map, ${plates.own} with a House's shield (${plates.servedDrawn} drawn in view); the HUD pass ${f(plates.asServed)} ms as served`);
+  for (const r of plates.rounds ?? []) console.log(`plates: 300 plates, ${r.drawn} shields drawn in view: ${f(r.on)} ms with shields, ${f(r.off)} ms without (+${f(r.on - r.off)} ms)`);
   await finish(0);
 } catch (e) {
   await fail(`${crashed ? "the tab crashed; " : ""}${e.message ?? e}${errors.length ? `\n  ${errors.slice(0, 5).join("\n  ")}` : ""}`);

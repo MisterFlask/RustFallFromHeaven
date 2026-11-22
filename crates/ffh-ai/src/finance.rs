@@ -157,7 +157,8 @@ pub fn gold_value(f: &Finance) -> i32 {
 /// City maintenance (x100 gold per turn, before inflation) split into the two parts civics
 /// scale (C++ `calculateDistanceMaintenanceTimes100`, `calculateNumCitiesMaintenanceTimes100`),
 /// with the player's current civic modifiers taken out and the cities' own modifiers
-/// (Courthouses) applied.
+/// (Courthouses) applied. A House perk's percent adds to the civics' in its city
+/// (docs/HOUSES.md, rule 9), so each city's part is divided by its own sum.
 fn maintenance_base_x100(g: &Game, p: PlayerId) -> (i64, i64) {
     let pl = &g.players[p];
     let (mut dist, mut num) = (0i64, 0i64);
@@ -168,12 +169,12 @@ fn maintenance_base_x100(g: &Game, p: PlayerId) -> (i64, i64) {
             continue;
         }
         let m = (100 + city.maintenance_modifier).max(0) as i64;
-        dist += g.city_calculate_distance_maintenance_times100(c) as i64 * m / 100;
-        num += g.city_calculate_num_cities_maintenance_times100(c) as i64 * m / 100;
+        let dm = (100 + pl.distance_maintenance_modifier + g.city_house_distance_maintenance_modifier(c)).max(1) as i64;
+        let nm = (100 + pl.num_cities_maintenance_modifier + g.city_house_num_cities_maintenance_modifier(c)).max(1) as i64;
+        dist += g.city_calculate_distance_maintenance_times100(c) as i64 * m / dm;
+        num += g.city_calculate_num_cities_maintenance_times100(c) as i64 * m / nm;
     }
-    let dm = (100 + pl.distance_maintenance_modifier).max(1) as i64;
-    let nm = (100 + pl.num_cities_maintenance_modifier).max(1) as i64;
-    (dist * 100 / dm, num * 100 / nm)
+    (dist, num)
 }
 
 /// Gold per turn (x100, inflated) that running `civic` adds to city maintenance (negative: it

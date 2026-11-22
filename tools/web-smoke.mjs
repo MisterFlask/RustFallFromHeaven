@@ -759,70 +759,6 @@ async function cityQueue() {
   steps.push("city queue: appended with Shift, removed with ✕, no ✕ on the only order");
 }
 
-/** This game's cultural channel (docs/CULTURE.md, "UI"; docs/PERSONS.md, "The fourth build", rule
- *  10): the city screen's Culture section has its line (the city's culture; no channel in a fresh
- *  game) and a link that opens the Culture screen; there the head says what a channel would take,
- *  and the three actions are listed, each with its targets or its one line of why none. A target
- *  the game allows is set (the head changes) and stopped. The smoke game is early and small: with
- *  nothing to aim at (no House met, no religion), only the lines of why none are checked. */
-async function cultureUi() {
-  const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
-  await b.eval(`window.ffh.emit("open-city", ${city.id})`);
-  const sec = `#modals .backdrop:not(.under) .section.culture`;
-  await until2(`!!document.querySelector(${q(`${sec} .culture-line`)})`, "the city's Culture section");
-  const line = await b.eval(`document.querySelector(${q(`${sec} .culture-line`)}).textContent`);
-  if (!/^Culture: \d+\.\d a turn; no channel\.$/.test(line)) throw new Error(`the city's Culture line: ${line}`);
-  if (!(await b.eval(`!!document.querySelector(${q(`${sec} .kw-chip[data-keyword="KEYWORD_CHANNEL"]`)})`))) throw new Error("the city's Culture section has no Channel keyword");
-  await shot("culture-section");
-  await click(`${sec} button.culture-open`);
-  const M = `#modals .backdrop:not(.under) .modal[data-tag=culture]`;
-  const has = (sel) => b.eval(`!!document.querySelector(${q(`${M} ${sel}`)})`);
-  await until2(`!!document.querySelector(${q(`${M} .culture-head`)})`, "the Culture screen from the city's link");
-  const head = () => b.eval(`[...document.querySelectorAll(${q(`${M} .culture-head p`)})].map((p) => p.textContent)`);
-  const h0 = await head();
-  if (h0[0] !== "Channel: none. Your cities keep all their culture." || !/^A channel would take \d+\.\d culture a turn\.$/.test(h0[1] ?? "")) throw new Error(`the head: ${h0.join(" | ")}`);
-  const n = await b.eval(`window.ffh.S.data.tables.CulturalActionType.length`);
-  const shown = await b.eval(`document.querySelectorAll(${q(`${M} .culture-actions button[data-action]`)}).length`);
-  if (shown !== n) throw new Error(`the Culture screen offers ${shown} actions of ${n}`);
-  // Each action: its targets, or its one line of why none.
-  let ok = null;
-  const seen = [];
-  for (let a = 0; a < n; a++) {
-    await click(`${M} .culture-actions button[data-action="${a}"]`);
-    await until2(`!!document.querySelector(${q(`${M} .culture-actions button[data-action="${a}"].on`)})`, `action ${a} picked`);
-    const targets = await b.eval(`document.querySelectorAll(${q(`${M} button.culture-target`)}).length`);
-    const none = await b.eval(`document.querySelector(${q(`${M} p.culture-none`)})?.textContent ?? null`);
-    if (!targets && !none) throw new Error(`action ${a}: neither targets nor why there are none`);
-    seen.push(`${await b.eval(`window.ffh.S.data.tables.CulturalActionType[${a}].name`)}: ${targets ? `${targets} targets` : none}`);
-    if (ok === null && (await has("button.culture-target:not([disabled])"))) ok = a;
-  }
-  let what = "none can be set";
-  if (ok !== null) {
-    await click(`${M} .culture-actions button[data-action="${ok}"]`);
-    await click(`${M} button.culture-target:not([disabled])`);
-    await until2(`!!document.querySelector(${q(`${M} .culture-pick button.culture-set`)})`, "the picked target's preview and Set");
-    await shot("culture-preview");
-    await click(`${M} .culture-pick button.culture-set`);
-    await until(async () => /^Channel: .+, since turn \d+\.$/.test((await head())[0]), "the head with the channel set");
-    if (!(await has(".culture-ours .culture-stop"))) throw new Error("no Stop under the channel set");
-    await shot("culture-channel");
-    await click(`${M} .culture-ours .culture-stop`);
-    await until(async () => (await head())[0] === "Channel: none. Your cities keep all their culture.", "the channel stopped");
-    what = `a ${await b.eval(`window.ffh.S.data.tables.CulturalActionType[${ok}].name`)} channel set and stopped`;
-  } else {
-    await shot("culture-screen");
-  }
-  await b.key("Escape");
-  await until2(`!document.querySelector("#modals .modal[data-tag=culture]")`, "the Culture screen closed");
-  await b.key("Escape");
-  await until(async () => !(await modalTitles()).length, "the city dialog closed");
-  await b.key("F8");
-  await until(async () => (await modalTitles()).includes("Culture"), "the Culture screen from F8");
-  await b.key("Escape");
-  await until(async () => !(await modalTitles()).length, "the Culture screen closed");
-  steps.push(`culture: the city's line and its link; the Culture screen lists the ${n} actions (${seen.join("; ")}; ${what}); F8 opens it`);
-}
-
 /** This game's armies (docs/ARMIES.md; the new-game screen starts with them on): an army unit's
  *  panel has the Army section, F5 opens the Armies screen (an army renamed there), and the city
  *  screen has the recruitment destination. */
@@ -854,15 +790,22 @@ async function armiesUi() {
   steps.push(`armies: the panel's army actions, F5 lists ${armies} arm${armies === 1 ? "y" : "ies"}${renamed}; the city's recruitment`);
 }
 
-/** This game's governors (docs/GOVERNORS.md): the game starts in Despotism, which rules every
- *  city directly: the city screen's Governance section says so, and F9's Governors screen is the
- *  mode line and the city list. */
+/** This game's governors (docs/GOVERNORS.md): the game starts in Despotism, where a city is run by
+ *  hand until it is handed to a governor: the city screen's Governance section says so and its
+ *  toggle hands the capital over and takes it back; F9's Governors screen is the mode line and
+ *  the list of the cities run by hand. */
 async function governorsUi() {
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
   await b.eval(`window.ffh.emit("open-city", ${city.id})`);
-  await until2(`!!document.querySelector("#modals .backdrop:not(.under) .section.governance")`, "the city's Governance section");
-  const text = await b.eval(`document.querySelector("#modals .backdrop:not(.under) .section.governance").textContent`);
-  if (!/Ruled directly/.test(text)) throw new Error(`the capital is not ruled directly: ${text}`);
+  const section = `#modals .backdrop:not(.under) .section.governance`;
+  await until2(`!!document.querySelector(${q(section)})`, "the city's Governance section");
+  const text = await b.eval(`document.querySelector(${q(section)}).textContent`);
+  if (!/Run by hand/.test(text)) throw new Error(`the capital is not run by hand: ${text}`);
+  await clickSteady(`${section} button.govern-toggle`);
+  await until2(`/^Governed\\. Role: /.test(document.querySelector(${q(`${section} p`)})?.textContent ?? "")`, "the capital handed to a governor");
+  await until2(`/Run by hand/.test(document.querySelector(${q(`${section} button.govern-toggle`)})?.textContent ?? "")`, "the toggle to take it back");
+  await clickSteady(`${section} button.govern-toggle`);
+  await until2(`/^Run by hand\\./.test(document.querySelector(${q(`${section} p`)})?.textContent ?? "")`, "the capital taken back");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
   await b.key("F9");
@@ -870,11 +813,11 @@ async function governorsUi() {
   const n = await S("S.view.cities.filter((c) => c.owner === S.view.me.player).length");
   await until2(`document.querySelectorAll("#modals table.governors tbody tr").length === ${n}`, "every city listed");
   const mode = await b.eval(`document.querySelector("#modals .governors-mode")?.textContent ?? ""`);
-  if (!/^Government: .+\. Every city is ruled directly\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
+  if (!/^Government: .+\. Governed: 0 of \d+ cit(y|ies)\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
   await shot("governors-screen");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the Governors screen closed");
-  steps.push(`governors: the capital ruled directly; F9 says "${mode}" and lists ${n} cit${n === 1 ? "y" : "ies"}`);
+  steps.push(`governors: the capital run by hand, handed to a governor and taken back from the city screen; F9 says "${mode}" and lists ${n} cit${n === 1 ? "y" : "ies"}`);
 }
 
 /** Governors v2 under a governed government (`stage governors`: Aristocracy, two governed cities,
@@ -882,14 +825,14 @@ async function governorsUi() {
  *  Armies screen's Order unit picks a unit, then the city (the suggestion pre-selected: one click),
  *  and the army shows it on order; a second one is ordered with a click on an outlined city on the
  *  map; the capital's city screen offers empire orders only and says so; the civics screen's
- *  preview of Despotism says every city will be ruled directly. */
+ *  preview of Despotism says the cities stay governed. */
 async function stagedGovernors(bin, saves) {
   const st = await loadStaged(bin, saves, "governors");
   await b.key("F9");
   await until(async () => (await modalTitles()).includes("Governors"), "the Governors screen");
   await until2(`document.querySelectorAll("#modals .role-card").length === 2`, "a role card per governed city");
   const mode = await b.eval(`document.querySelector("#modals .governors-mode")?.textContent ?? ""`);
-  if (!/Every city is governed\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
+  if (!/Every city is run by a governor\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
   const card = await b.eval(`document.querySelector("#modals .role-card").textContent`);
   if (!/Role: /.test(card) || !/Plan: /.test(card) || !/Other roles: /.test(card)) throw new Error(`a role card: ${card}`);
   await click(`#modals label.priority[data-role="1"] input`);
@@ -935,12 +878,12 @@ async function stagedGovernors(bin, saves) {
   await shot("city-governed");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
-  // Civics: Despotism's preview says every city will be ruled directly.
+  // Civics: Despotism's preview says the cities stay governed.
   const despotism = await S(`S.data.tables.CivicType.findIndex((t) => t.type === "CIVIC_DESPOTISM")`);
   await b.key("F3");
   await dialog("Civics");
   await clickSteady(`${TOP} button.civic[data-civic="${despotism}"]`);
-  await until2(`/Every city will be ruled directly\\./.test(document.querySelector(${q(`${TOP} .civic-rule-change`)})?.textContent ?? "")`, "the civics preview of who runs the cities");
+  await until2(`/Your cities stay governed until you take them back\\./.test(document.querySelector(${q(`${TOP} .civic-rule-change`)})?.textContent ?? "")`, "the civics preview of who runs the cities");
   await closeDialog("Civics");
   steps.push(`governors (stage governors): "${mode}"; a priority set, a role card per city; a unit ordered for the army from the Armies screen in one click on the suggestion, a second by a click on an outlined city on the map; the governed city screen; the civics preview`);
 }
@@ -2314,7 +2257,6 @@ async function main() {
     await staleSelection();
     await foundCity();
     await cityQueue();
-    await cultureUi();
     await armiesUi();
     await governorsUi();
     await moveUnit();

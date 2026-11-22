@@ -655,27 +655,24 @@ word for word and that fits in a short reminder.
 A number the rules calculate shows how it is made in a tooltip (the owner's rule, 2026-11-20:
 "tooltips are how you want to expose that information"). The screen shows the result; the
 tooltip shows its parts and how they combine, with the values in play, one line each, bare:
-`Inflow: your cities' culture 11.0 × 50% = 5.5 a turn.`, `Reach: 8 plots: (5 ÷ 8)² = 39%.`,
-`Gain: 5.5 × 39% = 2.1 a turn.`, `Next liege turn: 5.3 + 2.1 − 0.0 = 7.4, less 5%: 7.0.` A number
-made of several parts that are themselves calculated shows each (a courtship's requirement, its
-inflow, reach, gain, guard and next turn); a sum of many parts uses a parts list (`infotips.js`
-`partsList`: a city's mood, the gold rate). The parts of a sum add up to its total as written:
-show them at the precision the rules count in (`Ventry: 7.70 × 50% = 3.85.`), not rounded.
+`Per turn: 100 ÷ 300 turns = +0.33.`, `Attack: -20% × 2 = -40%.`, `2. More units fell: attackers
+3, defenders 5.` A number made of several parts that are themselves calculated shows each; a sum
+of many parts uses a parts list (`infotips.js` `partsList`: a city's mood, the gold rate). The
+parts of a sum add up to its total as written: show them at the precision the rules count in, not
+rounded.
 
 The rules write the lines, next to the formula they explain, so the two cannot drift apart: the
-`*_calc` reads of `ffh-core` (`Requirement::formula`, `culture_reach_calc`,
-`player_culture_inflow_calc`, `house_courtship_calc`, `house_guard_calc`,
-`house_requirement_steps_calc`, `culture_spread_calc`). A view sends them as a `calc` field beside
-the number or line it explains (a list of lines; a courtship's `{requirement, inflow, reach, gain,
-guard, turn}`), and `app/calc.js` draws them: `withCalc(el, calc)` makes the tooltip, shown on
-hover, focus or a tap (a touch screen has no hover), and marks the text with a dotted underline.
-The client does no arithmetic of its own. A calculation's lines are rules text: they name a
-keyword's quantities (the world culture unit) but do not restate its rule (4.8).
+`*_calc` reads of `ffh-core` (`doom_clock_calc`, `unit_wounds_calc`, `BattleReport::verdict_calc`).
+A view sends them as a `calc` field beside the number or line it explains (a list of lines), and
+`app/calc.js` draws them: `withCalc(el, calc)` makes the tooltip, shown on hover, focus or a tap
+(a touch screen has no hover), and marks the text with a dotted underline. The client does no
+arithmetic of its own. A calculation's lines are rules text: they name a keyword's quantities but
+do not restate its rule (4.8).
 
-Built for the culture and courting numbers (the Culture screen, the House cards, the trade table
-with a House, the diplomacy list, the city screen's Culture section, the Court's attention line).
-The rest of the game's calculated numbers are on the work list (TODO.md, "Calculated numbers:
-the other screens").
+Built for the Armageddon counter's change a turn (the top bar), a hero's Wounds (the unit panel)
+and a battle's verdict (the battle report and the watched battle). Houses' numbers follow it
+(docs/HOUSES.md, rule 12). The rest of the game's calculated numbers are on the work list
+(TODO.md, "Calculated numbers: the other screens").
 
 ---
 

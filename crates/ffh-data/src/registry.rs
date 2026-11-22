@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::enums::*;
 use crate::infos::building::BuildingTierType;
-use crate::infos::{CulturalActionType, GovernorNameType, CityRoleType, KeywordType, ResearchPathType, SeaNameType};
+use crate::infos::{GovernorNameType, CityRoleType, KeywordType, ResearchPathType, SeaNameType};
 use crate::idx::{Idx, IdxVec};
 use crate::jsonc::Value;
 
@@ -92,7 +92,6 @@ info_ids! {
     ContactType => "ContactTypes",
     DiplomacyPowerType => "DiplomacyPowerTypes",
     DirectionType => "DirectionTypes",
-    CulturalActionType => "CulturalActionInfo",
     CityRoleType => "CityRoleInfo",
     GovernorNameType => "GovernorNameInfo",
     BuildingTierType => "BuildingTierInfo",
@@ -570,6 +569,20 @@ impl<'a> Rd<'a> {
         for (name, x) in self.members(key) {
             if let Some(k) = self.resolve::<K>(name) {
                 v[k] = self.item_ref::<V>(key, x);
+            }
+        }
+        v
+    }
+
+    /// An object from type names to lists of type names (each list in file order).
+    pub fn pairs_ref_list<K: InfoId, V: InfoId>(&self, key: &str) -> IdxVec<K, Vec<V>> {
+        let mut v = IdxVec::from_elem(Vec::new(), self.cx.reg.count::<K>());
+        for (name, x) in self.members(key) {
+            if let Some(k) = self.resolve::<K>(name) {
+                match x {
+                    Value::Arr(items) => v[k] = items.iter().filter_map(|i| self.item_ref::<V>(key, i)).collect(),
+                    other => self.wrong(key, "an object of lists of type names", other),
+                }
             }
         }
         v

@@ -153,8 +153,19 @@ fn t11_agent_transcript_with_a_decision_inside_a_command() {
     let lines = std::fs::read_to_string(&journal).unwrap();
     assert!(lines.lines().any(|l| l.contains("\"k\":\"answer\"") && l.contains("keep_city")), "{lines}");
 
-    // The end of the turn: the reply, then the next control point.
-    let ended = a.ask(ffh_play::jobj! { "id" => 13, "k" => "cmd", "c" => "end_turn", "force" => true });
+    // The end of the turn: the captured city, foreign, forms a House in the turn processing
+    // (docs/HOUSES.md, rule 4): its pick is a decision inside the command; then the reply, then
+    // the next control point.
+    a.send(&ffh_play::jobj! { "id" => 13, "k" => "cmd", "c" => "end_turn", "force" => true });
+    let ev = a.next();
+    assert_eq!(ev.req_str("ev"), Ok("decision"), "{ev}");
+    let d = ev.get("decision").unwrap();
+    assert_eq!(d.req_str("kind"), Ok("house_leader"));
+    let house_id: u32 = d.req("id").unwrap();
+    let picked = a.ask(ffh_play::jobj! { "id" => 14, "k" => "answer", "decision" => house_id, "option" => 0 });
+    assert!(picked.get("r").is_some(), "{picked}");
+    let ended = a.next();
+    assert_eq!(ended.req::<i64>("id"), Ok(13), "{ended}");
     assert_eq!(ended.get("status").unwrap().req_str("phase"), Ok("running"));
     let control = a.next();
     assert_eq!((control.req_str("ev"), control.req::<i32>("turn")), (Ok("control"), Ok(staged.turn + 1)));
@@ -166,7 +177,7 @@ fn t11_agent_transcript_with_a_decision_inside_a_command() {
         order,
         [
             "ev:control", "ok:1", "ev:decision", "ok:3", "ok:4", "busy:5", "decision_pending:6", "decision_pending:7", "gone:8", "invalid:9", "invalid:null", "ok:11", "ok:2",
-            "ok:12", "ok:13", "ev:control"
+            "ok:12", "ev:decision", "ok:14", "ok:13", "ev:control"
         ]
     );
 }

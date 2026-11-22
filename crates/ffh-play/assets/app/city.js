@@ -21,16 +21,29 @@ import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, isoIcon, queueIcon, refreshCityPanel } from "./isoui.js";
 import { plotState } from "./citywork.js";
 import { infoTip, moodTip, roomText } from "./infotips.js";
-import { cultureView } from "./culture.js";
 import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
 import { governanceView } from "./governors.js";
+import { houseCityView } from "./houses.js";
 import { addHelp } from "./help.js";
 import { keywordChips } from "./keywords.js";
 import { perkView } from "./perks.js";
-import { stateKey } from "./persons_mark.js";
 import { render as markup } from "./markup.js";
 import { withCalc } from "./calc.js";
 import { raidTone } from "./raids.js";
+
+/** The House perk's parts of a number (city.rs `house_part`: `{label, n, text}`, such as
+ *  `House Aldric (Scholars II): +25%`), as a tooltip's lines after its other parts; null for none. */
+function houseLines(...parts) {
+  const ps = parts.flat().filter((p) => p?.text);
+  return ps.length ? h("div.tip-calc.tip-sep.tip-house", ps.map((p) => h("div.tip-calc-line", p.text))) : null;
+}
+
+/** A tooltip of `text` (one line) followed by the House perk's `parts`: the string alone when the
+ *  perk has none (a tooltip's content function otherwise). */
+function withHouse(text, ...parts) {
+  const lines = houseLines(...parts);
+  return lines ? () => [h("div", text), lines] : text;
+}
 
 // ---- Outposts in the help display (docs/NAVAL.md, section 9) -----------------------------------
 
@@ -581,14 +594,16 @@ function growthView(c) {
     "div.section.city-growth",
     h(
       "div.meter",
-      { tip: `Culture ${c.culture}/${ct}${c.culture_level !== null ? ` (${dname("CultureLevelType", c.culture_level)})` : ""}: it grows the city's borders.` },
+      { tip: `Culture ${c.culture}/${ct}${c.culture_level !== null ? ` (${dname("CultureLevelType", c.culture_level)})` : ""}, ${signed(c.culture_rate ?? 0)} a turn: it grows the city's borders.` },
       ic("culture"),
       ct > 0 ? barEl(c.culture / ct, "culture", { w: 60 }) : null,
       h("span", `${c.culture}/${ct}`),
+      // The culture level and the culture a turn, readable without the tooltip.
+      h("span.dim.culture-level", `${c.culture_level !== null && c.culture_level !== undefined ? ` ${dname("CultureLevelType", c.culture_level)} ·` : ""} ${signed(c.culture_rate ?? 0)} a turn`),
     ),
     h(
       "div.meter",
-      { tip: "Great people points: a great person is born when they reach the empire's threshold." },
+      { tip: withHouse("Great people points: a great person is born when they reach the empire's threshold.", c.great_people.house) },
       ic("greatpeople"),
       h("span", `${c.great_people.progress} · ${signed(c.great_people.rate)} a turn`),
     ),
@@ -608,7 +623,7 @@ function growthView(c) {
       c.besieged ? h("span.chip.bad", { tip: `Besieged by ${c.besiegers} enemy unit${c.besiegers === 1 ? "" : "s"} next to the city. ${c.harbour?.state === "open" ? "City healing and Sentinel repair run at half rate while the harbour stays open." : "No healing from the city; no Sentinel repair."}` }, "Besieged") : null,
       // Named seas (docs/NAVAL.md 10): the harbour, open or blockaded.
       c.harbour ? h(`span.chip${c.harbour.state === "blockaded" ? ".bad" : ""}.harbour`, { tip: c.harbour.text }, c.harbour.text) : null,
-      h("span.chip", { tip: "Upkeep: gold a turn" }, ic("gold"), c.maintenance ? `−${c.maintenance}` : "0"),
+      h("span.chip", { tip: withHouse("Upkeep: gold a turn", c.maintenance_house) }, ic("gold"), c.maintenance ? `−${c.maintenance}` : "0"),
       c.trade_routes ? h("span.chip", { tip: "Trade routes" }, `Trade ${c.trade_routes}`) : null,
       h("span.chip.dim", `Founded turn ${c.founded}`),
     ),
@@ -645,13 +660,13 @@ function summaryRow(c, { prompt = false } = {}) {
     ),
     h(
       "div.cs-gauge",
-      { tip: `Food: ${y(0).rate} grown, ${f.consumption} eaten by the citizens; ${f.stored}/${f.threshold} stored` },
+      { tip: withHouse(`Food: ${y(0).rate} grown, ${f.consumption} eaten by the citizens; ${f.stored}/${f.threshold} stored`, y(0).house) },
       h("div.cs-top", ic("food", true), h(`b.cs-big.${foodCls || "even"}`, signed(f.difference)), h("span.cs-sub", String(y(0).rate), ic("food"), " − ", String(f.consumption), ic("population"))),
       h("div.cs-top", f.threshold > 0 ? barEl(f.stored / f.threshold, "food", { w: 60, next: (f.stored + f.difference) / f.threshold }) : null, grows),
     ),
     h(
       "div.cs-gauge",
-      { tip: prod.current ? `Production: ${prod.rate} a turn; ${prod.stored}/${prod.needed ?? "-"}` : "Nothing is being built" },
+      { tip: prod.current ? withHouse(`Production: ${prod.rate} a turn; ${prod.stored}/${prod.needed ?? "-"}`, y(1).house, prod.house) : withHouse("Nothing is being built", y(1).house) },
       h("div.cs-top", ic("production", true), h("b.cs-big.prod", String(prod.rate)), h("span.cs-sub", prod.current ? productionName(c) : c.outpost ? "an outpost builds nothing" : prompt ? "a turn" : h("span.bad", "nothing to build"))),
       prod.current && prod.needed ? h("div.cs-top", barEl(prod.stored / prod.needed, "production", { w: 60, next: (prod.stored + prod.rate) / prod.needed }), h("span.when", c.queue[0]?.turns !== null && c.queue[0]?.turns !== undefined ? `in ${turns(c.queue[0].turns)}` : "")) : null,
     ),
@@ -692,17 +707,18 @@ function commerceView(c) {
     add(k.religions, ic("religion"), "From religions");
     add(k.empire, ic("civics"), "From the empire (its traits and civics)");
     add(k.process, ic("production"), "Production turned to it");
-    if (k.modifier) parts.push(h("span.part", { title: "Buildings, wonders and the empire's bonuses" }, ` ${k.modifier > 0 ? "+" : "−"}${Math.abs(k.modifier)}%`));
+    // The modifier's House part (its perk's) is in its tooltip and the commerce's.
+    if (k.modifier) parts.push(h("span.part", { title: k.house?.text ? `Buildings, wonders and the empire's bonuses; of it ${k.house.text}` : "Buildings, wonders and the empire's bonuses" }, ` ${k.modifier > 0 ? "+" : "−"}${Math.abs(k.modifier)}%`));
     return h(
       `div.cs-out.${name}`,
-      { tip: `${dname("CommerceType", k.commerce)}: ${k.rate} a turn` },
+      { tip: withHouse(`${dname("CommerceType", k.commerce)}: ${k.rate} a turn`, k.house) },
       h("span.cs-out-top", ic(name, true), h("b", String(k.rate))),
       h("span.cs-out-parts", parts.length ? parts : "0"),
     );
   });
   return h(
     "div.cs-row.cs-commerce",
-    h("span.cs-raw", { tip: `Commerce: ${raw} from the city's plots and trade routes, split by the empire's rates` }, ic("commerce", true), h("b.cs-big.com", String(raw))),
+    h("span.cs-raw", { tip: withHouse(`Commerce: ${raw} from the city's plots and trade routes, split by the empire's rates`, c.yields.find((v) => v.yield === 2)?.house) }, ic("commerce", true), h("b.cs-big.com", String(raw))),
     h("span.cs-arrow", "→"),
     total || raw ? bar : h("span.dim", "no commerce"),
     h("span.cs-arrow", "→"),
@@ -906,9 +922,6 @@ function chooseModes([tapMode, setTapMode], always = false) {
 function buildLists(c, choose) {
   // A governed city lists what may be an empire order (the server's list); a click places one.
   const locked = !!c.governance?.governed;
-  // Houses (docs/PERSONS.md, "UI", part C): a House that takes no order now: its reason
-  // once over the lists (each entry disabled, the reason in its tooltip too).
-  const houseWhy = locked ? c.buildable.find((b) => b.why)?.why : null;
   const lists = GROUPS.map(([order, label]) => {
     const items = c.buildable.filter((b) => b.order === order);
     if (!items.length) return null;
@@ -923,7 +936,6 @@ function buildLists(c, choose) {
           // chip's hover or tap); a world ritual's rules line (its own facts: what it leaves, the
           // next cost), its own state (The Tithe's named rival), and why it cannot be chosen now.
           const ritual = b.ritual ?? null;
-          // (Houses: a House that takes no order now gives its reason, `b.why`.)
           const why = !b.enabled ? (ritual?.why ?? b.why ?? "Not possible now.") : null;
           return h(
             `button.build${ritual ? ".ritual-build" : ""}`,
@@ -931,7 +943,8 @@ function buildLists(c, choose) {
               disabled: !b.enabled,
               "data-order": order,
               "data-type": b.type,
-              tip: infoTip(kind, b.type, { hint: [tierHint(b), nationalHint(b), why ?? (locked ? "Click: empire order, ahead of the governor's choice." : "Click: build now. Shift: add to the queue. Ctrl: put first.")].filter(Boolean).join(" ") }),
+              // The House perk's parts: its production modifier, a unit's experience.
+              tip: infoTip(kind, b.type, { extra: houseLines(b.house, b.house_xp), hint: [tierHint(b), nationalHint(b), why ?? (locked ? "Click: empire order, ahead of the governor's choice." : "Click: build now. Shift: add to the queue. Ctrl: put first.")].filter(Boolean).join(" ") }),
               onclick: (ev) => choose(order, b.type, ev),
             },
             isoSkin() ? buildIcon(order, b.type) : null,
@@ -946,8 +959,7 @@ function buildLists(c, choose) {
       ),
     );
   });
-  const whyCls = stateKey(c.governance?.house?.state) === "furious" ? "p.warn.build-refusal" : "p.caution.build-refusal";
-  return houseWhy ? [h(whyCls, houseWhy), ...lists] : lists;
+  return lists;
 }
 
 /** The full screen's production: the current build's progress, the queue, what a tap does, then
@@ -963,6 +975,7 @@ function productionView(c, choose, remove, tap, reload) {
       h("h4", "Production"),
       h(
         "div.prod-line",
+        { tip: withHouse(prod.current ? `Production: ${prod.rate} a turn` : "Nothing is being built", c.yields.find((v) => v.yield === 1)?.house, prod.current ? prod.house : null) },
         prod.current && (look.art || isoSkin()) ? uiIcon("yield", 1, 16) : null,
         prod.current ? `${prod.stored}/${prod.needed ?? "-"} (+${prod.rate} per turn)` : h("span.warn", "Nothing is being built."),
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
@@ -991,15 +1004,16 @@ function screen(c, { task, choose, remove, overlay, tap, reload }) {
   // On the map (the isometric interface) the plots are worked there: citywork.js draws the
   // citizens on them; the dialog shows them as a grid.
   const plots = overlay ? null : plotGrid(c, task);
-  // This game's cultural channel after the city's numbers (its culture among them), above the
-  // buildings.
-  const left = h("div.city-col", siegeView(c), raidView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
+  const left = h("div.city-col", siegeView(c), raidView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), buildingsView(c, reload));
   // What to build first; then the orders, where trained units go (armies.js) and the governance.
   // An outpost builds nothing and has no governor: its lane and Raise to city instead.
   if (c.outpost) return [summaryView(c, reload, overlay), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];
   const garrison = c.governance?.governed ? null : recruitView(c, reload);
   // The sally posture beside the garrison (docs/RAIDS.md, section 4).
   const right = h("div.city-col", productionView(c, choose, remove, tap, reload), manageView(c, task), garrison ? h("div.section.recruit", garrison) : null, sallyView(c, reload), governanceView(c, reload));
+  // This game's Houses (docs/HOUSES.md, rule 15): the city's House under its governance (houses.js).
+  const house = c.owner === me()?.player ? houseCityView(c) : null;
+  if (house) right.append(house);
   return [summaryView(c, reload, overlay), h("div.city-cols", left, right)];
 }
 

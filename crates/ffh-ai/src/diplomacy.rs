@@ -81,15 +81,6 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
             out.push(("alignment leaning", lean));
         }
     }
-    // What `other` did to us with cultural actions (docs/CULTURE.md): a point of memory per
-    // completed unrest-sized act, fading a point every few turns; two points are a step.
-    let [hostility, friendship] = a.culture_memory[other];
-    if hostility > 0 {
-        out.push(("cultural hostility", -((hostility + 1) / 2).min(3)));
-    }
-    if friendship > 0 {
-        out.push(("cultural friendship", ((friendship + 1) / 2).min(2)));
-    }
     // Gifts received and demands paid in the last turns (ffh-core `tribute`).
     let (gifts, demands) = g.tribute_relations(p, other);
     if gifts > 0 {
@@ -102,16 +93,8 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
 }
 
 /// The memories [`relation_parts`] weighs, with their labels: the wrongs of the owner's decision
-/// of 2026-11-18 (docs/PERSONS.md, "The second build"; FFH2's other memories are not read), a
-/// House split by a rival's courtship (the fourth build, rule 4: -300 on FfH's scale, -2 here) and
-/// a House courted (rule 7: a point every 5 turns of a Court channel, -200 on FfH's scale, -1
-/// here).
-pub const MEMORY_TERMS: [(MemoryType, &str); 4] = [
-    (MemoryType::MEMORY_DECLARED_WAR, "declared war on us"),
-    (MemoryType::MEMORY_TOOK_CITY, "took our cities"),
-    (MemoryType::MEMORY_SPLIT_HOUSE, "split our House"),
-    (MemoryType::MEMORY_COURTED_HOUSE, "courted our House"),
-];
+/// of 2026-11-18 (FFH2's other memories are not read).
+pub const MEMORY_TERMS: [(MemoryType, &str); 2] = [(MemoryType::MEMORY_DECLARED_WAR, "declared war on us"), (MemoryType::MEMORY_TOOK_CITY, "took our cities")];
 
 /// A memory term of [`relation_parts`] is at most this many points either way.
 pub const MEMORY_TERM_CAP: i32 = 3;
@@ -458,11 +441,7 @@ pub fn manage(g: &mut Game, v: &View) {
     // Telemetry: every target that passed the gates, with its score.
     let mut scored: Vec<(TeamId, i64)> = Vec::new();
     for other in g.player_ids() {
-        let Some(mut t) = territory_target(g, p, &bar, other, false) else { continue };
-        // A war a House of ours requests (docs/PERSONS.md): a tenth more.
-        if crate::persons::war_demanded(g, p, other) {
-            t.score += t.score.abs() / 10 + 1;
-        }
+        let Some(t) = territory_target(g, p, &bar, other, false) else { continue };
         let ot = g.players[other].team;
         scored.push((ot, t.score));
         if best.as_ref().map_or(true, |(_, b)| t.score > b.score) {
@@ -599,9 +578,38 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
         if (us == good && them == evil) || (us == evil && them == good) { 30 } else { 0 }
     };
     // Greedy gain: a bigger edge, more and closer cities; minus how much we like them; a
-    // flavor nudge toward alignment-opposites.
-    let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor;
+    // flavor nudge toward alignment-opposites; minus what the war would cost our Houses.
+    let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor - house_war_cost(g, p, ot);
     Ok(Target { score, ratio, allies })
+}
+
+/// What a war on team `target` would cost player `p`'s Houses (docs/HOUSES.md, rule 14), per
+/// city of each House the war would make Furious (its perk goes off, -4 happiness), and a third of
+/// that per city of each it would make Annoyed. A nudge beside the alignment flavor (30): a
+/// 4-city House turned Furious weighs about as much. First guesses, not measured (CLAUDE.md, "How
+/// AI changes are checked": a rules change gets a reasonable AI and is not gated on it).
+const HOUSE_WAR_FURIOUS_PER_CITY: i64 = 9;
+const HOUSE_WAR_ANNOYED_PER_CITY: i64 = 3;
+
+/// [`HOUSE_WAR_FURIOUS_PER_CITY`] and [`HOUSE_WAR_ANNOYED_PER_CITY`] over the rules' own preview
+/// of declaring war on `target` (`Game::house_preview`): only the Houses whose state would fall
+/// to Furious or to Annoyed.
+pub(crate) fn house_war_cost(g: &Game, p: PlayerId, target: TeamId) -> i64 {
+    use ffh_core::houses::{HouseAct, HouseState};
+    if g.players[p].houses.is_empty() {
+        return 0;
+    }
+    g.house_preview(p, HouseAct::DeclareWar(target))
+        .iter()
+        .map(|v| {
+            let n = v.cities as i64;
+            match v.after {
+                HouseState::Furious => n * HOUSE_WAR_FURIOUS_PER_CITY,
+                HouseState::Annoyed if v.before < HouseState::Annoyed => n * HOUSE_WAR_ANNOYED_PER_CITY,
+                _ => 0,
+            }
+        })
+        .sum()
 }
 
 /// Does team `target` still pass a gate that would choose it now: the victory
@@ -1501,14 +1509,6 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let because = |accept: bool, why: &str| OfferVerdict { accept, margin: None, why: Some(why.to_string()) };
     let on_value = |margin: i64| OfferVerdict { accept: margin >= 0, margin: Some(margin as i32), why: None };
     let has = |items: &[TradeData], kind: TradeableItem| items.iter().any(|t| t.item_type == kind);
-    // ---- Houses (docs/PERSONS.md, "The fourth build", rule 9): a House accepts any gift (nothing
-    // asked back: gold or a resource) and trades nothing else.
-    if g.player_house(p).is_some() {
-        if we_give.is_empty() && !they_give.is_empty() {
-            return rule(true, "");
-        }
-        return no("a House takes gifts only");
-    }
     // Vassal states come with strings attached (vassals.rs): asked to become `from`'s vassal, or
     // offered `from` as ours.
     if let Some(yes) = crate::vassals::agree(g, p, from, we_give, tel) {
@@ -1876,6 +1876,48 @@ mod tests {
     use super::*;
     use crate::testkit::one_landmass_game;
 
+    /// A war on a civilization a House of ours favours (docs/HOUSES.md, rule 14) scores lower as
+    /// a target than the same war without the House: by 9 a city of each House it makes Furious,
+    /// 3 of each it makes Annoyed.
+    #[test]
+    fn a_house_that_favours_a_civ_makes_it_a_worse_target() {
+        use ffh_core::houses::HouseState;
+        let mut g = one_landmass_game(19);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        let cities: Vec<CityId> = [(3, 4), (3, 7), (6, 5)].iter().map(|&(x, y)| g.player_init_city(us, x, y, true, true)).collect();
+        g.player_init_city(them, 12, 5, true, true);
+        g.player_houses_turn(us);
+        let h = *g.players[us].houses.first().expect("a House at three cities");
+        assert_eq!(g.houses[h].cities.len(), cities.len());
+        let (team, ot) = (g.players[us].team, g.players[them].team);
+        g.team_meet(team, ot, false);
+        g.teams[team].ai_at_peace_counter[ot] = 50;
+        g.players[us].alignment = Some(AlignmentType::ALIGNMENT_GOOD);
+        g.players[them].alignment = Some(AlignmentType::ALIGNMENT_GOOD);
+        let bar = WarBar { need_ratio: 0, spare_friends: false, ours: 1_000_000 };
+        let score = |g: &Game| territory_check(g, us, &bar, them, false).map(|t| t.score);
+        // Without the House.
+        let houses = std::mem::take(&mut g.players[us].houses);
+        let base = score(&g).expect("a target");
+        g.players[us].houses = houses;
+        // A House of the other alignment, Annoyed now (-4): the war on the civ it favours (-3)
+        // makes it Furious.
+        g.houses[h].religion = None;
+        g.houses[h].outsider = false;
+        g.houses[h].alignment = Some(AlignmentType::ALIGNMENT_EVIL);
+        g.houses[h].sympathy = Some(them);
+        assert_eq!(g.house_state(h), HouseState::Annoyed);
+        assert_eq!(house_war_cost(&g, us, ot), 3 * HOUSE_WAR_FURIOUS_PER_CITY);
+        assert_eq!(score(&g), Ok(base - 3 * HOUSE_WAR_FURIOUS_PER_CITY));
+        // One step away, Cautious (-2): the war makes it Annoyed.
+        g.houses[h].alignment = Some(AlignmentType::ALIGNMENT_NEUTRAL);
+        assert_eq!(g.house_state(h), HouseState::Cautious);
+        assert_eq!(score(&g), Ok(base - 3 * HOUSE_WAR_ANNOYED_PER_CITY));
+        // A House that favours no one does not mind this war.
+        g.houses[h].sympathy = None;
+        assert_eq!(score(&g), Ok(base));
+    }
+
     #[test]
     fn the_trust_spell_raises_attitudes() {
         let mut g = one_landmass_game(19);
@@ -1887,7 +1929,7 @@ mod tests {
         assert_eq!(relation(&g, them, us), theirs, "the caster's own attitude is unchanged");
     }
 
-    /// The three remembered wrongs are terms of their own: `count x percent / 100`, halved (rounded
+    /// The remembered wrongs are terms of their own: `count x percent / 100`, halved (rounded
     /// half away from zero), capped at -3; a declared war is remembered by the side declared on,
     /// and fades.
     #[test]
@@ -1908,18 +1950,11 @@ mod tests {
             g.players[us].ai_memory_count[them][m] = count;
             assert_eq!(term(&g, "took our cities"), want, "{count} cities");
         }
-        // MEMORY_SPLIT_HOUSE -300, as a declared war.
-        g.players[us].ai_memory_count[them][MemoryType::MEMORY_SPLIT_HOUSE] = 1;
-        assert_eq!(term(&g, "split our House"), Some(-2));
-        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_SPLIT_HOUSE), -1, "the second: -2 to -3");
-        g.players[us].ai_memory_count[them][MemoryType::MEMORY_SPLIT_HOUSE] = 2;
-        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_SPLIT_HOUSE), 0, "at the cap");
-        // MEMORY_COURTED_HOUSE -200: -1 a point (the fourth build, rule 7), the cap at three.
-        assert_eq!(term(&g, "courted our House"), None);
-        for (count, want) in [(1, Some(-1)), (2, Some(-2)), (3, Some(-3)), (9, Some(-3))] {
-            g.players[us].ai_memory_count[them][MemoryType::MEMORY_COURTED_HOUSE] = count;
-            assert_eq!(term(&g, "courted our House"), want, "{count} courtships");
-        }
+        // A second declaration: -2 to -3; then the cap.
+        g.players[us].ai_memory_count[them][MemoryType::MEMORY_DECLARED_WAR] = 1;
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_DECLARED_WAR), -1, "the second: -2 to -3");
+        g.players[us].ai_memory_count[them][MemoryType::MEMORY_DECLARED_WAR] = 2;
+        assert_eq!(memory_added(&g, us, them, MemoryType::MEMORY_DECLARED_WAR), 0, "at the cap");
         assert_eq!(memory_part(&g, us, MemoryType::MEMORY_TOOK_CITY, 100), -MEMORY_TERM_CAP);
         // A declaration is remembered by the side declared on, through these terms.
         let mut g = one_landmass_game(19);

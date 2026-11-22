@@ -514,6 +514,9 @@ impl Game {
             modifier -= city.raid_percent;
         }
 
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's.
+        modifier += self.city_house_yield_modifier(c, yield_type);
+
         modifier += extra;
 
         // note: player->invalidateYieldRankCache() must be called for anything that is checked here
@@ -786,7 +789,9 @@ impl Game {
         let city = &self.cities[c];
         let player = &self.players[city.owner];
         let capital_modifier = if self.city_is_capital(c) { player.capital_commerce_rate_modifier[i] } else { 0 };
-        max(0, city.commerce_rate_modifier[i] + player.commerce_rate_modifier[i] + capital_modifier + 100)
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's.
+        let house = self.city_house_commerce_modifier(c, commerce);
+        max(0, city.commerce_rate_modifier[i] + player.commerce_rate_modifier[i] + capital_modifier + house + 100)
     }
 
     /// C++ `CvCity::updateCommerce(CommerceTypes)` (CvCity.cpp:8489-8524).
@@ -1311,8 +1316,7 @@ impl Game {
         }
 
         let owner = self.cities[c].owner;
-        // This game's cultural channel diverts part of the rate (`city_culture_diverted_times100`).
-        let culture_rate = self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE) - self.city_culture_diverted_times100(c);
+        let culture_rate = self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE);
         self.city_change_culture_times100(c, owner, culture_rate, false, true);
     }
 

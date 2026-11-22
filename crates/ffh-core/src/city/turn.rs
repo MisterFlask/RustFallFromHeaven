@@ -145,8 +145,7 @@ impl Game {
 
         // FfH: Added by Kael 11/07/2007. Changed from FFH2 (docs/PORTING.md): a settlement is a
         // city of radius 1 under every other rule; a city below the cap is always a full city
-        // (FFH2 asked a human, BUTTONPOPUP_CONFIRMSETTLEMENT); a capped House founds or takes
-        // only settlements (docs/PERSONS.md, rule 14).
+        // (FFH2 asked a human, BUTTONPOPUP_CONFIRMSETTLEMENT).
         if self.players[owner].max_cities != -1 && !outpost {
             if self.player_new_city_is_settlement(owner, c) {
                 self.cities[c].settlement = true;
@@ -404,12 +403,8 @@ impl Game {
         }
         // FfH: End Add
 
-        // This game's cultural channels (docs/CULTURE.md): the civilization's channel takes the
-        // city's share first (its owner's inflow); what it diverts reaches neither the city's
-        // culture nor its plots.
-        let diverted = self.city_divert_culture(c);
         self.city_do_culture(c);
-        let culture_rate = (self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE) - diverted) / 100;
+        let culture_rate = self.city_commerce_rate_times100(c, CommerceType::COMMERCE_CULTURE) / 100;
         let owner = self.cities[c].owner;
         self.city_do_plot_culture(c, false, owner, culture_rate);
         self.city_do_production(c, allow_no_production);
@@ -804,13 +799,7 @@ impl Game {
                     }
 
                     let (x, y) = (self.cities[c].x, self.cities[c].y);
-                    // This game's Houses (docs/PERSONS.md, the levy): a requisition order of the
-                    // liege's army in a House's city trains the liege's unit.
-                    let unit_owner = match order.dest {
-                        Some(crate::army::RecruitDest::Army(a)) if order.requisition && self.armies.contains(a) && self.city_levied_by(c, self.armies[a].owner) => self.armies[a].owner,
-                        _ => owner,
-                    };
-                    let new_unit = self.player_init_unit(unit_owner, unit, x, y, opt_from_i32(train_unit_ai), None);
+                    let new_unit = self.player_init_unit(owner, unit, x, y, opt_from_i32(train_unit_ai), None);
 
                     // Creating the unit can remove the city (entering its plot, a unit takes a city
                     // of a team it is at war with) or the unit: the unit stays built, and what

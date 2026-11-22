@@ -1727,16 +1727,11 @@ TXT_KEY_ATG_UNIT_PELTAST	Peltast
 TXT_KEY_ATG_UNIT_PELTISTS_STRATEGY	[COLOR_UNIT_TEXT]Peltasts[COLOR_REVERT] are cheap units, useful for reinforcing tactical locations such as hills and forests.
 TXT_KEY_ATG_UNIT_PRODROMOI_STRATEGY	[COLOR_UNIT_TEXT]Prodromoi[COLOR_REVERT] are good scouting units. They are lightly armored and extremely fast. 
 TXT_KEY_ATTITUDE_ANNOYED	Annoyed
-TXT_KEY_ATTITUDE_ANNOYED_HELP	Loyalty from -5 to -3. A House takes no levy.
 TXT_KEY_ATTITUDE_CAUTIOUS	Cautious
-TXT_KEY_ATTITUDE_CAUTIOUS_HELP	Loyalty from -2 to 0. A House takes levies.
 TXT_KEY_ATTITUDE_FRIENDLY	Friendly
-TXT_KEY_ATTITUDE_FRIENDLY_HELP	Loyalty +3 or more. A House takes levies.
 TXT_KEY_ATTITUDE_FURIOUS	Furious
-TXT_KEY_ATTITUDE_FURIOUS_HELP	Loyalty -6 or less. A House takes no levy. It issues an ultimatum in its liege's turn; refused, it breaks away at war with its liege, and each of its cities where the liege's army units outnumber the House's land combat units goes back to the liege.
 TXT_KEY_ATTITUDE_MASTER_OF	Master of %s1_player
 TXT_KEY_ATTITUDE_PLEASED	Pleased
-TXT_KEY_ATTITUDE_PLEASED_HELP	Loyalty +1 or +2. A House takes levies.
 TXT_KEY_ATTITUDE_TOWARDS	%s1_attitude towards %s2_leader
 TXT_KEY_ATTITUDE_VASSAL_OF	Vassal of %s1_CivDesc
 TXT_KEY_AT_WAR_WITH	[ICON_BULLET][COLOR_WARNING_TEXT]War with %s1_player[COLOR_REVERT]
@@ -5734,12 +5729,6 @@ TXT_KEY_CROSSROADS_INI	Carve your fortune from the Crossroads of the World!
 TXT_KEY_CROSSROADS_WB_DESC	The year is 1300. European traders have caught the sweet waft of spices from the East, and the craving for the goods of the Orient has become an epidemic. China, for the first time in their history, has sent out trading vessels to establish contact with the West. Indian storehouses spill over with finery. It is a trader's age and you stand at the Crossroads of the World.[NEWLINE][NEWLINE]Features:[NEWLINE]Commerce Victory[NEWLINE]This new victory requires players to accumulate wealth through any means necessary. Taxes, pillaging, conquest or trade - the means matter not, only that in the end, you have the deepest coffers. Ten new Corporations are among the many features that will let players engage in unprecedented economic warfare.[NEWLINE][NEWLINE]Raiders[NEWLINE]These lightning-quick cavalry bear no markings of nationality, allowing players to pillage the lands of friends and foes alike. 
 TXT_KEY_CS_5_1_3	Bravado and luck, buddy.  Bravado and luck.
 TXT_KEY_CTRL	Ctrl+
-TXT_KEY_CULTURALACTION_COURT_HOUSE	Court
-TXT_KEY_CULTURALACTION_COURT_HOUSE_HELP	[KW=KEYWORD_COURT]Court[\KW] a House of another realm that you have met.
-TXT_KEY_CULTURALACTION_GUARD_HOUSE	Guard
-TXT_KEY_CULTURALACTION_GUARD_HOUSE_HELP	[KW=KEYWORD_GUARD]Guard[\KW] one of your Houses.
-TXT_KEY_CULTURALACTION_SPREAD_RELIGION	Spread Religion
-TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	A [KW=KEYWORD_CHANNEL]channel[\KW] that spreads one of your cities' religions among a civilization's cities that lack it (your own included). Each turn there is a chance it spreads to one of them: more culture, nearer cities and fewer religions already there make it likelier. Their leader minds it only when it has another state religion.
 TXT_KEY_RESEARCHPATH_ARCANE	Arcane
 TXT_KEY_RESEARCHPATH_FAITH	Faith
 TXT_KEY_RESEARCHPATH_STEEL	Steel
@@ -12668,6 +12657,48 @@ TXT_KEY_TRAIT_NO_UPKEEP	[NEWLINE][SPACE][SPACE][ICON_BULLET]No Upkeep Costs for 
 TXT_KEY_TRAIT_ORGANIZED	Organized
 TXT_KEY_TRAIT_ORGANIZED_SHORT	Org
 TXT_KEY_TRAIT_PEDIA	[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1
+TXT_KEY_TRAIT_PERK_BATTLE_MAGES_1	Battle-mages I
+TXT_KEY_TRAIT_PERK_BATTLE_MAGES_2	Battle-mages II
+TXT_KEY_TRAIT_PERK_BATTLE_MAGES_3	Battle-mages III
+TXT_KEY_TRAIT_PERK_DRILLMASTERS_1	Drillmasters I
+TXT_KEY_TRAIT_PERK_DRILLMASTERS_2	Drillmasters II
+TXT_KEY_TRAIT_PERK_DRILLMASTERS_3	Drillmasters III
+TXT_KEY_TRAIT_PERK_FREEHOLDERS_1	Freeholders I
+TXT_KEY_TRAIT_PERK_FREEHOLDERS_2	Freeholders II
+TXT_KEY_TRAIT_PERK_FREEHOLDERS_3	Freeholders III
+TXT_KEY_TRAIT_PERK_HORSEMASTERS_1	Horsemasters I
+TXT_KEY_TRAIT_PERK_HORSEMASTERS_2	Horsemasters II
+TXT_KEY_TRAIT_PERK_HORSEMASTERS_3	Horsemasters III
+TXT_KEY_TRAIT_PERK_LUMINARIES_1	Luminaries I
+TXT_KEY_TRAIT_PERK_LUMINARIES_2	Luminaries II
+TXT_KEY_TRAIT_PERK_LUMINARIES_3	Luminaries III
+TXT_KEY_TRAIT_PERK_MARKSMEN_1	Marksmen I
+TXT_KEY_TRAIT_PERK_MARKSMEN_2	Marksmen II
+TXT_KEY_TRAIT_PERK_MARKSMEN_3	Marksmen III
+TXT_KEY_TRAIT_PERK_MASTER_BUILDERS_1	Master Builders I
+TXT_KEY_TRAIT_PERK_MASTER_BUILDERS_2	Master Builders II
+TXT_KEY_TRAIT_PERK_MASTER_BUILDERS_3	Master Builders III
+TXT_KEY_TRAIT_PERK_MERCHANTS_1	Merchants I
+TXT_KEY_TRAIT_PERK_MERCHANTS_2	Merchants II
+TXT_KEY_TRAIT_PERK_MERCHANTS_3	Merchants III
+TXT_KEY_TRAIT_PERK_PATRONS_1	Patrons I
+TXT_KEY_TRAIT_PERK_PATRONS_2	Patrons II
+TXT_KEY_TRAIT_PERK_PATRONS_3	Patrons III
+TXT_KEY_TRAIT_PERK_RITUALISTS_1	Ritualists I
+TXT_KEY_TRAIT_PERK_RITUALISTS_2	Ritualists II
+TXT_KEY_TRAIT_PERK_RITUALISTS_3	Ritualists III
+TXT_KEY_TRAIT_PERK_SCHOLARS_1	Scholars I
+TXT_KEY_TRAIT_PERK_SCHOLARS_2	Scholars II
+TXT_KEY_TRAIT_PERK_SCHOLARS_3	Scholars III
+TXT_KEY_TRAIT_PERK_SHIELDWALL_1	Shieldwall I
+TXT_KEY_TRAIT_PERK_SHIELDWALL_2	Shieldwall II
+TXT_KEY_TRAIT_PERK_SHIELDWALL_3	Shieldwall III
+TXT_KEY_TRAIT_PERK_SHIPWRIGHTS_1	Shipwrights I
+TXT_KEY_TRAIT_PERK_SHIPWRIGHTS_2	Shipwrights II
+TXT_KEY_TRAIT_PERK_SHIPWRIGHTS_3	Shipwrights III
+TXT_KEY_TRAIT_PERK_SMITHS_1	Smiths I
+TXT_KEY_TRAIT_PERK_SMITHS_2	Smiths II
+TXT_KEY_TRAIT_PERK_SMITHS_3	Smiths III
 TXT_KEY_TRAIT_PERMANENT	[SPACE][SPACE](permanent)
 TXT_KEY_TRAIT_PHILOSOPHICAL	Philosophical
 TXT_KEY_TRAIT_PHILOSOPHICAL_SHORT	Phi
@@ -14967,27 +14998,13 @@ TXT_KEY_KEYWORD_RITUAL	Ritual
 TXT_KEY_KEYWORD_RITUAL_REMINDER	Progress is lost if the city switches to building something else. Cannot be hurried with gold. While this is in production, the city's plot is visible to every player.
 TXT_KEY_KEYWORD_WORLD_RITUAL	World Ritual
 TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER	One in progress per player. Each completion doubles its next cost. Every player is told when it begins, is abandoned or completes. At completion its world spell takes effect; a spell with a target must be cast before the turn ends.
-TXT_KEY_KEYWORD_HOUSE	House
-TXT_KEY_KEYWORD_HOUSE_REMINDER	A vassal civilization with a leader of its own, its cities its own. It pays its liege a tribute and its cities take the liege's levies. A House that breaks away declares war on its liege. Every vassal is a House.
-TXT_KEY_KEYWORD_CROWN	Crown
-TXT_KEY_KEYWORD_CROWN_REMINDER	The cities a civilization holds itself; the capital is always the Crown's. A city of the Crown can be granted to a House; a realm's first grant founds one. Under a governing civic, the Crown's cities beyond its limit (the capital first, settlements not counted) pay triple city-count maintenance.
-TXT_KEY_KEYWORD_REQUEST	Request
-TXT_KEY_KEYWORD_REQUEST_REMINDER	A House's wish, one at a time, with a term of 40 turns. Met: +3 loyalty for 60 turns. Lapsed at its term, or made impossible by its liege's act: -3 loyalty for 60 turns. The next one comes 20 turns later.
-TXT_KEY_KEYWORD_ULTIMATUM	Ultimatum
-TXT_KEY_KEYWORD_ULTIMATUM_REMINDER	A Furious House's one demand, made in its liege's turn and answered at once. Accepted: it is done, and a contract binds its liege for 20 turns; the House stays at least Annoyed while it runs. Refused: the House breaks away, at war with its liege.
-TXT_KEY_KEYWORD_TRIBUTE	Tribute
-TXT_KEY_KEYWORD_TRIBUTE_REMINDER	Each turn a House pays its liege a share of its cities' gold, from 0 to 50%, from its treasury. A part of the House's loyalty: +1 at 0%, 1 less for each 10% more. The rate in force moves one step of 10% toward the rate set every 5 turns; the payment and the loyalty follow the rate in force.
-TXT_KEY_KEYWORD_LEVY	Levy
-TXT_KEY_KEYWORD_LEVY_REMINDER	An army's requisition in a city of its owner's House: the city trains a unit for the army, the liege's unit. Each levy placed costs the House -1 loyalty for 20 turns. A House Annoyed or Furious takes no levy.
-TXT_KEY_KEYWORD_CLAIMANT	Claimant
-TXT_KEY_KEYWORD_CLAIMANT_REMINDER	A House with a city within 6 plots. Granting the city to another House costs a claimant House -1 (30 turns).
-TXT_KEY_KEYWORD_CHANNEL	Channel
-TXT_KEY_KEYWORD_CHANNEL_REMINDER	A civilization's one cultural order at a time, set on the Culture screen. While it runs, each of its cities diverts half its culture to it, none in disorder; the diverted culture adds nothing to the city's own culture or borders. Its effect falls with the distance from the caster's nearest city to the target's nearest city: in full within 5 plots, then with the square of the distance, nothing beyond 20. Every civilization that has met the caster sees it.
-TXT_KEY_KEYWORD_COURT	Court
-TXT_KEY_KEYWORD_COURT_REMINDER	A channel at a House of another realm. In each of the liege's turns the House's favour toward the courter gains the channel's culture, loses any guard's, then fades 5%. Requirement: (the House's loyalty + 6 − 2 × its leader's attitude toward the courter, from −2 Furious to +2 Friendly, at least 1) × the median civilization's culture a turn. At the requirement the half of the House's cities nearest the courter join the courter's realm as a new House, without war, and that favour starts again from 0; never the House's capital, and a House of one city joins whole. A city where the liege's army units outnumber the House's stays. Every 5 turns of the channel the liege remembers it, up to 8 times; it remembers a split as well.
-TXT_KEY_KEYWORD_GUARD	Guard
-TXT_KEY_KEYWORD_GUARD_REMINDER	A liege's channel at one of its own Houses. In each of the liege's turns the channel's culture is taken from every civilization's favour at the House, before the fade.
 TXT_KEY_KEYWORD_ARMAGEDDON_COUNTER	Armageddon counter
 TXT_KEY_KEYWORD_ARMAGEDDON_COUNTER_REMINDER	0 to 100. Rises by 100 over 300 turns at Normal speed (201 at Quick, 450 at Epic, 900 at Marathon). Razed cities, the Ashen Veil, the Octopus Overlords, demon units and some rituals and spells raise or lower it.
 TXT_KEY_KEYWORD_ARMAGEDDON_CARD	Armageddon card
 TXT_KEY_KEYWORD_ARMAGEDDON_CARD_REMINDER	Dealt face down at the end of turn 1: one card or none at each slot (10, 20, ... 100). Revealed to every player when the counter is within 5 of its slot. Plays when the counter reaches its slot.
+TXT_KEY_KEYWORD_HOUSE	House
+TXT_KEY_KEYWORD_HOUSE_REMINDER	Up to 4 of a civilization's cities under a leader. The leader's opinion of you is happiness in each of its cities: Friendly +2, Pleased +1, Cautious 0, Annoyed -2, Furious -4. While a House is Furious its perk is off. A city joins the House of its origin whose seat is nearest, within 8 plots; your first House forms at 3 cities.
+TXT_KEY_KEYWORD_SYMPATHY	Sympathy
+TXT_KEY_KEYWORD_SYMPATHY_REMINDER	The civilization a House's leader favours, rolled when the leader is offered and kept for good; a civilization's culture around the House's cities draws it. Opinion: at war with it -3; a defensive pact or a permanent alliance with it, or it is your vassal or master, +2; else open borders with it +1.
+TXT_KEY_KEYWORD_OUTSIDER	Outsider
+TXT_KEY_KEYWORD_OUTSIDER_REMINDER	A leader of your own civilization offered for a foreign House. Its opinion counts alignment and religion only, and it has no sympathy. Its cities have -3 happiness while it leads.

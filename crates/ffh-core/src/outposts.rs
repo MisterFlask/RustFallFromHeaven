@@ -167,8 +167,7 @@ impl Game {
         self.cities[c].outpost = false;
         self.cities[c].lane_cut_turns = 0;
         self.cities[c].lane.clear();
-        // A player with a city limit (the Kuriotates): a city beyond it, or a capped House's, is
-        // a settlement (docs/PERSONS.md, rule 14).
+        // A player with a city limit (the Kuriotates): a city beyond it is a settlement.
         if self.player_new_city_is_settlement(p, c) {
             self.cities[c].settlement = true;
         }
@@ -181,6 +180,8 @@ impl Game {
             }
         }
         self.city_governance_init(c, true);
+        // This game's Houses (docs/HOUSES.md, rule 4): a city now, it joins a House at once.
+        self.house_city_gained(c);
         self.cities[c].ai_choose_production_dirty = true;
         self.player_update_maintenance(p);
         let around = self.outpost_area_plots(c);

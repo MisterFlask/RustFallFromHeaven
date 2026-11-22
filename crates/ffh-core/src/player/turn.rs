@@ -208,8 +208,6 @@ impl Game {
             }
         }
 
-        // This game's cultural actions: their memories fade.
-        self.player_do_culture_memory(p);
         // This game's armies (docs/ARMIES.md): the marching recruits march (the armies settled with
         // the groups first), with the moves they kept through the turn, to where their
         // destinations are after their owner moved, and join them there (an army's moves this
@@ -217,15 +215,15 @@ impl Game {
         self.player_do_march(p);
         self.player_march_join(p);
         self.player_army_sync(p);
-        // This game's Houses (docs/PERSONS.md): after the armies are settled, before governance
-        // and requisition.
-        self.player_persons_turn(p);
         // This game's fleets (docs/NAVAL.md, 7.2): their standing orders, with the moves their
         // owner left them (after its own orders: an order it gave this turn is not undone).
         self.player_fleet_stations(p);
         // This game's raids (docs/RAIDS.md, section 5): its cities' guards sally against the
         // raiders, and the raiders take their share (before its gold, research and cities).
         self.player_do_raids(p);
+        // This game's Houses (docs/HOUSES.md, rule 4): the unhoused cities join or form Houses
+        // (the pick through the controller), and each change of a House's state is told.
+        self.player_houses_turn(p);
         // This game's governors (docs/GOVERNORS.md): the cities in the mode the civics give.
         self.player_governance_turn(p);
         // This game's armies: the requisition, before the cities produce (a new requisition order
@@ -257,19 +255,11 @@ impl Game {
             self.player_do_research(p);
         }
 
-        // This game's cultural channel (docs/CULTURE.md): ended when it can no longer go on; its
-        // inflow counts the cities' turns.
-        self.player_culture_channel_turn_start(p);
         for c in self.players[p].cities.clone() {
             if self.cities.contains(c) {
                 self.city_do_turn(c);
             }
         }
-        // Spread Religion rolls with the turn's inflow; Court leaves its memory.
-        if self.players[p].alive {
-            self.player_do_culture_channel(p);
-        }
-
         // Xienwolf Tweak 12/27/08 (Stasis Pauses Golden Ages)
         let pl = &self.players[p];
         if pl.golden_age_turns > 0 && !(pl.disable_production > 0 && pl.disable_research > 0) {
@@ -502,8 +492,6 @@ impl Game {
                 // gDLL->openSlot(getID()): network.
             } else {
                 self.tel_autopsy_civ_died(p);
-                // This game's Houses (docs/PERSONS.md): a House's player dead, its record ends.
-                self.player_persons_died(p);
                 self.player_clear_research_queue(p);
 
                 self.player_kill_units(p);
@@ -1059,6 +1047,10 @@ impl Game {
                             }
                         }
                     }
+                    // This game's Houses (docs/HOUSES.md): a House's leader leads nothing else.
+                    if leader_valid && self.houses.iter().any(|(_, h)| h.leader == leader) {
+                        leader_valid = false;
+                    }
 
                     if leader_valid {
                         leaders.push((civ, leader));
@@ -1151,8 +1143,6 @@ impl Game {
             }
 
             self.team_assign_vassal(team, new_team, false);
-            // A colony is a House that sought no protection (docs/PERSONS.md).
-            self.player_house_birth(new_player);
             new_player
         };
 

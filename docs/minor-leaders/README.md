@@ -52,11 +52,11 @@ Maereth inherited a village muster book in which the same dead men had paid mili
 
 ![Odran Vale leaderhead portrait](portraits/odran_iron_mercy.png)
 
-**Evil · Personal traits:** Spiritual, Defender. **Inherited:** Guardsman.
+**Neutral · Personal traits:** Spiritual, Defender. **Inherited:** Guardsman.
 
-*A Bannor prison chaplain turns the promise of safety into permanent confinement and inherited punishment.*
+*A Bannor prison chaplain turns the promise of safety into permanent confinement and inherited suspicion.*
 
-Odran tended prisoners who had survived demonic captivity, and came to believe that freedom itself gave evil its opportunity. His Order of the Closed Hand began by sheltering threatened families, then locked its sanctuary gates and declared that their children must remain until every outside temptation had been destroyed. Its fortress towns now export inquisitors who sentence the innocent for the sins they might one day commit, all while Odran continues to preach deliverance from Hell.
+Odran tended prisoners who had survived demonic captivity, and came to believe that freedom itself gave evil its opportunity. His Order of the Closed Hand began by sheltering threatened families, then locked its sanctuary gates and declared that their children must remain until every outside temptation had been destroyed. Its fortress towns now export inquisitors who question the innocent for the sins they might one day commit, and their walled families have not lost a child to Hell since Odran began to preach.
 
 **Portrait direction:** Paternal carceral calm. Palette: Ivory white dominant, coal black secondary, dull gold glints. Activity: Turns a heavy iron key in the lock of a barred sanctuary door beside his face, other hand drawing the door shut
 
@@ -136,7 +136,7 @@ At flood season Hamira commandeered a noble's empty granary to keep the ford ope
 
 ![Cedric Stave leaderhead portrait](portraits/cedric_stave.png)
 
-**Evil · Personal traits:** Aggressive, Organized. **Inherited:** Guardsman.
+**Neutral · Personal traits:** Aggressive, Organized. **Inherited:** Guardsman.
 
 *A road marshal makes a strip of country into a hereditary military jurisdiction.*
 
@@ -177,11 +177,11 @@ Nadira settled a blood feud by tracing two rival wells to the same underground s
 
 ![Qasir al-Nahar leaderhead portrait](portraits/qasir_of_noon.png)
 
-**Evil · Personal traits:** Spiritual, Aggressive.
+**Neutral · Personal traits:** Spiritual, Aggressive.
 
-*A splinter interpretation of the light's demand for truth abolishes privacy and treats concealment as guilt.*
+*A splinter interpretation of the light's demand for truth abolishes privacy and treats concealment as a question to be answered.*
 
-Qasir exposed a caravan master's hidden slave pens by tearing the roofs from his warehouses at noon. Applause convinced the young preacher that every locked door concealed an equal wickedness, and his followers began dismantling shutters, veils, and the screens around family courtyards. The cities under his judgment glow with polished mirrors while informers decide whose private grief must be dragged into the sun, a tyranny he still calls service to Lugus.
+Qasir exposed a caravan master's hidden slave pens by tearing the roofs from his warehouses at noon. Applause convinced the young preacher that every locked door concealed an equal wickedness, and his followers began dismantling shutters, veils, and the screens around family courtyards. The cities under his judgment glow with polished mirrors where hidden crimes and private griefs are dragged into the sun alike, a severity he calls service to Lugus.
 
 **Portrait direction:** Radiant intrusive certainty. Palette: Brilliant gold dominant, stark white secondary, bronze edging. Activity: Tilts a hinged sun mirror to direct a sharp beam into a dark doorway, free hand commanding its occupants to emerge
 
@@ -249,7 +249,7 @@ Safiya grew up among glassblowers who tinted every window in the oasis except th
 
 ![Kamal Red Meridian leaderhead portrait](portraits/kamal_red_meridian.png)
 
-**Evil · Personal traits:** Aggressive, Organized.
+**Neutral · Personal traits:** Aggressive, Organized.
 
 *A commander makes the safe hours at a mountain pass into privileges to be earned.*
 
@@ -302,11 +302,11 @@ Isrene discovered that the stones of a ruined shrine repeated fragments of conve
 
 ![Damar of the Nine Bells leaderhead portrait](portraits/damar_ninebells.png)
 
-**Evil · Personal traits:** Organized, Defender.
+**Neutral · Personal traits:** Organized, Defender.
 
-*The Elohim duty of guardianship hardens into occupation and the denial of a protected community's consent.*
+*The Elohim duty of guardianship hardens into a watch that a protected community has no power to dismiss.*
 
-Damar saved nine villages by erecting warning towers around a sacred valley and drilling every inhabitant in its defense. When the raiders were gone, he declared that the threat would return if anyone were allowed to leave, and placed each village under a monk-governor answerable only to him. His wardens now seize neighboring settlements for their protection, and the nine bells ring to announce both approaching enemies and the capture of escaping families.
+Damar saved nine villages by erecting warning towers around a sacred valley and drilling every inhabitant in its defense. When the raiders were gone, he declared that the threat would return if anyone were allowed to leave, and placed each village under a monk-governor answerable only to him. His wardens now extend their towers over neighboring settlements whether asked or not, and the nine bells ring to announce both approaching enemies and the return of families who stray beyond them.
 
 **Portrait direction:** Watchful coercive stillness. Palette: Ink navy dominant, aged bronze secondary, small black leather accents. Activity: Pulls down a warning bell rope with one fist while his other hand gives a rigid stop signal across the gate
 
@@ -386,7 +386,7 @@ Imena cleared a ruined chapterhouse and found that the dirt beneath its floor wh
 
 ![Levan Pledge leaderhead portrait](portraits/levan_pledge.png)
 
-**Evil · Personal traits:** Financial, Spiritual.
+**Neutral · Personal traits:** Financial, Spiritual.
 
 *A keeper of holy hospitality converts guests' gratitude into debts they can never repay.*
 
@@ -439,11 +439,11 @@ Othra counted the hammers, sandals, and grain sacks abandoned after a Mercurian 
 
 ![Talvek leaderhead portrait](portraits/talvek_unforgiven.png)
 
-**Evil · Personal traits:** Aggressive, Charismatic.
+**Neutral · Personal traits:** Aggressive, Charismatic.
 
-*An anti-demon Mercurian splinter mistakes uncompromising purpose for righteousness and enslaves the people it claims to defend.*
+*An anti-demon Mercurian splinter mistakes uncompromising purpose for righteousness and conscripts the people it claims to defend.*
 
-Talvek returned from Hell with his wings burned and the names of his lost company carved into his armor. He decided that mortal hesitation had prolonged the war, and began binding rescued settlements to compulsory service until the last demon in existence was dead. His followers still fight the Infernals with terrible courage, but execute deserters and take children as guarantees of obedience, making a prison of the liberation they proclaim.
+Talvek returned from Hell with his wings burned and the names of his lost company carved into his armor. He decided that mortal hesitation had prolonged the war, and began binding rescued settlements to compulsory service until the last demon in existence was dead. His followers still fight the Infernals with terrible courage, but hang deserters and hold every rescued village to its quota of recruits, a liberation that does not end when the fighting does.
 
 **Portrait direction:** Charismatic merciless conviction. Palette: Obsidian black dominant, scarlet red secondary, cold silver edging. Activity: Tightens a campaign oath chain across the map-table with a ratcheting gauntlet while raising the other hand to demand an oath
 
@@ -499,7 +499,7 @@ Meriel watched the first winged regiment crush a water tower when its soldiers l
 
 ![Caradriel Pale Fire leaderhead portrait](portraits/caradriel_pale_fire.png)
 
-**Evil · Personal traits:** Aggressive, Magic Resistant.
+**Neutral · Personal traits:** Aggressive, Magic Resistant.
 
 *An angel presses an unyielding war of prevention against any city judged capable of harboring demons.*
 
@@ -576,11 +576,11 @@ Kelna learned to diagnose failing enchantments by listening to the uneven hum in
 
 ![Vorra Rentshaper leaderhead portrait](portraits/vorra_rentshaper.png)
 
-**Evil · Personal traits:** Financial, Organized.
+**Neutral · Personal traits:** Financial, Organized.
 
-*A dark Luchuirp offshoot turns the obedient servant economy into permanent dependence on its owners.*
+*A Luchuirp offshoot turns the obedient servant economy into lasting dependence on its lenders.*
 
-Vorra rescued several indebted workshops by buying their golems and leasing the same servants back to them. Each repair introduced another proprietary enchantment, until an entire district could neither harvest nor build without her permission. When its council challenged her fees, she recalled every leased construct on the morning the flood defenses needed reinforcement. The council submitted, and her creditor cities now call submission to her contracts the price of civilization.
+Vorra rescued several indebted workshops by buying their golems and leasing the same servants back to them. Each repair introduced another proprietary enchantment, until an entire district could neither harvest nor build without her permission. When its council challenged her fees, she offered to recall every leased construct and let it reinforce the flood defenses by hand. The council renewed, and her client cities now call her contracts the price of civilization.
 
 **Portrait direction:** Polished coercive assurance. Palette: Wine red with ivory accents. Activity: Turning a command key inside a golem's shoulder lock while her other palm pins a rental contract to the desk.
 
@@ -624,7 +624,7 @@ Dessa automated a bell so workers below ground would hear the opening of the mee
 
 ![Nori Bondhammer leaderhead portrait](portraits/nori_bondhammer.png)
 
-**Evil · Personal traits:** Financial, Arcane.
+**Neutral · Personal traits:** Financial, Arcane.
 
 *A golem designer turns maintenance contracts into the power to stop a whole city.*
 
@@ -701,11 +701,11 @@ Ilyra organized the harpy messengers who nested above a city that taxed their de
 
 ![Avar Senn leaderhead portrait](portraits/avar_senn.png)
 
-**Evil · Personal traits:** Financial, Organized. **Inherited:** Sprawling.
+**Neutral · Personal traits:** Financial, Organized. **Inherited:** Sprawling.
 
-*An authoritarian merchant preserves the multiracial metropolis while making its promise of asylum a source of exploitation.*
+*A merchant preserves the multiracial metropolis while making its promise of asylum a source of profit.*
 
-Avar rose by supplying food and housing to newcomers whom the royal administration had welcomed faster than it could accommodate. He converted those emergency advances into hereditary obligations, then purchased offices that let him decide when a family had repaid them. His city admits almost anyone and displays every people of Erebus in its splendid public processions. Behind that hospitality, his magistrates make leaving one's assigned work far harder than entering the gates.
+Avar rose by supplying food and housing to newcomers whom the royal administration had welcomed faster than it could accommodate. He converted those emergency advances into long contracts of service, then purchased offices that let him decide when a family had repaid them. His city admits almost anyone and displays every people of Erebus in its splendid public processions. Behind that hospitality, his magistrates make leaving one's assigned work far harder than entering the gates.
 
 **Portrait direction:** Silken predatory hospitality. Palette: Warm ivory with imperial purple accents. Activity: Sliding a citizenship token toward the viewer while crossing out an exit clause in its contract with his other hand.
 
@@ -749,9 +749,9 @@ A centaur's hooves once cracked the stairs to the market and Rython was charged 
 
 ![Isil Coilbank leaderhead portrait](portraits/isil_coilbank.png)
 
-**Evil · Personal traits:** Organized, Arcane. **Inherited:** Sprawling.
+**Neutral · Personal traits:** Organized, Arcane. **Inherited:** Sprawling.
 
-*A deed broker coerces families whose homes stand on land built up by several peoples at once.*
+*A deed broker profits from families whose homes stand on land built up by several peoples at once.*
 
 Isil amassed deeds to the old riverbed while its lamia houses were still built on floats. When the river shifted inland, she charged the residents for the reclaimed foundations under their homes and took their boats as collateral. Her tenants are free to move, provided they leave their furnishings and a child who knows the ledger.
 
@@ -1665,11 +1665,11 @@ Meri built a room to exhibit dangerous artifacts that would no longer obey their
 
 ![Harka Reedtooth leaderhead portrait](portraits/harka_reedtooth.png)
 
-**Good · Personal traits:** Expansive, Defender.
+**Neutral · Personal traits:** Expansive, Defender.
 
 *A rival interpretation of pack survival that makes reciprocal care a form of strength without abandoning Doviello independence.*
 
-Harka lost a foot while bringing a wounded hunting party home, and her chief ordered her left beside the trail on their next migration. The hunters she had saved returned with a sled, then stayed when she challenged the chief and won from her knees. Her pack now judges a leader by how many people survive the journey, giving injured hunters work as trackers, toolmakers, and teachers instead of abandoning them. She meets demands for submission with the same ferocity as any beastman, but her growing winter camps offer fugitives a place where survival need not require another person's death.
+Harka lost a foot while bringing a wounded hunting party home, and her chief ordered her left beside the trail on their next migration. The hunters she had saved returned with a sled, then stayed when she challenged the chief and won from her knees. Her pack now judges a leader by how many people survive the journey, giving injured hunters work as trackers, toolmakers, and teachers instead of abandoning them. She meets demands for submission with the same ferocity as any beastman, and her growing winter camps take in fugitives on the same terms: every pair of hands is counted and none is wasted.
 
 **Portrait direction:** Fierce sheltering patience. Palette: Forest green with rust red and pale birch accents. Activity: Cinch-tightening a rescue sled harness knot with both hands, bracing the strap across one forearm.
 
@@ -1725,7 +1725,7 @@ Nask escaped an Illian labour column after an overseer's binding spell failed on
 
 ![Runa Boldhide leaderhead portrait](portraits/runa_boldhide.png)
 
-**Good · Personal traits:** Expansive, Industrious.
+**Neutral · Personal traits:** Expansive, Industrious.
 
 *Tanners and hide workers defend a permanent winter camp from raiders within their own people.*
 
@@ -1761,7 +1761,7 @@ Bekka claimed she could tell which family a wolf had eaten by the shape of its t
 
 ![Jerek Barkshield leaderhead portrait](portraits/jerek_barkshield.png)
 
-**Good · Personal traits:** Charismatic, Magic Resistant.
+**Neutral · Personal traits:** Charismatic, Magic Resistant.
 
 *A river clan grants winter residence to strangers who teach or practice a craft.*
 
@@ -1790,11 +1790,11 @@ Unna kept a stick for every night two kin groups managed to share a shelter with
 
 ![Perpentach, the Gentle Witness leaderhead portrait](portraits/perpentach_gentle_witness.png)
 
-**Good · Personal traits:** Spiritual, Tolerant.
+**Neutral · Personal traits:** Spiritual, Tolerant.
 
 *Perpentach facet: a healer among his inner voices commands a breakaway court that treats his other personalities as usurpers of the same body.*
 
-When a long-silenced healer among Perpentach's inner voices seized the king's attention, he ordered every carnival slave freed and forbade his court to enter an unwilling mind. At the next feast another voice revoked the decree, but three provincial circuses kept the first command and proclaimed the Gentle Witness their rightful sovereign. They shelter the king whenever his gentler facet prevails and dispatch his own signed letters to recruit soldiers against the courts obeying his other selves. The Witness calls those selves usurpers, even as they answer through his own mouth, and his followers fight to preserve a mercy their king may no longer remember promising.
+When a long-silenced healer among Perpentach's inner voices seized the king's attention, he ordered an end to the carnival's killing acts and forbade his court to enter an unwilling mind. At the next feast another voice revoked the decree, but three provincial circuses kept the first command and proclaimed the Gentle Witness their rightful sovereign. They shelter the king whenever his gentler facet prevails and dispatch his own signed letters to recruit soldiers against the courts obeying his other selves. The Witness calls those selves usurpers, even as they answer through his own mouth, and his followers fight to preserve a restraint their king may no longer remember promising.
 
 **Portrait direction:** Attentive fragile mercy. Palette: Sky blue with warm cream and faded gold accents. Activity: Stitching a torn performer glove with a fine needle, his other hand gently spreading its damaged fingers.
 
@@ -1850,7 +1850,7 @@ Velisse was a minor demon repeatedly summoned to impersonate absent stars in a r
 
 ![Pella Crackmirror leaderhead portrait](portraits/pella_crackmirror.png)
 
-**Good · Personal traits:** Charismatic, Ingenuity.
+**Neutral · Personal traits:** Charismatic, Ingenuity.
 
 *Mask menders build a refuge for performers who need time away from their assigned roles.*
 
@@ -1927,11 +1927,11 @@ Ugrava was the goblin who kept Braduk's communal ovens working when an ambitious
 
 ![Vorga Coalwidow leaderhead portrait](portraits/vorga_coalwidow.png)
 
-**Good · Personal traits:** Barbarian, Spiritual.
+**Neutral · Personal traits:** Barbarian, Spiritual.
 
-*An orc religious dissident who remembers the justice and mercy associated with Bhall before her fall, without pretending that Bhall herself has been redeemed.*
+*An orc religious dissident who remembers the older hearth rites associated with Bhall before her fall, without pretending that Bhall herself has been redeemed.*
 
-After her husband was offered to Bhall for a defeat his chief had caused, Vorga began gathering the old hearth prayers that named fire a shelter against the cold. She teaches that the goddess fell but that her people need not keep falling with her, and refuses the living sacrifices demanded by Braduk's priesthood. Refugee families carry embers from her hearth between settlements, giving her a following no single warlord can surround. Her clan shelters outsiders beside orcs, while its warriors still honour the truces that keep the scattered barbarian tribes from destroying one another.
+After her husband was offered to Bhall for a defeat his chief had caused, Vorga began gathering the old hearth prayers that named fire a shelter against the cold. She teaches that the goddess fell but that her people need not keep falling with her, and refuses to give her own kin to the living sacrifices demanded by Braduk's priesthood. Refugee families carry embers from her hearth between settlements, giving her a following no single warlord can surround. Her clan takes in any outsider who can tend a fire, while its warriors still honour the truces that keep the scattered barbarian tribes from destroying one another.
 
 **Portrait direction:** Fierce Hearth Mercy. Palette: Ivory with ember-red bands and dark iron accents. Activity: Banking a small hearth flame by sprinkling a controlled scoop of ash from her right hand while her left hand slides the brazier vent closed.
 
@@ -1975,7 +1975,7 @@ Ishka learned that a chieftain could lose an argument to a song his warriors had
 
 ![Gromka Potlid leaderhead portrait](portraits/gromka_potlid.png)
 
-**Good · Personal traits:** Barbarian, Expansive.
+**Neutral · Personal traits:** Barbarian, Expansive.
 
 *Orc cooks turn scattered war camps into winter settlements with a claim on the common larder.*
 
@@ -2023,7 +2023,7 @@ Rask grew a shining fungus in the boot he had been issued because its mate had n
 
 ![Mogra Tempreed leaderhead portrait](portraits/mogra_tempreed.png)
 
-**Good · Personal traits:** Barbarian, Ingenuity.
+**Neutral · Personal traits:** Barbarian, Ingenuity.
 
 *Marsh families use cheap armor to defend themselves without pledging half their harvest to a chief.*
 
@@ -2040,11 +2040,11 @@ Mogra brought a reed shield to a challenge after no smith would sell iron to her
 
 ![Neryss Thornveil leaderhead portrait](portraits/neryss_thornveil.png)
 
-**Good · Personal traits:** Defender, Charismatic. **Inherited:** Sinister.
+**Neutral · Personal traits:** Defender, Charismatic. **Inherited:** Sinister.
 
-*A protective Unseelie intelligence service that keeps its shadowcraft while rejecting Faeryl's dynastic vendetta.*
+*An independent Unseelie intelligence service that keeps its shadowcraft while rejecting Faeryl's dynastic vendetta.*
 
-Neryss spent a century selecting the roads on which the queen's inconvenient relatives would disappear. Ordered to murder an entire winter household for sheltering a Seelie child, she instead scattered the family through her own network of false identities. The agents who helped her now protect isolated woodland settlements, using the same ambushes and misdirection once employed to keep those settlements afraid. She offers neither court the names of her dependants, and insists that a hidden blade can stand between a hunter and a victim.
+Neryss spent a century selecting the roads on which the queen's inconvenient relatives would disappear. Ordered to murder an entire winter household for sheltering a Seelie child, she instead scattered the family through her own network of false identities. The agents who helped her now protect isolated woodland settlements, using the same ambushes and misdirection once employed to keep those settlements afraid. She offers neither court the names of her dependants, and insists that a hidden blade is worth more kept than spent.
 
 **Portrait direction:** Mercy Kept Secret. Palette: Slate blue with pearl-grey and deep plum accents. Activity: Carefully lifting a letter seal with a thin thorn pick in her right hand while left fingertips pin the folded message against a small writing board.
 
@@ -2100,7 +2100,7 @@ Ossren inherited a ferry whose passengers were forbidden to admit where they had
 
 ![Mirel Widowfern leaderhead portrait](portraits/mirel_widowfern.png)
 
-**Good · Personal traits:** Defender, Organized. **Inherited:** Sinister.
+**Neutral · Personal traits:** Defender, Organized. **Inherited:** Sinister.
 
 *A dark elf establishes safe-conduct for people who abandon disputes before killing completes them.*
 
@@ -2148,7 +2148,7 @@ Nessar planted the winter gardens of houses that were fighting about whose road 
 
 ![Valira Thinveil leaderhead portrait](portraits/valira_thinveil.png)
 
-**Good · Personal traits:** Creative, Magic Resistant. **Inherited:** Sinister.
+**Neutral · Personal traits:** Creative, Magic Resistant. **Inherited:** Sinister.
 
 *A disguise artist gives escaped servants names that survive close inquiry.*
 
@@ -2165,11 +2165,11 @@ Valira dressed a runner in an expensive disguise that came apart at the first da
 
 ![Nemara Vey leaderhead portrait](portraits/nemara_vey.png)
 
-**Good · Personal traits:** Defender, Philosophical.
+**Neutral · Personal traits:** Defender, Philosophical.
 
-*A vampire who accepts eventual death rather than continuing to consume souls; the Calabim's immortality becomes a moral deadline.*
+*A vampire who accepts eventual death rather than continuing to consume souls; the Calabim's immortality becomes a deadline.*
 
-Nemara heard the last words of a household servant whose soul she had meant to consume, and found herself remembering every other voice she had silenced. She swore never to feast again, knowing that blood alone could not purchase the stolen years on which a Calabim vampire depends. Her estate has become a refuge guarded by mortal soldiers and a few immortals willing to spend their remaining strength without replenishing it. She is training a human successor while rival broods gather at the borders, determined that her last inheritance will be a people who can survive her.
+Nemara heard the last words of a household servant whose soul she had meant to consume, and found she could no longer stop hearing every other voice she had silenced. She swore never to feast again, knowing that blood alone could not purchase the stolen years on which a Calabim vampire depends. Her estate has become a refuge guarded by mortal soldiers and a few immortals willing to spend their remaining strength without replenishing it. She is training a human successor while rival broods gather at the borders, determined that her last inheritance will be a people who can survive her.
 
 **Portrait direction:** The Cost Accepted. Palette: Warm white with muted burgundy and aged silver accents. Activity: Cutting the cord of a jeweled feeding collar with silver shears in her right hand while her left hand holds the collar open.
 
@@ -2225,7 +2225,7 @@ Raska was a bloodpet captain denied the Dark Gift after three decades of keeping
 
 ![Vesna Quayward leaderhead portrait](portraits/vesna_quayward.png)
 
-**Good · Personal traits:** Financial, Magic Resistant.
+**Neutral · Personal traits:** Financial, Magic Resistant.
 
 *Mortal merchants buy a guarded right of passage for households leaving the feasting estates.*
 
@@ -2261,7 +2261,7 @@ Lysana received only the silverware when her aunt's estates changed hands. She b
 
 ![Milos Grainsty leaderhead portrait](portraits/milos_grainsty.png)
 
-**Good · Personal traits:** Expansive, Defender.
+**Neutral · Personal traits:** Expansive, Defender.
 
 *Farm families keep an underground store reserve that their vampire landlords cannot seize in daylight.*
 
@@ -2302,11 +2302,11 @@ Serev entered a planar gate expecting the paradise his tutor had promised and re
 
 ![Veyra Ash-Witness leaderhead portrait](portraits/veyra_ash_witness.png)
 
-**Good · Personal traits:** Magic Resistant, Organized. **Inherited:** Sundered.
+**Neutral · Personal traits:** Magic Resistant, Organized. **Inherited:** Sundered.
 
 *An explicitly dissident Sheaim faction uses its knowledge of destructive magic to document its victims and stop the next ritual.*
 
-Veyra was the clerk ordered to certify that a vanished quarter of Galveholm had never contained any residents. Instead she carried its surviving household rolls into the streets, where the names drew relatives, deserters, and frightened apprentices to her side. Their breakaway wards use confiscated ritual diagrams to identify sacrifices and evacuate the intended victims before the gates open. Her faction has not escaped the Sheaim's dangerous magical inheritance, and its claim to goodness rests on accepting that danger themselves instead of charging it to strangers.
+Veyra was the clerk ordered to certify that a vanished quarter of Galveholm had never contained any residents. Instead she carried its surviving household rolls into the streets, where the names drew relatives, deserters, and frightened apprentices to her side. Their breakaway wards use confiscated ritual diagrams to identify sacrifices and evacuate the intended victims before the gates open. Her faction has not escaped the Sheaim's dangerous magical inheritance, and its claim to be different rests on accepting that danger themselves instead of charging it to strangers.
 
 **Portrait direction:** exhausted forensic resolve. Palette: mustard ochre with ink-black and parchment accents. Activity: Pressing a small household-name stamp into a fresh wax witness tablet while steadying its wooden tray
 
@@ -2362,7 +2362,7 @@ Temran's first door opened into a room his workshop had never built. He sent a m
 
 ![Ivaya Fadebell leaderhead portrait](portraits/ivaya_fadebell.png)
 
-**Good · Personal traits:** Magic Resistant, Defender. **Inherited:** Sundered.
+**Neutral · Personal traits:** Magic Resistant, Defender. **Inherited:** Sundered.
 
 *Families at the edge of summoning sites set their own terms for evacuation.*
 
@@ -2398,7 +2398,7 @@ Neriss charged twice for a first step into the beyond and nothing for the second
 
 ![Hesia Ashcomber leaderhead portrait](portraits/hesia_ashcomber.png)
 
-**Good · Personal traits:** Creative, Industrious. **Inherited:** Sundered.
+**Neutral · Personal traits:** Creative, Industrious. **Inherited:** Sundered.
 
 *Growers turn soil warped by a destroyed ritual into a source of food and a reason to stay.*
 
@@ -2540,7 +2540,7 @@ Zurn once let a burning manor cool because three rival devils were still debatin
 
 ![Tovra Hearthmeter leaderhead portrait](portraits/tovra_hearthmeter.png)
 
-**Good · Personal traits:** Agnostic, Organized, Expansive.
+**Neutral · Personal traits:** Agnostic, Organized, Expansive.
 
 *Illian stewardship of life in winter rather than Auric's restoration of worldwide dominion; Agnostic remains a structural personal trait.*
 
@@ -2588,11 +2588,11 @@ Ysrel learned to guide caravans across frozen rivers after a southern toll lord 
 
 ![Naevra Snow-Listener leaderhead portrait](portraits/naevra_snow_listener.png)
 
-**Good · Personal traits:** Agnostic, Defender, Magic Resistant.
+**Neutral · Personal traits:** Agnostic, Defender, Magic Resistant.
 
 *An Illian defender whose reverence for winter means recognizing its dangers and sheltering outsiders, rather than treating cold as a right to rule.*
 
-Naevra was guarding a mountain shrine when an avalanche buried an invading company and her own relief patrol beneath the same snow. She broke the shrine's ceremonial doors into stretchers and brought survivors from both sides down the mountain. The watch houses that follow her preserve Illian winter customs but keep their shelters open to anyone who surrenders a weapon at the threshold. She refuses Auric's demand to close the passes to unbelievers, arguing that knowing the cold creates a duty to those who do not.
+Naevra was guarding a mountain shrine when an avalanche buried an invading company and her own relief patrol beneath the same snow. She broke the shrine's ceremonial doors into stretchers and brought survivors from both sides down the mountain. The watch houses that follow her preserve Illian winter customs but keep their shelters open to anyone who surrenders a weapon at the threshold. She refuses Auric's demand to close the passes to unbelievers, arguing that a closed pass starves the watch houses as surely as the strangers.
 
 **Portrait direction:** alert disciplined compassion. Palette: golden ochre with blue-gray and snow-white accents. Activity: Fastening a rescue splint around a padded demonstration arm with both hands pulling opposite straps
 
@@ -2600,7 +2600,7 @@ Naevra was guarding a mountain shrine when an avalanche buried an invading compa
 
 ![Rhuna Snowcellar leaderhead portrait](portraits/rhuna_snowcellar.png)
 
-**Good · Personal traits:** Agnostic, Industrious, Defender.
+**Neutral · Personal traits:** Agnostic, Industrious, Defender.
 
 *Granary crews defend high villages by pooling the work of preserving food through the longest winters.*
 
@@ -2636,7 +2636,7 @@ Erva counted the households on one slope by the smoke above their roofs and foun
 
 ![Sieda Icequill leaderhead portrait](portraits/sieda_icequill.png)
 
-**Good · Personal traits:** Agnostic, Creative, Charismatic.
+**Neutral · Personal traits:** Agnostic, Creative, Charismatic.
 
 *A song keeper helps returning families recover the place names buried under official winter markers.*
 

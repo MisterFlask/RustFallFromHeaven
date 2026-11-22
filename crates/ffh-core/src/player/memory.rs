@@ -6,11 +6,9 @@
 //! This game's rules (docs/PORTING.md, "Changes from FFH2"; the owner's decisions of 2026-11-18):
 //! - The decay is a rule: [`Game::player_do_memory_decay`] runs in every player's turn (C++ ran
 //!   it in `CvPlayerAI::AI_doCounter`, the AI's half of the turn).
-//! - [`Game::player_add_memory`] records a wrong of this game's own (`MEMORY_TOOK_CITY`,
-//!   `MEMORY_SPLIT_HOUSE`, `MEMORY_COURTED_HOUSE`). An act against a House angers the House and its liege
-//!   (docs/PERSONS.md, "The second build"): the liege remembers it too. The ported increments
-//!   of FFH2's memories stay where they were (a declared war is remembered by every player of the
-//!   side declared on, a House pulled in included, by `team_declare_war` itself).
+//! - [`Game::player_add_memory`] records a wrong of this game's own (`MEMORY_TOOK_CITY`). The
+//!   ported increments of FFH2's memories stay where they were (a declared war is remembered by
+//!   every player of the side declared on, by `team_declare_war` itself).
 
 use crate::game::Game;
 use crate::ids::*;
@@ -18,20 +16,12 @@ use ffh_data::*;
 
 impl Game {
     /// Player `p` remembers `mem` of player `of` (+1 to `ai_memory_count[of][mem]`). Nothing when
-    /// either is the barbarians, `p` is `of`, or they are of the same team. When `p` is a House,
-    /// its liege remembers it as well (an act against a House angers the House and its liege),
-    /// unless the liege is `of` or of its team.
+    /// either is the barbarians, `p` is `of`, or they are of the same team.
     pub fn player_add_memory(&mut self, p: PlayerId, of: PlayerId, mem: MemoryType) {
         if !self.memory_counts(p, of) {
             return;
         }
         self.players[p].ai_memory_count[of][mem] += 1;
-        if let Some(h) = self.player_house(p) {
-            let liege = self.houses[h].owner;
-            if liege != p && self.memory_counts(liege, of) {
-                self.players[liege].ai_memory_count[of][mem] += 1;
-            }
-        }
     }
 
     /// Whether `p` can remember an act of `of` ([`Game::player_add_memory`]).

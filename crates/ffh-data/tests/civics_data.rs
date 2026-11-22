@@ -158,11 +158,14 @@ fn civics_government() {
     assert_eq!(despotism.tech_prereq, None);
     assert_eq!(despotism.ai_weight, -1000);
     assert_eq!(despotism.num_cities_maintenance_modifier, 40);
-    assert!(despotism.direct_rule);
+    assert!(!despotism.governed);
     assert_eq!(despotism.war_weariness_modifier, -50);
     assert_eq!(despotism.we_love_the_king, "TXT_KEY_CIVIC_WE_LOVE_DESPOT");
 
     let aristocracy = civic("CIVIC_ARISTOCRACY");
+    // This game's governors (docs/GOVERNORS.md): City States and Aristocracy govern every city.
+    let governed: Vec<&str> = d().civics.iter().filter(|c| c.governed).map(|c| c.base.type_.as_str()).collect();
+    assert_eq!(governed, ["CIVIC_CITY_STATES", "CIVIC_ARISTOCRACY"]);
     assert_eq!(aristocracy.tech_prereq, Some(tech("TECH_CODE_OF_LAWS")));
     assert_eq!(aristocracy.distance_maintenance_modifier, -40);
     let farm = d().t::<ImprovementType>("IMPROVEMENT_FARM");

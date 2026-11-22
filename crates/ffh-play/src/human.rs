@@ -51,6 +51,9 @@ pub const POLICIES: &[(&str, Policy)] = &[
     // (the rules' default unit for an army's requisition: the human picks the cities, not the unit)
     ("requisition_unit", Policy::Fixed),
     ("govern_cities", Policy::Advisor),
+    // (a city is run by hand until the human hands it over: the `govern_city` command)
+    ("choose_city_governance", Policy::Fixed),
+    ("govern_gained_city", Policy::Fixed),
     // (docs/WORKS.md: the cities' crews choose their next build as the AI's do)
     ("choose_crew_build", Policy::Advisor),
     ("choose_research", Policy::Deferred),
@@ -74,13 +77,13 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("crusade_pledge", Policy::Deferred),
     ("crusade_draft_pick", Policy::Blocking),
     ("consider_loan", Policy::Blocking),
-    // (docs/PERSONS.md, "The third build", rule 5: a House's ultimatum to its liege)
-    ("consider_ultimatum", Policy::Blocking),
     ("choose_loan_units", Policy::Advisor),
     // (the cards, docs/CARDS.md: the Spire of the Archmagi's sphere, Agares's Well's mana)
     ("choose_free_promotion", Policy::Blocking),
     ("choose_free_bonus", Policy::Blocking),
     ("choose_lair_outcome", Policy::Blocking),
+    // (docs/HOUSES.md, rule 5: the leader of a House forming)
+    ("choose_house_leader", Policy::Blocking),
     ("hook", Policy::Advisor),
     ("assign_working_plots", Policy::Advisor),
 ];
@@ -325,6 +328,20 @@ impl Controller for HumanController {
         self.advisor.govern_cities(g, p);
     }
 
+    /// This game's governors: the human hands its cities over by command (`govern_city`); the AI
+    /// chooses while it plays the human's civilization.
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        if !g.players[p].human {
+            self.advisor.choose_city_governance(g, p);
+        }
+    }
+
+    /// This game's governors: a city the human gains is run by hand (the AI's choice while it
+    /// plays the human's civilization).
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        !g.players[g.cities[c].owner].human && self.advisor.govern_gained_city(g, c)
+    }
+
     /// This game's city works (docs/WORKS.md): the crews of the human's cities choose their next
     /// build as the AI's do.
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
@@ -483,6 +500,16 @@ impl Controller for HumanController {
         self.block(g, decision::lair_outcome(g, p, u, tier, options, advice))
     }
 
+    /// Houses (docs/HOUSES.md, rule 5): the leader of a House forming, blocking; the advice is
+    /// the rules' default pick.
+    fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
+        let advice = self.suggest(g, |g| self.advisor.choose_house_leader(g, p, offer));
+        if !g.players[p].human || offer.cards.len() < 2 {
+            return advice;
+        }
+        self.block(g, decision::house_leader(g, p, offer, advice))
+    }
+
     /// The cards (docs/CARDS.md): the Spire of the Archmagi's free promotion, blocking.
     fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
         let advice = self.suggest(g, |g| self.advisor.choose_free_promotion(g, p, u, options));
@@ -552,16 +579,6 @@ impl Controller for HumanController {
         } else {
             LoanAnswer::Refuse
         }
-    }
-
-    /// A House's ultimatum to the human (docs/PERSONS.md, "The third build", rule 5): blocking
-    /// accept (0) / refuse (1, the House breaks away now).
-    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
-        if !g.players[p].human {
-            return self.advisor.consider_ultimatum(g, p, u);
-        }
-        let advice = self.suggest(g, |g| self.advisor.consider_ultimatum(g, p, u));
-        self.block(g, decision::ultimatum(g, p, u, advice)) == 0
     }
 
     /// The units of a loan the human agreed to lend: the advisor picks them.

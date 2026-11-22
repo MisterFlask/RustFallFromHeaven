@@ -25,10 +25,8 @@ import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
 import { openTroops, troopsLabel } from "./crusade.js";
 import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
-import { previewList } from "./persons_lines.js";
-import { stateMark, houseShield, openCourt, openHouse } from "./persons.js";
-import { keywordChips } from "./keywords.js";
-import { withCalc } from "./calc.js";
+import { diploHouses, previewNode } from "./houses.js";
+import { dealPreview } from "./houses_lines.js";
 
 /** The players screen. */
 export async function openDiplomacy() {
@@ -41,41 +39,27 @@ export async function openDiplomacy() {
       return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
-    const rows = byLiege(r.players.filter((p) => !p.barbarian), me()?.player)
+    const rows = r.players
+      .filter((p) => !p.barbarian)
       .map((p) => {
-        // A House (docs/PERSONS.md, "The second build", rule 13): under its liege, named by its
-        // label (`House Arne, vassal of the Bannor`; yours: `House Arne, your vassal`, so its
-        // relations do not say it again); its attitude toward you, its liege, is its state's one
-        // mark, with its loyalty parts as the tip.
-        const house = p.house;
-        const ownHouse = !!house && house.liege === me()?.player;
-        // (Your own House is always at peace with you: its relations do not say it.)
-        const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : ownHouse ? null : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us && !ownHouse ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
-        const who = house ? [houseLine(house), houseState(p)] : `${dname("CivilizationType", p.civ)} · team ${p.team}`;
-        // Its courtships (docs/PERSONS.md, "The fourth build", rule 1: a channel is in the open),
-        // a line each under its line; another's House, your courtship of it first.
-        const yours = !ownHouse && p.house_offer?.courting ? [withCalc(h("div.house-courting-row", p.house_offer.courting), p.house_offer.courting_calc)] : [];
-        const courted = [...yours, ...(house?.courted ?? []).map((c) => withCalc(h("div.house-courted", c.line), c.calc))];
-        const attitude = ownHouse && house.state
-          ? h("td", { tip: () => houseAttitudeTip(house) }, ownHouseStateMark(house))
-          : h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-");
+        const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
+        const who = `${dname("CivilizationType", p.civ)} · team ${p.team}`;
+        const attitude = h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-");
         // Your deals with them; one may be cancelled after its first turns (a peace treaty ends then).
         const deals = p.deals.map((d) => {
           const text = `${d.we_give.map(tradeItemLabel).join(", ") || "nothing"} ⇄ ${d.they_give.map(tradeItemLabel).join(", ") || "nothing"} (since turn ${d.turn})`;
           const peace = [...d.we_give, ...d.they_give].some((it) => tname("TradeableItem", it.item) === "TRADE_PEACE_TREATY");
           const action = d.cancelable
-            ? h("button.link.small", { "data-cancel-deal": d.deal, onclick: () => cancelDeal(text, d.deal).then(load) }, "Cancel")
-            : d.cancel_refusal
-              ? h("span.dim", ` ${d.cancel_refusal}`)
-              : d.cancel_in > 0
+            ? h("button.link.small", { "data-cancel-deal": d.deal, onclick: () => cancelDeal(text, d.deal, d.house_preview).then(load) }, "Cancel")
+            : d.cancel_in > 0
               ? h("span", peace ? ` (ends in ${d.cancel_in} turns)` : ` (cancel in ${d.cancel_in} turns)`)
               : null;
           return h("div", { "data-deal": d.deal }, text, " ", action);
         });
         return h(
           "tr",
-          { class: [p.alive ? "" : "dead", house ? "house-row" : ""].filter(Boolean).join(" "), "data-player": p.id, "data-house": house?.id ?? null },
-          h("td", { tip: infoTip("LeaderHeadType", p.leader, { title: p.name }) }, h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h(house ? "div.dim.house-who" : "div.dim", who), ...courted))),
+          { class: p.alive ? "" : "dead", "data-player": p.id },
+          h("td", { tip: infoTip("LeaderHeadType", p.leader, { title: p.name }) }, h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", who), diploHouses(p)))),
           h("td", relation.flatMap((x, i) => (i ? [", ", x] : [x]))),
           attitude,
           h("td", p.alignment !== null && p.alignment !== undefined ? dname("AlignmentType", p.alignment) : h("span.dim", "-"), h("div.dim", p.state_religion !== null && p.state_religion !== undefined ? dname("ReligionType", p.state_religion) : "no state religion")),
@@ -87,11 +71,7 @@ export async function openDiplomacy() {
               : p.crusade_host && p.alive
                 ? h("span.dim", { title: "A crusade's Host fights its crusade only: see the Crusades advisor" }, "crusade")
                 : h("span.dim", !p.alive ? "dead" : "no contact"),
-            ownHouse ? h("button.small", { "data-court": house.id, title: "Open the Court at this House", onclick: () => openCourt({ house: house.id }).then(load) }, "Court") : null,
-            // Another's House: its card, where you court it (the fourth build, rule 10).
-            house && !ownHouse && p.alive ? h("button.small", { "data-house-card": house.id, title: "Open the House's card", onclick: () => openHouse(house.id).then(load) }, "House") : null,
             p.can_declare_war && !p.war ? h("button.small.danger", { "data-war": p.team, onclick: () => declareWar(p).then(load) }, "Declare war") : null,
-            !p.war && p.war_refusal ? h("button.small.danger", { disabled: true, title: p.war_refusal, "data-war-refusal": p.team }, "Declare war") : null,
           ),
           deals.length ? h("td.dim", deals) : h("td"),
         );
@@ -114,73 +94,14 @@ export async function openDiplomacy() {
   return m.done;
 }
 
-/** The players in the list's order (docs/PERSONS.md, "The second build", rule 13): your Houses
- *  first, then each other player followed by its Houses (a House whose liege you have not met
- *  stands on its own). `players`: the `players` query's rows; `mine`: your player id. */
-export function byLiege(players, mine) {
-  const listed = new Set(players.map((p) => p.id));
-  const under = new Map();
-  for (const p of players) {
-    const l = p.house?.liege;
-    if (l === undefined || l === null || (l !== mine && !listed.has(l))) continue;
-    if (!under.has(l)) under.set(l, []);
-    under.get(l).push(p);
-  }
-  const out = [...(under.get(mine) ?? [])];
-  for (const p of players) {
-    const l = p.house?.liege;
-    if (l !== undefined && l !== null && (l === mine || listed.has(l))) continue;
-    out.push(p, ...(under.get(p.id) ?? []));
-  }
-  return out;
-}
-
-/** A House's line under its leader's name: its shield and `House Arne, vassal of the Bannor`
- *  (`House Arne, your vassal` for yours). */
-function houseLine(house) {
-  const yours = house.liege === me()?.player;
-  return h("span.house-of", houseShield(house.colour, 13), ` ${house.label}, ${yours ? "your vassal" : `vassal of the ${house.liege_name}`}`);
-}
-
-/** A House's state under its line in the list, where a phone sees it (docs/PERSONS.md, "UI"; the
- *  Attitude column is cut at 390 px), each part a line of its own (style.css; the separators read
- *  as text only): yours, its attitude toward you (`✖ Furious`); another's, its state toward its
- *  own liege (your courtship of it is the line under it: the fourth build). Null when the view
- *  sends no state. */
-function houseState(p) {
-  // Each part a chunk that wraps whole, after a space a line may break at (on a phone a line of its
-  // own, without the separator).
-  const chunk = (...c) => [" ", h("span.house-chunk", h("span.sep", "· "), ...c)];
-  const x = p.house;
-  if (x.liege === me()?.player) return x.state ? h("span.house-state", chunk(ownHouseStateMark(x))) : null;
-  const o = p.house_offer;
-  if (!o) return null;
-  return h("span.house-state", chunk(stateMark(o.state, o.turns)));
-}
-
-function ownHouseStateMark(house) {
-  return stateMark(house.state, house.turns, { details: () => houseAttitudeTip(house) });
-}
-
-/** The parties a war brings in for certain, by the vassal rules (docs/PERSONS.md, "The second
- *  build", rule 7; `against` and `join`: the view's labels): `At war with you as well: House
- *  Alyndra, Malakim.` and `Your Houses join: House Aldric, House Bertram.` */
+/** The parties a war brings in for certain, by the vassal rules (`against` and `join`: the
+ *  view's labels): `At war with you as well: the Svartalfar, Malakim.` and `Your vassals join: the
+ *  Bannor.` */
 export function warPartyLines(against, join) {
   const out = [];
   if (against?.length) out.push(`At war with you as well: ${against.join(", ")}.`);
-  if (join?.length) out.push(`Your Houses join: ${join.join(", ")}.`);
+  if (join?.length) out.push(`Your vassals join: ${join.join(", ")}.`);
   return out;
-}
-
-/** Your House's attitude toward you (its loyalty, docs/PERSONS.md, rule 5): its parts and total,
- *  and its ultimatum's outcome when Furious. */
-function houseAttitudeTip(x) {
-  return [
-    h("div.tip-title", `${x.label}: ${x.state} towards you`),
-    (x.parts ?? []).length ? h("div", x.parts.map((l) => h("div", l))) : h("div.dim", "Nothing for or against you."),
-    x.loyalty ? h("div.tip-hint", x.loyalty) : null,
-    x.outcome ? h("div.warn", x.outcome) : null,
-  ];
 }
 
 /** Why player `p` feels as it does about you (the `players` query's `attitude_parts`, which sum to
@@ -219,8 +140,7 @@ export function leaderHead(p, text) {
   const pl = S.players.get(p);
   const quote = h("blockquote.leader-says", text ?? "…");
   const mood = pl && pl.attitude !== null && pl.attitude !== undefined ? ` · ${dname("AttitudeType", pl.attitude)}` : "";
-  // A House: its label and liege in place of the civilization (`House Arne, vassal of the Bannor`).
-  const who = pl?.house ? [houseLine(pl.house), mood] : `${pl ? dname("CivilizationType", pl.civ) : ""}${mood}`;
+  const who = `${pl ? dname("CivilizationType", pl.civ) : ""}${mood}`;
   const el = h(
     "div.leader-head",
     { "data-player": p },
@@ -341,15 +261,15 @@ function itemTip(it, techHelp) {
 }
 
 async function declareWar(p) {
-  // Who the war brings in for certain (the vassal rules: their Houses and yours), then what is not
-  // certain (defensive pacts, which you do not see); what it costs with them (the memory of a
+  // Who the war brings in for certain (the vassal rules: their vassals and yours), then what is
+  // not certain (defensive pacts, which you do not see); what it costs with them (the memory of a
   // declared war, which fades: `They remember it: attitude toward you -1 (fades).`, and the
-  // Houses that remember it too); Houses (docs/PERSONS.md, "UI", part I): what the war
-  // does to the Houses, under the question (nothing when nothing).
-  const pv = previewList(p.war_preview);
+  // vassals that remember it too).
   const parties = warPartyLines(p.war_against, p.war_join).map((t) => h("p.war-parties", t));
   const memory = p.war_memory ? h("p.caution.war-memory", p.war_memory) : null;
-  const body = [h("p", `Declare war on ${teamName(p.team)}?`), ...parties, h("p", "Their defensive pact partners may join them."), memory, pv].filter(Boolean);
+  // This game's Houses (docs/HOUSES.md, rule 12): the Houses whose state the war would change.
+  const houses = previewNode(p.war_house_preview, { title: "Your Houses:" });
+  const body = [h("p", `Declare war on ${teamName(p.team)}?`), ...parties, h("p", "Their defensive pact partners may join them."), memory, houses].filter(Boolean);
   const v = await ask("Declare war?", body, [
     { label: "Declare war", value: true, primary: true, danger: true },
     { label: "Cancel", value: null },
@@ -358,8 +278,10 @@ async function declareWar(p) {
 }
 
 /** Cancels a standing deal (`cancel_deal`), after asking. */
-async function cancelDeal(text, deal) {
-  const v = await ask("Cancel deal?", `${text}. Cancelling ends every item of the deal now.`, [
+async function cancelDeal(text, deal, housePreview = null) {
+  // This game's Houses (docs/HOUSES.md, rule 12): ending its open borders or pact.
+  const houses = previewNode(housePreview, { title: "Your Houses:" });
+  const v = await ask("Cancel deal?", [`${text}. Cancelling ends every item of the deal now.`, houses].filter(Boolean), [
     { label: "Cancel deal", value: true, primary: true },
     { label: "Keep", value: null },
   ]);
@@ -457,8 +379,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     let requested = 0;
     for (const it of t.we_give) if (deal.give.has(keyOf(it))) offered += points(it, deal.give.get(keyOf(it)).data);
     for (const it of t.they_give) if (deal.get.has(keyOf(it))) requested -= points(it, deal.get.get(keyOf(it)).data);
-    // Only your side: a gift; only theirs: a demand (the trade query's `tribute`); else a trade. (A
-    // House takes gifts only, an ordinary gift: docs/PERSONS.md, "The fourth build", rule 3.)
+    // Only your side: a gift; only theirs: a demand (the trade query's `tribute`); else a trade.
     const mode = deal.troops ? "trade" : !get.length ? "gift" : !give.length ? "demand" : "trade";
     const tr = t.tribute;
     const lines =
@@ -467,6 +388,10 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
         : mode === "demand"
           ? [h("div", `This would ask for: ${requested}.`)]
           : [h("div", `Total offered: ${offered}`), h("div", `Total requested: ${requested}`)];
+    // This game's Houses (docs/HOUSES.md, rule 12): what the deal's peace, open borders or pact
+    // would do to your Houses.
+    const houseLines = dealPreview(t.house_preview, [...give, ...get].map((it) => tname("TradeableItem", it.item)));
+    if (houseLines.length) lines.push(h("div.house-preview", h("div.house-preview-title", "Your Houses:"), houseLines.map((l) => h("div.house-preview-line", l))));
     summary.dataset.mode = mode;
     summary.replaceChildren(...lines);
     summary.hidden = false;
@@ -490,40 +415,6 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       summary.replaceChildren(...[h("div", `Maximum possible value extorted: ${most}.`), ...lines, answer, r.accept ? h("div", effect) : reason].filter(Boolean));
     } else summary.replaceChildren(...[...lines, answer, reason].filter(Boolean));
   };
-  // Your own House (docs/PERSONS.md, rules 4 and 9): no gift; it pays you by tribute (the rules'
-  // line), its attitude toward you, and the Court.
-  const ownHouseBody = () => {
-    const x = S.players.get(withPlayer)?.house;
-    return h(
-      "div.own-house",
-      h("p", t.house.line ?? ""),
-      x?.state ? h("p", "Attitude: ", stateMark(x.state, x.turns)) : null,
-      x?.outcome ? h("p.warn", x.outcome) : null,
-      h("p", h("button.small", { "data-court": t.house.id, onclick: () => (m.close(null), openCourt({ house: t.house.id })) }, "Open the Court")),
-    );
-  };
-  // A House's other trades are its liege's: `Trades through the Bannor.`, with the liege's trade
-  // screen a tap away when you can trade with it.
-  // A House of another realm (docs/PERSONS.md, "The fourth build", rules 3 and 10), above the
-  // items: your courtship of it (`Your courtship of House Aldric: favour 80 of 188, ...`, or `You
-  // do not court House Aldric.`) and its requirement against its leader's attitude toward you
-  // (what a gift that raises the attitude brings), with its card a tap away.
-  const courting = () =>
-    t.house && !t.house.own
-      ? h(
-          "div.house-courting-block",
-          h("p.house-courting", { "data-courts": t.house.courts ? "1" : "0" }, withCalc(h("span.house-courting-line", t.house.courting), t.house.courting_calc), " ", h("button.link.small", { "data-house-card": t.house.id, onclick: () => openHouse(t.house.id) }, "House card")),
-          withCalc(h("p.house-requirement", t.house.requirement), t.house.requirement_calc),
-        )
-      : null;
-  const tradesThrough = () =>
-    t.house?.trades_through
-      ? h(
-          "p.dim.trades-through",
-          t.house.trades_through,
-          t.house.liege_contact ? [" ", h("button.link.small", { "data-trade": t.house.liege, onclick: () => openTrade(t.house.liege) }, `Trade with the ${t.house.liege_name}…`)] : null,
-        )
-      : null;
   const draw = () => {
     const side = (list, mapKey, other, title, none = "Nothing.") =>
       h(
@@ -533,8 +424,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
           ? list.map((it) => {
               const k = keyOf(it);
               const on = deal[mapKey].has(k);
-              // Refused by its side, or (an item on both sides) by the other side; a House's item
-              // by the rules' reason (`House Arne is Pleased with the Bannor.`).
+              // Refused by its side, or (an item on both sides) by the other side.
               const refusal = tradeRefusal(it, other);
               const denied = !!refusal || !!it.refusal;
               const why = it.refusal ? it.refusal : refusal ? `${refusal.twin ? "the other side refuses: " : ""}${dname("DenialType", refusal.denial)}` : "";
@@ -621,26 +511,13 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
         denied ? h("span.dim", ` (${way.why_not})`) : null,
       );
     };
-    if (t.house?.own) {
-      m.setBody(leader.el, ownHouseBody(), status);
-      m.setButtons([{ label: "Close", value: null }]);
-      return;
-    }
-    // At war with a House: a gift makes no peace (docs/PERSONS.md, "The fourth build", rule 3).
-    const atWar = t.house
-      ? h("p.warn", `You are at war. A gift to ${t.house.label} makes no peace.`)
-      : h("p.warn", { title: "A deal makes peace, so it must hold the peace treaty (or a capitulation)." }, "You are at war.");
+    const atWar = h("p.warn", { title: "A deal makes peace, so it must hold the peace treaty (or a capitulation)." }, "You are at war.");
     m.setBody(
       leader.el,
       t.war ? atWar : null,
-      // Houses (docs/PERSONS.md, "UI", part I): what making peace does to the Houses.
-      t.war ? previewList(t.peace_preview, { title: "If peace is made:" }) : null,
-      courting(),
-      h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give", t.house?.takes ?? "Nothing.")),
-      tradesThrough(),
+      h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
       summary,
       status,
-      t.house?.reminders?.length ? h("div.court-keywords", keywordChips(t.house.reminders)) : null,
     );
     refreshSummary();
   };
@@ -665,8 +542,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
         const accepted = !!reply.r?.accepted;
         const weGet = get.length || (k && !k.lend);
         const weGive = give.length || (k && k.lend);
-        // (A gift to a House makes no peace: docs/PERSONS.md, "The fourth build", rule 3.)
-        const peace = t.war && !(t.house && !get.length && !k);
+        const peace = t.war;
         const comment = accepted ? (peace ? "AI_DIPLOCOMMENT_PEACE" : weGet ? "AI_DIPLOCOMMENT_ACCEPT" : "AI_DIPLOCOMMENT_THANKS") : peace ? "AI_DIPLOCOMMENT_NO_PEACE" : weGive ? "AI_DIPLOCOMMENT_NO_DEAL" : "AI_DIPLOCOMMENT_REJECT";
         if (accepted) {
           // The tables change with the deal (gold spent, peace made): read them again.

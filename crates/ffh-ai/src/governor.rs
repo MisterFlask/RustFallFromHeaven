@@ -22,8 +22,9 @@
 //! building the ladder names gives way to a wonder it ranks nearly as high. A city whose garrison
 //! is missing or overwhelmed drops its empire orders for the governor's defender.
 //!
-//! Cultural channels are the civilization's, not its governors' (culture.rs plans them in
-//! governed cities too).
+//! **Who runs the AI's cities** ([`choose_governance`], [`wants_governors`]): every city goes to a
+//! governor unless its government is Despotism or God King, and under those two every city is
+//! run by hand, through the rules call a human uses (`Game::player_set_city_governed`).
 
 use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
@@ -170,15 +171,36 @@ pub fn turn(ai: &Ai, g: &mut Game, p: PlayerId) {
         return;
     }
     set_priorities(g, p);
-    if g.player_rules_directly(p) {
-        return;
-    }
     for c in g.players[p].cities.clone() {
         if g.cities.contains(c) && g.city_is_governed(c) {
             yield_to_defense(ai, g, c);
         }
     }
     place_empire_orders(ai, g, p);
+}
+
+/// Whether AI player `p` wants its cities governed: unless its government civic is Despotism or
+/// God King. This is what the rules made every player do until 2026-11-21 (the civics' old
+/// `direct_rule`), so the AI governs exactly where it did; whether it should govern from the first
+/// turn (or run some cities by hand) is not measured.
+pub fn wants_governors(g: &Game, p: PlayerId) -> bool {
+    let d = g.d;
+    !g.player_is_barbarian(p) && !g.players[p].civics.iter().flatten().any(|&c| matches!(d.civics[c].base.type_.as_str(), "CIVIC_DESPOTISM" | "CIVIC_GOD_KING"))
+}
+
+/// AI player `p` hands every city to a governor, or takes every city back, as
+/// [`wants_governors`] says (outposts have no governor). The rules call it after `p`'s civics
+/// change and in its turn processing, before its cities produce.
+pub fn choose_governance(g: &mut Game, p: PlayerId) {
+    if g.player_is_barbarian(p) {
+        return;
+    }
+    let want = wants_governors(g, p);
+    for c in g.players[p].cities.clone() {
+        if g.cities.contains(c) && !g.cities[c].outpost && g.city_is_governed(c) != want {
+            let _ = g.player_set_city_governed(p, c, want);
+        }
+    }
 }
 
 /// The cities `p` places empire orders in: its capital (if governed) and its most productive other
@@ -465,7 +487,7 @@ mod tests {
     }
 
     /// The AI places empire orders in its capital and its three most productive other governed
-    /// cities; under Despotism (direct rule) in none.
+    /// cities; under Despotism (every city run by hand) in none.
     #[test]
     fn the_capital_and_the_most_productive_cities_place_empire_orders() {
         let (mut g, cities) = governed(&[(3, 4), (3, 7), (7, 4), (7, 7), (11, 4), (11, 7)]);
@@ -482,6 +504,30 @@ mod tests {
         let option = g.d.civics[despotism].civic_option_type.unwrap();
         g.player_set_civics(P0, option, Some(despotism));
         assert!(empire_cities(&g, P0).is_empty());
+    }
+
+    /// The AI hands every city to a governor under Republic (a civic that governs none itself),
+    /// a city it founds too, and takes every city back under Despotism and God King.
+    #[test]
+    fn the_ai_governs_under_republic_and_not_under_despotism() {
+        let mut g = crate::testkit::one_landmass_game(4);
+        let set = |g: &mut Game, name: &str| {
+            let civic = g.d.t::<CivicType>(name);
+            let option = g.d.civics[civic].civic_option_type.unwrap();
+            g.player_set_civics(P0, option, Some(civic));
+        };
+        set(&mut g, "CIVIC_DESPOTISM");
+        let cities: Vec<CityId> = [(3, 4), (7, 4)].iter().map(|&(x, y)| g.player_init_city(P0, x, y, true, true)).collect();
+        assert!(cities.iter().all(|&c| !g.city_is_governed(c)), "Despotism: run by hand");
+        set(&mut g, "CIVIC_REPUBLIC");
+        assert!(!g.player_civics_govern(P0), "Republic governs no city by itself");
+        assert!(cities.iter().all(|&c| g.city_is_governed(c) && g.city_role(c).is_some()), "the AI hands every city over");
+        let founded = g.player_init_city(P0, 11, 4, true, true);
+        assert!(g.city_is_governed(founded), "a city it founds too");
+        set(&mut g, "CIVIC_GOD_KING");
+        assert!(g.players[P0].cities.iter().all(|&c| !g.city_is_governed(c)), "God King: every city taken back");
+        let founded = g.player_init_city(P0, 15, 4, true, true);
+        assert!(!g.city_is_governed(founded));
     }
 
     /// A field unit the AI's ladder picks is placed as an empire order ahead of the governor's own

@@ -16,8 +16,8 @@ import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark
 import { stackWear, drawWearPip, drawHarbourMark } from "../sea.js";
 import { outpostTag } from "../lanes.js";
 import { drawMarksR3d } from "../marks.js";
-import { drawPlateShield } from "../persons_lines.js";
-import { shieldHits, starHit } from "../plates.js";
+import { starHit } from "../plates.js";
+import { drawPlateShield, shieldHit, SHIELD } from "../houses_lines.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -120,13 +120,14 @@ function drawHudParts(r3d, cam) {
   // City plates: under the settlement, toward the camera; over the far-zoom counters (a city's
   // name matters more than the pins crowding round it), under the stack badges.
   const screenCity = v.overlay.city;
-  // The boxes of the plates' marks (a House's shield and countdown, a capital's star), for their
+  // The boxes of the plates' marks (a capital's star), for their
   // tooltips (plates.js; MapView.plateAt).
   const plateHits = [];
   r3d.plateHits = plateHits;
   for (const c of r3d.cities ?? []) {
-    // The view's entry as it is now (the dressing keeps the one it was dressed with: a House's
-    // state or a siege changes without a redress).
+    // The view's entry as it is now: the dressing keeps the entry its plot was dressed with, and
+    // what the plate shows (the House's shield and its state's mark, a siege) changes without a
+    // redress of the plot.
     const city = S.cities.get(c.city.id) ?? c.city;
     // The city screen's own city is named by its title; its plate would cover its plot's yields.
     if (screenCity && city.id === screenCity.id) continue;
@@ -188,22 +189,25 @@ function drawHudParts(r3d, cam) {
     }
     // Sieges (docs/SIEGES.md): a besieged city's plate is ringed in red, and its walls' Sentinels
     // stand as small towers under it (filled by their HP left; hollow when breached).
-    // Houses (docs/PERSONS.md, "UI", part G): an own city's House shield at the plate's
-    // left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
-    const shieldW = city.house ? drawPlateShield(g, city.house, x - h * 0.42, p.y, h * 1.05) : 0;
-    if (shieldW) plateHits.push(...shieldHits(city, x - h * 0.42, p.y, h * 1.05, shieldW));
-    // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plate's left end (left of the
-    // shield when there is one).
-    drawHarbourMark(g, city, x - h * 0.45 - (shieldW ? shieldW + 3 : 0), p.y, h * 0.42, 1);
+    // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plate's left end.
+    drawHarbourMark(g, city, x - h * 0.45, p.y, h * 0.42, 1);
     // Raids (docs/RAIDS.md, section 8; raids.js): a contested or overrun city's plate is ringed in
     // dashed amber (a besieged one's solid red wins).
     const ring = plateRing(city);
+    // (The dashed ring stands off the plate, clear of the owner's border.)
+    const off = ring ? (ring.dash.length ? 4 : 2) : 0;
+    // This game's Houses (docs/HOUSES.md, rule 15): an own city's House shield at the plate's
+    // right end, in the House's colour (houses_lines.js), clear of the ring.
+    if (city.house) {
+      const sh = h * 1.1;
+      const sx = x + w + 2 + off + (sh * SHIELD.w) / SHIELD.h / 2;
+      drawPlateShield(g, city, sx, p.y, sh);
+      plateHits.push(shieldHit(city, sx, p.y, sh));
+    }
     if (ring) {
       g.lineWidth = ring.dash.length ? 3 : 2.5;
       g.strokeStyle = ring.colour;
       g.setLineDash(ring.dash);
-      // (The dashed ring stands off the plate, clear of the owner's border.)
-      const off = ring.dash.length ? 4 : 2;
       roundRect(g, x - off, y - off, w + off * 2, h + off * 2, (h + off * 2) / 2);
       g.stroke();
       g.setLineDash([]);

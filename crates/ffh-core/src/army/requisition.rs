@@ -3,14 +3,9 @@
 //! while it is short of its target size.
 //!
 //! - **The cities.** `Army::requisition`, in the order the player added them: any of its cities,
-//!   directly ruled or governed, the capital included, and the cities of its Houses (the levy,
-//!   docs/PERSONS.md, "The second build", rule 6) ([`Game::army_add_requisition`],
+//!   directly ruled or governed, the capital included ([`Game::army_add_requisition`],
 //!   [`Game::army_remove_requisition`], [`Game::army_set_requisition`]). A city lost leaves every
-//!   list (`city_army_lost`), and a House's cities leave its liege's lists when the House ends.
-//! - **The levy.** A House's city takes the order as the owner's own cities do: in its queue, its
-//!   production; the unit trained is the army owner's (`city/turn.rs`) and marches to the army.
-//!   Each order placed there is a grievance of the House (`Levied: -1 (20 turns)`). A House
-//!   Annoyed or worse takes no levy: its cities are passed over (`Game::house_levy_refusal`).
+//!   list (`city_army_lost`).
 //! - **The shortfall** ([`Game::army_shortfall`]): the target size less the army's units, its
 //!   recruits marching to it, its requisition orders in production and the other orders bound for
 //!   it at the head of a city's queue (the first order that is not a requisition). No target size
@@ -66,12 +61,11 @@ impl Game {
         Ok(())
     }
 
-    /// Whether army `a` of `p` may requisition from city `c` (else why not): a city of `p`'s or of
-    /// one of its Houses (the levy).
+    /// Whether army `a` of `p` may requisition from city `c` (else why not).
     pub fn army_check_requisition_city(&self, p: PlayerId, a: ArmyId, c: CityId) -> ArmyResult {
         self.army_check_requisition(p, a)?;
-        if !self.cities.contains(c) || (self.cities[c].owner != p && !self.city_levied_by(c, p)) {
-            return Err("not a city of yours or of your Houses");
+        if !self.cities.contains(c) || self.cities[c].owner != p {
+            return Err("not a city of yours");
         }
         // This game's outposts (docs/NAVAL.md, 9.2) build nothing.
         if self.cities[c].outpost {
@@ -144,12 +138,11 @@ impl Game {
     // ---------------------------------------------------------------------------------------
 
     /// Army `a`'s requisition orders in production: (city, index in its queue), in the order of
-    /// its owner's cities, then its Houses' ([`Game::player_levy_cities`]).
+    /// its owner's cities.
     pub fn army_requisition_orders(&self, a: ArmyId) -> Vec<(CityId, usize)> {
         let Some(army) = self.armies.get(a) else { return Vec::new() };
         let mut out = Vec::new();
-        let levy = self.player_levy_cities(army.owner);
-        for &c in self.players[army.owner].cities.iter().chain(levy.iter()) {
+        for &c in &self.players[army.owner].cities {
             for (i, o) in self.cities[c].order_queue.iter().enumerate() {
                 if o.requisition && o.dest == Some(RecruitDest::Army(a)) {
                     out.push((c, i));
@@ -196,8 +189,7 @@ impl Game {
     /// The turns until a unit of `unit` that city `c` trains (its order at `index` of the queue)
     /// would join army `a`: its production turns and its march (estimated).
     fn requisition_eta(&self, c: CityId, unit: UnitType, index: usize, a: ArmyId) -> i32 {
-        // (The unit is the army owner's, a levied one too.)
-        let owner = self.armies[a].owner;
+        let owner = self.cities[c].owner;
         let production = self.city_production_turns_left_unit(c, unit, index as i32).min(NO_WAY);
         let march = self.army_plot(a).and_then(|at| self.march_turns(owner, unit, self.city_plot(c), at)).unwrap_or(NO_WAY);
         production + march
@@ -207,7 +199,7 @@ impl Game {
     /// controller's choice), its production turns there and its march to the army (estimated;
     /// `None`: no way by land). `None` when the city can train no unit for it.
     pub fn army_requisition_preview(&self, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType, i32, Option<i32>)> {
-        let owner = self.armies[a].owner;
+        let owner = self.cities[c].owner;
         let (unit, ai) = self.controller(owner).requisition_unit(self, c, a)?;
         let production = self.city_production_turns_left_unit(c, unit, 0);
         let march = self.army_plot(a).and_then(|at| self.march_turns(owner, unit, self.city_plot(c), at));
@@ -286,9 +278,8 @@ impl Game {
             while i < self.cities[c].order_queue.len() {
                 let o = &self.cities[c].order_queue[i];
                 if o.requisition {
-                    // (An order of the liege's army in a House's city: the levy.)
                     let keep = match o.dest {
-                        Some(RecruitDest::Army(a)) => self.armies.get(a).is_some_and(|ar| (ar.owner == p || self.player_liege(p) == Some(ar.owner)) && ar.disband_to.is_none() && ar.requisition.contains(&c)),
+                        Some(RecruitDest::Army(a)) => self.armies.get(a).is_some_and(|ar| ar.owner == p && ar.disband_to.is_none() && ar.requisition.contains(&c)),
                         _ => false,
                     };
                     if !keep {
@@ -330,11 +321,7 @@ impl Game {
             while short > 0 {
                 let mut best: Option<((i32, usize), CityId, UnitType, UnitAIType)> = None;
                 for (pos, c) in self.armies[a].requisition.clone().into_iter().enumerate() {
-                    if !self.cities.contains(c) || (self.cities[c].owner != p && !self.city_levied_by(c, p)) || self.city_has_requisition(c, a) {
-                        continue;
-                    }
-                    // A House Annoyed or worse takes no levy (docs/PERSONS.md, rule 6).
-                    if self.city_levy_refusal(c).is_some() {
+                    if !self.cities.contains(c) || self.cities[c].owner != p || self.city_has_requisition(c, a) {
                         continue;
                     }
                     let Some((unit, ai)) = controller.requisition_unit(self, c, a) else { continue };
@@ -358,17 +345,12 @@ impl Game {
     /// City `c` trains a unit of `unit` for army `a` first: a requisition order at the front of its
     /// queue (behind any other requisition orders). Returns whether it was placed.
     fn city_place_requisition(&mut self, c: CityId, a: ArmyId, unit: UnitType, ai: UnitAIType) -> bool {
-        let p = self.armies[a].owner;
-        let house = self.city_house(c).filter(|&h| self.houses[h].owner == p);
         let Some(index) = self.city_push_order_kind(c, OrderType::ORDER_TRAIN, unit.i(), ai.i(), false, false, false, false, OrderKind::Requisition) else { return false };
         if !self.cities.contains(c) {
             return false;
         }
-        // A levy in a House's city: `Levied: -1 (20 turns)` (docs/PERSONS.md, rule 6).
-        if let Some(h) = house {
-            self.house_levied(h);
-        }
         self.cities[c].order_queue[index].dest = Some(RecruitDest::Army(a));
+        let p = self.cities[c].owner;
         self.tel_requisition(p, "placed");
         let turn = self.game_turn();
         let city = self.d.text.name(&self.cities[c].name).to_string();
@@ -399,11 +381,7 @@ impl Game {
     /// (what was put into it stays with the unit type), its owner told.
     fn city_withdraw_order(&mut self, c: CityId, index: usize, choose: bool) {
         let o = self.cities[c].order_queue[index].clone();
-        // (Told to the army's owner: a levy's order is in a House's city.)
-        let p = match o.dest {
-            Some(RecruitDest::Army(a)) if self.armies.contains(a) => self.armies[a].owner,
-            _ => self.cities[c].owner,
-        };
+        let p = self.cities[c].owner;
         let city = self.d.text.name(&self.cities[c].name).to_string();
         let at = (self.cities[c].x, self.cities[c].y);
         self.city_pop_order(c, index as i32, false, choose);

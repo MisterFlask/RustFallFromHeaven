@@ -132,6 +132,7 @@ html.iso.hd2d .tip-unique {
   background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat top / 100% 1px,
     linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat bottom / 100% 1px;
 }
+html.iso.hd2d .tip-sep { background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat top / 100% 1px; }
 html.iso.hd2d .tip-combat { background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat top / 100% 1px; }
 
 /* --- dialogs: the title on a dark strip at the left, a hairline under it ------------------ */
@@ -187,7 +188,6 @@ html.iso.hd2d button.link { color: var(--iso-gold); }
 html.iso.hd2d button.stat:hover:not([disabled]) { background: var(--hd-band); }
 /* What is chosen: the band, a brighter hairline and a mark at the left. */
 html.iso.hd2d button.option.chosen, html.iso.hd2d button.build.current, html.iso.hd2d button.civic.chosen, html.iso.hd2d .trade-item.on,
-html.iso.hd2d .culture-actions button.on, html.iso.hd2d .culture-religions button.on, html.iso.hd2d button.culture-target.on,
 html.iso.hd2d .tap-mode button.on, html.iso.hd2d #iso-corner .layers button.active {
   border-image: var(--iso-tile-hover); background: var(--hd-band), var(--hd-fill); background-clip: padding-box; color: #fff;
   box-shadow: inset 3px 0 0 var(--hd-ink);
@@ -311,13 +311,6 @@ html.iso.hd2d button.tech:hover:not([disabled]) { background: var(--hd-band), rg
 html.iso.hd2d .cplot { border: 1px solid var(--hd-faint); background: rgba(20, 20, 23, 0.9); }
 html.iso.hd2d .cplot.worked { background: rgba(38, 56, 30, 0.92); border-color: #8fbf78; }
 html.iso.hd2d .cplot.centre { background: rgba(70, 56, 34, 0.92); border-color: var(--iso-gold); }
-html.iso.hd2d .culture-ours, html.iso.hd2d .culture-aimed-house { border: 1px solid var(--hd-faint); background: rgba(0, 0, 0, 0.3); }
-html.iso.hd2d .favour-bar { border: 1px solid var(--hd-faint); background: rgba(0, 0, 0, 0.45); }
-html.iso.hd2d .favour-fill { background: var(--hd-dim); }
-html.iso.hd2d .favour.attention .favour-fill { background: var(--iso-warn); }
-html.iso.hd2d .favour-mark { background: var(--hd-ink); }
-html.iso.hd2d table.culture-req tr.total td { border-top-color: var(--hd-faint); }
-html.iso.hd2d .culture-pick { border-left: 2px solid var(--hd-line); }
 html.iso.hd2d .unlock { background: rgba(0, 0, 0, 0.36); }
 
 /* --- sizes --------------------------------------------------------------------------------- */
@@ -353,5 +346,4 @@ html.iso.hd2d .reminder {
 }
 html.iso.hd2d .reminder-name { font: 700 12px/16px var(--iso-font); letter-spacing: 0.1em; }
 html.iso.hd2d .kw-chip { font: 700 14px/18px var(--iso-font); background: rgba(24, 30, 38, 0.9); }
-html.iso.hd2d .pstate { font: 700 14px/18px var(--iso-font); letter-spacing: 0.02em; }
 html.iso.hd2d #end-turn .end-turn-why { font: 400 15px/17px var(--iso-font); color: #f0a08a; letter-spacing: 0; }

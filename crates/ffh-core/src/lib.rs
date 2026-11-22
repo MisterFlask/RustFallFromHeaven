@@ -7,9 +7,9 @@
 pub mod area;
 pub mod army;
 pub mod governors;
+pub mod houses;
 pub mod city;
 pub mod controller;
-pub mod culture;
 pub mod crusade;
 pub mod deal;
 pub mod deck;
@@ -29,7 +29,6 @@ pub mod mapscript;
 pub mod naval;
 pub mod outposts;
 pub mod path;
-pub mod persons;
 pub mod player;
 pub mod plot;
 pub mod plot_group;

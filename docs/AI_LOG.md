@@ -32,9 +32,54 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Houses over a civilization's own cities (2026-11-21; a rules change, not measured)
+
+docs/HOUSES.md. Cultural channels and Houses as vassal players were removed, and a House became a
+record over its owner's own cities; governors are mandatory under City States and Aristocracy
+only. The AI got what rule 14 says and nothing was tuned: it picks a House's leader by the
+happiness the candidate's opinion gives now, a war target loses value for each House the war
+would anger (`diplomacy.rs`, `house_war_cost`: 9 a city for a House turned Furious, 3 for one
+turned Annoyed, against the alignment flavor's 30), and it governs its cities exactly when the
+rules used to make it (seeds 1-4 over 200 turns end on the same checksums with the governors
+change alone).
+
+The guardrail: 12 seeds x 300 turns against master before the change (a0bfe8c),
+`tools/agents/ab.sh --base a0bfe8c --seeds 1-12 --turns 300 --at 100,200,300`. The base has
+House players, so per-player means are not comparable; these are world totals over the 12 games
+at turn 300 (barbarians included):
+
+| | before | after |
+|---|---|---|
+| players alive (the base counts Houses) | 255 | 131 |
+| cities | 648 | 643 |
+| population | 3525 | 3902 (+11%) |
+| research a turn | 21176 | 20362 (-4%; at turn 200: 7332 -> 6370, -13%) |
+| production a turn | 5461 | 5383 |
+| commerce a turn | 15187 | 15875 (+5%) |
+| military units | 4353 | 3744 (-14%) |
+| maintenance a turn | 1024 | 1563 (+53%) |
+| cities founded | 713 | 677 |
+| cities taken, civilization from civilization | 684 | 172 |
+| civilizations eliminated (the base counts Houses) | 29 | 17 |
+| cities lost to barbarians | 27 | 21 |
+| time a turn | 68 ms | 60 ms |
+
+Nothing broad broke: the same number of cities, more people, production level. What moved and
+why, as far as the totals say: the military and most of the captures were the House players'
+(each kept a garrison and joined its liege's wars, and cities passed between Houses and Crowns);
+maintenance is paid by one empire again instead of being split among a realm's players, with no
+Crown limit; research at turn 200 is lower without a realm sharing every tech. Not traced.
+
+Six checked games to turn 250 (6 civilizations) formed 10 to 16 home Houses and 3 to 8 foreign
+ones a game; at turn 250 most Houses were Pleased or Cautious, 0 to 3 Annoyed, none Furious, and
+the AI picked the outsider once in 28 foreign Houses (its score takes the outsider only when
+every local candidate would be Furious). So among AIs the bottom of the scale is rarely reached:
+whether a human's wars reach it, and whether the AI's term is strong enough to keep it from a
+war that would, is to be judged in play.
+
 ## Courting is a cultural channel (2026-11-20, the fourth build; a rules change, not measured)
 
-**Built, in every game** (docs/PERSONS.md, "The fourth build"; docs/CULTURE.md). A rules change is
+**Built, in every game** (git history of docs/PERSONS.md, "The fourth build"; git history of docs/CULTURE.md). A rules change is
 not gated on the AI (CLAUDE.md). The guardrail ran 12 seeds × 300 turns, 6 civilizations, against
 94be8522 (base → new). Turn 100 is identical: no channel is set before turn 110.
 
@@ -77,7 +122,7 @@ games.
 
 ## Houses without Persons of Note (2026-11-19, the third build; a rules change, not measured)
 
-**Built, in every game** (docs/PERSONS.md, "The third build"). A rules change is not gated on the
+**Built, in every game** (git history of docs/PERSONS.md, "The third build"). A rules change is not gated on the
 AI (CLAUDE.md); the guardrail, 12 seeds x 300 turns against b4779d45, base -> new. Read with care:
 a House is a player and a team of its own, so the per-player means fall with the player count
 (alive at turn 300: 76 -> 195 players, 66 -> 69 of the 72 original civilizations) and two of the
@@ -100,7 +145,7 @@ the players). Nothing broad broke.
 
 ## The memory of wrongs (2026-11-18, the owner's decision; a rules change, not measured)
 
-**Built, in every game** (docs/PERSONS.md rule 15, docs/PORTING.md "Changes from FFH2"). Before
+**Built, in every game** (git history of docs/PERSONS.md, rule 15; docs/PORTING.md "Changes from FFH2"). Before
 it, `relation_parts` had no memory of a war or a conquest: a war counted -2 `at war` while it
 lasted and nothing after (`war between us` reads `ai_at_war_counter`, which nothing counts up),
 and a bought House was the one lasting grudge (`BRIBE_GRUDGE`, an attitude modifier that never

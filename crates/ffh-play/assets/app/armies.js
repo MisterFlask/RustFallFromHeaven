@@ -31,7 +31,6 @@ import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
 import { pickEmpireItem, orderEmpire } from "./governors.js";
-import { houseShield, stateMark } from "./persons.js";
 import { squadBoard } from "./squads.js";
 
 // ---- the rules, in the help display (help.js; the Armies screen's (i) opens it) ---------------
@@ -155,21 +154,6 @@ function candidateLine(c, fleet = false) {
   return h("span", h("span.dim", ` · ${dname("UnitType", c.unit)}, ${turns(c.production_turns)} to train`), march);
 }
 
-/** The levy line of a House's city among the requisition's candidates (docs/PERSONS.md, rule 6):
- *  its House (shield, name and state mark) and `Takes levies. Each levy: -1 (20 turns).`, or
- *  `Takes no levy.` in the caution colour (the warning colour when Furious). The row is crowded:
- *  how many levies it takes before it takes none (`Annoyed after 2 levies.`), or the rules' reason
- *  it takes none, is the state mark's tooltip, over what the state does. */
-function levyLine(x) {
-  const tone = x.takes_levy === false ? (String(x.state).toLowerCase() === "furious" ? ".warn" : ".caution") : "";
-  return h(
-    `div.requisition-house${tone}`,
-    { "data-house": x.id, "data-levy": x.takes_levy === false ? "no" : "yes" },
-    h("span.house-tag", houseShield(x.colour, 14), h("span.house-name", x.label), stateMark(x.state, x.turns, { note: x.until ?? x.reason ?? null }), h("span.dim", "·")),
-    h("span.levy-text", x.text),
-  );
-}
-
 /** An army's requisition on the Armies screen: the cities it requisitions from, its orders in
  *  progress, and every city it may requisition from with a checkbox (`act` sends a command and
  *  re-reads the screen). */
@@ -178,15 +162,10 @@ function requisitionView(a, act) {
   if (a.disband_to) return null;
   const picked = rq.candidates.filter((c) => c.picked);
   const names = picked.map((c) => c.name);
-  // A picked city of a House that takes no levy is passed over: said apart, with why
-  // (`Ventry: passed over (House Arne takes no levy).`), not among the cities that work.
-  const working = picked.filter((c) => !c.house?.passed).map((c) => c.name);
-  const passed = picked.filter((c) => c.house?.passed).map((c) => c.house.passed);
   const head = h(
     "div.requisition-head",
     h("b", "Requisition"),
-    working.length ? h("span", ` from ${working.join(", ")}`) : h("span.dim", " from no city"),
-    passed.map((t) => h("span.caution.requisition-passed", ` · ${t}`)),
+    names.length ? h("span", ` from ${names.join(", ")}`) : h("span.dim", " from no city"),
     !a.target_size && names.length ? h("span.warn", { title: "An army requisitions only while it is short of its target size" }, " · no target size: it requisitions nothing") : null,
     a.target_size && names.length ? (rq.shortfall > 0 ? h("span.dim", ` · ${rq.shortfall} more wanted`) : h("span.dim", " · nothing wanted now")) : null,
   );
@@ -205,10 +184,6 @@ function requisitionView(a, act) {
       h("span", ` ${c.name}`),
       c.governed ? h("span.dim", " (governed)") : null,
       candidateLine(c, a.domain === "sea"),
-      // Houses (docs/PERSONS.md, rule 6, the levy): a House's city, its House and
-      // whether it takes levies, or the rules' reason it takes none (the requisition then passes
-      // it over).
-      c.house ? levyLine(c.house) : null,
       c.order ? h("span.badge", { title: "Training for the army now" }, `${turns(c.order.turns)}`) : null,
     ),
   );

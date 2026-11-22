@@ -19,23 +19,14 @@ use ffh_play::{Json, Session, SessionOptions};
 const FRAGMENTS: &[(&str, &[&str])] = &[
     ("KEYWORD_RITUAL", &["progress is lost if the city switches", "switches to building something else", "hurried with gold", "cannot be hurried", "production is lost", "first build", "off the head of the queue", "visible to every player"]),
     ("KEYWORD_WORLD_RITUAL", &["one in progress per player", "doubles the next cost", "doubles its next cost", "every player is told"]),
-    // Houses (docs/PERSONS.md, "UI", part J; "The second build", rule 13: the loyalty states are
-    // the attitude words, no keywords; "The third build", rule 2: Request).
-    ("KEYWORD_HOUSE", &["a vassal civilization with a leader of its own", "its cities its own", "a house that breaks away declares war", "every vassal is a house"]),
-    ("KEYWORD_CROWN", &["the cities a civilization holds itself", "always the crown's", "a realm's first grant founds one", "pay triple city-count maintenance"]),
-    ("KEYWORD_REQUEST", &["a house's wish, one at a time", "with a term of 40 turns", "made impossible by its liege's act", "the next one comes 20 turns later"]),
-    // ("The third build", rule 5.)
-    ("KEYWORD_ULTIMATUM", &["a furious house's one demand", "answered at once", "binds its liege for 20 turns", "while it runs"]),
-    ("KEYWORD_TRIBUTE", &["a share of its cities' gold and research", "the research added to the liege's", "1 less for each 10% more", "toward the rate set every", "follow the rate in force"]),
-    ("KEYWORD_LEVY", &["an army's requisition in a city of its owner's house", "costs the house -1 loyalty", "annoyed or furious takes no levy"]),
-    ("KEYWORD_CLAIMANT", &["a house with a city within", "granting the city to another house costs"]),
-    // Culture ("The fourth build", rules 1 to 5).
-    ("KEYWORD_CHANNEL", &["one cultural order at a time", "diverts half its culture", "in full within 5 plots", "nothing beyond 20"]),
-    ("KEYWORD_COURT", &["a channel at a house of another realm", "then fades 5%", "join the courter's realm", "a house of one city joins whole", "the median civilization's culture"]),
-    ("KEYWORD_GUARD", &["a liege's channel at one of its own houses", "taken from every civilization's favour"]),
     // The Armageddon counter (docs/CARDS.md, section 4).
     ("KEYWORD_ARMAGEDDON_COUNTER", &["100 over 300 turns", "raise or lower it"]),
     ("KEYWORD_ARMAGEDDON_CARD", &["one card or none at each slot", "within 5 of its slot", "reaches its slot"]),
+    // This game's Houses (docs/HOUSES.md, rule 15; the cards' lines are checked in
+    // tests/houses_screens.rs).
+    ("KEYWORD_HOUSE", &["up to 4 of a civilization's cities", "whose seat is nearest"]),
+    ("KEYWORD_SYMPATHY", &["the civilization a house's leader favours", "kept for good"]),
+    ("KEYWORD_OUTSIDER", &["offered for a foreign house", "counts alignment and religion only"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.
@@ -112,49 +103,4 @@ fn every_keyword_mark_names_a_keyword() {
         }
     }
     assert!(marks >= 2, "the World Spells concept marks its keywords: {marks}");
-}
-
-/// Every string of an object (but its `reminders` and a House leader's `backstory`, flavour), deep.
-fn strings_of(j: &Json, out: &mut Vec<String>) {
-    match j {
-        Json::Str(s) => out.push(s.clone()),
-        Json::Arr(a) => a.iter().for_each(|x| strings_of(x, out)),
-        Json::Obj(o) => o.iter().filter(|(k, _)| k != "reminders" && k != "backstory").for_each(|(_, v)| strings_of(v, out)),
-        _ => {}
-    }
-}
-
-/// Houses (docs/PERSONS.md, "UI", part J): the Court's, every grant list's, every House's card's
-/// and the trade table's with a House lines, on the staged scene (and the founding's, the human's
-/// Houses freed), do not restate a keyword's reminder.
-#[test]
-fn the_court_does_not_restate_reminder_text() {
-    let bad = forbidden(ffh_data::global());
-    let dir = common::TempDir::new("keywords-persons");
-    let st = ffh_play::stage::persons(&dir.0, false).expect("staged");
-    let (bytes, sidecar) = ffh_play::save::read_bundle(&st.save).unwrap();
-    let opts = SessionOptions { journal: false, ..SessionOptions::default() };
-    let mut s = Session::load(&bytes, sidecar.as_ref(), Arc::new(AdvisorAnswerer), opts).unwrap();
-    let mut texts = Vec::new();
-    strings_of(&s.query(&ffh_play::query::Query::Court).unwrap(), &mut texts);
-    for c in s.g.players[s.human].cities.clone() {
-        strings_of(&s.query(&ffh_play::query::Query::Grant { city: c }).unwrap(), &mut texts);
-    }
-    // Every House's card and the trade table with the neighbour's House (the fourth build, rule
-    // 10: the courtships, the guard, the channel buttons, the requirement).
-    for hs in &st.houses {
-        strings_of(&s.query(&ffh_play::query::Query::House { house: hs.id }).unwrap(), &mut texts);
-    }
-    let neighbour = st.houses.iter().find(|x| x.role == "neighbour").unwrap().player;
-    strings_of(&s.query(&ffh_play::query::Query::Trade { with: neighbour }).unwrap(), &mut texts);
-    // The founding (a realm without a House): the Court's line and the grant list's card.
-    for hs in st.houses.iter().filter(|x| x.role != "neighbour") {
-        s.g.player_free_house(st.human, hs.id).unwrap();
-    }
-    strings_of(&s.query(&ffh_play::query::Query::Court).unwrap(), &mut texts);
-    strings_of(&s.query(&ffh_play::query::Query::Grant { city: st.crown[1] }).unwrap(), &mut texts);
-    assert!(texts.len() > 100, "{}", texts.len());
-    for t in &texts {
-        check("persons payload", t, &bad);
-    }
 }

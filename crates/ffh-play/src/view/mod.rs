@@ -20,15 +20,14 @@ pub mod armies;
 pub mod battles;
 pub mod cards;
 pub mod governors;
-pub mod house_marks;
 pub mod city;
 pub mod crusade;
-pub mod culture;
 pub mod data;
 pub mod diplo;
 pub mod explore;
 pub mod fog;
 pub mod help;
+pub mod houses;
 pub mod hotkeys;
 pub mod improvement_help;
 pub mod keywords;
@@ -36,7 +35,6 @@ pub mod map;
 pub mod marks;
 pub mod player;
 pub mod perks;
-pub mod persons;
 pub mod raids;
 pub mod sieges;
 pub mod outposts;
@@ -236,10 +234,9 @@ pub fn me(v: &Viewer) -> Json {
 /// Where the gold rate comes from (the financial advisor): the gold of the cities' commerce and of
 /// deals, and the costs C++ `calculateInflatedCosts` takes: units (with the free ones), units
 /// outside the borders, city maintenance, civic upkeep and the inflation on those. `income +
-/// deals - contracts - units - supply - maintenance - civics - inflation` is `calculateBaseNetGold`,
+/// deals - units - supply - maintenance - civics - inflation` is `calculateBaseNetGold`,
 /// the gold rate while research is flexible (else `research_fixed`: the rules take the shortfall of
-/// both). `contracts`: `[[what, gold]]`, the gold a turn of each House's contract (docs/PERSONS.md,
-/// "The third build", rule 5 (f): `contract with House Aldric until turn 160`), out of `deals`.
+/// both).
 pub fn gold_parts(g: &Game, h: PlayerId) -> Json {
     let pl = &g.players[h];
     let units = g.player_calculate_unit_cost(h);
@@ -248,22 +245,9 @@ pub fn gold_parts(g: &Game, h: PlayerId) -> Json {
     let civics = g.player_get_civic_upkeep(h, None, false);
     let inflated = g.player_calculate_inflated_costs(h);
     let ub = g.player_calculate_unit_cost_breakdown(h);
-    // A House's contract's gold a turn (docs/PERSONS.md, "The third build", rule 5 (f)): an
-    // expense of its own, out of the deals' gold.
-    let contracts: Vec<(String, i32)> = g.players[h]
-        .houses
-        .iter()
-        .filter_map(|&hh| {
-            let c = g.house_contract(hh)?;
-            let ffh_core::persons::UltimatumKind::Gold(gold) = c.kind else { return None };
-            Some((format!("contract with {} until turn {}", g.house_label(hh), c.until), gold))
-        })
-        .collect();
-    let contracts_gold: i32 = contracts.iter().map(|c| c.1).sum();
     crate::jobj! {
         "income" => g.player_get_commerce_rate(h, CommerceType::COMMERCE_GOLD),
-        "deals" => pl.gold_per_turn + contracts_gold,
-        "contracts" => Json::Arr(contracts.iter().map(|(what, gold)| crate::jarr![what.as_str(), *gold]).collect()),
+        "deals" => pl.gold_per_turn,
         "units" => units,
         "units_count" => pl.num_units(),
         "units_free" => ub.free_units,
@@ -327,10 +311,6 @@ pub fn players_brief(v: &Viewer) -> Json {
             "our_master" => g.teams[v.team].vassal[t],
             "score" => g.player_score[p],
             "contact" => g.player_can_contact(v.h, p),
-            // Houses (docs/PERSONS.md, "The second build", rules 1 and 13): the player whose
-            // colour it is drawn in (a House: its liege's), and a House's record (null: no House).
-            "color_player" => g.player_color_player(p),
-            "house" => house_marks::player_house_brief(v, p),
         });
     }
     Json::Arr(out)
@@ -407,13 +387,10 @@ pub fn cities(v: &Viewer) -> Json {
             j.set("food_turns", g.city_food_turns_left(c));
             j.set("disorder", g.city_is_disorder(c));
         }
-        // Houses (docs/PERSONS.md, "UI", parts E and G; rules 1 and 13): a House's city
-        // carries its House (`{id, label, colour, liege, state, turns}`, the state and turns for its
-        // liege only), for its plate and its colour (the liege's); the human's own cities are the
-        // Crown's (null), for the lists. Left out for the other cities and for a human without
-        // Houses.
-        if let Some(house) = house_marks::city_map_mark(v, c).or_else(|| house_marks::city_house_field(v, c)) {
-            j.set("house", house);
+        // This game's Houses (docs/HOUSES.md, rule 15): an own city's House, for its plate's
+        // shield and the lists (`{id, label, state}`); left out for others and the unhoused.
+        if city.owner == v.h && city.house.is_some() {
+            j.set("house", houses::city_mark(v, c));
         }
         out.push(j);
     }
@@ -576,12 +553,9 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // World rituals (docs/CARDS.md, "World rituals"): every civilization's ritual as the human
         // may know it (the HUD's rituals element and its full list).
         "rituals" => rituals::rituals(v),
-        // Houses (docs/PERSONS.md, "UI"): how many things need attention on the Court screen
-        // (the menu button's badge; 0: none).
-        "court_attention" => persons::attention_count(v),
-        // Houses (docs/PERSONS.md, "UI", part H): the human's Houses in brief (`{id, label,
-        // leader, leader_name}`), for the alerts' portraits.
-        "houses" => house_marks::houses_brief(v),
+        // This game's Houses (docs/HOUSES.md, rule 15): the human's Houses in brief (`{id, label,
+        // leader, leader_name, state}`), for the alerts' portraits.
+        "houses" => houses::brief(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

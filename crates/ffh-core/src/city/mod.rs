@@ -276,8 +276,8 @@ pub struct City {
     /// Where the city's trained land combat units go when their order names no destination
     /// (docs/ARMIES.md); `None`: its own garrison.
     pub recruit_default: Option<crate::army::RecruitDest>,
-    /// This game's governors (docs/GOVERNORS.md): ruled directly (else governed); its owner's
-    /// government civic decides (`Game::player_rules_directly`).
+    /// This game's governors (docs/GOVERNORS.md): run by hand (else governed); its owner's choice
+    /// (`Game::player_set_city_governed`), governed under a governed civic.
     pub direct_rule: bool,
     /// Its role (`None` until it is first governed): the proposal (`Game::city_role_proposal`)
     /// unless the player chose another (`role_overridden`).
@@ -326,6 +326,9 @@ pub struct City {
     pub raid_turns: i32,
     /// Turns left until a stripped countryside recovers (0: not stripped; section 6).
     pub raid_stripped: i32,
+    /// This game's Houses (docs/HOUSES.md): the House the city is in (`Game::houses`); `None`
+    /// for an outpost and a city in no House yet.
+    pub house: Option<HouseId>,
 }
 
 impl City {
@@ -552,6 +555,7 @@ impl City {
             raid_percent: 0,
             raid_turns: 0,
             raid_stripped: 0,
+            house: None,
         }
     }
 

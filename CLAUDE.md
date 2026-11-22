@@ -4,7 +4,7 @@
 `docs/AI.md` + `docs/AI_LOG.md` + `docs/TELEMETRY.md`, `docs/PLAY_DESIGN.md` + `docs/HUMAN.md`, `docs/ART.md`,
 `docs/R3D.md`, `docs/HD2D.md`, `docs/SCORE.md`, `docs/PERF.md`, `docs/CRUSADE.md`, `docs/CARDS.md`,
 `docs/WORKS.md`, `docs/TACTICS.md`, `docs/SUPPLY.md`, `docs/NAVAL.md`, `docs/RAIDS.md`, `docs/SPECIALTIES.md`,
-`docs/PERSONS.md`). What is merged is what git says (`git log origin/master`);
+`docs/HOUSES.md`). What is merged is what git says (`git log origin/master`);
 open work and known gaps live in the area docs, not in a session log; the owner's queue of planned
 work is `TODO.md`. Out of scope for now (the owner's
 call): scenarios. The C++ AI is ported only as a benchmark to measure ffh-ai against (`crates/ffh-cppai`,
@@ -106,8 +106,8 @@ When porting, read the C++/Python being ported -- never port from memory.
   of other work: say what changed and why in the commit, and list gameplay changes from FFH2 0.41
   in docs/PORTING.md ("Changes from FFH2").
 - **New game features are not behind game options** (the owner's decision, 2026-11-05): a new
-  system is part of the rules in every game, not a feature flag. Governors, armies, cultural
-  actions, engagement combat and crusades were options once; they are in every game now.
+  system is part of the rules in every game, not a feature flag. Governors, armies, engagement
+  combat and crusades were options once; they are in every game now.
 - **No switch without a reason to exist** (the owner's decision, 2026-11-10). A game option stays
   only if a player can choose it on the new-game screen and it works; an AI switch
   (`crates/ffh-ai/src/switches.rs`) only while its behaviour is being measured, and it is removed

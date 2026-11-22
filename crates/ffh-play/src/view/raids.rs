@@ -9,11 +9,16 @@ use ffh_core::raid::{RaidState, Sally};
 
 use crate::command::Command;
 use crate::json::Json;
-use crate::view::culture::calc_lines;
 use crate::view::{city_name, Viewer};
 
 /// The sally postures' shared rule (the city screen's Sally section, under the selector).
 pub const SALLY_RULE: &str = "A sally is a battle between a guard squad and a raider squad, each turn. The guard does not leave the city.";
+
+/// A calculation's lines (the rules' `*_calc` reads), names resolved: the tooltip of the number
+/// or line beside it (docs/PLAY_DESIGN.md 4.9).
+fn calc_lines(v: &Viewer, lines: &[String]) -> Json {
+    Json::Arr(lines.iter().map(|l| Json::from(crate::names::resolve_keys(v.g.d, l).into_owned())).collect())
+}
 
 /// `n turns` (`1 turn`).
 fn turns(n: i32) -> String {

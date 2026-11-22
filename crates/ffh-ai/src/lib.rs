@@ -38,7 +38,6 @@ pub mod combat_sim;
 pub mod civs;
 pub mod code_effects;
 pub mod council;
-pub mod culture;
 pub mod defense;
 pub mod crusade;
 pub mod diplomacy;
@@ -56,7 +55,6 @@ pub mod military;
 pub mod naval;
 pub mod offers;
 pub mod outposts;
-pub mod persons;
 pub mod pacts;
 pub mod predict;
 pub mod probes;
@@ -166,9 +164,6 @@ impl Controller for Ai {
             return;
         }
         let turn = g.game_turn();
-        // A House (docs/PERSONS.md) is a vassal: its liege makes its war and peace, and it plays
-        // its own land (persons.rs).
-        let house = persons::is_house(g, p);
         // The empire decisions are made on the first call of the player's turn. A controller
         // that did not see the earlier calls (a game saved mid-turn, resumed with a fresh AI)
         // recognises them from the game state: the rules call again within a turn only while
@@ -209,21 +204,11 @@ impl Controller for Ai {
             production::wonder_emphasis(g, p);
             expansion::prepare_escorts(g, p); // early-expansion
             diplomacy::reconsider_deals(g, p);
-            // A House makes no war, peace or deals of its own (it answers offers: `judge_offer`),
-            // and asks no loans.
-            if !house {
-                diplomacy::manage(g, &v);
-                offers::to_humans(g, &v); // ai-offers: deals offered to human players
-            }
+            diplomacy::manage(g, &v);
+            offers::to_humans(g, &v); // ai-offers: deals offered to human players
             // Crusades and loans (docs/CRUSADE.md): pledged units leave before ours move.
             crusade::deliver(g, p);
-            if !house {
-                crusade::ask_for_loans(g, p);
-            }
-            // Houses (docs/PERSONS.md): tribute, a grant. A
-            // grant moves a city to a House: before the
-            // view of the turn is built.
-            persons::turn(g, p);
+            crusade::ask_for_loans(g, p);
             // War declarations change the picture.
             // (`View::new`, the forecast cache carried over.)
             let forecasts = std::mem::take(&mut v.forecasts);
@@ -235,7 +220,6 @@ impl Controller for Ai {
             governor::turn(self, g, p); // governed cities: priorities, empire orders (docs/GOVERNORS.md)
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)
-            culture::turn(g, p); // the civilization's cultural channel (docs/CULTURE.md: Court, Guard, Spread Religion)
             cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
             world_rituals::turn(g, &v); // the civilization's world ritual (docs/CARDS.md)
             lanun_khazad::turn(g, &v); // the Lanun's storm, the Khazad's tunnels (docs/CARDS.md)
@@ -264,6 +248,16 @@ impl Controller for Ai {
             return;
         }
         production::choose(self, g, c);
+    }
+
+    /// Who runs the AI's cities (docs/GOVERNORS.md): governors unless its government is
+    /// Despotism or God King (`governor::choose_governance`).
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        governor::choose_governance(g, p);
+    }
+
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        governor::wants_governors(g, g.cities[c].owner)
     }
 
     /// The unit a city trains for an army's requisition (docs/ARMIES.md): siege up to a third
@@ -325,10 +319,6 @@ impl Controller for Ai {
 
     fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
         crusade::consider_loan(g, p, proposal)
-    }
-
-    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
-        persons::consider_ultimatum(g, p, u)
     }
 
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {

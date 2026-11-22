@@ -437,7 +437,11 @@ impl Game {
         // The HP when the engagement begins (who lost counts from it).
         let start = hp_now(ov);
         self.engage_morale_rolls(&setup.units, n_att, &mut sat, rng);
-        self.engage_opening_rolls(&setup.units, n_att, &sat, &view.on_plot, ov, rng);
+        // The units seen on the plot that this game still holds: a plan's scratch copy (a save
+        // and load, then the battle's summons) may have lost one the view read from the game (a
+        // settler alone on the plot, gone once a summon was made there).
+        let on_plot: Vec<UnitId> = view.on_plot.iter().copied().filter(|&u| self.units.contains(u)).collect();
+        self.engage_opening_rolls(&setup.units, n_att, &sat, &on_plot, ov, rng);
         let mut hp = hp_now(ov);
         let mut effects = pre.to_vec();
         effects.extend(self.engage_opening_spells(setup, &hp));

@@ -377,21 +377,7 @@ impl Game {
     /// researching the tech) founds it), corporations, the tech's free great person in the
     /// capital and its free techs (AI: `AI_chooseFreeTech` -> controller; humans:
     /// `player_choose_tech`).
-    ///
-    /// Not in C++: a realm shares its knowledge (docs/PERSONS.md, "The third build", rule 10): a
-    /// tech gained here is gained by every other team of the team's realm (a liege and its Houses),
-    /// as not its first discoverer (`persons/knowledge.rs`).
     pub fn team_set_has_tech(&mut self, t: TeamId, tech: TechType, value: bool, player: Option<PlayerId>, first: bool, announce: bool) {
-        let gained = value && !self.team_is_has_tech(t, Some(tech));
-        self.team_set_has_tech_one(t, tech, value, player, first, announce);
-        if gained && self.team_is_has_tech(t, Some(tech)) {
-            self.team_share_tech(t, tech, announce);
-        }
-    }
-
-    /// [`Game::team_set_has_tech`] for team `t` alone (C++ `CvTeam::setHasTech`): the realm's
-    /// share calls it for each team it reaches, so a share reaches no further.
-    pub(crate) fn team_set_has_tech_one(&mut self, t: TeamId, tech: TechType, value: bool, player: Option<PlayerId>, first: bool, announce: bool) {
         let d = self.d;
 
         if self.team_is_has_tech(t, Some(tech)) != value {

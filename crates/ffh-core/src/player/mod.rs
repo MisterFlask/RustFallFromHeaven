@@ -361,15 +361,6 @@ pub struct Player {
     /// C++ `CvPlayerAI::m_aaiMemoryCount` (`AI_get/changeMemoryCount`): `[other][memory]`.
     pub ai_memory_count: IdxVec<PlayerId, IdxVec<MemoryType, i32>>,
     // ---- This game's own rules (not FFH2's) ----
-    /// What this player remembers of each player's cultural actions against it
-    /// (docs/CULTURE.md): `[hostility, friendship]` points, capped and decaying.
-    pub culture_memory: IdxVec<PlayerId, [i32; 2]>,
-    /// Its standing cultural channel (docs/CULTURE.md; docs/PERSONS.md, "The fourth build", rule
-    /// 1): Court, Guard or Spread Religion. Set it through `Game::player_set_culture_channel`.
-    pub culture_channel: Option<crate::culture::CultureChannel>,
-    /// What its cities diverted to the channel in their last turn, hundredths of culture: the
-    /// channel's inflow.
-    pub culture_inflow: i32,
     /// The gifts this player received and the demands it paid through proposed deals in the
     /// last `tribute::TRIBUTE_TURNS` turns (`crate::tribute`), oldest first.
     pub tributes: Vec<Tribute>,
@@ -410,21 +401,18 @@ pub struct Player {
     /// the player casts it, an untargeted one until it can take effect (no unit of the player, or
     /// its requirement unmet). The ritual is not built again meanwhile.
     pub world_ritual_pending: Option<ProjectType>,
-    /// Its Houses (its vassals, docs/PERSONS.md), in the order they became its Houses.
-    pub houses: Vec<HouseId>,
-    /// The names its founded Houses took in this game (a name is not used twice).
-    pub house_names: Vec<String>,
-    /// The House this player is (docs/PERSONS.md, "The second build": a House is a vassal
-    /// civilization of its own).
-    pub house: Option<HouseId>,
-    /// The tribute a new House of this player takes, percent (`persons::TRIBUTE_DEFAULT`).
-    pub house_tribute: i32,
     /// Not in C++: its heroes that died and will return to its capital (`unit/fallen.rs`), in
     /// the order they died.
     pub recovering: Vec<crate::unit::fallen::FallenUnit>,
     /// Not in C++: its units other than heroes that died in the last
     /// [`crate::unit::fallen::RESURRECTION_TURNS`] turns, the Resurrection spell's targets.
     pub fallen: Vec<crate::unit::fallen::FallenUnit>,
+    /// This game's Houses (docs/HOUSES.md): its Houses, in the order they formed.
+    pub houses: Vec<HouseId>,
+    /// The names its Houses took in this game (without "House"; a name is not used twice).
+    pub house_names: Vec<String>,
+    /// The game turn of its last Houses pass in its turn processing (-1: none yet).
+    pub house_turn: i32,
 }
 
 impl Player {
@@ -672,9 +660,6 @@ impl Player {
             ai_attitude_extra: IdxVec::from_elem(0, num_players),
             ai_first_contact: IdxVec::from_elem(false, num_players),
             ai_memory_count: IdxVec::from_fn(num_players, |_| IdxVec::from_elem(0, MemoryType::NUM)),
-            culture_memory: IdxVec::from_elem([0, 0], num_players),
-            culture_channel: None,
-            culture_inflow: 0,
             tributes: Vec::new(),
             armies: Vec::new(),
             army_count: 0,
@@ -688,12 +673,11 @@ impl Player {
             world_spell_casts: 0,
             tithe_target: None,
             world_ritual_pending: None,
-            houses: Vec::new(),
-            house_names: Vec::new(),
-            house: None,
-            house_tribute: crate::persons::TRIBUTE_DEFAULT,
             recovering: Vec::new(),
             fallen: Vec::new(),
+            houses: Vec::new(),
+            house_names: Vec::new(),
+            house_turn: -1,
         }
     }
 
@@ -868,7 +852,7 @@ fn reset_player(g: &mut Game, p: PlayerId) {
     for id in old.armies {
         g.armies.remove(id);
     }
-    // So are its Houses (docs/PERSONS.md).
+    // So are its Houses (docs/HOUSES.md; their cities went with its cities).
     for id in old.houses {
         g.houses.remove(id);
     }
@@ -909,9 +893,6 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
         for memory in pl.ai_memory_count.iter_mut() {
             memory.fill(0);
         }
-        pl.culture_memory.fill([0, 0]);
-        pl.culture_channel = None;
-        pl.culture_inflow = 0;
         pl.tributes.clear();
     }
     for other in g.player_ids() {
@@ -935,9 +916,6 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
             memory.fill(0);
         }
         o.tributes.retain(|t| t.other != p);
-        if let Some(memory) = o.culture_memory.get_mut(p) {
-            *memory = [0, 0];
-        }
     }
 }
 

@@ -275,35 +275,10 @@ export const PLAYER_COLORS = [
   "#8fb83a", "#6b6bd6", "#c97f5a", "#4fa3a3", "#b8b8b8", "#d6d65b", "#7f4fd6", "#5bd6a0",
 ];
 
-/** The player each player is drawn in the colour of, where it is another (docs/PERSONS.md, "The
- *  second build", rule 1: a House in its liege's, so a realm reads as one on the map; the shields
- *  on the plates tell its Houses apart): `Map(player -> colour player)`, set by state.js from each
- *  view (`players[].color_player`, a House city's `house.liege`). */
-let colourOf = new Map();
-let colourKeyText = "";
-
-/** Sets the colour players ({@link colourOf}): `pairs` is `[[player, colour player], ..]`. */
-export function setColourPlayers(pairs) {
-  colourOf = new Map();
-  for (const [p, c] of pairs) if (Number.isInteger(p) && Number.isInteger(c) && c >= 0 && c !== p) colourOf.set(p, c);
-  colourKeyText = [...colourOf].sort((a, b) => a[0] - b[0]).map(([p, c]) => `${p}>${c}`).join(",");
-}
-
-/** The player whose colour player `id` is drawn in (itself unless it is a House). */
-export function colourPlayer(id) {
-  return colourOf.get(id) ?? id;
-}
-
-/** A key that changes when a player's colour changes (a House breaking away, a new House): the
- *  renderers' caches of drawn territory compare it. */
-export function colourKey() {
-  return colourKeyText;
-}
-
 export function playerColor(id, barbarian = false) {
   if (barbarian) return "#5a1010";
   if (id === null || id === undefined || id < 0) return "#777";
-  return PLAYER_COLORS[colourPlayer(id) % PLAYER_COLORS.length];
+  return PLAYER_COLORS[id % PLAYER_COLORS.length];
 }
 
 /** A short label for a name: the initials of two or more words ("Great Commander" -> "GC"),

@@ -47,9 +47,9 @@ pub enum DecisionKind {
     FreeBonus { city: CityId },
     /// Two random results from the exploration's rolled tier.
     LairOutcome { unit: UnitId },
-    /// Not in C++ (docs/PERSONS.md, "The third build", rule 5): a House's ultimatum to the human,
-    /// its liege: option 0 accepts (a contract), 1 refuses (the House breaks away now).
-    Ultimatum { house: HouseId },
+    /// Not in C++ (docs/HOUSES.md, rule 5): the leader of a House forming at `city` (its seat);
+    /// the options are the candidates' cards, in the offer's order.
+    HouseLeader { city: CityId },
 }
 
 impl DecisionKind {
@@ -66,7 +66,7 @@ impl DecisionKind {
             DecisionKind::FreePromotion { .. } => "free_promotion",
             DecisionKind::FreeBonus { .. } => "free_bonus",
             DecisionKind::LairOutcome { .. } => "lair_outcome",
-            DecisionKind::Ultimatum { .. } => "ultimatum",
+            DecisionKind::HouseLeader { .. } => "house_leader",
         }
     }
 }
@@ -101,7 +101,7 @@ pub struct DecisionContext {
 }
 
 /// A blocking question (design §3).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Decision {
     /// Session-local id (answers name it; not stable across save/load).
     pub id: u32,
@@ -116,7 +116,13 @@ pub struct Decision {
     /// The keywords the decision names, whose reminder text the client shows as chips beside it
     /// (docs/PLAY_DESIGN.md, "Keywords and reminder text"; empty for most).
     pub keywords: Vec<KeywordType>,
+    /// What a designed dialog draws, structured (null for most): a House's pick
+    /// (`view::houses::offer_json`). The options stay the plain answer for every client.
+    pub offer: Json,
 }
+
+// (The offer holds no float: integers, strings and lists only.)
+impl Eq for Decision {}
 
 impl Decision {
     /// Is `i` an enabled option?
@@ -150,7 +156,7 @@ impl Decision {
 
     pub fn to_json(&self) -> Json {
         let c = &self.context;
-        crate::jobj! {
+        let mut j = crate::jobj! {
             "id" => self.id,
             "player" => self.player,
             "kind" => self.kind.name(),
@@ -167,7 +173,12 @@ impl Decision {
                 "unit" => c.unit,
                 "other_player" => c.other_player,
             },
+        };
+        // A designed dialog's structured contents (a House's pick), only where there are some.
+        if self.offer != Json::Null {
+            j.set("offer", self.offer.clone());
         }
+        j
     }
 }
 
@@ -199,6 +210,7 @@ pub fn free_tech(g: &Game, p: PlayerId, techs: &[TechType], advisor: Option<Tech
         advisor: advisor.and_then(|a| techs.iter().position(|&t| t == a)),
         context: DecisionContext::default(),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -247,30 +259,13 @@ pub fn keep_city(g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Opti
         player: p,
         kind: DecisionKind::KeepCity { city: c, can_raze, gift_to },
         title: if can_raze { "Raze or keep?".into() } else { "Keep the city?".into() },
-        text: format!("You have captured {} (size {}).{}{}", city.name, city.population, city_contents(g, c), if can_raze { raze_preview(g, p, c) } else { String::new() }),
+        text: format!("You have captured {} (size {}).{}", city.name, city.population, city_contents(g, c)),
         advisor: options.iter().position(|o| o.key == key),
         options,
         context: city_context(g, c, city.previous_owner),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
-}
-
-/// Houses (docs/PERSONS.md, "UI", part I): what razing city `c` does to player `p`'s Houses,
-/// `[NEWLINE]`-led lines under `If razed:` (empty when nothing).
-fn raze_preview(g: &Game, p: PlayerId, c: CityId) -> String {
-    if !g.player_has_houses(p) || g.players[p].houses.is_empty() {
-        return String::new();
-    }
-    let lines = g.persons_preview(p, &ffh_core::persons::PersonsAct::Raze(c));
-    if lines.is_empty() {
-        return String::new();
-    }
-    let mut out = "[NEWLINE][NEWLINE]If razed:".to_string();
-    for l in &lines {
-        out.push_str("[NEWLINE]");
-        out.push_str(&crate::view::house_marks::preview_sentence(l));
-    }
-    out
 }
 
 /// What a captured or joining city holds, for the keep/raze question: its buildings (wonders
@@ -317,6 +312,7 @@ pub fn disband_city(g: &Game, p: PlayerId, c: CityId, advisor_disbands: bool) ->
         advisor: Some(advisor_disbands as usize),
         context: city_context(g, c, city.previous_owner),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -343,6 +339,7 @@ pub fn take_control(g: &Game, p: PlayerId, new: PlayerId, advisor_takes: bool) -
         advisor: Some(if advisor_takes { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(new), ..Default::default() },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -359,6 +356,7 @@ pub fn offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(from), ..Default::default() },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -388,6 +386,7 @@ pub fn draft(g: &Game, p: PlayerId, crusade: u32, budget: i32, offered: &[(CityI
         options,
         context: DecisionContext::default(),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -422,40 +421,7 @@ pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanPropo
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(proposal.from), ..Default::default() },
         keywords: Vec::new(),
-    }
-}
-
-/// A House's ultimatum to its liege `p` (docs/PERSONS.md, "The third build", rules 5 and 6): what
-/// it demands, what accepting binds (a contract of `PERSON_ULTIMATUM_TURNS` turns, the House at
-/// least Annoyed) and what refusing does (the break-away now, the hold contest included). Option 0
-/// accepts, 1 refuses; the rules' lines, from the rules' read API.
-pub fn ultimatum(g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum, advisor_accepts: bool) -> Decision {
-    let h = u.house;
-    let label = g.house_label(h);
-    let turns = g.d.defines.person_ultimatum_turns;
-    let demand = g.ultimatum_demand_text(h, u.kind);
-    let again = if u.request { " Its refused request again." } else { "" };
-    let bound = match g.contract_bound_text(h, u.kind, true) {
-        Some(b) => format!("For {turns} turns: {b}."),
-        None => format!("For {turns} turns: a contract, with no other bound."),
-    };
-    let floor = format!("{label} stays at least Annoyed until turn {}.", u.until);
-    let refusal = g.house_refusal_outcome(h);
-    let mut accept = DecisionOption::new("accept", "Accept");
-    accept.help = format!("{bound} {floor}");
-    let mut refuse = DecisionOption::new("refuse", "Refuse");
-    refuse.help = refusal;
-    let seat = g.house_seat(h);
-    Decision {
-        id: 0,
-        player: p,
-        kind: DecisionKind::Ultimatum { house: h },
-        title: format!("Ultimatum: {label}"),
-        text: format!("{label} demands: {demand}{again}"),
-        options: vec![accept, refuse],
-        advisor: Some(if advisor_accepts { 0 } else { 1 }),
-        context: DecisionContext { plot: seat.map(|c| (g.cities[c].x, g.cities[c].y)), city: seat, unit: None, other_player: Some(g.houses[h].player) },
-        keywords: g.d.ty::<KeywordType>("KEYWORD_ULTIMATUM").into_iter().collect(),
+        offer: Json::Null,
     }
 }
 
@@ -481,6 +447,7 @@ pub fn free_promotion(g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType
         advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
         context: DecisionContext { plot: Some((unit.x, unit.y)), city: None, unit: Some(u), other_player: None },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -505,6 +472,7 @@ pub fn free_bonus(g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[
         advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
         context: city_context(g, c, None),
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -549,6 +517,7 @@ pub fn lair_outcome(g: &Game, p: PlayerId, u: UnitId, tier: ffh_core::ffh::lairs
         advisor: Some(advisor).filter(|&i| i < options.len()),
         context: DecisionContext { plot: Some((unit.x, unit.y)), city: None, unit: Some(u), other_player: None },
         keywords: Vec::new(),
+        offer: Json::Null,
     }
 }
 
@@ -1064,5 +1033,40 @@ pub fn pending(g: &Game, p: PlayerId, events: &[TriggeredId]) -> Pending {
         ai_groups_idle: ai_groups_waiting(g, p),
         crusade_calls: pending_crusade_calls(g, p),
         cast_due: cast_due(g, p),
+    }
+}
+
+/// A House forming (docs/HOUSES.md, rule 5): one option per candidate, its card's lines as the
+/// help (bare, `[NEWLINE]`-separated), the perk's effects as the tip; the head names the cities
+/// and the culture there.
+pub fn house_leader(g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer, advisor: usize) -> Decision {
+    let seat = offer.cities[0];
+    let options = offer
+        .cards
+        .iter()
+        .map(|card| {
+            let label = match &card.epithet {
+                Some(e) => format!("{}, {e}", card.name),
+                None => card.name.clone(),
+            };
+            let mut o = DecisionOption::new(g.d.type_name(card.candidate.leader).to_string(), label);
+            o.help = card.lines.join("[NEWLINE]");
+            o.tip = card.perk_lines.join("[NEWLINE]");
+            o
+        })
+        .collect();
+    let advisor = Some(advisor).filter(|&i| i < offer.cards.len());
+    Decision {
+        id: 0,
+        player: p,
+        kind: DecisionKind::HouseLeader { city: seat },
+        title: format!("House {} forms", offer.name),
+        text: offer.head(g).join("[NEWLINE]"),
+        options,
+        advisor,
+        context: city_context(g, seat, None),
+        keywords: crate::view::houses::keywords(g.d),
+        // The cards as the pick dialog draws them (docs/HOUSES.md, rule 15).
+        offer: crate::view::houses::offer_json(g, offer, advisor),
     }
 }

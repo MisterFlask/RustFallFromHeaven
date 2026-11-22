@@ -167,6 +167,15 @@ function optionTip(o) {
   return [h("div.tip-title", o.label), long ? h("div.tip-effects", markup(o.help)) : null, o.tip ? h("div.tip-hint", markup(o.tip)) : null];
 }
 
+/** The designed dialogs of some decisions, by kind (`house_leader`: houses.js): `view(d, send)`
+ *  returns `{body, className?, wide?}` drawn in place of the plain options (`send(option)`
+ *  answers); the decision's plain options stay the answer. */
+const decisionViews = new Map();
+
+export function registerDecisionView(kind, view) {
+  decisionViews.set(kind, view);
+}
+
 /** Shows decision `d` (`status.decision`); `answer(option | null)` sends the answer (null:
  *  the advisor's pick) and resolves when it was accepted. Showing the same decision again does
  *  nothing; `null` closes it. */
@@ -190,6 +199,21 @@ export function showDecision(d, answer) {
     }
   };
   const errorLine = h("p.error");
+  // A designed dialog (a House's pick: houses.js) where the decision carries its structured form.
+  const custom = d.offer ? decisionViews.get(d.kind)?.(d, send) : null;
+  if (custom) {
+    m = openModal({
+      title: d.title,
+      body: [...custom.body, errorLine],
+      buttons: [{ label: "AI default", title: "The advisor's pick", onClick: () => send(null) }],
+      dismissible: false,
+      tag: "decision",
+      wide: !!custom.wide,
+      className: `decision ${custom.className ?? ""}`.trim(),
+    });
+    decisionModal = m;
+    return;
+  }
   const options = h(
     "div.options",
     d.options.map((o, i) =>
@@ -208,7 +232,8 @@ export function showDecision(d, answer) {
   const other = d.context?.other_player;
   const face = other !== null && other !== undefined ? playerPortrait(other, { size: PORTRAIT.medium }) : null;
   const text = h("p.page-text", illuminate(markup(d.text)));
-  // The keywords the decision names (an ultimatum's), their reminders as chips.
+  // The keywords the decision names (none for most; a House's pick sent without its designed
+  // form), their reminders as chips.
   const chips = d.reminders?.length ? h("div.decision-keywords", keywordChips(d.reminders)) : null;
   m = openModal({
     title: d.title,

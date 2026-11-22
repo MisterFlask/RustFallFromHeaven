@@ -103,7 +103,7 @@ def definitions():
                     info.pop(field, None)
                 info["religion_weight_modifiers"] = {r: -100 for r in religions}
             elif civ["civilization"] == "CIVILIZATION_MERCURIANS":
-                # Talvek's tyranny still fights demons; evil does not make him a Veil ally.
+                # Every Mercurian faction still fights demons, whatever its alignment: never a Veil ally.
                 info.setdefault("religion_weight_modifiers", {})["RELIGION_THE_ASHEN_VEIL"] = -100
             if concept["alignment"] == "Good" and info.get("favorite_civic") == "CIVIC_SLAVERY":
                 info["favorite_civic"] = "CIVIC_LIBERTY"

@@ -557,12 +557,6 @@ impl Game {
 
     /// C++ `CvCity::calculateDistanceMaintenanceTimes100` (CvCity.cpp:5807-5855).
     pub fn city_calculate_distance_maintenance_times100(&self, c: CityId) -> i32 {
-        self.city_distance_maintenance_without_times100(c, None)
-    }
-
-    /// [`Game::city_calculate_distance_maintenance_times100`] were city `without` no longer its
-    /// owner's (a grant's preview, docs/PERSONS.md).
-    pub(crate) fn city_distance_maintenance_without_times100(&self, c: CityId, without: Option<CityId>) -> i32 {
         let d = self.d;
         let city = &self.cities[c];
         let owner = city.owner;
@@ -571,18 +565,18 @@ impl Game {
 
         let mut worst_city_maintenance = 0;
         let mut best_capital_maintenance = MAX_INT;
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's percent of this city's part,
+        // added to the empire's.
+        let modifier = self.players[owner].distance_maintenance_modifier + self.city_house_distance_maintenance_modifier(c);
 
         for &loop_city in &self.players[owner].cities {
-            if Some(loop_city) == without {
-                continue;
-            }
             let (loop_x, loop_y) = (self.cities[loop_city].x, self.cities[loop_city].y);
             let mut temp_maintenance = 100 * (d.defines.max_distance_city_maintenance * self.plot_distance(city.x, city.y, loop_x, loop_y));
 
             temp_maintenance *= city.population + 7;
             temp_maintenance /= 10;
 
-            temp_maintenance *= std::cmp::max(0, self.players[owner].distance_maintenance_modifier + 100);
+            temp_maintenance *= std::cmp::max(0, modifier + 100);
             temp_maintenance /= 100;
 
             temp_maintenance *= world.distance_maintenance_percent;
@@ -611,28 +605,8 @@ impl Game {
         temp_maintenance
     }
 
-    /// C++ `CvCity::calculateNumCitiesMaintenanceTimes100` (CvCity.cpp:5862-5905). Not in FFH2
-    /// (docs/PERSONS.md, rule 14): a Crown city beyond its Crown's limit pays
-    /// `persons::CROWN_OVER_FACTOR` times it.
+    /// C++ `CvCity::calculateNumCitiesMaintenanceTimes100` (CvCity.cpp:5862-5905).
     pub fn city_calculate_num_cities_maintenance_times100(&self, c: CityId) -> i32 {
-        self.city_num_cities_maintenance_without_times100(c, None)
-    }
-
-    /// [`Game::city_calculate_num_cities_maintenance_times100`] were city `without` of the same
-    /// owner granted to a House (a vassal of its team): it counts as a vassal's city, no longer as
-    /// the owner's or its Crown's (a grant's preview, docs/PERSONS.md).
-    pub(crate) fn city_num_cities_maintenance_without_times100(&self, c: CityId, without: Option<CityId>) -> i32 {
-        let base = self.city_num_cities_base_times100(c, without);
-        if self.city_crown_over_without(c, without) {
-            base * crate::persons::CROWN_OVER_FACTOR
-        } else {
-            base
-        }
-    }
-
-    /// The city-count maintenance of city `c` at the normal rate (C++
-    /// `CvCity::calculateNumCitiesMaintenanceTimes100`), were city `without` granted to a House.
-    pub(crate) fn city_num_cities_base_times100(&self, c: CityId, without: Option<CityId>) -> i32 {
         let d = self.d;
         let owner = self.cities[c].owner;
         let team = self.city_team(c);
@@ -656,19 +630,16 @@ impl Game {
                 num_vassal_cities += self.players[p].num_cities();
             }
         }
-        // (A city granted to a House counts as a vassal's: every city of a vassal counts.)
-        let granted = without.filter(|&w| self.cities.contains(w) && self.cities[w].owner == owner);
-        num_vassal_cities += i32::from(granted.is_some());
         num_vassal_cities /= std::cmp::max(1, self.teams[team].num_members);
-        let own_less = granted.map_or(0, |w| i32::from(!self.cities[w].outpost));
 
         // FfH: Modified by Kael 03/29/2009 (settlements did not count; they count now, outposts do not)
         let mut num_cities_maintenance =
-            ((self.players[owner].num_cities() - self.player_get_num_outposts(owner) - own_less) + num_vassal_cities) * num_cities_percent;
+            ((self.players[owner].num_cities() - self.player_get_num_outposts(owner)) + num_vassal_cities) * num_cities_percent;
         // FfH: End Modify
 
         num_cities_maintenance = std::cmp::min(num_cities_maintenance, handicap.max_num_cities_maintenance * 100);
-        num_cities_maintenance *= std::cmp::max(0, self.players[owner].num_cities_maintenance_modifier + 100);
+        // This game's Houses (docs/HOUSES.md, rule 9): the perk's percent, added to the empire's.
+        num_cities_maintenance *= std::cmp::max(0, self.players[owner].num_cities_maintenance_modifier + self.city_house_num_cities_maintenance_modifier(c) + 100);
         num_cities_maintenance /= 100;
 
         // FfH: Added by Kael 11/18/2008 (settlements paid none either: they pay now)
@@ -683,12 +654,6 @@ impl Game {
     /// C++ `CvCity::calculateColonyMaintenanceTimes100` (CvCity.cpp:5913-5959). FFH: no
     /// colony maintenance on a landmass with any government center of the owner.
     pub fn city_calculate_colony_maintenance_times100(&self, c: CityId) -> i32 {
-        self.city_colony_maintenance_without_times100(c, None)
-    }
-
-    /// [`Game::city_calculate_colony_maintenance_times100`] were city `without` no longer its
-    /// owner's (a grant's preview, docs/PERSONS.md).
-    pub(crate) fn city_colony_maintenance_without_times100(&self, c: CityId, without: Option<CityId>) -> i32 {
         if self.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) {
             return 0;
         }
@@ -700,7 +665,7 @@ impl Game {
         // FfH: Modified by Kael 10/09/2008 (colony maintenance is determined by the closest
         // palace: none on a landmass with any of the owner's government centers)
         for &loop_city in &self.players[owner].cities {
-            if Some(loop_city) != without && self.city_is_government_center(loop_city) && self.city_area(loop_city) == area {
+            if self.city_is_government_center(loop_city) && self.city_area(loop_city) == area {
                 return 0;
             }
         }
@@ -719,8 +684,7 @@ impl Game {
         num_cities_percent *= handicap.colony_maintenance_percent;
         num_cities_percent /= 100;
 
-        let gone = without.is_some_and(|w| self.cities.contains(w) && self.cities[w].owner == owner && self.city_area(w) == area);
-        let num_cities = (self.map.areas[area].cities_per_player[owner] - 1 - i32::from(gone)) * num_cities_percent;
+        let num_cities = (self.map.areas[area].cities_per_player[owner] - 1) * num_cities_percent;
 
         let mut maintenance = (num_cities * num_cities) / 100;
         maintenance = std::cmp::min(maintenance, (handicap.max_colony_maintenance * self.city_calculate_distance_maintenance_times100(c)) / 100);
@@ -778,31 +742,6 @@ impl Game {
         }
 
         maintenance
-    }
-
-    /// The maintenance (hundredths of gold a turn, before inflation) city `c` would pay were city
-    /// `without` of its owner granted to a House: `city_update_maintenance`'s formula with
-    /// `without` counted as a vassal's city (0 in disorder, We Love the King Day, without
-    /// population, an outpost).
-    pub(crate) fn city_maintenance_without_times100(&self, c: CityId, without: Option<CityId>) -> i32 {
-        let city = &self.cities[c];
-        if self.city_is_disorder(c) || city.we_love_the_king_day || city.population <= 0 || city.outpost {
-            return 0;
-        }
-        let base = self.city_distance_maintenance_without_times100(c, without)
-            + self.city_num_cities_maintenance_without_times100(c, without)
-            + self.city_colony_maintenance_without_times100(c, without)
-            + self.city_calculate_corporation_maintenance_times100(c);
-        base * std::cmp::max(0, city.maintenance_modifier + 100) / 100
-    }
-
-    /// The number-of-cities part of [`Game::city_maintenance_without_times100`].
-    pub(crate) fn city_num_cities_part_without_times100(&self, c: CityId, without: Option<CityId>) -> i32 {
-        let city = &self.cities[c];
-        if self.city_is_disorder(c) || city.we_love_the_king_day || city.population <= 0 || city.outpost {
-            return 0;
-        }
-        self.city_num_cities_maintenance_without_times100(c, without) * std::cmp::max(0, city.maintenance_modifier + 100) / 100
     }
 
     /// C++ `CvCity::calculateBaseMaintenanceTimes100` (CvCity.cpp:6030-6033).

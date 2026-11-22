@@ -1,5 +1,7 @@
-//! Governors v2: the government decides who runs the cities, city roles, empire priorities and
-//! diagnoses, empire orders (docs/GOVERNORS.md). Every situation is built by hand.
+//! Governors v2: who runs the cities (a governed civic governs every city; under any other the
+//! owner hands cities over city by city), city roles, empire priorities and diagnoses, empire
+//! orders (docs/GOVERNORS.md). Every situation is built by hand; the players' controllers choose
+//! nothing (a bare game), so a city is governed only by the rules or a call of the test.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -104,37 +106,74 @@ fn city_roles_have_four_generic_key_buildings_each_none_in_two_roles() {
             assert!(d.building_classes[k].rolls_tier, "{:?} has tiers", k);
         }
     }
-    let direct: Vec<&str> = d.civics.iter().filter(|c| c.direct_rule).map(|c| c.base.type_.as_str()).collect();
-    assert_eq!(direct, ["CIVIC_DESPOTISM", "CIVIC_GOD_KING"]);
+    let governed: Vec<&str> = d.civics.iter().filter(|c| c.governed).map(|c| c.base.type_.as_str()).collect();
+    assert_eq!(governed, ["CIVIC_CITY_STATES", "CIVIC_ARISTOCRACY"]);
 }
 
 #[test]
-fn the_government_hands_every_city_over_and_takes_every_city_back() {
-    let (mut g, cities) = game(4);
-    assert!(g.player_rules_directly(P0), "Despotism rules directly");
+fn cities_are_run_by_hand_under_republic_and_theocracy() {
+    let (mut g, cities) = game(3);
+    assert!(!g.player_civics_govern(P0), "Despotism governs no city");
     assert!(cities.iter().all(|&c| !g.city_is_governed(c)));
+    for name in ["CIVIC_REPUBLIC", "CIVIC_THEOCRACY"] {
+        government(&mut g, P0, name);
+        assert!(!g.player_civics_govern(P0), "{name}");
+        for &c in &cities {
+            assert!(!g.city_is_governed(c), "{name}: run by hand");
+            assert_eq!(g.city_role(c), None);
+        }
+    }
+}
+
+#[test]
+fn a_city_is_handed_to_a_governor_and_taken_back_at_will() {
+    let (mut g, cities) = game(3);
+    government(&mut g, P0, "CIVIC_REPUBLIC");
+    let c = cities[1];
+    g.player_set_city_governed(P0, c, true).unwrap();
+    assert!(g.city_is_governed(c) && g.city_role(c).is_some() && g.cities[c].production_automated);
+    assert!(!g.city_is_governed(cities[0]) && !g.city_is_governed(cities[2]), "city by city");
+    assert_eq!(g.player_governed_cities(P0), vec![c]);
+    // Twice: refused, nothing changes.
+    assert!(g.player_set_city_governed(P0, c, true).is_err());
+    // The capital too.
+    g.player_set_city_governed(P0, cities[0], true).unwrap();
+    assert!(g.city_is_governed(cities[0]));
+    // Taken back at once, at no cost: the role and its emphasis gone, production the player's.
+    let gold = g.players[P0].gold;
+    g.player_set_city_governed(P0, c, false).unwrap();
+    assert!(!g.city_is_governed(c) && g.city_role(c).is_none() && !g.cities[c].production_automated);
+    assert_eq!(g.players[P0].gold, gold);
+    assert!(g.player_set_city_governed(P0, c, false).is_err());
+    // Not another player's city.
+    assert!(g.player_set_city_governed(P1, c, true).is_err());
+}
+
+#[test]
+fn under_city_states_every_city_is_governed_and_none_is_taken_back() {
+    let (mut g, cities) = game(4);
+    government(&mut g, P0, "CIVIC_REPUBLIC");
+    g.player_set_city_governed(P0, cities[2], true).unwrap();
     let before = g.log.entries.len();
-    government(&mut g, P0, "CIVIC_ARISTOCRACY");
-    assert!(!g.player_rules_directly(P0));
+    government(&mut g, P0, "CIVIC_CITY_STATES");
+    assert!(g.player_civics_govern(P0));
     for &c in &cities {
         assert!(g.city_is_governed(c), "every city governed, the capital included");
-        assert!(g.cities[c].production_automated);
-        assert!(g.city_role(c).is_some());
+        assert!(g.cities[c].production_automated && g.city_role(c).is_some());
     }
     let news: Vec<&str> = g.log.entries[before..].iter().map(|m| m.text.as_str()).filter(|t| t.starts_with("Government:")).collect();
     assert_eq!(news.len(), 1, "one message: {news:?}");
-    // Back to a direct-rule civic: every city taken back.
+    assert!(news[0].contains("(3 handed to governors)"), "{news:?}");
+    // Taking one back is refused, with the civic's reason.
+    assert_eq!(g.player_check_city_governed(P0, cities[1], false), Err("City States: every city is run by a governor.".to_string()));
+    assert!(g.player_set_city_governed(P0, cities[1], false).is_err());
+    assert!(g.city_is_governed(cities[1]));
+    // Leaving City States changes no city; each is taken back by hand after.
     government(&mut g, P0, "CIVIC_GOD_KING");
-    for &c in &cities {
-        assert!(!g.city_is_governed(c));
-        assert!(!g.cities[c].production_automated);
-        assert_eq!(g.city_role(c), None);
-    }
-    // Governed again: every city has a role.
-    government(&mut g, P0, "CIVIC_ARISTOCRACY");
-    for &c in &cities {
-        assert!(g.city_is_governed(c) && g.city_role(c).is_some());
-    }
+    assert!(cities.iter().all(|&c| g.city_is_governed(c) && g.city_role(c).is_some()), "each stays governed");
+    g.player_set_city_governed(P0, cities[1], false).unwrap();
+    assert!(!g.city_is_governed(cities[1]));
+    assert!(g.city_is_governed(cities[0]) && g.city_is_governed(cities[2]));
 }
 
 #[test]
@@ -148,37 +187,76 @@ fn a_city_taken_back_drops_its_roles_emphasis() {
     let wanted = g.d.city_roles[production].emphasizes.clone();
     assert!(!wanted.is_empty() && wanted.iter().all(|&e| g.cities[c].ai_emphasize[e]));
     government(&mut g, P0, "CIVIC_DESPOTISM");
+    g.player_set_city_governed(P0, c, false).unwrap();
     assert!(wanted.iter().all(|&e| !g.cities[c].ai_emphasize[e]));
 }
 
 #[test]
-fn a_new_city_takes_its_owners_mode() {
-    let (mut g, _) = governed_game(2);
-    // Founded.
+fn a_city_gained_is_run_by_hand_unless_a_governed_civic_governs_it() {
+    let (mut g, cities) = game(2);
+    government(&mut g, P0, "CIVIC_REPUBLIC");
+    for &c in &cities {
+        g.player_set_city_governed(P0, c, true).unwrap();
+    }
+    // Founded under Republic, every other city governed: run by hand.
     let (x, y) = free_plot(&g);
     let founded = g.player_init_city(P0, x, y, true, true);
-    assert!(g.city_is_governed(founded));
-    assert!(g.city_role(founded).is_some());
-    assert!(g.cities[founded].recruit_default.is_none());
-    // Acquired from a player that rules directly.
-    assert!(g.player_rules_directly(P1));
+    assert!(!g.city_is_governed(founded) && g.city_role(founded).is_none());
+    // Acquired from a governed city of another player: run by hand.
+    government(&mut g, P1, "CIVIC_ARISTOCRACY");
     let (x, y) = free_plot(&g);
     let theirs = g.player_init_city(P1, x, y, true, true);
-    assert!(!g.city_is_governed(theirs));
+    assert!(g.city_is_governed(theirs));
     g.player_acquire_city(P0, theirs, false, true, true);
     let ours = g.map.plots[g.map.plot_xy(x, y).unwrap()].plot_city.expect("the city");
-    assert!(g.city_is_governed(ours) && g.city_role(ours).is_some());
-    // Given to a player that rules directly: ruled directly.
+    assert!(!g.city_is_governed(ours) && g.city_role(ours).is_none());
+    // Under Aristocracy a city gained is governed: founded, and given back.
     g.player_acquire_city(P1, ours, false, true, true);
     let back = g.map.plots[g.map.plot_xy(x, y).unwrap()].plot_city.expect("the city");
-    assert!(!g.city_is_governed(back));
-    assert_eq!(g.city_role(back), None);
+    assert!(g.city_is_governed(back) && g.city_role(back).is_some());
+    let (x, y) = free_plot(&g);
+    let founded = g.player_init_city(P1, x, y, true, true);
+    assert!(g.city_is_governed(founded) && g.city_role(founded).is_some());
+    assert!(g.cities[founded].recruit_default.is_none());
 }
 
 #[test]
-fn barbarian_cities_are_ruled_directly() {
-    let (g, _) = game(1);
-    assert!(g.player_rules_directly(g.barbarian_player()));
+fn barbarian_cities_are_never_governed() {
+    let (mut g, _) = game(1);
+    let barbarian = g.barbarian_player();
+    assert!(!g.player_civics_govern(barbarian));
+    let (x, y) = free_plot(&g);
+    let c = g.player_init_city(barbarian, x, y, true, true);
+    assert!(!g.city_is_governed(c));
+    assert!(g.player_set_city_governed(barbarian, c, true).is_err());
+}
+
+#[test]
+fn a_mixed_empire_counts_its_governed_cities_only() {
+    let (mut g, cities) = game(7);
+    government(&mut g, P0, "CIVIC_REPUBLIC");
+    for &c in &cities {
+        all_standard(&mut g, c);
+    }
+    // Five of seven governed: with fewer than six governed cities no role is expected without a
+    // priority (seven cities, two run by hand).
+    for &c in &cities[..5] {
+        g.player_set_city_governed(P0, c, true).unwrap();
+    }
+    g.player_set_governor_priorities(P0, vec![]).unwrap();
+    assert_eq!(g.player_governor_diagnoses(P0), vec![]);
+    // The priorities' proposals reach the governed cities only.
+    let research = role(&g, "ROLE_RESEARCH");
+    g.player_set_governor_priorities(P0, vec![research]).unwrap();
+    assert!(cities[..5].iter().all(|&c| g.city_role(c) == Some(research)), "the governed cities follow the priority");
+    assert!(cities[5..].iter().all(|&c| g.city_role(c).is_none()), "a hand-run city has no role");
+    assert_eq!(g.player_governor_diagnoses(P0), vec![]);
+    // A sixth governed city: every role is expected.
+    g.player_set_governor_priorities(P0, vec![]).unwrap();
+    g.player_set_city_governed(P0, cities[5], true).unwrap();
+    let first = g.d.city_roles.keys().next().unwrap();
+    let unfilled: Vec<GovDiagnosis> = g.d.city_roles.keys().filter(|&r| r != first).map(GovDiagnosis::RoleUnfilled).collect();
+    assert_eq!(g.player_governor_diagnoses(P0), unfilled);
 }
 
 #[test]
@@ -246,6 +324,7 @@ fn a_role_the_player_chooses_needs_the_suitability() {
     assert!(!g.cities[c].role_overridden);
     // Not a governed city: refused.
     government(&mut g, P0, "CIVIC_DESPOTISM");
+    g.player_set_city_governed(P0, c, false).unwrap();
     assert!(g.player_check_city_role(P0, c, research).is_err());
 }
 
@@ -323,8 +402,9 @@ fn empire_orders_are_units_wonders_palaces_and_projects() {
     let granary = g.city_building_for_class(c, d.t::<BuildingClassType>("BUILDINGCLASS_GRANARY")).unwrap();
     assert!(g.city_check_empire_order(P0, c, OrderType::ORDER_CONSTRUCT, granary.i()).is_err());
     assert!(g.city_check_empire_order(P0, c, OrderType::ORDER_MAINTAIN, 0).is_err());
-    // Not in a directly ruled city.
+    // Not in a city run by hand.
     government(&mut g, P0, "CIVIC_DESPOTISM");
+    g.player_set_city_governed(P0, c, false).unwrap();
     assert!(g.city_check_empire_order(P0, c, OrderType::ORDER_TRAIN, warrior.i()).is_err());
 }
 
@@ -402,6 +482,8 @@ fn a_city_handed_over_keeps_its_requisition_and_empire_orders_only() {
     assert_eq!(g.cities[c].recruit_default, None);
     // Taken back: the queue kept, as ordinary orders.
     government(&mut g, P0, "CIVIC_DESPOTISM");
+    assert!(g.cities[c].order_queue.iter().any(|o| o.empire), "leaving Aristocracy changes no city");
+    g.player_set_city_governed(P0, c, false).unwrap();
     assert!(g.cities[c].order_queue.iter().all(|o| !o.empire));
     assert_eq!(g.cities[c].order_queue.len(), 1);
 }

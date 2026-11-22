@@ -90,17 +90,23 @@ impl Controller for Timed {
     fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
         self.time(|| self.inner.consider_loan(g, p, proposal))
     }
-    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
-        self.time(|| self.inner.consider_ultimatum(g, p, u))
-    }
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.time(|| self.inner.choose_loan_units(g, p, terms))
+    }
+    fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
+        self.time(|| self.inner.choose_house_leader(g, p, offer))
     }
     fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
         self.time(|| self.inner.requisition_unit(g, c, a))
     }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.time(|| self.inner.govern_cities(g, p))
+    }
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        self.time(|| self.inner.choose_city_governance(g, p))
+    }
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        self.time(|| self.inner.govern_gained_city(g, c))
     }
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
         self.time(|| self.inner.choose_crew_build(g, c))
@@ -263,6 +269,12 @@ impl Controller for CppCitizens {
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.inner.govern_cities(g, p)
     }
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        self.inner.choose_city_governance(g, p)
+    }
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        self.inner.govern_gained_city(g, c)
+    }
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
         self.inner.choose_crew_build(g, c)
     }
@@ -310,11 +322,11 @@ impl Controller for CppCitizens {
     fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
         self.inner.consider_loan(g, p, proposal)
     }
-    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
-        self.inner.consider_ultimatum(g, p, u)
-    }
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.inner.choose_loan_units(g, p, terms)
+    }
+    fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
+        self.inner.choose_house_leader(g, p, offer)
     }
     fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
         self.inner.choose_free_promotion(g, p, u, options)
@@ -1118,17 +1130,23 @@ impl Controller for FreeRider {
     fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
         self.inner.consider_loan(g, p, proposal)
     }
-    fn consider_ultimatum(&self, g: &Game, p: PlayerId, u: &ffh_core::persons::Ultimatum) -> bool {
-        self.inner.consider_ultimatum(g, p, u)
-    }
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.inner.choose_loan_units(g, p, terms)
+    }
+    fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
+        self.inner.choose_house_leader(g, p, offer)
     }
     fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
         self.inner.requisition_unit(g, c, a)
     }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.inner.govern_cities(g, p)
+    }
+    fn choose_city_governance(&self, g: &mut Game, p: PlayerId) {
+        self.inner.choose_city_governance(g, p)
+    }
+    fn govern_gained_city(&self, g: &Game, c: CityId) -> bool {
+        self.inner.govern_gained_city(g, c)
     }
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
         self.inner.choose_crew_build(g, c)

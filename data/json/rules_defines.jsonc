@@ -1,29 +1,9 @@
 {
   // Tuning values of this game's own rules (not FFH2's): read after GlobalDefines.xml,
   //     GlobalDefinesAlt.xml and PythonCallbackDefines.xml, like them. Each system's doc lists
-  //     its values: docs/CULTURE.md for the CULTURE_* defines, docs/ARMIES.md for the ARMY_* ones, docs/GOVERNORS.md for the
+  //     its values: docs/ARMIES.md for the ARMY_* ones, docs/GOVERNORS.md for the
   //     GOVERNOR_* ones; the ENGAGEMENT_* ones are engagement combat's (phase 6). Percentages are integers
   //     (100 = 1.0).
-  // ==== Cultural channels (docs/CULTURE.md; docs/PERSONS.md, "The fourth build") ====
-  // percent of each city's culture rate a civilization's channel diverts (counted in hundredths)
-  "CULTURE_CHANNEL_PERCENT": 50,
-  // plots within which a channel works in full; beyond, it falls with the square of the distance
-  "CULTURE_CHANNEL_FULL_RANGE": 5,
-  // plots beyond which a channel does nothing
-  "CULTURE_CHANNEL_RANGE": 20,
-  // Court: percent of its favour a House's favour toward a courter fades each turn (at least a
-  //      hundredth of a culture)
-  "CULTURE_FAVOUR_FADE_PERCENT": 5,
-  // Court: the turns of a Court channel per point of the liege's memory of it (MEMORY_COURTED_HOUSE)
-  "CULTURE_COURT_MEMORY_TURNS": 5,
-  // Spread Religion: chance a turn per culture channelled, in hundredths of a percent, before distance and the religions present
-  "CULTURE_SPREAD_PER_CULTURE": 100,
-  // Spread Religion: most chance a turn, in hundredths of a percent
-  "CULTURE_SPREAD_MAX": 2500,
-  // turns per point a leader's memory of cultural hostility or friendship fades
-  "CULTURE_MEMORY_DECAY_TURNS": 10,
-  // most points of cultural hostility or friendship a leader remembers
-  "CULTURE_MEMORY_MAX": 8,
   // ==== Armies (GAMEOPTION_ARMIES, docs/ARMIES.md) ====
   "ARMY_TRANSIT_STALL_TURNS": 5,
   // ==== Supply lines (docs/SUPPLY.md) ====
@@ -96,24 +76,6 @@
   "GOVERNOR_PRIORITY_WEIGHT": 30,
   // the empire priorities a player may set
   "GOVERNOR_MAX_PRIORITIES": 2,
-  // ==== Houses (docs/PERSONS.md; the PERSON_ prefix is the system's first name) ====
-  // the turns a House's request stands before it lapses (refused)
-  "PERSON_DEMAND_TURNS": 40,
-  // the turns after a request was met or refused before the next one is made
-  "PERSON_DEMAND_REST": 20,
-  // a House with a city within this many plots of a city is a claimant to it
-  "PERSON_CLAIM_RANGE": 6,
-  // the Crown's limit under a governing civic (docs/PERSONS.md, "The second build", rule 14): the
-  //      cities the Crown holds at the normal city-count maintenance, the capital first; each
-  //      further one pays triple
-  "PERSON_CROWN_CITIES": 3,
-  // ---- the third build, part 2A (docs/PERSONS.md, "The third build", rules 4 to 6) ----
-  // a House holding this many cities or more (outposts left out) may split
-  "PERSON_HOUSE_SPLIT_CITIES": 6,
-  // the chance, percent, that such a House splits in its liege's turn processing
-  "PERSON_HOUSE_SPLIT_PERCENT": 5,
-  // the turns an accepted ultimatum's contract binds the liege and floors the House at Annoyed
-  "PERSON_ULTIMATUM_TURNS": 20,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
   //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
   //      engage_row_order in units.jsonc; plot
@@ -254,5 +216,56 @@
   //      this many per mille
   "RAID_SALLY_ODDS": 600,
   // RAID_SALLY_FORECAST_RUNS: sampled battles of a sally forecast
-  "RAID_SALLY_FORECAST_RUNS": 12
+  "RAID_SALLY_FORECAST_RUNS": 12,
+  // ==== Houses (docs/HOUSES.md): a civilization's cities in groups of up to four under a minor
+  //      leader whose opinion of the ruler is happiness there ====
+  // HOUSE_MAX_CITIES: the cities a House holds at most
+  "HOUSE_MAX_CITIES": 4,
+  // HOUSE_JOIN_RANGE: a city joins a House whose seat is at most this many plots away
+  "HOUSE_JOIN_RANGE": 8,
+  // HOUSE_FIRST_CITIES: the unhoused home cities its owner holds when its first House forms
+  "HOUSE_FIRST_CITIES": 3,
+  // HOUSE_CANDIDATES: the leaders offered at a House's forming (a foreign House: one more, the
+  //      outsider)
+  "HOUSE_CANDIDATES": 3,
+  // HOUSE_OUTSIDER_HAPPY: happiness in the cities of a House led by an outsider
+  "HOUSE_OUTSIDER_HAPPY": -3,
+  // HOUSE_HAPPY_<state>: happiness in a House's cities by its state
+  "HOUSE_HAPPY_FRIENDLY": 2,
+  "HOUSE_HAPPY_PLEASED": 1,
+  "HOUSE_HAPPY_CAUTIOUS": 0,
+  "HOUSE_HAPPY_ANNOYED": -2,
+  "HOUSE_HAPPY_FURIOUS": -4,
+  // HOUSE_OPINION_<state>: the least opinion of each state (below ANNOYED: Furious)
+  "HOUSE_OPINION_FRIENDLY": 3,
+  "HOUSE_OPINION_PLEASED": 1,
+  "HOUSE_OPINION_CAUTIOUS": -2,
+  "HOUSE_OPINION_ANNOYED": -5,
+  // HOUSE_PERK_TIER_<n>_TURN: a House formed from this turn on (at Normal speed, scaled by the
+  //      game speed) rolls perks of tier n
+  "HOUSE_PERK_TIER_2_TURN": 100,
+  "HOUSE_PERK_TIER_3_TURN": 200,
+  // Opinion parts (rule 7): (a) alignment, (b) religion, (c) sympathy, (d) wars and alignment
+  "HOUSE_OPINION_ALIGNMENT_SAME": 1,
+  "HOUSE_OPINION_ALIGNMENT_STEP": -2,
+  "HOUSE_OPINION_RELIGION_SAME": 2,
+  "HOUSE_OPINION_RELIGION_OTHER": -1,
+  "HOUSE_OPINION_SYMPATHY_WAR": -3,
+  "HOUSE_OPINION_SYMPATHY_PACT": 2,
+  "HOUSE_OPINION_SYMPATHY_OPEN_BORDERS": 1,
+  "HOUSE_OPINION_WAR_SAME_ALIGNMENT": -1,
+  "HOUSE_OPINION_WAR_OPPOSED_ALIGNMENT": 1,
+  // HOUSE_OPINION_WARS_LIMIT: part (d) is kept within minus and plus this
+  "HOUSE_OPINION_WARS_LIMIT": 2,
+  // The rolls (rule 6): a religion's weight, its extra where a forming city has it, no religion's
+  "HOUSE_RELIGION_WEIGHT": 10,
+  "HOUSE_RELIGION_PRESENT_WEIGHT": 30,
+  "HOUSE_RELIGION_NONE_WEIGHT": 20,
+  // A sympathy's weight 5 + 100 x its culture share there; no sympathy's 20 + 100 x the owner's
+  "HOUSE_SYMPATHY_WEIGHT": 5,
+  "HOUSE_SYMPATHY_NONE_WEIGHT": 20,
+  "HOUSE_SYMPATHY_CULTURE_WEIGHT": 100,
+  // The default pick (rule 14): PERK unless Furious now, plus HAPPY x the happiness now
+  "HOUSE_PICK_PERK_VALUE": 60,
+  "HOUSE_PICK_HAPPY_VALUE": 30
 }

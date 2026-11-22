@@ -167,12 +167,6 @@ impl Game {
             return false;
         }
 
-        // Not in C++: a House's contract binds its liege to no war on the civilization peace was
-        // made with (docs/PERSONS.md, "The third build", rule 6).
-        if self.team_contract_refusal(t, crate::persons::ContractAct::DeclareWar(other)).is_some() {
-            return false;
-        }
-
         if self.is_option(GameOptionType::GAMEOPTION_ALWAYS_PEACE) {
             return false;
         }
@@ -554,9 +548,6 @@ impl Game {
             self.log.msg_to(turn, to, || format!("Team {} made peace with team {}", t, other));
 
             self.ev_change_war(false, t, other);
-            // This game's Houses (docs/PERSONS.md): requests to take a city of the other side are
-            // refused.
-            self.persons_peace_made(t, other);
 
             for o in self.team_ids() {
                 if o != t && o != other && self.team_is_alive(o) {
@@ -984,14 +975,9 @@ impl Game {
         false
     }
 
-    /// C++ `CvTeam::canVassalRevolt`. Not in C++: a House is never freed by it (docs/PERSONS.md,
-    /// rule 7: its ultimatum refused and offers to secede are the only ways out by its own will).
+    /// C++ `CvTeam::canVassalRevolt`.
     pub fn team_can_vassal_revolt(&self, t: TeamId, master: TeamId) -> bool {
         let defs = &self.d.defines;
-
-        if self.player_ids().any(|p| self.players[p].team == t && self.players[p].house.is_some()) {
-            return false;
-        }
 
         if self.teams[t].vassal[master] {
             if 100 * self.team_get_total_land(t, false) < defs.vassal_revolt_own_losses_factor * self.teams[t].vassal_power {
@@ -1170,10 +1156,6 @@ impl Game {
             if self.final_initialized {
                 self.ev_vassal_state(master, t, value);
             }
-
-            // This game's Houses (docs/PERSONS.md, "The second build", rule 2): every vassal is a
-            // House; the record begins and ends with the vassalage.
-            self.team_vassal_houses(t, master, value, capitulated);
         }
     }
 

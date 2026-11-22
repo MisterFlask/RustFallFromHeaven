@@ -11,7 +11,7 @@ import { run } from "./commands.js";
 import { render as markup } from "./markup.js";
 import { isoSkin, isoIcon, unlockIcon } from "./isoui.js";
 import { infoTip } from "./infotips.js";
-import { previewList } from "./persons_lines.js";
+import { previewNode } from "./houses.js";
 
 /** A multiplier in percent (200) as the screens write it: "x2", "x2.7", "x1.35". */
 export function times(pct) {
@@ -700,6 +700,14 @@ export async function openResearchPaths() {
 /** The civics screen: each civic option with its civics (the current one marked, those not
  *  available greyed); clicking civics picks a new set, whose anarchy and upkeep the server
  *  computes (`civics {with}`); Revolution sends `update_civics`. */
+/** The civics preview's line of who will run the cities (this game's governors): adopting a civic
+ *  that governs every city, or leaving one. */
+export function ruleChangeLine(p) {
+  if (p.rule_change === "governed" && !p.cities) return "Every city will be run by a governor.";
+  if (p.rule_change === "governed") return p.cities === 1 ? "Your city will be run by a governor." : `Your ${p.cities} cities will be run by governors.`;
+  return "Your cities stay governed until you take them back.";
+}
+
 export async function openCivics() {
   const m = openModal({ title: "Civics", body: [h("p.dim", "…")], tag: "civics", wide: true, buttons: [{ label: "Close", value: null }] });
   let picked = [];
@@ -744,30 +752,19 @@ export async function openCivics() {
       ? h(
           "div.civic-summary",
           p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : (p.changed ? h("span.warn", { title: "The revolution timer, a civic you cannot leave, or anarchy" }, "This change is not possible now.") : h("span.warn", "No change.")),
-          // This game's governors: the government decides who runs the cities.
-          p.rule_change ? h("div.civic-rule-change", p.rule_change === "governed" ? "Every city will be handed to governors." : "Every city will be ruled directly.") : null,
-          // Houses (docs/PERSONS.md, "UI", part I): a direct-rule civic while Houses
-          // stand (the warning), then what the set does to the Houses.
-          // One line per House: how many enemies, and which cities each takes.
-          p.persons_warning ? h("div.persons-warning", { role: "alert" }, h("div", p.persons_warning), p.persons_houses?.length ? h("ul.persons-warning-houses", p.persons_houses.map((l) => h("li", l))) : null) : null,
-          p.persons_warning ? null : previewList(p.persons),
+          // This game's governors: a governed civic governs every city; leaving one changes none.
+          p.rule_change ? h("div.civic-rule-change", ruleChangeLine(p)) : null,
         )
       : h("div.civic-summary.dim", `Upkeep ${c.upkeep} gold per turn.${c.anarchy ? ` Anarchy: ${turns(c.anarchy)}.` : ""}${c.revolution_timer ? ` Next revolution in ${turns(c.revolution_timer)}.` : ""} Pick civics to see the change.`);
     m.setBody(h("div.civics", columns), summary);
     m.setButtons([
       {
-        label: p?.valid && p.persons_button ? p.persons_button : "Revolution!",
+        label: "Revolution!",
         primary: true,
         disabled: !p?.valid,
         onClick: async () => {
-          // Houses (principle 4): adopting a direct-rule civic while Houses stand is
-          // confirmed on its warning (Cancel has the focus).
-          if (p?.persons_warning && !(await ask(`${p.persons_button}?`, [p.persons_warning, ...(p.persons_houses?.length ? [h("ul.persons-warning-houses", p.persons_houses.map((l) => h("li", l)))] : []), `${p.anarchy ? `${turns(p.anarchy)} of anarchy. ` : ""}This cannot be undone.`], [
-            { label: p.persons_button ?? "Adopt", value: true, primary: true, danger: true },
-            { label: "Cancel", value: null },
-          ]))) return;
           // Anarchy is the price: ask first (Cancel has the focus); none, no question.
-          if (p?.anarchy && !p.persons_warning && !(await ask("Start the revolution?", `Start the revolution? ${turns(p.anarchy)} of anarchy.`, [
+          if (p?.anarchy && !(await ask("Start the revolution?", `Start the revolution? ${turns(p.anarchy)} of anarchy.`, [
             { label: "Revolution", value: true, primary: true, danger: true },
             { label: "Cancel", value: null },
           ]))) return;
@@ -841,20 +838,18 @@ export async function openReligion() {
         h("td", x.can_convert ? h("button.small", { onclick: () => convert(x.religion) }, "Convert") : null),
       ),
     );
-    // Houses (docs/PERSONS.md, "UI", part I): what converting does to the Houses, under the
+    // This game's Houses (docs/HOUSES.md, rule 12): what converting does to the Houses, under the
     // religion's row (nothing when nothing).
-    const rowsWithPreview = rows.flatMap((row, i) => {
+    const withPreview = rows.flatMap((row, i) => {
       const x = r.religions[i];
-      const pv = x.can_convert ? previewList(x.persons) : null;
-      return pv ? [row, h("tr.persons-preview-row", { "data-religion": x.religion }, h("td", { colspan: 5 }, pv))] : [row];
+      const pv = x.can_convert ? previewNode(x.house_preview, { title: "Your Houses:" }) : null;
+      return pv ? [row, h("tr.house-preview-row", { "data-religion": x.religion }, h("td", { colspan: 5 }, pv))] : [row];
     });
     m.setBody(
       h("p.dim", `${r.state_religion !== null ? `State religion: ${dname("ReligionType", r.state_religion)}. ` : "No state religion. "}Converting costs ${turns(r.anarchy)} of anarchy${r.conversion_timer ? `; the next conversion is possible in ${turns(r.conversion_timer)}` : ""}.`),
-      h("table.scores", h("tr", h("th", "Religion"), h("th", "Founded"), h("th", "Holy city"), h("th", "Your cities"), h("th", "")), rowsWithPreview),
+      h("table.scores", h("tr", h("th", "Religion"), h("th", "Founded"), h("th", "Holy city"), h("th", "Your cities"), h("th", "")), withPreview),
       r.can_convert_none ? h("button", { onclick: () => convert(null) }, "No state religion") : null,
-      r.can_convert_none ? previewList(r.persons_none) : null,
-      // A House's contract that forbids a change (docs/PERSONS.md, "The third build", rule 6).
-      r.convert_refusal ? h("p.caution.convert-refusal", r.convert_refusal) : null,
+      r.can_convert_none ? previewNode(r.house_preview_none, { title: "Your Houses:" }) : null,
     );
   };
   load();

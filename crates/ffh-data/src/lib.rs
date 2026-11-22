@@ -78,6 +78,10 @@ macro_rules! game_data {
             /// Derived at load (docs/CARDS.md, "New data keys"): the promotions with a battle kit
             /// (`PromotionInfo::kit`), in id order.
             pub kit_promotions: Vec<PromotionType>,
+            /// Derived at load (docs/HOUSES.md, rule 9): the House perks of each tier
+            /// (`TraitInfo::house_perk_tier`, index 1 to 3; index 0 is empty), in table order.
+            /// Read through [`GameData::house_perks`].
+            pub house_perks_by_tier: [Vec<TraitType>; 4],
         }
 
         /// (data file, registry class) for every info table, in load order.
@@ -104,7 +108,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), train_unit_buildings: Vec::new(), rebirth_buildings: Vec::new(), claim_improvements: Vec::new(), tech_research_bonuses: IdxVec::new(), own_improvements: 0, magic_promotions: Vec::new(), kit_promotions: Vec::new() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), train_unit_buildings: Vec::new(), rebirth_buildings: Vec::new(), claim_improvements: Vec::new(), tech_research_bonuses: IdxVec::new(), own_improvements: 0, magic_promotions: Vec::new(), kit_promotions: Vec::new(), house_perks_by_tier: Default::default() }
             }
 
             /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
@@ -128,6 +132,7 @@ macro_rules! game_data {
                 )*
                 out.push(("combat_mod_promotions".to_string(), format!("{:?}", self.combat_mod_promotions)));
                 out.push(("unlocking_buildings".to_string(), format!("{:?}", self.unlocking_buildings)));
+                out.push(("house_perks_by_tier".to_string(), format!("{:?}", self.house_perks_by_tier)));
                 out.push(("tech_research_bonuses".to_string(), format!("{:?}", self.tech_research_bonuses)));
                 out.push(("warnings".to_string(), format!("{:?}", self.warnings)));
                 out
@@ -207,7 +212,6 @@ game_data! {
     events: EventType => EventInfo, event::read_event;
     event_triggers: EventTriggerType => EventTriggerInfo, event::read_event_trigger;
     // ---- This game's own rules (not FFH2's) ----
-    cultural_actions: CulturalActionType => CulturalActionInfo, culture::read_cultural_action;
     city_roles: CityRoleType => CityRoleInfo, governor::read_city_role;
     governor_names: GovernorNameType => GovernorNameInfo, governor::read_governor_names;
     building_tiers: BuildingTierType => BuildingTierInfo, building::read_building_tier;
@@ -433,15 +437,7 @@ impl GameData {
             self.promotions.keys().filter(|&p| self.promotions[p].promotion_combat_mod > 0).collect();
         self.magic_promotions = self.promotions.keys().filter(|&p| self.promotions[p].magic.any()).collect();
         self.kit_promotions = self.promotions.keys().filter(|&p| self.promotions[p].kit.any()).collect();
-        // A leader without `iCulturalAggression`: 100, more for a war-eager leader (FfH's
-        // iLimitedWarRand runs from 60, eager, to 300, peaceful) and for a culture lover.
-        let culture_flavor = self.reg.lookup::<FlavorType>("FLAVOR_CULTURE");
-        for info in self.leader_heads.iter_mut() {
-            if info.cultural_aggression < 0 {
-                let flavor = culture_flavor.map_or(0, |f| info.flavor_value.get(f).copied().unwrap_or(0));
-                info.cultural_aggression = (100 + (150 - info.limited_war_rand) / 3 + 2 * flavor).clamp(40, 180);
-            }
-        }
+        self.derive_house_perks();
         self.derive_engagements();
         self.tech_research_bonuses = IdxVec::from_elem(Vec::new(), self.techs.len());
         for i in self.improvements.keys() {
@@ -452,6 +448,49 @@ impl GameData {
         }
         self.derive_building_tiers();
         self.check_keyword_marks();
+    }
+
+    /// The House perks of `tier` (1 to 3; docs/HOUSES.md, rule 9), in table order; empty for any
+    /// other tier.
+    pub fn house_perks(&self, tier: i32) -> &[TraitType] {
+        match tier {
+            1..=3 => &self.house_perks_by_tier[tier as usize],
+            _ => &[],
+        }
+    }
+
+    /// The House perks by tier, and warnings for a perk that could be taken for a leader's trait.
+    fn derive_house_perks(&mut self) {
+        let mut by_tier: [Vec<TraitType>; 4] = Default::default();
+        for t in self.traits.keys() {
+            let info = &self.traits[t];
+            if info.house_perk_tier == 0 {
+                continue;
+            }
+            let name = &info.base.type_;
+            if !(1..=3).contains(&info.house_perk_tier) {
+                self.warnings.push(format!("{name}: house_perk_tier {} is not 1 to 3", info.house_perk_tier));
+                continue;
+            }
+            if info.selectable || info.house_perk_family.is_empty() {
+                self.warnings.push(format!("{name}: a House perk is not selectable and has a house_perk_family"));
+            }
+            by_tier[info.house_perk_tier as usize].push(t);
+        }
+        let mut held: Vec<(&str, TraitType)> = Vec::new();
+        for l in self.leader_heads.iter() {
+            held.extend(l.has_trait.keys().filter(|&t| l.has_trait[t]).chain(l.permanent_trait).map(|t| (l.base.type_.as_str(), t)));
+        }
+        for c in self.civilizations.iter() {
+            held.extend(c.civ_trait.map(|t| (c.base.type_.as_str(), t)));
+        }
+        let bad: Vec<String> = held
+            .into_iter()
+            .filter(|&(_, t)| self.traits[t].is_house_perk())
+            .map(|(who, t)| format!("{who}: the House perk {} as its own trait", self.traits[t].base.type_))
+            .collect();
+        self.warnings.extend(bad);
+        self.house_perks_by_tier = by_tier;
     }
 
     /// Warns about a `[KW=X]` mark in the text that names no keyword (docs/DATA.md, "Keywords").

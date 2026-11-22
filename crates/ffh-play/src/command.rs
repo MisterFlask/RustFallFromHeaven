@@ -40,11 +40,6 @@ pub enum Command {
     PushOrder { city: CityId, order: OrderType, data: i32, alt: bool, shift: bool, ctrl: bool },
     PopOrder { city: CityId, index: i32 },
     DoTask { city: CityId, task: TaskType, data1: i32, data2: i32, option: bool, alt: bool, shift: bool, ctrl: bool },
-    /// This game's cultural channel (docs/CULTURE.md; docs/PERSONS.md, "The fourth build", rule 1):
-    /// the civilization channels `action` from now on, into `target` (the House's player for Court
-    /// and Guard, a civilization for Spread Religion, with `religion`); no `action`: it channels
-    /// nothing.
-    CultureChannel { action: Option<CulturalActionType>, target: Option<PlayerId>, religion: Option<ReligionType> },
     /// This game's armies (docs/ARMIES.md): form a new army of the units (on one plot).
     ArmyForm { units: Vec<UnitId> },
     /// Split the units off their army into a new one.
@@ -95,20 +90,14 @@ pub enum Command {
     GovernRole { city: CityId, role: CityRoleType },
     /// The empire priorities (at most `GOVERNOR_MAX_PRIORITIES` roles, distinct).
     GovernPriorities { roles: Vec<CityRoleType> },
+    /// City `city` is handed to a governor (`governed`) or taken back to be run by hand
+    /// (`Game::player_set_city_governed`; refused under a governed civic).
+    GovernCity { city: CityId, governed: bool },
     /// An empire order in governed city `city` (a unit, a wonder, a palace, a project): ahead of
     /// the governor's choice. `dest`: where a unit goes (`None`: the city's garrison).
     EmpireOrder { city: CityId, order: OrderType, data: i32, dest: Option<ffh_core::army::RecruitDest> },
     /// Take the empire order at `index` of governed city `city`'s queue off.
     EmpireOrderRemove { city: CityId, index: i32 },
-    /// Houses (docs/PERSONS.md): grant city `city`, for good, to `to` (`{house}`, or `{found:
-    /// true}`: a new House founded with it, while the realm has none).
-    GrantCity { city: CityId, to: ffh_core::persons::GrantTo },
-    /// Set House `house`'s tribute to `pct` percent (0 to 50 by 10; docs/PERSONS.md, rule 4).
-    SetHouseTribute { house: HouseId, pct: i32 },
-    /// Free House `house`: its vassalage ends at peace (docs/PERSONS.md, rule 8).
-    FreeHouse { house: HouseId },
-    /// Set the realm's default tribute (the one a new House takes) to `pct` percent.
-    SetTributeDefault { pct: i32 },
     /// Raids (docs/RAIDS.md, section 4): city `city`'s sally posture (`posture`: `Never`,
     /// `Favoured` or `Always`, `Sally::name`).
     CitySally { city: CityId, posture: ffh_core::raid::Sally },
@@ -443,7 +432,6 @@ pub const COMMAND_NAMES: &[&str] = &[
     "push_order",
     "pop_order",
     "do_task",
-    "culture_channel",
     "army_form",
     "army_split",
     "army_join",
@@ -463,12 +451,9 @@ pub const COMMAND_NAMES: &[&str] = &[
     "recruit_dest",
     "govern_role",
     "govern_priorities",
+    "govern_city",
     "empire_order",
     "empire_order_remove",
-    "grant_city",
-    "house_tribute",
-    "free_house",
-    "tribute_default",
     "city_sally",
     "research",
     "research_path",
@@ -506,7 +491,6 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("push_order", &["city", "order", "data", "alt", "shift", "ctrl"]),
     ("pop_order", &["city", "index"]),
     ("do_task", &["city", "task", "data1", "data2", "option", "alt", "shift", "ctrl"]),
-    ("culture_channel", &["action", "target", "religion"]),
     ("army_form", &["units"]),
     ("army_split", &["units"]),
     ("army_join", &["units", "army"]),
@@ -526,12 +510,9 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("recruit_dest", &["city", "index", "dest"]),
     ("govern_role", &["city", "role"]),
     ("govern_priorities", &["roles"]),
+    ("govern_city", &["city", "governed"]),
     ("empire_order", &["city", "order", "data", "dest"]),
     ("empire_order_remove", &["city", "index"]),
-    ("grant_city", &["city", "house", "found"]),
-    ("house_tribute", &["house", "pct"]),
-    ("free_house", &["house"]),
-    ("tribute_default", &["pct"]),
     ("city_sally", &["city", "posture"]),
     ("research", &["tech", "shift"]),
     ("research_path", &["path"]),
@@ -667,18 +648,6 @@ fn sally_field(j: &Json) -> Result<ffh_core::raid::Sally, FieldError> {
     ffh_core::raid::Sally::from_name(&name).ok_or_else(|| FieldError::new("posture", format!("expected Never, Favoured or Always, got {name:?}")))
 }
 
-/// The grantee of `grant_city`: exactly one of `house` and `found: true`.
-fn grant_to_field(j: &Json) -> Result<ffh_core::persons::GrantTo, FieldError> {
-    use ffh_core::persons::GrantTo;
-    let house: Option<HouseId> = j.opt("house")?;
-    let found: Option<bool> = j.opt("found")?;
-    match (house, found) {
-        (Some(x), None | Some(false)) => Ok(GrantTo::House(x)),
-        (None, Some(true)) => Ok(GrantTo::NewHouse),
-        _ => Err(FieldError::new("house", "exactly one of `house` and `found: true`")),
-    }
-}
-
 /// The `dest` field of `recruit_dest` ([`recruit_dest_json`]'s form).
 fn recruit_dest_field(j: &Json) -> Result<Option<ffh_core::army::RecruitDest>, FieldError> {
     use ffh_core::army::RecruitDest;
@@ -719,7 +688,6 @@ impl Command {
             Command::PushOrder { .. } => "push_order",
             Command::PopOrder { .. } => "pop_order",
             Command::DoTask { .. } => "do_task",
-            Command::CultureChannel { .. } => "culture_channel",
             Command::ArmyForm { .. } => "army_form",
             Command::ArmySplit { .. } => "army_split",
             Command::ArmyJoin { .. } => "army_join",
@@ -739,12 +707,9 @@ impl Command {
             Command::RecruitDest { .. } => "recruit_dest",
             Command::GovernRole { .. } => "govern_role",
             Command::GovernPriorities { .. } => "govern_priorities",
+            Command::GovernCity { .. } => "govern_city",
             Command::EmpireOrder { .. } => "empire_order",
             Command::EmpireOrderRemove { .. } => "empire_order_remove",
-            Command::GrantCity { .. } => "grant_city",
-            Command::SetHouseTribute { .. } => "house_tribute",
-            Command::FreeHouse { .. } => "free_house",
-            Command::SetTributeDefault { .. } => "tribute_default",
             Command::CitySally { .. } => "city_sally",
             Command::Research { .. } => "research",
             Command::ResearchPath { .. } => "research_path",
@@ -832,11 +797,6 @@ impl Command {
                     ctrl: flag("ctrl")?,
                 }
             }
-            "culture_channel" => Command::CultureChannel {
-                action: names::opt_field(d, j, "action")?,
-                target: j.opt("target")?,
-                religion: names::opt_field(d, j, "religion")?,
-            },
             "army_form" => Command::ArmyForm { units: j.req("units")? },
             "army_split" => Command::ArmySplit { units: j.req("units")? },
             "army_join" => Command::ArmyJoin { units: j.req("units")?, army: j.req("army")? },
@@ -866,15 +826,12 @@ impl Command {
             "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
             "govern_role" => Command::GovernRole { city: j.req("city")?, role: names::field(d, j, "role")? },
             "govern_priorities" => Command::GovernPriorities { roles: names::list_field(d, j, "roles")? },
+            "govern_city" => Command::GovernCity { city: j.req("city")?, governed: j.req("governed")? },
             "empire_order" => {
                 let order = names::field::<OrderType>(d, j, "order")?;
                 Command::EmpireOrder { city: j.req("city")?, order, data: order_data(d, j, order)?, dest: recruit_dest_field(j)? }
             }
             "empire_order_remove" => Command::EmpireOrderRemove { city: j.req("city")?, index: j.req("index")? },
-            "grant_city" => Command::GrantCity { city: j.req("city")?, to: grant_to_field(j)? },
-            "house_tribute" => Command::SetHouseTribute { house: j.req("house")?, pct: j.req("pct")? },
-            "free_house" => Command::FreeHouse { house: j.req("house")? },
-            "tribute_default" => Command::SetTributeDefault { pct: j.req("pct")? },
             "city_sally" => Command::CitySally { city: j.req("city")?, posture: sally_field(j)? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "research_path" => Command::ResearchPath { path: names::field(d, j, "path")? },
@@ -970,7 +927,6 @@ impl Command {
                 .with("alt", *alt)
                 .with("shift", *shift)
                 .with("ctrl", *ctrl),
-            Command::CultureChannel { action, target, religion } => j.with("action", Json::opt_idx(*action)).with("target", *target).with("religion", Json::opt_idx(*religion)),
             Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => j.with("units", ids(units)),
             Command::ArmyJoin { units, army } => j.with("units", ids(units)).with("army", *army),
             Command::ArmyRename { army, name } => j.with("army", *army).with("name", name.as_str()),
@@ -991,17 +947,11 @@ impl Command {
             Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
             Command::GovernRole { city, role } => j.with("city", *city).with("role", Json::idx(*role)),
             Command::GovernPriorities { roles } => j.with("roles", Json::Arr(roles.iter().map(|&r| Json::idx(r)).collect())),
+            Command::GovernCity { city, governed } => j.with("city", *city).with("governed", *governed),
             Command::EmpireOrder { city, order, data, dest } => {
                 j.with("city", *city).with("order", Json::idx(*order)).with("data", *data).with("dest", recruit_dest_json(*dest))
             }
             Command::EmpireOrderRemove { city, index } => j.with("city", *city).with("index", *index),
-            Command::GrantCity { city, to } => match *to {
-                ffh_core::persons::GrantTo::House(x) => j.with("city", *city).with("house", x),
-                ffh_core::persons::GrantTo::NewHouse => j.with("city", *city).with("found", true),
-            },
-            Command::SetHouseTribute { house, pct } => j.with("house", *house).with("pct", *pct),
-            Command::FreeHouse { house } => j.with("house", *house),
-            Command::SetTributeDefault { pct } => j.with("pct", *pct),
             Command::CitySally { city, posture } => j.with("city", *city).with("posture", posture.name()),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::ResearchPath { path } => j.with("path", Json::idx(*path)),
@@ -1060,10 +1010,6 @@ impl Command {
             }
             Command::PushOrder { city, order, data, .. } => format!("city {} {} {}", city.0, names::name(d, *order), data),
             Command::DoTask { city, task, data1, data2, option, .. } => format!("city {} {} ({data1}, {data2}, {option})", city.0, names::name(d, *task)),
-            Command::CultureChannel { action, target, religion } => match (action, target) {
-                (Some(a), Some(t)) => format!("channel {} into player {}{}", names::name(d, *a), t.0, religion.map_or(String::new(), |r| format!(" ({})", names::name(d, r)))),
-                _ => "channel nothing".to_string(),
-            },
             Command::Research { tech, shift } => {
                 format!("research {}{}", tech.map_or("none".to_string(), |t| names::name(d, t).to_string()), if *shift { " (queue)" } else { "" })
             }
@@ -1106,6 +1052,8 @@ impl Command {
             Command::Place { spell, target } => format!("place {} at {}", names::name(d, *spell), target.describe()),
             Command::GovernRole { city, role } => format!("city {} role {}", city.0, names::name(d, *role)),
             Command::GovernPriorities { roles } => format!("priorities {}", roles.iter().map(|&r| names::name(d, r)).collect::<Vec<_>>().join(", ")),
+            Command::GovernCity { city, governed: true } => format!("city {} handed to a governor", city.0),
+            Command::GovernCity { city, governed: false } => format!("city {} run by hand", city.0),
             Command::EmpireOrder { city, order, data, dest } => {
                 format!("city {} empire order {} {}{}", city.0, names::name(d, *order), data, dest.map_or(String::new(), |x| format!(" to {x:?}")))
             }
@@ -1167,7 +1115,6 @@ pub enum Action {
     PushOrder { city: CityId, order: OrderType, data: i32, save: bool, pop: bool, append: bool },
     PopOrder { city: CityId, index: i32 },
     DoTask { city: CityId, task: TaskType, data1: i32, data2: i32, option: bool, alt: bool, shift: bool, ctrl: bool },
-    CultureChannel { order: Option<ffh_core::culture::ChannelOrder> },
     /// An army or governor command, checked by the rules call itself (they change nothing when
     /// they refuse).
     Army(Command),
@@ -1182,9 +1129,6 @@ pub enum Action {
     DeclareWar { team: TeamId },
     /// The AI accepted: `implementDeal(h, to, give, get)`.
     ImplementDeal { to: PlayerId, give: Vec<TradeData>, get: Vec<TradeData> },
-    /// A gift to a House (docs/PERSONS.md, "The fourth build", rule 3): `Game::player_offer_house`,
-    /// which implements it when the House accepts (`accept`: its answer, for the reply).
-    OfferHouse { to: PlayerId, give: Vec<TradeData>, get: Vec<TradeData>, accept: bool },
     /// `CvDeal::kill` of a deal the human cancelled.
     CancelDeal { deal: DealId },
     Event { triggered: TriggeredId, event: EventType },
@@ -1235,16 +1179,6 @@ fn city_of(g: &Game, h: PlayerId, c: CityId) -> Result<(), CmdErr> {
     match g.cities.get(c) {
         None => Err(CmdErr::Gone),
         Some(city) if city.owner != h => Err(CmdErr::NotOwner),
-        Some(_) => Ok(()),
-    }
-}
-
-/// A city `h`'s armies may requisition from: its own, or one of its Houses' (the levy,
-/// docs/PERSONS.md, rule 6).
-fn levy_city_of(g: &Game, h: PlayerId, c: CityId) -> Result<(), CmdErr> {
-    match g.cities.get(c) {
-        None => Err(CmdErr::Gone),
-        Some(city) if city.owner != h && !g.city_levied_by(c, h) => Err(CmdErr::NotOwner),
         Some(_) => Ok(()),
     }
 }
@@ -1358,6 +1292,9 @@ fn squad_move_check(g: &Game, h: PlayerId, u: UnitId, squad: Option<SquadId>, ce
 
 /// Applies an army command (the rules check it too; a refusal changes nothing).
 fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
+    if let Command::GovernCity { city, governed } = c {
+        return g.player_set_city_governed(h, *city, *governed).map_err(cannot);
+    }
     let r: Result<(), &'static str> = match c {
         Command::ArmyForm { units } => g.army_form(h, units).map(|_| ()),
         Command::ArmySplit { units } => g.army_split(h, units).map(|_| ()),
@@ -1385,11 +1322,6 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::GovernPriorities { roles } => g.player_set_governor_priorities(h, roles.clone()),
         Command::EmpireOrder { city, order, data, dest } => g.city_push_empire_order(h, *city, *order, *data, -1, *dest),
         Command::EmpireOrderRemove { city, index } => g.city_remove_empire_order(h, *city, *index as usize),
-        Command::GrantCity { city, to } => g.player_grant_city(h, *city, *to).map(|_| ()),
-        // (`check` ran the rules' check first, with its reason: a contract's bound included.)
-        Command::SetHouseTribute { house, pct } => g.player_set_house_tribute(h, *house, *pct).map_err(|_| "The tribute cannot be set."),
-        Command::FreeHouse { house } => g.player_free_house(h, *house),
-        Command::SetTributeDefault { pct } => g.player_set_house_tribute_default(h, *pct),
         Command::CitySally { city, posture } => g.city_set_sally(h, *city, *posture),
         Command::RecruitDest { city, index, dest } => {
             if *index < 0 {
@@ -1689,33 +1621,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::PopOrder { city: *city, index: *index })
         }
 
-        Command::CultureChannel { action, target, religion } => {
-            use ffh_core::culture::{ChannelOrder, ChannelTarget};
-            let order = match (action, target) {
-                (None, _) => None,
-                (Some(_), None) => return Err(invalid("field `target`: a channel needs a target (a House's player, or a civilization)")),
-                (Some(a), Some(t)) => {
-                    in_range("cultural action", a.idx() as i32, d.cultural_actions.len())?;
-                    in_range("player", t.0 as i32, g.num_players())?;
-                    if let Some(r) = religion {
-                        in_range("religion", r.idx() as i32, d.religions.len())?;
-                    }
-                    // Court and Guard name a House by its player.
-                    let target = match d.cultural_actions[*a].effect {
-                        CultureEffect::Court | CultureEffect::Guard => match g.player_house(*t) {
-                            Some(house) => ChannelTarget::House(house),
-                            None => return Err(invalid(format!("field `target`: player {} is not a House", t.0))),
-                        },
-                        CultureEffect::SpreadReligion => ChannelTarget::Player(*t),
-                    };
-                    let o = ChannelOrder { action: *a, target, religion: *religion };
-                    g.culture_channel_check(h, &o).map_err(cannot)?;
-                    Some(o)
-                }
-            };
-            Plan::Apply(Action::CultureChannel { order })
-        }
-
         Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => {
             if units.is_empty() {
                 return Err(invalid("field `units`: none"));
@@ -1763,7 +1668,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::ArmyRequisition { army, city, on } => {
             army_of(g, h, *army)?;
-            levy_city_of(g, h, *city)?;
+            city_of(g, h, *city)?;
             let listed = g.armies[*army].requisition.contains(city);
             if *on {
                 g.army_check_requisition_city(h, *army, *city).map_err(cannot)?;
@@ -1780,7 +1685,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             army_of(g, h, *army)?;
             g.army_check_requisition(h, *army).map_err(cannot)?;
             for (i, c) in cities.iter().enumerate() {
-                levy_city_of(g, h, *c)?;
+                city_of(g, h, *c)?;
                 if cities[..i].contains(c) {
                     return Err(invalid(format!("field `cities`: city {} twice", c.0)));
                 }
@@ -1839,6 +1744,12 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
+        Command::GovernCity { city, governed } => {
+            city_of(g, h, *city)?;
+            g.player_check_city_governed(h, *city, *governed).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
         Command::GovernPriorities { roles } => {
             let max = d.defines.governor_max_priorities.max(0) as usize;
             if roles.len() > max {
@@ -1881,35 +1792,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(Command::EmpireOrderRemove { city: *city, index: *index }))
         }
 
-        // Houses (docs/PERSONS.md): the rules' own checks and reasons.
-        Command::GrantCity { city, to } => {
-            city_of(g, h, *city)?;
-            g.player_check_grant(h, *city, *to).map_err(cannot)?;
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::SetHouseTribute { house, pct } => {
-            g.player_check_house_tribute(h, *house, *pct).map_err(cannot)?;
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::SetTributeDefault { pct } => {
-            if !g.player_has_houses(h) {
-                return Err(cannot("This civilization has no Houses."));
-            }
-            if !(0..=ffh_core::persons::TRIBUTE_MAX).contains(pct) || pct % ffh_core::persons::TRIBUTE_STEP != 0 {
-                return Err(cannot("Tribute: 0 to 50 percent, in steps of 10."));
-            }
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
         Command::CitySally { city, .. } => {
             city_of(g, h, *city)?;
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::FreeHouse { house } => {
-            g.player_check_free_house(h, *house).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -2133,8 +2017,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::Convert { religion } => {
             if !g.player_can_convert(h, *religion) {
-                // A House's contract's reason first (docs/PERSONS.md, "The third build", rule 6).
-                return Err(cannot(g.player_contract_refusal(h, ffh_core::persons::ContractAct::ChangeReligion).unwrap_or_else(|| "cannot convert".to_string())));
+                return Err(cannot("cannot convert"));
             }
             Plan::Apply(Action::Convert { religion: *religion })
         }
@@ -2142,8 +2025,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::DeclareWar { team: t } => {
             in_range("team", t.0 as i32, g.num_teams())?;
             if !g.team_can_declare_war(team, *t) {
-                let why = g.team_contract_refusal(team, ffh_core::persons::ContractAct::DeclareWar(*t));
-                return Err(cannot(why.unwrap_or_else(|| format!("cannot declare war on {}", team_name(g, *t)))));
+                return Err(cannot(format!("cannot declare war on {}", team_name(g, *t))));
             }
             Plan::Apply(Action::DeclareWar { team: *t })
         }
@@ -2154,11 +2036,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             // the exe asks before it sends the implementDeal message.
             crate::view::diplo::check_deal(g, h, *to, give, get)?;
             let accept = g.controller(*to).consider_offer(g, *to, h, give, get);
-            // A gift to a House (docs/PERSONS.md, "The fourth build", rule 3): the rules' one path
-            // (`Game::player_offer_house`).
-            if g.player_house(*to).is_some() {
-                return Ok(Plan::Apply(Action::OfferHouse { to: *to, give: give.clone(), get: get.clone(), accept }));
-            }
             if !accept {
                 return Ok(Plan::Declined);
             }
@@ -2175,10 +2052,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             }
             if !g.deal_is_cancelable(*deal, Some(h)) {
                 let turns = g.deal_turns_to_cancel(*deal, Some(h));
-                // A House's contract holds it (docs/PERSONS.md, "The third build", rule 6).
-                if let Some(why) = g.deal_contract_refusal(*deal) {
-                    return Err(cannot(why));
-                }
                 return Err(cannot(if turns > 0 { format!("the deal may be cancelled in {turns} turns") } else { "the deal may not be cancelled".to_string() }));
             }
             Plan::Apply(Action::CancelDeal { deal: *deal })
@@ -2639,10 +2512,6 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             g.city_push_order(*city, *order, *data, -1, *save, *pop, *append, false);
         }
         Action::PopOrder { city, index } => g.city_pop_order(*city, *index, false, false),
-        Action::CultureChannel { order } => {
-            // Validated just before: the check passed.
-            let _ = g.player_set_culture_channel(h, *order);
-        }
         // Validated just before (`validate`); a refusal in the rules would change nothing.
         Action::Army(c) => {
             let _ = apply_army(g, h, c);
@@ -2677,9 +2546,6 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
         // gDLL->sendImplementDealMessage -> CvGame::implementDeal(eWho, eOtherWho, .., bForce
         // = false); a gift or a demand is recorded first (ffh-core `tribute`).
         Action::ImplementDeal { to, give, get } => g.implement_proposal(h, *to, give, get),
-        Action::OfferHouse { to, give, get, .. } => {
-            g.player_offer_house(h, *to, give, get);
-        }
         Action::CancelDeal { deal } => g.deal_kill(*deal, true),
         Action::Event { triggered, event } => g.player_apply_event(h, *event, *triggered, true),
         Action::Vote { vote, choice } => g.cast_vote(h, *vote, *choice),
@@ -2747,9 +2613,6 @@ mod tests {
             Command::PushOrder { city: CityId(1), order: OrderType::ORDER_TRAIN, data: 4, alt: false, shift: true, ctrl: false },
             Command::PopOrder { city: CityId(1), index: 0 },
             Command::DoTask { city: CityId(1), task: TaskType::TASK_HURRY, data1: 0, data2: -1, option: false, alt: false, shift: false, ctrl: false },
-            Command::CultureChannel { action: Some(CulturalActionType(2)), target: Some(PlayerId(2)), religion: Some(ReligionType(1)) },
-            Command::CultureChannel { action: Some(CulturalActionType(0)), target: Some(PlayerId(3)), religion: None },
-            Command::CultureChannel { action: None, target: None, religion: None },
             Command::ArmyForm { units: vec![UnitId(3), UnitId(4)] },
             Command::ArmySplit { units: vec![UnitId(3)] },
             Command::ArmyJoin { units: vec![UnitId(3)], army: ArmyId(2) },
@@ -2779,15 +2642,12 @@ mod tests {
             Command::RecruitDest { city: CityId(1), index: -1, dest: None },
             Command::GovernRole { city: CityId(2), role: CityRoleType::from_usize(1) },
             Command::GovernPriorities { roles: vec![] },
+            Command::GovernCity { city: CityId(2), governed: true },
+            Command::GovernCity { city: CityId(2), governed: false },
             Command::GovernPriorities { roles: vec![CityRoleType::from_usize(0), CityRoleType::from_usize(3)] },
             Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_TRAIN, data: 5, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(1))) },
             Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_CONSTRUCT, data: 9, dest: None },
             Command::EmpireOrderRemove { city: CityId(2), index: 1 },
-            Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::House(HouseId(1)) },
-            Command::GrantCity { city: CityId(2), to: ffh_core::persons::GrantTo::NewHouse },
-            Command::SetHouseTribute { house: HouseId(0), pct: 30 },
-            Command::FreeHouse { house: HouseId(2) },
-            Command::SetTributeDefault { pct: 10 },
             Command::CitySally { city: CityId(2), posture: ffh_core::raid::Sally::Always },
             Command::CitySally { city: CityId(0), posture: ffh_core::raid::Sally::Never },
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Raid(CityId(4)) },

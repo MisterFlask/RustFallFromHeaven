@@ -79,8 +79,8 @@ pub struct Game {
     pub armies: Slab<ArmyId, crate::army::Army>,
     /// This game's squads (docs/ENGAGEMENTS.md, "Squads"; `army/squad.rs`).
     pub squads: Slab<SquadId, crate::army::Squad>,
-    /// This game's Houses (docs/PERSONS.md). Owner lists: `Player::houses`.
-    pub houses: Slab<HouseId, crate::persons::House>,
+    /// This game's Houses (docs/HOUSES.md; `houses/`). Owner lists: `Player::houses`.
+    pub houses: Slab<HouseId, crate::houses::House>,
     /// Engagement combat's battle reports, oldest first: those of the current and the previous
     /// turn and the last `ENGAGEMENT_REPORTS_KEPT` (`engagement/report.rs`; add with
     /// `battle_report_add`).

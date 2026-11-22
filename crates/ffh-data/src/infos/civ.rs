@@ -62,6 +62,44 @@ pub struct TraitInfo {
     /// units at this many gold per hammer left, whatever its civics (`unit_rush_gold`, also a
     /// civic's: Gold Standard; 0: no).
     pub unit_rush_gold: i32,
+    // ---- This game's House perks (docs/HOUSES.md, rule 9); read only for a perk ----
+    /// 1 to 3 for a House perk (`TRAIT_PERK_<FAMILY>_<tier>`), 0 for an ordinary trait. A perk
+    /// is never a leader's own trait and never selectable.
+    pub house_perk_tier: i32,
+    /// The perk's family (`"HORSEMASTERS"`); empty for an ordinary trait.
+    pub house_perk_family: String,
+    /// The perk is rolled only for a House one of whose forming cities is coastal.
+    pub house_requires_coastal: bool,
+    /// Percent, by yield, in the House's cities.
+    pub house_yield_modifier: [i32; YieldType::NUM],
+    /// Percent, by commerce, in the House's cities.
+    pub house_commerce_modifier: [i32; CommerceType::NUM],
+    /// Percent of a House city's great people rate.
+    pub house_great_people_rate_modifier: i32,
+    /// Percent of a House city's distance maintenance (-100 removes it).
+    pub house_distance_maintenance_modifier: i32,
+    /// Percent of a House city's city-count maintenance (-100 removes it).
+    pub house_num_cities_maintenance_modifier: i32,
+    /// Experience for every unit trained in a House city that takes experience.
+    pub house_free_experience: i32,
+    /// Experience for a unit of that combat trained in a House city.
+    pub house_unit_combat_free_experience: IdxVec<UnitCombatType, i32>,
+    /// The promotions, in order, a unit of that combat trained in a House city is given (as a
+    /// building's free promotions are).
+    pub house_unit_combat_free_promotions: IdxVec<UnitCombatType, Vec<PromotionType>>,
+    /// Percent of the production of a unit of that combat in a House city.
+    pub house_unit_combat_production_modifier: IdxVec<UnitCombatType, i32>,
+    /// Percent of the production of world and national wonders in a House city.
+    pub house_wonder_production_modifier: i32,
+    /// Percent of the production of rituals (projects) in a House city.
+    pub house_ritual_production_modifier: i32,
+}
+
+impl TraitInfo {
+    /// A House perk (docs/HOUSES.md, rule 9), not an ordinary trait.
+    pub fn is_house_perk(&self) -> bool {
+        self.house_perk_tier > 0
+    }
 }
 
 /// C++ `CvTraitInfo::read`.
@@ -102,6 +140,20 @@ pub fn read_trait(rd: &Rd) -> TraitInfo {
         free_promotion_unit_combat: rd.pairs_bool("free_promotion_unit_combats"),
         summon_promotion: rd.rf::<PromotionType>("summon_promotion"),
         unit_rush_gold: rd.int("unit_rush_gold"),
+        house_perk_tier: rd.int("house_perk_tier"),
+        house_perk_family: rd.string("house_perk_family"),
+        house_requires_coastal: rd.bool("house_requires_coastal"),
+        house_yield_modifier: rd.yields("house_yield_modifier"),
+        house_commerce_modifier: rd.commerces("house_commerce_modifier"),
+        house_great_people_rate_modifier: rd.int("house_great_people_rate_modifier"),
+        house_distance_maintenance_modifier: rd.int("house_distance_maintenance_modifier"),
+        house_num_cities_maintenance_modifier: rd.int("house_num_cities_maintenance_modifier"),
+        house_free_experience: rd.int("house_free_experience"),
+        house_unit_combat_free_experience: rd.pairs_int("house_unit_combat_free_experience", 0),
+        house_unit_combat_free_promotions: rd.pairs_ref_list("house_unit_combat_free_promotions"),
+        house_unit_combat_production_modifier: rd.pairs_int("house_unit_combat_production_modifier", 0),
+        house_wonder_production_modifier: rd.int("house_wonder_production_modifier"),
+        house_ritual_production_modifier: rd.int("house_ritual_production_modifier"),
     }
 }
 
@@ -391,10 +443,6 @@ pub struct LeaderHeadInfo {
     pub freedom_appreciation: i32,
     pub favorite_civic: Option<CivicType>,
     pub favorite_religion: Option<ReligionType>,
-    /// This game's own (docs/CULTURE.md): how readily the AI turns culture against rivals, in
-    /// percent (100 = normal). XML `iCulturalAggression`; when absent, derived at load from
-    /// the leader's war eagerness and culture flavor (`GameData::derive`).
-    pub cultural_aggression: i32,
     /// This game's own (The Sundering, docs/CARDS.md section 4): a minor leader of this
     /// civilization, which no civilization lists and no game starts with. The Sundering may
     /// give a new faction of this civilization its minor leader.
@@ -406,8 +454,7 @@ pub struct LeaderHeadInfo {
     /// C++ `hasTrait(i)`.
     pub has_trait: IdxVec<TraitType, bool>,
     /// The leader's own traits in their authored order (the `traits` object's keys set to true, in
-    /// file order; a civilization's traits are not listed). A House's ambition reads the first one
-    /// (docs/PERSONS.md: ambition, a head's trait).
+    /// file order; a civilization's traits are not listed).
     pub traits: Vec<TraitType>,
     pub flavor_value: IdxVec<FlavorType, i32>,
     pub contact_rand: IdxVec<ContactType, i32>,
@@ -541,7 +588,6 @@ pub fn read_leader_head(rd: &Rd) -> LeaderHeadInfo {
         vassal_refuse_attitude_threshold: rd.rf("vassal_refuse_attitude_threshold"),
         favorite_civic: rd.rf("favorite_civic"),
         favorite_religion: rd.rf("favorite_religion"),
-        cultural_aggression: rd.int_or("cultural_aggression", -1),
         minor_leader_of: rd.rf("minor_leader_of"),
         preferred_breakaway: rd.bool("preferred_breakaway"),
         has_trait: rd.pairs_bool("traits"),

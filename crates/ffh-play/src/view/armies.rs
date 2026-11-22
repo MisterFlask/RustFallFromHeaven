@@ -67,7 +67,7 @@ fn requisition_orders(v: &Viewer, a: ArmyId) -> Vec<(CityId, Json)> {
 /// (`head_orders`: a count; their destination or the city's default names the army) and how many
 /// it lacks of its target size counting its units, its marching recruits and both kinds of orders
 /// (`shortfall`; 0 or less: none). With `candidates`
-/// (the Armies screen), every city of the human's and of its Houses' that it may requisition from: whether picked,
+/// (the Armies screen), every city of the human's that it may requisition from: whether picked,
 /// governed, the unit it would train there (the rules' choice for the human), its production
 /// turns, its march turns to the army over land (`null`: no way by land), its order in progress.
 fn requisition_json(v: &Viewer, a: ArmyId, candidates: bool) -> Json {
@@ -84,9 +84,7 @@ fn requisition_json(v: &Viewer, a: ArmyId, candidates: bool) -> Json {
         let open = g.army_check_requisition(v.h, a).is_ok();
         // A fleet's: the coastal cities only (docs/NAVAL.md, 7.1).
         let fleet = army.domain == ArmyDomain::Sea;
-        // The human's cities, then its Houses' (the levy, docs/PERSONS.md, rule 6).
-        let levy = g.player_levy_cities(v.h);
-        let list = g.players[v.h].cities.iter().chain(levy.iter()).copied().filter(|&c| g.cities.contains(c) && !g.cities[c].outpost && (!fleet || g.city_is_port(c))).map(|c| {
+        let list = g.players[v.h].cities.iter().copied().filter(|&c| g.cities.contains(c) && !g.cities[c].outpost && (!fleet || g.city_is_port(c))).map(|c| {
             let preview = if open { g.army_requisition_preview(c, a) } else { None };
             crate::jobj! {
                 "city" => c,
@@ -97,10 +95,6 @@ fn requisition_json(v: &Viewer, a: ArmyId, candidates: bool) -> Json {
                 "production_turns" => preview.map(|p| p.2),
                 "march_turns" => preview.and_then(|p| p.3),
                 "order" => orders.iter().find(|(oc, _)| *oc == c).map(|(_, o)| o.clone()),
-                // Houses (docs/PERSONS.md, rule 6, the levy): a House's city, whether
-                // it takes levies (`text`: `Takes levies. Each levy: -1 (20 turns).` or the rules'
-                // reason it takes none).
-                "house" => crate::view::persons::levy_house(g, c),
             }
         });
         j.set("candidates", Json::Arr(list.collect()));

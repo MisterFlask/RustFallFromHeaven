@@ -147,11 +147,6 @@ fn item_json(g: &Game, judge: PlayerId, from: PlayerId, to: PlayerId, t: &TradeD
 /// decay is a rule now (`player_do_memory_decay`, 2026-11-18); the branch was not taken up with
 /// it (ffh-ai reads three memories, docs/AI.md "Diplomacy").
 pub fn ai_willing_to_talk(g: &Game, ai: PlayerId, other: PlayerId) -> bool {
-    // Not in C++: a House is a party for anyone who has met it, at war too (its side deals,
-    // docs/PERSONS.md, rule 9; what it trades is the rules').
-    if g.player_house(ai).is_some() {
-        return true;
-    }
     let (team, their) = (g.players[ai].team, g.players[other].team);
     if their == team || g.teams[their].vassal[team] || g.teams[team].vassal[their] {
         return true;
@@ -210,14 +205,9 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
     }
     let can = contact(v, with);
     let (ours, theirs) = if can.is_ok() { (trade_table(g, v.h, with), trade_table(g, with, v.h)) } else { (Vec::new(), Vec::new()) };
-    // A House (docs/PERSONS.md, "The fourth build", rule 3): it takes gifts, gold (no gold per
-    // turn) and resources, and gives nothing (`house_trade_items`). No troops.
-    let house = g.player_house(with);
-    let troops = if can.is_ok() && house.is_none() { troops(v, with) } else { Json::Null };
-    let (we_give, they_give): (Vec<Json>, Vec<Json>) = match house {
-        Some(hh) if can.is_ok() => house_trade_items(v, hh, &ours),
-        _ => (ours.iter().map(|t| item_json(g, with, v.h, with, t)).collect(), theirs.iter().map(|t| item_json(g, with, with, v.h, t)).collect()),
-    };
+    let troops = if can.is_ok() { troops(v, with) } else { Json::Null };
+    let we_give: Vec<Json> = ours.iter().map(|t| item_json(g, with, v.h, with, t)).collect();
+    let they_give: Vec<Json> = theirs.iter().map(|t| item_json(g, with, with, v.h, t)).collect();
     Ok(crate::jobj! {
         "with" => with,
         "contact" => can.is_ok(),
@@ -226,97 +216,27 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
         "we_give" => Json::Arr(we_give),
         "they_give" => Json::Arr(they_give),
         "troops" => troops,
-        "house" => house.map_or(Json::Null, |hh| house_trade_json(v, hh)),
         "tribute" => tribute_json(g, with, v.h),
-        // Houses (docs/PERSONS.md, "UI", part I): what making peace with them does to
-        // the Houses (at war only; empty when nothing).
-        "peace_preview" => if g.at_war(v.team, g.players[with].team) { crate::view::house_marks::act_preview(v, &ffh_core::persons::PersonsAct::MakePeace(g.players[with].team)) } else { Json::Arr(Vec::new()) },
+        // This game's Houses (docs/HOUSES.md, rule 12): what the deal's acts would do to the
+        // human's Houses, for the lines under the trade: making peace (at war only), signing open
+        // borders, signing a defensive pact (where not in force). Each a list, empty when nothing.
+        "house_preview" => house_trade_preview(v, with),
     })
 }
 
-/// Whether the human's team is House `hh`'s liege's (its own House: no gift, it pays tribute).
-fn own_house(v: &Viewer, hh: HouseId) -> bool {
-    v.g.players[v.g.houses[hh].owner].team == v.team
-}
-
-/// The trade tables with House `hh` (docs/PERSONS.md, "The fourth build", rule 3): what the human
-/// can give it (`ours`, the rules' table: gold and resources, gifts; it gives nothing). None for
-/// the human's own House.
-fn house_trade_items(v: &Viewer, hh: HouseId, ours: &[TradeData]) -> (Vec<Json>, Vec<Json>) {
+/// `{peace, open_borders, defensive_pact}`: the Houses' previews of the acts a deal with `with`
+/// can hold (`view::houses::preview`).
+fn house_trade_preview(v: &Viewer, with: PlayerId) -> Json {
+    use ffh_core::houses::HouseAct;
     let g = v.g;
-    let hp = g.houses[hh].player;
-    if own_house(v, hh) {
-        return (Vec::new(), Vec::new());
-    }
-    (ours.iter().map(|t| item_json(g, hp, v.h, hp, t)).collect(), Vec::new())
-}
-
-/// House `hh` as a party, the `trade` reply's `house` (docs/PERSONS.md, "The fourth build", rules
-/// 3 and 10): `{id, label, liege, liege_name, colour, own, trades_through, liege_contact, line,
-/// takes, courting, courts, requirement, reminders}`. `own`: the human is its liege (no gift: `line`
-/// says why, the rules' `House Arne pays its liege by tribute.`); `trades_through`: `Trades through
-/// the Bannor.` (the rest is its liege's to trade; `liege_contact`: the human can open the liege's
-/// trade screen). A House of another realm takes gifts only: `takes` (`House Aldric takes gifts of
-/// gold and resources and gives nothing.`, its side of the table); `courting`: the human's
-/// courtship of it (`Your courtship of House Aldric: favour 80 of 188, ...`, the rules'
-/// `house_courting_line`; `You do not court House Aldric.` while `courts` is false); `requirement`:
-/// that courtship's requirement against its leader's attitude toward the human (`Its leader's
-/// attitude toward you: Cautious. Requirement: 168; at Pleased 120; at Friendly 72.`: what a gift
-/// that raises the attitude brings); `courting_calc` and `requirement_calc`: how their numbers are
-/// made (docs/PLAY_DESIGN.md, "Calculated numbers"); `reminders`: the Court keyword's. Null for the
-/// human's own.
-fn house_trade_json(v: &Viewer, hh: HouseId) -> Json {
-    let g = v.g;
-    let d = g.d;
-    let liege = g.houses[hh].owner;
-    let label = g.house_label(hh);
-    let civ = g.player_get_civilization_short_description(liege);
-    let own = own_house(v, hh);
-    let courting = if own { None } else { g.house_courting_line(hh, v.h) };
-    let courts = courting.is_some();
-    let court = d.ty::<KeywordType>("KEYWORD_COURT");
+    let t = g.players[with].team;
+    let empty = || Json::Arr(Vec::new());
+    let war = g.at_war(v.team, t);
     crate::jobj! {
-        "id" => hh,
-        "label" => label.as_str(),
-        "liege" => liege,
-        "liege_name" => civ.as_str(),
-        "colour" => g.houses[hh].color as i32,
-        "own" => own,
-        "trades_through" => (!own).then(|| format!("Trades through the {civ}.")),
-        "liege_contact" => !own && liege != v.h && contact(v, liege).is_ok(),
-        "line" => if own { g.house_gift_refusal(hh, v.h) } else { None },
-        "takes" => (!own).then(|| format!("{label} takes gifts of gold and resources and gives nothing.")),
-        "courts" => courts,
-        "courting" => if own { None } else { Some(courting.unwrap_or_else(|| format!("You do not court {label}."))) },
-        "courting_calc" => if courts { crate::view::culture::courtship_calc_json(v, &g.house_courtship_view(hh, v.h)) } else { Json::Null },
-        "requirement" => (!own).then(|| crate::view::persons::requirement_line(g, hh, v.h)),
-        "requirement_calc" => if own { Json::Null } else { crate::view::culture::calc_lines(v, &g.house_requirement_steps_calc(hh, v.h)) },
-        "reminders" => if own { Json::Arr(Vec::new()) } else { crate::view::keywords::reminders(d, court) },
+        "peace" => if war { crate::view::houses::preview(v, HouseAct::MakePeace(t)) } else { empty() },
+        "open_borders" => if war || g.teams[v.team].open_borders[t] { empty() } else { crate::view::houses::preview(v, HouseAct::OpenBorders(t, true)) },
+        "defensive_pact" => if war || g.teams[v.team].defensive_pact[t] { empty() } else { crate::view::houses::preview(v, HouseAct::DefensivePact(t, true)) },
     }
-}
-
-/// A rules' sentence as the screen's `Reason: ...` takes it (no closing full stop: the screen adds
-/// one).
-fn reason_text(s: String) -> String {
-    match s.strip_suffix('.') {
-        Some(t) => t.to_string(),
-        None => s,
-    }
-}
-
-/// What House `hh` answers if the human proposes `give` for `get` (docs/PERSONS.md, "The fourth
-/// build", rule 3), from the rules alone: a gift (nothing asked back: gold or resources) is
-/// accepted when the deal's checks pass; anything else is refused (`House Arne takes gifts only`).
-fn house_answer(g: &Game, hh: HouseId, h: PlayerId, give: &[TradeData], get: &[TradeData]) -> ffh_core::controller::OfferVerdict {
-    use ffh_core::controller::OfferVerdict;
-    let no = |why: String| OfferVerdict { accept: false, margin: None, why: Some(reason_text(why)) };
-    if get.is_empty() && !give.is_empty() {
-        return match check_deal(g, h, g.houses[hh].player, give, get) {
-            Ok(()) => OfferVerdict { accept: true, margin: None, why: None },
-            Err(e) => no(e.detail()),
-        };
-    }
-    no(format!("{} takes gifts only", g.house_label(hh)))
 }
 
 fn tribute_json(g: &Game, ai: PlayerId, h: PlayerId) -> Json {
@@ -351,12 +271,6 @@ pub fn trade_answer(v: &Viewer, with: PlayerId, give: &[TradeData], get: &[Trade
     }
     if g.players[with].human {
         return Ok(crate::jobj! { "accept" => Json::Null, "margin" => Json::Null, "why" => Json::Null });
-    }
-    // A House answers by the rules (docs/PERSONS.md, "The fourth build", rule 3: gifts only),
-    // whatever plays it.
-    if let Some(hh) = g.player_house(with) {
-        let verdict = house_answer(g, hh, v.h, give, get);
-        return Ok(crate::jobj! { "accept" => verdict.accept, "margin" => verdict.margin, "why" => verdict.why });
     }
     let verdict = match check_deal(g, v.h, with, give, get) {
         Ok(()) => g.controller(with).judge_offer(g, with, v.h, give, get),
@@ -461,10 +375,8 @@ pub fn check_deal(g: &Game, h: PlayerId, to: PlayerId, give: &[TradeData], get: 
             }
         }
     }
-    // At war every deal makes peace (`CvDeal::addTrades`): it has to be a peace deal. (Not a gift to
-    // a House, docs/PERSONS.md, "The fourth build", rule 3, which makes no peace.)
-    let house_gift = get.is_empty() && g.player_house(to).is_some();
-    if !house_gift && g.at_war(g.players[h].team, g.players[to].team) {
+    // At war every deal makes peace (`CvDeal::addTrades`): it has to be a peace deal.
+    if g.at_war(g.players[h].team, g.players[to].team) {
         let has = |kind: TradeableItem| give.iter().chain(get).any(|t| t.item_type == kind);
         if !has(TradeableItem::TRADE_PEACE_TREATY) && !has(TradeableItem::TRADE_SURRENDER) {
             return Err(CmdErr::Invalid("at war a deal makes peace: it needs the peace treaty (both sides) or a capitulation".into()));

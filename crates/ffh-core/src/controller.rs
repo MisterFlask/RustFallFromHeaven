@@ -49,6 +49,18 @@ pub trait Controller: Send + Sync {
     /// cities do on their own besides production, in its turn processing.
     fn govern_cities(&self, _g: &mut Game, _p: PlayerId) {}
 
+    /// This game's governors (docs/GOVERNORS.md): player `p` hands cities to governors or takes
+    /// them back ([`Game::player_set_city_governed`], the human's command too). Called after its
+    /// civics change and in its turn processing, before its cities produce. Default: nothing.
+    fn choose_city_governance(&self, _g: &mut Game, _p: PlayerId) {}
+
+    /// This game's governors: whether the owner of city `c`, just gained (founded, captured,
+    /// traded, flipped, raised from an outpost), hands it to a governor at once (a city gained is
+    /// run by hand). Not asked under a governed civic. Default: no.
+    fn govern_gained_city(&self, _g: &Game, _c: CityId) -> bool {
+        false
+    }
+
     /// The research choice of `CvPlayer::chooseTech(0)`: for a human the BUTTONPOPUP_CHOOSETECH
     /// popup (`None` = not answered now; the popup's answer arrives later as `CvNetResearch`),
     /// for an AI player `CvPlayerAI::AI_chooseResearch` (`chooseTech` deletes an AI player's
@@ -196,17 +208,17 @@ pub trait Controller: Send + Sync {
         crate::crusade::loan::LoanAnswer::Refuse
     }
 
-    /// Not in C++ (docs/PERSONS.md, "The third build", rule 5): liege `p` answers its House's
-    /// ultimatum `u`: true accepts (the demand is carried out, a contract binds for its turns),
-    /// false refuses (the House breaks away now). Default: accept.
-    fn consider_ultimatum(&self, _g: &Game, _p: PlayerId, _u: &crate::persons::Ultimatum) -> bool {
-        true
-    }
-
     /// Not in C++: lender `p` picks the units of an agreed loan (at least `terms.strength`;
     /// short of it the rules pick strongest-first). Default: strongest first.
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &crate::crusade::loan::LoanTerms) -> Vec<UnitId> {
         g.loan_default_units(p, terms.strength)
+    }
+
+    /// This game's Houses (docs/HOUSES.md, rule 5): the leader player `p` picks for a House
+    /// forming, an index into `offer.cards`. Called in the owner's turn processing. Default: the
+    /// rule-14 scoring ([`crate::houses::house_pick_default`]).
+    fn choose_house_leader(&self, g: &Game, _p: PlayerId, offer: &crate::houses::HouseOffer) -> usize {
+        crate::houses::house_pick_default(g.d, offer)
     }
 
     /// Choose one of two rolled results in the exploration's tier. Only the chosen result
@@ -325,13 +337,6 @@ impl Game {
     /// (a teammate, or the master of our non-capitulated vassal team, is FRIENDLY; anything
     /// involving the barbarians is FURIOUS); otherwise the controller's attitude.
     pub fn player_ai_get_attitude(&self, p: PlayerId, towards: PlayerId, forced: bool) -> AttitudeType {
-        // This game's Houses (docs/PERSONS.md, rule 5): a House's attitude toward its liege is
-        // its loyalty's state.
-        if let Some(h) = self.player_house(p) {
-            if self.houses[h].owner == towards {
-                return self.house_state(h).attitude();
-            }
-        }
         if forced {
             let team = self.players[p].team;
             let their_team = self.players[towards].team;

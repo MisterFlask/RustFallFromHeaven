@@ -828,19 +828,6 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
         return;
     }
 
-    // A free stack holds a city of a House whose break-away no tribute cut can stop: a city where
-    // our army units outnumber the House's goes back to us (docs/PERSONS.md, rule 7; persons.rs).
-    if let Some(q) = crate::persons::disloyal_house_post(g, v, grp, u) {
-        crate::trace!(g, p, "stack {:?} holds a Disloyal House's city at {:?}", grp, g.map.xy(q));
-        if q == here {
-            hold(g, grp);
-        } else {
-            move_to(g, grp, q, 0);
-            finish(g, grp);
-        }
-        return;
-    }
-
     // Gather: join the nearest other stack within a few turns, else hold in the nearest city.
     // (Posting lone units here to block barbarian spawns near our cities was tried and reverted:
     // the units held in cities fight for them. docs/AI_LOG.md, "Fog-busting posts".)

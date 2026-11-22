@@ -12,9 +12,7 @@
 //!   that needs its production for its own defence, governed cities first (their production is
 //!   the governor's development), a directly ruled city only when what it would interrupt is worth
 //!   less ([`interruptible`]: not a wonder, a ritual, a settler or a worker, not the last turns of
-//!   a building), and the cities of its Houses while the House is Pleased or Friendly (the levy,
-//!   docs/PERSONS.md, rule 6: each order is a grievance); as many cities as the army lacks units,
-//!   the soonest to deliver first. A city
+//!   a building); as many cities as the army lacks units, the soonest to deliver first. A city
 //!   whose order is under way keeps it while it can still serve. At peace, no requisition; through
 //!   a turn without a main army (out of supply, at sea) while the war lasts, the orders under way
 //!   are kept where the city can still spare them and no new ones placed. The unit is [`requisition_unit`] (the AI's
@@ -175,8 +173,7 @@ fn ordered_cities(g: &Game, a: ArmyId) -> Vec<CityId> {
 
 /// Whether city `c` can spare its production for an army: it holds against what threatens its
 /// owner there (a defender at least, and the defense `production::emergency` would not switch to
-/// a defender for), and it is not
-/// training a defender for itself. (A levied city of a House: the House's garrison.)
+/// a defender for), and it is not training a defender for itself.
 fn can_spare(g: &Game, c: CityId) -> bool {
     let p = g.cities[c].owner;
     let plot = g.city_plot(c);
@@ -225,9 +222,7 @@ fn interruptible(g: &Game, c: CityId, a: ArmyId) -> bool {
 /// units, the soonest to deliver first (training plus march, within [`REQUISITION_HORIZON`]; the
 /// march guessed from the distance to rank them, then found along the land), governed cities
 /// before directly ruled ones, which serve only when what they would interrupt gives way
-/// ([`interruptible`]). Only cities on the army's landmass whose unit can reach it by land. The
-/// cities of its Houses that take a levy now are candidates beside its own
-/// (`persons::levy_cities`: a House that stays Pleased or better after the levy).
+/// ([`interruptible`]). Only cities on the army's landmass whose unit can reach it by land.
 pub fn requisition_cities(g: &Game, p: PlayerId, a: ArmyId) -> Vec<CityId> {
     let Some(at) = g.army_plot(a) else { return Vec::new() };
     let area = g.map.plots[at].area;
@@ -247,9 +242,7 @@ pub fn requisition_cities(g: &Game, p: PlayerId, a: ArmyId) -> Vec<CityId> {
     let siege = wants_siege(g, a);
     let (ax, ay) = g.map.xy(at);
     let mut cands: Vec<(bool, i32, CityId, UnitType, i32)> = Vec::new();
-    // Its own cities, then its Houses' that take a levy now (Pleased after it: persons.rs).
-    let levy = crate::persons::levy_cities(g, p);
-    for &c in g.players[p].cities.iter().chain(&levy) {
+    for &c in &g.players[p].cities {
         if busy.contains(&c) || g.map.plots[g.city_plot(c)].area != area || !can_spare(g, c) {
             continue;
         }

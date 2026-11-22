@@ -158,18 +158,14 @@ impl View {
 
     /// The analysis of the turn: the danger map, and for a civilization the field army
     /// targets, the amphibious target, the road plan, the rival defenders and the cities in peril.
-    /// A House (docs/PERSONS.md) has no targets of its own: its liege makes its wars, and it
-    /// defends its land (`persons::is_house`).
     pub fn analyze(&mut self, g: &Game) {
         let p = self.p;
         let v = self;
         v.danger = vec![0; g.map.num_plots()];
         v.build_danger(g);
         if !v.barbarian {
-            if !crate::persons::is_house(g, p) {
-                v.targets = crate::military::find_targets(g, &*v);
-                v.amphibious = crate::naval::amphibious_target_in(g, Some(&v.forecasts), p);
-            }
+            v.targets = crate::military::find_targets(g, &*v);
+            v.amphibious = crate::naval::amphibious_target_in(g, Some(&v.forecasts), p);
             v.rival_def = crate::defense::all_rival_defenders(g, p);
             for &c in &g.players[p].cities {
                 let cp = g.city_plot(c);

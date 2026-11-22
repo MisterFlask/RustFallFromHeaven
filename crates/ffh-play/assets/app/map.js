@@ -17,8 +17,8 @@ import { stackHead, stackReady } from "./stacks.js";
 import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
-import { drawPlateShield } from "./persons_lines.js";
-import { shieldHits, starHit, plateHitAt, plateTip } from "./plates.js";
+import { starHit, plateHitAt, plateTip } from "./plates.js";
+import { drawPlateShield, shieldHit, SHIELD } from "./houses_lines.js";
 import { remindersNode } from "./keywords.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
 import { drawLanesFlat, outpostTag } from "./lanes.js";
@@ -266,7 +266,7 @@ export class MapView {
       // A sea's name or badge on the Sea layer opens the sea's panel (docs/NAVAL.md 10).
       const sea = this.seaAt(ev);
       if (sea !== null && this.h.seaClick) return this.h.seaClick(sea);
-      // A tap on a plate's mark (a House's shield, a capital's star) shows its
+      // A tap on a plate's mark (a capital's star) shows its
       // tooltip, as a mouse's hover does, and nothing else.
       if (ev.pointerType === "touch" && this.plateAt(ev)) return this.hoverAt(ev);
       if (ev.pointerType === "touch") this.hoverAt(ev);
@@ -365,7 +365,7 @@ export class MapView {
       else this.hideTip();
       return;
     }
-    // A mark on a city's plate (a House's shield, a capital's star): its tooltip.
+    // A mark on a city's plate (a capital's star): its tooltip.
     if (this.plateHoverAt(this.plateAt(ev))) return;
     // A sea's name or buoy on the HD-2D map's Sea layer: its tooltip and its outline.
     if (this.seaHoverAt(this.r3d ? this.seaAt(ev) : null)) return;
@@ -990,14 +990,6 @@ export class MapView {
   }
 
   draw() {
-    // A player drawn in another colour (a House in its liege's, docs/PERSONS.md, rule 1; a House
-    // breaking away): the drawn territory and the minimap go.
-    if (T.colourKey() !== this.colourSeen) {
-      this.colourSeen = T.colourKey();
-      this.chunks.clear();
-      this.pixels = 0;
-      this.miniImage = null;
-    }
     if (this.r3d) {
       try {
         this.r3d.draw();
@@ -1165,8 +1157,8 @@ export class MapView {
     return null;
   }
 
-  /** The mark of a city's plate under pointer event `ev` (`{kind, city}`, plates.js: a House's
-   *  shield, a capital's star; any renderer, each records the boxes it drew), or null.
+  /** The mark of a city's plate under pointer event `ev` (`{kind, city}`, plates.js: a capital's
+   *  star; any renderer, each records the boxes it drew), or null.
    *  A finger gets a few pixels of slack. */
   plateAt(ev) {
     if (this.overlay.city || this.backdropDrawn()) return null;
@@ -1176,8 +1168,7 @@ export class MapView {
     return plateHitAt(hits, ev.clientX - rc.left, ev.clientY - rc.top, ev.pointerType === "touch" ? 6 : 1);
   }
 
-  /** Plate mark `hit` (or null) is pointed at: its tooltip (plates.js `plateTip`, with the House's
-   *  and the attitude's reminders). Returns whether a mark took the hover; leaving one gives the
+  /** Plate mark `hit` (or null) is pointed at: its tooltip (plates.js `plateTip`). Returns whether a mark took the hover; leaving one gives the
    *  plot under the pointer its own hover back. */
   plateHoverAt(hit) {
     const key = hit ? `${hit.city}:${hit.kind}` : null;
@@ -1457,7 +1448,7 @@ export class MapView {
   drawCities(g) {
     const ts = this.cam.ts;
     const mine = me()?.player;
-    // The boxes of the labels' marks (a House's shield, a capital's star), for their
+    // The boxes of the labels' marks (a capital's star), for their
     // tooltips (plates.js; `plateAt`).
     this.plateHits = [];
     for (const c of S.cities.values()) {
@@ -1495,12 +1486,15 @@ export class MapView {
             const sw = g.measureText("★").width;
             this.plateHits.push(starHit(c, sx + ts / 2 - tw / 2 + 4 + sw / 2, sy - 2, Math.max(5, sw / 2 + 1)));
           }
-          // Houses (docs/PERSONS.md, "UI", part G): an own city's House shield at the
-          // label's left (none for the Crown's); Restless ◆, Disloyal ✖ and its turns on it.
-          const shieldW = c.house ? drawPlateShield(g, c.house, sx + ts / 2 - tw / 2 - 8, sy - 2, 17) : 0;
-          if (shieldW) this.plateHits.push(...shieldHits(c, sx + ts / 2 - tw / 2 - 8, sy - 2, 17, shieldW));
           // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the label's left end.
-          drawHarbourMark(g, c, sx + ts / 2 - tw / 2 - 5 - (shieldW ? shieldW + 2 : 0), sy - 2, 7, 1);
+          drawHarbourMark(g, c, sx + ts / 2 - tw / 2 - 5, sy - 2, 7, 1);
+          // This game's Houses (docs/HOUSES.md, rule 15): an own city's House shield at the label's
+          // right end (houses_lines.js).
+          if (c.house) {
+            const shx = sx + ts / 2 + tw / 2 + 2 + (16 * SHIELD.w) / SHIELD.h / 2;
+            drawPlateShield(g, c, shx, sy - 2, 16);
+            this.plateHits.push(shieldHit(c, shx, sy - 2, 16));
+          }
           if (c.owner === mine && ts >= 32) {
             const prod = c.production ? `${dname(ORDER_KINDS[c.production.order], c.production.type)}${c.production.turns !== null ? ` ${c.production.turns}` : ""}` : c.idle ? "idle!" : "";
             if (prod) {
@@ -1945,17 +1939,14 @@ export class MapView {
 }
 
 /** The tooltip of plate mark `hit` (`{kind, city}`, plates.js): its title, its lines in their
- *  colours and the reminders of the House keyword and of the House's attitude (the data's keyword
- *  reminder, the attitude's help); null when it says nothing. */
+ *  colours and its keywords' reminders; null when it says nothing. */
 function plateTipNodes(hit) {
   const city = S.cities.get(hit.city);
   if (!city) return null;
   const mine = me()?.player ?? null;
-  // The House's player's record in the view (its liege's name; for its liege, a Furious House's
-  // stated outcome); a capital's owner's civilization.
+  // A capital's owner's civilization.
   const owner = city.owner === mine ? me() : S.players.get(city.owner);
-  const house = owner?.house ?? null;
-  const tip = plateTip(hit.kind, city, { mine, liegeName: house?.liege_name ?? null, outcome: house?.outcome ?? null, civ: owner?.civ !== null && owner?.civ !== undefined ? dname("CivilizationType", owner.civ) : null });
+  const tip = plateTip(hit.kind, city, { civ: owner?.civ !== null && owner?.civ !== undefined ? dname("CivilizationType", owner.civ) : null });
   if (!tip) return null;
   const div = (cls, text, colour) => {
     const e = Object.assign(document.createElement("div"), { className: cls, textContent: text });
@@ -1965,12 +1956,8 @@ function plateTipNodes(hit) {
   const tables = S.data?.tables ?? {};
   const reminders = tip.reminders
     .map((r) => {
-      if (r.keyword) {
-        const k = (tables.KeywordType ?? []).find((x) => x.type === r.keyword);
-        return k?.reminder ? { key: k.type, name: k.name, text: k.reminder } : null;
-      }
-      const a = (tables.AttitudeType ?? []).find((x) => x.type === r.attitude);
-      return a?.help ? { key: a.type, name: a.name, text: a.help } : null;
+      const k = (tables.KeywordType ?? []).find((x) => x.type === r.keyword);
+      return k?.reminder ? { key: k.type, name: k.name, text: k.reminder } : null;
     })
     .filter(Boolean);
   return [div("tip-title", tip.title), ...tip.lines.map((l) => div("tip-plate", l.text, l.colour)), remindersNode(reminders)].filter(Boolean);
