@@ -899,7 +899,8 @@ pub(crate) fn offer_open_borders(g: &mut Game, p: PlayerId, other: PlayerId) -> 
     if !(g.player_can_trade_item(p, other, &item, true) && g.player_can_trade_item(other, p, &item, true)) {
         // (The rules allow the item once either team has a tech with `open_borders_trading`.)
         let tech = g.team_is_open_borders_trading(team) || g.team_is_open_borders_trading(ot);
-        g.tel_decision(p, "caravan", "open_borders", if tech { "item_refused" } else { "no_tech" }, 1, String::new);
+        let house = g.player_house(p).is_some() || g.player_house(other).is_some();
+        g.tel_decision(p, "caravan", "open_borders", if house { "house" } else if tech { "item_refused" } else { "no_tech" }, 1, String::new);
         return false;
     }
     if let Some(w) = why {
