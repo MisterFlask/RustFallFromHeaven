@@ -20,7 +20,8 @@
 //! `houses` also leaves one home city in no House, out of range of every home House that has room:
 //! ending the turn forms its House, the human's pick (a home pick). `houses-foreign` instead leaves
 //! a city of `enemy`'s founding in no House, out of range of House `furious`: ending the turn forms
-//! a foreign House, whose pick has the outsider's card.
+//! a foreign House, whose pick has the outsider's card; the plots around that city hold mostly the
+//! enemy's culture (four times the human's), so the pick's head and its sympathies show it.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -168,7 +169,7 @@ struct Leaning {
 
 /// A House of `p` over `cities` (the seat first), formed by the rules (`house_form`, the
 /// advisor's pick; its message left out) and then given `x` by hand; its forming told as rule 11
-/// words it, the state it is in now taken as told.
+/// words it, its state and perk switch set by the owner's pass (`player_houses_tell_states`).
 fn house(g: &mut Game, p: PlayerId, cities: &[CityId], x: Leaning, hand_set: &mut Vec<String>, role: &'static str) -> Result<HouseId, String> {
     let d = g.d;
     let log = g.log.enabled;
@@ -187,8 +188,15 @@ fn house(g: &mut Game, p: PlayerId, cities: &[CityId], x: Leaning, hand_set: &mu
         house.perk = perk;
         house.outsider = x.outsider;
     }
-    let state = g.house_state(h);
-    g.houses[h].told_state = state;
+    // The hand-set perk enters the cities' stored values; then the rules' own pass tells the
+    // House's state (its message left out) and switches its perk by it (rule 9): off for a
+    // Furious House, `told_state` the state it is in now.
+    for c in g.houses[h].cities.clone() {
+        g.city_house_perk_changed(c);
+    }
+    g.log.enabled = false;
+    g.player_houses_tell_states(p);
+    g.log.enabled = log;
     hand_set.push(format!("House {role}: its leader, religion, sympathy, perk{}", if x.outsider { " and outsider" } else { "" }));
     let label = g.house_label(h);
     let name = ffh_core::houses::leader_name(d, x.leader);
@@ -342,6 +350,24 @@ fn staged(dir: &Path, seed: u32, foreign: bool) -> Result<StagedHouses, String> 
                 g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), -1, false, false, false, true);
             }
         }
+    }
+
+    // `houses-foreign`: the city taken from the enemy keeps the enemy's culture. Each plot of its
+    // work radius (the city's own included) is given four times the human's culture there in the
+    // enemy's, by the rules' own call (its owner follows the culture), so the pick's head reads
+    // about `Culture here: the <enemy> 80%, yours 20%.` and the sympathy roll leans to the enemy.
+    if foreign {
+        let plots: Vec<_> = (0..g.city_num_city_plots(unhoused).max(0) as usize).filter_map(|i| g.city_index_plot(unhoused, i)).collect();
+        // (With no culture of the human's there at all, 20 a plot.)
+        let none = plots.iter().all(|&q| g.map.plots[q].culture[h] <= 0);
+        for q in plots {
+            let want = if none { 20 } else { 4 * g.map.plots[q].culture[h].max(0) };
+            let change = want - g.map.plots[q].culture[enemy];
+            if change > 0 {
+                g.plot_change_culture(q, enemy, change, true);
+            }
+        }
+        hand_set.push("the enemy's plot culture around the city in no House: four times the human's".into());
     }
 
     // The checks: each House in its state, the city in no House waiting.

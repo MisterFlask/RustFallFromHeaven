@@ -4,14 +4,18 @@
 // (a home House, a foreign House with the outsider's card, the same at a phone's width), the
 // Houses screen, a card's opinion tooltip with its calculation, the city screen's House block,
 // the war question with its Houses preview, the plates' shields on the map, a House alert and the
-// diplomacy row of a rival's Houses.
+// diplomacy row of a rival's Houses; a perk's part in a city's number (the research's tooltip);
+// and the governors (docs/GOVERNORS.md): the city screen's toggle in both states over the HD-2D map
+// at 1024 x 700 (the Close plaque clear of the column's end), the Governors screen of the mixed
+// empire, and the civics screen's City States with its adoption preview.
 //
 //   node tools/houses-shots.mjs --bin <built>/ffh-play [--out DIR] [--assets crates/ffh-play/assets] [--only a,b]
 //
 // It stages `ffh-play stage houses` and `houses-foreign`, serves each with `ffh-play serve --load`
 // and drives the page with Playwright's Chromium (as tools/heroes-shots.mjs), the map on HD-2D in
 // software (`?renderer=hd2d&force3d=1`) for the alert and the plates; the dialogs over the flat map
-// (their crops show none of it). Parts (`--only`): home, map, screen, city, diplo, foreign.
+// (their crops show none of it). Parts (`--only`): home, map, screen, city, diplo, foreign, gov
+// (`stage governors-mixed`).
 
 import fs from "node:fs";
 import path from "node:path";
@@ -228,6 +232,12 @@ async function main() {
           await hover(page, ".section.mood .mood-row");
           await crop(page, [".section.mood", ".richtip:not([hidden])"], "06b-city-mood.png", { pad: 6, maxW: 700 });
           await unhover(page, ".section.mood .mood-row");
+          // (11) The perk's part in a calculation: House annoyed's Scholars I in the research's tooltip.
+          const research = ".modal.city-screen .cs-out.research";
+          await page.evaluate((s) => document.querySelector(s).scrollIntoView({ block: "center" }), research);
+          await hover(page, research);
+          await crop(page, [research, ".richtip:not([hidden])", ".tooltip:not([hidden])"], "11-city-perk-part.png", { pad: 6, maxW: 600 });
+          await unhover(page, research);
           await closeModals(page);
         }
 
@@ -291,8 +301,75 @@ async function main() {
         await server.stop();
       }
     }
+    if (want("gov")) await governorShots(browser, bin);
   } finally {
     await browser.close();
+  }
+}
+
+/** The governors' shots (`stage governors-mixed`: Republic, the capital and a second city
+ *  governed, a third run by hand; Cartography known, so City States can be adopted). */
+async function governorShots(browser, bin) {
+  const saves = tempDir("governors-shots");
+  const st = await stage(bin, "governors-mixed", path.join(saves, "staged-governors"));
+  const server = await startServer({ bin, saves, extra: ["--load", st.save, "--assets", ASSETS] });
+  try {
+    // (12, 13) The city screen over the HD-2D map at 1024 x 700, where the Close plaque reaches
+    // under the right column: the column scrolled to its end, the toggle and the House block above
+    // the plaque. A governed city (`Run by hand`), then the city run by hand (`Hand to a governor`).
+    const page = await openGame(browser, server, { width: 1024, height: 700 });
+    // (The research question the staged game opens with, out of the way.)
+    await closeModals(page);
+    for (const [city, name] of [[st.capital, "12-governance-governed.png"], [st.hand_run, "13-governance-by-hand.png"]]) {
+      await page.evaluate((c) => window.ffh.emit("open-city", c), city);
+      await until(() => page.evaluate(() => !!document.querySelector(".modal.city-screen .section.governance .govern-toggle")), "the Governance toggle", 60000);
+      await sleep(3000);
+      const r = await page.evaluate(() => {
+        const col = document.querySelector(".section.governance").closest(".city-col");
+        col.scrollTop = col.scrollHeight;
+        const g = document.querySelector(".section.governance").getBoundingClientRect();
+        const b = document.querySelector(".modal.city-screen .modal-buttons").getBoundingClientRect();
+        const c = col.getBoundingClientRect();
+        return { x0: b.left, y0: g.top, x1: c.right, y1: Math.max(b.bottom, c.bottom), w: innerWidth, h: innerHeight };
+      });
+      await sleep(1500);
+      await clip(page, r, name, { pad: 6, maxW: 760 });
+      await closeModals(page);
+      await sleep(500);
+    }
+    // The screens over the flat map (the same page: software GL holds it for seconds a frame).
+    await page.evaluate(() => window.ffh.setRenderer("flat"));
+    await page.setViewportSize(VIEW);
+    await sleep(1500);
+    const flat = page;
+    // (14) The Governors screen of the mixed empire.
+    await closeModals(flat);
+    await flat.evaluate(() => void window.ffh.openScreen("governors"));
+    await until(() => flat.evaluate(() => !!document.querySelector('.modal[data-tag="governors"] .govern-toggle')), "the Governors screen", 30000);
+    await sleep(800);
+    await crop(flat, ['.modal[data-tag="governors"]'], "14-governors-screen.png", { pad: 0, maxW: 1000 });
+    await closeModals(flat);
+    // (15) The civics screen: City States' tooltip, then (16) its adoption preview.
+    await flat.evaluate(() => void window.ffh.openScreen("civics"));
+    await until(() => flat.evaluate(() => document.querySelectorAll('.modal[data-tag="civics"] button.civic').length > 3), "the civics screen", 30000);
+    await sleep(600);
+    const cs = await flat.evaluate(() => {
+      const b = [...document.querySelectorAll('.modal[data-tag="civics"] button.civic')].find((x) => /City States/.test(x.textContent));
+      return b ? b.dataset.civic : null;
+    });
+    if (!cs) throw new Error("no City States button");
+    const sel = `.modal[data-tag="civics"] button.civic[data-civic="${cs}"]`;
+    await hover(flat, sel);
+    await crop(flat, [sel, ".richtip:not([hidden])", ".tooltip:not([hidden])"], "15-civics-city-states.png", { pad: 6, maxW: 700 });
+    await unhover(flat, sel);
+    await flat.evaluate((s) => document.querySelector(s).click(), sel);
+    await until(() => flat.evaluate(() => !!document.querySelector('.modal[data-tag="civics"] .civic-rule-change')), "the adoption preview", 30000);
+    await sleep(500);
+    await crop(flat, ['.modal[data-tag="civics"] .civic-summary'], "16-civics-preview.png", { pad: 8, maxW: 1000 });
+    await closeModals(flat);
+    await page.close();
+  } finally {
+    await server.stop();
   }
 }
 

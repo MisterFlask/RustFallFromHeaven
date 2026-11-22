@@ -5,10 +5,11 @@ States and Aristocracy every city is governed; under any other civic the owner h
 governors, and takes them back, city by city. Over its governed cities the player sets empire
 priorities, may overrule a city's role, and places empire orders (armies' units, settlers,
 wonders, rituals) at the cities it picks; it never picks an ordinary building there. This file is
-the rules as they play, what was decided beyond the design, and what is left. A city granted to a House (docs/PERSONS.md) is the House's
-player's since the second build (2026-11-18): the House is a vassal civilization of its own and
-governs its cities itself; the first build's order quota is gone. Its liege reaches its cities only
-by the levy (docs/ARMIES.md, "Requisition").
+the rules as they play, what was decided beyond the design, and what is left. A House
+(docs/HOUSES.md) owns no city: a city in a House is its owner's, run by hand or governed as any
+other. (From 2026-11-18 to 2026-11-20 a city granted to a House was the House's player's, a vassal
+civilization that governed its cities itself and that its liege reached only by a levy; those
+Houses were removed on 2026-11-21: git history of docs/PERSONS.md.)
 
 History: the first rules (the owner's design spec "FfH Culture Actions & Army Combat", 2026-10-29:
 four directly ruled cities, every other city under a governor from a bench, governors with a
@@ -30,8 +31,8 @@ Code: rules `crates/ffh-core/src/governors.rs` (the hand-over and take-back
 `player_set_city_governed`; hooks: `player_set_civics`, `player_init_city`, `city_kill`, the
 player turn, the production queue in `city/turn.rs`; the controller's `choose_city_governance` and
 `govern_gained_city`); the command `govern_city {city, governed}` (`crates/ffh-play`); data
-`data/json/city_roles.jsonc`, `governor_names.jsonc` (read by nothing now; kept for the Houses of
-docs/PERSONS.md), the civics'
+`data/json/city_roles.jsonc`, `governor_names.jsonc` (no governor reads it; the Houses' names are drawn from it,
+`house_new_name`), the civics'
 `governed`, the tiers' `core_effect_percent` (`ffh-data` `infos/governor.rs`), tuning
 `data/json/rules_defines.jsonc` (`GOVERNOR_*`); AI `crates/ffh-ai/src/governor.rs` (which of its
 cities it governs, what a governor builds, its plan, the AI's priorities and empire orders); UI
@@ -108,8 +109,8 @@ from done. In a mixed empire the cities run by hand count for none of them.
 
 **Governors.** A governor is not a character: it has no name and no trait. Named governors (a name
 from the civilization's list and, with 50%, one trait: *Cautious*, one more defender; *Ambitious*,
-the costliest building first) were removed on 2026-11-18 by the owner's decision (docs/PERSONS.md:
-the House's name takes their place). Governors have no yield, happiness, health, production or
+the costliest building first) were removed on 2026-11-18 by the owner's decision (the House's name
+took their place then: git history of docs/PERSONS.md; the names now name Houses, docs/HOUSES.md). Governors have no yield, happiness, health, production or
 experience modifiers, there is no bench, and nothing is assigned.
 
 **What a governor builds** (ffh-ai `governor.rs`, for the human's cities and the AI's alike):
@@ -137,8 +138,10 @@ cities that can train it with what each would delay, pick one (the client pre-se
 capable city). The standing requisition (an army's target size and the cities it draws on) is
 unchanged and fills by its role mix.
 
-**Cultural channels are the player's** (the owner's decision, 2026-10-30): a governor never sets,
-changes or ends a city's channel (docs/CULTURE.md).
+**There are no cultural channels.** Until 2026-11-21 a city's cultural channel (Court, Guard,
+Spread Religion) was the player's, and a governor never set, changed or ended one (the owner's
+decision, 2026-10-30); the channels were removed with the Houses' redesign (docs/HOUSES.md; git
+history of docs/CULTURE.md).
 
 ## Decided beyond the design's text
 

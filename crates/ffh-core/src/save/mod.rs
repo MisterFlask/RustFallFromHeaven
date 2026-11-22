@@ -70,7 +70,7 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   shares of the world in basis points instead of FFH2's `calculateScore` (no new fields).
 /// - 3: no rules caches: the path finders, `Player::ai_bonus_value` and the city rank caches
 ///   are gone (computed when needed).
-/// - 4: cultural actions (docs/CULTURE.md): `City::culture_queue`, `culture_diverted`,
+/// - 4: cultural actions (git history of docs/CULTURE.md): `City::culture_queue`, `culture_diverted`,
 ///   `culture_marks`, `Player::culture_memory`.
 /// - 5: Foment Revolt and Flip City: `City::culture_revolt_turn`.
 /// - 6: armies (docs/ARMIES.md): `Game::armies`, `Unit::army`, `Player::armies`, `army_count`,
@@ -78,7 +78,7 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 7: governors (docs/GOVERNORS.md): `Game::governors`, `Player::governors`, `governor_count`,
 ///   `City::direct_rule`, `rule_changed_turn`, `governor`, `feed_army`, `governor_penalty_turns`,
 ///   `governor_hostile_culture`.
-/// - 8: cultural channels replace the cultural queue (docs/CULTURE.md): `City::culture_channel`,
+/// - 8: cultural channels replace the cultural queue (git history of docs/CULTURE.md): `City::culture_channel`,
 ///   `culture_pressure`, `culture_revolt_level` in place of `culture_queue`, `culture_marks`,
 ///   `culture_revolt_turn`; `City::governor_hostile_culture` gone (governors never channel).
 /// - 9: requisition and marching recruits replace transit and the governed cities' feed mode
@@ -155,11 +155,11 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 45: a log entry's audience, mark and tag (`LogEntry::audience`, `mark`, `tag`).
 /// - 46: named governors and their traits gone (`Game::governors`, `Player::governors`,
 ///   `governor_count`, `City::governor`; docs/GOVERNORS.md).
-/// - 47: Persons of Note (docs/PERSONS.md): `Game::persons`, `houses`, `persons_drawn`,
+/// - 47: Persons of Note (git history of docs/PERSONS.md): `Game::persons`, `houses`, `persons_drawn`,
 ///   `persons_barred`, `Player::persons`, `houses`, `house_names`, `City::house`, `taken_by`,
 ///   `Army::commander` a person, `Army::commander_named`, `LogMark::Person`, `LogTag::Person`.
-/// - 48: a House's trait in its cities (`City::house_trait`; docs/PERSONS.md).
-/// - 49: Houses as vassal civilizations (docs/PERSONS.md, "The second build"): `House::player`,
+/// - 48: a House's trait in its cities (`City::house_trait`; git history of docs/PERSONS.md).
+/// - 49: Houses as vassal civilizations (git history of docs/PERSONS.md, "The second build"): `House::player`,
 ///   `origin`, `tribute`, `last_gold`, `last_research`, `last_turn` (no `seat`, `cities`,
 ///   `orders`), `Player::house`, `house_tribute`, no `City::house` nor `house_trait`, the
 ///   attitude scale (`LoyaltyState`), `PersonOrigin::Ruler`, `LoyaltyCause::Levied`,
@@ -167,23 +167,23 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `TRADE_HOUSE_VASSAL`.
 /// - 50: the memory of wrongs: `MEMORY_TOOK_CITY` and `MEMORY_BOUGHT_HOUSE` lengthen each
 ///   `Player::ai_memory_count` row (`MemoryType::NUM` 38).
-/// - 51: a raise of a House's tribute remembered (`LoyaltyCause::TributeRaised`; docs/PERSONS.md,
+/// - 51: a raise of a House's tribute remembered (`LoyaltyCause::TributeRaised`; git history of docs/PERSONS.md,
 ///   rule 4).
 /// - 52: a House's tribute lags the rate its liege set (`House::tribute_now`, `tribute_since`;
-///   docs/PERSONS.md, rule 4); `LoyaltyCause::TributeRaised` gone.
-/// - 53: Persons of Note removed, Houses alone (docs/PERSONS.md, "The third build", rules 1 to 3):
+///   git history of docs/PERSONS.md, rule 4); `LoyaltyCause::TributeRaised` gone.
+/// - 53: Persons of Note removed, Houses alone (git history of docs/PERSONS.md, "The third build", rules 1 to 3):
 ///   no `Game::persons`, `persons_drawn`, `persons_barred`, `Player::persons`, `City::taken_by`,
 ///   `Army::commander`, `commander_named`, `Standing::sworn`, `House::head`; a House's own request
 ///   and record (`House::demand`, `demand_rest_until`, `deeds`); `DemandKind` without `Post`,
 ///   `House` and `Wonder`; `LogMark::House` and `LogTag::House` in place of the person's;
 ///   `TermSource::Aura` gone.
-/// - 54: Houses split, ultimatums and contracts replace the countdown (docs/PERSONS.md, "The third
+/// - 54: Houses split, ultimatums and contracts replace the countdown (git history of docs/PERSONS.md, "The third
 ///   build", rules 4 to 6): `HouseOrigin::Split`, `House::refused`, `contract`, `ultimatums`;
 ///   `Standing::countdown` gone.
-/// - 55: courtship and gold tribute (docs/PERSONS.md, "The third build", rules 7 and 10):
+/// - 55: courtship and gold tribute (git history of docs/PERSONS.md, "The third build", rules 7 and 10):
 ///   `House::gifts`, `courtships`; no `House::last_research`; `MEMORY_COURTED_HOUSE` lengthens each
 ///   `Player::ai_memory_count` row (`MemoryType::NUM` 39).
-/// - 56: courting is a cultural channel (docs/PERSONS.md, "The fourth build"): the civilization's
+/// - 56: courting is a cultural channel (git history of docs/PERSONS.md, "The fourth build"): the civilization's
 ///   channel (`Player::culture_channel`, `culture_inflow`; `CultureChannel::target` a
 ///   `ChannelTarget`), `House::favour` in place of `gifts` and `courtships`,
 ///   `HouseOrigin::Courted`; no `City::culture_channel`, `culture_diverted`, `culture_pressure`,

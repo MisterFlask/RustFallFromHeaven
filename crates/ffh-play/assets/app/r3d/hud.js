@@ -124,8 +124,9 @@ function drawHudParts(r3d, cam) {
   const plateHits = [];
   r3d.plateHits = plateHits;
   for (const c of r3d.cities ?? []) {
-    // The view's entry as it is now (the dressing keeps the one it was dressed with: a House's
-    // state or a siege changes without a redress).
+    // The view's entry as it is now: the dressing keeps the entry its plot was dressed with, and
+    // what the plate shows (the House's shield and its state's mark, a siege) changes without a
+    // redress of the plot.
     const city = S.cities.get(c.city.id) ?? c.city;
     // The city screen's own city is named by its title; its plate would cover its plot's yields.
     if (screenCity && city.id === screenCity.id) continue;
