@@ -417,6 +417,25 @@ water 12. Plunder 3,486 gold in 66 kills. Route-turns: open 14,578; closed for n
 war 318, no path 209, the destination not revealed 161 (a captured destination is a new city the
 owner has not seen yet).
 
+**Measured with cargo and the AI's second build** (2026-11-22, branch `trade-ai`; the same 12
+games and tools; first build's numbers in brackets):
+
+| | turn 100 | turn 150 | turn 200 |
+|---|---|---|---|
+| routes a civilization, mean domestic / foreign | 0.89 / 0.15 (0.82 / 0.06) | 0.88 / 0.31 (0.82 / 0.30) | 0.96 / 0.45 (0.97 / 0.56) |
+| civilizations with a route | 55 of 75 (47 of 77) | 76 of 115 (79 of 118) | 123 of 169 (130 of 174) |
+| commerce a civilization, median | 21 (19) | 30 (27.5) | 37 (37.5) |
+| routes' trade, median / share of commerce | 3 / 20% (2 / 16%) | 6 / 25% (5 / 25%) | 8 / 32% (9.5 / 35%) |
+| team pairs with open borders | 3 of 198 (7 of 210) | 31 of 517 (37 of 545) | 60 of 1115 (59 of 1196) |
+
+The first route of a game: median turn 61 (72). Routes established 304 (238 domestic, 66 foreign),
+45 replacing one (357, 61). Cargos loaded 31, all luxuries (23 at the premium for a resource the
+recipient lacks, 8 at the ordinary one); cargo-turns delivered 482, 362 of them at +150% and 120 at
++50%. Caravans lost 131 in 27,000 caravan-turns (4.8 per 1000): barbarians and animals 56, at war
+52, hidden 16, no killer 7. Route-turns closed: no open borders 1,241, war 578, no path 246 (no
+longer "not revealed"). Civilizations with two or more cities and no route at turn 200: 21 (22);
+19 of them Houses, 9 born at turn 180 or later.
+
 With the first build: routes a civilization by turn; caravans killed, by the killer's kind
 (civilization at war, hidden nationality, barbarians, animals) and where (own land, foreign,
 unowned, water); route-turns closed, by reason; the share of commerce from routes against today's.

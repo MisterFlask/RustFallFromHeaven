@@ -1923,7 +1923,8 @@ with none free and none route-less, a replacement), and the best plan (`plan_all
 among the cities `city_origin_refusal` accepts, ties to the lower id) repaying the Caravan within
 30 turns (worth x 30 >= its hammers x 100), the Caravan is put first in the origin's queue (an empire
 order in a governed city). The build it interrupts keeps its production. When the origin cannot
-train it, is unsafe (the threat near it above half its garrison's defence) or holds a ritual in
+train it, is unsafe (no defender, or the threat near it above half its garrison's defence: a
+governed city without a defender drops the empire order for its garrison) or holds a ritual in
 progress, the nearest city of its landmass within 5 plots that can trains it, and it walks there.
 (Before 2026-11-22 this was a step of `production::decide`, behind its `safe` test. A city
 decides only when its queue empties, and the AI places empire orders only in its empire cities, so

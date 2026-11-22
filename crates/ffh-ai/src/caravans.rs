@@ -16,8 +16,8 @@
 //!   Caravan claims, and the best plan ([`plan_all`]: the best offer among the cities that can be
 //!   an origin now, ties to the lower city id) repaying the Caravan within [`REPAY_TURNS`] turns
 //!   (one hammer for one commerce), the Caravan is put first in the origin's queue (an empire
-//!   order in a governed city); when the origin cannot train it, is unsafe or holds a ritual in
-//!   progress, in the nearest city of its landmass within [`STAND_IN_DIST`] plots that can.
+//!   order in a governed city); when the origin cannot train it, is unsafe (no defender, or a
+//!   threat above half its defence) or holds a ritual in progress, in the nearest city of its landmass within [`STAND_IN_DIST`] plots that can.
 //! - **Replacing**: with no route free and no route-less Caravan, the plan is the best offer from a
 //!   city that could be the origin once our least-paying route is dissolved, when it is worth at
 //!   least [`REPLACE_FACTOR`] times what that route pays ([`route_pays`]: a closed route counts what
@@ -387,11 +387,13 @@ pub fn idle_caravans(g: &Game, p: PlayerId) -> (Vec<UnitId>, i32) {
     (alive, training)
 }
 
-/// Whether city `c` of `p` is safe enough to train a Caravan: the threat near it at most half its
+/// Whether city `c` of `p` is safe enough to train a Caravan: a defender in it (a governed city
+/// without one drops the empire order for its garrison) and the threat near it at most half its
 /// garrison's defence (`production::decide`'s `safe`).
 fn safe(g: &Game, p: PlayerId, c: CityId) -> bool {
     let plot = g.city_plot(c);
-    crate::production::local_threat(g, p, plot, 3) * 2 <= crate::production::garrison(g, p, plot).1
+    let (n, defense) = crate::production::garrison(g, p, plot);
+    n > 0 && crate::production::local_threat(g, p, plot, 3) * 2 <= defense
 }
 
 /// Where `p` trains a Caravan now, and for what plan (module comment), if anywhere: on a plan turn
@@ -796,8 +798,11 @@ mod tests {
         let a = g.player_init_city(p, 3, 5, true, true);
         let b = g.player_init_city(p, 9, 5, true, true);
         let c = g.player_init_city(p, 16, 5, true, true);
+        let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
         for &x in &[a, b, c] {
             g.city_set_population(x, 6);
+            let (cx, cy) = (g.cities[x].x, g.cities[x].y);
+            g.player_init_unit(p, warrior, cx, cy, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
         }
         (g, p, [a, b, c])
     }
@@ -915,7 +920,7 @@ mod tests {
         crate::units::play(&ai, &mut g, &mut v);
         assert!(g.units.contains(u) && g.unit_in_route(u));
         assert_eq!((g.unit_plot(u), g.groups[g.units[u].group.unwrap()].mission_queue.len()), before);
-        assert_eq!(crate::production::garrison(&g, p, g.city_plot(plan.origin)).0, 0, "not a defender");
+        assert_eq!(crate::production::garrison(&g, p, g.city_plot(plan.origin)).0, 1, "the warrior defends, not the caravan");
         let _ = cities;
     }
 
