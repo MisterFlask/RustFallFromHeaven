@@ -262,6 +262,9 @@ impl Game {
 
         self.test_victory();
 
+        // This game's trade (docs/TRADE.md, 5): the game turn's changes reach the caravans.
+        self.trade_refresh_pay();
+
         // Globe texture dirty bit, engine DoTurn, DLL profiling and AutoSave: not ported.
     }
 
@@ -605,6 +608,8 @@ impl Game {
         if self.deals.contains(deal) && self.deals[deal].first_trades.is_empty() && self.deals[deal].second_trades.is_empty() {
             self.deal_kill(deal, true);
         }
+        // This game's trade (docs/TRADE.md, 5): a resource traded changes what caravans deliver.
+        self.trade_refresh_pay();
     }
 
     /// C++ `CvGame::verifyDeals`.

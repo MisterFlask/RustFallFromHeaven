@@ -643,6 +643,8 @@ pub fn station_json(station: ffh_core::army::Station) -> Json {
         Station::Patrol(s) => crate::jobj! { "patrol" => s.idx() },
         Station::Escort(EscortTarget::Army(a)) => crate::jobj! { "escort" => a },
         Station::Escort(EscortTarget::Group(g)) => crate::jobj! { "escort_group" => g },
+        // (A compile fix for docs/TRADE.md 4.4; the client's form is the client's to decide.)
+        Station::Escort(EscortTarget::Caravan(r, slot)) => crate::jobj! { "escort_caravan" => r.0, "slot" => slot as i32 },
         Station::Raid(c) => crate::jobj! { "raid" => c },
     }
 }
@@ -1852,7 +1854,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                         return Err(CmdErr::NotOwner);
                     }
                 }
-                Station::None | Station::Raid(_) => {}
+                // (A compile fix for docs/TRADE.md 4.4: the rules check it.)
+                Station::None | Station::Raid(_) | Station::Escort(EscortTarget::Caravan(..)) => {}
             }
             Plan::Apply(Action::Army(cmd.clone()))
         }

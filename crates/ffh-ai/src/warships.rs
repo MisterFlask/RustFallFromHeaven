@@ -755,6 +755,8 @@ pub(crate) fn escort_ends(g: &mut Game, v: &View, grp: GroupId) -> bool {
         Some(EscortTarget::Group(gr)) => g.groups.contains(gr) && g.groups[gr].units.iter().any(|&o| carries_army(g, o)),
         // The rules ended it (its target gone): an asleep former escort wakes.
         None => return false,
+        // (A caravan's escort is not the AI's: it keeps it. A compile fix, docs/TRADE.md 4.4.)
+        Some(EscortTarget::Caravan(..)) => return false,
     };
     let tired = g.groups[grp].units.iter().any(|&o| worn(g, o) || g.unit_is_out_of_sea_range(o) || damage_pct(g, o) >= HEAL_PCT);
     if busy && !tired {

@@ -442,7 +442,8 @@ A fleet holds one standing order, `Army::station`:
 - **Patrol** of a named sea: the fleet sails to the nearest plot of that sea it can reach (in
   range) and its warships take the Patrol order there (4.2); it stays until ordered otherwise.
 - **Escort** of one of its owner's armies or ships: whenever that group ends a move on a water
-  plot the fleet moves to the same plot if it can reach it this turn.
+  plot the fleet moves to the same plot if it can reach it this turn. A fleet or a land army may
+  also escort a caravan of a trade route (docs/TRADE.md, 4.4 and section 16).
 
 A move order ends the standing order.
 
@@ -533,7 +534,7 @@ Choices made where this spec was silent (each open to change):
   it joined.
 
 Not built: Escort of a ship group from the client (the rules take it); a message when a standing
-order starts or ends.
+order starts or ends (built for the Escort of a caravan: docs/TRADE.md, section 16).
 
 ## 8. What the AI does
 

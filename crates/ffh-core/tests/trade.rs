@@ -255,8 +255,8 @@ fn each_refusal() {
     w.g.players[w.p1].no_foreign_trade_count -= 1;
     // Cargo is not built.
     let gems = w.g.d.t::<BonusType>("BONUS_GEMS");
-    assert_eq!(w.g.unit_establish_refusal(u, w.far, [Some(gems), None]), Some(RouteRefusal::CargoNotBuilt));
-    assert_eq!(w.g.unit_establish_route(u, w.far, [Some(gems), None]), Err(RouteRefusal::CargoNotBuilt));
+    assert_eq!(w.g.unit_establish_refusal(u, w.far, [Some(gems), None]), Some(RouteRefusal::CargoNoCopy(gems)));
+    assert_eq!(w.g.unit_establish_route(u, w.far, [Some(gems), None]), Err(RouteRefusal::CargoNoCopy(gems)));
     // Not revealed.
     let t0 = w.team(w.p0);
     let fp = w.g.city_plot(w.far);
@@ -321,10 +321,10 @@ fn the_path_costs_and_entry() {
     assert_eq!(w.g.plot_route_cost(t0, p1_land), None);
     w.open_borders(w.p0, w.p1, true);
     assert_eq!(w.g.plot_route_cost(t0, p1_land), Some(d.defines.caravan_cost_land));
-    // A city of a team at war is never passed, though its land is entered.
+    // At war: neither its land nor its city.
     w.open_borders(w.p0, w.p1, false);
     w.war(w.p0, w.p1);
-    assert_eq!(w.g.plot_route_cost(t0, p1_land), Some(d.defines.caravan_cost_land));
+    assert_eq!(w.g.plot_route_cost(t0, p1_land), None);
     assert_eq!(w.g.plot_route_cost(t0, w.g.city_plot(w.far)), None);
     // Impassable.
     let peak = w.at(9, 4);
@@ -910,4 +910,480 @@ fn a_route_runs_through_the_owner_s_turns() {
     let plots: Vec<PlotIdx> = route.caravans().iter().map(|&u| w.g.unit_plot(u)).collect();
     assert!(plots.iter().all(|q| route.path.contains(q)), "on the path: {bounds:?}");
     assert!(!w.g.player_has_ready_unit(w.p0, true), "no caravan waits for orders");
+}
+
+// ---- The path avoids enemy land (3.5) ----
+
+#[test]
+fn a_route_whose_only_way_crosses_enemy_land_closes() {
+    let mut w = world();
+    // Player 2 holds column x 7 of the home island; the capital (6, 7) is inland.
+    for y in 1..=14 {
+        let q = w.at(7, y);
+        if !w.g.plot_is_water(q) {
+            w.g.plot_set_owner(q, Some(w.p2), false, true);
+        }
+    }
+    let east = w.g.player_init_city(w.p0, 10, 7, true, true);
+    let t0 = w.team(w.p0);
+    assert!(!w.g.city_is_route_coastal(w.capital));
+    let u = w.caravan_at(w.capital);
+    assert_eq!(w.g.unit_establish_refusal(u, east, [None, None]), Some(RouteRefusal::NoPath), "no open borders with player 2");
+    w.open_borders(w.p0, w.p2, true);
+    let r = w.g.unit_establish_route(u, east, [None, None]).expect("through player 2's land");
+    // Unowned land stays enterable at war; player 2's does not.
+    w.war(w.p0, w.p2);
+    assert_eq!(w.g.plot_route_cost(t0, w.at(7, 7)), None, "enemy land");
+    assert_eq!(w.g.plot_route_cost(t0, w.at(30, 3)), Some(w.g.d.defines.caravan_cost_land), "unowned land");
+    assert_eq!(w.g.routes[r].closed, Some(RouteRefusal::NoPath));
+    w.consistent();
+}
+
+// ---- The Great Merchant ----
+
+#[test]
+fn the_trade_mission_counts_a_share_of_a_caravan() {
+    let w = world();
+    let pct = w.g.d.defines.trade_mission_percent;
+    let (a, b) = (&w.g.cities[w.far], &w.g.cities[w.capital]);
+    let length = w.g.plot_distance(a.x, a.y, b.x, b.y);
+    let total = w.g.route_pay_total_x100(w.p1, w.far, w.capital, length, false, 0);
+    let half = total - total / 2;
+    assert_eq!(w.g.trade_mission_profit(w.far, w.capital), (half * pct / 100 + 50) / 100);
+}
+
+// ---- Cargo (section 5) ----
+
+fn gems(w: &World) -> BonusType {
+    w.g.d.t::<BonusType>("BONUS_GEMS")
+}
+
+impl World {
+    fn give(&mut self, c: CityId, b: BonusType, n: i32) {
+        self.g.city_change_free_bonus(c, b, n);
+        self.g.trade_refresh_pay();
+    }
+}
+
+/// Player 0's route from its port to player 1's port with `cargo`, arrived.
+fn cargo_route(w: &mut World, cargo: [Option<BonusType>; 2]) -> RouteId {
+    w.open_borders(w.p0, w.p1, true);
+    let u = w.caravan_at(w.port);
+    let r = w.g.unit_establish_route(u, w.far, cargo).expect("established");
+    w.arrive(r);
+    r
+}
+
+#[test]
+fn cargo_refusals() {
+    let mut w = world();
+    let g = gems(&w);
+    let silk = w.g.d.t::<BonusType>("BONUS_SILK");
+    w.open_borders(w.p0, w.p1, true);
+    let u = w.caravan_at(w.port);
+    assert_eq!(w.g.unit_establish_refusal(u, w.far, [Some(g), None]), Some(RouteRefusal::CargoNoCopy(g)), "no copy");
+    w.give(w.capital, g, 1);
+    assert_eq!(w.g.unit_establish_refusal(u, w.far, [Some(g), None]), None);
+    assert_eq!(w.g.unit_establish_refusal(u, w.far, [Some(g), Some(g)]), Some(RouteRefusal::CargoSame));
+    w.give(w.capital, silk, 1);
+    assert_eq!(w.g.unit_establish_refusal(u, w.far, [Some(g), Some(silk)]), None);
+    // Domestic.
+    let v = w.caravan_at(w.capital);
+    assert_eq!(w.g.unit_establish_refusal(v, w.port, [Some(g), None]), Some(RouteRefusal::CargoDomestic));
+    // A copy another caravan carries is not free.
+    w.g.unit_establish_route(u, w.far, [Some(g), None]).unwrap();
+    let far2 = w.g.player_init_city(w.p1, 30, 10, true, true);
+    let x = w.caravan_at(w.capital);
+    assert_eq!(w.g.unit_establish_refusal(x, far2, [Some(g), None]), Some(RouteRefusal::CargoNoCopy(g)));
+    assert_eq!(w.g.unit_establish_refusal(x, far2, [Some(silk), None]), None);
+    // The options say the same.
+    let opts = w.g.route_cargo_options(w.p0, w.capital, far2, None);
+    assert!(opts.iter().all(|o| o.bonus != g));
+    let s = opts.iter().find(|o| o.bonus == silk).expect("silk is offered");
+    assert!(s.only_copy && s.free_copies == 1);
+    assert_eq!(s.class, ffh_core::trade::CargoClass::Luxury);
+    assert!(w.g.route_cargo_options(w.p0, w.capital, w.port, None).is_empty(), "domestic: none");
+    w.consistent();
+}
+
+#[test]
+fn delivery_moves_the_only_copy() {
+    let mut w = world();
+    let g = gems(&w);
+    w.give(w.capital, g, 1);
+    let happy = w.g.city_happy_level(w.far);
+    assert!(w.g.city_has_bonus(w.capital, g) && !w.g.city_has_bonus(w.far, g));
+    let r = cargo_route(&mut w, [Some(g), None]);
+    assert_eq!(w.g.routes[r].slots[0].delivering, Some((w.p1, g)));
+    assert_eq!(w.g.route_slot_cargo(r, 0).state, ffh_core::trade::CargoState::Delivering);
+    assert!(w.g.city_has_bonus(w.far, g), "the recipient's cities have it");
+    assert!(w.g.city_happy_level(w.far) > happy, "a happiness resource raises happiness there");
+    assert!(!w.g.city_has_bonus(w.capital, g), "the owner's only copy is gone");
+    assert_eq!(w.g.player_get_num_tradeable_bonuses(w.p1, g), 0, "it cannot be traded on");
+    assert_eq!(w.g.players[w.p0].bonus_export[g], 1);
+    assert_eq!(w.g.players[w.p1].bonus_import[g], 1);
+    w.consistent();
+}
+
+#[test]
+fn a_spare_copy_stays_with_the_owner() {
+    let mut w = world();
+    let g = gems(&w);
+    w.give(w.capital, g, 2);
+    let r = cargo_route(&mut w, [Some(g), None]);
+    assert!(w.g.routes[r].slots[0].delivering.is_some());
+    assert!(w.g.city_has_bonus(w.capital, g));
+    w.consistent();
+}
+
+#[test]
+fn delivery_stops_and_resumes() {
+    use ffh_core::trade::CargoState;
+    let mut w = world();
+    let g = gems(&w);
+    w.give(w.capital, g, 1);
+    let r = cargo_route(&mut w, [Some(g), None]);
+    // The copy lost, then back.
+    w.give(w.capital, g, -1);
+    assert_eq!(w.g.route_slot_cargo(r, 0).state, CargoState::NoCopy);
+    assert!(!w.g.city_has_bonus(w.far, g));
+    w.consistent();
+    w.give(w.capital, g, 1);
+    assert_eq!(w.g.route_slot_cargo(r, 0).state, CargoState::Delivering);
+    assert!(w.logged("delivery stopped") >= 1);
+    w.consistent();
+    // The route closed, then open again.
+    w.open_borders(w.p0, w.p1, false);
+    w.g.player_update_routes(w.p0);
+    assert_eq!(w.g.route_slot_cargo(r, 0).state, CargoState::CaravanLost, "its caravan is off the map");
+    assert!(!w.g.city_has_bonus(w.far, g) && w.g.city_has_bonus(w.capital, g), "the copy is back with its owner");
+    w.consistent();
+    w.open_borders(w.p0, w.p1, true);
+    w.g.player_update_routes(w.p0);
+    assert_eq!(w.g.route_slot_cargo(r, 0).state, CargoState::Delivering);
+    w.consistent();
+    // The caravan killed: stops; re-formed: resumes.
+    let u = w.g.routes[r].slots[0].unit.unwrap();
+    w.g.unit_kill(u, false, Some(w.p2));
+    assert_eq!(w.g.route_slot_cargo(r, 0).state, CargoState::CaravanLost);
+    assert!(!w.g.city_has_bonus(w.far, g));
+    w.consistent();
+    for _ in 0..w.g.d.defines.caravan_reform_turns {
+        w.g.player_update_routes(w.p0);
+    }
+    assert_eq!(w.g.route_slot_cargo(r, 0).state, CargoState::Delivering, "it re-forms with its cargo");
+    w.consistent();
+}
+
+#[test]
+fn both_premiums_and_their_end() {
+    let mut w = world();
+    let g = gems(&w);
+    let (low, high) = (w.g.d.defines.trade_cargo_percent, w.g.d.defines.trade_cargo_new_percent);
+    w.give(w.capital, g, 1);
+    let r = cargo_route(&mut w, [Some(g), None]);
+    assert_eq!(w.g.routes[r].slots[0].premium, high, "the recipient has none");
+    // The premium on the caravan's half only; the destination's share before it.
+    let total = expected_total(&w.g, r);
+    let halves = [total - total / 2, total / 2];
+    let pay = w.g.route_pay(r);
+    assert_eq!(pay.caravan_x100[0], halves[0] * (100 + high) / 100);
+    assert_eq!(pay.caravan_x100[1], halves[1]);
+    let dest_pct = w.g.d.defines.trade_dest_percent;
+    assert_eq!(pay.dest_x100, halves[0] * dest_pct / 100 + halves[1] * dest_pct / 100);
+    // The recipient's own copy: the low premium.
+    w.give(w.far, g, 1);
+    assert_eq!(w.g.routes[r].slots[0].premium, low);
+    assert!(w.logged("now has") >= 1);
+    w.give(w.far, g, -1);
+    assert_eq!(w.g.routes[r].slots[0].premium, high);
+    // A deal's import counts as having it.
+    let p2city = w.g.player_init_city(w.p2, 30, 7, true, true);
+    w.give(p2city, g, 1);
+    let item = ffh_core::structs::TradeData { item_type: TradeableItem::TRADE_RESOURCES, data: g.0 as i32, offering: false, hidden: false };
+    w.g.implement_deal(w.p2, w.p1, &[item], &[], true);
+    assert_eq!(w.g.players[w.p1].bonus_import[g], 2, "the deal's and the caravan's");
+    assert_eq!(w.g.routes[r].slots[0].premium, low);
+    w.consistent();
+}
+
+#[test]
+fn two_routes_with_one_resource() {
+    let mut w = world();
+    let g = gems(&w);
+    let (low, high) = (w.g.d.defines.trade_cargo_percent, w.g.d.defines.trade_cargo_new_percent);
+    w.give(w.capital, g, 2);
+    let older = cargo_route(&mut w, [Some(g), None]);
+    let far2 = w.g.player_init_city(w.p1, 30, 10, true, true);
+    w.g.routes[older].established -= 1;
+    let u = w.caravan_at(w.capital);
+    let younger = w.g.unit_establish_route(u, far2, [Some(g), None]).unwrap();
+    w.arrive(younger);
+    assert_eq!(w.g.routes[older].slots[0].premium, high, "the older route's");
+    assert_eq!(w.g.routes[younger].slots[0].premium, low);
+    w.consistent();
+    // The older one's caravan dead: the younger has the high premium.
+    let k = w.g.routes[older].slots[0].unit.unwrap();
+    w.g.unit_kill(k, false, None);
+    assert_eq!(w.g.routes[younger].slots[0].premium, high);
+    w.consistent();
+}
+
+#[test]
+fn plunder_includes_the_premium() {
+    let mut w = world();
+    let g = gems(&w);
+    w.give(w.capital, g, 1);
+    let r = cargo_route(&mut w, [Some(g), None]);
+    let pay = w.g.routes[r].slots[0].pay_x100;
+    let total = expected_total(&w.g, r);
+    assert!(pay > total - total / 2, "the premium is in the stored pay");
+    let gold = w.g.players[w.p2].gold;
+    let u = w.g.routes[r].slots[0].unit.unwrap();
+    w.g.unit_kill(u, false, Some(w.p2));
+    assert_eq!(w.g.players[w.p2].gold - gold, (w.g.d.defines.trade_plunder_turns * pay + 50) / 100);
+    w.consistent();
+}
+
+#[test]
+fn refit_keeps_growth_and_uses_the_unit() {
+    let mut w = world();
+    let g = gems(&w);
+    let r = cargo_route(&mut w, [None, None]);
+    w.g.routes[r].growth = 14;
+    w.give(w.capital, g, 1);
+    let u = w.caravan_at(w.port);
+    let elsewhere = w.caravan_at(w.capital);
+    assert_eq!(w.g.unit_refit_refusal(elsewhere, r, [Some(g), None]), Some(RouteRefusal::NotInOrigin));
+    assert_eq!(w.g.unit_refit_refusal(u, RouteId(999), [Some(g), None]), Some(RouteRefusal::RouteGone));
+    w.g.unit_refit_route(u, r, [Some(g), None]).unwrap();
+    assert!(!w.g.units.contains(u), "used up");
+    assert_eq!(w.g.routes[r].growth, 14);
+    assert_eq!(w.g.routes[r].slots[0].cargo, Some(g));
+    assert!(w.g.routes[r].slots[0].delivering.is_some());
+    assert_eq!(w.logged("refitted"), 1);
+    // Another refit may put the same copy on the other caravan (the route's own copies are free for it).
+    let v = w.caravan_at(w.port);
+    assert_eq!(w.g.unit_refit_refusal(v, r, [None, Some(g)]), None);
+    w.consistent();
+}
+
+#[test]
+fn the_import_follows_the_destination_to_its_new_owner() {
+    let mut w = world();
+    let g = gems(&w);
+    w.give(w.capital, g, 1);
+    let r = cargo_route(&mut w, [Some(g), None]);
+    w.open_borders(w.p0, w.p2, true);
+    w.g.player_acquire_city(w.p2, w.far, false, true, true);
+    let far = w.g.map.plots[w.at(22, 10)].plot_city.unwrap();
+    assert_eq!(w.g.routes[r].destination, far);
+    assert_eq!(w.g.players[w.p1].bonus_import[g], 0, "the old owner's import is undone");
+    // Its caravan in the city went back to wait in the origin; it forms there at the owner's next
+    // turn start and delivers to player 2.
+    w.consistent();
+    w.g.player_update_routes(w.p0);
+    let delivering_to_p2 = w.g.routes[r].slots.iter().any(|s| s.delivering == Some((w.p2, g)));
+    assert!(delivering_to_p2, "player 2 receives it");
+    assert_eq!(w.g.players[w.p2].bonus_import[g], 1);
+    w.consistent();
+}
+
+#[test]
+fn cargo_survives_a_save() {
+    let mut w = world();
+    let g = gems(&w);
+    w.give(w.capital, g, 1);
+    let r = cargo_route(&mut w, [Some(g), None]);
+    let bytes = w.g.save();
+    let h = Game::load(w.g.d, &bytes).unwrap();
+    assert_eq!(h.routes[r], w.g.routes[r]);
+    assert_eq!(h.players[w.p1].bonus_import[g], 1);
+    assert!(h.trade_stale().is_empty());
+    assert_eq!(h.save(), bytes);
+}
+
+// ---- Escorts (4.4) ----
+
+use ffh_core::army::{EscortTarget, Station};
+
+impl World {
+    /// The owner's turn end for the trade: every unit of player 0 fresh, the caravans move, then
+    /// their escorts.
+    fn trade_turn(&mut self) {
+        for u in self.g.players[self.p0].units.clone() {
+            self.g.units[u].moves = 0;
+        }
+        self.g.player_move_caravans(self.p0);
+        self.g.player_caravan_escorts(self.p0);
+        self.consistent();
+    }
+
+    fn army_of(&mut self, name: &str, x: i32, y: i32) -> (ArmyId, UnitId) {
+        let u = self.unit(self.p0, name, x, y);
+        let a = self.g.army_form(self.p0, &[u]).expect("an army");
+        (a, u)
+    }
+
+    fn escort(&mut self, a: ArmyId, r: RouteId, slot: u8) {
+        self.g.army_set_station(self.p0, a, Station::Escort(EscortTarget::Caravan(r, slot))).expect("the escort order");
+    }
+}
+
+#[test]
+fn an_army_escorts_a_caravan_over_land_at_its_pace() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let c = w.g.routes[r].slots[0].unit.unwrap();
+    let (army, man) = w.army_of("UNIT_AXEMAN", 2, 3);
+    assert!(w.g.army_escort_caravans(army).contains(&(r, 0)), "a land path: a land army may escort it");
+    w.escort(army, r, 0);
+    assert_eq!(w.g.route_slot_escorts(r, 0), vec![army]);
+    assert_eq!(w.g.escort_target_name(EscortTarget::Caravan(r, 0)), format!("Caravan: {} to {} (1)", w.g.cities[a].name, w.g.cities[b].name));
+    assert_eq!(w.logged("escorts Caravan"), 1);
+    let path = w.g.routes[r].path.clone();
+    let moves = w.g.unit_max_moves(man) / w.g.d.defines.move_denominator;
+    let free = (w.g.d.defines.caravan_move / w.g.d.defines.caravan_cost_land) as i32;
+    for turn in 1..=3 {
+        w.trade_turn();
+        let at = path.iter().position(|&q| q == w.g.unit_plot(c)).unwrap() as i32;
+        assert_eq!(w.g.unit_plot(man), w.g.unit_plot(c), "turn {turn}: together");
+        assert_eq!(at, turn * moves.min(free), "turn {turn}: held to the army's pace");
+    }
+    // Apart: the caravan is not held; the army follows at the turn's end.
+    let (other, _) = w.army_of("UNIT_AXEMAN", 2, 3);
+    w.g.army_set_station(w.p0, army, Station::None).unwrap();
+    let before = path.iter().position(|&q| q == w.g.unit_plot(c)).unwrap() as i32;
+    w.escort(other, r, 0);
+    w.trade_turn();
+    let after = path.iter().position(|&q| q == w.g.unit_plot(c)).unwrap() as i32;
+    assert_eq!(after - before, free.min(path.len() as i32 - 1 - before), "an escort elsewhere does not slow it");
+    assert!(w.g.army_plot(other) != Some(w.g.city_plot(a)), "the escort walks toward it");
+}
+
+#[test]
+fn a_fleet_escorts_the_water_leg_and_an_army_waits_at_the_shore() {
+    let mut w = world();
+    let across = w.g.player_init_city(w.p0, 22, 4, true, true);
+    let r = w.establish(w.port, across);
+    let c = w.g.routes[r].slots[0].unit.unwrap();
+    let (fleet, _) = w.army_of("UNIT_TRIREME", 13, 10);
+    let (army, _) = w.army_of("UNIT_AXEMAN", 12, 10);
+    assert!(w.g.army_escort_caravans(fleet).contains(&(r, 0)), "water on the path: a fleet may escort it");
+    w.escort(fleet, r, 0);
+    w.escort(army, r, 0);
+    let mut was_on_water = false;
+    let mut landed_after_water = false;
+    for _ in 0..30 {
+        w.trade_turn();
+        let here = w.g.unit_plot(c);
+        let fp = w.g.army_plot(fleet).unwrap();
+        let ap = w.g.army_plot(army).unwrap();
+        assert!(w.g.plot_is_water(fp), "the fleet stays on water");
+        assert!(!w.g.plot_is_water(ap), "the army never takes to boats");
+        if w.g.plot_is_water(here) {
+            was_on_water = true;
+            assert_eq!(fp, here, "the fleet is with the caravan at sea");
+        } else if was_on_water {
+            landed_after_water = true;
+        }
+        if w.g.routes[r].slots[0].bound == ffh_core::trade::Leg::Back && landed_after_water && w.g.plot_is_water(here) {
+            assert_eq!(fp, here, "it follows again on the way back");
+            break;
+        }
+    }
+    assert!(was_on_water && landed_after_water);
+}
+
+#[test]
+fn an_escort_waits_for_a_lost_caravan_and_ends_with_the_route() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let (army, man) = w.army_of("UNIT_AXEMAN", 2, 3);
+    w.escort(army, r, 0);
+    w.trade_turn();
+    let c = w.g.routes[r].slots[0].unit.unwrap();
+    w.g.unit_kill(c, false, Some(w.p2));
+    assert_eq!(w.logged("waits"), 1);
+    let at = w.g.unit_plot(man);
+    w.trade_turn();
+    assert_eq!(w.g.unit_plot(man), at, "it waits where it is");
+    assert_eq!(w.g.armies[army].station, Station::Escort(EscortTarget::Caravan(r, 0)), "the order stays");
+    for _ in 0..w.g.d.defines.caravan_reform_turns {
+        w.g.player_update_routes(w.p0);
+    }
+    let again = w.g.routes[r].slots[0].unit.expect("re-formed");
+    w.trade_turn();
+    let origin = w.g.city_plot(a);
+    let (ox, oy) = w.g.map.xy(origin);
+    let (mx, my) = w.g.map.xy(w.g.unit_plot(man));
+    let (cx, cy) = w.g.map.xy(w.g.unit_plot(again));
+    assert!(w.g.plot_distance(mx, my, cx, cy) < w.g.plot_distance(mx, my, ox, oy) + 2, "it heads for the re-formed caravan");
+    assert!(w.g.route_dissolve(r));
+    assert_eq!(w.g.armies[army].station, Station::None, "the route ended: so does the order");
+    assert_eq!(w.logged("ended: the route ended"), 1);
+}
+
+#[test]
+fn a_move_order_ends_an_escort() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let (army, _) = w.army_of("UNIT_AXEMAN", 2, 3);
+    w.escort(army, r, 0);
+    let grp = w.g.armies[army].group.unwrap();
+    w.g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, 2, 6, 0, false, false, None, None, None);
+    assert_eq!(w.g.armies[army].station, Station::None);
+    assert_eq!(w.logged("ended: a move order"), 1);
+    // A land army escorts nothing else.
+    let (other, _) = w.army_of("UNIT_AXEMAN", 4, 4);
+    assert!(w.g.army_set_station(w.p0, other, Station::Escort(EscortTarget::Army(army))).is_err());
+}
+
+#[test]
+fn an_attack_on_an_escorted_caravan_fights_the_army() {
+    let mut w = world();
+    let a = w.g.player_init_city(w.p0, 2, 3, true, true);
+    let b = w.g.player_init_city(w.p0, 11, 3, true, true);
+    let r = w.establish(a, b);
+    let (army, man) = w.army_of("UNIT_AXEMAN", 2, 3);
+    w.escort(army, r, 0);
+    w.trade_turn();
+    let c = w.g.routes[r].slots[0].unit.unwrap();
+    let here = w.g.unit_plot(c);
+    assert_eq!(w.g.unit_plot(man), here);
+    assert!(w.g.map.plots[here].plot_city.is_none());
+    w.war(w.p0, w.p2);
+    let (x, y) = w.g.map.xy(here);
+    let champ = w.unit(w.p2, "UNIT_CHAMPION", x, y + 1);
+    let before = w.g.battle_report_next;
+    let grp = w.g.units[champ].group.unwrap();
+    let (attacked, _) = w.g.group_attack(grp, x, y, MOVE_DIRECT_ATTACK);
+    assert!(attacked);
+    let report = w.g.battle_reports.iter().find(|rep| rep.id >= before).expect("a battle report");
+    assert!(report.sides[1].committed >= 1);
+    // One squad of the plot defends (docs/ENGAGEMENTS.md, "Squads": the best for the defender):
+    // the army's axeman, not the caravan.
+    let hurt = |u: UnitId| !w.g.units.contains(u) || w.g.units[u].damage > 0;
+    assert!(hurt(man), "the army fought");
+    assert!(!hurt(c), "the caravan stood in reserve");
+    w.consistent();
+}
+
+#[test]
+fn an_escort_survives_a_save() {
+    let mut w = world();
+    let across = w.g.player_init_city(w.p0, 22, 4, true, true);
+    let r = w.establish(w.port, across);
+    let (fleet, _) = w.army_of("UNIT_TRIREME", 13, 10);
+    w.escort(fleet, r, 1);
+    let bytes = w.g.save();
+    let h = Game::load(w.g.d, &bytes).unwrap();
+    assert_eq!(h.armies[fleet].station, Station::Escort(EscortTarget::Caravan(r, 1)));
+    assert_eq!(h.save(), bytes);
 }

@@ -237,6 +237,8 @@ pub fn station_view(v: &Viewer, a: ArmyId) -> Json {
             let (army, group) = match t {
                 EscortTarget::Army(b) => (Some(b), None),
                 EscortTarget::Group(gr) => (None, Some(gr)),
+                // (A compile fix for docs/TRADE.md 4.4.)
+                EscortTarget::Caravan(..) => (None, None),
             };
             crate::jobj! { "kind" => "escort", "army" => army, "group" => group, "text" => format!("Standing order: Escort of {}.", g.escort_target_name(t)) }
         }

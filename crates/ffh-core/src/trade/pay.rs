@@ -68,8 +68,10 @@ impl Game {
         let dest_pct = self.d.defines.trade_dest_percent;
         for i in 0..CARAVAN_SLOTS {
             if route.slots[i].unit.is_some() {
-                // (A cargo's premium goes on its caravan's half: docs/TRADE.md, section 5, not built.)
-                pay.caravan_x100[i] = halves[i];
+                // A delivered cargo's premium goes on its caravan's half (docs/TRADE.md, 5); the
+                // destination's share is counted before it (6.3).
+                let premium = if route.slots[i].delivering.is_some() { route.slots[i].premium } else { 0 };
+                pay.caravan_x100[i] = (halves[i] as i64 * (100 + premium) as i64 / 100) as i32;
                 pay.dest_x100 += halves[i] * dest_pct / 100;
             }
         }
@@ -103,6 +105,8 @@ impl Game {
     /// The pay refresh (6.1, 6.3): every route's stored pay and every city's trade yield set
     /// from the routes' state now. Cheap; called whenever something it reads changes.
     pub fn trade_refresh_pay(&mut self) {
+        // Cargo first (section 5): the pay reads what is delivered and its premium.
+        self.cargo_refresh();
         for r in self.routes.ids() {
             let pay = self.route_pay(r);
             let route = &mut self.routes[r];
@@ -126,7 +130,7 @@ impl Game {
     /// check): each city's trade yield, each route's stored pay, and routes and caravan units
     /// referring to each other. Empty when they agree.
     pub fn trade_stale(&self) -> Vec<String> {
-        let mut out = Vec::new();
+        let mut out = self.cargo_stale();
         for (id, r) in self.routes.iter() {
             if !self.cities.contains(r.origin) || self.cities[r.origin].owner != r.owner {
                 out.push(format!("route {id:?}: its origin is not its owner's city"));
@@ -175,13 +179,14 @@ impl Game {
 
     /// The trade a Great Merchant's mission in city `c` counts (`unit_get_trade_gold`, which
     /// multiplies it by the unit's `trade_multiplier`): what one caravan of a route of `c`'s owner
-    /// from `c` to `capital` would pay a turn at growth 0, the plot distance as its length,
-    /// rounded to the nearest whole (docs/TRADE.md, "As built").
+    /// from `c` to `capital` would pay a turn at growth 0, the plot distance as its length, times
+    /// `TRADE_MISSION_PERCENT` / 100, rounded to the nearest whole (docs/TRADE.md, "As built").
     pub fn trade_mission_profit(&self, c: CityId, capital: CityId) -> i32 {
         let owner = self.cities[c].owner;
         let (a, b) = (&self.cities[c], &self.cities[capital]);
         let length = self.plot_distance(a.x, a.y, b.x, b.y);
         let total = self.route_pay_total_x100(owner, c, capital, length, false, 0);
-        round_x100(total - total / 2)
+        let half = (total - total / 2) as i64;
+        round_x100((half * self.d.defines.trade_mission_percent as i64 / 100) as i32)
     }
 }

@@ -225,6 +225,8 @@ impl Game {
         self.player_fleet_stations(p);
         // This game's trade (docs/TRADE.md, 4.1): the caravans travel their routes.
         self.player_move_caravans(p);
+        // Their escorts (docs/TRADE.md, 4.4): after them.
+        self.player_caravan_escorts(p);
         // This game's raids (docs/RAIDS.md, section 5): its cities' guards sally against the
         // raiders, and the raiders take their share (before its gold, research and cities).
         self.player_do_raids(p);
@@ -330,6 +332,10 @@ impl Game {
         // expireMessages(), CityInfo dirty bit: UI.
         // AI: AI_doTurnPost() (AI diplomacy, AI_launch) -- left to the controller.
         self.ai_hook(p, AiHook::PlayerTurnPost(p));
+
+        // This game's trade (docs/TRADE.md, 5): resources gained or lost this turn change what
+        // caravans deliver.
+        self.trade_refresh_pay();
 
         let turn = self.game_turn();
         self.ev_end_player_turn(turn, p);
