@@ -30,6 +30,8 @@ mod combat;
 mod duel_reference;
 mod ffh;
 pub use ffh::{CreateBuildingRefusal, CreateUnitRefusal, NoEffect, SpellRefusal, SummonHow};
+pub mod order_refusal;
+pub use order_refusal::*;
 mod lifecycle;
 pub use lifecycle::UnitEventRefusal;
 mod missions;

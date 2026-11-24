@@ -1672,22 +1672,28 @@ impl Game {
     /// `bTestEra` (always false in the rules): with `test_visible`, a build whose tech is not
     /// known yet passes.
     pub fn player_can_build(&self, p: PlayerId, plot: PlotIdx, build: BuildType, test_visible: bool) -> bool {
+        self.player_build_refusal(p, plot, build, test_visible).is_none()
+    }
+
+    /// Why [`Game::player_can_build`] refuses: its first failing check, `None` when it does not.
+    pub fn player_build_refusal(&self, p: PlayerId, plot: PlotIdx, build: BuildType, test_visible: bool) -> Option<crate::unit::BuildRefusal> {
+        use crate::unit::BuildRefusal;
         let d = self.d;
         let info = &d.builds[build];
         let team = self.players[p].team;
 
-        if !self.plot_can_build(plot, build, p, test_visible) {
-            return false;
+        if let Some(r) = self.plot_build_refusal(plot, build, p, test_visible) {
+            return Some(BuildRefusal::Plot(r));
         }
 
         // Not in C++ (docs/WORKS.md): a civilization's own build (the Lanun's Pirate Cove).
-        if info.prereq_civ.is_some_and(|civ| self.player_get_civilization_type(p) != Some(civ)) {
-            return false;
+        if let Some(civ) = info.prereq_civ.filter(|&civ| self.player_get_civilization_type(p) != Some(civ)) {
+            return Some(BuildRefusal::Civilization(civ));
         }
 
         if let Some(tech_prereq) = info.tech_prereq {
             if !self.team_is_has_tech(team, Some(tech_prereq)) && !test_visible {
-                return false;
+                return Some(BuildRefusal::Tech(tech_prereq));
             }
         }
 
@@ -1695,16 +1701,20 @@ impl Game {
             if let Some(feature) = self.map.plots[plot].feature_type {
                 // FfH: Added by Kael 12/16/2007
                 if !d.civilizations[civ_of(self, p)].maintain_features[feature] && !self.team_is_has_tech(team, info.feature_tech[feature]) {
-                    return false;
+                    // (`team_is_has_tech` holds for no tech, so the feature has one here.)
+                    if let Some(tech) = info.feature_tech[feature] {
+                        return Some(BuildRefusal::FeatureTech(feature, tech));
+                    }
                 }
             }
 
-            if max(0, self.players[p].gold) < self.player_get_build_cost(p, plot, build) {
-                return false;
+            let cost = self.player_get_build_cost(p, plot, build);
+            if max(0, self.players[p].gold) < cost {
+                return Some(BuildRefusal::Gold { have: self.players[p].gold, need: cost });
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::getBuildCost(pPlot, eBuild)` (gold cost, inflated; 0 once started).

@@ -19,6 +19,7 @@ use crate::log::{LogMark, LogTag};
 use crate::defs::INVALID_PLOT_COORD;
 use crate::game::Game;
 use crate::ids::*;
+use super::order_refusal::MissionRefusal;
 use crate::engagement::report::TermSource;
 use crate::engagement::BattleRng;
 use crate::unit::{CombatDetails, CombatTerms, DefenderCombatValues, StrMode, TermLog};
@@ -2750,36 +2751,42 @@ impl Game {
 
     /// C++ `CvUnit::canRangeStrike` (CvUnit.cpp:17589-17622).
     pub fn unit_can_range_strike(&self, u: UnitId) -> bool {
+        self.unit_range_strike_refusal(u).is_none()
+    }
+
+    /// Why [`Game::unit_can_range_strike`] refuses: its first failing check, `None` when it does
+    /// not.
+    pub fn unit_range_strike_refusal(&self, u: UnitId) -> Option<MissionRefusal> {
         if self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR {
-            return false;
+            return Some(MissionRefusal::Air);
         }
 
         // This game's (docs/NAVAL.md, 3.2): no strike from boats.
         if self.unit_is_in_boats(u) {
-            return false;
+            return Some(MissionRefusal::InBoats);
         }
 
         if self.unit_air_range(u) <= 0 {
-            return false;
+            return Some(MissionRefusal::NoRange);
         }
 
         if self.unit_air_base_combat_str(u) <= 0 {
-            return false;
+            return Some(MissionRefusal::NoStrength);
         }
 
         if !self.unit_can_fight(u) {
-            return false;
+            return Some(MissionRefusal::CannotFight);
         }
 
         if self.units[u].made_attack && !self.unit_is_blitz(u) {
-            return false;
+            return Some(MissionRefusal::Attacked);
         }
 
         if !self.unit_can_move(u) && self.units[u].moves > 0 {
-            return false;
+            return Some(MissionRefusal::NoMoves);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::canRangeStrikeAt` (CvUnit.cpp:17624-17660).
@@ -2787,35 +2794,41 @@ impl Game {
     /// C++ passes `getFacingDirection(true)` to `canSeePlot`: always NO_DIRECTION with FfH data
     /// (no unit has bLineOfSight).
     pub fn unit_can_range_strike_at(&self, u: UnitId, plot: PlotIdx, x: i32, y: i32) -> bool {
-        if !self.unit_can_range_strike(u) {
-            return false;
+        self.unit_range_strike_at_refusal(u, plot, x, y).is_none()
+    }
+
+    /// Why [`Game::unit_can_range_strike_at`] refuses: its first failing check, `None` when it
+    /// does not.
+    pub fn unit_range_strike_at_refusal(&self, u: UnitId, plot: PlotIdx, x: i32, y: i32) -> Option<MissionRefusal> {
+        if let Some(r) = self.unit_range_strike_refusal(u) {
+            return Some(r);
         }
 
         let Some(target_plot) = self.map.plot_xy(x, y) else {
-            return false;
+            return Some(MissionRefusal::OffMap);
         };
 
         let team = self.unit_get_team(u);
         if !self.plot_is_visible(plot, team) {
-            return false;
+            return Some(MissionRefusal::NotVisible);
         }
 
         let (from_x, from_y) = self.map.xy(plot);
         let (target_x, target_y) = self.map.xy(target_plot);
         let air_range = self.unit_air_range(u);
         if self.plot_distance(from_x, from_y, target_x, target_y) > air_range {
-            return false;
+            return Some(MissionRefusal::OutOfRange(air_range));
         }
 
         if self.unit_air_strike_target(u, target_plot).is_none() {
-            return false;
+            return Some(MissionRefusal::NoTarget);
         }
 
         if !self.plot_can_see_plot(plot, target_plot, team, air_range, None) {
-            return false;
+            return Some(MissionRefusal::NoLineOfSight);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::rangeStrike` (CvUnit.cpp:17663-17726).

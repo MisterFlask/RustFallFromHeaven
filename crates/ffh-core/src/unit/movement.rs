@@ -11,6 +11,7 @@
 use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
+use super::order_refusal::{LoadRefusal, UnloadRefusal};
 use ffh_data::*;
 
 /// C++ `getGroup()` at call sites that dereference it (every unit on the map has a group).
@@ -702,49 +703,55 @@ impl Game {
 
     /// C++ `CvUnit::canLoadUnit` (CvUnit.cpp:4094-4164).
     pub fn unit_can_load_unit(&self, u: UnitId, transport: UnitId, plot: PlotIdx) -> bool {
+        self.unit_load_unit_refusal(u, transport, plot).is_none()
+    }
+
+    /// Why [`Game::unit_can_load_unit`] refuses: its first failing check, `None` when it does
+    /// not.
+    pub fn unit_load_unit_refusal(&self, u: UnitId, transport: UnitId, plot: PlotIdx) -> Option<LoadRefusal> {
         // This game's trade (docs/TRADE.md, 4.1): a caravan of a route is never loaded.
         if transport == u || self.unit_in_route(u) {
-            return false;
+            return Some(if transport == u { LoadRefusal::Itself } else { LoadRefusal::InRoute });
         }
 
         if self.unit_get_team(transport) != self.unit_get_team(u) {
-            return false;
+            return Some(LoadRefusal::OtherTeam);
         }
 
         // UNOFFICIAL_PATCH 10/30/09 (Mongoose & jdog5000): from Mongoose SDK
         if self.unit_is_cargo(u) {
-            return false;
+            return Some(LoadRefusal::Cargo);
         }
 
         if self.units[u].cargo > 0 {
-            return false;
+            return Some(LoadRefusal::HasCargo);
         }
 
         if self.unit_is_cargo(transport) {
-            return false;
+            return Some(LoadRefusal::TransportCargo);
         }
 
         let special_unit = self.unit_get_special_unit_type(u);
         if self.unit_cargo_space_available(transport, special_unit, Some(self.unit_get_domain_type(u))) == 0 {
-            return false;
+            return Some(LoadRefusal::NoRoom);
         }
 
         if !self.unit_at_plot(transport, plot) {
-            return false;
+            return Some(LoadRefusal::NotHere);
         }
 
         //FfH Hidden Nationality: Modified by Kael 08/27/2007
         if self.unit_is_hidden_nationality(u) != self.unit_is_hidden_nationality(transport) {
-            return false;
+            return Some(LoadRefusal::HiddenNationality);
         }
 
         if let Some(special_unit) = special_unit {
             if self.d.special_units[special_unit].city_load && !self.plot_is_city(plot, true, Some(self.unit_get_team(u))) {
-                return false;
+                return Some(LoadRefusal::CityLoad);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::loadUnit` (CvUnit.cpp:4167-4175).
@@ -835,15 +842,20 @@ impl Game {
 
     /// C++ `CvUnit::canUnload` (CvUnit.cpp:4299-4337).
     pub fn unit_can_unload(&self, u: UnitId) -> bool {
+        self.unit_unload_refusal(u).is_none()
+    }
+
+    /// Why [`Game::unit_can_unload`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_unload_refusal(&self, u: UnitId) -> Option<UnloadRefusal> {
         if transport_of(self, u).is_none() {
-            return false;
+            return Some(UnloadRefusal::NotLoaded);
         }
 
         // C++ `CvPlot& kPlot = *(plot())` (only used from here on).
         let plot = self.unit_plot(u);
 
         if !self.plot_is_valid_domain_for_location(plot, u) {
-            return false;
+            return Some(UnloadRefusal::Domain);
         }
 
         if self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR && self.plot_is_friendly_city(plot, u, true) {
@@ -851,14 +863,14 @@ impl Game {
             let num_air_units = self.plot_count_num_air_units(plot, team);
             if let Some(city) = live_city(self, self.map.plots[plot].plot_city) {
                 if num_air_units >= self.city_air_unit_capacity(city, team) {
-                    return false;
+                    return Some(UnloadRefusal::AirCapacity);
                 }
             } else if num_air_units >= self.d.defines.city_air_unit_capacity {
-                return false;
+                return Some(UnloadRefusal::AirCapacity);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::unload` (CvUnit.cpp:4340-4348).

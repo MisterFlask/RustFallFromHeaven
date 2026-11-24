@@ -10,6 +10,7 @@
 use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
+use super::order_refusal::{AcquireRefusal, MissionRefusal, PromoteRefusal, UpgradeRefusal};
 use crate::utils::{is_promotion_valid, is_world_unit_class};
 use ffh_data::*;
 
@@ -50,11 +51,16 @@ impl Game {
     /// C++ `CvUnit::canPromote` (CvUnit.cpp:7717-7776).
     /// C++ `iLeaderUnitId` is a unit id of the same owner, -1 = none.
     pub fn unit_can_promote(&self, u: UnitId, promotion: Option<PromotionType>, leader_unit: Option<UnitId>) -> bool {
+        self.unit_promote_refusal(u, promotion, leader_unit).is_none()
+    }
+
+    /// Why [`Game::unit_can_promote`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_promote_refusal(&self, u: UnitId, promotion: Option<PromotionType>, leader_unit: Option<UnitId>) -> Option<PromoteRefusal> {
         let d = self.d;
 
         if let Some(leader_id) = leader_unit {
             if leader_id == u {
-                return false;
+                return Some(PromoteRefusal::LeaderSelf);
             }
 
             // The command is always possible if it's coming from a Warlord unit that gives just experience points
@@ -65,37 +71,37 @@ impl Game {
                     && warlord_info.leader_promotion.is_none()
                     && self.unit_can_acquire_promotion_any(u)
                 {
-                    return true;
+                    return None;
                 }
             }
         }
 
         let Some(promotion) = promotion else {
-            return false;
+            return Some(PromoteRefusal::NoPromotion);
         };
 
-        if !self.unit_can_acquire_promotion(u, promotion) {
-            return false;
+        if let Some(r) = self.unit_acquire_promotion_refusal(u, promotion) {
+            return Some(PromoteRefusal::Acquire(promotion, r));
         }
 
         // FfH Units: Added by Kael 08/04/2007
         if self.units[u].free_promotion_pick > 0 {
-            return true;
+            return None;
         }
         // FfH: End Add
 
         if d.promotions[promotion].leader {
             if let Some(leader_id) = leader_unit {
                 if let Some(warlord) = owner_unit(self, u, leader_id) {
-                    return d.units[self.units[warlord].unit_type].leader_promotion == Some(promotion);
+                    return if d.units[self.units[warlord].unit_type].leader_promotion == Some(promotion) { None } else { Some(PromoteRefusal::Leader(promotion)) };
                 }
             }
-            return false;
+            return Some(PromoteRefusal::Leader(promotion));
         } else if !self.units[u].promotion_ready {
-            return false;
+            return Some(PromoteRefusal::NotReady);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::promote` (CvUnit.cpp:7778-7835).
@@ -196,6 +202,23 @@ impl Game {
         self.unit_kill(u, true, None);
 
         true
+    }
+
+    /// Why [`Game::unit_can_lead`] leads no unit (0): the leader is dying, the given unit cannot
+    /// take its promotion ([`Game::unit_promote_refusal`]), or no unit of its owner on the plot
+    /// can. `None` when it leads one.
+    pub fn unit_lead_refusal(&self, u: UnitId, plot: PlotIdx, unit: Option<UnitId>) -> Option<MissionRefusal> {
+        if self.unit_can_lead(u, plot, unit) != 0 {
+            return None;
+        }
+        if self.units[u].death_delay {
+            return Some(MissionRefusal::Dying);
+        }
+        let leader_promotion = self.d.units[self.units[u].unit_type].leader_promotion;
+        match unit.and_then(|id| owner_unit(self, u, id)).filter(|&t| t != u) {
+            Some(target) => Some(self.unit_promote_refusal(target, leader_promotion, Some(u)).map_or(MissionRefusal::NoneToLead, MissionRefusal::Lead)),
+            None => Some(MissionRefusal::NoneToLead),
+        }
     }
 
     /// C++ `CvUnit::canLead` (CvUnit.cpp:7880-7920).
@@ -376,35 +399,43 @@ impl Game {
 
     /// C++ `CvUnit::canUpgrade` (CvUnit.cpp:8067-8138).
     pub fn unit_can_upgrade(&self, u: UnitId, unit_type: Option<UnitType>, test_visible: bool) -> bool {
+        self.unit_upgrade_refusal(u, unit_type, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_upgrade`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_upgrade_refusal(&self, u: UnitId, unit_type: Option<UnitType>, test_visible: bool) -> Option<UpgradeRefusal> {
         let Some(unit_type) = unit_type else {
-            return false;
+            return Some(UpgradeRefusal::NoUnit);
         };
 
-        if !self.unit_is_ready_for_upgrade(u) {
-            return false;
+        if let Some(r) = self.unit_ready_for_upgrade_refusal(u) {
+            return Some(r);
         }
 
         let owner = self.units[u].owner;
-        if !test_visible && self.players[owner].gold < self.unit_upgrade_price(u, unit_type) {
-            return false;
+        if !test_visible {
+            let price = self.unit_upgrade_price(u, unit_type);
+            if self.players[owner].gold < price {
+                return Some(UpgradeRefusal::Gold { have: self.players[owner].gold, need: price });
+            }
         }
 
         let info = &self.d.units[unit_type];
 
         // FfH Units: Added by Kael 05/24/2008
         if self.units[u].level < info.min_level {
-            return false;
+            return Some(UpgradeRefusal::Level(info.min_level));
         }
         if info.disable_upgrade_to {
-            return false;
+            return Some(UpgradeRefusal::Disabled);
         }
         if self.player_is_unit_class_maxed_out(owner, info_unit_class(info), 0) {
-            return false;
+            return Some(UpgradeRefusal::ClassMaxed);
         }
         if !self.unit_is_human(u) {
             //added so the AI wont spam UNTIAI_MISSIONARY priests by upgradign disciples
             if self.units[u].ai_type == Some(UnitAIType::UNITAI_MISSIONARY) && self.units[u].level < 2 {
-                return false;
+                return Some(UpgradeRefusal::AiMissionary);
             }
         }
         // FfH: End Add
@@ -413,29 +444,34 @@ impl Game {
         if !self.unit_is_human(u) {
             let group_flag = self.units[u].ai_groupflag;
             if (group_flag == GROUPFLAG_PERMDEFENSE || group_flag == GROUPFLAG_PERMDEFENSE_NEW) && info.no_defensive_bonus {
-                return false;
+                return Some(UpgradeRefusal::AiDefender);
             }
         }
         // END
 
         if self.unit_has_upgrade_to(u, Some(unit_type), false) {
-            return true;
+            return None;
         }
 
-        false
+        Some(UpgradeRefusal::NoUpgrade)
     }
 
     /// C++ `CvUnit::isReadyForUpgrade` (CvUnit.cpp:8140-8153).
     pub fn unit_is_ready_for_upgrade(&self, u: UnitId) -> bool {
+        self.unit_ready_for_upgrade_refusal(u).is_none()
+    }
+
+    /// Why [`Game::unit_is_ready_for_upgrade`] is false (`NoMoves`, `Territory`).
+    pub fn unit_ready_for_upgrade_refusal(&self, u: UnitId) -> Option<UpgradeRefusal> {
         if !self.unit_can_move(u) {
-            return false;
+            return Some(UpgradeRefusal::NoMoves);
         }
 
         if self.plot_get_team(self.unit_plot(u)) != Some(self.unit_get_team(u)) {
-            return false;
+            return Some(UpgradeRefusal::Territory);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::hasUpgrade` (CvUnit.cpp:8168-8171).
@@ -1549,36 +1585,42 @@ impl Game {
 
     /// C++ `CvUnit::canAcquirePromotion` (CvUnit.cpp:13206-13347).
     pub fn unit_can_acquire_promotion(&self, u: UnitId, promotion: PromotionType) -> bool {
+        self.unit_acquire_promotion_refusal(u, promotion).is_none()
+    }
+
+    /// Why [`Game::unit_can_acquire_promotion`] refuses: its first failing check, `None` when
+    /// it does not.
+    pub fn unit_acquire_promotion_refusal(&self, u: UnitId, promotion: PromotionType) -> Option<AcquireRefusal> {
         let d = self.d;
         let unit = &self.units[u];
         let info = &d.promotions[promotion];
 
         if unit.has_promotion[promotion] {
-            return false;
+            return Some(AcquireRefusal::Has);
         }
 
         if let Some(prereq) = info.prereq_promotion {
             if !unit.has_promotion[prereq] {
-                return false;
+                return Some(AcquireRefusal::Prereq(prereq));
             }
         }
 
         // FfH: Modified by Kael 07/30/2007 (replaces the BTS PrereqOrPromotion1/2 test)
         if info.min_level == -1 {
-            return false;
+            return Some(AcquireRefusal::NotPickable);
         }
         if info.race {
-            return false;
+            return Some(AcquireRefusal::Race);
         }
         if info.equipment {
-            return false;
+            return Some(AcquireRefusal::Equipment);
         }
         if info.min_level > unit.level {
-            return false;
+            return Some(AcquireRefusal::Level(info.min_level));
         }
         if let Some(prereq_and) = info.promotion_prereq_and {
             if !unit.has_promotion[prereq_and] {
-                return false;
+                return Some(AcquireRefusal::PrereqAnd(prereq_and));
             }
         }
         if let Some(prereq_or1) = info.prereq_or_promotion1 {
@@ -1602,47 +1644,47 @@ impl Game {
                 }
             }
             if !valid {
-                return false;
+                return Some(AcquireRefusal::PrereqOr(prereq_or1, info.prereq_or_promotion2, info.promotion_prereq_or3, info.promotion_prereq_or4));
             }
         }
         if let Some(bonus) = info.bonus_prereq {
             if !self.player_has_bonus(unit.owner, bonus) {
-                return false;
+                return Some(AcquireRefusal::Bonus(bonus));
             }
         }
         for other in d.promotions.keys() {
             if unit.has_promotion[other] {
                 let other_info = &d.promotions[other];
                 if other_info.promotion_immune1 == Some(promotion) {
-                    return false;
+                    return Some(AcquireRefusal::Immune(other));
                 }
                 if other_info.promotion_immune2 == Some(promotion) {
-                    return false;
+                    return Some(AcquireRefusal::Immune(other));
                 }
                 if other_info.promotion_immune3 == Some(promotion) {
-                    return false;
+                    return Some(AcquireRefusal::Immune(other));
                 }
             }
         }
         if info.prereq_alive && !self.unit_is_alive(u) {
-            return false;
+            return Some(AcquireRefusal::Alive);
         }
         // FfH: End Add
 
         if let Some(tech) = info.tech_prereq {
             if !self.team_is_has_tech(self.unit_get_team(u), Some(tech)) {
-                return false;
+                return Some(AcquireRefusal::Tech(tech));
             }
         }
 
         if let Some(religion) = info.state_religion_prereq {
             if self.player_get_state_religion(unit.owner) != Some(religion) {
-                return false;
+                return Some(AcquireRefusal::StateReligion(religion));
             }
         }
 
-        if !self.unit_is_promotion_valid(u, promotion) {
-            return false;
+        if let Some(r) = self.unit_promotion_valid_refusal(u, promotion) {
+            return Some(r);
         }
 
         // Card (docs/CARDS.md): a unit learns at most one spell by a promotion's `battle_spell`
@@ -1654,21 +1696,27 @@ impl Game {
                 unit.has_promotion[p] && ((m.spell.is_some() && o.spell.is_some()) || (m.strike_spell.is_some() && o.strike_spell.is_some()))
             });
             if clash {
-                return false;
+                return Some(AcquireRefusal::SpellClash);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::isPromotionValid` (CvUnit.cpp:13349-13383).
     /// Starts with `::isPromotionValid(ePromotion, getUnitType(), true)` (CvGameCoreUtils).
     pub fn unit_is_promotion_valid(&self, u: UnitId, promotion: PromotionType) -> bool {
+        self.unit_promotion_valid_refusal(u, promotion).is_none()
+    }
+
+    /// Why [`Game::unit_is_promotion_valid`] is false (`NotForUnit`, `Withdrawal`,
+    /// `Interception`, `Evasion`).
+    pub fn unit_promotion_valid_refusal(&self, u: UnitId, promotion: PromotionType) -> Option<AcquireRefusal> {
         let d = self.d;
         let unit_type = self.units[u].unit_type;
 
         if !is_promotion_valid(d, promotion, unit_type, true) {
-            return false;
+            return Some(AcquireRefusal::NotForUnit);
         }
 
         let promotion_info = &d.promotions[promotion];
@@ -1678,7 +1726,7 @@ impl Game {
             if promotion_info.withdrawal_change + d.units[unit_type].withdrawal_probability + self.units[u].extra_withdrawal
                 > d.defines.max_withdrawal_probability
             {
-                return false;
+                return Some(AcquireRefusal::Withdrawal(d.defines.max_withdrawal_probability));
             }
         }
         // FfH: End Modify
@@ -1686,14 +1734,14 @@ impl Game {
         if promotion_info.intercept_change + self.unit_max_interception_probability(u)
             > d.defines.max_interception_probability
         {
-            return false;
+            return Some(AcquireRefusal::Interception(d.defines.max_interception_probability));
         }
 
         if promotion_info.evasion_change + self.unit_evasion_probability(u) > d.defines.max_evasion_probability {
-            return false;
+            return Some(AcquireRefusal::Evasion(d.defines.max_evasion_probability));
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::canAcquirePromotionAny` (CvUnit.cpp:13386-13399).

@@ -416,134 +416,65 @@ pub fn found_refusal_text(g: &Game, u: UnitId, r: FoundRefusal) -> String {
     }
 }
 
-/// Why unit `u` cannot build `build` at `plot`: the checks of `unit_can_build` and
-/// `player_can_build` in their order (the plot's own check, `plot_can_build`, named as one).
-fn build_refusal(g: &Game, u: UnitId, plot: PlotIdx, build: BuildType) -> String {
-    let d = g.d;
-    let name = unit_label(g, u);
-    let owner = g.units[u].owner;
-    let team = g.players[owner].team;
-    let info = &d.builds[build];
-    if !d.units[g.units[u].unit_type].builds[build] && !(info.field && g.unit_is_army_unit(u)) {
-        return format!("{name} does not build {}.", display(d, build));
-    }
-    if !g.plot_can_build(plot, build, owner, false) {
-        return format!("{} cannot be built on this plot.", display(d, build));
-    }
-    if let Some(civ) = info.prereq_civ.filter(|&civ| g.player_get_civilization_type(owner) != Some(civ)) {
-        return format!("Only for the {}.", display(d, civ));
-    }
-    if let Some(t) = info.tech_prereq.filter(|&t| !g.team_is_has_tech(team, Some(t))) {
-        return format!("Requires {}.", display(d, t));
-    }
-    if let Some(f) = g.map.plots[plot].feature_type {
-        let civ = g.player_get_civilization_type(owner);
-        if !civ.is_some_and(|c| d.civilizations[c].maintain_features[f]) && !g.team_is_has_tech(team, info.feature_tech[f]) {
-            if let Some(t) = info.feature_tech[f] {
-                return format!("Removing {} requires {}.", display(d, f), display(d, t));
-            }
-        }
-    }
-    let cost = g.player_get_build_cost(owner, plot, build);
-    if g.players[owner].gold.max(0) < cost {
-        return gold_line(g.players[owner].gold, cost);
-    }
-    if !g.plot_is_valid_domain_for_action(plot, u) {
-        return format!("{name} cannot build from this plot.");
-    }
-    if g.unit_is_automated(u) && build.i() == d.defines.build_fort {
-        return "Automated workers build no forts.".to_string();
-    }
-    format!("{name} cannot build {} here.", display(d, build))
-}
-
-/// `{Unit} is fortified or asleep already.` when its group waits.
-fn waiting(g: &Game, u: UnitId) -> Option<String> {
-    g.unit_is_waiting(u).then(|| format!("{} is fortified or asleep already.", unit_label(g, u)))
+/// Why unit `u` cannot build `build` at `plot`: the check of `unit_can_build` that refuses (its
+/// own, `player_can_build`'s and `plot_can_build`'s, ffh-core's `BuildRefusal`); `None` when
+/// the gate allows it.
+fn build_refusal(g: &Game, u: UnitId, plot: PlotIdx, build: BuildType) -> Option<String> {
+    g.unit_build_refusal(u, plot, build, false).map(|r| crate::view::reasons_orders::build_refusal_text(g, u, plot, build, r))
 }
 
 /// Why the selection `units` cannot start `mission` (with its data, at `plot`): what
 /// `selection::can_start_mission` refused, as a sentence. The selection-wide checks first, then
-/// the first unit's failing check of the mission's gate; for a gate whose check is not named
-/// here, `{Unit} cannot {Mission} here.`
+/// the failing check of the mission's gate for the unit explained: the first one the gate shows
+/// the mission to (`test_visible`), else the first not held back by boats. For the missions no
+/// unit of this game can do (air, espionage), `{Unit} cannot {Mission} here.`
 pub fn mission_refusal(g: &Game, units: &[UnitId], mission: MissionType, data1: i32, data2: i32, plot: PlotIdx) -> String {
+    use crate::view::reasons_orders::mission_refusal_text;
     let d = g.d;
     if selection::is_busy(g, units) {
         return "A selected unit is in combat.".to_string();
     }
-    let u = units[0];
-    let name = unit_label(g, u);
-    if units.iter().all(|&x| g.unit_in_boats_at(x, plot)) && !ffh_core::naval::mission_allowed_in_boats(mission) {
+    let boats_ok = ffh_core::naval::mission_allowed_in_boats(mission);
+    let free = |x: UnitId| boats_ok || !g.unit_in_boats_at(x, plot);
+    if !units.iter().any(|&x| free(x)) {
         return "In boats a unit only moves, waits or sleeps.".to_string();
     }
+    let u = units
+        .iter()
+        .copied()
+        .filter(|&x| free(x))
+        .find(|&x| selection::can_start_mission(g, &[x], mission, data1, data2, plot, true))
+        .or_else(|| units.iter().copied().find(|&x| free(x)))
+        .unwrap_or(units[0]);
+    let name = unit_label(g, u);
     let typed = |n: usize| (data1 >= 0 && (data1 as usize) < n).then_some(data1 as usize);
+    let target = (data1 >= 0).then_some(UnitId(data1 as u32));
+    let text = |r| mission_refusal_text(g, u, plot, target, r);
     let why = match mission {
         MissionType::MISSION_MOVE_TO if g.plot_at(plot, data1, data2) => Some("The units are already there.".to_string()),
+        MissionType::MISSION_ROUTE_TO if g.plot_at(plot, data1, data2) => Some("The units are already there, and no route can be built here.".to_string()),
+        MissionType::MISSION_SLEEP => g.unit_sleep_refusal(u, plot).map(text),
+        MissionType::MISSION_FORTIFY => g.unit_fortify_refusal(u, plot).map(text),
+        MissionType::MISSION_HEAL => g.unit_heal_refusal(u, plot).map(text),
+        MissionType::MISSION_SENTRY => g.unit_sentry_refusal(u, plot).map(text),
+        MissionType::MISSION_BOMBARD => g.unit_bombard_refusal(u, plot).map(text),
+        MissionType::MISSION_RANGE_ATTACK => g.unit_range_strike_at_refusal(u, plot, data1, data2).map(text),
+        MissionType::MISSION_PLUNDER => g.unit_plunder_refusal(u, plot, false).map(text),
+        MissionType::MISSION_PILLAGE => g.unit_pillage_reason(u, plot).map(text),
         MissionType::MISSION_FOUND if data1 == ffh_core::outposts::FOUND_OUTPOST => g.unit_found_outpost_refusal(u, plot, false).map(|s| s.to_string()),
         MissionType::MISSION_FOUND => g.unit_found_refusal(u, plot, false).map(|r| found_refusal_text(g, u, r)),
-        MissionType::MISSION_BUILD => typed(d.builds.len()).map(|b| build_refusal(g, u, plot, BuildType::from_usize(b))),
-        MissionType::MISSION_PILLAGE => g.unit_pillage_refusal(u, plot).map(|s| s.to_string()),
-        MissionType::MISSION_FORTIFY => {
-            if !g.unit_is_fortifyable(u) {
-                Some(format!("{name} does not fortify."))
-            } else if g.unit_in_boats_at(u, plot) {
-                Some("No fortifying in boats.".to_string())
-            } else {
-                waiting(g, u)
-            }
-        }
-        MissionType::MISSION_SLEEP => {
-            if g.unit_is_fortifyable(u) {
-                Some(format!("{name} fortifies instead of sleeping."))
-            } else {
-                waiting(g, u)
-            }
-        }
-        MissionType::MISSION_HEAL => {
-            if !g.unit_is_hurt(u) {
-                Some(format!("{name} is not hurt."))
-            } else if let Some(w) = waiting(g, u) {
-                Some(w)
-            } else if g.unit_heal_rate(u, plot) <= 0 {
-                Some(format!("{name} heals nothing here."))
-            } else {
-                None
-            }
-        }
-        MissionType::MISSION_SENTRY => {
-            if !g.unit_can_defend(u, Some(plot)) {
-                Some(format!("{name} cannot defend."))
-            } else {
-                waiting(g, u)
-            }
-        }
-        MissionType::MISSION_JOIN => typed(d.specialists.len()).map(SpecialistType::from_usize).and_then(|s| {
-            let city = g.map.plots[plot].plot_city.filter(|&c| g.cities.contains(c));
-            if !d.units[g.units[u].unit_type].great_peoples[s] {
-                Some(format!("{name} does not join a city as {}.", display(d, s)))
-            } else if city.is_none() {
-                Some("Join in a city.".to_string())
-            } else if city.is_some_and(|c| g.city_team(c) != g.unit_get_team(u)) {
-                Some("Join a city of your team.".to_string())
-            } else if g.units[u].has_casted {
-                Some(format!("{name} has cast this turn."))
-            } else {
-                None
-            }
-        }),
-        MissionType::MISSION_PLUNDER => {
-            if !g.unit_is_warship(u) {
-                Some(format!("{name} is not a warship."))
-            } else if g.unit_is_barbarian(u) {
-                Some("Barbarians do not patrol.".to_string())
-            } else if !g.plot_is_water(plot) || g.map.plots[plot].sea.is_none() {
-                Some("Patrol on a sea.".to_string())
-            } else if g.map.plots[plot].plot_city.is_some() {
-                Some("No Patrol in a city.".to_string())
-            } else {
-                None
-            }
-        }
+        MissionType::MISSION_SPREAD => g.unit_spread_refusal(u, plot, typed(d.religions.len()).map(ReligionType::from_usize), false).map(text),
+        MissionType::MISSION_SPREAD_CORPORATION => g.unit_spread_corporation_refusal(u, plot, typed(d.corporations.len()).map(CorporationType::from_usize), false).map(text),
+        MissionType::MISSION_JOIN => g.unit_join_refusal(u, plot, typed(d.specialists.len()).map(SpecialistType::from_usize)).map(text),
+        MissionType::MISSION_CONSTRUCT => g.unit_construct_refusal(u, plot, typed(d.buildings.len()).map(BuildingType::from_usize), false).map(text),
+        MissionType::MISSION_DISCOVER => g.unit_discover_refusal(u, plot).map(text),
+        MissionType::MISSION_HURRY => g.unit_hurry_refusal(u, plot, false).map(text),
+        MissionType::MISSION_TRADE => g.unit_trade_refusal(u, plot, false).map(text),
+        MissionType::MISSION_GREAT_WORK => g.unit_great_work_refusal(u, plot).map(text),
+        // (data1 other than -1 plays the animation only: never refused.)
+        MissionType::MISSION_GOLDEN_AGE => g.unit_golden_age_refusal(u, plot, false).map(text),
+        MissionType::MISSION_BUILD => typed(d.builds.len()).and_then(|b| build_refusal(g, u, plot, BuildType::from_usize(b))),
+        MissionType::MISSION_LEAD => g.unit_lead_refusal(u, plot, target).map(text),
         _ => None,
     };
     why.unwrap_or_else(|| format!("{name} cannot {} here.", display(d, mission)))
@@ -551,9 +482,11 @@ pub fn mission_refusal(g: &Game, units: &[UnitId], mission: MissionType, data1: 
 
 /// Why the selection `units` cannot do `command` (with its data): what
 /// `selection::can_do_command` refused, as a sentence. The selection-wide checks first, then the
-/// first unit's failing check of the command's gate; for a gate whose check is not named here,
-/// `{Unit} cannot {Command} now.`
-pub fn command_refusal(g: &Game, units: &[UnitId], command: CommandType, data1: i32, _data2: i32) -> String {
+/// failing check of the command's gate for the unit explained (the first one the gate shows the
+/// command to, else the first). For the commands a client never sends (hot keys, automatic
+/// spells), `{Unit} cannot {Command} now.`
+pub fn command_refusal(g: &Game, units: &[UnitId], command: CommandType, data1: i32, data2: i32) -> String {
+    use crate::view::reasons_orders as o;
     let d = g.d;
     if selection::is_busy(g, units) {
         return "A selected unit is in combat.".to_string();
@@ -564,7 +497,7 @@ pub fn command_refusal(g: &Game, units: &[UnitId], command: CommandType, data1: 
             _ => "No selected unit is loaded.".to_string(),
         };
     }
-    let u = units[0];
+    let u = units.iter().copied().find(|&x| g.unit_can_do_command(x, command, data1, data2, true, false)).unwrap_or(units[0]);
     let name = unit_label(g, u);
     if g.unit_in_route(u) {
         return "A caravan of a trade route takes no orders.".to_string();
@@ -584,53 +517,49 @@ pub fn command_refusal(g: &Game, units: &[UnitId], command: CommandType, data1: 
     if g.unit_is_in_boats(u) && !boats_ok {
         return "In boats a unit only moves, waits, loads or is promoted.".to_string();
     }
+    let typed = |n: usize| (data1 >= 0 && (data1 as usize) < n).then_some(data1 as usize);
+    let plot = g.unit_plot(u);
     let why = match command {
-        CommandType::COMMAND_CAST => (data1 >= 0 && (data1 as usize) < d.spells.len()).then(|| SpellType::from_usize(data1 as usize)).and_then(|s| g.unit_cast_refusal(u, s, false).map(|r| spell_refusal_text(g, u, s, r))),
+        CommandType::COMMAND_CAST => typed(d.spells.len()).map(SpellType::from_usize).and_then(|s| g.unit_cast_refusal(u, s, false).map(|r| spell_refusal_text(g, u, s, r))),
         CommandType::COMMAND_PROMOTION => {
-            let p = (data1 >= 0 && (data1 as usize) < d.promotions.len()).then(|| PromotionType::from_usize(data1 as usize));
-            match p {
-                Some(p) if !g.unit_can_acquire_promotion(u, p) => Some(format!("{name} cannot take {}.", display(d, p))),
-                Some(p) if d.promotions[p].leader && g.units[u].free_promotion_pick <= 0 => Some(format!("{} comes from a great commander.", display(d, p))),
-                Some(_) if !g.units[u].promotion_ready && g.units[u].free_promotion_pick <= 0 => Some(format!("{name} has not the experience for a promotion.")),
-                _ => None,
-            }
+            let leader = (data2 >= 0).then_some(UnitId(data2 as u32));
+            g.unit_promote_refusal(u, typed(d.promotions.len()).map(PromotionType::from_usize), leader).map(|r| o::promote_refusal_text(g, u, r))
         }
         CommandType::COMMAND_UPGRADE => {
-            let t = (data1 >= 0 && (data1 as usize) < d.units.len()).then(|| UnitType::from_usize(data1 as usize));
-            t.and_then(|t| {
-                let owner = g.units[u].owner;
-                let price = g.unit_upgrade_price(u, t);
-                if !g.unit_can_move(u) {
-                    Some(format!("{name} has no moves left."))
-                } else if g.plot_get_team(g.unit_plot(u)) != Some(g.unit_get_team(u)) {
-                    Some("Units upgrade in your own territory.".to_string())
-                } else if g.players[owner].gold < price {
-                    Some(gold_line(g.players[owner].gold, price))
-                } else if g.units[u].level < d.units[t].min_level {
-                    Some(format!("{} requires level {}: {name} is level {}.", display(d, t), d.units[t].min_level, g.units[u].level))
-                } else if d.units[t].disable_upgrade_to {
-                    Some(format!("No unit upgrades to {}.", display(d, t)))
-                } else if d.units[t].unit_class_type.is_some_and(|c| g.player_is_unit_class_maxed_out(owner, c, 0)) {
-                    Some(format!("{}: the limit of its class is reached.", display(d, t)))
-                } else {
-                    None
-                }
+            let t = typed(d.units.len()).map(UnitType::from_usize);
+            g.unit_upgrade_refusal(u, t, false).map(|r| match t {
+                Some(t) => o::upgrade_refusal_text(g, u, t, r),
+                None => "No unit type given.".to_string(),
             })
         }
-        CommandType::COMMAND_DELETE => {
-            if g.plot_is_fighting(g.unit_plot(u)) {
-                Some("A battle is under way on the plot.".to_string())
-            } else if d.units[g.units[u].unit_type].equipment_promotion.is_some() {
-                Some("Equipment is not disbanded.".to_string())
-            } else {
-                None
-            }
-        }
+        CommandType::COMMAND_AUTOMATE => g.unit_automate_refusal(u, typed(d.automates.len()).map(AutomateType::from_usize)).map(|r| o::automate_refusal_text(g, u, r)),
+        CommandType::COMMAND_DELETE => g.unit_scrap_refusal(u).map(o::scrap_refusal_text),
+        CommandType::COMMAND_GIFT => g.unit_gift_refusal(u, false, true).map(|r| o::gift_refusal_text(g, u, r)),
         CommandType::COMMAND_WAKE => Some(if g.unit_is_automated(u) { format!("{name} is automated.") } else { format!("{name} is not asleep or fortified.") }),
         CommandType::COMMAND_CANCEL | CommandType::COMMAND_CANCEL_ALL => Some(if g.unit_is_automated(u) { format!("{name} is automated.") } else { format!("{name} has no orders.") }),
         CommandType::COMMAND_STOP_AUTOMATION => Some(format!("{name} is not automated.")),
-        CommandType::COMMAND_LOAD => Some("No transport on this plot has room.".to_string()),
-        CommandType::COMMAND_UNLOAD | CommandType::COMMAND_UNLOAD_ALL if !g.unit_is_cargo(u) => Some(format!("{name} is not loaded.")),
+        // `canLoad`: some transport on the plot takes the unit; the first one with room says why
+        // it does not.
+        CommandType::COMMAND_LOAD => Some(
+            g.map.plots[plot]
+                .units
+                .iter()
+                .copied()
+                .filter(|&t| t != u && !g.unit_is_full(t))
+                .find_map(|t| g.unit_load_unit_refusal(u, t, plot))
+                .map_or_else(|| "No transport on this plot has room.".to_string(), |r| o::load_refusal_text(g, u, r)),
+        ),
+        CommandType::COMMAND_LOAD_UNIT => {
+            let t = (data1 >= 0 && (data1 as usize) < g.num_players() && data2 >= 0)
+                .then_some(UnitId(data2 as u32))
+                .filter(|&t| g.units.contains(t) && g.units[t].owner.idx() == data1 as usize);
+            Some(match t {
+                Some(t) => g.unit_load_unit_refusal(u, t, plot).map_or_else(|| "No transport on this plot has room.".to_string(), |r| o::load_refusal_text(g, u, r)),
+                None => "No such transport.".to_string(),
+            })
+        }
+        CommandType::COMMAND_UNLOAD => g.unit_unload_refusal(u).map(|r| o::unload_refusal_text(g, u, r)),
+        CommandType::COMMAND_UNLOAD_ALL => (g.units[u].cargo == 0).then(|| format!("{name} carries no units.")),
         _ => None,
     };
     why.unwrap_or_else(|| format!("{name} cannot {} now.", display(d, command)))
