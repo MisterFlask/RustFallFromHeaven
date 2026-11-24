@@ -107,7 +107,7 @@ impl World {
 
     /// `units` (army units of `owner` on one plot, made one at a time: one-unit armies each) form
     /// one army, its squads auto-sorted into as few as hold them (docs/ENGAGEMENTS.md, "Squads"):
-    /// up to six make one squad, which fights together. Its squads on the plot, in order.
+    /// up to five make one squad, which fights together. Its squads on the plot, in order.
     fn army(&mut self, owner: PlayerId, units: &[UnitId]) -> Vec<SquadId> {
         self.g.army_form(owner, units).expect("an army");
         let at = self.g.unit_plot(units[0]);
@@ -226,9 +226,9 @@ fn check_reach(log: &BattleLog) -> usize {
     checked
 }
 
-/// A squad of 6 Axemen against an Axeman and 3 Archers, the garrison's one squad, in a city of
+/// A squad of 5 Axemen against an Axeman and 3 Archers, the garrison's one squad, in a city of
 /// 50% defence (no wall building, so no Sentinels: docs/SIEGES.md; tests/sieges.rs has the walls):
-/// each side commits its squad (6 places a side, the city's defence costs none) on its 3 lanes,
+/// each side commits its squad (5 places a side, the city's defence costs none) on its 3 lanes,
 /// every strike and shot falls in its reach, and the city falls only when none of its defenders is
 /// left: then the launcher's group takes it; else nobody moves. Every battle: the places, lanes and
 /// reach; some seed of eight: the city taken.
@@ -242,8 +242,8 @@ fn axemen_storm_a_walled_city_of_archers() {
     w.unit(p1, "UNIT_AXEMAN", to);
     w.units(p1, "UNIT_ARCHER", to, 3);
     assert_eq!(w.g.squad_layouts_at(p1, to).len(), 1, "the garrison's one squad");
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
-    // Veterans: six of them can clear the four defenders in a battle's rounds (eight Axemen did
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
+    // Veterans: five of them can clear the four defenders in a battle's rounds (eight Axemen did
     // in the old ten slots).
     for &a in &axemen {
         w.g.unit_change_extra_combat_percent(a, 100);
@@ -257,9 +257,9 @@ fn axemen_storm_a_walled_city_of_archers() {
         assert_eq!(reports.len(), 1, "one order, one engagement");
         let r = &reports[0];
         let log = r.log.as_ref().unwrap();
-        assert_eq!(log.slots[0].total, 6, "a squad's 6 places, the city's defence costs none: {:?}", log.slots[0]);
-        assert_eq!((r.sides[0].committed, r.sides[1].committed), (6, 4));
-        assert_eq!((r.sides[0].slots, r.sides[1].slots), (6, 6), "the report keeps the slots");
+        assert_eq!(log.slots[0].total, 5, "a squad's 5 places, the city's defence costs none: {:?}", log.slots[0]);
+        assert_eq!((r.sides[0].committed, r.sides[1].committed), (5, 4));
+        assert_eq!((r.sides[0].slots, r.sides[1].slots), (5, 5), "the report keeps the slots");
         assert_eq!((r.sides[0].lanes, r.sides[1].lanes), (3, 3));
         assert_eq!(log.lanes, [3, 3]);
         assert!(log.ground.city && !log.ground.flanking());
@@ -285,19 +285,19 @@ fn axemen_storm_a_walled_city_of_archers() {
             }
         }
     }
-    assert!(taken > 0, "six axemen never took the city");
+    assert!(taken > 0, "five axemen never took the city");
     assert!(checked > 50, "{checked} actions checked");
 }
 
-/// Who lost and what it does to the plot (docs/ENGAGEMENTS.md, "The result"): six axemen at
-/// +400% against half-hurt warriors in a forest lose far less HP for any seed. Six warriors (one
+/// Who lost and what it does to the plot (docs/ENGAGEMENTS.md, "The result"): five axemen at
+/// +400% against half-hurt warriors in a forest lose far less HP for any seed. Five warriors (one
 /// squad): the survivors are pushed back and the launcher moves in. Eight in one army (two squads:
 /// one fights, the other is the reserve) on open ground: the reserve is pushed back off the plot
-/// with the line, away from the attackers, and the launcher moves in. Twelve in a city (two
+/// with the line, away from the attackers, and the launcher moves in. Ten in a city (two
 /// squads): nobody is pushed back, the reserve holds the plot and nobody moves. Every battle.
 #[test]
 fn the_plot_falls_to_a_won_battle_with_no_defender_left() {
-    for (n, city) in [(6, false), (8, false), (12, true)] {
+    for (n, city) in [(5, false), (8, false), (10, true)] {
         let mut w = world();
         let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
         w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
@@ -309,8 +309,8 @@ fn the_plot_falls_to_a_won_battle_with_no_defender_left() {
         for &d in &defenders {
             w.g.units[d].damage = 50;
         }
-        assert_eq!(w.army(p1, &defenders).len(), if n > 6 { 2 } else { 1 });
-        let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+        assert_eq!(w.army(p1, &defenders).len(), if n > 5 { 2 } else { 1 });
+        let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
         for &a in &axemen {
             w.g.unit_change_extra_combat_percent(a, 400);
             w.g.units[a].stat_pct[StatType::Defense.idx()] = 1000;
@@ -381,16 +381,16 @@ fn the_ordered_squad_is_the_one_fought() {
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.g.players[p1].human = true;
     w.units(p1, "UNIT_WARRIOR", to, 2);
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 3);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 2);
     let archer = w.unit(p0, "UNIT_ARCHER", from);
     let giant = w.unit(p0, "UNIT_WAR_ELEPHANT", from);
     let all: Vec<UnitId> = axemen.iter().copied().chain([archer, giant]).collect();
     let army = w.g.army_form(p0, &all).expect("an army");
     let grp = w.g.armies[army].group.expect("the army's group");
     let (x, y) = w.g.map.xy(to);
-    // One squad of 6 places: the archer in front, the axemen behind, the war elephant (an animal
+    // One squad of 5 places: the archer in front, the axemen behind, the war elephant (an animal
     // is no army unit, so it may stand in the army's squad) in the rear across lanes 1 and 2.
-    let order = [(archer, 0u8, 0u8), (axemen[0], 0, 1), (axemen[1], 1, 1), (axemen[2], 2, 1), (giant, 1, 2)];
+    let order = [(archer, 0u8, 0u8), (axemen[0], 0, 1), (axemen[1], 2, 1), (giant, 1, 2)];
     let squad = w.g.units[axemen[0]].squad.expect("a squad");
     for &(u, lane, row) in &order {
         w.g.units[u].squad = Some(squad);
@@ -412,7 +412,7 @@ fn the_ordered_squad_is_the_one_fought() {
     }
     let g = log.fighters.iter().find(|lf| lf.unit == giant).unwrap();
     assert!(g.large && g.max_hp == 150, "a large unit: two cells and 150% of its role's HP ({})", g.max_hp);
-    assert_eq!((r.sides[0].committed, r.sides[0].used), (5, 6));
+    assert_eq!((r.sides[0].committed, r.sides[0].used), (4, 5));
     check_reach(log);
 
     // A squad that cannot attack there (the defender's): refused, nothing changed.
@@ -470,7 +470,7 @@ fn siege_units_cap_on_attack_and_fight_to_the_end_on_defense() {
     assert!(lost > 0, "nobody ever fell");
 }
 
-/// Twelve archers in one army, two squads of six: the squad left in reserve still makes defensive
+/// Ten archers in one army, two squads of five: the squad left in reserve still makes defensive
 /// strikes, and the catapult (collateral damage) in the attacking squad splashes its hits on the
 /// target's neighbours. Some seed of six for each.
 #[test]
@@ -478,12 +478,12 @@ fn the_reserve_strikes_and_the_catapult_splashes() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.g.players[p1].human = true;
-    let archers = w.units(p1, "UNIT_ARCHER", to, 12);
+    let archers = w.units(p1, "UNIT_ARCHER", to, 10);
     assert_eq!(w.army(p1, &archers).len(), 2);
     let cat = w.unit(p0, "UNIT_CATAPULT", from);
     // Tough enough to outlive the archers' first volleys (it acts last: speed 1).
     w.g.units[cat].stat_pct[StatType::Defense.idx()] = 2000;
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 4);
     let squad: Vec<UnitId> = axemen.iter().copied().chain([cat]).collect();
     assert_eq!(w.army(p0, &squad).len(), 1);
     let (mut strikes, mut collateral) = (0, 0);
@@ -491,10 +491,10 @@ fn the_reserve_strikes_and_the_catapult_splashes() {
         let mut f = w.fork(seed);
         let (_, reports) = f.attack(cat);
         let r = &reports[0];
-        assert_eq!((r.sides[0].committed, r.sides[1].committed), (6, 6));
+        assert_eq!((r.sides[0].committed, r.sides[1].committed), (5, 5));
         // The squad in reserve and the line's survivors: on the plot, or pushed back with the
         // line when it lost (outside a city).
-        assert_eq!(r.outcome.defenders_left + r.outcome.pushed, 6 + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: {:?}", r.outcome);
+        assert_eq!(r.outcome.defenders_left + r.outcome.pushed, 5 + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: {:?}", r.outcome);
         let log = r.log.as_ref().unwrap();
         let cat_b = log.fighters.iter().position(|lf| lf.unit == cat).expect("the catapult fights") as u16;
         for ev in &log.events {
@@ -554,7 +554,7 @@ fn defensive_withdrawal_only_outside_cities() {
         }
         let runner = w.unit(p1, "UNIT_WARRIOR", to);
         w.g.unit_change_extra_withdrawal(runner, 100);
-        let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+        let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
         w.army(p0, &axemen);
         for seed in 0..4 {
             let mut f = w.fork(seed);
@@ -845,7 +845,7 @@ fn a_marching_recruit_defends_and_keeps_its_march() {
     let dest = RecruitDest::Garrison(c);
     w.g.units[recruit].march = Some(March { dest, stalled: 0, left_turn: 0, from_city: c, diverted: false });
     w.g.player_army_sync(p1);
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
     w.army(p0, &axemen);
     for seed in 0..4 {
         let mut f = w.fork(seed);
@@ -867,11 +867,11 @@ fn the_report_counts_the_reserve_left() {
     let mut w = world_with(false);
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.city(p1, to, 0);
-    let warriors = w.units(p1, "UNIT_WARRIOR", to, 11);
+    let warriors = w.units(p1, "UNIT_WARRIOR", to, 9);
     for &d in &warriors {
         w.g.units[d].damage = 60;
     }
-    // Eleven in one army: two squads, one fights, the other is the reserve.
+    // Nine in one army: two squads, one fights, the other is the reserve.
     assert_eq!(w.army(p1, &warriors).len(), 2);
     let a = w.units(p0, "UNIT_AXEMAN", from, 4);
     for &u in &a {
@@ -883,9 +883,9 @@ fn the_report_counts_the_reserve_left() {
         assert!(attacked);
         let r = &reports[0];
         let committed = r.sides[1].committed;
-        assert_eq!(r.sides[1].slots, 6);
-        assert!(committed == 5 || committed == 6, "seed {seed}: one of the two squads: {committed}");
-        assert_eq!(r.outcome.defenders_left, 11 - committed + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: {:?}", r.outcome);
+        assert_eq!(r.sides[1].slots, 5);
+        assert!(committed == 4 || committed == 5, "seed {seed}: one of the two squads: {committed}");
+        assert_eq!(r.outcome.defenders_left, 9 - committed + r.sides[1].standing + r.sides[1].sat_out, "seed {seed}: {:?}", r.outcome);
     }
 }
 
@@ -1304,7 +1304,7 @@ fn the_verdict_is_all_fallen_then_more_fallen_then_more_hp() {
     assert_eq!(engage_verdict([t(2, 1, 9_000), t(1, 0, 3_000)]), (Some(Side::Attacker), DecidedBy::Deaths));
 }
 
-/// Wiping out a wounded line wins, however little HP it had left: six axemen at +400% against six
+/// Wiping out a wounded line wins, however little HP it had left: five axemen at +400% against five
 /// warriors at 5% HP in a forest (one squad a side). Whenever every warrior fell and no axeman did, the
 /// defenders lost by rule 1 and the launcher moved in. Every battle.
 #[test]
@@ -1312,12 +1312,12 @@ fn wiping_out_a_wounded_line_wins() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
-    let warriors = w.units(p1, "UNIT_WARRIOR", to, 6);
+    let warriors = w.units(p1, "UNIT_WARRIOR", to, 5);
     for &d in &warriors {
         w.g.units[d].damage = 95;
     }
     w.army(p1, &warriors);
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
     for &a in &axemen {
         w.g.unit_change_extra_combat_percent(a, 400);
     }

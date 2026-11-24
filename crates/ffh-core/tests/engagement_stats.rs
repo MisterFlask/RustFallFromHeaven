@@ -235,7 +235,7 @@ fn archer_in_a_walled_hill_city_fortified() {
 
 /// A city's defense (its walls, its culture) gives the defenders' Dv nothing (revision 4): a unit
 /// that ignores building defense, the defense half or wholly knocked down: the same Dv. It costs
-/// no places either (docs/SIEGES.md): each side has a squad's 6, and the walls' two Sentinels
+/// no places either (docs/SIEGES.md): each side has a squad's 5, and the walls' two Sentinels
 /// stand on top of the defender's, the defence knocked down or not.
 #[test]
 fn a_city_s_defense_costs_no_places_and_gives_dv_nothing() {
@@ -269,7 +269,7 @@ fn a_city_s_defense_costs_no_places_and_gives_dv_nothing() {
         slots.push((s.att(), s.def(), s.sentinels));
     }
     // A squad's places and the two Sentinels, whatever the defence.
-    assert_eq!(slots, vec![(6, 6, 2); 3]);
+    assert_eq!(slots, vec![(5, 5, 2); 3]);
 }
 
 #[test]

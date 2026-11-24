@@ -31,7 +31,7 @@ data in `crates/ffh-data/tests/engagement_data.rs` and `engagement_overrides.rs`
 
 **The field** (the owner's decision, 2026-11-21: frontage is gone). One battle is one squad
 against one squad (below, "Squads"). Each side stands on a grid of 3 rows (front 0, middle 1, rear
-2) by 3 lanes, and commits up to `ENGAGEMENT_SQUAD_PLACES` (6) places, whatever the ground
+2) by 3 lanes, and commits up to `ENGAGEMENT_SQUAD_PLACES` (5) places, whatever the ground
 (`slots.rs`; the slots of a side no longer change with the terrain, a feature, hills, a river or a
 city's Sentinels). A large unit (`bLarge`, below) fills two cells side by side in one row and counts
 2 places, and is the front or back unit of both its lanes. A walled city's standing Sentinels
@@ -41,7 +41,7 @@ nearest free cell (its row, the lanes nearest the centre first, then the rows be
 
 **Squads** (the owner's design, 2026-11-21; `army/squad.rs`, `engagement/squads.rs`; tests in
 `crates/ffh-core/tests/squads.rs`). Every land unit that fights stands in a squad: a 3 by 3 grid
-of up to 6 places, kept between battles (`Game::squads`, `Unit::squad`, `Unit::squad_cell`, `row
+of up to 5 places, kept between battles (`Game::squads`, `Unit::squad`, `Unit::squad_cell`, `row
 * 3 + lane`).
 
 - *Bodies.* A squad belongs to an army, a city's garrison, or none (loose: heroes, mages, recon

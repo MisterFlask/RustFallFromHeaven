@@ -440,7 +440,7 @@ fn withered_and_puppet_lower_defence_too() {
 #[test]
 fn engagement_defines() {
     let x = &d().defines;
-    assert_eq!((x.engagement_squad_places, x.engagement_defense_pick_runs), (6, 6));
+    assert_eq!((x.engagement_squad_places, x.engagement_defense_pick_runs), (5, 6));
     assert_eq!((x.engagement_forest_stab_percent, x.engagement_open_large_percent, x.engagement_rough_large_percent, x.engagement_wading_percent), (150, 120, 75, 50));
     assert_eq!(x.engagement_summon_extra_slots, 2);
     // Sieges (docs/SIEGES.md).

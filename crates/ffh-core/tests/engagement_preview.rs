@@ -78,7 +78,7 @@ impl World {
     }
 
     /// `owner`'s units on `at` (made one at a time: one-unit armies each) form one army, its
-    /// squads auto-sorted into as few as hold them (docs/ENGAGEMENTS.md, "Squads"): up to six
+    /// squads auto-sorted into as few as hold them (docs/ENGAGEMENTS.md, "Squads"): up to five
     /// make one squad. Its squads, in their order.
     fn army(&mut self, owner: PlayerId, at: PlotIdx) -> Vec<SquadId> {
         let units: Vec<UnitId> = self.g.map.plots[at].units.iter().copied().filter(|&u| self.g.units[u].owner == owner && self.g.unit_is_army_unit(u)).collect();
@@ -108,14 +108,14 @@ fn the_preview_is_a_function_of_its_inputs_and_changes_nothing() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.forest(to);
-    w.units(p0, "UNIT_AXEMAN", from, 5);
+    w.units(p0, "UNIT_AXEMAN", from, 4);
     w.units(p0, "UNIT_HORSEMAN", from, 2);
     w.units(p0, "UNIT_CATAPULT", from, 2);
     w.units(p0, "UNIT_ARCHER", from, 2);
     w.units(p1, "UNIT_ARCHER", to, 4);
     w.units(p1, "UNIT_AXEMAN", to, 4);
     w.units(p1, "UNIT_WARRIOR", to, 2);
-    // Each side one army of two squads (11 and 10 units: 6 places a squad).
+    // Each side one army of two squads (10 and 10 units: 5 places a squad).
     assert_eq!(w.army(p0, from).len(), 2);
     let def_squads = w.army(p1, to);
     assert_eq!(def_squads.len(), 2);
@@ -125,15 +125,15 @@ fn the_preview_is_a_function_of_its_inputs_and_changes_nothing() {
     let b = w.g.engage_preview(&inp).unwrap();
     assert_eq!(a, b);
     assert!(state(&w.g) == before, "the preview changed the game");
-    // What it holds: a squad's six places and three lanes a side, the forest's rules, both
+    // What it holds: a squad's five places and three lanes a side, the forest's rules, both
     // formations.
-    assert_eq!((a.slots.att(), a.slots.def(), a.lanes), (6, 6, [3, 3]));
+    assert_eq!((a.slots.att(), a.slots.def(), a.lanes), (5, 5, [3, 3]));
     assert!(a.ground.forest && !a.ground.flanking());
     assert_eq!(a.rules, a.ground.rules(&ffh_core::engagement::formation::Params::from_defines(&w.g.d.defines)));
     assert_eq!(a.squads.len(), 2, "the attacker's two squads");
     assert_eq!(a.formation, a.auto, "no squad given: the strongest");
     assert_eq!(a.formation, a.squads[a.squad].places);
-    assert!(!a.formation.is_empty() && a.formation.len() <= 6);
+    assert!(!a.formation.is_empty() && a.formation.len() <= 5);
     // The defenders' squad that fights stands in its cells; the other squad is the reserve.
     let def_squad = a.def_squad.expect("a defending squad");
     assert!(def_squads.contains(&def_squad));
@@ -337,7 +337,7 @@ fn the_forecast_if_is_the_preview_of_the_battle_it_imagines() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     w.forest(to);
-    w.units(p0, "UNIT_AXEMAN", from, 4);
+    w.units(p0, "UNIT_AXEMAN", from, 3);
     w.units(p0, "UNIT_ARCHER", from, 2);
     w.units(p1, "UNIT_ARCHER", to, 2);
     w.units(p1, "UNIT_AXEMAN", to, 2);
@@ -513,8 +513,8 @@ fn forecast_if_timing() {
     }
 }
 
-/// The time of a preview, 2 v 2, 4 v 4 and 6 v 6 (one squad a side: every battle is one squad
-/// against one, at most 6 places a side), with three more attackers in a second squad, and of the
+/// The time of a preview, 2 v 2, 4 v 4 and 5 v 5 (one squad a side: every battle is one squad
+/// against one, at most 5 places a side), with three more attackers in a second squad, and of the
 /// auto formation. `cargo test --release -p ffh-core --test engagement_preview -- --ignored
 /// --nocapture preview_timing`.
 #[test]
@@ -527,7 +527,7 @@ fn preview_timing() {
         }
         t.elapsed().as_secs_f64() * 1000.0 / reps as f64
     };
-    for size in [2usize, 4, 6] {
+    for size in [2usize, 4, 5] {
         let mut w = world();
         let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
         let mix = ["UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_HORSEMAN", "UNIT_SWORDSMAN"];
@@ -539,7 +539,7 @@ fn preview_timing() {
         assert_eq!(w.army(p1, to).len(), 1);
         let ctx = HitCtx::new(from, to);
         let slots = w.g.engage_slots(&ctx);
-        assert_eq!((slots.att(), slots.def()), (6, 6));
+        assert_eq!((slots.att(), slots.def()), (5, 5));
         let inp = w.input();
         let g = &w.g;
         let plan_ms = time(5, &mut || {

@@ -1,6 +1,6 @@
 //! Squads (the owner's design, 2026-11-21; docs/ENGAGEMENTS.md, "Squads"): the units a battle
 //! commits. Every land fighting unit stands in a squad: a grid of 3 rows (front, middle, rear) by
-//! 3 lanes holding up to `ENGAGEMENT_SQUAD_PLACES` (6) places, a large unit filling two cells side
+//! 3 lanes holding up to `ENGAGEMENT_SQUAD_PLACES` (5) places, a large unit filling two cells side
 //! by side in one row and counting 2. One battle is one squad against one squad.
 //!
 //! **Where squads live.** Each squad belongs to a body ([`SquadBody`]): an army, a city's garrison,
@@ -233,7 +233,7 @@ impl Game {
             let size = self.squad_size(p.unit);
             layout.put(p.unit, p.row * SQUAD_LANES + p.lane, size);
         }
-        // A unit the formation left out (none fit: never with 9 cells for 6 places) takes any
+        // A unit the formation left out (none fit: never with 9 cells for 5 places) takes any
         // free cell.
         for &u in units {
             if !layout.contains(u) {

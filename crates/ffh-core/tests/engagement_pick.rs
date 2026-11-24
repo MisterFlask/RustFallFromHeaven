@@ -1,5 +1,5 @@
 //! Engagement combat's slots, who can fight and where they stand
-//! (`engagement/slots.rs`, `engagement/pick.rs`, `engagement/arrange.rs`): a squad's 6 places and
+//! (`engagement/slots.rs`, `engagement/pick.rs`, `engagement/arrange.rs`): a squad's 5 places and
 //! 3 lanes a side on every ground, a city's Sentinels at no place, the river's Wading in place of
 //! its slots; the attack count with Blitz and bombards, the combat limit and marching units in
 //! `unit_can_engage` and the gates it shares with `unit_can_move_into`; the defender's
@@ -152,14 +152,14 @@ fn check_sums(s: &Slots) {
 /// lanes.
 fn assert_squad_slots(w: &World, s: &Slots, what: &str) {
     let n = w.g.d.defines.engagement_squad_places;
-    assert_eq!(n, 6);
+    assert_eq!(n, 5);
     check_sums(s);
     assert_eq!((s.att(), s.att_river(), s.def()), (n, 0, n), "{what}");
     assert!(s.sides.iter().all(|side| side.changes.is_empty()), "{what}: {:?}", s.sides);
     assert_eq!(w.g.engage_lanes(s), [3, 3], "{what}");
 }
 
-/// Frontage is gone (docs/ENGAGEMENTS.md, "The field"): every ground gives each side a squad's 6
+/// Frontage is gone (docs/ENGAGEMENTS.md, "The field"): every ground gives each side a squad's 5
 /// places on 3 lanes; the grounds differ by their rules ("The ground").
 #[test]
 fn every_ground_gives_a_squad_its_places_and_lanes() {
@@ -217,10 +217,10 @@ fn a_walled_citys_sentinels_cost_no_place() {
     assert_eq!(s.sentinels, 2);
     let cells = w.g.engage_sentinel_cells(&s);
     assert_eq!(cells, vec![(1, 0), (0, 0)]);
-    // Eight axemen defend: six fight (a squad's places), none in a Sentinel's cell.
+    // Eight axemen defend: five fight (a squad's places), none in a Sentinel's cell.
     let axemen = w.units(p1, "UNIT_AXEMAN", to, 8);
     let def = w.auto(&axemen, Side::Defender);
-    assert_eq!(def.len(), 6);
+    assert_eq!(def.len(), 5);
     assert!(def.iter().all(|p| !cells.contains(&(p.lane, p.row))), "{def:?}");
 
     // One breached: one Sentinel left, the places the same.
@@ -230,7 +230,7 @@ fn a_walled_citys_sentinels_cost_no_place() {
     assert_eq!(s.sentinels, 1);
     w.g.city_set_sentinel_damage(c, 0, 0);
 
-    // Forested hills: the same 6 places and the two Sentinels.
+    // Forested hills: the same 5 places and the two Sentinels.
     w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
     w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
     let s = w.slots();
@@ -257,7 +257,7 @@ fn a_river_crossing_costs_no_place_and_wades() {
     // No approach plot (a hypothetical estimate): no river.
     assert!(!w.g.engage_ground(&HitCtx { from: None, ..w.ctx() }).crossing);
 
-    // Ten strong Axemen and three Lizardmen (bRiver): six places on either side.
+    // Ten strong Axemen and three Lizardmen (bRiver): five places on either side.
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 10);
     for &a in &axemen {
         w.promote(a, "PROMOTION_COMBAT1");
@@ -265,8 +265,8 @@ fn a_river_crossing_costs_no_place_and_wades() {
     let lizards = w.units(p0, "UNIT_LIZARDMAN", from, 3);
     assert!(w.g.unit_is_river(lizards[0]) && !w.g.unit_is_river(axemen[0]));
     let pool: Vec<UnitId> = axemen.iter().chain(&lizards).copied().collect();
-    assert_eq!(w.pick(&pool, Side::Attacker).len(), 6);
-    assert_eq!(w.pick(&pool, Side::Defender).len(), 6);
+    assert_eq!(w.pick(&pool, Side::Attacker).len(), 5);
+    assert_eq!(w.pick(&pool, Side::Defender).len(), 5);
 }
 
 #[test]
@@ -299,23 +299,22 @@ fn the_auto_formation_takes_one_of_each_kind_first_and_puts_each_in_the_row_it_p
     let adepts = w.units(p0, "UNIT_ADEPT", from, 2);
     let pool: Vec<UnitId> = [axemen.clone(), vec![screen], archers, horsemen, assassins, adepts].concat();
     assert_eq!(w.kind(screen), "ANTI_FLANK");
-    assert_eq!((w.slots().att(), w.g.engage_lanes(&w.slots())), (6, [3, 3]));
+    assert_eq!((w.slots().att(), w.g.engage_lanes(&w.slots())), (5, [3, 3]));
 
     let kinds = |pick: &[UnitId]| ["STRIKE", "ANTI_FLANK", "SHOOT", "CHARGE", "STAB", "SPELL"].map(|k| w.kinds(pick, k));
-    // One of each kind first (anti-flank, strike, shoot, charge, spell, stab: six), which fills
-    // a squad's six places.
+    // One of each kind first (anti-flank, strike, shoot, charge, spell; the stab kind, last, finds no
+    // place left: five), which fills a squad's five places.
     let auto = w.auto(&pool, Side::Attacker);
     let pick: Vec<UnitId> = auto.iter().map(|p| p.unit).collect();
-    assert_eq!(kinds(&pick), [1, 1, 1, 1, 1, 1]);
+    assert_eq!(kinds(&pick), [1, 1, 1, 1, 0, 1]);
     // The rows they prefer: the anti-flanker, the axeman and the horseman in the front row (its
-    // three cells full); the archer and the assassin in the middle; the adept in the rear.
+    // three cells full); the archer in the middle; the adept in the rear.
     let row_of = |u: UnitId| auto.iter().find(|p| p.unit == u).map(|p| p.row);
     let of_kind = |k: &str| pick.iter().copied().filter(|&u| w.kind(u) == k).collect::<Vec<_>>();
     assert_eq!(row_of(screen), Some(0));
     assert_eq!(of_kind("STRIKE").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(0)]);
     assert_eq!(of_kind("CHARGE").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(0)]);
     assert_eq!(of_kind("SHOOT").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(1)]);
-    assert_eq!(of_kind("STAB").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(1)]);
     assert_eq!(of_kind("SPELL").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(2)]);
     assert_eq!(auto.iter().filter(|p| p.row == 0).count(), 3, "the front row is full");
     // Centre lane first: the anti-flanker, picked first, stands in lane 1.
@@ -328,11 +327,11 @@ fn the_auto_formation_takes_one_of_each_kind_first_and_puts_each_in_the_row_it_p
     for side in [Side::Attacker, Side::Defender] {
         let a = w.auto(&pool, side);
         assert_eq!(a, w.auto(&pool, side));
-        assert_eq!(a.len(), 6);
+        assert_eq!(a.len(), 5);
         let mut units: Vec<UnitId> = a.iter().map(|p| p.unit).collect();
         units.sort();
         units.dedup();
-        assert_eq!(units.len(), 6);
+        assert_eq!(units.len(), 5);
     }
     assert_eq!(w.pick(&pool[..5], Side::Attacker).len(), 5);
 
@@ -344,15 +343,15 @@ fn the_auto_formation_takes_one_of_each_kind_first_and_puts_each_in_the_row_it_p
     let auto = w.auto(&pool2, Side::Attacker);
     let g = auto.iter().find(|p| p.unit == giant).expect("the giant is strong enough to be taken");
     assert_eq!((g.lane, g.row), (0, 0));
-    assert_eq!(auto.iter().map(|p| w.g.unit_engage_size(p.unit)).sum::<i32>(), 6);
-    assert_eq!(auto.len(), 5);
+    assert_eq!(auto.iter().map(|p| w.g.unit_engage_size(p.unit)).sum::<i32>(), 5);
+    assert_eq!(auto.len(), 4);
 }
 
 #[test]
 fn a_wounded_unit_waits_behind_the_healthy_ones_of_its_role() {
     let mut w = world();
     let (p0, from) = (w.p0, w.from);
-    assert_eq!(w.slots().att(), 6);
+    assert_eq!(w.slots().att(), 5);
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 7);
     let archer = w.unit(p0, "UNIT_ARCHER", from);
     // The strongest Axeman at 40% HP.
@@ -361,15 +360,15 @@ fn a_wounded_unit_waits_behind_the_healthy_ones_of_its_role() {
     w.g.units[hurt].damage = 60;
     let pool: Vec<UnitId> = axemen.iter().copied().chain([archer]).collect();
     let pick = w.pick(&pool, Side::Attacker);
-    assert!(!pick.contains(&hurt), "five healthy Axemen and the archer");
+    assert!(!pick.contains(&hurt), "four healthy Axemen and the archer");
     assert!(pick.contains(&archer), "one of each role first");
-    assert_eq!(w.count(&pick, "UNIT_AXEMAN"), 5);
+    assert_eq!(w.count(&pick, "UNIT_AXEMAN"), 4);
     // At exactly half its HP it counts as healthy, and its strength makes it its role's first.
     w.g.units[hurt].damage = 50;
     assert!(w.pick(&pool, Side::Attacker).contains(&hurt));
     // With fewer healthy Axemen than the slots, it is taken after them.
     w.g.units[hurt].damage = 60;
-    let pool: Vec<UnitId> = axemen[..5].iter().copied().chain([archer]).collect();
+    let pool: Vec<UnitId> = axemen[..4].iter().copied().chain([archer]).collect();
     let pick = w.pick(&pool, Side::Attacker);
     assert!(pick.contains(&hurt) && pick.contains(&archer));
     // Heroes and veterans are not held back: the strongest is taken first.

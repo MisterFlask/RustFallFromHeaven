@@ -63,7 +63,7 @@ Garrison promotions).
 ## Slots and the grid
 
 **Squads** (the owner's decision, 2026-11-21; docs/ENGAGEMENTS.md, "Squads"): every battle is one
-squad against one squad, 6 places a side on 3 lanes, and the Sentinels cost no place on either side
+squad against one squad, 5 places a side on 3 lanes, and the Sentinels cost no place on either side
 (until then each Sentinel cost both sides a slot). They hold the defender's front cells, the lanes
 nearest the centre first (`engage_sentinel_cells`), on top of its squad; a unit of the defending
 squad whose cell they hold stands in the nearest free cell (its row, then the rows behind, then

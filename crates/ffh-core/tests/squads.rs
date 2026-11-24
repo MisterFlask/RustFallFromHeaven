@@ -69,22 +69,22 @@ impl World {
 fn arrivals_take_their_best_row_or_form_a_squad() {
     let mut w = world();
     let (p0, from) = (w.p0, w.from);
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 2);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 1);
     let archers = w.units(p0, "UNIT_ARCHER", from, 4);
     let all: Vec<UnitId> = axemen.iter().chain(&archers).copied().collect();
     let army = w.g.army_form(p0, &all).expect("an army");
     let sq = w.squads(p0, from);
     assert_eq!(sq.len(), 2, "{sq:?}");
     let (first, second) = (&sq[0].1, &sq[1].1);
-    assert_eq!(first.len(), 5);
-    assert!(axemen.iter().all(|a| first.iter().any(|&(u, c)| u == *a && c / 3 == 0)), "the axemen in front: {first:?}");
+    assert_eq!(first.len(), 4);
+    assert!(axemen.iter().all(|a| first.iter().any(|&(u, c)| u == *a && c / 3 == 0)), "the axeman in front: {first:?}");
     assert_eq!(first.iter().filter(|&&(u, c)| archers.contains(&u) && c / 3 == 1).count(), 3, "three archers in the middle");
     assert_eq!(second.len(), 1, "the fourth archer is a squad of one");
     for (s, _) in &sq {
         assert_eq!(w.g.squads[*s].body, SquadBody::Army(army));
         assert!(!w.g.squads[*s].hand_set);
     }
-    // 6 places fit one squad: the AI's rule sorts them.
+    // 5 places fit one squad: the AI's rule sorts them.
     assert_eq!(w.g.squad_bodies_to_sort(p0), vec![(from, SquadBody::Army(army))]);
 }
 
@@ -95,13 +95,13 @@ fn moves_swaps_and_auto() {
     let mut w = world();
     let (p0, from) = (w.p0, w.from);
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 3);
-    let archers = w.units(p0, "UNIT_ARCHER", from, 4);
+    let archers = w.units(p0, "UNIT_ARCHER", from, 3);
     let all: Vec<UnitId> = axemen.iter().chain(&archers).copied().collect();
     w.g.army_form(p0, &all).expect("an army");
     let sq = w.squads(p0, from);
     let (one, two) = (sq[0].0, sq[1].0);
     let lone = sq[1].1[0].0;
-    // The squad of six is full.
+    // The squad of five is full.
     assert!(w.g.squad_move(p0, lone, SquadDest::Squad(one), Some(7)).is_err(), "squad I has no free place");
     // A swap: the lone archer takes an axeman's front cell; the axeman goes to squad II.
     let ax = axemen[0];
@@ -160,7 +160,7 @@ fn a_squad_split_off_keeps_its_id() {
     let mut w = world();
     let (p0, from) = (w.p0, w.from);
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 3);
-    let archers = w.units(p0, "UNIT_ARCHER", from, 5);
+    let archers = w.units(p0, "UNIT_ARCHER", from, 4);
     let all: Vec<UnitId> = axemen.iter().chain(&archers).copied().collect();
     w.g.army_form(p0, &all).expect("an army");
     let sq = w.squads(p0, from);

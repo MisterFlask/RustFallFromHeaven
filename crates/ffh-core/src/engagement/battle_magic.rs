@@ -323,7 +323,7 @@ mod tests {
         let mut out = [Vec::new(), Vec::new()];
         for (k, (owner, names, at)) in [(PlayerId(0), att, from), (PlayerId(1), def, to)].into_iter().enumerate() {
             let (x, y) = g.map.xy(at);
-            // One army a side, its squads sorted into as few as hold them, so up to six of its
+            // One army a side, its squads sorted into as few as hold them, so up to five of its
             // units fight in one squad (docs/ENGAGEMENTS.md, "Squads"); the units that are no
             // army units (casters, heroes) are made after it and arrive in its squad.
             let types: Vec<UnitType> = names.iter().map(|n| d.t::<UnitType>(n)).collect();

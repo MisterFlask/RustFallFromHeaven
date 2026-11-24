@@ -567,7 +567,7 @@ impl Game {
     /// the same seed (both formations, the plots, the turn), so for a real attack (the attacker's
     /// pool on `from`, no extras) whose strongest squad is the pool's auto formation (one Auto
     /// squad) it is the preview's forecast at the same `runs`. The attackers are taken as one
-    /// force in the auto formation (6 places), not by their squads.
+    /// force in the auto formation (5 places), not by their squads.
     ///
     /// The pool is the attackers that could make the attack: one standing on `from` already as the
     /// real fight picks it ([`Game::unit_can_engage`]: moves and attacks left), any other one if

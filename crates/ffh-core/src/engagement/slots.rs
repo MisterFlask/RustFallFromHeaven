@@ -1,7 +1,7 @@
 //! Engagement slots: how many places each side of an engagement commits.
 //!
 //! Every battle is one squad against one squad (docs/ENGAGEMENTS.md, "Squads"): each side has
-//! `ENGAGEMENT_SQUAD_PLACES` (6) places on a grid of 3 rows by 3 lanes, whatever the ground (the
+//! `ENGAGEMENT_SQUAD_PLACES` (5) places on a grid of 3 rows by 3 lanes, whatever the ground (the
 //! owner's decision, 2026-11-21: frontage is gone; the ground's own rules tell the grounds apart,
 //! `formation::Ground`). A defended city's standing Sentinels (docs/SIEGES.md) stand in the
 //! defender's front row on top of its squad, costing no place ([`Slots::sentinels`]).

@@ -200,7 +200,7 @@ flag.
 
 - **Squads; frontage gone; the ground's own rules** (the owner's decision, 2026-11-21;
   docs/ENGAGEMENTS.md, "Squads" and "The ground"). Every land fighting unit stands in a squad: a
-  grid of 3 rows by 3 lanes holding `ENGAGEMENT_SQUAD_PLACES` (6) places, a large unit 2, kept
+  grid of 3 rows by 3 lanes holding `ENGAGEMENT_SQUAD_PLACES` (5) places, a large unit 2, kept
   between battles. Armies and garrisons are divided into squads, Auto (the auto formation) until
   the player hand-sets one; a new unit joins the first squad with room and a free cell in its best
   row, else forms a squad of one; auto-sort deals chosen squads into as few as hold them. One

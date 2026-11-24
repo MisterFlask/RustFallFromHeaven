@@ -1,5 +1,5 @@
 // Squads (docs/ENGAGEMENTS.md, "Squads"): the squad board and what the strip and the battle plan
-// say of squads. A squad is a grid of 3 rows (front, middle, rear) by 3 lanes holding up to 6
+// say of squads. A squad is a grid of 3 rows (front, middle, rear) by 3 lanes holding up to 5
 // places (a large unit fills two cells side by side and counts 2); one battle is one squad
 // against one squad. The board shows the squads of a plot (the `group` query's `squads`) or of an
 // army (the Armies screen's): drag a unit to a cell (an empty one: it moves; a unit there: the two
@@ -23,7 +23,7 @@ addHelp({
   body: () => [
     h(
       "ul",
-      h("li", "One battle is one squad against one squad. A squad is a grid of 3 rows (front, middle, rear) by 3 lanes and holds up to 6 places. A large unit fills two cells side by side and counts 2."),
+      h("li", "One battle is one squad against one squad. A squad is a grid of 3 rows (front, middle, rear) by 3 lanes and holds up to 5 places. A large unit fills two cells side by side and counts 2."),
       h("li", "An army's units stand in its squads, a garrison's in the garrison's squads. A unit in neither (a hero, a mage, a scout) can stand in any of your squads on its plot."),
       h("li", "Auto: the rules arrange the squad. Moving a unit in or out of a squad makes it Hand-set: its units keep their cells. Auto gives it back to the rules."),
       h("li", "A new unit joins the first squad with room and a free cell in its best row, else forms a squad of its own."),
@@ -181,7 +181,7 @@ export function squadBoard(squads, { unitOf, changed, readOnly = false }) {
           squadName(s),
         ),
         h(`span.sq-badge.${s.auto ? "auto" : "hand"}`, { title: s.auto ? "Arranged by the rules." : "Arranged by hand." }, s.auto ? "Auto" : "Hand-set"),
-        h("span.sq-count", { title: "Places: a large unit counts 2." }, `${s.places}/${s.max_places ?? 6}`),
+        h("span.sq-count", { title: "Places: a large unit counts 2." }, `${s.places}/${s.max_places ?? 5}`),
       ),
       bodies.size > 1 ? h("div.sq-body.dim", s.body) : null,
       h("div.sq-grid", labels, cells, tokens),
@@ -268,7 +268,7 @@ function readOnlyBoard(list, unitOf) {
         h(
           "div.sq-card",
           { "data-squad": s.id },
-          h("div.sq-head", h("span.sq-name", squadName(s)), h("span.sq-count", { title: "Places: a large unit counts 2." }, `${s.places}/${s.max_places ?? 6}`)),
+          h("div.sq-head", h("span.sq-name", squadName(s)), h("span.sq-count", { title: "Places: a large unit counts 2." }, `${s.places}/${s.max_places ?? 5}`)),
           bodies.size > 1 ? h("div.sq-body.dim", s.body) : null,
           readOnlyGrid(s, unitOf),
         ),
