@@ -40986,5 +40986,913 @@
   "gen_size": "1024x1024",
   "quality": "medium",
   "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_trebuchet": {
+  "kind": "unit",
+  "file": "roster/units/unit_trebuchet.png",
+  "size": [
+   99,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_trebuchet.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 92,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_battlemaster": {
+  "kind": "unit",
+  "file": "roster/units/unit_battlemaster.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": true,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_swordsman.png"
+  ],
+  "prompt": "prompts/assets/unit_battlemaster.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 90,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_boarding_party": {
+  "kind": "unit",
+  "file": "roster/units/unit_boarding_party.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": true,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_swordsman.png"
+  ],
+  "prompt": "prompts/assets/unit_boarding_party.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_dragon_slayer": {
+  "kind": "unit",
+  "file": "roster/units/unit_dragon_slayer.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_swordsman.png"
+  ],
+  "prompt": "prompts/assets/unit_dragon_slayer.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 88,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_iron_golem": {
+  "kind": "unit",
+  "file": "roster/units/unit_iron_golem.png",
+  "size": [
+   109,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": true,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_iron_golem.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 112,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_mimic": {
+  "kind": "unit",
+  "file": "roster/units/unit_mimic.png",
+  "size": [
+   100,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_mimic.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_ogre": {
+  "kind": "unit",
+  "file": "roster/units/unit_ogre.png",
+  "size": [
+   117,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": true,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_ogre.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 110,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_vampire": {
+  "kind": "unit",
+  "file": "roster/units/unit_vampire.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": true,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_swordsman.png"
+  ],
+  "prompt": "prompts/assets/unit_vampire.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 88,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_chariot_scorpion_clan": {
+  "kind": "unit",
+  "file": "roster/units/unit_chariot_scorpion_clan.png",
+  "size": [
+   97,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_horseman.png"
+  ],
+  "prompt": "prompts/assets/unit_chariot_scorpion_clan.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 84,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_decius": {
+  "kind": "unit",
+  "file": "roster/units/unit_decius.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_swordsman.png"
+  ],
+  "prompt": "prompts/assets/unit_decius.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 88,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_flurry": {
+  "kind": "unit",
+  "file": "roster/units/unit_flurry.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_archer.png"
+  ],
+  "prompt": "prompts/assets/unit_flurry.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 88,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_dwarven_druid": {
+  "kind": "unit",
+  "file": "roster/units/unit_dwarven_druid.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": true,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_dwarven_druid.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 80,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_lizardman_druid": {
+  "kind": "unit",
+  "file": "roster/units/unit_lizardman_druid.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_lizardman_druid.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 90,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_luonnotar": {
+  "kind": "unit",
+  "file": "roster/units/unit_luonnotar.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": true,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_luonnotar.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 90,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_eye": {
+  "kind": "unit",
+  "file": "roster/units/unit_eye.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_eye.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 66,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_fireball": {
+  "kind": "unit",
+  "file": "roster/units/unit_fireball.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_fireball.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 64,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_guardian_vines": {
+  "kind": "unit",
+  "file": "roster/units/unit_guardian_vines.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_guardian_vines.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 92,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_wolf_rider_scorpion_clan": {
+  "kind": "unit",
+  "file": "roster/units/unit_wolf_rider_scorpion_clan.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_horseman.png"
+  ],
+  "prompt": "prompts/assets/unit_wolf_rider_scorpion_clan.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_equipment_scorched_staff": {
+  "kind": "unit",
+  "file": "roster/units/unit_equipment_scorched_staff.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_equipment_scorched_staff.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 66,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_equipment_staff_of_souls": {
+  "kind": "unit",
+  "file": "roster/units/unit_equipment_staff_of_souls.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_equipment_staff_of_souls.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 52,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_equipment_sylivens_perfect_lyre": {
+  "kind": "unit",
+  "file": "roster/units/unit_equipment_sylivens_perfect_lyre.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_equipment_sylivens_perfect_lyre.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 52,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_equipment_timor_mask": {
+  "kind": "unit",
+  "file": "roster/units/unit_equipment_timor_mask.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_equipment_timor_mask.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 52,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_equipment_treasure": {
+  "kind": "unit",
+  "file": "roster/units/unit_equipment_treasure.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_equipment_treasure.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 52,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_equipment_war": {
+  "kind": "unit",
+  "file": "roster/units/unit_equipment_war.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_equipment_war.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 70,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_skirmisher": {
+  "kind": "unit",
+  "file": "roster/units/unit_skirmisher.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_skirmisher.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 84,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_archer_scorpion_clan": {
+  "kind": "unit",
+  "file": "roster/units/unit_archer_scorpion_clan.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_archer_scorpion_clan.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 66,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_dwarven_slinger": {
+  "kind": "unit",
+  "file": "roster/units/unit_dwarven_slinger.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_dwarven_slinger.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 72,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_javelin_thrower": {
+  "kind": "unit",
+  "file": "roster/units/unit_javelin_thrower.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_javelin_thrower.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_eater_of_dreams": {
+  "kind": "unit",
+  "file": "roster/units/unit_eater_of_dreams.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_eater_of_dreams.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 92,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_chanter": {
+  "kind": "unit",
+  "file": "roster/units/unit_chanter.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_chanter.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_devout": {
+  "kind": "unit",
+  "file": "roster/units/unit_devout.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_devout.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_ghost": {
+  "kind": "unit",
+  "file": "roster/units/unit_ghost.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_ghost.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_lizardman_assassin": {
+  "kind": "unit",
+  "file": "roster/units/unit_lizardman_assassin.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_lizardman_assassin.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 88,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_taskmaster": {
+  "kind": "unit",
+  "file": "roster/units/unit_taskmaster.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_taskmaster.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 90,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_polar_bear": {
+  "kind": "unit",
+  "file": "roster/units/unit_polar_bear.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_polar_bear.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 66,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_brigit_held": {
+  "kind": "unit",
+  "file": "roster/units/unit_brigit_held.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_brigit_held.txt",
+  "accepted": "2026-11-24 03:54",
+  "height": 96,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
  }
 }
