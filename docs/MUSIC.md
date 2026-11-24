@@ -229,6 +229,8 @@ against the dry sound; "speed" is the piece's length over the time the render to
 | Banners | -20.8 | 0.53 | -21.2, -20.2 | -39.2 | 1343 | 25x |
 
 - No NaN and no sample above 0.8 in any piece, in the first playing or the second.
+- At 48 kHz the four new pieces read within 0.3 dB of the above, with no NaN and no sample above
+  0.8 (peaks 0.51 to 0.72).
 - Two playings back to back on one orchestra, handed out by the `Conductor`: each reads as it does
   alone (within 0.2 dB), the silence between them is silent (-67 dB or less) where the piece has
   one, and Onslaught, which has none, runs through its seam with no NaN and a peak of 0.74.
