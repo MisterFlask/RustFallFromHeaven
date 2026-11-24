@@ -950,7 +950,10 @@ function buildLists(c, choose) {
           // chip's hover or tap); a world ritual's rules line (its own facts: what it leaves, the
           // next cost), its own state (The Tithe's named rival), and why it cannot be chosen now.
           const ritual = b.ritual ?? null;
-          const why = !b.enabled ? (ritual?.why ?? b.why ?? "Not possible now.") : null;
+          // Why a disabled entry cannot be started: the rules' own refusal (the server's `why`).
+          const why = !b.enabled ? (ritual?.why ?? b.why ?? null) : null;
+          // What a click does (none on a disabled entry).
+          const click = !b.enabled ? null : locked ? "Click: empire order, ahead of the governor's choice." : "Click: build now. Shift: add to the queue. Ctrl: put first.";
           return h(
             `button.build${ritual ? ".ritual-build" : ""}`,
             {
@@ -958,7 +961,7 @@ function buildLists(c, choose) {
               "data-order": order,
               "data-type": b.type,
               // The House perk's parts: its production modifier, a unit's experience.
-              tip: infoTip(kind, b.type, { extra: houseLines(b.house, b.house_xp), hint: [tierHint(b), nationalHint(b), why ?? (locked ? "Click: empire order, ahead of the governor's choice." : "Click: build now. Shift: add to the queue. Ctrl: put first.")].filter(Boolean).join(" ") }),
+              tip: infoTip(kind, b.type, { extra: houseLines(b.house, b.house_xp), hint: [tierHint(b), nationalHint(b), why ?? click].filter(Boolean).join(" ") }),
               onclick: (ev) => choose(order, b.type, ev),
             },
             isoSkin() ? buildIcon(order, b.type) : null,

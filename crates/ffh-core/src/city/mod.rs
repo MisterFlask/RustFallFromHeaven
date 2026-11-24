@@ -14,6 +14,7 @@
 //! - [`buildings`]: buildings, bonuses, corporations, power, defense, maintenance.
 //! - [`yields_culture`]: yields, commerce, trade routes, culture, religion, rank caches,
 //!   owner/location helpers (`city_team`, `city_plot`, ...).
+//! - [`refusal`]: why the build checks refuse (the first failing check of each gate).
 //!
 //! Method naming (C++ -> Rust): `getFoo` -> `city_foo`, `isFoo` -> `city_is_foo`,
 //! `setFoo`/`changeFoo`/`canFoo`/`doFoo` keep their verb; overloads get a suffix naming the
@@ -32,6 +33,7 @@ use ffh_data::*;
 pub mod buildings;
 pub mod citizens;
 pub mod production;
+pub mod refusal;
 pub mod tiers;
 pub mod specialties;
 pub mod siege;

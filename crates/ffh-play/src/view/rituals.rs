@@ -166,32 +166,11 @@ pub fn ritual_needs_tech(g: &Game, c: CityId, project: ProjectType) -> Option<Te
 }
 
 /// Why city `c` cannot start world ritual `project` now (the production list shows it disabled
-/// with this): `Requires <tech>.`, `Cast pending: cast <spell> first.`, `In progress in <city>.`, `Sanctuary holds: <N>
-/// turns.`, `No rival named: use Name the Tithe.` (Ritual: The Tithe), else `Not available now.`
-/// (a reason of the rules this list does not know).
-pub fn cannot_reason(g: &Game, c: CityId, project: ProjectType) -> String {
-    let d = g.d;
-    let p = g.cities[c].owner;
-    if let Some(t) = ritual_needs_tech(g, c, project) {
-        return format!("Requires {}.", crate::names::display(d, t));
-    }
-    if g.player_world_ritual_pending(p, project) {
-        if let Some(s) = g.world_ritual_spell(project) {
-            return format!("Cast pending: cast {} first.", crate::names::display(d, s));
-        }
-    }
-    if let Some(o) = g.player_world_ritual_city(p, project).filter(|&o| o != c) {
-        return format!("In progress in {}.", city_name(g, o));
-    }
-    if g.player_world_ritual_paused(p, project) {
-        return format!("Sanctuary holds: {}.", turns_text(g.players[p].sanctuary_timer));
-    }
-    if is_tithe(g, project) && tithe_named(g, p).is_none() {
-        if let Some(s) = d.ty::<SpellType>("SPELL_NAME_THE_TITHE") {
-            return format!("No rival named: use {}.", crate::names::display(d, s));
-        }
-    }
-    "Not available now.".to_string()
+/// with this), `None` when it can: the rules' refusal ([`crate::view::refusal`]), e.g.
+/// `Requires <tech>.`, `Cast pending: cast <spell> first.`, `In progress in <city>.`, `Sanctuary
+/// holds: <N> turns.`, `No rival named: use Name the Tithe.` (Ritual: The Tithe).
+pub fn cannot_reason(g: &Game, c: CityId, project: ProjectType) -> Option<String> {
+    g.city_create_refusal(c, project, false, false).map(|r| crate::view::refusal::create_refusal_text(g, c, project, r))
 }
 
 /// A ritual's entry of the production list (`buildable`; every project is a ritual, ffh-core's
@@ -214,7 +193,7 @@ pub fn buildable_fields(g: &Game, c: CityId, project: ProjectType, enabled: bool
         "ritual",
         crate::jobj! {
             "rules" => rules_line(g, c, project),
-            "why" => if enabled { Json::Null } else { Json::from(cannot_reason(g, c, project)) },
+            "why" => if enabled { None } else { cannot_reason(g, c, project) },
             "note" => note,
             "reminders" => reminders,
         },

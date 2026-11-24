@@ -17,9 +17,10 @@ fn all<I: Idx>(n: usize) -> impl Iterator<Item = I> {
 
 /// The buildable list: units, buildings, projects and processes the city screen shows
 /// (`canTrain/canConstruct/canCreate(.., bTestVisible = true)`), `enabled` when they can be
-/// started now, with cost (production needed) and turns. A governed city (docs/GOVERNORS.md)
-/// lists only what may be an empire order, `enabled` when the city can take it as one now (the
-/// governor builds the rest).
+/// started now, with cost (production needed) and turns, and `why` an entry is not enabled (the
+/// rules' refusal, [`crate::view::refusal`]; null when enabled). A governed city
+/// (docs/GOVERNORS.md) lists only what may be an empire order, `enabled` when the city can take
+/// it as one now (the governor builds the rest).
 pub fn buildable(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
     let d = g.d;
@@ -28,9 +29,11 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
     let mut out = Vec::new();
     for u in d.units.keys() {
         if g.city_offers_unit(c, u) && g.city_can_train(c, u, false, true, false, false) {
+            let refusal = g.city_train_refusal(c, u, false, false, false, false);
             let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_TRAIN), "type" => Json::idx(u),
-                "enabled" => g.city_can_train(c, u, false, false, false, false),
+                "enabled" => refusal.is_none(),
+                "why" => refusal.map(|r| crate::view::refusal::train_refusal_text(g, c, u, r)),
                 "cost" => g.city_production_needed_unit(c, u), "turns" => g.city_production_turns_left_unit(c, u, 0),
                 // The House perk's parts of its production modifier and experience.
                 "house" => house_part(g, c, g.city_house_unit_production_modifier(c, u), "", "%"),
@@ -42,9 +45,11 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
     }
     for b in d.buildings.keys() {
         if empire(OrderType::ORDER_CONSTRUCT, b.idx()) && g.city_can_construct(c, b, false, true, false) {
+            let refusal = g.city_construct_refusal(c, b, false, false, false);
             let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_CONSTRUCT), "type" => Json::idx(b),
-                "enabled" => g.city_can_construct(c, b, false, false, false),
+                "enabled" => refusal.is_none(),
+                "why" => refusal.map(|r| crate::view::refusal::construct_refusal_text(g, c, b, r)),
                 "cost" => g.city_production_needed_building(c, b), "turns" => g.city_production_turns_left_building(c, b, 0),
                 "house" => house_part(g, c, g.city_house_building_production_modifier(c, b), "", "%"),
             };
@@ -54,10 +59,12 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
     }
     for p in d.projects.keys() {
         if g.city_can_create(c, p, false, true) || crate::view::rituals::ritual_needs_tech(g, c, p).is_some() {
-            let enabled = g.city_can_create(c, p, false, false);
+            let refusal = g.city_create_refusal(c, p, false, false);
+            let enabled = refusal.is_none();
             let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_CREATE), "type" => Json::idx(p),
                 "enabled" => enabled,
+                "why" => refusal.map(|r| crate::view::refusal::create_refusal_text(g, c, p, r)),
                 "cost" => g.city_production_needed_project(c, p), "turns" => g.city_production_turns_left_project(c, p, 0),
                 "house" => house_part(g, c, g.city_house_project_production_modifier(c, p), "", "%"),
             };

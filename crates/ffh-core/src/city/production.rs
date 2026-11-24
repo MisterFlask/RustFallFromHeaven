@@ -3,6 +3,7 @@
 //!
 //! The build queue itself (`pushOrder`/`popOrder`, `doProduction`, ...) is in `turn.rs`.
 
+use crate::city::refusal::*;
 use crate::city::specialties::*;
 
 use super::{ai_choose_production, building_class_of, order_type_data, unit_class_of, unit_domain_of};
@@ -143,21 +144,26 @@ impl Game {
         d.units[unit].unit_class_type.is_some_and(|class| d.civ_unit(self.city_civilization_type(c), class) == Some(unit)) || self.city_legion_unit_civ(c, unit).is_some()
     }
 
-    /// C++ `CvCity::canTrain(UnitTypes, ...)` (CvCity.cpp:1832-1850). FFH: min level and
-    /// outpost check, then `canUpgrade`. (C++ returns false for `NO_UNIT`; callers holding
-    /// an `Option` check it first.)
+    /// C++ `CvCity::canTrain(UnitTypes, ...)` (CvCity.cpp:1832-1850): [`Game::city_train_refusal`]
+    /// is none. (C++ returns false for `NO_UNIT`; callers holding an `Option` check it first.)
     pub fn city_can_train(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool) -> bool {
+        self.city_train_refusal(c, unit, cont, test_visible, ignore_cost, ignore_upgrades).is_none()
+    }
+
+    /// Why city `c` cannot train `unit` (the first check of `canTrain` that fails), `None` when it
+    /// can. FFH: min level and outpost check, then `canUpgrade`.
+    pub fn city_train_refusal(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool) -> Option<TrainRefusal> {
         let min_level = self.d.units[unit].min_level;
         if min_level > 0 {
-            return false;
+            return Some(TrainRefusal::MinLevel(min_level));
         }
         if self.cities[c].outpost {
-            return false;
+            return Some(TrainRefusal::Outpost);
         }
         // Card: the Gilded Legion (docs/CARDS.md): its city trains the chosen civilization's units
         // for each class as that civilization's city would (`ffh::cards::battle_more`).
         if let Some(civ) = self.city_legion_unit_civ(c, unit) {
-            return self.city_can_upgrade_as(c, unit, cont, test_visible, ignore_cost, ignore_upgrades, Some(civ));
+            return self.city_upgrade_refusal_as(c, unit, cont, test_visible, ignore_cost, ignore_upgrades, Some(civ));
         }
         // Changed from FFH2: `canUpgrade` checks a unit with `UpgradeCiv` only against that
         // civilization's line, so that a Centaur in anyone's hands upgrades to a Centaur Archer.
@@ -169,28 +175,34 @@ impl Game {
             let class = unit_class_of(d, unit);
             let owner_civ = self.player_get_civilization_type(self.cities[c].owner);
             if d.civ_unit(self.city_civilization_type(c), class) != Some(unit) && owner_civ.and_then(|civ| d.civ_unit(civ, class)) != Some(unit) {
-                return false;
+                return Some(TrainRefusal::UpgradeCivUnit);
             }
         }
-        self.city_can_upgrade(c, unit, cont, test_visible, ignore_cost, ignore_upgrades)
+        self.city_upgrade_refusal_as(c, unit, cont, test_visible, ignore_cost, ignore_upgrades, None)
     }
 
     /// C++ `CvCity::canUpgrade` (CvCity.cpp:1852-1968): the BTS `canTrain` body (Python
     /// `canTrain`/`cannotTrain` callbacks, player/plot checks, FFH civ/world-unit rules).
     pub fn city_can_upgrade(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool) -> bool {
-        self.city_can_upgrade_as(c, unit, cont, test_visible, ignore_cost, ignore_upgrades, None)
+        self.city_upgrade_refusal_as(c, unit, cont, test_visible, ignore_cost, ignore_upgrades, None).is_none()
     }
 
     /// [`Game::city_can_upgrade`] for city `c` as a city of civilization `civ` (card: the Gilded
     /// Legion's; `None`: its own, `city_civilization_type`).
     #[allow(clippy::too_many_arguments)]
     pub fn city_can_upgrade_as(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool, civ: Option<CivilizationType>) -> bool {
+        self.city_upgrade_refusal_as(c, unit, cont, test_visible, ignore_cost, ignore_upgrades, civ).is_none()
+    }
+
+    /// Why [`Game::city_can_upgrade_as`] refuses (its first failing check), `None` when it allows.
+    #[allow(clippy::too_many_arguments)]
+    pub fn city_upgrade_refusal_as(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool, civ: Option<CivilizationType>) -> Option<TrainRefusal> {
         let d = self.d;
         let city_civ = civ.unwrap_or_else(|| self.city_civilization_type(c));
         let owner = self.cities[c].owner;
 
         if d.defines.use_can_train_callback != 0 && py_can_train(self, c, unit, cont, test_visible, ignore_cost, ignore_upgrades) {
-            return true;
+            return None;
         }
 
         // Card: the Beast Market, the Elemental Foundry (docs/CARDS.md): a building of the city
@@ -198,63 +210,66 @@ impl Game {
         let trained = self.city_train_unit_entry(c, unit);
         if let Some(bonus) = trained.and_then(|t| t.bonus) {
             if !test_visible && !self.city_has_bonus(c, bonus) {
-                return false;
+                return Some(TrainRefusal::Bonus(bonus));
             }
         }
 
-        if !self.player_can_train(owner, unit, cont, test_visible, ignore_cost || trained.is_some()) {
-            return false;
+        if let Some(r) = self.player_train_refusal(owner, unit, cont, test_visible, ignore_cost || trained.is_some()) {
+            return Some(TrainRefusal::Player(r));
         }
 
         if !ignore_upgrades
-            && self.city_all_upgrades_available(c, unit, 0).is_some()
             // FfH: Added by Kael 08/04/2007
             && !d.units[unit].never_obsolete
         {
-            return false;
+            if let Some(upgrade) = self.city_all_upgrades_available(c, unit, 0) {
+                return Some(TrainRefusal::Upgrade(upgrade));
+            }
         }
 
-        if !self.plot_can_train(self.city_plot(c), unit, cont, test_visible) {
-            return false;
+        if let Some(r) = self.plot_train_refusal(self.city_plot(c), unit, cont, test_visible) {
+            return Some(TrainRefusal::Plot(r));
         }
 
         // FfH: Added by Kael 09/26/2007
         let info = &d.units[unit];
         if let Some(prereq_civ) = info.prereq_civ {
             if prereq_civ != city_civ {
-                return false;
+                return Some(TrainRefusal::PrereqCiv(prereq_civ));
             }
         }
         if self.is_option(GameOptionType::GAMEOPTION_NO_SETTLERS) && info.found {
-            return false;
+            return Some(TrainRefusal::GameOption(GameOptionType::GAMEOPTION_NO_SETTLERS));
         }
         let unit_class = unit_class_of(d, unit);
         let owner_civ_unit = self.player_get_civilization_type(owner).and_then(|civ| d.civ_unit(civ, unit_class));
         if is_world_unit_class(d, unit_class) {
             if owner_civ_unit != Some(unit) {
-                return false;
+                return Some(TrainRefusal::WorldUnitNotOwnCiv);
             }
         } else {
             match info.upgrade_civ {
                 None => {
                     if !(d.civ_unit(city_civ, unit_class) == Some(unit) || owner_civ_unit == Some(unit)) {
-                        return false;
+                        return Some(TrainRefusal::NotCivUnit);
                     }
                 }
                 Some(upgrade_civ) => {
                     if d.civ_unit(upgrade_civ, unit_class) != Some(unit) {
-                        return false;
+                        return Some(TrainRefusal::NotUpgradeCivUnit);
                     }
                 }
             }
         }
         // FfH: End Add
 
-        if d.defines.use_cannot_train_callback != 0 && self.py_cannot_train(c, unit, cont, test_visible, ignore_cost, ignore_upgrades) {
-            return false;
+        if d.defines.use_cannot_train_callback != 0 {
+            if let Some(r) = self.py_train_refusal(c, unit, cont, test_visible, ignore_cost, ignore_upgrades) {
+                return Some(TrainRefusal::Py(r));
+            }
         }
 
-        true
+        None
     }
 
     /// C++ `CvCity::canTrain(UnitCombatTypes)` (CvCity.cpp:1970-1989).
@@ -270,9 +285,15 @@ impl Game {
         false
     }
 
-    /// C++ `CvCity::canConstruct` (CvCity.cpp:1992-2309). Python `canConstruct` /
-    /// `cannotConstruct` callbacks. (C++ returns false for `NO_BUILDING`.)
+    /// C++ `CvCity::canConstruct` (CvCity.cpp:1992-2309): [`Game::city_construct_refusal`] is
+    /// none. (C++ returns false for `NO_BUILDING`.)
     pub fn city_can_construct(&self, c: CityId, building: BuildingType, cont: bool, test_visible: bool, ignore_cost: bool) -> bool {
+        self.city_construct_refusal(c, building, cont, test_visible, ignore_cost).is_none()
+    }
+
+    /// Why city `c` cannot construct `building` (the first check of `canConstruct` that fails),
+    /// `None` when it can. Python `canConstruct` / `cannotConstruct` callbacks.
+    pub fn city_construct_refusal(&self, c: CityId, building: BuildingType, cont: bool, test_visible: bool, ignore_cost: bool) -> Option<ConstructRefusal> {
         let d = self.d;
         let defines = &d.defines;
         let city = &self.cities[c];
@@ -281,140 +302,146 @@ impl Game {
 
         // FfH: Modified by Kael 08/24/2007
         if city.outpost {
-            return false;
+            return Some(ConstructRefusal::Outpost);
         }
 
         // This game's building suitability (docs/SUITABILITY.md): only the city's own tier.
         if !self.city_is_own_tier(c, building) {
-            return false;
+            return Some(ConstructRefusal::OtherTier);
         }
 
         if defines.use_can_construct_callback != 0 && py_can_construct(self, c, building, cont, test_visible, ignore_cost) {
-            return true;
+            return None;
         }
 
-        if !self.player_can_construct(owner, building, cont, test_visible, ignore_cost) {
-            return false;
+        if let Some(r) = self.player_construct_refusal(owner, building, cont, test_visible, ignore_cost) {
+            return Some(ConstructRefusal::Player(r));
         }
 
-        if self.city_num_building(c, building) >= defines.city_max_num_buildings {
-            return false;
+        let have = self.city_num_building(c, building);
+        if have >= defines.city_max_num_buildings {
+            return Some(ConstructRefusal::Built { have, max: defines.city_max_num_buildings });
         }
 
         if info.is_prereq_religion && self.city_religion_count(c) > 0 {
-            return false;
+            return Some(ConstructRefusal::ReligionPresent { have: self.city_religion_count(c) });
         }
 
         if info.is_state_religion {
             match self.player_get_state_religion(owner) {
                 Some(state_religion) if city.has_religion[state_religion] => {}
-                _ => return false,
+                state_religion => return Some(ConstructRefusal::StateReligion(state_religion)),
             }
         }
 
         if let Some(religion) = info.prereq_religion {
             if !city.has_religion[religion] {
-                return false;
+                return Some(ConstructRefusal::Religion(religion));
             }
         }
 
         if let Some(corporation) = info.prereq_corporation {
             if !city.has_corporation[corporation] {
-                return false;
+                return Some(ConstructRefusal::Corporation(corporation));
             }
         }
 
         if let Some(corporation) = info.founds_corporation {
             if self.is_corporation_founded(corporation) {
-                return false;
+                return Some(ConstructRefusal::Corporation(corporation));
             }
 
             for loop_corporation in d.corporations.keys() {
                 if self.city_is_headquarters(c, loop_corporation) && self.is_competing_corporation(loop_corporation, corporation) {
-                    return false;
+                    return Some(ConstructRefusal::Corporation(corporation));
                 }
             }
         }
 
-        if !self.city_is_valid_building_location(c, building) {
-            return false;
+        if let Some(r) = self.city_building_location_refusal(c, building) {
+            return Some(ConstructRefusal::Location(r));
         }
 
         // Card: Elemental Forge (docs/CARDS.md): a building of an exclusive class excludes it.
-        if info.exclusive_with.iter().any(|&k| self.city_is_has_building_class(c, k)) {
-            return false;
+        if let Some(&k) = info.exclusive_with.iter().find(|&&k| self.city_is_has_building_class(c, k)) {
+            return Some(ConstructRefusal::Exclusive(k));
         }
 
         if info.government_center && self.city_is_government_center(c) {
-            return false;
+            return Some(ConstructRefusal::GovernmentCenter);
         }
 
         if !test_visible {
             if !cont && self.city_first_building_order(c, building).is_some() {
-                return false;
+                return Some(ConstructRefusal::InQueue);
             }
 
             let building_class = building_class_of(d, building);
             if !d.building_classes[building_class].no_limit {
                 if is_world_wonder_class(d, building_class) {
                     if self.city_is_world_wonders_maxed(c) {
-                        return false;
+                        return Some(ConstructRefusal::WorldWonders { have: city.num_world_wonders, max: defines.max_world_wonders_per_city });
                     }
                 } else if is_team_wonder_class(d, building_class) {
                     if self.city_is_team_wonders_maxed(c) {
-                        return false;
+                        return Some(ConstructRefusal::TeamWonders { have: city.num_team_wonders, max: defines.max_team_wonders_per_city });
                     }
                 } else if is_national_wonder_class(d, building_class) {
                     if self.city_is_national_wonders_maxed(c) {
-                        return false;
+                        let max = if self.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && self.city_is_human(c) {
+                            defines.max_national_wonders_per_city_for_occ
+                        } else {
+                            defines.max_national_wonders_per_city
+                        };
+                        return Some(ConstructRefusal::NationalWonders { have: city.num_national_wonders, max });
                     }
                 } else if self.city_is_buildings_maxed(c) {
-                    return false;
+                    return Some(ConstructRefusal::Buildings { have: city.num_buildings, max: defines.max_buildings_per_city });
                 }
             }
 
             if let Some(religion) = info.holy_city {
                 if !self.city_is_holy_city(c, religion) {
-                    return false;
+                    return Some(ConstructRefusal::HolyCity(religion));
                 }
             }
 
             if let Some(bonus) = info.prereq_and_bonus {
                 if !self.city_has_bonus(c, bonus) {
-                    return false;
+                    return Some(ConstructRefusal::Bonus(bonus));
                 }
             }
 
             if let Some(corporation) = info.founds_corporation {
                 if self.is_corporation_founded(corporation) {
-                    return false;
+                    return Some(ConstructRefusal::Corporation(corporation));
                 }
 
                 if self.player_is_no_corporations(owner) {
-                    return false;
+                    return Some(ConstructRefusal::Corporation(corporation));
                 }
 
                 let num_prereq_bonuses = defines.num_corporation_prereq_bonuses.max(0) as usize;
                 let valid = d.corporations[corporation].prereq_bonus.iter().take(num_prereq_bonuses).any(|&bonus| self.city_has_bonus(c, bonus));
                 if !valid {
-                    return false;
+                    return Some(ConstructRefusal::Corporation(corporation));
                 }
             }
 
             let plot = self.city_plot(c);
             if self.plot_get_latitude(plot) > info.max_latitude {
-                return false;
+                return Some(ConstructRefusal::MaxLatitude { have: self.plot_get_latitude(plot), max: info.max_latitude });
             }
 
             if self.plot_get_latitude(plot) < info.min_latitude {
-                return false;
+                return Some(ConstructRefusal::MinLatitude { have: self.plot_get_latitude(plot), min: info.min_latitude });
             }
 
             // FfH: Modified by Kael 08/24/2007 (the buildings' OR bonus requirements are AND
             // requirements)
             for bonus in info.prereq_or_bonuses.iter().flatten() {
                 if !self.city_has_bonus(c, *bonus) {
-                    return false;
+                    return Some(ConstructRefusal::OrBonus(*bonus));
                 }
             }
 
@@ -422,7 +449,7 @@ impl Game {
                 if info.building_class_needed_in_city[loop_class] {
                     if let Some(prereq_building) = d.civ_building(self.city_civilization_type(c), loop_class) {
                         if self.city_num_family(c, prereq_building) == 0 {
-                            return false;
+                            return Some(ConstructRefusal::Building(prereq_building));
                         }
                     }
                 }
@@ -432,62 +459,70 @@ impl Game {
         // FfH: Added by Kael 08/04/2007
         if let Some(prereq_civ) = info.prereq_civ {
             if prereq_civ != self.city_civilization_type(c) {
-                return false;
+                return Some(ConstructRefusal::PrereqCiv(prereq_civ));
             }
         }
 
         if let Some(prereq_trait) = info.prereq_trait {
             if !self.city_has_trait(c, prereq_trait) {
-                return false;
+                return Some(ConstructRefusal::Trait(prereq_trait));
             }
         }
         if info.plot_radius != 0 && info.plot_radius == city.plot_radius {
-            return false;
+            return Some(ConstructRefusal::PlotRadius(info.plot_radius));
         }
         let building_class = building_class_of(d, building);
         if !d.civ_building(self.city_civilization_type(c), building_class).is_some_and(|b| d.same_building(b, building)) {
-            return false;
+            return Some(ConstructRefusal::NotCivBuilding);
         }
         // FfH: End Add
 
-        if defines.use_cannot_construct_callback != 0 && self.py_cannot_construct(c, building, cont, test_visible, ignore_cost) {
-            return false;
+        if defines.use_cannot_construct_callback != 0 {
+            if let Some(r) = self.py_construct_refusal(c, building, cont, test_visible, ignore_cost) {
+                return Some(ConstructRefusal::Py(r));
+            }
         }
 
-        true
+        None
     }
 
-    /// C++ `CvCity::canCreate` (CvCity.cpp:2312-2374). Python `canCreate`/`cannotCreate`.
+    /// C++ `CvCity::canCreate` (CvCity.cpp:2312-2374): [`Game::city_create_refusal`] is none.
     pub fn city_can_create(&self, c: CityId, project: ProjectType, cont: bool, test_visible: bool) -> bool {
+        self.city_create_refusal(c, project, cont, test_visible).is_none()
+    }
+
+    /// Why city `c` cannot create `project` (the first check of `canCreate` that fails), `None`
+    /// when it can. Python `canCreate`/`cannotCreate`.
+    pub fn city_create_refusal(&self, c: CityId, project: ProjectType, cont: bool, test_visible: bool) -> Option<CreateRefusal> {
         let info = &self.d.projects[project];
 
         // FfH: Added by Kael 04/11/2008
         if self.cities[c].outpost {
-            return false;
+            return Some(CreateRefusal::Outpost);
         }
         if let Some(prereq_civ) = info.prereq_civilization {
             if prereq_civ != self.city_civilization_type(c) {
-                return false;
+                return Some(CreateRefusal::PrereqCiv(prereq_civ));
             }
         }
         if info.prereq_global_counter != 0 && info.prereq_global_counter > self.get_global_counter() {
-            return false;
+            return Some(CreateRefusal::GlobalCounter { have: self.get_global_counter(), need: info.prereq_global_counter });
         }
         // FfH: End Add
 
         if py_can_create(self, c, project, cont, test_visible) {
-            return true;
+            return None;
         }
 
-        if !self.player_can_create(self.cities[c].owner, project, cont, test_visible) {
-            return false;
+        if let Some(r) = self.player_create_refusal(self.cities[c].owner, project, cont, test_visible) {
+            return Some(CreateRefusal::Player(r));
         }
 
-        if self.py_cannot_create(c, project, cont, test_visible) {
-            return false;
+        if let Some(r) = self.py_create_refusal(c, project, cont, test_visible) {
+            return Some(CreateRefusal::Py(r));
         }
 
-        true
+        None
     }
 
     /// C++ `CvCity::canMaintain` (CvCity.cpp:2377-2419). Python `canMaintain`/`cannotMaintain`.

@@ -83,24 +83,37 @@ fn creates(order: &crate::structs::OrderData, project: ProjectType) -> bool {
 /// while another city of the owner has it queued, and the Sanctuary's while the Sanctuary holds.
 /// Birthright Regained before the owner has completed its world ritual (net of refunds).
 pub fn cannot_create(g: &Game, c: CityId, project: ProjectType, test_visible: bool) -> bool {
+    create_refusal(g, c, project, test_visible).is_some()
+}
+
+/// Why [`cannot_create`] refuses (`None`: it does not).
+pub fn create_refusal(g: &Game, c: CityId, project: ProjectType, test_visible: bool) -> Option<crate::city::refusal::PyCreateRefusal> {
+    use crate::city::refusal::PyCreateRefusal;
     let d = g.d;
     let p = g.cities[c].owner;
     if d.ty::<ProjectType>("PROJECT_BIRTHRIGHT_REGAINED") == Some(project) {
-        return g.player_world_ritual_net_completions(p) < 1;
+        return (g.player_world_ritual_net_completions(p) < 1).then_some(PyCreateRefusal::NoRitualCompleted);
     }
     if !d.projects[project].world_ritual {
-        return false;
+        return None;
     }
     if g.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) {
-        return true;
+        return Some(PyCreateRefusal::GameOption(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS));
     }
     if test_visible {
-        return false;
+        return None;
     }
-    if g.players[p].world_ritual_pending == Some(project) || g.player_world_ritual_paused(p, project) {
-        return true;
+    if g.players[p].world_ritual_pending == Some(project) {
+        return Some(PyCreateRefusal::CastPending);
     }
-    g.players[p].cities.iter().any(|&o| o != c && g.cities.contains(o) && g.cities[o].order_queue.iter().any(|q| creates(q, project)))
+    if g.player_world_ritual_paused(p, project) {
+        return Some(PyCreateRefusal::SanctuaryHolds);
+    }
+    g.players[p]
+        .cities
+        .iter()
+        .find(|&&o| o != c && g.cities.contains(o) && g.cities[o].order_queue.iter().any(|q| creates(q, project)))
+        .map(|&o| PyCreateRefusal::InQueueElsewhere(o))
 }
 
 /// At the completion of a world ritual in city `c` (`ev_project_built`): the owner's count, the

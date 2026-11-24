@@ -2,6 +2,7 @@
 //! `PUF_*` predicates), defenders, movement cost, defense modifiers, nukes, sight (line of
 //! sight and sight sources), plot events and unit training requirements.
 
+use crate::city::refusal::PlotTrainRefusal;
 use crate::game::Game;
 use crate::ids::*;
 use crate::defs::INVALID_PLOT_COORD;
@@ -1341,9 +1342,16 @@ impl Game {
     }
 
     /// C++ `CvPlot::canTrain`: plot/city requirements for training `unit` here
-    /// (`continue_` = C++ `bContinue`, unused by the C++ body).
-    #[allow(unused_variables)]
+    /// (`continue_` = C++ `bContinue`, unused by the C++ body): [`Game::plot_train_refusal`] is
+    /// none.
     pub fn plot_can_train(&self, p: PlotIdx, unit: UnitType, continue_: bool, test_visible: bool) -> bool {
+        self.plot_train_refusal(p, unit, continue_, test_visible).is_none()
+    }
+
+    /// Why plot `p` refuses training `unit` (the first check of `CvPlot::canTrain` that fails),
+    /// `None` when it allows it.
+    #[allow(unused_variables)]
+    pub fn plot_train_refusal(&self, p: PlotIdx, unit: UnitType, continue_: bool, test_visible: bool) -> Option<PlotTrainRefusal> {
         let d = self.d;
         let info = &d.units[unit];
         let plot = &self.map.plots[p];
@@ -1351,18 +1359,18 @@ impl Game {
         let (x, y) = (plot.x, plot.y);
 
         if info.is_prereq_religion && city.map_or(true, |c| self.city_religion_count(c) > 0) {
-            return false;
+            return Some(PlotTrainRefusal::ReligionPresent);
         }
 
         if let Some(religion) = info.prereq_religion {
             if city.map_or(true, |c| !self.cities[c].has_religion[religion]) {
-                return false;
+                return Some(PlotTrainRefusal::Religion(religion));
             }
         }
 
         if let Some(corporation) = info.prereq_corporation {
             if city.map_or(true, |c| !self.city_is_active_corporation(c, corporation)) {
-                return false;
+                return Some(PlotTrainRefusal::Corporation(corporation));
             }
         }
 
@@ -1380,48 +1388,49 @@ impl Game {
                 }
 
                 if !valid {
-                    return false;
+                    return Some(PlotTrainRefusal::NoWaterResources);
                 }
             } else {
                 // C++ quirk: a non-sea bPrereqBonuses unit needs an area WITHOUT bonuses (BTS
                 // code; only UNIT_WORKBOAT, a sea unit, sets the flag).
                 if self.area_get_num_total_bonuses(assigned_area(self, p)) > 0 {
-                    return false;
+                    return Some(PlotTrainRefusal::AreaHasResources);
                 }
             }
         }
 
+        let area_tiles = || self.map.areas[assigned_area(self, p)].num_tiles;
         // (C++ `isCity()`)
         if city.is_some() {
             if info.domain_type == Some(DomainType::DOMAIN_SEA) {
                 if !self.plot_is_water(p) && !self.plot_is_coastal_land(p, info.min_area_size) {
-                    return false;
+                    return Some(PlotTrainRefusal::NotCoastal { min_area: info.min_area_size });
                 }
-            } else if self.map.areas[assigned_area(self, p)].num_tiles < info.min_area_size {
-                return false;
+            } else if area_tiles() < info.min_area_size {
+                return Some(PlotTrainRefusal::AreaTooSmall { have: area_tiles(), need: info.min_area_size });
             }
         } else {
-            if self.map.areas[assigned_area(self, p)].num_tiles < info.min_area_size {
-                return false;
+            if area_tiles() < info.min_area_size {
+                return Some(PlotTrainRefusal::AreaTooSmall { have: area_tiles(), need: info.min_area_size });
             }
 
             if info.domain_type == Some(DomainType::DOMAIN_SEA) {
                 if !self.plot_is_water(p) {
-                    return false;
+                    return Some(PlotTrainRefusal::NotWater);
                 }
             } else if info.domain_type == Some(DomainType::DOMAIN_LAND) {
                 if self.plot_is_water(p) {
-                    return false;
+                    return Some(PlotTrainRefusal::NotLand);
                 }
             } else {
-                return false;
+                return Some(PlotTrainRefusal::NotInCity);
             }
         }
 
         if !test_visible {
             if let Some(religion) = info.holy_city {
                 if city.map_or(true, |c| !self.city_is_holy_city(c, religion)) {
-                    return false;
+                    return Some(PlotTrainRefusal::HolyCity(religion));
                 }
             }
 
@@ -1439,23 +1448,23 @@ impl Game {
             if valid {
                 if let Some(building) = info.prereq_building {
                     let Some(city) = city else {
-                        return false;
+                        return Some(PlotTrainRefusal::Building(building));
                     };
                     if self.city_num_family(city, building) == 0 {
                         let special_building = d.buildings[building].special_building_type;
                         // (`GET_PLAYER(getOwnerINLINE())`: a city plot is always owned.)
                         let owner = plot.owner.expect("CvPlot::canTrain: city plot without an owner");
                         if special_building.map_or(true, |s| !self.player_is_special_building_not_required(owner, s)) {
-                            return false;
+                            return Some(PlotTrainRefusal::Building(building));
                         }
                     }
                 }
                 if let Some(building_class) = info.prereq_building_class {
                     let Some(city) = city else {
-                        return false;
+                        return Some(PlotTrainRefusal::BuildingClass(building_class));
                     };
                     if !self.city_is_has_building_class(city, building_class) {
-                        return false;
+                        return Some(PlotTrainRefusal::BuildingClass(building_class));
                     }
                 }
             }
@@ -1465,12 +1474,12 @@ impl Game {
                 match city {
                     None => {
                         if !plot_group_connected_bonus(self, p, bonus) {
-                            return false;
+                            return Some(PlotTrainRefusal::Bonus(bonus));
                         }
                     }
                     Some(city) => {
                         if !self.city_has_bonus(city, bonus) {
-                            return false;
+                            return Some(PlotTrainRefusal::Bonus(bonus));
                         }
                     }
                 }
@@ -1494,11 +1503,11 @@ impl Game {
             }
 
             if requires_bonus && needs_bonus {
-                return false;
+                return Some(PlotTrainRefusal::AnyBonus);
             }
         }
 
-        true
+        None
     }
 }
 

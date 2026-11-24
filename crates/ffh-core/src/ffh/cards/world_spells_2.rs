@@ -488,12 +488,19 @@ fn tidecall_project(d: &GameData) -> Option<ProjectType> {
 /// Card rituals that city `c` cannot build (`cannotCreate`): one whose charge it holds; the
 /// Tidecall of Danalin away from the ocean.
 pub fn cannot_create(g: &Game, c: CityId, project: ProjectType) -> bool {
+    create_refusal(g, c, project).is_some()
+}
+
+/// Why [`cannot_create`] refuses (`None`: it does not).
+pub fn create_refusal(g: &Game, c: CityId, project: ProjectType) -> Option<crate::city::refusal::PyCreateRefusal> {
+    use crate::city::refusal::PyCreateRefusal;
     // (A world ritual's held charge is `world_rituals::cannot_create`'s: the ritual stays listed,
     // refused, in every city of its owner.)
     if !g.d.projects[project].world_ritual && g.cities[c].ritual_charges.contains(&project) {
-        return true;
+        return Some(PyCreateRefusal::ChargeHeld);
     }
-    tidecall_project(g.d) == Some(project) && !g.city_is_coastal(c, g.d.defines.min_water_size_for_ocean)
+    let min_area = g.d.defines.min_water_size_for_ocean;
+    (tidecall_project(g.d) == Some(project) && !g.city_is_coastal(c, min_area)).then_some(PyCreateRefusal::NotCoastal { min_area })
 }
 
 impl Game {

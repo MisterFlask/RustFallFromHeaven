@@ -13,6 +13,7 @@
 //!
 //! NOTE: Python 2 `/` on ints is floor division; use `py_div` for faithful results.
 
+use crate::city::refusal::{PyConstructRefusal, PyCreateRefusal, PyTrainRefusal};
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
@@ -23,15 +24,22 @@ impl Game {
         false
     }
 
-    /// `cannotConstruct(pCity, eBuilding, bContinue, bTestVisible, bIgnoreCost)`.
-    /// The AI-only branch (`BUILDING_PROPHECY_OF_RAGNAROK` for non-evil AIs) is omitted (AI policy).
-    pub fn py_cannot_construct(&self, c: CityId, building: BuildingType, _continue: bool, _test_visible: bool, _ignore_cost: bool) -> bool {
+    /// `cannotConstruct(pCity, eBuilding, bContinue, bTestVisible, bIgnoreCost)`:
+    /// [`Game::py_construct_refusal`] is some.
+    pub fn py_cannot_construct(&self, c: CityId, building: BuildingType, continue_: bool, test_visible: bool, ignore_cost: bool) -> bool {
+        self.py_construct_refusal(c, building, continue_, test_visible, ignore_cost).is_some()
+    }
+
+    /// Why `cannotConstruct` refuses `building` in city `c` (its first refusing check), `None`
+    /// when it does not. The AI-only branch (`BUILDING_PROPHECY_OF_RAGNAROK` for non-evil AIs) is
+    /// omitted (AI policy).
+    pub fn py_construct_refusal(&self, c: CityId, building: BuildingType, _continue: bool, _test_visible: bool, _ignore_cost: bool) -> Option<PyConstructRefusal> {
         let d = self.d;
         let owner = self.cities[c].owner;
         let player = &self.players[owner];
         // (Any tier of the building: docs/SUITABILITY.md.)
         let t = |name: &str| d.ty::<BuildingType>(name).is_some_and(|b| d.same_building(b, building));
-        if d.ty::<TraitType>("TRAIT_AGNOSTIC").map_or(false, |tr| player.traits[tr]) {
+        if let Some(agnostic) = d.ty::<TraitType>("TRAIT_AGNOSTIC").filter(|&tr| player.traits[tr]) {
             for name in [
                 "BUILDING_TEMPLE_OF_LEAVES",
                 "BUILDING_TEMPLE_OF_KILMORPH",
@@ -41,7 +49,7 @@ impl Game {
                 "BUILDING_TEMPLE_OF_THE_ORDER",
             ] {
                 if t(name) {
-                    return true;
+                    return Some(PyConstructRefusal::Trait(agnostic));
                 }
             }
         }
@@ -69,7 +77,7 @@ impl Game {
                     "BUILDING_BREWERY",
                 ] {
                     if t(name) {
-                        return true;
+                        return Some(PyConstructRefusal::UnderCivic(cr));
                     }
                 }
             }
@@ -77,28 +85,30 @@ impl Game {
         if t("BUILDING_SHRINE_OF_THE_CHAMPION") {
             let hero = self.cf_get_hero(owner);
             let hero = match hero {
-                None => return true,
+                None => return Some(PyConstructRefusal::NoHero),
                 Some(h) => h,
             };
             if !self.is_unit_class_maxed_out(hero, 0) {
-                return true;
+                return Some(PyConstructRefusal::HeroNotCreated(hero));
             }
             // (A hero recovering from its death is not dead: unit/fallen.rs.)
             if self.player_hero_class_alive(owner, hero) {
-                return true;
+                return Some(PyConstructRefusal::HeroAlive(hero));
             }
         }
         if t("BUILDING_MERCURIAN_GATE") {
             if let Some(o) = d.ty::<GameOptionType>("GAMEOPTION_NO_HYBOREM_OR_BASIUM") {
                 if self.is_option(o) {
-                    return true;
+                    return Some(PyConstructRefusal::GameOption(o));
                 }
             }
-            if self.player_get_state_religion(owner) == d.ty::<ReligionType>("RELIGION_THE_ASHEN_VEIL") && d.ty::<ReligionType>("RELIGION_THE_ASHEN_VEIL").is_some() {
-                return true;
+            if let Some(veil) = d.ty::<ReligionType>("RELIGION_THE_ASHEN_VEIL") {
+                if self.player_get_state_religion(owner) == Some(veil) {
+                    return Some(PyConstructRefusal::StateReligion(veil));
+                }
             }
             if self.city_is_capital(c) {
-                return true;
+                return Some(PyConstructRefusal::Capital);
             }
             // AI-only branch (evil AIs may not build it) omitted: AI policy.
         }
@@ -115,20 +125,20 @@ impl Game {
         .map(|n| d.ty::<BuildingType>(n))
         .collect();
         if let Some(i) = altars.iter().position(|a| *a == Some(building)) {
-            if player.alignment.is_some() && player.alignment == d.ty::<AlignmentType>("ALIGNMENT_EVIL") {
-                return true;
+            if let Some(evil) = player.alignment.filter(|&a| Some(a) == d.ty::<AlignmentType>("ALIGNMENT_EVIL")) {
+                return Some(PyConstructRefusal::Alignment(evil));
             }
             // Each altar stage is blocked once a later stage exists.
             for later in altars.iter().skip(i + 1).flatten() {
                 if self.player_count_num_buildings(owner, *later) > 0 {
-                    return true;
+                    return Some(PyConstructRefusal::LaterStage(*later));
                 }
             }
         }
         if t("BUILDING_SMUGGLERS_PORT") && !self.player_is_smuggling_ring(owner) {
-            return true;
+            return Some(PyConstructRefusal::SmugglingRing);
         }
-        false
+        None
     }
 
     /// `cannotResearch(ePlayer, eTech, bTrade)`. AI-only branches (religion techs disliked by
@@ -180,28 +190,38 @@ impl Game {
         -1
     }
 
-    /// `cannotTrain(pCity, eUnit, bContinue, bTestVisible, bIgnoreCost, bIgnoreUpgrades)`.
-    /// The large AI-only block (scout/settler/worker/adept limits, Airship, Lightbringer, ...)
-    /// is omitted (AI policy).
-    pub fn py_cannot_train(&self, c: CityId, unit: UnitType, _continue: bool, _test_visible: bool, _ignore_cost: bool, _ignore_upgrades: bool) -> bool {
+    /// `cannotTrain(pCity, eUnit, bContinue, bTestVisible, bIgnoreCost, bIgnoreUpgrades)`:
+    /// [`Game::py_train_refusal`] is some.
+    pub fn py_cannot_train(&self, c: CityId, unit: UnitType, continue_: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool) -> bool {
+        self.py_train_refusal(c, unit, continue_, test_visible, ignore_cost, ignore_upgrades).is_some()
+    }
+
+    /// Why `cannotTrain` refuses `unit` in city `c` (its first refusing check), `None` when it
+    /// does not. The large AI-only block (scout/settler/worker/adept limits, Airship,
+    /// Lightbringer, ...) is omitted (AI policy).
+    pub fn py_train_refusal(&self, c: CityId, unit: UnitType, _continue: bool, _test_visible: bool, _ignore_cost: bool, _ignore_upgrades: bool) -> Option<PyTrainRefusal> {
         let d = self.d;
         let owner = self.cities[c].owner;
         let is = |name: &str| d.ty::<UnitType>(name) == Some(unit);
         if is("UNIT_BEAST_OF_AGARES") && self.cities[c].population <= 5 {
-            return true;
+            return Some(PyTrainRefusal::Population { have: self.cities[c].population, need: 6 });
         }
         if let (Some(cv), Some(cr)) = (d.ty::<CivicOptionType>("CIVICOPTION_CULTURAL_VALUES"), d.ty::<CivicType>("CIVIC_CRUSADE")) {
             if self.players[owner].civics[cv] == Some(cr) && is("UNIT_SETTLER") {
-                return true;
+                return Some(PyTrainRefusal::UnderCivic(cr));
             }
         }
-        if is("UNIT_ACHERON") && d.ty::<GameOptionType>("GAMEOPTION_NO_ACHERON").map_or(false, |o| self.is_option(o)) {
-            return true;
+        if is("UNIT_ACHERON") {
+            if let Some(o) = d.ty::<GameOptionType>("GAMEOPTION_NO_ACHERON").filter(|&o| self.is_option(o)) {
+                return Some(PyTrainRefusal::GameOption(o));
+            }
         }
-        if is("UNIT_DUIN") && d.ty::<GameOptionType>("GAMEOPTION_NO_DUIN").map_or(false, |o| self.is_option(o)) {
-            return true;
+        if is("UNIT_DUIN") {
+            if let Some(o) = d.ty::<GameOptionType>("GAMEOPTION_NO_DUIN").filter(|&o| self.is_option(o)) {
+                return Some(PyTrainRefusal::GameOption(o));
+            }
         }
-        false
+        None
     }
 
     /// `doPillageGold(pPlot, pUnit)` (always called by `CvUnit::pillage`).
@@ -244,37 +264,43 @@ impl Game {
         needed
     }
 
-    /// `cannotCreate(pCity, eProject, bContinue, bTestVisible)` (always called by `CvCity::canCreate`).
-    /// AI-only branches (Purge the Unfaithful, Samhain, early-game production limits) are omitted.
-    pub fn py_cannot_create(&self, c: CityId, project: ProjectType, _continue: bool, test_visible: bool) -> bool {
+    /// `cannotCreate(pCity, eProject, bContinue, bTestVisible)` (always called by `CvCity::canCreate`):
+    /// [`Game::py_create_refusal`] is some.
+    pub fn py_cannot_create(&self, c: CityId, project: ProjectType, continue_: bool, test_visible: bool) -> bool {
+        self.py_create_refusal(c, project, continue_, test_visible).is_some()
+    }
+
+    /// Why `cannotCreate` refuses `project` in city `c` (its first refusing check), `None` when
+    /// it does not. AI-only branches (Purge the Unfaithful, Samhain, early-game production limits)
+    /// are omitted.
+    pub fn py_create_refusal(&self, c: CityId, project: ProjectType, _continue: bool, test_visible: bool) -> Option<PyCreateRefusal> {
         let d = self.d;
         let owner = self.cities[c].owner;
         let is = |name: &str| d.ty::<ProjectType>(name) == Some(project);
         if is("PROJECT_PURGE_THE_UNFAITHFUL") && self.player_get_state_religion(owner).is_none() {
-            return true;
+            return Some(PyCreateRefusal::NoStateReligion);
         }
         if is("PROJECT_STIR_FROM_SLUMBER") && self.players[owner].players_killed == 0 {
-            return true;
+            return Some(PyCreateRefusal::NoPlayersKilled);
         }
-        if is("PROJECT_GENESIS") && self.player_get_civilization_type(owner) == d.ty::<CivilizationType>("CIVILIZATION_ILLIANS") {
-            return true;
+        if is("PROJECT_GENESIS") {
+            if let Some(illians) = d.ty::<CivilizationType>("CIVILIZATION_ILLIANS").filter(|&i| self.player_get_civilization_type(owner) == Some(i)) {
+                return Some(PyCreateRefusal::Civilization(illians));
+            }
         }
         // Cards: the Weather Engine, the Tidecall of Danalin (docs/CARDS.md): not while the city
         // holds the ritual's charge; the Tidecall in coastal cities only.
-        if crate::ffh::cards::world_spells_2::cannot_create(self, c, project) {
-            return true;
+        if let Some(r) = crate::ffh::cards::world_spells_2::create_refusal(self, c, project) {
+            return Some(r);
         }
         // This game's world rituals (docs/CARDS.md): one city at a time, one charge held, not
         // under the option without world spells; Birthright Regained (which undoes one doubling
         // of the ritual's cost) once the ritual has been completed.
-        if crate::ffh::world_rituals::cannot_create(self, c, project, test_visible) {
-            return true;
+        if let Some(r) = crate::ffh::world_rituals::create_refusal(self, c, project, test_visible) {
+            return Some(r);
         }
         // The world rituals' own conditions (The Tithe needs a named rival).
-        if crate::ffh::world_ritual_spells::cannot_create(self, c, project, test_visible) {
-            return true;
-        }
-        false
+        crate::ffh::world_ritual_spells::create_refusal(self, c, project, test_visible)
     }
 
     /// `calculateScore(ePlayer, False, False)`: FFH2's score, now only the legacy score

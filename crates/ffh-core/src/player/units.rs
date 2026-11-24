@@ -9,6 +9,7 @@
 
 use std::cmp::max;
 
+use crate::city::refusal::*;
 use crate::defs::*;
 use crate::game::Game;
 use crate::group::SelectionGroup;
@@ -421,8 +422,15 @@ impl Game {
 
     // ------------------------------------------------------------------ training units
 
-    /// C++ `CvPlayer::canTrain(eUnit, bContinue = false, bTestVisible = false, bIgnoreCost = false)`.
+    /// C++ `CvPlayer::canTrain(eUnit, bContinue = false, bTestVisible = false, bIgnoreCost = false)`:
+    /// [`Game::player_train_refusal`] is none.
     pub fn player_can_train(&self, p: PlayerId, unit: UnitType, continue_: bool, test_visible: bool, ignore_cost: bool) -> bool {
+        self.player_train_refusal(p, unit, continue_, test_visible, ignore_cost).is_none()
+    }
+
+    /// Why player `p` cannot train `unit` (the first check of `canTrain` that fails), `None` when
+    /// it can.
+    pub fn player_train_refusal(&self, p: PlayerId, unit: UnitType, continue_: bool, test_visible: bool, ignore_cost: bool) -> Option<PlayerTrainRefusal> {
         let d = self.d;
         let info = &d.units[unit];
         let unit_class = unit_class_of(d, unit);
@@ -432,68 +440,81 @@ impl Game {
         // check is commented out)
 
         if !ignore_cost && info.production_cost == -1 {
-            return false;
+            return Some(PlayerTrainRefusal::NoProductionCost);
         }
 
         if self.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && self.players[p].human && info.found {
-            return false;
+            return Some(PlayerTrainRefusal::OneCityChallenge);
         }
 
         if info.spy || info.espionage_points > 0 {
-            return false;
+            return Some(PlayerTrainRefusal::Espionage);
         }
 
-        if !self.team_is_has_tech(team, info.prereq_and_tech) {
-            return false;
+        if let Some(tech) = info.prereq_and_tech {
+            if !self.team_is_has_tech(team, Some(tech)) {
+                return Some(PlayerTrainRefusal::Tech(tech));
+            }
         }
 
         // C++ scans the NUM_UNIT_AND_TECH_PREREQS slots and skips NO_TECH.
         for &tech in &info.prereq_and_techs {
             if !self.team_is_has_tech(team, Some(tech)) {
-                return false;
+                return Some(PlayerTrainRefusal::Tech(tech));
             }
         }
 
         if let Some(state_religion) = info.state_religion {
             if self.player_get_state_religion(p) != Some(state_religion) {
-                return false;
+                return Some(PlayerTrainRefusal::StateReligion(state_religion));
             }
         }
 
+        // The refusal of a maxed-out limit: `count` against the class's maximum for `scope`.
+        let limit = |scope: LimitScope, count: i32, in_production: bool| {
+            let k = &d.unit_classes[unit_class];
+            let max = match scope {
+                LimitScope::World => k.max_global_instances,
+                LimitScope::Team => k.max_team_instances,
+                LimitScope::Player => k.max_player_instances,
+            };
+            Some(PlayerTrainRefusal::Limit(Limit { scope, in_production, count, max }))
+        };
+
         if self.is_unit_class_maxed_out(unit_class, 0) {
-            return false;
+            return limit(LimitScope::World, self.unit_class_created_count[unit_class], false);
         }
 
         if self.team_is_unit_class_maxed_out(team, unit_class, 0) {
-            return false;
+            return limit(LimitScope::Team, self.teams[team].unit_class_count[unit_class], false);
         }
 
         if self.player_is_unit_class_maxed_out(p, unit_class, 0) {
-            return false;
+            return limit(LimitScope::Player, self.players[p].unit_class_count[unit_class], false);
         }
 
         if !test_visible {
             let continue_extra = if continue_ { -1 } else { 0 };
 
             if self.is_unit_class_maxed_out(unit_class, self.team_get_unit_class_making(team, unit_class) + continue_extra) {
-                return false;
+                return limit(LimitScope::World, self.unit_class_created_count[unit_class] + self.team_get_unit_class_making(team, unit_class) + continue_extra, true);
             }
 
             if self.team_is_unit_class_maxed_out(team, unit_class, self.team_get_unit_class_making(team, unit_class) + continue_extra) {
-                return false;
+                return limit(LimitScope::Team, self.teams[team].unit_class_count[unit_class] + self.team_get_unit_class_making(team, unit_class) + continue_extra, true);
             }
 
             if self.player_is_unit_class_maxed_out(p, unit_class, self.players[p].unit_class_making[unit_class] + continue_extra) {
-                return false;
+                return limit(LimitScope::Player, self.players[p].unit_class_count[unit_class] + self.players[p].unit_class_making[unit_class] + continue_extra, true);
             }
 
             if (self.is_no_nukes() || !self.nukes_valid) && info.nuke_range != -1 {
-                return false;
+                return Some(PlayerTrainRefusal::Nukes);
             }
 
             if let Some(special_unit) = info.special_unit_type {
                 if !self.special_unit_valid[special_unit] {
-                    return false;
+                    return Some(PlayerTrainRefusal::SpecialUnit(special_unit));
                 }
             }
         }
@@ -508,23 +529,23 @@ impl Game {
                 }
             }
             if !valid {
-                return false;
+                return Some(PlayerTrainRefusal::Civic(prereq_civic));
             }
         }
         if info.prereq_global_counter != 0 {
             // Card: Golems of the Earthmother (docs/CARDS.md): no counter for the Mithril Golem.
             if self.get_global_counter() < info.prereq_global_counter && !self.player_earthmother_golem(p, unit) {
-                return false;
+                return Some(PlayerTrainRefusal::GlobalCounter { have: self.get_global_counter(), need: info.prereq_global_counter });
             }
         }
         if let Some(prereq_alignment) = info.prereq_alignment {
             if self.players[p].alignment != Some(prereq_alignment) {
-                return false;
+                return Some(PlayerTrainRefusal::Alignment(prereq_alignment));
             }
         }
         // FfH: End Add
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::isProductionMaxedUnitClass(eUnitClass)` (game/team/player limits).
@@ -943,8 +964,15 @@ impl Game {
 
     // ------------------------------------------------------------------ buildings and projects
 
-    /// C++ `CvPlayer::canConstruct(eBuilding, bContinue = false, bTestVisible = false, bIgnoreCost = false)`.
+    /// C++ `CvPlayer::canConstruct(eBuilding, bContinue = false, bTestVisible = false, bIgnoreCost = false)`:
+    /// [`Game::player_construct_refusal`] is none.
     pub fn player_can_construct(&self, p: PlayerId, building: BuildingType, continue_: bool, test_visible: bool, ignore_cost: bool) -> bool {
+        self.player_construct_refusal(p, building, continue_, test_visible, ignore_cost).is_none()
+    }
+
+    /// Why player `p` cannot construct `building` (the first check of `canConstruct` that fails),
+    /// `None` when it can.
+    pub fn player_construct_refusal(&self, p: PlayerId, building: BuildingType, continue_: bool, test_visible: bool, ignore_cost: bool) -> Option<PlayerConstructRefusal> {
         let d = self.d;
         let info = &d.buildings[building];
         let building_class = building_class_of(d, building);
@@ -954,65 +982,80 @@ impl Game {
         // eBuilding` check is commented out)
 
         if !ignore_cost && info.production_cost == -1 {
-            return false;
+            return Some(PlayerConstructRefusal::NoProductionCost);
         }
 
-        if !self.team_is_has_tech(team, info.prereq_and_tech) {
-            return false;
+        if let Some(tech) = info.prereq_and_tech {
+            if !self.team_is_has_tech(team, Some(tech)) {
+                return Some(PlayerConstructRefusal::Tech(tech));
+            }
         }
 
         for &tech in &info.prereq_and_techs {
             if let Some(tech) = tech {
                 if !self.team_is_has_tech(team, Some(tech)) {
-                    return false;
+                    return Some(PlayerConstructRefusal::Tech(tech));
                 }
             }
         }
 
         if self.team_is_obsolete_building(team, building) {
-            return false;
+            return Some(PlayerConstructRefusal::Obsolete);
         }
 
         if let Some(special_building) = info.special_building_type {
-            if !self.team_is_has_tech(team, d.special_buildings[special_building].tech_prereq) {
-                return false;
+            if let Some(tech) = d.special_buildings[special_building].tech_prereq {
+                if !self.team_is_has_tech(team, Some(tech)) {
+                    return Some(PlayerConstructRefusal::SpecialBuildingTech(tech));
+                }
             }
         }
 
         if let Some(state_religion) = info.state_religion {
             if self.player_get_state_religion(p) != Some(state_religion) {
-                return false;
+                return Some(PlayerConstructRefusal::StateReligion(state_religion));
             }
         }
 
         if self.count_civ_teams_ever_alive() < info.num_teams_prereq {
-            return false;
+            return Some(PlayerConstructRefusal::NumTeams { have: self.count_civ_teams_ever_alive(), need: info.num_teams_prereq });
         }
 
         if let Some(victory_prereq) = info.victory_prereq {
             if !self.is_victory_valid(victory_prereq) {
-                return false;
+                return Some(PlayerConstructRefusal::VictoryInvalid(victory_prereq));
             }
 
             if self.player_is_minor_civ(p) {
-                return false;
+                return Some(PlayerConstructRefusal::MinorCiv);
             }
 
             if self.teams[team].victory_countdown[victory_prereq] >= 0 {
-                return false;
+                return Some(PlayerConstructRefusal::VictoryCountdown(victory_prereq));
             }
         }
 
+        // The refusal of a maxed-out limit: `count` against the class's maximum for `scope`.
+        let limit = |scope: LimitScope, count: i32, in_production: bool| {
+            let k = &d.building_classes[building_class];
+            let max = match scope {
+                LimitScope::World => k.max_global_instances,
+                LimitScope::Team => k.max_team_instances,
+                LimitScope::Player => k.max_player_instances + k.extra_player_instances,
+            };
+            Some(PlayerConstructRefusal::Limit(Limit { scope, in_production, count, max }))
+        };
+
         if self.is_building_class_maxed_out(building_class, 0) {
-            return false;
+            return limit(LimitScope::World, self.building_class_created_count[building_class], false);
         }
 
         if self.team_is_building_class_maxed_out(team, building_class, 0) {
-            return false;
+            return limit(LimitScope::Team, self.teams[team].building_class_count[building_class], false);
         }
 
         if self.player_is_building_class_maxed_out(p, building_class, 0) {
-            return false;
+            return limit(LimitScope::Player, self.players[p].building_class_count[building_class], false);
         }
 
         let civ = civ_of(self, p);
@@ -1021,7 +1064,11 @@ impl Game {
                 if self.team_is_obsolete_building(team, prereq_building)
                     && self.players[p].building_class_count[i] < self.player_get_building_class_prereq_building(p, building, i, 0)
                 {
-                    return false;
+                    return Some(PlayerConstructRefusal::ObsoletePrereq {
+                        class: i,
+                        have: self.players[p].building_class_count[i],
+                        need: self.player_get_building_class_prereq_building(p, building, i, 0),
+                    });
                 }
             }
         }
@@ -1030,29 +1077,29 @@ impl Game {
             let continue_extra = if continue_ { -1 } else { 0 };
 
             if self.is_building_class_maxed_out(building_class, self.team_get_building_class_making(team, building_class) + continue_extra) {
-                return false;
+                return limit(LimitScope::World, self.building_class_created_count[building_class] + self.team_get_building_class_making(team, building_class) + continue_extra, true);
             }
 
             if self.team_is_building_class_maxed_out(team, building_class, self.team_get_building_class_making(team, building_class) + continue_extra)
             {
-                return false;
+                return limit(LimitScope::Team, self.teams[team].building_class_count[building_class] + self.team_get_building_class_making(team, building_class) + continue_extra, true);
             }
 
             if self.player_is_building_class_maxed_out(p, building_class, self.players[p].building_class_making[building_class] + continue_extra) {
-                return false;
+                return limit(LimitScope::Player, self.players[p].building_class_count[building_class] + self.players[p].building_class_making[building_class] + continue_extra, true);
             }
 
             if self.is_no_nukes() && info.allows_nukes {
                 for loop_unit in d.units.keys() {
                     if d.units[loop_unit].nuke_range != -1 {
-                        return false;
+                        return Some(PlayerConstructRefusal::Nukes);
                     }
                 }
             }
 
             if let Some(special_building) = info.special_building_type {
                 if !self.special_building_valid[special_building] {
-                    return false;
+                    return Some(PlayerConstructRefusal::SpecialBuilding(special_building));
                 }
             }
 
@@ -1060,98 +1107,117 @@ impl Game {
             // (was `getNumCities() < getNumCitiesPrereq()`)
             let num_cities = self.players[p].num_cities();
             let max_cities = self.players[p].max_cities;
-            if num_cities < info.num_cities_prereq || (max_cities != -1 && (max_cities < info.num_cities_prereq) && (num_cities != max_cities)) {
-                return false;
+            if num_cities < info.num_cities_prereq {
+                return Some(PlayerConstructRefusal::Cities { have: num_cities, need: info.num_cities_prereq, max: -1 });
+            }
+            if max_cities != -1 && (max_cities < info.num_cities_prereq) && (num_cities != max_cities) {
+                return Some(PlayerConstructRefusal::Cities { have: num_cities, need: info.num_cities_prereq, max: max_cities });
             }
 
             if self.players[p].highest_unit_level < info.unit_level_prereq {
-                return false;
+                return Some(PlayerConstructRefusal::UnitLevel { have: self.players[p].highest_unit_level, need: info.unit_level_prereq });
             }
 
             for i in d.building_classes.keys() {
                 let extra = if continue_ { 0 } else { self.players[p].building_class_making[building_class] };
                 if self.players[p].building_class_count[i] < self.player_get_building_class_prereq_building(p, building, i, extra) {
-                    return false;
+                    return Some(PlayerConstructRefusal::BuildingCount {
+                        class: i,
+                        have: self.players[p].building_class_count[i],
+                        need: self.player_get_building_class_prereq_building(p, building, i, extra),
+                    });
                 }
             }
         }
 
-        true
+        None
     }
 
-    /// C++ `CvPlayer::canCreate(eProject, bContinue = false, bTestVisible = false)`.
+    /// C++ `CvPlayer::canCreate(eProject, bContinue = false, bTestVisible = false)`:
+    /// [`Game::player_create_refusal`] is none.
     pub fn player_can_create(&self, p: PlayerId, project: ProjectType, continue_: bool, test_visible: bool) -> bool {
+        self.player_create_refusal(p, project, continue_, test_visible).is_none()
+    }
+
+    /// Why player `p` cannot create `project` (the first check of `canCreate` that fails), `None`
+    /// when it can.
+    pub fn player_create_refusal(&self, p: PlayerId, project: ProjectType, continue_: bool, test_visible: bool) -> Option<PlayerCreateRefusal> {
         let d = self.d;
         let info = &d.projects[project];
         let team = self.players[p].team;
 
         if self.player_is_barbarian(p) {
-            return false;
+            return Some(PlayerCreateRefusal::Barbarian);
         }
 
         if info.production_cost == -1 {
-            return false;
+            return Some(PlayerCreateRefusal::NoProductionCost);
         }
 
-        if !self.team_is_has_tech(team, info.tech_prereq) {
-            return false;
+        if let Some(tech) = info.tech_prereq {
+            if !self.team_is_has_tech(team, Some(tech)) {
+                return Some(PlayerCreateRefusal::Tech(tech));
+            }
         }
 
         if let Some(victory_prereq) = info.victory_prereq {
             if !self.is_victory_valid(victory_prereq) {
-                return false;
+                return Some(PlayerCreateRefusal::VictoryInvalid(victory_prereq));
             }
 
             if self.player_is_minor_civ(p) {
-                return false;
+                return Some(PlayerCreateRefusal::MinorCiv);
             }
 
             if self.teams[team].victory_countdown[victory_prereq] >= 0 {
-                return false;
+                return Some(PlayerCreateRefusal::VictoryCountdown(victory_prereq));
             }
         }
 
+        let world = |count: i32, in_production: bool| Some(PlayerCreateRefusal::Limit(Limit { scope: LimitScope::World, in_production, count, max: info.max_global_instances }));
+        let team_limit = |count: i32, in_production: bool| Some(PlayerCreateRefusal::Limit(Limit { scope: LimitScope::Team, in_production, count, max: info.max_team_instances }));
+
         if self.is_project_maxed_out(project, 0) {
-            return false;
+            return world(self.project_created_count[project], false);
         }
 
         if self.team_is_project_maxed_out(team, project, 0) {
-            return false;
+            return team_limit(self.teams[team].project_count[project], false);
         }
 
         if !test_visible {
             let continue_extra = if continue_ { -1 } else { 0 };
 
             if self.is_project_maxed_out(project, self.teams[team].project_making[project] + continue_extra) {
-                return false;
+                return world(self.project_created_count[project] + self.teams[team].project_making[project] + continue_extra, true);
             }
 
             if self.team_is_project_maxed_out(team, project, self.teams[team].project_making[project] + continue_extra) {
-                return false;
+                return team_limit(self.teams[team].project_count[project] + self.teams[team].project_making[project] + continue_extra, true);
             }
 
             if self.is_no_nukes() && info.allows_nukes {
                 for loop_unit in d.units.keys() {
                     if d.units[loop_unit].nuke_range != -1 {
-                        return false;
+                        return Some(PlayerCreateRefusal::Nukes);
                     }
                 }
             }
 
             if let Some(anyone_project_prereq) = info.anyone_project_prereq {
                 if self.project_created_count[anyone_project_prereq] == 0 {
-                    return false;
+                    return Some(PlayerCreateRefusal::AnyoneProject(anyone_project_prereq));
                 }
             }
 
             for i in d.projects.keys() {
                 if self.teams[team].project_count[i] < info.projects_needed[i] {
-                    return false;
+                    return Some(PlayerCreateRefusal::ProjectsNeeded { project: i, have: self.teams[team].project_count[i], need: info.projects_needed[i] });
                 }
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::canMaintain(eProcess, bContinue = false)`.

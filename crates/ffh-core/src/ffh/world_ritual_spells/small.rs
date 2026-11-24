@@ -61,12 +61,12 @@ pub fn find_target_label(name: &str) -> Option<TargetLabelFn> {
 
 /// The rituals of this module that a city cannot create: The Tithe without a living named rival
 /// (outside a visibility test).
-fn cannot_create(g: &Game, c: CityId, project: ProjectType, test_visible: bool) -> bool {
+fn cannot_create(g: &Game, c: CityId, project: ProjectType, test_visible: bool) -> Option<crate::city::refusal::PyCreateRefusal> {
     if test_visible || tithe_project(g.d) != Some(project) {
-        return false;
+        return None;
     }
     let p = g.cities[c].owner;
-    !g.players[p].tithe_target.is_some_and(|r| g.players[r].alive)
+    (!g.players[p].tithe_target.is_some_and(|r| g.players[r].alive)).then_some(crate::city::refusal::PyCreateRefusal::NoTitheRival)
 }
 
 /// At the completion of a ritual of this module.

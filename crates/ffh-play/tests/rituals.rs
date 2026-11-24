@@ -243,14 +243,14 @@ fn a_pending_targeted_spell_blocks_the_end_of_the_turn() {
     assert!(s.g.player_world_ritual_pending(h, d.t::<ProjectType>("PROJECT_RITUAL_THE_CULL")), "still pending");
 }
 
-/// The Sanctuary's ritual while the Sanctuary holds, and the reason the list does not know.
+/// The Sanctuary's ritual while the Sanctuary holds; no reason while it can start.
 #[test]
 fn the_production_list_says_why_a_ritual_cannot_start() {
     let mut s = duel_as(34, "CIVILIZATION_ELOHIM");
     let h = s.human;
     let project = project_of(&s, h);
     let capital = s.g.player_get_capital_city(h).unwrap();
-    assert_eq!(ffh_play::view::rituals::cannot_reason(&s.g, capital, project), "Not available now.");
+    assert_eq!(ffh_play::view::rituals::cannot_reason(&s.g, capital, project), None);
     s.g.players[h].sanctuary_timer = 3;
     let entry = ritual_entry(&s, capital, project);
     assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(false));

@@ -1373,26 +1373,33 @@ impl Game {
     }
 
     /// C++ `CvCity::isValidBuildingLocation` (CvCity.cpp:13112-13142): water / river / area
-    /// size requirements.
+    /// size requirements ([`Game::city_building_location_refusal`] is none).
     pub fn city_is_valid_building_location(&self, c: CityId, building: BuildingType) -> bool {
+        self.city_building_location_refusal(c, building).is_none()
+    }
+
+    /// Why `building`'s location requirements refuse city `c`, `None` when they are met.
+    pub fn city_building_location_refusal(&self, c: CityId, building: BuildingType) -> Option<crate::city::refusal::LocationRefusal> {
+        use crate::city::refusal::LocationRefusal;
         let info = &self.d.buildings[building];
 
         // if both the river and water flags are set, we require one of the two conditions, not both
         if info.water {
             if (!info.river || !self.plot_is_river(self.city_plot(c))) && !self.city_is_coastal(c, info.min_area_size) {
-                return false;
+                return Some(LocationRefusal::Coast { river: info.river, min_area: info.min_area_size });
             }
         } else {
-            if self.map.areas[self.city_area(c)].num_tiles < info.min_area_size {
-                return false;
+            let have = self.map.areas[self.city_area(c)].num_tiles;
+            if have < info.min_area_size {
+                return Some(LocationRefusal::AreaTooSmall { have, need: info.min_area_size });
             }
 
             if info.river && !self.plot_is_river(self.city_plot(c)) {
-                return false;
+                return Some(LocationRefusal::River);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvCity::getBuildingYieldChange` (CvCity.cpp:13754-13765).

@@ -3,6 +3,7 @@
 //! `py_requirement`, `py_targets`, `py_target_label`) and the rules hooks of their rituals. One
 //! module per batch; each lists its hooks in [`MODULES`].
 
+use crate::city::refusal::PyCreateRefusal;
 use crate::ffh::dispatch::*;
 use crate::game::Game;
 use crate::ids::*;
@@ -18,8 +19,9 @@ pub struct Hooks {
     pub req: fn(&str) -> Option<ReqFn>,
     pub targets: fn(&str) -> Option<TargetsFn>,
     pub label: fn(&str) -> Option<TargetLabelFn>,
-    /// `cannotCreate` for a world ritual (outside a visibility test only when it says so).
-    pub cannot_create: fn(&Game, CityId, ProjectType, bool) -> bool,
+    /// `cannotCreate` for a world ritual (outside a visibility test only when it says so): why
+    /// it refuses, `None` when it does not.
+    pub cannot_create: fn(&Game, CityId, ProjectType, bool) -> Option<PyCreateRefusal>,
     /// At the completion of a world ritual (after the framework's count and charge).
     pub project_built: fn(&mut Game, CityId, ProjectType),
     /// At the start of a player's turn (`player_do_turn`), and after a war or peace or a player's
@@ -29,8 +31,8 @@ pub struct Hooks {
 
 /// Every module's hooks, in order.
 const MODULES: &[Hooks] = &[
-    Hooks { spell: illians::find_spell, req: illians::find_req, targets: illians::find_targets, label: illians::find_target_label, cannot_create: |_, _, _, _| false, project_built: |_, _, _| {}, check: |_, _| {} },
-    Hooks { spell: lanun_khazad::find_spell, req: lanun_khazad::find_req, targets: lanun_khazad::find_targets, label: lanun_khazad::find_target_label, cannot_create: |_, _, _, _| false, project_built: |_, _, _| {}, check: |_, _| {} },
+    Hooks { spell: illians::find_spell, req: illians::find_req, targets: illians::find_targets, label: illians::find_target_label, cannot_create: |_, _, _, _| None, project_built: |_, _, _| {}, check: |_, _| {} },
+    Hooks { spell: lanun_khazad::find_spell, req: lanun_khazad::find_req, targets: lanun_khazad::find_targets, label: lanun_khazad::find_target_label, cannot_create: |_, _, _, _| None, project_built: |_, _, _| {}, check: |_, _| {} },
     small::HOOKS,
 ];
 
@@ -56,7 +58,12 @@ pub fn find_target_label(name: &str) -> Option<TargetLabelFn> {
 
 /// Can city `c` not create world ritual `project` (any module refuses)?
 pub fn cannot_create(g: &Game, c: CityId, project: ProjectType, test_visible: bool) -> bool {
-    MODULES.iter().any(|m| (m.cannot_create)(g, c, project, test_visible))
+    create_refusal(g, c, project, test_visible).is_some()
+}
+
+/// Why city `c` cannot create world ritual `project`: the first module's refusal.
+pub fn create_refusal(g: &Game, c: CityId, project: ProjectType, test_visible: bool) -> Option<PyCreateRefusal> {
+    MODULES.iter().find_map(|m| (m.cannot_create)(g, c, project, test_visible))
 }
 
 /// At the completion of world ritual `project` in city `c`.
