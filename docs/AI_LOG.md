@@ -55,7 +55,7 @@ fixes did where they fire.
    enemy's land or, alone on ours, to a civilization no stronger, the waters an enemy's cities
    work, less the waters ours work), cast only at a worth of 40 or more, the ritual started only
    when such a target exists, and the Illians' ships break no Sea Ice. 24 games with the Illians
-   forced in (seeds 1-24, 6 civs, standard map, 300 turns, `FFH_AI_TRACE`): before, 44 rituals
+   forced in (seeds 1-24, 6 civs, small map, 300 turns, `FFH_AI_TRACE`): before, 44 rituals
    started and 44 casts, in all 24 games, the first at turn 61, one of them freezing a single
    plot; after, 12 rituals started and 11 casts in 9 games, the first at turn 136, each worth 40 to
    160 (six bridges, five on an enemy's waters).

@@ -2736,7 +2736,7 @@ vassal or their master can work. Only revealed cities count, barbarian ones as n
 cast goes to the best target worth 40 (`MIN_WORTH`) or more, else it stays pending; the ritual is
 started only when such a target exists (`civ_gate`, looked for every 5 turns,
 `FROZEN_PASSAGE_EVERY`). Their ships break no Sea Ice (`sea_ice.rs`). All constants ad hoc.
-Measured, 24 games with the Illians forced in (seeds 1-24, 6 civs, standard map, 300 turns,
+Measured, 24 games with the Illians forced in (seeds 1-24, 6 civs, small map, 300 turns,
 `FFH_AI_TRACE`): with the ritual started from two cities on and the cast at the plot nearest the
 closest rival city overseas (with none, nearest their own capital), 44 rituals started and 44 casts,
 in all 24 games, the first at turn 61, one of them freezing a single plot; with this rule 12 rituals
