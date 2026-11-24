@@ -126,17 +126,27 @@ pub fn supply_line_json(g: &Game, line: &SupplyLine) -> Json {
     }
 }
 
+/// Why army `a` may not leave its city (docs/SUPPLY.md, 3.2): held in an invested city of its
+/// team, it moves only to attack until the siege lifts. `None`: free to move.
+pub fn siege_hold_text(g: &Game, a: ArmyId) -> Option<String> {
+    let c = g.army_units(a).iter().find_map(|&u| g.unit_siege_hold(u))?;
+    Some(format!("Besieged in {}: moves only to attack until the siege lifts.", city_name(g, c)))
+}
+
 /// Army `a`'s supply (docs/SUPPLY.md, section 5), the human's own: `state` (`supplied`, `hunger`
 /// or `starvation`, from its counter), `turn` and `of` (Hunger's turn of `SUPPLY_HUNGER_TURNS`),
 /// `turns_to_starvation` (Hunger: the turn starts with the line cut before Starvation; else
 /// null), `line` (the line as it is traced now, [`supply_line_json`]; null: cut), `raiding` (it
-/// holds a Raid order: supplied whatever its line, docs/RAIDS.md section 3) and `text`, the
+/// holds a Raid order: supplied whatever its line, docs/RAIDS.md section 3), `home` (it stands in
+/// its owner's territory: supplied with no line, `line` null) and `text`, the
 /// state in the bare words of the Armies screen and the unit panel.
 pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
     let g = v.g;
     let d = g.d;
     let state = g.army_supply_state(a);
-    let line = g.army_supply_line(a);
+    // Within its owner's borders an army needs no line (docs/SUPPLY.md, section 2): none is drawn.
+    let home = g.army_supply_home(a);
+    let line = if home { None } else { g.army_supply_line(a) };
     let budget = d.defines.supply_line_budget;
     let supplied = |l: &SupplyLine| match l.source {
         // At sea, in range of a port (docs/NAVAL.md, 3.3 and 10).
@@ -145,11 +155,12 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
     };
     // No line: why a supply ship of the human's on or by the army's plot is no source
     // (docs/NAVAL.md, 4.6 and 10: `the transport is in Sirens' Water, held by Lanun.`).
-    let sea_why = if line.is_none() { g.army_plot(a).and_then(|q| crate::view::seas::transport_refusal(v, q)) } else { None };
+    let sea_why = if line.is_none() && !home { g.army_plot(a).and_then(|q| crate::view::seas::transport_refusal(v, q)) } else { None };
     // Raids (docs/RAIDS.md, section 3): an army holding the Raid order lives off the land.
     let raiding = g.army_raid_city(a).is_some();
     let mut text = match state {
         SupplyState::Supplied if raiding => "Supplied: raiding, no supply line needed.".to_string(),
+        SupplyState::Supplied if home => "Supplied: in your territory, no supply line needed.".to_string(),
         SupplyState::Supplied => match (&line, &sea_why) {
             (Some(l), _) => format!("Supplied: {}", supplied(l)),
             (None, Some(why)) => format!("No supply line: {why} Hunger from your next turn."),
@@ -161,8 +172,12 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
             d.defines.starvation_damage_percent, d.defines.starvation_floor_percent, d.defines.starvation_damage_dealt_percent
         ),
     };
-    if let (Some(l), true) = (&line, state != SupplyState::Supplied) {
-        text.push_str(&format!(" Supply line again: {} Supplied from your next turn.", supplied(l)));
+    if state != SupplyState::Supplied {
+        if home {
+            text.push_str(" In your territory: supplied from your next turn.");
+        } else if let Some(l) = &line {
+            text.push_str(&format!(" Supply line again: {} Supplied from your next turn.", supplied(l)));
+        }
     }
     if let (Some(why), true) = (&sea_why, state != SupplyState::Supplied) {
         text.push_str(&format!(" No supply line: {why}"));
@@ -179,6 +194,7 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
         "turns_to_starvation" => state.turns_to_starvation(),
         "line" => line.as_ref().map(|l| supply_line_json(g, l)),
         "raiding" => raiding,
+        "home" => home,
         "text" => text,
     }
 }
@@ -206,6 +222,10 @@ pub fn foreign_supply_lines(v: &Viewer) -> Json {
             }
             let Some(plot) = g.army_plot(a) else { continue };
             if !v.plot_visible(plot) || !g.army_units(a).iter().any(|&u| v.unit_visible(u) && v.unit_owner(u) == p) {
+                continue;
+            }
+            // Within its owner's borders an army needs no line: none to draw.
+            if g.plot_supply_home(p, plot) {
                 continue;
             }
             let Some(line) = g.plot_supply_line_known(p, plot, v.team) else { continue };
@@ -270,6 +290,8 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "name" => army.name.as_str(),
         "group" => army.group,
         "units" => units,
+        // Held in an invested city (docs/SUPPLY.md, 3.2): why it moves only to attack.
+        "held" => siege_hold_text(g, a),
         "x" => plot.map(|p| g.map.xy(p).0),
         "y" => plot.map(|p| g.map.xy(p).1),
         "in_supply" => g.army_in_supply(a),

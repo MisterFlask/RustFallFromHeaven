@@ -365,7 +365,9 @@ impl PathFinder {
                 let sea = g.group_get_domain_type(group) == Some(DomainType::DOMAIN_SEA);
                 let mut memo = std::mem::take(&mut self.defense_memo);
                 memo.begin(self.nodes.len());
-                let cb = PathCallbacks { g, group, sea, from_memo: Cell::new(None), defense_memo: RefCell::new(memo) };
+                // An army held in an invested city (docs/SUPPLY.md, 3.2): its steps are tested too.
+                let held = g.group_siege_hold(group).is_some();
+                let cb = PathCallbacks { g, group, sea, held, from_memo: Cell::new(None), defense_memo: RefCell::new(memo) };
                 let found = self.search(&cb, start_x, start_y, dest_x, dest_y, cardinal_only, info);
                 self.defense_memo = cb.defense_memo.into_inner();
                 found
@@ -694,8 +696,11 @@ struct PathCallbacks<'a> {
     /// across searches.
     from_memo: Cell<Option<((i32, i32, i32, i32), bool)>>,
     /// `group_get_domain_type(group) == DOMAIN_SEA` (fixed during one search): only sea groups
-    /// have a step test ([`Game::path_valid_step`] is true for the others).
+    /// and held armies have a step test ([`Game::path_valid_step`] is true for the others).
     sea: bool,
+    /// The group is held in an invested city ([`Game::group_siege_hold`], fixed during one
+    /// search): its step test runs too.
+    held: bool,
     /// `pathCost`'s defense modifiers within this call (see [`DefenseMemo`]).
     defense_memo: RefCell<DefenseMemo>,
 }
@@ -718,7 +723,7 @@ impl FinderCallbacks for PathCallbacks<'_> {
         let Some(parent) = parent else {
             return true;
         };
-        if self.sea && !self.g.path_valid_step(parent, node, self.group) {
+        if (self.sea || self.held) && !self.g.path_valid_step(parent, node, self.group) {
             return false;
         }
         let key = (parent.x, parent.y, parent.data1, parent.data2);
@@ -1175,6 +1180,15 @@ impl Game {
     pub fn path_valid_step(&self, parent: &PathNode, node: &PathNode, group: GroupId) -> bool {
         let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathValid: FromPlot");
         let to_plot = self.map.plot_soren(node.x, node.y).expect("pathValid: ToPlot");
+
+        // This game's (docs/SUPPLY.md, 3.2): an army held in an invested city of its team leaves
+        // it only to attack (a sally) until the investment ends.
+        if self.map.plots[from_plot].plot_city.is_some() && self.group_at_plot(group, Some(from_plot)) && self.group_siege_hold(group).is_some() {
+            let head = self.group_get_head_unit(group);
+            if !head.is_some_and(|h| self.plot_is_visible_enemy_defender(to_plot, h)) {
+                return false;
+            }
+        }
 
         // XXX might want to take this out...
         if self.group_get_domain_type(group) == Some(DomainType::DOMAIN_SEA) && self.plot_is_water(from_plot) && self.plot_is_water(to_plot) {

@@ -470,6 +470,10 @@ flag.
   heal, its recruits wait), then starving (each unit loses 10% of its full HP a turn, down to 25%,
   never killed; it deals 25% less damage in battles). It replaces the old supply rule (within
   `ARMY_SUPPLY_RANGE` of the trade network, which only paused recruits). Save format 29.
+  Since 2026-11-23 (the owner's decision) an army within its owner's borders needs no line: on a
+  land plot of its team's territory it is supplied even when encircled, except in an invested
+  city, where it needs a line and is held: it leaves the city only to attack until the
+  investment ends (docs/SUPPLY.md 3.2).
 - **Starving invested garrisons** (docs/SUPPLY.md 3.1, docs/SIEGES.md): a saved city counter
   advances under at least 3 visible non-animal adjacent enemy land soldiers and half its
   physical defending force, rounded up. An open harbour prevents it. Two turns of Hunger block

@@ -769,15 +769,17 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
     let army = g.units[units[0]].army.filter(|&a| g.armies.contains(a) && g.armies[a].owner == v.h && units.iter().all(|&u| g.units[u].army == Some(a)));
     let supply = match army {
         Some(_) if v.plot_revealed(to) => {
-            let line = g.plot_supply_line_known(v.h, to, v.team);
+            // Within the human's borders an army needs no line (docs/SUPPLY.md, section 2).
+            let home = g.plot_supply_home(v.h, to);
+            let line = if home { None } else { g.plot_supply_line_known(v.h, to, v.team) };
             // At sea (docs/NAVAL.md, 3.3): the port it would be in range of.
             let port = line.as_ref().and_then(|l| match l.source {
                 ffh_core::army::SupplySource::Sea(c) => Some(crate::view::sea::port_name(v, c)),
                 _ => None,
             });
             // No line: why a supply ship of the human's there is no source (docs/NAVAL.md, 4.6).
-            let why = if line.is_none() { crate::view::seas::transport_refusal(v, to) } else { None };
-            crate::jobj! { "ok" => line.is_some(), "cost" => line.as_ref().map(|l| l.cost), "budget" => g.d.defines.supply_line_budget, "sea_port" => port, "sea_why" => why }
+            let why = if line.is_none() && !home { crate::view::seas::transport_refusal(v, to) } else { None };
+            crate::jobj! { "ok" => home || line.is_some(), "home" => home, "cost" => line.as_ref().map(|l| l.cost), "budget" => g.d.defines.supply_line_budget, "sea_port" => port, "sea_why" => why }
         }
         _ => Json::Null,
     };
@@ -788,6 +790,8 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
         "declare_war_team" => war,
         "attack" => attack,
         "approximate" => mirrored.is_none(),
+        // An army held in an invested city (docs/SUPPLY.md, 3.2): moves only to attack.
+        "held" => if attack { None } else { g.units[units[0]].army.filter(|&a| g.armies.contains(a)).and_then(|a| crate::view::armies::siege_hold_text(g, a)) },
         "supply" => supply,
         "ends_sieges" => Json::Arr(if ok { crate::view::sieges::ended_by_move(g, v.h, units, to).iter().map(|s| s.to_json()).collect() } else { Vec::new() }),
         "sea" => sea,

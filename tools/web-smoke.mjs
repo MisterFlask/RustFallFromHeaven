@@ -1923,10 +1923,24 @@ async function supplyHd2d(url, bin, saves) {
   await b.eval(`window.ffh.units.select(${JSON.stringify(units)})`);
   await until2(`window.ffh.S.sel && window.ffh.S.sel.units.length === ${units.length}`, "the army selected");
   await until2(`/Supplied: \\d+ of \\d+, from /.test(document.querySelector("#unit-panel .army-supply")?.textContent ?? "")`, "the army's supply in the unit panel");
-  const near = await S(`(() => { const p = ${army(st.supplied).replace("window.ffh.S", "S")}.supply.line.path[1]; return { x: p[0], y: p[1] }; })()`);
+  // A plot next to the army, outside your borders, where it would have a line (in your territory
+  // the readout says none is needed): the path query says which.
+  const near = await b.eval(`(async () => {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const x = ${st.x} + dx, y = ${st.y} + dy;
+      const r = await window.ffh.api.query("path", { units: ${JSON.stringify(units)}, x, y });
+      if (r.ok && r.supply?.ok && !r.supply.home && !r.supply.sea_port) return { x, y };
+    }
+    return null;
+  })()`);
+  if (!near) throw new Error("no plot next to the supplied army with a supply line");
   const e = await plotPos(near.x, near.y);
   await hoverUntil(e, `/^Supplied \\(cost \\d+ of \\d+\\)$/.test(document.querySelector("#mapwrap .tooltip .tip-supply")?.textContent ?? "")`, "the supply readout in the path's tooltip");
   const readout = await b.eval(`document.querySelector("#mapwrap .tooltip .tip-supply").textContent`);
+  // Within the borders (the home army's plot, in the capital's territory): no line needed.
+  const eh = await plotPos(st.ox, st.oy);
+  await hoverUntil(eh, `document.querySelector("#mapwrap .tooltip .tip-supply")?.textContent === "Supplied (your territory)"`, "the supply readout in your territory");
+  await shot("hd2d-supply-home-readout");
   await b.eval(`window.ffh.units.clearSelection()`);
   // The hungry army's marker.
   await plotPos(st.hx, st.hy);
@@ -1937,9 +1951,32 @@ async function supplyHd2d(url, bin, saves) {
   await b.key("F5");
   await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
   const words = (id) => `document.querySelector('#modals .army-card[data-army="${id}"] .army-supply')?.textContent ?? ""`;
-  await until2(`/^Supplied: \\d+ of \\d+, from .+\\.$/.test(${words(st.supplied)}) && /^Hunger: turn 1 of \\d+\\. No healing, no recruits\\.$/.test(${words(st.hungry)})`, "the armies' supply in words on the Armies screen");
+  await until2(`/^Supplied: \\d+ of \\d+, from .+\\.$/.test(${words(st.supplied)}) && /^Hunger: turn 1 of \\d+\\. No healing, no recruits\\.$/.test(${words(st.hungry)}) && (${words(st.home)}) === "Supplied: in your territory, no supply line needed."`, "the armies' supply in words on the Armies screen");
+  await b.eval(`document.querySelector('#modals .army-card[data-army="${st.home}"]')?.scrollIntoView({ block: "center" })`);
+  await shot("hd2d-supply-armies");
   await closeDialog("Armies");
   steps.push(`supply lines (stage supply, HD-2D): the line drawn, the Hunger marker, "${readout}" under the pointer, the Armies screen's words`);
+}
+
+/** An army held in an invested city (docs/SUPPLY.md 3.2), `stage siege-hunger` on the HD-2D map:
+ *  the unit panel says it is held, and a move out of the city that is no attack is refused with the
+ *  same words in the path's tooltip. (The client is already on the HD-2D map: `supplyHd2d`.) */
+async function siegeHeldHd2d(bin, saves) {
+  const st = await stage(bin, "siege-hunger", path.join(saves, "staged-siege-held"));
+  await loadSave("staged-siege-held/siege-hunger", st.turn);
+  await answerPopups(false);
+  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam`, "the HD-2D map", 180000);
+  const held = "moves only to attack until the siege lifts.";
+  await until2(`(window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.held ?? "").endsWith(${JSON.stringify(held)})`, "the held army in the view");
+  await b.eval(`window.ffh.units.select(${JSON.stringify(st.defenders)})`);
+  await until2(`window.ffh.S.sel && window.ffh.S.sel.units.length === ${st.defenders.length}`, "the held army selected");
+  await until2(`(document.querySelector("#unit-panel .army-held")?.textContent ?? "").endsWith(${JSON.stringify(held)})`, "the held line in the unit panel");
+  const [wx, wy] = st.withdraw;
+  const e = await plotPos(wx, wy);
+  await hoverUntil(e, `(document.querySelector("#mapwrap .tooltip .tip-held")?.textContent ?? "").endsWith(${JSON.stringify(held)})`, "the held reason in the path's tooltip");
+  await shot("hd2d-siege-held");
+  await b.eval(`window.ffh.units.clearSelection()`);
+  steps.push(`an army held in an invested city (stage siege-hunger, HD-2D): the unit panel's line and the path's refusal`);
 }
 
 async function crusadeHd2d(url, bin, saves) {
@@ -2288,6 +2325,7 @@ async function main() {
     await stagedLairs(bin, saves);
     await crusadeHd2d(server.url, bin, saves);
     await supplyHd2d(server.url, bin, saves);
+    await siegeHeldHd2d(bin, saves);
     await erebusMap(bin);
     await erebusMap(bin, "ErebusTerra");
     await warStart(bin);

@@ -41,6 +41,37 @@ impl Game {
         self.supply_state(self.cities[c].siege_turns)
     }
 
+    /// The invested city holding unit `u` (docs/SUPPLY.md, 3.2): a land unit of a land army,
+    /// not cargo, standing in an invested city of its team. Until the investment ends it moves
+    /// out of the city only to attack (a sally); rules effects (routs, bumps, spells) still
+    /// move it.
+    pub fn unit_siege_hold(&self, u: UnitId) -> Option<CityId> {
+        if !self.units.contains(u) || !self.unit_siege_holdable(u) {
+            return None;
+        }
+        let plot = self.unit_plot_opt(u)?;
+        let c = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c))?;
+        (self.city_team(c) == self.unit_get_team(u) && self.city_is_invested(c)).then_some(c)
+    }
+
+    /// Whether unit `u` is one a siege can hold: a land unit of a land army, not cargo.
+    fn unit_siege_holdable(&self, u: UnitId) -> bool {
+        self.units[u].army.is_some_and(|a| self.armies.contains(a) && self.armies[a].domain == crate::army::ArmyDomain::Land)
+            && self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
+            && !self.unit_is_cargo(u)
+    }
+
+    /// The invested city holding a unit of group `g` ([`Game::unit_siege_hold`]). The city and
+    /// its investment are tested once, only for a group in a city of its team with such a unit.
+    pub fn group_siege_hold(&self, g: GroupId) -> Option<CityId> {
+        let group = self.groups.get(g)?;
+        let plot = self.group_plot(g)?;
+        let c = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c))?;
+        let team = self.city_team(c);
+        let held = group.units.iter().any(|&u| self.units.contains(u) && self.unit_get_team(u) == team && self.unit_siege_holdable(u));
+        (held && self.city_is_invested(c)).then_some(c)
+    }
+
     /// Counter on a unit's city plot. Every unit there is affected; Sentinels are not units.
     pub fn plot_siege_turns(&self, plot: PlotIdx) -> i32 {
         self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c))
