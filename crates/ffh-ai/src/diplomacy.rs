@@ -1593,6 +1593,17 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
             _ => "these items are not traded",
         });
     }
+    // A treaty or a pact binds both sides: one on a single side is no gift and no demand (a
+    // demand for peace alone would count 0 and be paid as a demand is).
+    for (kind, mutual) in [
+        (TradeableItem::TRADE_PEACE_TREATY, "a peace treaty is mutual"),
+        (TradeableItem::TRADE_OPEN_BORDERS, "open borders are mutual"),
+        (TradeableItem::TRADE_DEFENSIVE_PACT, "a defensive pact is mutual"),
+    ] {
+        if has(they_give, kind) != has(we_give, kind) {
+            return no(mutual);
+        }
+    }
     if we_give.is_empty() {
         return OfferVerdict { accept: true, margin: Some(crate::trade::deal_val(g, p, from, they_give, false, 1)), why: Some("gift".into()) };
     }
@@ -1628,27 +1639,19 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         }
         !g.at_war(team, their_team) && rel + step >= 1
     };
-    // A pact inside a larger deal: it is on both sides and its rule holds, then the rest of the
-    // deal is judged on its own (only they give more: a gift; only we do: a demand).
-    let pacts = [
-        (TradeableItem::TRADE_OPEN_BORDERS, "open borders are mutual"),
-        (TradeableItem::TRADE_DEFENSIVE_PACT, "a defensive pact is mutual"),
-    ];
-    let in_deal = |kind: TradeableItem| has(they_give, kind) || has(we_give, kind);
+    // A pact inside a larger deal (it is on both sides: above): its rule holds, then the rest of
+    // the deal is judged on its own (only they give more: a gift; only we do: a demand).
+    let pacts = [TradeableItem::TRADE_OPEN_BORDERS, TradeableItem::TRADE_DEFENSIVE_PACT];
+    let in_deal = |kind: TradeableItem| has(we_give, kind);
     let pure = |kind: TradeableItem| all(they_give, kind) && all(we_give, kind);
-    if pacts.iter().any(|&(k, _)| in_deal(k)) && !pacts.iter().any(|&(k, _)| pure(k)) {
-        for (kind, mutual) in pacts {
-            if in_deal(kind) && !(has(they_give, kind) && has(we_give, kind)) {
-                return no(mutual);
-            }
-        }
+    if pacts.iter().any(|&k| in_deal(k)) && !pacts.iter().any(|&k| pure(k)) {
         if in_deal(TradeableItem::TRADE_OPEN_BORDERS) && !ob_holds() {
             return no(OB_WHY);
         }
         if in_deal(TradeableItem::TRADE_DEFENSIVE_PACT) && !dp_holds() {
             return no(DP_WHY);
         }
-        let rest = |items: &[TradeData]| items.iter().filter(|t| !pacts.iter().any(|&(k, _)| t.item_type == k)).cloned().collect::<Vec<_>>();
+        let rest = |items: &[TradeData]| items.iter().filter(|t| !pacts.contains(&t.item_type)).cloned().collect::<Vec<_>>();
         let (theirs, ours) = (rest(they_give), rest(we_give));
         if theirs.is_empty() && ours.is_empty() {
             return rule(true, "");
