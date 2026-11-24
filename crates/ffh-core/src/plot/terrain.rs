@@ -20,6 +20,7 @@ use crate::defs::{MAX_INT, NUM_CITY_PLOTS};
 use crate::game::Game;
 use crate::ids::*;
 use crate::utils::final_improvement_upgrade;
+use crate::unit::{ImprovementRefusal, PlotBuildRefusal};
 use ffh_data::*;
 
 impl Game {
@@ -851,6 +852,12 @@ impl Game {
 
     /// C++ `CvPlot::canHaveImprovement` (C++ defaults: `eTeam = NO_TEAM`, `bPotential = false`).
     pub fn plot_can_have_improvement(&self, p: PlotIdx, improvement: ImprovementType, team: Option<TeamId>, potential: bool) -> bool {
+        self.plot_improvement_refusal(p, improvement, team, potential).is_none()
+    }
+
+    /// Why [`Game::plot_can_have_improvement`] refuses: its first failing check, `None` when it
+    /// does not.
+    pub fn plot_improvement_refusal(&self, p: PlotIdx, improvement: ImprovementType, team: Option<TeamId>, potential: bool) -> Option<ImprovementRefusal> {
         let d = self.d;
         let info = &d.improvements[improvement];
         let plot = &self.map.plots[p];
@@ -858,56 +865,56 @@ impl Game {
         let mut valid = false;
 
         if live_plot_city(self, p).is_some() {
-            return false;
+            return Some(ImprovementRefusal::City);
         }
 
         // Card: The Sky Falls (docs/CARDS.md): nothing is built on Crater, not even what hills
         // allow (mines).
         if self.plot_is_unimprovable(p) {
-            return false;
+            return Some(ImprovementRefusal::Unimprovable);
         }
 
         //FfH: Modified by Kael 09/10/2008
         if self.plot_is_impassable(p) {
             if self.plot_is_peak(p) {
                 if !info.requires_peak {
-                    return false;
+                    return Some(ImprovementRefusal::Impassable);
                 }
             } else {
-                return false;
+                return Some(ImprovementRefusal::Impassable);
             }
         }
         if info.requires_peak && !self.plot_is_peak(p) {
-            return false;
+            return Some(ImprovementRefusal::Peak);
         }
         //FfH: End Modify
 
         if info.water != self.plot_is_water(p) {
-            return false;
+            return Some(if info.water { ImprovementRefusal::OnWater } else { ImprovementRefusal::OnLand });
         }
 
         if let Some(feature) = plot.feature_type {
             if d.features[feature].no_improvement {
-                return false;
+                return Some(ImprovementRefusal::Feature(feature));
             }
         }
 
         if let Some(bonus) = self.plot_get_bonus_type(p, team) {
             if info.improvement_bonus[bonus].bonus_makes_valid {
-                return true;
+                return None;
             }
         }
 
         if info.no_fresh_water && self.plot_is_fresh_water(p) {
-            return false;
+            return Some(ImprovementRefusal::FreshWater);
         }
 
         if info.requires_flatlands && !self.plot_is_flatlands(p) {
-            return false;
+            return Some(ImprovementRefusal::Flatlands);
         }
 
         if info.requires_feature && plot.feature_type.is_none() {
-            return false;
+            return Some(ImprovementRefusal::NeedsFeature);
         }
 
         if info.hills_makes_valid && self.plot_is_hills(p) {
@@ -934,7 +941,7 @@ impl Game {
         }
 
         if !valid {
-            return false;
+            return Some(ImprovementRefusal::Site);
         }
 
         if info.requires_river_side {
@@ -953,22 +960,22 @@ impl Game {
             }
 
             if !valid {
-                return false;
+                return Some(ImprovementRefusal::RiverSide);
             }
         }
 
         for i in 0..YieldType::NUM {
             if self.plot_calculate_nature_yield(p, YieldType::from_usize(i), team, false) < info.prereq_nature_yield[i] {
-                return false;
+                return Some(ImprovementRefusal::NatureYield(YieldType::from_usize(i), info.prereq_nature_yield[i]));
             }
         }
 
         let ignore_irrigation = self.plot_get_team(p).is_some_and(|t| self.team_is_ignore_irrigation(t));
         if !ignore_irrigation && !potential && info.requires_irrigation && !self.plot_is_irrigation_available(p, false) {
-            return false;
+            return Some(ImprovementRefusal::Irrigation);
         }
 
-        true
+        None
     }
 
     /// C++ `CvPlot::setImprovementType`.
@@ -1333,26 +1340,31 @@ impl Game {
 
     /// C++ `CvPlot::canBuild` (calls the `canBuild` Python callback when enabled).
     pub fn plot_can_build(&self, p: PlotIdx, build: BuildType, player: PlayerId, test_visible: bool) -> bool {
+        self.plot_build_refusal(p, build, player, test_visible).is_none()
+    }
+
+    /// Why [`Game::plot_can_build`] refuses: its first failing check, `None` when it does not.
+    pub fn plot_build_refusal(&self, p: PlotIdx, build: BuildType, player: PlayerId, test_visible: bool) -> Option<PlotBuildRefusal> {
         let d = self.d;
         let plot = &self.map.plots[p];
 
         //FfH: Added by Kael 11/10/2008
         if plot.build_disabled {
-            return false;
+            return Some(PlotBuildRefusal::Disabled);
         }
         //FfH: End Add
         // This game's: nothing is built on Sea Ice (no improvement, no route).
         if plot.sea_ice {
-            return false;
+            return Some(PlotBuildRefusal::SeaIce);
         }
 
         if d.defines.use_can_build_callback != 0 {
             // Python canBuild(iX, iY, iBuild, iPlayer): -1 = use default, 0 = cannot, >= 1 = can.
             let result = self.py_can_build(p, build, test_visible, player);
             if result >= 1 {
-                return true;
+                return None;
             } else if result == 0 {
-                return false;
+                return Some(PlotBuildRefusal::Script);
             }
         }
 
@@ -1363,8 +1375,8 @@ impl Game {
         let mut valid = false;
 
         if let Some(improvement) = build_info.improvement {
-            if !self.plot_can_have_improvement(p, improvement, Some(player_team), test_visible) {
-                return false;
+            if let Some(r) = self.plot_improvement_refusal(p, improvement, Some(player_team), test_visible) {
+                return Some(PlotBuildRefusal::Improvement(r));
             }
 
             // This game's cards (docs/CARDS.md): Siege Lines next to a city of a civ at war with
@@ -1373,43 +1385,43 @@ impl Game {
             let card = &d.improvements[improvement];
             if !test_visible {
                 if card.enemy_city_adjacent && !self.plot_next_to_enemy_city(p, player_team) {
-                    return false;
+                    return Some(PlotBuildRefusal::EnemyCityAdjacent);
                 }
                 if card.requires_route && plot.route_type.is_none() {
-                    return false;
+                    return Some(PlotBuildRefusal::NeedsRoute);
                 }
                 if card.canal && !self.plot_canal_connected(p) {
-                    return false;
+                    return Some(PlotBuildRefusal::CanalNotConnected);
                 }
                 // Causeway: next to land.
                 if card.land_bridge && !self.plot_is_adjacent_to_land(p) {
-                    return false;
+                    return Some(PlotBuildRefusal::CausewayNeedsLand);
                 }
             }
 
             // Not in C++ (docs/WORKS.md; FFH2's `reqPirateCove`): a Pirate Cove goes on an empty
             // coast plot of the builder with no cove within 2 plots.
             if !test_visible && opt_from_i32::<ImprovementType>(d.defines.pirate_cove_improvement) == Some(improvement) && !self.plot_is_pirate_cove_valid(p, player) {
-                return false;
+                return Some(PlotBuildRefusal::PirateCoveSite);
             }
 
             // Card: the Trading Post (docs/CARDS.md): outside every border, away from the cities.
-            if !self.plot_card_improvement_site_ok(p, improvement) {
-                return false;
+            if let Some(r) = self.plot_card_improvement_site_refusal(p, improvement) {
+                return Some(r);
             }
 
             if let Some(current) = plot.improvement_type {
                 if d.improvements[current].permanent {
-                    return false;
+                    return Some(PlotBuildRefusal::Permanent(current));
                 }
 
                 if current == improvement {
-                    return false;
+                    return Some(PlotBuildRefusal::Already(current));
                 }
 
                 if let Some(final_improvement) = final_improvement_upgrade(d, current, 0) {
                     if Some(final_improvement) == final_improvement_upgrade(d, improvement, 0) {
-                        return false;
+                        return Some(PlotBuildRefusal::SameUpgrade(current));
                     }
                 }
             }
@@ -1420,11 +1432,11 @@ impl Game {
                 if d.improvements[improvement].outside_borders {
                     //outside borders can't be built in other's culture
                     if plot_team.is_some() {
-                        return false;
+                        return Some(PlotBuildRefusal::ForeignBorders);
                     }
                 } else {
                     //only buildable in own culture
-                    return false;
+                    return Some(PlotBuildRefusal::OwnBorders);
                 }
             }
 
@@ -1434,14 +1446,14 @@ impl Game {
         if let Some(route) = build_info.route {
             if let Some(current) = plot.route_type {
                 if d.routes[current].value >= d.routes[route].value {
-                    return false;
+                    return Some(PlotBuildRefusal::Route(current));
                 }
             }
 
             if !test_visible {
                 if let Some(bonus) = d.routes[route].prereq_bonus {
                     if !self.plot_is_adjacent_plot_group_connected_bonus(p, player, bonus) {
-                        return false;
+                        return Some(PlotBuildRefusal::RouteBonus(bonus));
                     }
                 }
 
@@ -1458,7 +1470,7 @@ impl Game {
                 }
 
                 if !found_valid {
-                    return false;
+                    return Some(PlotBuildRefusal::RouteOrBonus(route));
                 }
             }
 
@@ -1477,7 +1489,7 @@ impl Game {
                             .player_get_civilization_type(owner)
                             .is_some_and(|civ| d.civilizations[civ].maintain_features[feature])
                     {
-                        return false;
+                        return Some(PlotBuildRefusal::FeatureOwner(feature));
                     }
                 }
 
@@ -1485,7 +1497,7 @@ impl Game {
             }
         }
 
-        valid
+        if valid { None } else { Some(PlotBuildRefusal::Nothing) }
     }
 
     /// C++ `CvPlot::getBuildTime`.

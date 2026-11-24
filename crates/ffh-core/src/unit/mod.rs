@@ -30,6 +30,8 @@ mod combat;
 mod duel_reference;
 mod ffh;
 pub use ffh::{SpellRefusal, SummonHow};
+pub mod order_refusal;
+pub use order_refusal::*;
 mod lifecycle;
 mod missions;
 mod movement;

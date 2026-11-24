@@ -14,6 +14,7 @@ use crate::city::specialties::*;
 
 use crate::game::Game;
 use crate::ids::*;
+use super::order_refusal::{BuildRefusal, MissionRefusal};
 use crate::utils::{is_limited_project, is_limited_unit_class, is_limited_wonder_class};
 use ffh_data::*;
 
@@ -486,43 +487,48 @@ impl Game {
         religion: Option<ReligionType>,
         test_visible: bool,
     ) -> bool {
+        self.unit_spread_refusal(u, plot, religion, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_spread`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_spread_refusal(&self, u: UnitId, plot: PlotIdx, religion: Option<ReligionType>, test_visible: bool) -> Option<MissionRefusal> {
         // UNOFFICIAL_PATCH (efficiency): the Python callback moved below the faster checks.
 
         let Some(religion) = religion else {
-            return false;
+            return Some(MissionRefusal::NoReligion);
         };
 
         if self.d.units[self.units[u].unit_type].religion_spreads[religion] <= 0 {
-            return false;
+            return Some(MissionRefusal::NoSpread(religion));
         }
 
         let Some(city) = live_plot_city(self, plot) else {
-            return false;
+            return Some(MissionRefusal::NoCity);
         };
 
         if self.cities[city].has_religion[religion] {
-            return false;
+            return Some(MissionRefusal::HasReligion(religion));
         }
 
         if !self.unit_can_enter_area(u, self.plot_get_team(plot), self.plot_area(plot), false) {
-            return false;
+            return Some(MissionRefusal::CannotEnter);
         }
 
         if !test_visible && self.city_team(city) != self.unit_get_team(u) {
             let city_owner = self.cities[city].owner;
             if self.player_is_no_non_state_religion_spread(city_owner) && Some(religion) != self.player_get_state_religion(city_owner) {
-                return false;
+                return Some(MissionRefusal::StateReligionOnly);
             }
         }
 
         if self.d.defines.use_use_cannot_spread_religion_callback != 0 {
             let (x, y) = self.map.xy(plot);
             if py_cannot_spread_religion(self, self.units[u].owner, u, religion, x, y) {
-                return false;
+                return Some(MissionRefusal::SpreadScript);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::spread` (CvUnit.cpp:6545-6609).
@@ -596,42 +602,48 @@ impl Game {
         corporation: Option<CorporationType>,
         test_visible: bool,
     ) -> bool {
+        self.unit_spread_corporation_refusal(u, plot, corporation, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_spread_corporation`] refuses: its first failing check, `None` when it
+    /// does not.
+    pub fn unit_spread_corporation_refusal(&self, u: UnitId, plot: PlotIdx, corporation: Option<CorporationType>, test_visible: bool) -> Option<MissionRefusal> {
         let d = self.d;
 
         let Some(corporation) = corporation else {
-            return false;
+            return Some(MissionRefusal::NoCorporation);
         };
 
         let owner = self.units[u].owner;
 
         if !self.player_is_active_corporation(owner, corporation) {
-            return false;
+            return Some(MissionRefusal::InactiveCorporation(corporation));
         }
 
         if d.units[self.units[u].unit_type].corporation_spreads[corporation] <= 0 {
-            return false;
+            return Some(MissionRefusal::NoCorporationSpread(corporation));
         }
 
         let Some(city) = live_plot_city(self, plot) else {
-            return false;
+            return Some(MissionRefusal::NoCity);
         };
 
         if self.cities[city].has_corporation[corporation] {
-            return false;
+            return Some(MissionRefusal::HasCorporation(corporation));
         }
 
         if !self.unit_can_enter_area(u, self.plot_get_team(plot), self.plot_area(plot), false) {
-            return false;
+            return Some(MissionRefusal::CannotEnter);
         }
 
         if !test_visible {
             if !self.player_is_active_corporation(self.cities[city].owner, corporation) {
-                return false;
+                return Some(MissionRefusal::ForeignInactiveCorporation(corporation));
             }
 
             for loop_corporation in d.corporations.keys() {
                 if self.city_is_headquarters(city, loop_corporation) && self.is_competing_corporation(loop_corporation, corporation) {
-                    return false;
+                    return Some(MissionRefusal::CompetingHeadquarters(loop_corporation));
                 }
             }
 
@@ -657,15 +669,16 @@ impl Game {
             }
 
             if !valid {
-                return false;
+                return Some(MissionRefusal::CorporationBonus(corporation));
             }
 
-            if self.players[owner].gold < self.unit_spread_corporation_cost(u, corporation, Some(city)) {
-                return false;
+            let cost = self.unit_spread_corporation_cost(u, corporation, Some(city));
+            if self.players[owner].gold < cost {
+                return Some(MissionRefusal::Gold { have: self.players[owner].gold, need: cost });
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::spreadCorporationCost` (CvUnit.cpp:6700-6730).
@@ -749,37 +762,42 @@ impl Game {
 
     /// C++ `CvUnit::canJoin` (CvUnit.cpp:6778-6822).
     pub fn unit_can_join(&self, u: UnitId, plot: PlotIdx, specialist: Option<SpecialistType>) -> bool {
+        self.unit_join_refusal(u, plot, specialist).is_none()
+    }
+
+    /// Why [`Game::unit_can_join`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_join_refusal(&self, u: UnitId, plot: PlotIdx, specialist: Option<SpecialistType>) -> Option<MissionRefusal> {
         let Some(specialist) = specialist else {
-            return false;
+            return Some(MissionRefusal::NoSpecialist);
         };
 
         if !self.d.units[self.units[u].unit_type].great_peoples[specialist] {
-            return false;
+            return Some(MissionRefusal::NotGreatPerson(specialist));
         }
 
         let Some(city) = live_plot_city(self, plot) else {
-            return false;
+            return Some(MissionRefusal::NoCity);
         };
 
         if !self.city_can_join(city) {
-            return false;
+            return Some(MissionRefusal::CityCannotJoin);
         }
 
         if self.city_team(city) != self.unit_get_team(u) {
-            return false;
+            return Some(MissionRefusal::ForeignCity);
         }
 
         if self.units[u].death_delay {
-            return false;
+            return Some(MissionRefusal::Dying);
         }
 
         // FfH: Added by Kael 08/18/2008
         if self.units[u].has_casted {
-            return false;
+            return Some(MissionRefusal::HasCast);
         }
         // FfH: End Add
 
-        true
+        None
     }
 
     /// C++ `CvUnit::join` (CvUnit.cpp:6825-6849).
@@ -814,44 +832,49 @@ impl Game {
         building: Option<BuildingType>,
         test_visible: bool,
     ) -> bool {
+        self.unit_construct_refusal(u, plot, building, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_construct`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_construct_refusal(&self, u: UnitId, plot: PlotIdx, building: Option<BuildingType>, test_visible: bool) -> Option<MissionRefusal> {
         let Some(building) = building else {
-            return false;
+            return Some(MissionRefusal::NoBuilding);
         };
 
         // FfH: Added by Kael 08/18/2008
         if self.units[u].has_casted {
-            return false;
+            return Some(MissionRefusal::HasCast);
         }
         // FfH: End Add
 
         let Some(city) = live_plot_city(self, plot) else {
-            return false;
+            return Some(MissionRefusal::NoCity);
         };
 
         if self.unit_get_team(u) != self.city_team(city) {
-            return false;
+            return Some(MissionRefusal::ForeignCity);
         }
 
         if self.city_num_real_family(city, building) > 0 {
-            return false;
+            return Some(MissionRefusal::HasBuilding(building));
         }
 
         let info = &self.d.units[self.units[u].unit_type];
         if !info.force_buildings[building] {
             if !info.buildings[building] {
-                return false;
+                return Some(MissionRefusal::NotConstructor(building));
             }
 
-            if !self.city_can_construct(city, building, false, test_visible, true) {
-                return false;
+            if let Some(r) = self.city_construct_refusal(city, building, false, test_visible, true) {
+                return Some(MissionRefusal::Construct(building, r));
             }
         }
 
         if self.units[u].death_delay {
-            return false;
+            return Some(MissionRefusal::Dying);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::construct` (CvUnit.cpp:6907-6933).
@@ -915,20 +938,26 @@ impl Game {
     }
 
     /// C++ `CvUnit::canDiscover` (CvUnit.cpp:6967-6989).
-    pub fn unit_can_discover(&self, u: UnitId, _plot: PlotIdx) -> bool {
+    pub fn unit_can_discover(&self, u: UnitId, plot: PlotIdx) -> bool {
+        self.unit_discover_refusal(u, plot).is_none()
+    }
+
+    /// Why [`Game::unit_can_discover`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_discover_refusal(&self, u: UnitId, _plot: PlotIdx) -> Option<MissionRefusal> {
         let Some(tech) = self.unit_get_discovery_tech(u) else {
-            return false;
+            return Some(MissionRefusal::NoDiscoveryTech);
         };
 
         if self.unit_get_discover_research(u, Some(tech)) == 0 {
-            return false;
+            // (No research: the unit has cast this turn, or it adds none.)
+            return Some(if self.units[u].has_casted { MissionRefusal::HasCast } else { MissionRefusal::NoResearch });
         }
 
         if self.units[u].death_delay {
-            return false;
+            return Some(MissionRefusal::Dying);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::discover` (CvUnit.cpp:6992-7014).
@@ -988,29 +1017,41 @@ impl Game {
 
     /// C++ `CvUnit::canHurry` (CvUnit.cpp:7057-7092).
     pub fn unit_can_hurry(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
+        self.unit_hurry_refusal(u, plot, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_hurry`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_hurry_refusal(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> Option<MissionRefusal> {
         if self.units[u].death_delay {
-            return false;
+            return Some(MissionRefusal::Dying);
         }
 
         if self.unit_get_hurry_production(u, plot) == 0 {
-            return false;
+            // (No production: no city, the unit has cast this turn, or nothing to add.)
+            return Some(if live_plot_city(self, plot).is_none() {
+                MissionRefusal::NoCity
+            } else if self.units[u].has_casted {
+                MissionRefusal::HasCast
+            } else {
+                MissionRefusal::NoHurry
+            });
         }
 
         let Some(city) = live_plot_city(self, plot) else {
-            return false;
+            return Some(MissionRefusal::NoCity);
         };
 
         if self.city_production_turns_left(city) == 1 {
-            return false;
+            return Some(MissionRefusal::OneTurnLeft);
         }
 
         // This game's rituals (`ffh::rituals`): every project is one, and a great person's hurry
         // is production, not gold: it hurries a ritual (FFH2's hurried buildings only).
         if !test_visible && !self.city_is_production_building(city) && !self.city_is_production_project(city) {
-            return false;
+            return Some(MissionRefusal::HurryOnly);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::hurry` (CvUnit.cpp:7095-7119).
@@ -1066,27 +1107,32 @@ impl Game {
 
     /// C++ `CvUnit::canTrade` (CvUnit.cpp:7152-7185).
     pub fn unit_can_trade(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
+        self.unit_trade_refusal(u, plot, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_trade`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_trade_refusal(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> Option<MissionRefusal> {
         if self.units[u].death_delay {
-            return false;
+            return Some(MissionRefusal::Dying);
         }
 
         let Some(city) = live_plot_city(self, plot) else {
-            return false;
+            return Some(MissionRefusal::NoCity);
         };
 
         if self.unit_get_trade_gold(u, plot) == 0 {
-            return false;
+            return Some(if self.units[u].has_casted { MissionRefusal::HasCast } else { MissionRefusal::NoTradeGold });
         }
 
         if !self.unit_can_enter_area(u, self.plot_get_team(plot), self.plot_area(plot), false) {
-            return false;
+            return Some(MissionRefusal::CannotEnter);
         }
 
         if !test_visible && self.city_team(city) == self.unit_get_team(u) {
-            return false;
+            return Some(MissionRefusal::OwnTeamCity);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::trade` (CvUnit.cpp:7188-7205).
@@ -1126,23 +1172,29 @@ impl Game {
 
     /// C++ `CvUnit::canGreatWork` (CvUnit.cpp:7228-7253).
     pub fn unit_can_great_work(&self, u: UnitId, plot: PlotIdx) -> bool {
+        self.unit_great_work_refusal(u, plot).is_none()
+    }
+
+    /// Why [`Game::unit_can_great_work`] refuses: its first failing check, `None` when it does
+    /// not.
+    pub fn unit_great_work_refusal(&self, u: UnitId, plot: PlotIdx) -> Option<MissionRefusal> {
         if self.units[u].death_delay {
-            return false;
+            return Some(MissionRefusal::Dying);
         }
 
         let Some(city) = live_plot_city(self, plot) else {
-            return false;
+            return Some(MissionRefusal::NoCity);
         };
 
         if self.cities[city].owner != self.units[u].owner {
-            return false;
+            return Some(MissionRefusal::NotOwnCity);
         }
 
         if self.unit_get_great_work_culture(u, plot) == 0 {
-            return false;
+            return Some(if self.units[u].has_casted { MissionRefusal::HasCast } else { MissionRefusal::NoCulture });
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::greatWork` (CvUnit.cpp:7256-7292).
@@ -1181,19 +1233,27 @@ impl Game {
     }
 
     /// C++ `CvUnit::canGoldenAge` (CvUnit.cpp:7604-7620).
-    pub fn unit_can_golden_age(&self, u: UnitId, _plot: PlotIdx, test_visible: bool) -> bool {
+    pub fn unit_can_golden_age(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
+        self.unit_golden_age_refusal(u, plot, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_golden_age`] refuses: its first failing check, `None` when it does
+    /// not.
+    pub fn unit_golden_age_refusal(&self, u: UnitId, _plot: PlotIdx, test_visible: bool) -> Option<MissionRefusal> {
         if !self.unit_is_golden_age(u) {
-            return false;
+            // (`isGoldenAge` is false for a dying unit too.)
+            return Some(if self.units[u].death_delay { MissionRefusal::Dying } else { MissionRefusal::NotGoldenAge });
         }
 
         if !test_visible {
             let owner = self.units[u].owner;
-            if self.player_units_required_for_golden_age(owner) > self.player_units_golden_age_ready(owner) {
-                return false;
+            let (need, have) = (self.player_units_required_for_golden_age(owner), self.player_units_golden_age_ready(owner));
+            if need > have {
+                return Some(MissionRefusal::GoldenAgeUnits { need, have });
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::goldenAge` (CvUnit.cpp:7623-7643).
@@ -1224,25 +1284,30 @@ impl Game {
 
     /// C++ `CvUnit::canBuild` (CvUnit.cpp:7646-7679).
     pub fn unit_can_build(&self, u: UnitId, plot: PlotIdx, build: BuildType, test_visible: bool) -> bool {
+        self.unit_build_refusal(u, plot, build, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_build`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_build_refusal(&self, u: UnitId, plot: PlotIdx, build: BuildType, test_visible: bool) -> Option<BuildRefusal> {
         // Not in C++ (docs/WORKS.md): army units build the field works (roads, forts).
         if !self.d.units[self.units[u].unit_type].builds[build] && !(self.d.builds[build].field && self.unit_is_army_unit(u)) {
-            return false;
+            return Some(BuildRefusal::NotBuilder);
         }
 
-        if !self.player_can_build(self.units[u].owner, plot, build, test_visible) {
-            return false;
+        if let Some(r) = self.player_build_refusal(self.units[u].owner, plot, build, test_visible) {
+            return Some(r);
         }
 
         if !self.plot_is_valid_domain_for_action(plot, u) {
-            return false;
+            return Some(BuildRefusal::Domain);
         }
 
         // ADDON (stop automated workers from building forts) Sephi
         if self.unit_is_automated(u) && build.i() == self.d.defines.build_fort {
-            return false;
+            return Some(BuildRefusal::AutomatedFort);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::build` (CvUnit.cpp:7682-7714).

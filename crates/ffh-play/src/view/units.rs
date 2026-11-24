@@ -144,6 +144,9 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
                         extra.set("turns", g.plot_get_build_turns_left(plot, b, now, then));
                         extra.set("cost", g.player_get_build_cost(v.h, plot, b));
                     }
+                    if !enabled {
+                        extra.set("why", crate::view::reasons::mission_refusal(g, units, m, k, -1, plot));
+                    }
                     push("mission", enabled, mission_cmd(units, m, k, -1), extra);
                 }
             }
@@ -156,12 +159,22 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
                         help.push_str("[NEWLINE]");
                         help.push_str(&line);
                     }
-                    push("mission", can(m, -1, -1, false), mission_cmd(units, m, -1, -1), crate::jobj! { "mission" => Json::idx(m), "help" => help });
+                    let enabled = can(m, -1, -1, false);
+                    let mut extra = crate::jobj! { "mission" => Json::idx(m), "help" => help };
+                    if !enabled {
+                        extra.set("why", crate::view::reasons::mission_refusal(g, units, m, -1, -1, plot));
+                    }
+                    push("mission", enabled, mission_cmd(units, m, -1, -1), extra);
                 }
             }
             _ => {
                 if can(m, -1, -1, true) {
-                    push("mission", can(m, -1, -1, false), mission_cmd(units, m, -1, -1), crate::jobj! { "mission" => Json::idx(m) });
+                    let enabled = can(m, -1, -1, false);
+                    let mut extra = crate::jobj! { "mission" => Json::idx(m) };
+                    if !enabled {
+                        extra.set("why", crate::view::reasons::mission_refusal(g, units, m, -1, -1, plot));
+                    }
+                    push("mission", enabled, mission_cmd(units, m, -1, -1), extra);
                 } else if m == MissionType::MISSION_PILLAGE {
                     // Raids (docs/RAIDS.md, section 7): a pillage the fields rule refuses is shown
                     // disabled, with its reason (refused for any other reason, it is not shown).

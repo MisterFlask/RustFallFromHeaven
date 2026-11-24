@@ -431,9 +431,16 @@ impl Game {
     /// on plot `p`? A claim only on unowned land; `min_city_distance` plots or more from every
     /// city.
     pub fn plot_card_improvement_site_ok(&self, p: PlotIdx, imp: ImprovementType) -> bool {
+        self.plot_card_improvement_site_refusal(p, imp).is_none()
+    }
+
+    /// Why [`Game::plot_card_improvement_site_ok`] refuses (`ClaimOwned`, `NearCity`), `None`
+    /// when it does not.
+    pub fn plot_card_improvement_site_refusal(&self, p: PlotIdx, imp: ImprovementType) -> Option<crate::unit::PlotBuildRefusal> {
+        use crate::unit::PlotBuildRefusal;
         let info = &self.d.improvements[imp];
         if info.claim_range > 0 && self.map.plots[p].owner.is_some() {
-            return false;
+            return Some(PlotBuildRefusal::ClaimOwned);
         }
         let r = info.min_city_distance - 1;
         if r >= 0 {
@@ -441,12 +448,12 @@ impl Game {
             for dx in -r..=r {
                 for dy in -r..=r {
                     if self.plot_xy(x, y, dx, dy).is_some_and(|q| self.map.plots[q].plot_city.is_some()) {
-                        return false;
+                        return Some(PlotBuildRefusal::NearCity(info.min_city_distance));
                     }
                 }
             }
         }
-        true
+        None
     }
 }
 

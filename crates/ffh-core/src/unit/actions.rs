@@ -10,6 +10,7 @@ use crate::log::{Audience};
 use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
+use super::order_refusal::{AutomateRefusal, GiftRefusal, MissionRefusal, ScrapRefusal};
 use ffh_data::*;
 
 /// FfH 0.41 (Kael 04/22/2008) disables gifting: `CvUnit::canGift` returns false before its BtS
@@ -274,12 +275,17 @@ impl Game {
 
     /// C++ `CvUnit::canAutomate` (CvUnit.cpp:3730-3820).
     pub fn unit_can_automate(&self, u: UnitId, automate: Option<AutomateType>) -> bool {
+        self.unit_automate_refusal(u, automate).is_none()
+    }
+
+    /// Why [`Game::unit_can_automate`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_automate_refusal(&self, u: UnitId, automate: Option<AutomateType>) -> Option<AutomateRefusal> {
         let Some(automate) = automate else {
-            return false;
+            return Some(AutomateRefusal::NoAutomate);
         };
 
         if !self.unit_is_group_head(u) {
-            return false;
+            return Some(AutomateRefusal::NotGroupHead);
         }
 
         let unit_ai = self.units[u].ai_type;
@@ -288,7 +294,7 @@ impl Game {
             // Not in C++ (docs/WORKS.md): no unit improves the land by itself. The cities' crews
             // do the workers' builds, and the units' builds (mana nodes, the field works) are
             // ordered one by one.
-            AutomateType::AUTOMATE_BUILD | AutomateType::AUTOMATE_NETWORK | AutomateType::AUTOMATE_CITY => return false,
+            AutomateType::AUTOMATE_BUILD | AutomateType::AUTOMATE_NETWORK | AutomateType::AUTOMATE_CITY => return Some(AutomateRefusal::Disabled),
 
             AutomateType::AUTOMATE_EXPLORE => {
                 // BETTER_BTS_AI_MOD 06/02/09 jdog5000: enable exploration for air units.
@@ -297,24 +303,24 @@ impl Game {
                     && self.unit_get_domain_type(u) != DomainType::DOMAIN_AIR)
                     || self.unit_get_domain_type(u) == DomainType::DOMAIN_IMMOBILE
                 {
-                    return false;
+                    return Some(AutomateRefusal::Explore);
                 }
 
                 if self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR && !self.unit_can_recon(u, None) {
-                    return false;
+                    return Some(AutomateRefusal::AirRecon);
                 }
             }
 
             AutomateType::AUTOMATE_RELIGION => {
                 if unit_ai != Some(UnitAIType::UNITAI_MISSIONARY) {
-                    return false;
+                    return Some(AutomateRefusal::NotMissionary);
                 }
             }
 
             // ADDON (automatic terraforming) Sephi, rewritten by Kael 09/19/2009
             AutomateType::AUTOMATE_TERRAFORMING => {
                 if !self.units[u].terraformer {
-                    return false;
+                    return Some(AutomateRefusal::NotTerraformer);
                 }
             }
 
@@ -322,7 +328,7 @@ impl Game {
             _ => {}
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::automate` (CvUnit.cpp:3920-3928).
@@ -337,20 +343,25 @@ impl Game {
 
     /// C++ `CvUnit::canScrap` (CvUnit.cpp:3931-3950).
     pub fn unit_can_scrap(&self, u: UnitId) -> bool {
+        self.unit_scrap_refusal(u).is_none()
+    }
+
+    /// Why [`Game::unit_can_scrap`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_scrap_refusal(&self, u: UnitId) -> Option<ScrapRefusal> {
         if self.plot_is_fighting(self.unit_plot(u)) {
-            return false;
+            return Some(ScrapRefusal::Fighting);
         }
 
         // FfH: Added by Kael 11/06/2007
         if self.players[self.units[u].owner].temp_player_timer > 0 {
-            return false;
+            return Some(ScrapRefusal::TempPlayer);
         }
         if self.d.units[self.units[u].unit_type].equipment_promotion.is_some() {
-            return false;
+            return Some(ScrapRefusal::Equipment);
         }
         // FfH: End Add
 
-        true
+        None
     }
 
     /// C++ `CvUnit::scrap` (CvUnit.cpp:3953-3974).
@@ -397,9 +408,14 @@ impl Game {
     /// FfH 0.41 disables gifting: the C++ returns false before any other check.
     /// C++ non-const (asks `AI_acceptUnit`) but changes nothing.
     pub fn unit_can_gift(&self, u: UnitId, test_visible: bool, test_transport: bool) -> bool {
+        self.unit_gift_refusal(u, test_visible, test_transport).is_none()
+    }
+
+    /// Why [`Game::unit_can_gift`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_gift_refusal(&self, u: UnitId, test_visible: bool, test_transport: bool) -> Option<GiftRefusal> {
         // FfH: Added by Kael 04/22/2008 (to disable gifting)
         if GIFTING_DISABLED {
-            return false;
+            return Some(GiftRefusal::Disabled);
         }
         // FfH: End Add
 
@@ -409,38 +425,38 @@ impl Game {
         let owner = self.units[u].owner;
 
         if !self.plot_is_owned(plot) {
-            return false;
+            return Some(GiftRefusal::NotOwned);
         }
         let plot_owner = self.map.plots[plot].owner.expect("owned plot without an owner");
         let plot_team = self.plot_get_team(plot).expect("owned plot without a team");
 
         if plot_owner == owner {
-            return false;
+            return Some(GiftRefusal::OwnPlot);
         }
 
         if self.plot_is_visible_enemy_unit_for_unit(plot, u) {
-            return false;
+            return Some(GiftRefusal::Enemy);
         }
 
         if self.plot_is_visible_enemy_unit(plot, plot_owner) {
-            return false;
+            return Some(GiftRefusal::Enemy);
         }
 
         if !self.plot_is_valid_domain_for_location(plot, u) && transport.is_none() {
-            return false;
+            return Some(GiftRefusal::Domain);
         }
 
         let info = &self.d.units[self.units[u].unit_type];
         for corporation in self.d.corporations.keys() {
             if info.corporation_spreads[corporation] > 0 {
-                return false;
+                return Some(GiftRefusal::Corporation);
             }
         }
 
         if test_transport {
             if let Some(transport) = transport {
                 if self.unit_get_team(transport) != plot_team {
-                    return false;
+                    return Some(GiftRefusal::Transport);
                 }
             }
         }
@@ -449,26 +465,26 @@ impl Game {
             let unit_class = self.unit_get_unit_class_type(u);
 
             if self.team_is_unit_class_maxed_out(plot_team, unit_class, self.team_get_unit_class_making(plot_team, unit_class)) {
-                return false;
+                return Some(GiftRefusal::ClassMaxed);
             }
 
             if self.player_is_unit_class_maxed_out(plot_owner, unit_class, self.players[plot_owner].unit_class_making[unit_class]) {
-                return false;
+                return Some(GiftRefusal::ClassMaxed);
             }
 
             // C++ `AI_acceptUnit` accepts every unit for human players before any AI logic.
             if !(self.players[plot_owner].human || self.controller(plot_owner).accept_unit(self, plot_owner, u)) {
-                return false;
+                return Some(GiftRefusal::NotAccepted);
             }
         }
 
         // FfH: Added by Kael 11/06/2007
         if self.players[owner].temp_player_timer > 0 {
-            return false;
+            return Some(GiftRefusal::TempPlayer);
         }
         // FfH: End Add
 
-        !self.at_war(plot_team, self.unit_get_team(u))
+        if self.at_war(plot_team, self.unit_get_team(u)) { Some(GiftRefusal::War) } else { None }
     }
 
     /// C++ `CvUnit::gift` (CvUnit.cpp:4057-4091).
@@ -516,34 +532,44 @@ impl Game {
     }
 
     /// C++ `CvUnit::canSleep` (CvUnit.cpp:4393-4406).
-    pub fn unit_can_sleep(&self, u: UnitId, _plot: PlotIdx) -> bool {
+    pub fn unit_can_sleep(&self, u: UnitId, plot: PlotIdx) -> bool {
+        self.unit_sleep_refusal(u, plot).is_none()
+    }
+
+    /// Why [`Game::unit_can_sleep`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_sleep_refusal(&self, u: UnitId, _plot: PlotIdx) -> Option<MissionRefusal> {
         if self.unit_is_fortifyable(u) {
-            return false;
+            return Some(MissionRefusal::Fortifies);
         }
 
         if self.unit_is_waiting(u) {
-            return false;
+            return Some(MissionRefusal::Waiting);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::canFortify` (CvUnit.cpp:4409-4422).
     pub fn unit_can_fortify(&self, u: UnitId, plot: PlotIdx) -> bool {
+        self.unit_fortify_refusal(u, plot).is_none()
+    }
+
+    /// Why [`Game::unit_can_fortify`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_fortify_refusal(&self, u: UnitId, plot: PlotIdx) -> Option<MissionRefusal> {
         if !self.unit_is_fortifyable(u) {
-            return false;
+            return Some(MissionRefusal::NotFortifyable);
         }
 
         // This game's (docs/NAVAL.md, 3.2): no fortifying in boats.
         if self.unit_in_boats_at(u, plot) {
-            return false;
+            return Some(MissionRefusal::InBoats);
         }
 
         if self.unit_is_waiting(u) {
-            return false;
+            return Some(MissionRefusal::Waiting);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::canAirPatrol` (CvUnit.cpp:4425-4443).
@@ -586,32 +612,42 @@ impl Game {
 
     /// C++ `CvUnit::canHeal` (CvUnit.cpp:4501-4519).
     pub fn unit_can_heal(&self, u: UnitId, plot: PlotIdx) -> bool {
+        self.unit_heal_refusal(u, plot).is_none()
+    }
+
+    /// Why [`Game::unit_can_heal`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_heal_refusal(&self, u: UnitId, plot: PlotIdx) -> Option<MissionRefusal> {
         if !self.unit_is_hurt(u) {
-            return false;
+            return Some(MissionRefusal::NotHurt);
         }
 
         if self.unit_is_waiting(u) {
-            return false;
+            return Some(MissionRefusal::Waiting);
         }
 
         if self.unit_heal_rate(u, plot) <= 0 {
-            return false;
+            return Some(MissionRefusal::NoHeal);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::canSentry` (CvUnit.cpp:4522-4535).
     pub fn unit_can_sentry(&self, u: UnitId, plot: PlotIdx) -> bool {
+        self.unit_sentry_refusal(u, plot).is_none()
+    }
+
+    /// Why [`Game::unit_can_sentry`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_sentry_refusal(&self, u: UnitId, plot: PlotIdx) -> Option<MissionRefusal> {
         if !self.unit_can_defend(u, Some(plot)) {
-            return false;
+            return Some(MissionRefusal::CannotDefend);
         }
 
         if self.unit_is_waiting(u) {
-            return false;
+            return Some(MissionRefusal::Waiting);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::healRate` (CvUnit.cpp:4538-4673).
@@ -1327,34 +1363,39 @@ impl Game {
     /// C++ `CvUnit::canBombard` (CvUnit.cpp:5473-5496). Under engagement combat a land unit's
     /// bombard is one of its attacks this turn (one, Blitz one more: plan 5.2).
     pub fn unit_can_bombard(&self, u: UnitId, plot: PlotIdx) -> bool {
+        self.unit_bombard_refusal(u, plot).is_none()
+    }
+
+    /// Why [`Game::unit_can_bombard`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_bombard_refusal(&self, u: UnitId, plot: PlotIdx) -> Option<MissionRefusal> {
         if self.unit_bombard_rate(u) <= 0 {
-            return false;
+            return Some(MissionRefusal::NoBombard);
         }
 
         // This game's (docs/NAVAL.md, 3.2): no bombard from boats.
         if self.unit_in_boats_at(u, plot) {
-            return false;
+            return Some(MissionRefusal::InBoats);
         }
 
         if self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND {
             // Engagement combat (plan 5.2): a bombard is one of the turn's attacks (one a turn,
             // Blitz one more). Ships keep the duel's rule.
             if !self.unit_has_attack_left(u) {
-                return false;
+                return Some(MissionRefusal::NoAttackLeft);
             }
         } else if self.units[u].made_attack {
-            return false;
+            return Some(MissionRefusal::Attacked);
         }
 
         if self.unit_is_cargo(u) {
-            return false;
+            return Some(MissionRefusal::Cargo);
         }
 
         if self.unit_bombard_target(u, plot).is_none() {
-            return false;
+            return Some(MissionRefusal::NoBombardTarget);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::bombard` (CvUnit.cpp:5499-5560).
@@ -1443,16 +1484,29 @@ impl Game {
         }
     }
 
+    /// Why [`Game::unit_can_pillage`] refuses: its first failing check (the fields rule,
+    /// `Fields`, when the unit could pillage were the plot's fields not fields), `None` when it
+    /// does not.
+    pub fn unit_pillage_reason(&self, u: UnitId, plot: PlotIdx) -> Option<MissionRefusal> {
+        let r = self.unit_pillage_refusal_as(u, plot, true)?;
+        Some(if self.unit_pillage_refusal_as(u, plot, false).is_none() { MissionRefusal::Fields } else { r })
+    }
+
     /// [`Game::unit_can_pillage`]; `fields_rule`: fields cannot be pillaged.
     fn unit_can_pillage_as(&self, u: UnitId, plot: PlotIdx, fields_rule: bool) -> bool {
+        self.unit_pillage_refusal_as(u, plot, fields_rule).is_none()
+    }
+
+    /// Why [`Game::unit_can_pillage_as`] refuses: its first failing check.
+    fn unit_pillage_refusal_as(&self, u: UnitId, plot: PlotIdx, fields_rule: bool) -> Option<MissionRefusal> {
         let d = self.d;
 
         if !d.units[self.units[u].unit_type].pillage {
-            return false;
+            return Some(MissionRefusal::NotPillager);
         }
 
         if self.plot_is_city(plot, false, None) {
-            return false;
+            return Some(MissionRefusal::PillageCity);
         }
 
         let improvement = self.unit_pillage_improvement(plot, fields_rule);
@@ -1460,12 +1514,12 @@ impl Game {
         match improvement {
             None => {
                 if !self.plot_is_route(plot) {
-                    return false;
+                    return Some(MissionRefusal::NothingToPillage);
                 }
             }
             Some(improvement) => {
                 if d.improvements[improvement].permanent {
-                    return false;
+                    return Some(MissionRefusal::Permanent(improvement));
                 }
             }
         }
@@ -1473,24 +1527,24 @@ impl Game {
         if self.plot_is_owned(plot)
             && !self.unit_potential_war_action(u, plot) && (improvement.is_none() || self.map.plots[plot].owner != Some(self.units[u].owner))
         {
-            return false;
+            return Some(MissionRefusal::PillageNotAtWar);
         }
 
         if !self.plot_is_valid_domain_for_action(plot, u) {
-            return false;
+            return Some(MissionRefusal::Domain);
         }
 
         // FfH: Added by Kael 03/24/2009
         if self.unit_is_barbarian(u) {
             if let Some(improvement) = improvement {
                 if d.improvements[improvement].spawn_unit_type.is_some() {
-                    return false;
+                    return Some(MissionRefusal::Lair(improvement));
                 }
             }
         }
         // FfH: End Add
 
-        true
+        None
     }
 
     /// C++ `CvUnit::pillage` (CvUnit.cpp:5623-5750).
@@ -1598,13 +1652,25 @@ impl Game {
     /// of a player (not the barbarians') on a water plot of a sea, outside a city. (Civ4's
     /// `bPillage` flag, its own-borders and fresh-water tests are gone; `test_visible` no longer
     /// matters.)
-    pub fn unit_can_plunder(&self, u: UnitId, plot: PlotIdx, _test_visible: bool) -> bool {
-        self.unit_is_warship(u)
-            && !self.unit_is_barbarian(u)
-            && self.plot_is_water(plot)
-            && self.map.plots[plot].sea.is_some()
-            && self.map.plots[plot].plot_city.is_none()
-            && self.plot_is_valid_domain_for_action(plot, u)
+    pub fn unit_can_plunder(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
+        self.unit_plunder_refusal(u, plot, test_visible).is_none()
+    }
+
+    /// Why [`Game::unit_can_plunder`] refuses: its first failing check, `None` when it does not.
+    pub fn unit_plunder_refusal(&self, u: UnitId, plot: PlotIdx, _test_visible: bool) -> Option<MissionRefusal> {
+        if !self.unit_is_warship(u) {
+            Some(MissionRefusal::NotWarship)
+        } else if self.unit_is_barbarian(u) {
+            Some(MissionRefusal::Barbarian)
+        } else if !(self.plot_is_water(plot) && self.map.plots[plot].sea.is_some()) {
+            Some(MissionRefusal::NotSea)
+        } else if self.map.plots[plot].plot_city.is_some() {
+            Some(MissionRefusal::PatrolCity)
+        } else if !self.plot_is_valid_domain_for_action(plot, u) {
+            Some(MissionRefusal::Domain)
+        } else {
+            None
+        }
     }
 
     /// C++ `CvUnit::plunder` (CvUnit.cpp:5792-5806).
