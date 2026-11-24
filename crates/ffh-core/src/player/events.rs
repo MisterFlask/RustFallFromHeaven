@@ -72,6 +72,70 @@ fn change_memory_count(g: &mut Game, p: PlayerId, other: PlayerId, memory: Memor
     debug_assert!(*count >= 0, "AI memory count below 0");
 }
 
+/// Why an event option cannot be chosen (`Game::player_event_refusal`), a check of C++
+/// `CvPlayer::canDoEvent`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EventRefusal {
+    /// The other player lacks this much gold to give.
+    TheirGold(i32),
+    /// It costs this much gold.
+    Gold(i32),
+    /// No space race in this game.
+    NoSpaceRace,
+    /// There is no espionage.
+    Espionage,
+    /// No tech for it to advance.
+    NoTech,
+    /// It requires this tech.
+    Tech(TechType),
+    /// It needs another player, and the event has none.
+    NoOtherPlayer,
+    /// No trade network with the other player.
+    NoTrade,
+    /// The other player has the resource already.
+    TheyHaveBonus(BonusType),
+    /// The player has no second copy of the resource to give.
+    NoSpareBonus(BonusType),
+    /// The civilization has no unit of the class.
+    NoCivUnit,
+    /// The city does not meet the option's conditions (`canApplyEvent`).
+    City,
+    /// The other player's city does not meet the option's conditions.
+    OtherCity,
+    /// The plot does not meet the option's conditions.
+    Plot,
+    /// The unit does not meet the option's conditions.
+    Unit,
+    /// The resource is revealed already.
+    BonusKnown(BonusType),
+    /// No city left for the religion to spread to.
+    NoCityToConvert,
+    /// The other player is on the team.
+    SameTeam,
+    /// The other player is human and the option changes only its attitude.
+    HumanAttitude,
+    /// The other player has no worst enemy (or it is this team).
+    NoWorstEnemy,
+    /// War with the other player cannot be declared.
+    War,
+    /// The quest is done already.
+    QuestDone,
+    /// It requires this alignment.
+    Alignment(AlignmentType),
+    /// It requires this resource.
+    Bonus(BonusType),
+    /// Only for this civilization.
+    Civilization(CivilizationType),
+    /// The city must have this corporation.
+    Corporation(CorporationType),
+    /// The city must have this religion.
+    Religion(ReligionType),
+    /// It requires this state religion.
+    StateReligion(ReligionType),
+    /// The event's Python `canDo` callback refuses.
+    Script,
+}
+
 impl Game {
     // ------------------------------------------------------------------ triggered-event list
 
@@ -1169,6 +1233,12 @@ impl Game {
 
     /// C++ `CvPlayer::canDoEvent(eEvent, kTriggeredData)`.
     pub fn player_can_do_event(&self, p: PlayerId, event: EventType, data: &EventTriggeredData) -> bool {
+        self.player_event_refusal(p, event, data).is_none()
+    }
+
+    /// Why player `p` cannot choose `event` of triggered `data` ([`Self::player_can_do_event`]):
+    /// the first check that fails, in the gate's order; `None` when it can.
+    pub fn player_event_refusal(&self, p: PlayerId, event: EventType, data: &EventTriggeredData) -> Option<EventRefusal> {
         let d = self.d;
         let k_event = &d.events[event];
         let team = self.players[p].team;
@@ -1179,11 +1249,11 @@ impl Game {
             if gold > 0 && data.other_player.is_some() && k_event.gold_to_player {
                 if let Some(other) = data.other_player {
                     if self.players[other].gold < gold {
-                        return false;
+                        return Some(EventRefusal::TheirGold(gold));
                     }
                 }
             } else if gold < 0 && self.players[p].gold < -gold {
-                return false;
+                return Some(EventRefusal::Gold(-gold));
             }
         }
 
@@ -1201,87 +1271,87 @@ impl Game {
             }
 
             if !valid {
-                return false;
+                return Some(EventRefusal::NoSpaceRace);
             }
         }
 
         // There is no espionage: no event gives espionage points, nor takes them from those held
         // against another player (none).
         if k_event.espionage_points > 0 || (k_event.espionage_points < 0 && data.other_player.is_some()) {
-            return false;
+            return Some(EventRefusal::Espionage);
         }
 
         if (0 != k_event.tech_percent || 0 != k_event.tech_cost_percent) && self.player_get_best_event_tech(p, event, data.other_player).is_none() {
-            return false;
+            return Some(EventRefusal::NoTech);
         }
 
         if let Some(prereq_tech) = k_event.prereq_tech {
             if !self.team_is_has_tech(team, Some(prereq_tech)) {
-                return false;
+                return Some(EventRefusal::Tech(prereq_tech));
             }
         }
 
         if let Some(bonus) = k_event.bonus_gift {
             let Some(other) = data.other_player else {
-                return false;
+                return Some(EventRefusal::NoOtherPlayer);
             };
 
             if !self.player_can_trade_network_with(p, other) {
-                return false;
+                return Some(EventRefusal::NoTrade);
             }
 
             if self.player_get_num_available_bonuses(other, bonus) > 0 {
-                return false;
+                return Some(EventRefusal::TheyHaveBonus(bonus));
             }
 
             if self.player_get_num_tradeable_bonuses(p, bonus) <= 1 {
-                return false;
+                return Some(EventRefusal::NoSpareBonus(bonus));
             }
         }
 
         if let Some(unit_class) = k_event.unit_class {
             if civ_unit(self, p, unit_class).is_none() {
-                return false;
+                return Some(EventRefusal::NoCivUnit);
             }
         }
 
         if k_event.city_effect {
             let city = player_city(self, p, data.city);
             if city.is_none_or(|c| !self.city_can_apply_event(c, event, data)) {
-                return false;
+                return Some(EventRefusal::City);
             }
         } else if k_event.other_player_city_effect {
             let Some(other) = data.other_player else {
-                return false;
+                return Some(EventRefusal::NoOtherPlayer);
             };
 
             let city = player_city(self, other, data.other_player_city);
             if city.is_none_or(|c| !self.city_can_apply_event(c, event, data)) {
-                return false;
+                return Some(EventRefusal::OtherCity);
             }
         }
 
         if is_plot_event_trigger(d, data.trigger) {
             if let Some(plot) = self.map.plot_xy(data.plot_x, data.plot_y) {
                 if !self.plot_can_apply_event(plot, event) {
-                    return false;
+                    return Some(EventRefusal::Plot);
                 }
             }
         }
 
         if let Some(unit) = player_unit(self, p, data.unit) {
             if !self.unit_can_apply_event(unit, event) {
-                return false;
+                return Some(EventRefusal::Unit);
             }
         }
 
         if let Some(bonus) = k_event.bonus_revealed {
             if self.team_is_has_tech(team, d.bonuses[bonus].tech_reveal) {
-                return false;
+                return Some(EventRefusal::BonusKnown(bonus));
             }
 
             if self.team_is_force_revealed_bonus(team, bonus) {
-                return false;
+                return Some(EventRefusal::BonusKnown(bonus));
             }
         }
 
@@ -1300,7 +1370,7 @@ impl Game {
             }
 
             if !found_valid {
-                return false;
+                return Some(EventRefusal::NoCityToConvert);
             }
         }
 
@@ -1321,54 +1391,54 @@ impl Game {
             }
 
             if !found_valid {
-                return false;
+                return Some(EventRefusal::NoCityToConvert);
             }
         }
 
         if 0 != k_event.attitude_modifier {
             let Some(other) = data.other_player else {
-                return false;
+                return Some(EventRefusal::NoOtherPlayer);
             };
 
             if self.players[other].team == team {
-                return false;
+                return Some(EventRefusal::SameTeam);
             }
 
             if self.players[other].human && 0 == k_event.our_attitude_modifier {
-                return false;
+                return Some(EventRefusal::HumanAttitude);
             }
         }
 
         if 0 != k_event.their_enemy_attitude_modifier {
             let Some(other) = data.other_player else {
-                return false;
+                return Some(EventRefusal::NoOtherPlayer);
             };
 
             let worst_enemy = self.teams[self.players[other].team].ai_worst_enemy;
             let Some(worst_enemy) = worst_enemy else {
-                return false;
+                return Some(EventRefusal::NoWorstEnemy);
             };
             if worst_enemy == team {
-                return false;
+                return Some(EventRefusal::NoWorstEnemy);
             }
 
             if !self.team_is_alive(worst_enemy) {
-                return false;
+                return Some(EventRefusal::NoWorstEnemy);
             }
 
             if worst_enemy == team {
-                return false;
+                return Some(EventRefusal::NoWorstEnemy);
             }
         }
 
         if k_event.declare_war {
             let Some(other) = data.other_player else {
-                return false;
+                return Some(EventRefusal::NoOtherPlayer);
             };
 
             let other_team = self.players[other].team;
             if !self.team_can_declare_war(other_team, team) || !self.team_can_declare_war(team, other_team) {
-                return false;
+                return Some(EventRefusal::War);
             }
         }
 
@@ -1378,7 +1448,7 @@ impl Game {
                 if !k_trigger.recurring {
                     for &prereq_event in &k_trigger.prereq_events {
                         if prereq_event == event && self.player_is_trigger_fired(p, loop_trigger) {
-                            return false;
+                            return Some(EventRefusal::QuestDone);
                         }
                     }
                 }
@@ -1388,45 +1458,45 @@ impl Game {
         // FfH: Added by Kael 01/21/2008
         if let Some(alignment) = k_event.prereq_alignment {
             if self.players[p].alignment != Some(alignment) {
-                return false;
+                return Some(EventRefusal::Alignment(alignment));
             }
         }
         if let Some(bonus) = k_event.prereq_bonus {
             if !self.player_has_bonus(p, bonus) {
-                return false;
+                return Some(EventRefusal::Bonus(bonus));
             }
         }
         if let Some(civilization) = k_event.prereq_civilization {
             if self.player_get_civilization_type(p) != Some(civilization) {
-                return false;
+                return Some(EventRefusal::Civilization(civilization));
             }
         }
         if let Some(corporation) = k_event.prereq_corporation {
             if let Some(c) = player_city(self, p, data.city) {
                 if !self.cities[c].has_corporation[corporation] {
-                    return false;
+                    return Some(EventRefusal::Corporation(corporation));
                 }
             }
         }
         if let Some(religion) = k_event.prereq_religion {
             if let Some(c) = player_city(self, p, data.city) {
                 if !self.cities[c].has_religion[religion] {
-                    return false;
+                    return Some(EventRefusal::Religion(religion));
                 }
             }
         }
         if let Some(religion) = k_event.prereq_state_religion {
             if self.player_get_state_religion(p) != Some(religion) {
-                return false;
+                return Some(EventRefusal::StateReligion(religion));
             }
         }
         // FfH: End Add
 
         if !k_event.python_can_do.is_empty() && !self.py_event_can_do(event, data) {
-            return false;
+            return Some(EventRefusal::Script);
         }
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::applyEvent(eEvent, iTriggeredId, bUpdateTrigger = true)`: applies an

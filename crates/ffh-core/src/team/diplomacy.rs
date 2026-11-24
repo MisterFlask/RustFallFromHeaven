@@ -62,6 +62,40 @@ fn change_master_outside_units(g: &mut Game, master: TeamId, change: i32) {
     }
 }
 
+/// Why a team cannot declare war, or change war or peace (`Game::team_declare_war_refusal`,
+/// `Game::team_war_peace_refusal`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WarRefusal {
+    /// The team itself.
+    Own,
+    /// A crusade's Host (either side) is at war with its crusade's enemies only.
+    CrusadeHost,
+    /// One of the teams is not alive.
+    Dead,
+    /// At war already.
+    AtWar,
+    /// The teams have not met.
+    NotMet,
+    /// A peace treaty with this team holds (the target, or its master).
+    Peace(TeamId),
+    /// A truce with this team holds (the target, or its master).
+    Truce(TeamId),
+    /// The game option No Changing War or Peace.
+    NoChangingWarPeace,
+    /// Permanent war or peace with this team (the target, or a vassal's master).
+    Permanent(TeamId),
+    /// The team is a vassal: its master decides its wars.
+    WeAreVassal,
+    /// The target is the team's own vassal.
+    OurVassal,
+    /// The target is a vassal: war is declared on its master.
+    TheyAreVassal,
+    /// The game option Always Peace.
+    AlwaysPeace,
+    /// The rules' Python `canDeclareWar` (FFH2's always allows).
+    Script,
+}
+
 impl Game {
     // ------------------------------------------------------------------
     // War and peace
@@ -78,107 +112,119 @@ impl Game {
 
     /// C++ `CvTeam::canChangeWarPeace` (default `bAllowVassal = false`).
     pub fn team_can_change_war_peace(&self, t: TeamId, other: TeamId, allow_vassal: bool) -> bool {
+        self.team_war_peace_refusal(t, other, allow_vassal).is_none()
+    }
+
+    /// Why team `t` cannot change war or peace with `other` ([`Self::team_can_change_war_peace`]):
+    /// the first check that fails; `None` when it can.
+    pub fn team_war_peace_refusal(&self, t: TeamId, other: TeamId, allow_vassal: bool) -> Option<WarRefusal> {
         if is_option(self, GameOptionType::GAMEOPTION_NO_CHANGING_WAR_PEACE) {
-            return false;
+            return Some(WarRefusal::NoChangingWarPeace);
         }
 
         if other == t {
-            return false;
+            return Some(WarRefusal::Own);
         }
 
         if self.teams[t].permanent_war_peace[other] || self.teams[other].permanent_war_peace[t] {
-            return false;
+            return Some(WarRefusal::Permanent(other));
         }
 
         for o in civ_team_ids(self) {
             if self.team_is_alive(o) {
                 let k = &self.teams[o];
                 if k.vassal[t] && k.permanent_war_peace[other] {
-                    return false;
+                    return Some(WarRefusal::Permanent(other));
                 }
 
                 if k.vassal[other] && k.permanent_war_peace[t] {
-                    return false;
+                    return Some(WarRefusal::Permanent(o));
                 }
             }
         }
 
         if self.team_is_a_vassal(t) {
-            return false;
+            return Some(WarRefusal::WeAreVassal);
         }
 
         if allow_vassal {
             if self.teams[other].vassal[t] {
-                return false;
+                return Some(WarRefusal::OurVassal);
             }
         } else if self.team_is_a_vassal(other) {
-            return false;
+            return Some(WarRefusal::TheyAreVassal);
         }
 
-        true
+        None
     }
 
     /// C++ `CvTeam::canDeclareWar` (includes the `canDeclareWar` Python callback when
     /// `USE_CAN_DECLARE_WAR_CALLBACK` is set).
     pub fn team_can_declare_war(&self, t: TeamId, other: TeamId) -> bool {
+        self.team_declare_war_refusal(t, other).is_none()
+    }
+
+    /// Why team `t` cannot declare war on `other` ([`Self::team_can_declare_war`]): the first
+    /// check that fails, in the gate's order; `None` when it can.
+    pub fn team_declare_war_refusal(&self, t: TeamId, other: TeamId) -> Option<WarRefusal> {
         if other == t {
-            return false;
+            return Some(WarRefusal::Own);
         }
 
         // Not in C++: a crusade Host's wars are its crusade's only (docs/CRUSADE.md).
         if self.team_is_crusade_host(t) || self.team_is_crusade_host(other) {
-            return false;
+            return Some(WarRefusal::CrusadeHost);
         }
 
         if !self.team_is_alive(t) || !self.team_is_alive(other) {
-            return false;
+            return Some(WarRefusal::Dead);
         }
 
         if self.teams[t].at_war[other] {
-            return false;
+            return Some(WarRefusal::AtWar);
         }
 
         if !self.teams[t].has_met[other] {
-            return false;
+            return Some(WarRefusal::NotMet);
         }
 
         if self.teams[t].force_peace[other] {
-            return false;
+            return Some(WarRefusal::Peace(other));
         }
 
         for o in self.team_ids() {
             if o != other && o != t && self.teams[other].vassal[o] && self.teams[t].force_peace[o] {
-                return false;
+                return Some(WarRefusal::Peace(o));
             }
         }
 
         // Card: Judgment of Junil (docs/CARDS.md): no war while a truce holds, nor on the vassal of
         // a master under truce (the war would reach the master).
         if self.team_has_truce(t, other) {
-            return false;
+            return Some(WarRefusal::Truce(other));
         }
         for o in self.team_ids() {
             if o != other && o != t && self.teams[other].vassal[o] && self.team_has_truce(t, o) {
-                return false;
+                return Some(WarRefusal::Truce(o));
             }
         }
 
-        if !self.team_can_change_war_peace(t, other, true) {
-            return false;
+        if let Some(r) = self.team_war_peace_refusal(t, other, true) {
+            return Some(r);
         }
 
         if self.is_option(GameOptionType::GAMEOPTION_ALWAYS_PEACE) {
-            return false;
+            return Some(WarRefusal::AlwaysPeace);
         }
 
         if self.d.defines.use_can_declare_war_callback != 0 {
             // C++ `if (lResult == 0) return false;`
             if !py_can_declare_war(self, t, other) {
-                return false;
+                return Some(WarRefusal::Script);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvTeam::declareWar`. `war_plan = None` is C++ `NO_WARPLAN`.

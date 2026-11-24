@@ -52,6 +52,66 @@ fn hero_not_created(g: &Game, unit_class: Option<UnitClassType>) -> bool {
     }
 }
 
+/// Why a player cannot adopt a civic (`Game::player_civic_refusal`), a check of C++
+/// `CvPlayer::canDoCivics`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CivicRefusal {
+    /// A resolution of the council forces another civic of this option (full members only).
+    Forced(CivicOptionType),
+    /// The civic's tech is not known (nor the civic option held).
+    Tech(TechType),
+    /// Only while at war.
+    War,
+    /// Not for a civilization of this alignment.
+    BlockedAlignment(AlignmentType),
+    /// Only for a civilization of this alignment.
+    Alignment(AlignmentType),
+    /// Only for this civilization.
+    Civilization(CivilizationType),
+    /// Requires this state religion.
+    Religion(ReligionType),
+    /// The rules' Python `cannotDoCivic` (FFH2's always allows).
+    Script,
+}
+
+/// Why a player cannot change its civics (`Game::player_revolution_refusal`), a check of C++
+/// `CvPlayer::canRevolution`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RevolutionRefusal {
+    /// In anarchy, for this many turns.
+    Anarchy(i32),
+    /// The revolution timer runs, for this many turns.
+    Timer(i32),
+    /// A resolution of the council forces a civic of this option, and the change leaves it.
+    Forced(CivicOptionType),
+    /// No civic changes (with given civics), or no civic can be adopted (without).
+    NoChange,
+}
+
+/// Why a player cannot convert (`Game::player_convert_refusal`), a check of C++
+/// `CvPlayer::canConvert` and `canDoReligion`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConvertRefusal {
+    /// AI only: its favorite religion is its state religion.
+    Favorite(ReligionType),
+    /// AI only, or any leader's weight of -100 or less: the leader does not adopt the religion.
+    Disliked(ReligionType),
+    /// The barbarians have no state religion.
+    Barbarian,
+    /// In anarchy, for this many turns.
+    Anarchy(i32),
+    /// The conversion timer runs, for this many turns.
+    Timer(i32),
+    /// The civics allow no state religion.
+    NoStateReligion,
+    /// This is the state religion already (None: there is none already).
+    Already(Option<ReligionType>),
+    /// No city of the team has the religion.
+    NotPresent(ReligionType),
+    /// An agnostic leader adopts no religion.
+    Agnostic,
+}
+
 impl Game {
     // ------------------------------------------------------------------ civics
 
@@ -63,65 +123,108 @@ impl Game {
     /// C++ `CvPlayer::canDoCivics(eCivic)` (true for NO_CIVIC; forced civics, Python
     /// `canDoCivic`/`cannotDoCivic`, FFH prereqs: war, alignment, civilization, religion).
     pub fn player_can_do_civics(&self, p: PlayerId, civic: Option<CivicType>) -> bool {
-        let d = self.d;
-
         // UNOFFICIAL_PATCH 10/05/09 (jdog5000): circumvents a crash in simultaneous turns MP games.
-        let Some(civic) = civic else {
-            return true;
-        };
+        civic.is_none_or(|c| self.player_civic_refusal(p, c).is_none())
+    }
 
+    /// Why player `p` cannot adopt `civic` ([`Self::player_can_do_civics`]): the first check that
+    /// fails, in the gate's order; `None` when it can.
+    pub fn player_civic_refusal(&self, p: PlayerId, civic: CivicType) -> Option<CivicRefusal> {
+        let mut out = None;
+        self.civic_refusals_into(p, civic, &mut |r| {
+            out = Some(r);
+            false
+        });
+        out
+    }
+
+    /// Every check of [`Self::player_can_do_civics`] that fails for `civic`, in the gate's order
+    /// (a forced civic option has its one refusal); empty when it can be adopted.
+    pub fn player_civic_refusals(&self, p: PlayerId, civic: CivicType) -> Vec<CivicRefusal> {
+        let mut out = Vec::new();
+        self.civic_refusals_into(p, civic, &mut |r| {
+            out.push(r);
+            true
+        });
+        out
+    }
+
+    /// The checks of C++ `canDoCivics`: each failing one goes to `refuse`, which says whether to
+    /// go on to the next.
+    fn civic_refusals_into(&self, p: PlayerId, civic: CivicType, refuse: &mut dyn FnMut(CivicRefusal) -> bool) {
+        let d = self.d;
         let info = &d.civics[civic];
         let civic_option = civic_option_of(d, civic);
 
         //FfH: Added by Kael 11/23/2007 (forced civics only bind full members of vote source 0)
         if self.player_is_full_member(p, VoteSourceType(0)) && self.is_force_civic_option(civic_option) {
-            return self.is_force_civic(civic);
+            if !self.is_force_civic(civic) {
+                refuse(CivicRefusal::Forced(civic_option));
+            }
+            return;
         }
 
         if d.defines.use_can_do_civic_callback != 0 && py_can_do_civic(self, p, civic) {
-            return true;
+            return;
         }
 
         let team = self.players[p].team;
         if !self.player_is_has_civic_option(p, civic_option) && !self.team_is_has_tech(team, info.tech_prereq) {
-            return false;
+            // (`team_is_has_tech(None)` is true: a failing check has a tech.)
+            if let Some(t) = info.tech_prereq {
+                if !refuse(CivicRefusal::Tech(t)) {
+                    return;
+                }
+            }
         }
 
         //FfH Civics: Added by Kael 08/11/2007
-        if info.prereq_war && self.team_get_at_war_count(team, true) == 0 {
-            return false;
+        if info.prereq_war && self.team_get_at_war_count(team, true) == 0 && !refuse(CivicRefusal::War) {
+            return;
         }
-        if info.block_alignment.is_some() && self.players[p].alignment == info.block_alignment {
-            return false;
+        if let Some(a) = info.block_alignment.filter(|&a| self.players[p].alignment == Some(a)) {
+            if !refuse(CivicRefusal::BlockedAlignment(a)) {
+                return;
+            }
         }
-        if info.prereq_alignment.is_some() && self.players[p].alignment != info.prereq_alignment {
-            return false;
+        if let Some(a) = info.prereq_alignment.filter(|&a| self.players[p].alignment != Some(a)) {
+            if !refuse(CivicRefusal::Alignment(a)) {
+                return;
+            }
         }
-        if info.prereq_civilization.is_some() && self.player_get_civilization_type(p) != info.prereq_civilization {
-            return false;
+        if let Some(c) = info.prereq_civilization.filter(|&c| self.player_get_civilization_type(p) != Some(c)) {
+            if !refuse(CivicRefusal::Civilization(c)) {
+                return;
+            }
         }
-        if info.prereq_religion.is_some() && self.player_get_state_religion(p) != info.prereq_religion {
-            return false;
+        if let Some(r) = info.prereq_religion.filter(|&r| self.player_get_state_religion(p) != Some(r)) {
+            if !refuse(CivicRefusal::Religion(r)) {
+                return;
+            }
         }
         //FfH: End Add
 
         if d.defines.use_cannot_do_civic_callback != 0 && self.py_cannot_do_civic(p, civic) {
-            return false;
+            refuse(CivicRefusal::Script);
         }
-
-        true
     }
 
     /// C++ `CvPlayer::canRevolution(paeNewCivics)` (None = any civic change possible).
     pub fn player_can_revolution(&self, p: PlayerId, new_civics: Option<&IdxVec<CivicOptionType, Option<CivicType>>>) -> bool {
+        self.player_revolution_refusal(p, new_civics).is_none()
+    }
+
+    /// Why player `p` cannot change its civics ([`Self::player_can_revolution`]): the first check
+    /// that fails, in the gate's order; `None` when it can.
+    pub fn player_revolution_refusal(&self, p: PlayerId, new_civics: Option<&IdxVec<CivicOptionType, Option<CivicType>>>) -> Option<RevolutionRefusal> {
         let d = self.d;
 
         if self.player_is_anarchy(p) {
-            return false;
+            return Some(RevolutionRefusal::Anarchy(self.players[p].anarchy_turns));
         }
 
         if self.players[p].revolution_timer > 0 {
-            return false;
+            return Some(RevolutionRefusal::Timer(self.players[p].revolution_timer));
         }
 
         match new_civics {
@@ -129,7 +232,7 @@ impl Game {
                 // XXX is this necessary?
                 for civic in d.civics.keys() {
                     if self.player_can_do_civics(p, Some(civic)) && self.players[p].civics[civic_option_of(d, civic)] != Some(civic) {
-                        return true;
+                        return None;
                     }
                 }
             }
@@ -140,18 +243,18 @@ impl Game {
                         // C++ `isForceCivic(paeNewCivics[iI])`; a NO_CIVIC entry (never passed
                         // by callers) would index -1: here it is not forced.
                         if !new_civics[civic_option].is_some_and(|c| self.is_force_civic(c)) {
-                            return false;
+                            return Some(RevolutionRefusal::Forced(civic_option));
                         }
                     }
 
                     if self.players[p].civics[civic_option] != new_civics[civic_option] {
-                        return true;
+                        return None;
                     }
                 }
             }
         }
 
-        false
+        Some(RevolutionRefusal::NoChange)
     }
 
     /// C++ `CvPlayer::revolution(paeNewCivics, bForce = false)`.
@@ -786,31 +889,37 @@ impl Game {
 
     /// C++ `CvPlayer::canDoReligion(eReligion)` (FFH: agnostics and leader religion weights).
     pub fn player_can_do_religion(&self, p: PlayerId, religion: ReligionType) -> bool {
+        self.player_religion_refusal(p, religion).is_none()
+    }
+
+    /// Why player `p` cannot adopt `religion` ([`Self::player_can_do_religion`]): the first check
+    /// that fails; `None` when it can.
+    pub fn player_religion_refusal(&self, p: PlayerId, religion: ReligionType) -> Option<ConvertRefusal> {
         let d = self.d;
 
         let team = self.players[p].team;
         if self.team_get_has_religion_count(team, religion) == 0 {
-            return false;
+            return Some(ConvertRefusal::NotPresent(religion));
         }
 
         //FfH Traits: Added by Kael 08/02/2007
         if self.players[p].agnostic {
-            return false;
+            return Some(ConvertRefusal::Agnostic);
         }
         let personality = self.players[p].personality_type.expect("CvPlayer::canDoReligion: getPersonalityType() is NO_LEADER");
         let weight = d.leader_heads[personality].religion_weight_modifier[religion];
         if weight <= -100 {
-            return false;
+            return Some(ConvertRefusal::Disliked(religion));
         }
         //FfH: End Add
 
         // BETTER AI (favorite Religions) Sephi
         if !self.players[p].human && weight < 0 {
-            return false;
+            return Some(ConvertRefusal::Disliked(religion));
         }
         // BETTER AI: END
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::canChangeReligion`.
@@ -825,6 +934,12 @@ impl Game {
 
     /// C++ `CvPlayer::canConvert(eReligion)` (None = drop the state religion).
     pub fn player_can_convert(&self, p: PlayerId, religion: Option<ReligionType>) -> bool {
+        self.player_convert_refusal(p, religion).is_none()
+    }
+
+    /// Why player `p` cannot convert to `religion` ([`Self::player_can_convert`]): the first check
+    /// that fails, in the gate's order; `None` when it can.
+    pub fn player_convert_refusal(&self, p: PlayerId, religion: Option<ReligionType>) -> Option<ConvertRefusal> {
         let d = self.d;
         let pl = &self.players[p];
 
@@ -835,44 +950,44 @@ impl Game {
 
                 if let Some(favorite) = pl.favorite_religion {
                     if Some(favorite) == pl.last_state_religion && leader.religion_weight_modifier[favorite] > 50 {
-                        return false;
+                        return Some(ConvertRefusal::Favorite(favorite));
                     }
                 }
 
                 if leader.religion_weight_modifier[religion] < 0 {
-                    return false;
+                    return Some(ConvertRefusal::Disliked(religion));
                 }
             }
         }
         // BETTER AI: END
 
         if self.player_is_barbarian(p) {
-            return false;
+            return Some(ConvertRefusal::Barbarian);
         }
 
         if self.player_is_anarchy(p) {
-            return false;
+            return Some(ConvertRefusal::Anarchy(pl.anarchy_turns));
         }
 
         if pl.conversion_timer > 0 {
-            return false;
+            return Some(ConvertRefusal::Timer(pl.conversion_timer));
         }
 
         if !self.player_is_state_religion(p) {
-            return false;
+            return Some(ConvertRefusal::NoStateReligion);
         }
 
         if pl.last_state_religion == religion {
-            return false;
+            return Some(ConvertRefusal::Already(religion));
         }
 
         if let Some(religion) = religion {
-            if !self.player_can_do_religion(p, religion) {
-                return false;
+            if let Some(r) = self.player_religion_refusal(p, religion) {
+                return Some(r);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::convert(eReligion)` (FFH: alignment pulled into the religion's range).

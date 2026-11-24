@@ -64,7 +64,7 @@ test("goody hut: allowed outcomes by chance, refused ones greyed in the table", 
     kind: "hut", unit: 2, unit_type: 5, slots_total: 20, attempts: 10, nothing_ppm: 0,
     outcomes: [
       { goody: 0, label: "Gold: 20-60", ppm: 450000, slots: 4, allowed: true },
-      { goody: 1, label: "Heals 100%", ppm: 0, slots: 1, allowed: false },
+      { goody: 1, label: "Heals 100%", ppm: 0, slots: 1, allowed: false, why: "the unit must have lost 25% of its hit points" },
       { goody: 2, label: "Map", ppm: 550000, slots: 5, allowed: true },
     ],
   };
@@ -73,6 +73,6 @@ test("goody hut: allowed outcomes by chance, refused ones greyed in the table", 
   assert.ok(s.indexOf("55% Map") < s.indexOf("45% Gold"), s);
   assert.doesNotMatch(s, /Heals/);
   const f = plain(exploreFull(hut, dname));
-  assert.match(f, /0% Heals 100% \(1\/20, not possible now\)/);
+  assert.match(f, /0% Heals 100% \(1\/20, the unit must have lost 25% of its hit points\)/);
   assert.match(f, /10 draws from 20 slots/);
 });

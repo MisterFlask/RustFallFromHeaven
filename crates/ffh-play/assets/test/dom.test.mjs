@@ -28,9 +28,9 @@ test("errorText: one plain sentence per code, no repeated detail", () => {
 test("errorText: the rules' reason when it is plain", () => {
   assert.equal(text("cannot", "cannot declare war on Sabathiel"), "Cannot declare war on Sabathiel.");
   assert.equal(text("cannot", "the units are already there"), "The units are already there.");
-  assert.equal(text("cannot", ""), "Not possible now.");
+  assert.equal(text("cannot", ""), "The game refused this order.");
   // Engine identifiers, JSON, code and request details are not shown.
-  assert.equal(text("cannot", "SPELL_RAISE_SKELETON is not possible"), "Not possible now.");
+  assert.equal(text("cannot", "SPELL_RAISE_SKELETON is not possible"), "The game refused this order.");
   assert.equal(text("invalid", "field `units`: empty selection"), "The game did not accept this order.");
   assert.equal(text("invalid", 'start one with {"k":"session"}'), "The game did not accept this order.");
 });
