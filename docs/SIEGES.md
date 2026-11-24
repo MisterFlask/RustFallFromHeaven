@@ -170,11 +170,23 @@ A rules change is not gated on the AI (CLAUDE.md, "AI changes"); what it does:
 - its siege units bombard a city with Sentinels standing before its stack attacks: the pre-attack
   bombard-first in `group_attack_force` counts the turns to breach the least damaged Sentinel
   (`group_get_bombard_turns`);
-- it still judges attacks on the duel's odds (a known gap, docs/ENGAGEMENTS.md "Open"), which do not
-  see the Sentinels.
+- its field attacks and strikes are decided on the rules' battle forecast (docs/AI.md, "On the
+  forecast"), which fights the Sentinels themselves;
+- the siege operation's gather, march and step-in decisions (`covers`, `ok_all`, `ok_near`), the
+  target's score, `military::field_sim` and the crusade Host's cover are judged on the duel model
+  (`combat_sim`), where the city's defence modifier stands in for the Sentinels
+  (`combat_sim::wall_cut`): with no Sentinel standing (no walls, all breached, the city in
+  occupation) the whole modifier is dropped, engines or not; with Sentinels standing it counts in
+  proportion to the HP the least damaged one keeps after three turns of the force's bombards, by
+  the rule's own bombard damage (or as they stand, without siege); never more than the city gave
+  that defender;
+- in a strike its siege engines wait while the rules would turn their attack into a bombard
+  (`campaign::attack_would_bombard`, as `group_attack_force` does: an AI group's bombard turns 1 to
+  7), and `bombard()` orders the bombard whenever the mission's own test allows it.
 
 ## Open
 
-- The AI's target choice and odds do not see Sentinels (above).
+- The AI's duel model sees the Sentinels only through a proxy, the city's defence modifier cut by
+  the Sentinels' HP (`wall_cut`, above); the strike's forecast fights the Sentinels themselves.
 - Telemetry of sieges (turns besieged, Sentinels breached, bombard damage) is not counted yet.
 - The HD-2D battle field draws a Sentinel with the watchtower's art, scaled down: a stand-in.

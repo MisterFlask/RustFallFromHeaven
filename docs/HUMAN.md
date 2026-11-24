@@ -1348,9 +1348,15 @@ turns, doubled for a war it chose, shorter when you are clearly winning; Civ4's
 and `propose_deal` `cannot`. As every deal between enemies ends the war (Civ4's `CvDeal`), a deal
 at war must carry the peace treaty (both sides) or a capitulation; a gift alone is `invalid`.
 The AI answers at once: `accepted: false` changes nothing; `accepted: true` signs it. Today's
-AI (ffh-ai's `consider_offer`) accepts gifts, demands from a much stronger neighbour up to a
-limit, peace after 10 turns of war unless it is clearly winning, open borders when it likes you,
-and a fair tech swap, and refuses anything else. A gift or a demand it accepts is recorded
+AI (ffh-ai's `consider_offer`) accepts gifts (of any item), demands from a much stronger
+neighbour up to a limit, peace after 10 turns of war unless it is clearly winning, open borders
+when it likes you, and a fair trade of techs, resources, gold and gold per turn, and refuses
+anything else. It gives nothing it puts no price on: a deal in which it would give a city, a
+civic, a religion, an embargo, peace with a third party or another such item is refused, on
+demand or for any payment (`why`: "cities are not traded", "civics are not traded", "religions are
+not traded", "embargoes are not traded", "peace with others is not traded", "these items are not
+traded"). Open borders or a defensive pact inside a larger deal must pass its own rule, then the
+rest of the deal is judged on its own. A gift or a demand it accepts is recorded
 (ffh-core `tribute`; see the screen above); the `trade` query's `tribute` gives what it recorded
 of yours: `gifts {value, relations, steps}` (`steps`: `[threshold, relations]` pairs, increasing: the relations a total value at or above the threshold gives), `demands {value, relations, pause,
 pause_turns}` and `turns`. `cancel_deal {"deal": 3}` cancels a standing deal of yours (the

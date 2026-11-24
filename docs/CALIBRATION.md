@@ -96,7 +96,7 @@ acts on the old estimate, so the pairs are scored on identical events):
 
 | Kind | Beside | pct |
 |---|---|---|
-| `field2` | `field` (every site) | the plot falls in the battles the pool on the group's plot fights this turn (its formation, then its reserve); ctx `one`: in the first battle alone |
+| `field2` | `field` (every site) | the plot falls in the battles the pool on the group's plot fights this turn (its squads, the strongest first); ctx `one`: in the first battle alone |
 | `assault2`, `strike2` | `assault`, `strike` | the city falls in the battles the units next to it fight, the plot with the most of them first; ctx `one` |
 | `attack2` | `attack` (every site) | the battle the unit's plot fights wipes out the defender's line (taken or cleared) times the chance the unit does not fall |
 | `holds2_now`, `holds2_reinforced` | `peril` (each city with a threat in sight; `garrison_holds` asks the same question of the same cities and is not repeated) | the city falls to the worst of the enemy stacks within reach and the union of one player's stacks, as the garrison stands / with the units of ours that arrive first; by answer |
@@ -166,7 +166,10 @@ same game with telemetry on and off.
   `target` plus `extra_defenders` as if they stood there. It builds the preview's own plan
   (`engage_plan_finish`: the defender's formation, the summons in a copy of the game, the set-up)
   and samples it with the preview's per-battle code (`engage_sample_battle`) on the preview's seed
-  (both formations, the plots, the turn). For a real attack (the pool on `from`, no extras) it
+  (both formations, the plots, the turn). The attackers fight as the squads they stand in now,
+  wherever they stand (`engage_forecast_squads`: each plot's `engage_field_squads`, units in no
+  squad formed by the auto formation), and the strongest squad fights, as the real fight picks it
+  when no order names one. For a real attack (the pool on `from`, no extras) it
   equals `engage_preview(..).forecast` at the same runs (test
   `the_forecast_if_is_the_preview_of_the_battle_it_imagines`, which also moves the imagined units
   there for real and gets the same numbers).
@@ -184,8 +187,9 @@ same game with telemetry on and off.
   - `Err`: attackers of several players, `from` not next to the target, a water target, no unit
     that could attack, nobody to fight, the target unseen (`Attacker`).
 - `Game::engage_forecast_waves(attacks, target, extras, runs, sight, when)`: the battles a turn's
-  attacks fight one after another: each entry's pool in its auto formation, then its reserve in
-  theirs (every unit once, at most `FORECAST_MAX_WAVES` = 8 battles), then the next entry. In each
+  attacks fight one after another: each entry's pool by the squads its units stand in, one battle
+  a squad, the strongest of those left first (every unit once, at most `FORECAST_MAX_WAVES` = 8
+  battles), then the next entry. In each
   run the defenders that fell or fled are gone, the survivors keep their damage, the strikers used
   up stay used up, the city's Sentinels keep their HP; each battle meets the defenders left (its
   plan built once per set of defenders left). Approximation: the defender's formation of the
@@ -216,7 +220,9 @@ battles (waves).
 - `Cache`: one per player and game turn, kept by the controller (`Ai::forecasts`) and lent to the
   `View`; entries keyed by the inputs (sorted) and checked against a fingerprint of what changes
   within a turn (every unit involved and on the target: place, damage, moves, attacks, experience,
-  level, promotions, fortification; the target's owner and its city's defence damage).
+  level, promotions, fortification, its squad and the battles that squad fought this turn; the
+  target's owner, feature and improvement, its city's defence damage and each of its Sentinels'
+  damage).
 
 Calls (16 games, 300 turns, telemetry on, every shadow prediction above): 5,190 forecasts asked per
 game (17 per game turn; 6.5 per player-turn call that asked any), 4% answered by the cache; the
@@ -263,6 +269,28 @@ What the first version got wrong, found in the misses and fixed: it forecast one
 outcome of the turn (`field2` 90-100: 68% observed; `strike2` 0-9: 58% taken): a plot falls to the
 reserve and to the next plot's stack after the first battle, so the forecast now plays the turn's
 battles (`engage_forecast_waves`); and the enemy stacks with their moves spent (below).
+
+2026-11-23, squads. Until then the forecast took the attackers as one auto formation of the pool's
+best five places, then greedy formations of the rest, while the real battle fields one squad and
+the AI's squads were dealt by the snake auto-sort into balanced squads (a stack of 8 fought as two
+squads of 4 and was forecast as its best 5). Since then the forecast fights the squads as they
+stand and the AI keeps its bodies massed (docs/AI.md, "Squads" under Field armies).
+`calibration.py`, 24 games (seeds 1-24, 6 civs, standard map, 300 turns), the acted slice, base
+9f274400 against the change with four other fixes of the same day (docs/AI_LOG.md); predicted /
+observed:
+
+| Kind (acted) | before | N | Brier | after | N | Brier |
+|---|---|---|---|---|---|---|
+| `field2` | 94.4% / 89.6% | 4730 | 0.086 | 94.9% / 90.0% | 4849 | 0.087 |
+| `strike2` | 92.6% / 89.0% | 236 | 0.091 | 93.1% / 87.6% | 266 | 0.086 |
+| `assault2` | 93.9% / 85.2% | 176 | 0.145 | 91.7% / 86.2% | 203 | 0.118 |
+| `field2`, 6+ attackers | 87.9% / 79.6% | 279 | | 90.5% / 83.0% | 317 | |
+| `strike2`, 6+ attackers | 88.1% / 84.4% | 90 | | 90.2% / 80.0% | 130 | |
+| `assault2`, 6+ attackers | 88.5% / 80.7% | 57 | | 90.1% / 85.9% | 85 | |
+
+The forecast fights what fights by construction, but the calibration of the attacks acted on
+barely moved: the mismatch was real and cost little in practice. The optimism on stacks of six or
+more (about 7 points on `field2`) has another cause, not found.
 
 Defensive (every answer, by answer; outcome: the city lost within 10 turns):
 

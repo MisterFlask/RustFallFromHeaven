@@ -109,7 +109,7 @@ barbarians -26% (-1.4), military +5% (1.4); legacy -2.8% (-1.4), research -5.3% 
 | `CvCityAI::AI_chooseProduction` (from `CvCity::doProduction`) | `choose_production` | `production.rs` |
 | `CvPlayerAI::AI_chooseResearch` / `AI_chooseFreeTech` | `choose_research` | `research.rs`, `tech_plan.rs` |
 | `CvPlayerAI::AI_conquerCity` | `raze_conquered_city` | `diplomacy.rs` |
-| `CvPlayerAI::AI_considerOffer` | `consider_offer` (`judge_offer`: the same answer with its margin or rule, for the trade screen; `trade::item_value` per item; a demand is paid up to `max_extorted`) | `diplomacy.rs` |
+| `CvPlayerAI::AI_considerOffer` | `consider_offer` (`judge_offer`: the same answer with its margin or rule, for the trade screen; `trade::item_value` per item; a demand is paid up to `max_extorted`; nothing it puts no price on is given) | `diplomacy.rs` |
 | `CvPlayerAI::AI_doDiplo` (review of deals) | `reconsider_deals`, `keep_deal`: from 20 turns, a deal with a human it would no longer make is cancelled (with an AI, on a trade denial) | `diplomacy.rs` |
 | `CvPlayerAI::AI_chooseEvent` | `choose_event` | `events.rs` |
 | `CvTeamAI::AI_chooseElection` / `CvPlayerAI::AI_diploVote` | `choose_election` / `diplo_vote` | `council.rs` |
@@ -892,31 +892,64 @@ both were replaced (docs/AI_LOG.md, round 7g).
 above; barbarians always do). Every field attack (steps 1, 4, 5, 10, a landing, and
 `units::attack_adjacent`'s explorers, sorties and aggressive units) and the strike are decided on
 the rules' battle forecast (`forecast.rs`, docs/CALIBRATION.md): the battles the units that would
-fight (every unit of ours on the plot that can attack: an order commits them all, the formation
-and then the reserve) fight this turn, `p_take` the chance the plot falls. The same shape as round
-7g, the bars meaning what they say (`military::field_rule`): attack at `p_take` 65%
-(`TAKE_BAR`; 75% for a hurt stack), or 50% (`TRADE_BAR`) when more of their units are expected to
-fall than ours, raiders near our cities counted four times (`RAIDER_KILL_PCT`); a city to capture
-at 65% (`CAPTURE_BAR`); `attack_adjacent`'s own bars (75% explorer, 80% sortie, 50% aggressive)
-read as `p_take`. Nothing to fight (the rules' defenders, where we see the plot): go. A hero or
-veteran of the pool whose chance to fall is above its `precious_bar` allowance holds the attack
-(every unit of the plot fights, so the gate reads each one's fall, not the first attacker's odds).
-Strike (`campaign::strike_forecast`): the phase strikes when the adjacent ring takes the city at
-65% (`STRIKE_BAR`; 55% for the conquerors, `BOLD_STRIKE_BAR`), decisively at 90%
+fight (every unit of ours on the plot that can attack: an order commits the strongest squad, the
+next order the next squad; "Squads" below) fight this turn, `p_take` the chance the plot falls.
+The same shape as round 7g, the bars meaning what they say (`military::field_rule`): attack at
+`p_take` 65% (`TAKE_BAR`; 75% for a hurt stack), or 50% (`TRADE_BAR`) when more of their units are
+expected to fall than ours, raiders near our cities counted four times (`RAIDER_KILL_PCT`); a city
+to capture at 65% (`CAPTURE_BAR`); `attack_adjacent`'s own bars (75% explorer, 80% sortie, 50%
+aggressive) read as `p_take`. Nothing to fight (the rules' defenders, where we see the plot): go. A
+hero or veteran of the pool whose chance to fall is above its `precious_bar` allowance holds the
+attack (every squad of the plot fights in turn, so the gate reads each unit's fall, not the first
+attacker's odds). Strike (`campaign::strike_forecast`): the phase strikes when the adjacent ring
+takes the city at 65% (`STRIKE_BAR`; 55% for the conquerors, `BOLD_STRIKE_BAR`), decisively at 90%
 (`DECISIVE_BAR`: a probe opened by our casters; a ring that does not wait for the stacks one plot
 out); once started it goes on at 65%, or 50% with the better trade. Under engagements an order
-from a plot is one battle of the whole plot, so the old order of single attackers (collateral
-first, raised dead, best odds, cheapest sacrifice, heroes last) chose nothing but the plot: the
-strike orders each battle from the plot with the most units (the forecast's order), by the unit
-best able to take the city; the old code is kept for the switch's off side. A group assault's
-second battle (the reserve the formation left) is ordered by a unit that can still attack, out of
-its group: the group's own order did nothing once half of it had fought, while the forecast
-counted the reserve. Cost: a first look at 20 runs (`FAST_RUNS`), the full 60 only within 20
-points of a bar (`RECHECK_MARGIN`), the turn's cache, and no forecast when our attack power is
+from a plot is one battle of its strongest squad (the AI names none), so the old order of single
+attackers (collateral first, raised dead, best odds, cheapest sacrifice, heroes last) chose nothing
+but the plot: the strike orders each battle from the plot with the most units (the forecast's
+order), by the unit best able to take the city; the old code is kept for the switch's off side. A
+group assault's second battle (the squads that have not fought) is ordered by a unit that can still
+attack, out of its group: the group's own order did nothing once half of it had fought, while the
+forecast counted those squads. Cost: a first look at 20 runs (`FAST_RUNS`), the full 60 only within
+20 points of a bar (`RECHECK_MARGIN`), the turn's cache, and no forecast when our attack power is
 under 25% of the defenders' (`HOPELESS_PCT`). Left on `combat_sim`: the march and gather
 decisions (`ok_all`, `ok_near`), the one-turn concentration test, the casters' share of a
 decisive strike, the hunt's target pre-filter in `hunt` before the stack is next to it (judged as
 if from its staging plot), and the war gate. Measured: "The improvement scheme", item 3.
+
+**Squads** (`squads.rs`; docs/ENGAGEMENTS.md, "Squads"). A battle is one squad against one squad,
+and a battle won in the field pushes the whole enemy stack back, so the AI keeps every body (an
+army, a garrison, the loose units on a plot) of two or more squads massed
+(`Game::squad_mass_sort_body`, the bodies from `squad_bodies_to_mass`): the first squad is the auto
+formation of the whole body, the second that of the rest, and so on, all Auto. `squads::turn` does
+it before the turn's plans (`campaign::plan` forecasts) and again after the units have moved, for
+the battles it defends. The forecast fights the squads as they stand, wherever the units are
+(`Game::engage_forecast_squads`: each plot's `engage_field_squads`), the strongest of those left
+first, each once, as the real fight picks them; for a real attack its battle is the preview's. The forecast cache's key reads each unit's squad and the battles that squad fought this
+turn. Before (until 2026-11-23) the forecast took the attackers as one auto formation of the
+pool's best five places, then greedy formations of the rest, while the squads were dealt by the
+snake auto-sort into balanced squads: a stack of 8 fought as two squads of 4 and was forecast as
+its best 5. Measured (`calibration.py`, 24 games, seeds 1-24, 6 civs, standard map, 300 turns, the
+acted slice; predicted / observed, base 9f274400 against the change with the other four fixes of
+docs/AI_LOG.md, "Five wrong uses of this game's own rules"):
+
+| Kind (acted) | before | N | Brier | after | N | Brier |
+|---|---|---|---|---|---|---|
+| `field2` | 94.4% / 89.6% | 4730 | 0.086 | 94.9% / 90.0% | 4849 | 0.087 |
+| `strike2` | 92.6% / 89.0% | 236 | 0.091 | 93.1% / 87.6% | 266 | 0.086 |
+| `assault2` | 93.9% / 85.2% | 176 | 0.145 | 91.7% / 86.2% | 203 | 0.118 |
+| `field2`, 6+ attackers | 87.9% / 79.6% | 279 | | 90.5% / 83.0% | 317 | |
+| `strike2`, 6+ attackers | 88.1% / 84.4% | 90 | | 90.2% / 80.0% | 130 | |
+| `assault2`, 6+ attackers | 88.5% / 80.7% | 57 | | 90.1% / 85.9% | 85 | |
+
+The calibration of the attacks acted on barely moved: the mismatch was real and cost little in
+practice. The guardrail of the five fixes together (64 games, seeds 1-64, the same settings,
+against 9f274400): cities taken between civilizations 898 against 883, from barbarians 296 against
+308, by barbarians 203 against 191, destroyed 324 against 353, founded 3775 against 3853, wars
+1252 against 1162, eliminations 112 against 106; military at turn 100 12.2 against 12.0 and at
+turn 200 28.3 against 27.3; research at turn 200 120.8 against 117.7; 79.8 ms a turn against 75.5
+and 84.1 for two runs of the base.
 
 **Siege operations** (`campaign.rs`): one per player, rebuilt from the game state on the first
 army decision of each `play_turn` call (nothing outside `Game` is remembered).
@@ -935,8 +968,14 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   be fought: the attackers in the strike's own order, each against the defender the rules put up
   against it; a lost fight still wounds (the rounds won before dying, first strikes counted),
   a siege engine's win leaves the defender at its combat limit, collateral damage hits the
-  other defenders, siege engines that can bring the walls down in three turns count as having
-  done so. The force covers the city when every defender is 70% sure to be dead (60% for the
+  other defenders. The city's defence modifier stands in for its Sentinels (a battle adds no
+  city defence to the defenders, and a bombard hits the Sentinels and the soldiers, not the
+  defence: docs/SIEGES.md), by `combat_sim::wall_cut`: with no Sentinel standing (no walls,
+  breached, the city in occupation) the whole modifier is dropped, with or without engines; with
+  Sentinels standing it counts in proportion to the HP the least damaged one keeps after three
+  turns of the force's bombards by the rule's own formula (the `siege` callers) or as they stand;
+  never more than the city gave that defender. `military::field_sim` and the crusade Host's cover
+  pass it too. The force covers the city when every defender is 70% sure to be dead (60% for the
   conquerors, `BOLD_STRIKE`); committing to *march* wants a reserve, every defender 90% sure
   (so stacks do not advance understrength), but a committed force already positioned next to
   or beside the city *strikes at acceptable odds* -- it expects to clear the defenders without
@@ -959,14 +998,17 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   the best defense), and wait there. **StepIn**: the force within two plots covers the city:
   the stacks on the assembly ring step next to it (those still on their way come to the ring
   first). **Strike**: the force next to it covers the city: every committed stack there
-  attacks in the same turn -- siege engines bombard, collateral attackers first while several
-  defenders stand, then units summoned for good (skeletons and the like, `magic::raised`: free
-  to replace, they wear the defenders down as siege fodder; the owner's call, 2026-10-20), then
-  the best odds when 68%+, else the unit cheapest to lose for the damage it is expected to deal
-  (C++ `AI_getBestGroupSacrifice` weighs strength; round 7f), never one that would
-  deal under a tenth of a defender's hit points -- while the attackers left still cover the
-  defenders left (or the defenders are down to half their health and outnumbered). Up to three
-  units follow the victor into the city. The expected damage of a lost fight, in the strike's
+  attacks in the same turn -- siege engines bombard (`bombard()` orders it whenever the
+  mission's own test allows it; in the attacks an engine waits exactly while the rules would turn
+  its attack into a bombard, `campaign::attack_would_bombard`: `Game::group_attack_force` makes an
+  AI group's attack on an enemy city a bombard while its bombard turns are 1 to 7), collateral
+  attackers first while several defenders stand, then units summoned for good (skeletons and
+  the like, `magic::raised`: free to replace, they wear the defenders down as siege fodder; the
+  owner's call, 2026-10-20), then the best odds when 68%+, else the unit cheapest to lose for the
+  damage it is expected to deal (C++ `AI_getBestGroupSacrifice` weighs strength; round 7f), never
+  one that would deal under a tenth of a defender's hit points -- while the attackers left still
+  cover the defenders left (or the defenders are down to half their health and outnumbered). Up to
+  three units follow the victor into the city. The expected damage of a lost fight, in the strike's
   simulation and its sacrifices, counts first strikes (`fight`, round 7f): in the rounds a
   side has first strikes left it cannot be hurt. Heroes and veterans (once switch `PRECIOUS`; More
   Naval AI's `AI_getBestGroupAttacker`) below their odds -- a hero's 85% plus 1%
@@ -1205,7 +1247,10 @@ Every barbarian sea unit (`Role::Naval`, `Transport`, `SeaExplore`) plays [`barb
 
 1. *Heal*: damaged `HEAL_PCT` (50%) or more outside a city of ours: to the nearest port it reaches
    (20 turns); in port it stays while damaged above `HEALED_PCT` (10%).
-2. *Kill*: an enemy ship (a team at war with ours; barbarians always) it can attack this turn (next
+2. *Kill*: an enemy ship (the rules' `unit_is_enemy`, as in `warships::enemy_ship`: a team at war
+   with ours, barbarians always, and a ship of hidden nationality, a pirate, whatever its real
+   team, as the guard's own test reads it; with the war tested against the real team, a guard
+   sailed out to a pirate and never attacked it) it can attack this turn (next
    to a plot it reaches with moves left) at the rules' odds (`get_combat_odds`) of `ODDS_BAR`
    (65%), or `ODDS_BAR_PRIZE` (50%) against a transport seen carrying units, a ship on Patrol or a
    ship on a sea resource of ours. Order: loaded transports, other prizes, best odds. Each attack is
@@ -1479,14 +1524,26 @@ via the research-cost proxy since `AI_techTradeVal` is unported), gold valuation
 broke) and the gold caps (a research buffer plus an already-traded-to limit), and the give-refusal
 (`bonus_trade`: never to our worst enemy, nor a resource they already have, nor a strategic /
 happiness / health resource to a civ we do not like enough -- one step more generous toward a civ
-of our alignment or favourite religion). `consider_offer` values any resource/gold/mixed deal
-(accept when what we receive is worth at least what we give, no gold-for-gold, never a resource the
-refusal blocks); `trade()` (AI<->AI) and `offers.rs` (AI->human) buy the resource we most want and
-a neighbour can spare, paying with a surplus of ours or with gold, only at peace with civs we like.
-No corporations exist in FfH 0.41, so that value is 0 and its branches are dead; `AI_getAttitude`
-and `AI_isFinancialTrouble` reuse this AI's `attitude`/`production::financial_trouble` proxies
-(docs/PORTING.md). It adds no saved state -- deal memory rides ported `Game` fields updated by
-`implement_deal` -- and draws no RNG (deterministic, checksum-stable).
+of our alignment or favourite religion). `consider_offer` (`judge_offer`) values a deal of
+technologies, resources, gold, gold per turn and a war on a third party, the kinds `deal_val`
+prices (accept when what we receive is worth at least what we give, no gold-for-gold, never a
+resource the refusal blocks). The AI gives nothing it puts no price on: outside the vassal
+branches, a deal in which it would give a city, a civic, a religion, an embargo, peace with a third
+party or any other kind is refused ("cities are not traded", "civics are not traded", "religions
+are not traded", "embargoes are not traded", "peace with others is not traded", "these items are
+not traded"), on demand or for any payment; items of any kind the other side gives are taken (a
+gift of a city is a gift). A peace treaty, open borders or a defensive pact on one side only is
+refused ("a peace treaty is mutual", "open borders are mutual", "a defensive pact is mutual");
+open borders or a defensive pact inside a larger deal keeps its own rule (the pure deal's test),
+then the rest of the deal is judged on its own. Before (until 2026-11-23) a demand for a city was
+paid whenever a demand was (and, worth 0, recorded no tribute, so it could be repeated), and 1
+gold bought a city at peace. `trade()` (AI<->AI) and `offers.rs` (AI->human) buy the resource we
+most want and a neighbour can spare, paying with a surplus of ours or with gold, only at peace with
+civs we like. No corporations exist in FfH 0.41, so that value is 0 and its branches are dead;
+`AI_getAttitude` and `AI_isFinancialTrouble` reuse this AI's
+`attitude`/`production::financial_trouble` proxies (docs/PORTING.md). It adds no saved state -- deal
+memory rides ported `Game` fields updated by `implement_deal` -- and draws no RNG (deterministic,
+checksum-stable).
 
 Measured (16-seed, 690-turn A/B vs the no-trade tip): trading is positive-sum, so every civ grows
 -- final power +8.7%, research at turn 300 +3.4% (the hard guard), and 7% fewer civs eliminated
@@ -1519,7 +1576,8 @@ the proposing AI implements the deal unilaterally; here AI-AI deals are judged b
 `consider_offer`, whose `deal_val` scales gold by `gold_trade_value_percent` (200-300%), so face-value
 gold would read as overpriced and always be refused. `peace_tribute` instead builds the gold that is
 *worth* the gap under `deal_val` (the `AI_counterPropose` scaling), so the deal balances for the
-judge. Cities-as-tribute are omitted (`AI_cityTradeVal` unported). No new saved state; no RNG.
+judge. Cities-as-tribute are omitted (`AI_cityTradeVal` unported): ceding a city for peace is not
+offered. No new saved state; no RNG.
 
 Measured (16-seed, 690-turn A/B vs the pre-reparations tip, with the `press_conquest` guard):
 captured cities +16%, civs eliminated +25%, the leader's world-share at turn 690 35.9% -> 42.5%
@@ -1538,8 +1596,9 @@ threshold, eased one step by shared alignment or favourite religion), at peace, 
 `contact_due` cadence (~150 turns). Deliberate deviations from the C++: the gift is the *cheapest*
 tech we can give (deterministic -- ffh-ai draws no RNG -- and so it never hands over an expensive key
 enabler) rather than a random one; and we never gift a civ that is our victory rival (the project's
-"do not prop up a rival" rule). The gift does not raise attitude (`relation()` does not track gifts;
-C++ `AI_getTradeAttitude` is unported), matching how resource/open-borders trading was integrated.
+"do not prop up a rival" rule). The gift does not raise attitude (`relation()` reads the gifts
+ffh-core `tribute` records, and an AI's own one-sided deal records none; C++ `AI_getTradeAttitude`
+is unported), matching how resource/open-borders trading was integrated.
 Like the base game it is rare (the gating plus the ~150-turn cadence fire it only a handful of times
 across a 16-game set), so it is a faithful, low-impact "keep an ally alive" gesture rather than a
 force on the outcome. No new saved state; no RNG. (Measured 16-seed/690-turn A/B vs the
@@ -1712,23 +1771,12 @@ verdict): no panic or check failure; main armies of 4.8 to 6.7 units on average 
 stack limit), 7 to 65 such empire orders a game, 1 to 2 civilization cities conquered a game by
 turn 150.
 
-## Battle tactics (`tactics.rs`)
+## Battle tactics (retired)
 
-Each army's and each garrison's standing tactic (docs/TACTICS.md) is set once a turn, after the
-units have moved (so the turn's merges and splits are seen), by a pure rule of the body's units
-(`tactics::choose`: their kinds, `Game::unit_engage_kind`, as guards and support; the lanes of
-the 8 base slots, 4): **Charge** for a field army whose chargers are at least 60% of its fighting
-units and whose support is at most 25%; **Volley** with at least 2 support units, at least 25% of
-the army, and a guard for every lane (the screen); else **Line**. Garrisons: Volley by the same
-test, else Line (a charge is a strike in a city). Never Vanguard. A tactic is set only when the
-answer differs from the pending one; the rules apply it at the next turn start. The thresholds
-come from the lab's matrices (docs/TACTICS.md, section 8): Charge won with the mounted army (+15.3
-in a forest) and lost with every army that has more support (the ranged army in a forest: -28.1,
-its archers left out); Volley won with the melee core with archers and mages (+13.2 open, +8.1
-forest, +4.7 walls) and lost with the ranged army, whose 3 guards cannot screen. Telemetry:
-`tactic_army`, `tactic_garrison` (army- and city-turns by tactic in use) and `tactic_battle` (each
-side of an attack our stacks make, by the tactic it fights in: `tactics::note_attack`). Measured
-counts: docs/TACTICS.md, section 6.
+Battle tactics (docs/TACTICS.md) were retired on 2026-11-21 (the owner's decision), and
+`tactics.rs` with them: squads do their work (who fights, where each stands), and the AI keeps its
+squads massed ("Squads" under Field armies). The rule it played (Charge, Volley or Line by the
+body's kinds of units) and its measurements are in docs/TACTICS.md.
 
 ## Supply lines (`supply.rs`)
 
@@ -2649,16 +2697,18 @@ them).
 Since the world rituals (2026-11-11, docs/CARDS.md) a world spell comes with a completion of its
 ritual, and since 2026-11-12 no charge is held: an untargeted spell takes effect at the completion
 (so `world_rituals.rs` starts the ritual only when the spell's moment holds,
-`world_spells::ready_for_ritual`: the timing below), and a targeted one is cast as soon as the
-AI's targeting finds a target (`ready` is true while a cast is pending). `world_rituals.rs`
-builds the ritual: with no cast pending and no ritual under way, at least two cities (one if it may hold
-no more), no city in peril, it starts the ritual in its city with the most production when that
-city completes it within 20 turns. Nothing the AI queues goes in front of a ritual under way
-(`world_rituals::locked`; since 2026-11-12 any project with production at the head of its queue:
-every project is a ritual and loses its production off the head, docs/CARDS.md), so only losing
-the city ends one. It never tries a gold hurry on a ritual (the rules refuse it); its population
-hurries are for urgent units only (`empire::hurry`), as for any other build. The timing below
-decides when an untargeted spell's ritual starts. (The held casts of `civs/world_spell.rs` are gone: the Sidar's Into the Mist moment, a war or 60 units, is `expert_moment`'s.)
+`world_spells::ready_for_ritual`: the timing below), and a targeted one is cast when the AI's
+targeting finds a target (`ready` is true while a cast is pending; Frozen Passage waits for a
+target worth casting at, below). `world_rituals.rs` builds the ritual: with no cast pending and no
+ritual under way, at least two cities (one if it may hold no more), no city in peril, and the
+civilization's own condition (`world_rituals::civ_gate`), it starts the ritual in its city with the
+most production when that city completes it within 20 turns. Nothing the AI queues goes in front
+of a ritual under way (`world_rituals::locked`; since 2026-11-12 any project with production at the
+head of its queue: every project is a ritual and loses its production off the head, docs/CARDS.md),
+so only losing the city ends one. It never tries a gold hurry on a ritual (the rules refuse it); its
+population hurries are for urgent units only (`empire::hurry`), as for any other build. The timing
+below decides when an untargeted spell's ritual starts. (The held casts of `civs/world_spell.rs` are
+gone: the Sidar's Into the Mist moment, a war or 60 units, is `expert_moment`'s.)
 
 Four world spells were replaced on 2026-11-11 (the owner's design; docs/PORTING.md, "Changes from
 FFH2"), and the FfH timings below for River of Blood, Wild Hunt, Gifts of Nantosuelta and Arcane
@@ -2676,6 +2726,23 @@ Lacuna are history. Their AI now:
   `Game::player_place`, no unit needed): with a charge, the valid plot nearest
   the capital, the mana type they own the fewest of.
 
+**Frozen Passage** (Illians, `civs/illians.rs`; it replaced Stasis on 2026-11-11): a target is
+scored by `frozen_passage_worth`: a land bridge from a land where the Illians have a city to another
+is worth 100 (`BRIDGE`) when the far land holds a city of a team they are at war with or prepare a
+war on, or when they are alone on their land and it holds a city of a civilization no stronger than
+them; -50 (`OPENS_OUR_LAND`) when it only opens their land to other civilizations; +10 (`HARM`) for
+each frozen plot an enemy's city can work; -30 (`OWN_COST`) for each one a city of their own team, a
+vassal or their master can work. Only revealed cities count, barbarian ones as nobody's. A pending
+cast goes to the best target worth 40 (`MIN_WORTH`) or more, else it stays pending; the ritual is
+started only when such a target exists (`civ_gate`, looked for every 5 turns,
+`FROZEN_PASSAGE_EVERY`). Their ships break no Sea Ice (`sea_ice.rs`). All constants ad hoc.
+Measured, 24 games with the Illians forced in (seeds 1-24, 6 civs, standard map, 300 turns,
+`FFH_AI_TRACE`): with the ritual started from two cities on and the cast at the plot nearest the
+closest rival city overseas (with none, nearest their own capital), 44 rituals started and 44 casts,
+in all 24 games, the first at turn 61, one of them freezing a single plot; with this rule 12 rituals
+started and 11 casts in 9 games, the first at turn 136, each worth 40 to 160 (six bridges, five
+on an enemy's waters).
+
 FfH 0.41 timed the AI's world spells in the rules, as AI-only branches of the spells' Python
 requirements (`if pPlayer.isHuman() == False:` in `CvSpellInterface.py` `req*`). Those are AI
 policy, so the port took them out of the rules (docs/PORTING.md, "Changes from FFH2"; a human's
@@ -2686,16 +2753,15 @@ civilization forced, two fresh seeds each, full games: the same checksums before
 
 FfH's conditions, the AI's default timing: Legends, Rally, River of Blood and Gifts of
 Nantosuelta at 5 cities (Stasis, at 5 cities too, was replaced on 2026-11-11 by Frozen Passage, a
-targeted spell the Illians cast the turn they hold a charge, `civs/illians.rs`, and ships break Sea
-Ice near their cities, `sea_ice.rs`); Warcry at war with 25 units; Veil of Night at peace with 25 units; Wild
-Hunt at war with 20 units; Into the Mist at 40 units; Sanctuary, March of the Trees and Divine
-Retribution at war with two teams; Raging Seas at war with a player whose fleet is worth more than
-10; Ardor at 5 great people; Revelry at 25 population; Religious Fervor with 5 cities of the state
-religion; For the Horde with 60 barbarian units; Mother Lode at 10 mines; Arcane Lacuna with 7
-typed mana bonuses on the whole map; Worldbreak at an Armageddon counter of 50 (Hyborem's Whisper
-had none). Several almost never hold, so their spell is never cast: Arcane Lacuna (0 of 40 games),
-Worldbreak (about 3%, near the end), Raging Seas (5 of 40, around turn 590), March of the Trees and
-Sanctuary (16 and 15 of 40, late).
+targeted spell whose AI is above); Warcry at war with 25 units; Veil of Night at peace with 25
+units; Wild Hunt at war with 20 units; Into the Mist at 40 units; Sanctuary, March of the Trees
+and Divine Retribution at war with two teams; Raging Seas at war with a player whose fleet is worth
+more than 10; Ardor at 5 great people; Revelry at 25 population; Religious Fervor with 5 cities of
+the state religion; For the Horde with 60 barbarian units; Mother Lode at 10 mines; Arcane Lacuna
+with 7 typed mana bonuses on the whole map; Worldbreak at an Armageddon counter of 50 (Hyborem's
+Whisper had none). Several almost never hold, so their spell is never cast: Arcane Lacuna (0 of 40
+games), Worldbreak (about 3%, near the end), Raging Seas (5 of 40, around turn 590), March of the
+Trees and Sanctuary (16 and 15 of 40, late).
 
 **Raging Seas and The Delve** (2026-11-11, rules changes: docs/PORTING.md, "Changes from FFH2";
 `lanun_khazad.rs`, once a turn after the empire decisions). FfH's two conditions above (an enemy

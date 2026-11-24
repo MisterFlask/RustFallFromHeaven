@@ -84,8 +84,12 @@ of up to 5 places, kept between battles (`Game::squads`, `Unit::squad`, `Unit::s
   The other candidates are the defender's reserve. When the defending squad loses outside a city,
   the reserve is pushed back with the line's survivors ("The result"), so one squad's lost battle
   moves the whole stack off the plot.
-- *The AI* keeps its squads Auto and auto-sorts each body whose squads could be fewer
-  (`squad_bodies_to_sort`) at the start and the end of its turn (`ffh-ai/src/squads.rs`).
+- *The AI* keeps its squads Auto and each body of two or more squads massed
+  (`Game::squad_mass_sort_body`, the bodies from `squad_bodies_to_mass`, which leaves out a body
+  already so dealt): the body's units dealt into as few squads as hold them, the first the auto
+  formation of them all, the second that of the rest, and so on, each squad Auto (one battle is
+  one squad, so its best units fight together; the human's auto-sort keeps the snake). It masses
+  them before its turn's plans and again after its units have moved (`ffh-ai/src/squads.rs`).
 
 **Each unit's own rows** (the owner's decision, 2026-11-06: there are no roles). Every land unit
 type has, in `units.jsonc`:
@@ -711,8 +715,11 @@ declare; and the forecast.
   `Game::engage_forecast_if` is the same forecast for units that stand elsewhere, as if on a plot next
   to the target, against the defenders there plus others as if on it (for a real attack it equals the
   preview's forecast); `Game::engage_forecast_waves` the battles a turn's attacks fight one after
-  another (each plot's pool, then its reserve), the defenders' losses and damage carried from one to
-  the next. Both pure, on the preview's set-up code and the same per-battle sampling.
+  another (one battle a squad, the strongest of those left first, each once), the defenders' losses
+  and damage carried from one to the next. Both fight the attackers as the squads they stand in now,
+  wherever they stand (`engage_forecast_squads`: each plot's `engage_field_squads`), the strongest
+  first, as the real fight picks one when no order names it. Both pure, on the preview's set-up code
+  and the same per-battle sampling.
 
 ## Telemetry
 

@@ -32,6 +32,75 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Five wrong uses of this game's own rules (2026-11-23; from a code audit, not from games)
+
+An audit of the AI against the rules added since FFH2 found five places where it played against a
+rule: it judged or acted on a rule as it used to be, or not at all. They were found by reading
+code, not counted in games first (CLAUDE.md, "AI changes", step 1); the games below say what the
+fixes did where they fire.
+
+1. **Deals** (`diplomacy.rs` `judge_offer`, `trade.rs`). `trade::deal_val` prices technologies,
+   resources, gold, gold per turn and a war on a third party, and counts every other kind 0, and
+   `judge_offer` let such items through on our side: a demand for a city was paid whenever a
+   demand was (and, worth 0, recorded no tribute, so it could be repeated), and 1 gold bought a
+   city at peace. Now a deal in which the AI would give a city, a civic, a religion, an embargo,
+   peace with a third party or any other unpriced kind is refused, and a peace treaty, open borders
+   or a defensive pact on one side only is refused; a pact inside a larger deal keeps its own rule,
+   and the rest of the deal is judged on its own. Items the other side gives are still taken. No
+   AI-against-AI game exercises it, so there is nothing to measure there.
+2. **Frozen Passage** (`civs/illians.rs`, `world_rituals.rs` `civ_gate`, `sea_ice.rs`). The
+   ritual started from two cities on, the target was the plot nearest the closest rival city
+   overseas (at war or not) or, with none, nearest their own capital, and their idle ships broke
+   the ice near their cities again. Now a target is scored (`frozen_passage_worth`: a bridge to an
+   enemy's land or, alone on ours, to a civilization no stronger, the waters an enemy's cities
+   work, less the waters ours work), cast only at a worth of 40 or more, the ritual started only
+   when such a target exists, and the Illians' ships break no Sea Ice. 24 games with the Illians
+   forced in (seeds 1-24, 6 civs, standard map, 300 turns, `FFH_AI_TRACE`): before, 44 rituals
+   started and 44 casts, in all 24 games, the first at turn 61, one of them freezing a single
+   plot; after, 12 rituals started and 11 casts in 9 games, the first at turn 136, each worth 40 to
+   160 (six bridges, five on an enemy's waters).
+3. **Sentinels in the duel model** (`combat_sim.rs` `wall_cut`, `campaign.rs`, `forecast.rs`).
+   The model that decides whether an operation gathers, marches or steps in took off "the city
+   defence our siege engines bombard away within three turns", but a bombard no longer lowers a
+   city's defence (it hits the Sentinels and the soldiers), and a battle adds no city defence to
+   the defenders. `wall_cut` now treats the modifier as a proxy for the Sentinels: dropped where
+   none stands, else in proportion to the HP the least damaged one keeps after three turns of the
+   force's bombards; `field_sim` and the crusade Host's cover pass it too. The strike's siege
+   engines wait exactly while the rules would turn their attack into a bombard (before: at any city
+   with a defence modifier, walls or not), `bombard()` orders the bombard whenever the mission's
+   test allows it, and the forecast cache's key reads each Sentinel's damage. Guardrail, with fixes
+   1 and 5 only (64 games, seeds 1-64, 6 civs, standard map, 300 turns, against 9f274400): cities
+   taken between civilizations 849 against 883, from barbarians 294 against 308, by barbarians 182
+   against 191, eliminations 110 against 106; the games are identical to turn 100.
+4. **Squads** (`engagement/preview.rs`, `army/squad.rs`, `squads.rs`, `forecast.rs`). The
+   forecast took the attackers as one auto formation of the pool's best five places (then greedy
+   formations of the rest), while the real battle fields one squad, and the AI's squads were dealt
+   by the snake auto-sort into balanced squads: a stack of 8 fought as two squads of 4 and was
+   forecast as its best 5. Now the forecast fights the squads as they stand, the strongest first,
+   and the AI keeps every body of two or more squads massed (`squad_mass_sort_body`: the first
+   squad the auto formation of the whole body, the next that of the rest). Calibration
+   (`calibration.py`, 24 games, seeds 1-24, the acted slice, base against the five fixes;
+   predicted / observed): `field2` 94.4% / 89.6% (N 4730, Brier 0.086) against 94.9% / 90.0% (N
+   4849, Brier 0.087); `strike2` 92.6% / 89.0% (N 236, Brier 0.091) against 93.1% / 87.6% (N 266,
+   Brier 0.086); `assault2` 93.9% / 85.2% (N 176, Brier 0.145) against 91.7% / 86.2% (N 203, Brier
+   0.118). Stacks of six or more attackers: `field2` 87.9% / 79.6% (N 279) against 90.5% / 83.0% (N
+   317); `strike2` 88.1% / 84.4% (N 90) against 90.2% / 80.0% (N 130); `assault2` 88.5% / 80.7% (N
+   57) against 90.1% / 85.9% (N 85). Guardrail of all five (64 games, seeds 1-64, against
+   9f274400): cities taken between civilizations 898 against 883, from barbarians 296 against 308,
+   by barbarians 203 against 191, destroyed 324 against 353, founded 3775 against 3853, wars 1252
+   against 1162, eliminations 112 against 106; military at turn 100 12.2 against 12.0 and at turn
+   200 28.3 against 27.3; research at turn 200 120.8 against 117.7; 79.8 ms a turn against 75.5 and
+   84.1 for two runs of the base.
+5. **Pirates** (`warships.rs` `enemy_ship`). The warships' target test checked the war with a
+   ship's real team, so a ship of hidden nationality was no target, while the guard's own test was
+   the rules' `unit_is_enemy`: a guard sailed out to a pirate and never attacked it. The target
+   test is the rules' now. No AI-against-AI game exercises it either.
+
+**What it implies.** The squad mismatch was real and small in practice: the forecast now fights
+what fights by construction, and the calibration of the attacks acted on barely moved. The
+forecast's remaining optimism on stacks of six or more (about 7 points on `field2`) has another
+cause, not found.
+
 ## Requisition and marching recruits (2026-10-31 to 2026-11-23; removed, the owner's decision)
 
 A rules system with its AI, removed with the rules on 2026-11-23 and replaced by waypoints
@@ -66,6 +135,7 @@ turns, governed cities first) and sent its directly ruled cities' attackers to i
    queue entries. Waypoints keep the one useful part (a city's units go to an army on the map)
    under ordinary orders the player can override. The AI now places empire unit orders for its
    main army in governed cities and gathers the units by its own movement (docs/AI.md, "Armies").
+
 
 ## Houses over a civilization's own cities (2026-11-21; a rules change, not measured)
 
