@@ -22,6 +22,48 @@ export const MIX = {
   choirOo: { level: 0.55, pan: 0, hall: 0.8 },
   timpani: { level: 0.38, pan: 0.15, hall: 0.45 },
   celesta: { level: 0.2, pan: 0.35, hall: 0.6 },
+  // The other pieces' instruments (music_pieces.js).
+  spiccato: { level: 0.34, pan: 0.1, hall: 0.3 },
+  marcato: { level: 0.3, pan: -0.3, hall: 0.4 },
+  fiddle: { level: 0.26, pan: -0.25, hall: 0.4 },
+  whistle: { level: 0.3, pan: 0.15, hall: 0.4 },
+  brass: { level: 0.34, pan: 0.25, hall: 0.45 },
+  lute: { level: 0.42, pan: 0.2, hall: 0.3 },
+  drum: { level: 0.5, pan: 0, hall: 0.25 },
+  snare: { level: 0.9, pan: 0.1, hall: 0.3 },
+  shaker: { level: 0.6, pan: -0.3, hall: 0.2 },
+  cymbal: { level: 0.5, pan: -0.2, hall: 0.5 },
+  bell: { level: 0.45, pan: 0.1, hall: 0.7 },
+  chipLead: { level: 0.55, pan: 0, hall: 0.05 },
+  chipHarm: { level: 0.24, pan: 0, hall: 0.05 },
+  chipBass: { level: 0.26, pan: 0, hall: 0.03 },
+  chipNoise: { level: 0.66, pan: 0, hall: 0.04 },
+};
+
+/** The mix a piece is played with: `MIX`, with the piece's own `mix` laid over it voice by voice
+ *  (a battle wants its strings drier than a vigil does). */
+export function mixFor(piece) {
+  const out = { ...MIX };
+  for (const [voice, m] of Object.entries(piece?.mix ?? {})) out[voice] = { ...MIX[voice], ...m };
+  return out;
+}
+
+/** What `createOrchestra` takes for a piece: its mix and, where the piece has them, its own `trim`
+ *  (the level before the soft ceiling) and `hall` (the hall's level against the dry sound). */
+export function settingsFor(piece) {
+  const out = { mix: mixFor(piece) };
+  if (piece?.trim !== undefined) out.trim = piece.trim;
+  if (piece?.hall !== undefined) out.hall = piece.hall;
+  return out;
+}
+
+/** The notes each voice is written for, lowest and highest (MIDI); a voice without a pitch (a
+ *  snare, a shaker) is not listed. A piece that leaves them is caught by the tests. */
+export const RANGES = {
+  harp: [24, 103], flute: [60, 96], horn: [41, 77], violins: [55, 100], pad: [48, 84], bass: [28, 55],
+  choirAh: [40, 81], choirOo: [40, 81], timpani: [38, 57], celesta: [60, 108],
+  spiccato: [28, 79], marcato: [55, 100], fiddle: [55, 96], brass: [43, 84], lute: [36, 84], drum: [36, 60],
+  whistle: [62, 98], bell: [45, 84], chipLead: [55, 96], chipHarm: [48, 91], chipBass: [28, 60],
 };
 
 /** The whole mix's level before the soft ceiling: set so the loudest bars stay under it. */
@@ -171,7 +213,7 @@ function softClip() {
  *  `compile`: `{ voice, t, d, m, v, v2 }`, `t` in the context's seconds); a voice's notes must
  *  come in order of time. `out` is the last node before the speakers (its gain is the listener's
  *  volume). */
-export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
+export function createOrchestra(ctx, { seed = 7, mix: levels = MIX, trim = TRIM, hall: hallLevel = HALL } = {}) {
   const rng = mulberry32(seed);
   const sr = ctx.sampleRate;
 
@@ -195,7 +237,7 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
   };
 
   // The way out: the mix, the soft ceiling, the listener's volume.
-  const mix = gainNode(TRIM);
+  const mix = gainNode(trim);
   const halve = gainNode(0.5);
   const ceiling = ctx.createWaveShaper();
   ceiling.curve = softClip();
@@ -214,7 +256,7 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
   hall.buffer = hallImpulse(ctx, rng);
   hallIn.connect(before);
   before.connect(hall);
-  hall.connect(gainNode(HALL)).connect(mix);
+  hall.connect(gainNode(hallLevel)).connect(mix);
 
   const buses = {};
   for (const [voice, m] of Object.entries(levels)) {
@@ -256,6 +298,10 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
     sung: wave(40, (k) => 1 / k ** 1.15),
     flute: wave(6, (k) => [0, 1, 0.3, 0.1, 0.04, 0.015, 0.008][k]),
     horn: wave(24, (k) => Math.exp(-k / 7) / k),
+    brass: wave(32, (k) => Math.exp(-k / 12) / k ** 0.85),
+    whistle: wave(4, (k) => [0, 1, 0.16, 0.05, 0.02][k]),
+    // A pulse a quarter of the period wide: the thin, nasal square of an old game console.
+    pulse: wave(48, (k) => (2 / (k * Math.PI)) * Math.sin(k * Math.PI * 0.25)),
   };
 
   /** When a note's oscillator has ended, lets go of what fed it and what it fed: the shared
@@ -282,16 +328,19 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
 
   // --- the harp
   const strings = new Map();
-  const harp = (e) => {
-    let buf = strings.get(e.m);
+  const stringOf = (m) => {
+    let buf = strings.get(m);
     if (!buf) {
-      const s = pluckSamples(sr, e.m);
+      const s = pluckSamples(sr, m);
       buf = ctx.createBuffer(1, s.length, sr);
       buf.getChannelData(0).set(s);
-      strings.set(e.m, buf);
+      strings.set(m, buf);
     }
+    return buf;
+  };
+  const harp = (e) => {
     const src = ctx.createBufferSource();
-    src.buffer = buf;
+    src.buffer = stringOf(e.m);
     // A soft pluck is a duller one.
     const tone = filter("lowpass", clamp(2500 + hz(e.m) * (4 + 14 * e.v), 3000, 16000), 0.5);
     const place = panner((e.m - 62) / 44);
@@ -299,6 +348,23 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
     tone.connect(gainNode(e.v)).connect(place);
     place.connect(buses.harp);
     src.start(e.t);
+  };
+
+  // --- the lute: the same string, brighter, and the hand stops it when the note is over
+  const lute = (e) => {
+    const src = ctx.createBufferSource();
+    src.buffer = stringOf(e.m);
+    const tone = filter("lowpass", clamp(1800 + hz(e.m) * (5 + 10 * e.v), 2500, 12000), 0.5);
+    const g = gainNode(e.v);
+    const end = e.t + Math.max(e.d, 0.06);
+    g.gain.setValueAtTime(e.v, end);
+    g.gain.setTargetAtTime(0, end, 0.09);
+    src.connect(tone);
+    tone.connect(g);
+    g.connect(buses.lute);
+    src.start(e.t);
+    src.stop(end + 0.8);
+    src.onended = () => g.disconnect();
   };
 
   // --- the bowed strings: a few players a note, each a little out of tune with the others
@@ -325,12 +391,17 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
       env.connect(place);
       place.connect(kind.bus);
       const n = kind.detune.length;
-      envelope(env.gain, e.t, e.d, e.v / n, (e.v2 ?? e.v) / n, kind.attack, kind.tau);
+      envelope(env.gain, e.t, e.d, e.v / n, ((e.v2 ?? e.v) * (kind.fall ?? 1)) / n, kind.attack, kind.tau);
     };
   };
   const violins = bowed({ bus: buses.violins, detune: [-8, 3, 10], vibrato: 7, attack: 0.16, tau: 0.13, cut: 2600, track: 2.5, width: 0.5 });
   const pad = bowed({ bus: buses.pad, detune: [-9, 0, 8], vibrato: 4, attack: 0.55, tau: 0.3, cut: 900, track: 3, width: 1.2 });
   const bass = bowed({ bus: buses.bass, detune: [-5, 6], vibrato: 0, attack: 0.3, tau: 0.28, cut: 400, track: 6, width: 0.2 });
+  // Short strokes off the string (`fall`: how far the note has died by its end), marked ones, and
+  // one fiddler.
+  const spiccato = bowed({ bus: buses.spiccato, detune: [-7, 6], vibrato: 0, attack: 0.012, tau: 0.04, cut: 1800, track: 4, width: 0.5, fall: 0.4 });
+  const marcato = bowed({ bus: buses.marcato, detune: [-8, 3, 10], vibrato: 5, attack: 0.03, tau: 0.07, cut: 2800, track: 2.5, width: 0.4, fall: 0.85 });
+  const fiddle = bowed({ bus: buses.fiddle, detune: [0, 5], vibrato: 7, attack: 0.025, tau: 0.05, cut: 3200, track: 3, width: 0 });
 
   // --- the choir: voices through the mouth's resonances (the formants of a vowel)
   const vowel = (bus, formants, chest) => {
@@ -407,19 +478,19 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
     breath.gain.setTargetAtTime(0, end, 0.05);
   };
 
-  // --- the horn: two players, a filter that opens as the note speaks and the louder it is
-  const horn = (e) => {
+  // --- the brass: two players, a filter that opens as the note speaks and the louder it is
+  const brassy = (kind) => (e) => {
     const f = hz(e.m);
     const end = e.t + e.d;
     const tone = filter("lowpass", f * 1.2, 0.8);
     tone.frequency.setValueAtTime(f * 1.2, e.t);
-    tone.frequency.linearRampToValueAtTime(f * (2.2 + 4 * e.v), e.t + Math.min(0.13, e.d * 0.5));
-    tone.frequency.linearRampToValueAtTime(f * (2.2 + 4 * (e.v2 ?? e.v)), end);
-    tone.frequency.setTargetAtTime(f * 1.2, end, 0.12);
+    tone.frequency.linearRampToValueAtTime(f * (kind.open + kind.more * e.v), e.t + Math.min(kind.rise, e.d * 0.5));
+    tone.frequency.linearRampToValueAtTime(f * (kind.open + kind.more * (e.v2 ?? e.v)), end);
+    tone.frequency.setTargetAtTime(f * 1.2, end, kind.close);
     const env = gainNode(0);
-    [-4, 5].forEach((cents, i) => {
+    kind.detune.forEach((cents, i) => {
       const o = ctx.createOscillator();
-      o.setPeriodicWave(waves.horn);
+      o.setPeriodicWave(kind.wave);
       o.frequency.value = f;
       o.detune.value = cents;
       o.connect(tone);
@@ -428,9 +499,12 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
       if (i === 0) o.onended = () => env.disconnect();
     });
     tone.connect(env);
-    env.connect(buses.horn);
-    envelope(env.gain, e.t, e.d, e.v / 2, (e.v2 ?? e.v) / 2, 0.09, 0.09);
+    env.connect(kind.bus);
+    envelope(env.gain, e.t, e.d, e.v / 2, (e.v2 ?? e.v) / 2, kind.attack, kind.tau);
   };
+  const horn = brassy({ bus: buses.horn, wave: waves.horn, detune: [-4, 5], open: 2.2, more: 4, rise: 0.13, close: 0.12, attack: 0.09, tau: 0.09 });
+  // Trumpets and trombones: brighter, and quick to speak.
+  const brass = brassy({ bus: buses.brass, wave: waves.brass, detune: [-3, 4], open: 3, more: 6, rise: 0.05, close: 0.06, attack: 0.03, tau: 0.06 });
 
   /** A struck note: sine partials `[ratio, level, seconds to die]` that start together. */
   const struck = (bus, partials, bend) => (e) => {
@@ -472,7 +546,130 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX } = {}) {
   // --- the celesta: a struck bar, bright for a moment
   const celesta = struck(buses.celesta, [[1, 1, 2.2], [2, 0.3, 1.2], [4.07, 0.2, 0.35], [6.3, 0.08, 0.12]], 0);
 
-  const voices = { harp, violins, pad, bass, choirAh: choir, choirOo: choir, flute, horn, timpani, celesta };
+  // --- a bell: the partials of a cast bell (the hum an octave under the note, a minor third in it)
+  const bell = struck(buses.bell, [[0.5, 0.35, 5.5], [1, 1, 4.5], [1.183, 0.6, 3.2], [1.506, 0.45, 2.6], [2, 0.5, 2.2], [2.514, 0.3, 1.5], [2.662, 0.22, 1.2], [3.011, 0.18, 0.9], [4.166, 0.1, 0.6]], 0);
+
+  /** A hit of noise: a stretch of the shared noise through a filter, up at once and away. Each hit
+   *  has its own source, so hits may overlap. */
+  const burst = (bus, t, { type, freq, q = 0.7, level, attack = 0.002, tau }) => {
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    src.loop = true;
+    const tone = filter(type, freq, q);
+    const g = gainNode(0);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(level, t + attack);
+    g.gain.setTargetAtTime(0, t + attack, tau);
+    src.connect(tone);
+    tone.connect(g);
+    g.connect(bus);
+    src.start(t, rng() * 1.5);
+    src.stop(t + attack + tau * 8);
+    src.onended = () => g.disconnect();
+  };
+
+  // --- the whistle: the flute's cousin for a dance, quick to speak, a puff of air at each note
+  const whistle = (e) => {
+    const f = hz(e.m);
+    const end = e.t + e.d;
+    const o = ctx.createOscillator();
+    o.setPeriodicWave(waves.whistle);
+    o.frequency.value = f;
+    if (e.d > 0.4) {
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 5.2;
+      const depth = gainNode(0);
+      depth.gain.setValueAtTime(0, e.t + 0.15);
+      depth.gain.linearRampToValueAtTime(9, e.t + 0.35);
+      lfo.connect(depth);
+      depth.connect(o.detune);
+      lfo.start(e.t);
+      lfo.stop(end + 0.3);
+    }
+    const env = gainNode(0);
+    o.connect(env);
+    env.connect(buses.whistle);
+    envelope(env.gain, e.t, e.d, e.v, e.v2 ?? e.v, 0.018, 0.035);
+    o.start(e.t);
+    o.stop(end + 0.3);
+    o.onended = () => env.disconnect();
+    burst(buses.whistle, e.t, { type: "bandpass", freq: clamp(f * 2.5, 1500, 7000), q: 1.5, level: e.v * 0.25, tau: 0.015 });
+  };
+
+  // --- the small drums: a hand drum (its skin and the hand), a snare (its shell and its wires), a
+  // shaker, a cymbal. The snare, the shaker and the cymbal have no pitch: the note is ignored.
+  const drumSkin = struck(buses.drum, [[1, 1, 0.45], [1.52, 0.4, 0.22], [2.4, 0.15, 0.1]], 1.3);
+  const drum = (e) => {
+    drumSkin(e);
+    burst(buses.drum, e.t, { type: "lowpass", freq: 900, level: e.v * 0.5, tau: 0.02 });
+  };
+  const snareShell = struck(buses.snare, [[1, 0.5, 0.11], [1.59, 0.3, 0.07]], 1.25);
+  const snare = (e) => {
+    snareShell({ ...e, m: 54 });
+    burst(buses.snare, e.t, { type: "bandpass", freq: 2100, q: 0.6, level: e.v * 0.9, tau: 0.045 });
+    burst(buses.snare, e.t, { type: "highpass", freq: 5200, level: e.v * 0.3, tau: 0.03 });
+  };
+  const shaker = (e) => burst(buses.shaker, e.t, { type: "bandpass", freq: 7200, q: 1.1, level: e.v, attack: 0.004, tau: 0.018 });
+  const cymbal = (e) => {
+    burst(buses.cymbal, e.t, { type: "highpass", freq: 4200, level: e.v, attack: 0.003, tau: 0.4 });
+    burst(buses.cymbal, e.t, { type: "bandpass", freq: 9000, q: 2, level: e.v * 0.5, tau: 0.25 });
+  };
+
+  // --- the chip: the three voices and the noise of an old game console. A note starts at once,
+  // sinks to `hold` of its level and stops dead; a long one wavers.
+  const chip = (kind) => (e) => {
+    const end = e.t + e.d;
+    const o = ctx.createOscillator();
+    if (kind.wave) o.setPeriodicWave(kind.wave);
+    else o.type = kind.type;
+    o.frequency.value = hz(e.m);
+    const g = gainNode(0);
+    g.gain.setValueAtTime(0, e.t);
+    g.gain.linearRampToValueAtTime(e.v, e.t + 0.003);
+    g.gain.setTargetAtTime(e.v * kind.hold, e.t + 0.003, 0.06);
+    g.gain.setTargetAtTime(0, Math.max(e.t + 0.01, end - 0.012), 0.006);
+    if (kind.waver && e.d > 0.5) {
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 6;
+      const depth = gainNode(0);
+      depth.gain.setValueAtTime(0, e.t + 0.25);
+      depth.gain.linearRampToValueAtTime(kind.waver, e.t + 0.4);
+      lfo.connect(depth);
+      depth.connect(o.detune);
+      lfo.start(e.t);
+      lfo.stop(end + 0.08);
+    }
+    o.connect(g);
+    g.connect(kind.bus);
+    o.start(e.t);
+    o.stop(end + 0.08);
+    o.onended = () => g.disconnect();
+  };
+  const chipLead = chip({ bus: buses.chipLead, wave: waves.pulse, hold: 0.7, waver: 10 });
+  const chipHarm = chip({ bus: buses.chipHarm, type: "square", hold: 0.5 });
+  const chipBass = chip({ bus: buses.chipBass, type: "triangle", hold: 1 });
+  /** The console's drums, by the note: low a kick (a tone that drops), middle a snare, high a hat. */
+  const chipNoise = (e) => {
+    if (e.m >= 72) return burst(buses.chipNoise, e.t, { type: "highpass", freq: 7000, level: e.v * 0.45, tau: 0.012 });
+    if (e.m >= 48) return burst(buses.chipNoise, e.t, { type: "bandpass", freq: 2400, q: 0.5, level: e.v * 0.8, tau: 0.04 });
+    const o = ctx.createOscillator();
+    o.frequency.setValueAtTime(150, e.t);
+    o.frequency.exponentialRampToValueAtTime(42, e.t + 0.09);
+    const g = gainNode(0);
+    g.gain.setValueAtTime(0, e.t);
+    g.gain.linearRampToValueAtTime(e.v, e.t + 0.002);
+    g.gain.setTargetAtTime(0, e.t + 0.002, 0.045);
+    o.connect(g);
+    g.connect(buses.chipNoise);
+    o.start(e.t);
+    o.stop(e.t + 0.4);
+    o.onended = () => g.disconnect();
+  };
+
+  const voices = {
+    harp, violins, pad, bass, choirAh: choir, choirOo: choir, flute, horn, timpani, celesta,
+    spiccato, marcato, fiddle, whistle, brass, lute, drum, snare, shaker, cymbal, bell, chipLead, chipHarm, chipBass, chipNoise,
+  };
 
   return {
     ctx,

@@ -536,7 +536,7 @@ function radios(name, idPart, choices, current, set) {
 const section = (title, ...rows) => h("section.options-sec", h("h4", title), ...rows);
 
 /** Options: the player's options in this game, how battles open, the map's renderer, (phones)
- *  the screen's orientation and the music's switch and volume; the gear opens it. It ends with the way to the debug tools. */
+ *  the screen's orientation and the music's switch, piece and volume; the gear opens it. It ends with the way to the debug tools. */
 export function openOptions() {
   const my = me();
   // Game: the player options (`set_option`); a refusal puts the box back and says why (run's toast).
@@ -639,9 +639,15 @@ export function openOptions() {
         ),
       )
     : null;
-  // Sound: the music's switch and volume (music.js; remembered by this browser). Where it
-  // cannot play (no Web Audio, or it failed) both are shown disabled, with a line that says so.
+  // Sound: the music's switch, its piece and its volume (music.js; remembered by this browser).
+  // Where it cannot play (no Web Audio, or it failed) all three are shown disabled, with a line
+  // that says so.
   const can = music.available;
+  const piece = h(
+    "select#opt-music-piece",
+    { disabled: !can, "aria-label": "Piece", onchange: (ev) => music.setPiece(ev.target.value) },
+    music.pieces.map((p) => h("option", { value: p.id, selected: p.id === music.piece }, p.title)),
+  );
   const volume = h("input#opt-music-volume", {
     type: "range",
     min: 0,
@@ -670,6 +676,7 @@ export function openOptions() {
         }),
         " Music",
       ),
+      h("label.toggle.options-volume", h("span", "Piece"), piece),
       h("label.toggle.options-volume", h("span", "Volume"), volume),
     ),
     can ? null : h("p.dim", "Music is not available in this browser."),

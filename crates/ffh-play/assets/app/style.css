@@ -923,6 +923,9 @@ pre.report.inspect { max-height: 60vh; overflow: auto; font-size: 11px; }
 #opt-music-volume { flex: 0 1 220px; min-width: 120px; margin: 0; padding: 0; border: none; border-image: none; background: none; }
 html:not(.iso) #opt-music-volume { accent-color: var(--c-gold); }
 #opt-music-volume:disabled { opacity: 0.45; cursor: default; }
+/* The piece: as wide as the slider, its row the same as the slider's. */
+#opt-music-piece { flex: 0 1 220px; min-width: 120px; margin: 0; }
+#opt-music-piece:disabled { opacity: 0.45; cursor: default; }
 .options-debug { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(128, 128, 128, 0.35); }
 
 /* The unit panel: cargo under its transport, the promote button. */

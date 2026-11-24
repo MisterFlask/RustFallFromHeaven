@@ -1297,9 +1297,19 @@ async function musicOptions() {
   if (!(await sliderOff())) throw new Error("the volume slider is not disabled while the music is off");
   await click("#opt-music");
   await until(() => music("music.on && music.playing"), "the music on again");
+  // The piece: another one (the second in the list), then Vigil again; the music goes on playing.
+  const pieceSel = `document.getElementById("opt-music-piece")`;
+  const other = await b.eval(`${pieceSel}?.options[1]?.value ?? null`);
+  if (!other) throw new Error("the piece select has fewer than two pieces");
+  for (const id of [other, "vigil"]) {
+    await b.eval(`(() => { const s = ${pieceSel}; s.value = ${JSON.stringify(id)}; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+    await new Promise((r) => setTimeout(r, 1500));
+    await until(() => music(`music.on && music.playing && music.piece === ${JSON.stringify(id)}`), `the music playing ${id}`);
+    if ((await b.eval(`${pieceSel}.value`)) !== id) throw new Error(`the piece select does not show ${id}`);
+  }
   await shot("options-sound");
   await closeDialog("Options");
-  steps.push("the music: playing since the first click, switched off and on in Options");
+  steps.push("the music: playing since the first click, switched off and on, another piece and back in Options");
 }
 
 async function saveAndLoad() {

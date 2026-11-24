@@ -4,6 +4,8 @@
 // turns a piece into timed notes for the orchestra (music_synth.js). Data and arithmetic only: no
 // Web Audio here, so the node tests read it (test/music.test.mjs).
 
+import { MORE_PIECES } from "./music_pieces.js";
+
 const STEP = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 /** A note name as its MIDI number: "C4" is 60, "Bb3" 58, "F#5" 78. */
@@ -88,6 +90,8 @@ export const VIGIL = {
   seed: 41,
   /** Seconds of silence between one playing and the next. */
   gap: 8,
+  /** Where each section starts: [first bar, name]. */
+  sections: [[0, "The ground alone"], [4, "The theme"], [12, "The theme, with the strings"], [20, "The answer"], [28, "The theme, everyone"], [36, "Coda"]],
   chords: VIGIL_CHORDS,
   // [chord, beats a minute]; a pair of tempos is a bar that slows from the first to the second.
   bars: [
@@ -164,16 +168,16 @@ export const VIGIL = {
 };
 
 /** Every piece, by id. */
-export const PIECES = { vigil: VIGIL };
+export const PIECES = { vigil: VIGIL, ...Object.fromEntries(MORE_PIECES.map((p) => [p.id, p])) };
 
 // ---------------------------------------------------------------------------------------------
 // From a piece to timed notes
 
-const BEATS = 4;
-
-/** The bars' start times in seconds and `at(bar, beat)`. A bar with two tempos slows evenly, beat
- *  by beat, from the first to the second. */
+/** The bars' start times in seconds and `at(bar, beat)`. A bar has `piece.beats` beats (four when
+ *  left out) and the tempo counts those beats. A bar with two tempos slows evenly, beat by beat,
+ *  from the first to the second. */
 export function tempoMap(piece) {
+  const BEATS = piece.beats ?? 4;
   const within = (bpm, beat) => {
     if (typeof bpm === "number") return (60 * beat) / bpm;
     const [a, b] = bpm;
@@ -209,17 +213,18 @@ export function levelAt(points, bar) {
   return points[points.length - 1][1];
 }
 
-/** A line's notes: `{ beat, beats, m, v, v2 }` from its start (`m` null: a rest). `C5:1.5` is a
- *  note and its length in beats (one when left out), `-` a rest, `<mf>` the dynamic from there on,
- *  a trailing `^` a note that swells and `_` one that fades, `|` a bar line (checked: a line whose
- *  bars do not add up is an error, not a late entrance). */
-export function parseLine(notes, oct = 0) {
+/** A line's notes: `{ beat, beats, len, m, v, v2 }` from its start (`m` null: a rest; `len`: the
+ *  beats it sounds). `C5:1.5` is a note and its length in beats (one when left out), `-` a rest,
+ *  `<mf>` the dynamic from there on, a trailing `^` a note that swells, `_` one that fades, `'` one
+ *  cut short (half its length) and `!` one stressed, `|` a bar line (checked against `perBar`
+ *  beats: a line whose bars do not add up is an error, not a late entrance). */
+export function parseLine(notes, oct = 0, perBar = 4) {
   const out = [];
   let beat = 0;
   let v = MARKS.mf;
   for (const w of words(notes)) {
     if (w === "|") {
-      if (Math.abs(beat / BEATS - Math.round(beat / BEATS)) > 1e-9) throw new Error(`music: a bar of ${beat % BEATS} beats before "|" in "${notes}"`);
+      if (Math.abs(beat / perBar - Math.round(beat / perBar)) > 1e-9) throw new Error(`music: a bar of ${beat % perBar} beats before "|" in "${notes}"`);
       continue;
     }
     const mark = /^<(\w+)>$/.exec(w);
@@ -228,11 +233,13 @@ export function parseLine(notes, oct = 0) {
       v = MARKS[mark[1]];
       continue;
     }
-    const m = /^([^:^_]+)(?::([\d.]+))?([\^_]?)$/.exec(w);
+    const m = /^([^:^_'!]+)(?::([\d.]+))?([\^_'!]*)$/.exec(w);
     if (!m) throw new Error(`music: cannot read "${w}"`);
     const beats = m[2] ? Number(m[2]) : 1;
     const pitch = m[1] === "-" ? null : midi(m[1]) + 12 * oct;
-    out.push({ beat, beats, m: pitch, v, v2: m[3] === "^" ? v * 1.35 : m[3] === "_" ? v * 0.55 : v });
+    const loud = m[3].includes("!") ? Math.min(1, v * 1.25) : v;
+    const len = m[3].includes("'") ? beats * 0.5 : beats;
+    out.push({ beat, beats, len, m: pitch, v: loud, v2: m[3].includes("^") ? loud * 1.35 : m[3].includes("_") ? loud * 0.55 : loud });
     beat += beats;
   }
   return out;
@@ -254,6 +261,7 @@ const inSpan = (span, bar) => bar >= span[0] && bar <= span[1];
  *  the harp and, on every second playing, hands some lines to another instrument. */
 export function compile(piece, pass = 0) {
   const rng = mulberry32((piece.seed ?? 1) * 7919 + pass);
+  const BEATS = piece.beats ?? 4;
   const time = tempoMap(piece);
   const events = [];
   const note = (voice, bar, beat, beats, m, v, v2 = v, nudge = 0) => {
@@ -270,7 +278,7 @@ export function compile(piece, pass = 0) {
   // The harp. The first note of a bar leans, the notes off the beat step back, and no two are
   // quite alike.
   const harp = layers.harp;
-  for (let bar = 0; bar < piece.bars.length; bar++) {
+  for (let bar = 0; harp && bar < piece.bars.length; bar++) {
     const chord = chordAt(bar);
     const level = levelAt(dynamics.harp, bar);
     const fine = harp.sixteenths.some((s) => inSpan(s, bar));
@@ -283,7 +291,7 @@ export function compile(piece, pass = 0) {
       const lean = i === 0 ? 1.2 : onBeat ? 1 : 0.84;
       note("harp", bar, i * step, 2, m, level * lean * (0.94 + rng() * 0.12), undefined, i === 0 ? 0 : (rng() - 0.5) * 0.012);
     });
-    if (harp.low && inSpan(harp.low, bar)) note("harp", bar, 0, 4, halves(chord.bass)[0][0], level * 0.9);
+    if (harp.low && inSpan(harp.low, bar)) note("harp", bar, 0, BEATS, halves(chord.bass)[0][0], level * 0.9);
   }
 
   // The held layers: the strings' pad, the bass, the choir. A voice that keeps its note from one
@@ -330,12 +338,45 @@ export function compile(piece, pass = 0) {
     held(part.vowel === "oo" ? "choirOo" : "choirAh", part.bars, voicing, dynamics.choir);
   }
 
+  // The figures: a rhythm of the chord's notes, bar after bar (an ostinato, a strum, a drum).
+  for (const p of piece.patterns ?? []) {
+    const step = p.step ?? 0.5;
+    const figures = [p.figure].flat().map((f) => words(f).filter((w) => w !== "|"));
+    const count = Math.round(BEATS / step);
+    const points = dynamics[p.level ?? p.voice];
+    if (points === undefined) throw new Error(`music: no dynamics "${p.level ?? p.voice}"`);
+    for (const span of p.bars) {
+      for (let bar = span[0]; bar <= span[1]; bar++) {
+        if (p.every && (bar - span[0]) % p.every) continue;
+        const figure = figures[(bar - span[0]) % figures.length];
+        const parts = p.of ? halves(chordAt(bar)[p.of] ?? "") : null;
+        for (let i = 0; i < count; i++) {
+          const w = figure[i % figure.length];
+          if (w === "-") continue;
+          const tok = /^(\*|\d+|[A-G][#b]?-?\d)([',]*)([!?]?)$/.exec(w);
+          if (!tok) throw new Error(`music: cannot read "${w}" in a figure`);
+          const part = parts?.[Math.min(parts.length - 1, Math.floor((i * step * parts.length) / BEATS))];
+          const ms = tok[1] === "*" ? part : /^\d+$/.test(tok[1]) ? [part?.[Number(tok[1])]] : [midi(tok[1])];
+          if (!ms || !ms.length || ms.some((m) => m === undefined)) throw new Error(`music: the figure's "${w}" has no note in chord "${piece.bars[bar][0]}" ("${p.of}")`);
+          const shift = 12 * ((p.oct ?? 0) + tok[2].split("'").length - tok[2].split(",").length);
+          const level = typeof points === "number" ? points : levelAt(points, bar + (i * step) / BEATS);
+          const v = level * (tok[3] === "!" ? 1.3 : tok[3] === "?" ? 0.6 : 1) * (ms.length > 1 ? 0.8 : 1);
+          ms.forEach((m, k) => {
+            if (m === null) return;
+            const loose = p.human ? (rng() - 0.5) * p.human : 0;
+            note(p.voice, bar, i * step, p.len ?? step, m + shift, v * (p.human ? 0.96 + rng() * 0.08 : 1), undefined, k * (p.roll ?? 0) + loose);
+          });
+        }
+      }
+    }
+  }
+
   // The melodic lines.
   for (const line of piece.lines) {
     const alt = pass % 2 === 1 ? line.alt : null;
     const voice = alt?.voice ?? line.voice;
-    for (const n of parseLine(line.notes, (line.oct ?? 0) + (alt?.oct ?? 0))) {
-      if (n.m !== null) note(voice, line.bar, n.beat, n.beats, n.m, n.v, n.v2);
+    for (const n of parseLine(line.notes, (line.oct ?? 0) + (alt?.oct ?? 0), BEATS)) {
+      if (n.m !== null) note(voice, line.bar, n.beat, n.len, n.m, n.v, n.v2);
     }
   }
 

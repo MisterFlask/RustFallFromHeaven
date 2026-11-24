@@ -764,7 +764,7 @@ a refused change puts the box back and says why; without a game, a note), **Batt
 by this browser: "Battles fought against you": Watch, the default, Report, or Turn report only, see
 "Engagement combat"; "Your attacks": Watch or Report, the battle plan's switch), **Map** (the
 renderer: HD-2D, the default, isometric 2.5D or flat), **Screen** (on a phone only; below) and
-**Sound** (remembered by this browser: Music on or off, its Volume; disabled, with a line that says so, in a
+**Sound** (remembered by this browser: Music on or off, the Piece played (a select of the pieces by title, Vigil the default), its Volume; disabled, with a line that says so, in a
 browser without Web Audio; docs/MUSIC.md). It ends with **Debug tools…**, the only way to the Tools dialog.
 
 **Tools** (Options → Debug tools…): **Debug reveal** (the whole map and every unit and city; the top
