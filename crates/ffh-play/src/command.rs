@@ -1311,8 +1311,11 @@ fn squad_move_check(g: &Game, h: PlayerId, u: UnitId, squad: Option<SquadId>, ce
         return Err(cannot(if elsewhere { "that squad is on another plot" } else { "the squad has no units" }));
     };
     let target = &layouts[i];
-    if !squad_accepts(g, target.body, u) {
-        return Err(cannot("that unit cannot join that squad"));
+    // A drop on another body's squad moves the unit to that body (`Game::squad_rehome`), into a
+    // free cell: no swap.
+    let rehome = !squad_accepts(g, target.body, u);
+    if rehome {
+        g.squad_rehome_check(h, u, target.body).map_err(cannot)?;
     }
     let places = |l: &ffh_core::army::SquadLayout| -> i32 { l.units().iter().map(|&(x, _)| squad_size(g, x) as i32).sum() };
     let Some(c) = cell else {
@@ -1326,7 +1329,7 @@ fn squad_move_check(g: &Game, h: PlayerId, u: UnitId, squad: Option<SquadId>, ce
     match occupants.as_slice() {
         [] if i != from && places(target) + size as i32 > g.squad_places() => Err(cannot("that squad is full")),
         [] => Ok(()),
-        &[o] if squad_size(g, o) == size && target.cell_of(o) == Some(c) && squad_accepts(g, layouts[from].body, o) => Ok(()),
+        &[o] if !rehome && squad_size(g, o) == size && target.cell_of(o) == Some(c) && squad_accepts(g, layouts[from].body, o) => Ok(()),
         _ => Err(cannot("there is no room in that cell")),
     }
 }
