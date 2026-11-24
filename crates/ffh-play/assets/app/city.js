@@ -836,12 +836,14 @@ function manageView(c, task) {
   // server's reason (`Cannot be hurried with gold (Ritual).`).
   const hurries = c.hurries.map((x) => {
     const label = `${dname("HurryType", x.hurry)}${x.gold ? ` (${x.gold} gold)` : ""}${x.population ? ` (${x.population} pop.)` : ""}`;
+    // Why it is disabled: the ritual's reason, else the gate's failing check (`why`).
+    const why = x.enabled ? null : (x.reason ?? x.why ?? null);
     const button = h(
       `button.small${x.reason ? ".hurry-ritual" : ""}`,
-      { disabled: !x.enabled, "data-hurry": x.hurry, title: x.reason ?? dname("HurryType", x.hurry), "aria-label": x.reason ? `${label}: ${x.reason}` : null, onclick: () => task("TASK_HURRY", x.hurry) },
+      { disabled: !x.enabled, "data-hurry": x.hurry, title: why ?? dname("HurryType", x.hurry), "aria-label": why ? `${label}: ${why}` : null, onclick: () => task("TASK_HURRY", x.hurry) },
       label,
     );
-    return x.reason && !x.enabled ? [button, h("span.dim.small.hurry-note", x.reason)] : button;
+    return why ? [button, h("span.dim.small.hurry-note", why)] : button;
   });
   // A governed city's emphasis is its role's (shown, not chosen).
   const governed = !!c.governance?.governed;

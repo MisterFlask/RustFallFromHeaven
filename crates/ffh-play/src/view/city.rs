@@ -528,6 +528,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
             "gold" => g.city_hurry_gold(c, hu), "population" => g.city_hurry_population(c, hu),
             // A ritual at the head (ffh-core's `ffh::rituals`): why its gold hurry is disabled.
             "reason" => crate::view::rituals::hurry_reason(g, c, hu),
+            // Why a disabled hurry is disabled (`view::reasons`): the gate's failing check.
+            "why" => crate::view::reasons::hurry_refusal(g, c, hu),
         })
         .collect();
     let mut out = crate::jobj! {
