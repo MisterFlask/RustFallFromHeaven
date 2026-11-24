@@ -1423,3 +1423,32 @@ fn best_warship(g: &Game, c: CityId) -> Option<UnitType> {
     }
     best.map(|(u, _)| u)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testkit::two_landmass_game;
+
+    /// A ship of hidden nationality is a target at peace (the rules' `unit_is_enemy`: a pirate is
+    /// everyone's enemy); a ship of a team at peace is not, nor a hidden ship of our own.
+    #[test]
+    fn a_ship_of_hidden_nationality_is_an_enemy_ship() {
+        let mut g = two_landmass_game(5);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        let team = g.players[us].team;
+        assert!(!g.at_war(team, g.players[them].team));
+        let water: Vec<PlotIdx> = g.map.plot_ids().filter(|&q| g.plot_is_water(q)).take(2).collect();
+        assert_eq!(water.len(), 2, "two water plots");
+        let galley = g.d.t::<UnitType>("UNIT_GALLEY");
+        let (x, y) = g.map.xy(water[0]);
+        let theirs = g.player_init_unit(them, galley, x, y, None, None);
+        let (x, y) = g.map.xy(water[1]);
+        let ours = g.player_init_unit(us, galley, x, y, None, None);
+        assert!(!enemy_ship(&g, team, theirs), "a ship of a team at peace");
+        g.units[theirs].hidden_nationality = 1;
+        g.units[ours].hidden_nationality = 1;
+        assert!(g.unit_is_hidden_nationality(theirs));
+        assert!(enemy_ship(&g, team, theirs), "a pirate is everyone's enemy");
+        assert!(!enemy_ship(&g, team, ours), "our own hidden ship is not");
+    }
+}
