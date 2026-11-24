@@ -221,8 +221,9 @@ A rules change: the AI does something reasonable with it, ad hoc (CLAUDE.md, "AI
   `group_find_path`'s end-turn plot), not the final destination: an army walks no turn into a plot
   without a line. "Within two turns" is twice the slowest unit's base moves, in plots, from that
   plot to the city. A move into a city of ours and staying put are always allowed, and a plot of our
-  own territory counts as supplied without a search (own land costs 1 a plot from a city: it is cut
-  there only when enemy units close every way home, or in a pocket cut off from our cities).
+  own territory is supplied without a search (the rules: no line needed there, section 2; an
+  invested city of ours is the exception). A held army (3.2) gets no special handling: the path
+  finder refuses every move out but an attack, so its moves are attacks on the besiegers or none.
   Gated: the
   hunt (the target or the plot next to it; a refused candidate gives way to the next of the four
   it looks at), joining a bigger stack, and every move of a siege operation (`campaign::march`:

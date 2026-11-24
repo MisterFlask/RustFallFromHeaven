@@ -775,12 +775,12 @@ fn bombard_and_starvation_floors_stack_without_healing_the_garrison() {
 }
 
 #[test]
-fn an_army_held_in_an_invested_city_leaves_only_to_attack_until_the_siege_lifts() {
+fn an_army_held_in_an_invested_city_leaves_only_to_attack() {
     let mut w = world();
     w.war();
     let a = w.army(w.p0, 5, 5, 2);
     let grp = w.g.units[w.g.army_units(a)[0]].group.expect("a group");
-    let besiegers: Vec<UnitId> = (0..3).map(|_| w.unit(w.p1, "UNIT_WARRIOR", 6, 5)).collect();
+    for _ in 0..3 { w.unit(w.p1, "UNIT_WARRIOR", 6, 5); }
     assert!(w.g.city_is_invested(w.city));
     assert_eq!(w.g.group_siege_hold(grp), Some(w.city));
     assert!(!w.g.plot_supply_home(w.p0, w.at(5, 5)), "an invested city is not home territory");
@@ -791,10 +791,27 @@ fn an_army_held_in_an_invested_city_leaves_only_to_attack_until_the_siege_lifts(
     // A unit in no army (a garrison) is not held.
     let lone = w.unit(w.p0, "UNIT_WARRIOR", 5, 5);
     assert_eq!(w.g.unit_siege_hold(lone), None);
-    // Fewer than three besiegers: the siege lifts and the army moves freely.
-    let last = besiegers[0];
-    w.g.unit_kill(last, false, None);
-    assert!(!w.g.city_is_invested(w.city));
+    // A move order out of the city: it stays.
+    w.g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, 4, 5, 0, false, true, None, None, None);
+    assert_eq!(w.g.army_plot(a), Some(city), "held: no move out");
+    // A move order onto the besiegers: a battle (a sally).
+    w.g.players[w.p1].human = true;
+    let before = w.g.battle_report_next;
+    w.g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, 6, 5, MOVE_DIRECT_ATTACK, false, true, None, None, None);
+    assert!(w.g.battle_reports.iter().any(|r| r.id >= before), "the sally is fought");
+}
+
+#[test]
+fn the_hold_ends_when_the_siege_lifts() {
+    let mut w = world();
+    w.war();
+    let a = w.army(w.p0, 5, 5, 2);
+    let grp = w.g.units[w.g.army_units(a)[0]].group.expect("a group");
+    let besiegers: Vec<UnitId> = (0..3).map(|_| w.unit(w.p1, "UNIT_WARRIOR", 6, 5)).collect();
+    assert_eq!(w.g.group_siege_hold(grp), Some(w.city));
+    w.g.unit_kill(besiegers[0], false, None);
+    assert!(!w.g.city_is_invested(w.city), "two besiegers do not invest");
     assert_eq!(w.g.group_siege_hold(grp), None);
-    assert!(w.g.group_find_path(grp, city, w.at(4, 5), 0).is_some());
+    assert!(w.g.plot_supply_home(w.p0, w.at(5, 5)));
+    assert!(w.g.group_find_path(grp, w.at(5, 5), w.at(4, 5), 0).is_some());
 }

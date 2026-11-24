@@ -46,9 +46,7 @@ impl Game {
     /// out of the city only to attack (a sally); rules effects (routs, bumps, spells) still
     /// move it.
     pub fn unit_siege_hold(&self, u: UnitId) -> Option<CityId> {
-        let unit = self.units.get(u)?;
-        let a = unit.army.filter(|&a| self.armies.contains(a))?;
-        if self.armies[a].domain != crate::army::ArmyDomain::Land || self.unit_get_domain_type(u) != DomainType::DOMAIN_LAND || self.unit_is_cargo(u) {
+        if !self.units.contains(u) || !self.unit_siege_holdable(u) {
             return None;
         }
         let plot = self.unit_plot_opt(u)?;
@@ -56,9 +54,22 @@ impl Game {
         (self.city_team(c) == self.unit_get_team(u) && self.city_is_invested(c)).then_some(c)
     }
 
-    /// The invested city holding a unit of group `g` ([`Game::unit_siege_hold`]).
+    /// Whether unit `u` is one a siege can hold: a land unit of a land army, not cargo.
+    fn unit_siege_holdable(&self, u: UnitId) -> bool {
+        self.units[u].army.is_some_and(|a| self.armies.contains(a) && self.armies[a].domain == crate::army::ArmyDomain::Land)
+            && self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
+            && !self.unit_is_cargo(u)
+    }
+
+    /// The invested city holding a unit of group `g` ([`Game::unit_siege_hold`]). The city and
+    /// its investment are tested once, only for a group in a city of its team with such a unit.
     pub fn group_siege_hold(&self, g: GroupId) -> Option<CityId> {
-        self.groups.get(g)?.units.iter().find_map(|&u| self.unit_siege_hold(u))
+        let group = self.groups.get(g)?;
+        let plot = self.group_plot(g)?;
+        let c = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c))?;
+        let team = self.city_team(c);
+        let held = group.units.iter().any(|&u| self.units.contains(u) && self.unit_get_team(u) == team && self.unit_siege_holdable(u));
+        (held && self.city_is_invested(c)).then_some(c)
     }
 
     /// Counter on a unit's city plot. Every unit there is affected; Sentinels are not units.

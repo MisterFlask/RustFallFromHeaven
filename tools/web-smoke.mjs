@@ -1952,6 +1952,7 @@ async function supplyHd2d(url, bin, saves) {
   await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
   const words = (id) => `document.querySelector('#modals .army-card[data-army="${id}"] .army-supply')?.textContent ?? ""`;
   await until2(`/^Supplied: \\d+ of \\d+, from .+\\.$/.test(${words(st.supplied)}) && /^Hunger: turn 1 of \\d+\\. No healing, no recruits\\.$/.test(${words(st.hungry)}) && (${words(st.home)}) === "Supplied: in your territory, no supply line needed."`, "the armies' supply in words on the Armies screen");
+  await b.eval(`document.querySelector('#modals .army-card[data-army="${st.home}"]')?.scrollIntoView({ block: "center" })`);
   await shot("hd2d-supply-armies");
   await closeDialog("Armies");
   steps.push(`supply lines (stage supply, HD-2D): the line drawn, the Hunger marker, "${readout}" under the pointer, the Armies screen's words`);

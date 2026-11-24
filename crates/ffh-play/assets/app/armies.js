@@ -71,6 +71,7 @@ addHelp({
     h(
       "ul",
       h("li", "Within your borders an army needs no supply line. Outside them, each army needs one: the cheapest path over land to one of your cities, or to one of your ships that can carry land units, within its budget. A road plot costs least, then your own territory; other land costs more. Enemy units, enemy cities, land next to a manned enemy fort and closed borders block it."),
+      h("li", "An invested city is not counted as your territory: an army in it needs a supply line, and it moves out of the city only to attack until the siege lifts."),
       h("li", "The map draws your armies' lines, and the lines of other armies you see over the plots you have revealed. With an army selected, the plot under the pointer says whether it would be supplied there."),
       h("li", "Cut at the start of your turn: Hunger (no healing, no recruits), after a few turns Starvation (units lose HP each turn down to a floor, and deal less damage in battles). A restored line ends both at your next turn."),
     ),
