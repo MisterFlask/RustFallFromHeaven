@@ -925,6 +925,13 @@ join now); the faces as paving (redrawn).
   under half, as with the region moods. At counter 0 the light is LIGHT itself and the pass adds
   nothing. Screenshots: `docs/hd2d/armageddon-0-50-100.jpg`. Not done: the sprites themselves
   (dead or bare trees, ash in the air) do not change.
+  Contrast kept (the owner's report, 2026-11-23: the map washed out and was hard to read as the
+  counter climbed; the screenshots above predate this): the sea keeps most of its colour at the
+  middle of the counter instead of dulling to a grey slate, and ends darker than the land (blood
+  at half its value, from two thirds); the red cast is a multiply by the pixel's value, heavy on
+  the shade and light on what is lit, instead of one flat multiply; the trees' dead foliage (the
+  cards) is a quarter darker than the dead grass under it; the ember haze of the distance and the
+  closing corners are halved (0.15 and 0.2).
 * **No light shafts** (removed, the owner's call, 2026-11-21). The mode had a half-resolution pass
   (`RAYS_FS`, config `rays` 0.45): a sunlit haze scattered through the gaps of a drifting cloud
   layer, and broad soft beams painted fanning down from the sun beyond the upper left of the view.
