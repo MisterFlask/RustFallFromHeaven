@@ -1,0 +1,17 @@
+Draw a sheet of 16 NEW interface icons for a fantasy strategy game in a clean MINIMALIST flat style, like the icons of a modern, restrained strategy-game interface. NOT pixel art, no visible pixels. Each icon is reduced to its essential silhouette: a few simple geometric shapes, flat solid fills, at most three colours per icon, no gradients, no texture, no fine detail, no tiny parts, generous negative space, crisp smooth edges, consistent rounded corners and consistent shape weight across the whole set. No outline, or only where two shapes must separate. Palette for the whole set: warm gold, ivory, and one muted accent colour per icon (deep red, teal, sage green, violet, sky blue or terracotta), chosen to read on a deep navy panel. Never use black or near-black for a main shape: dark subjects (masks, cloaks, iron, shadows, night) are drawn in mid-tone slate grey, plum or steel blue so they read on the deep navy panel. Every icon must still be recognisable at 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons, plates, badges or circles behind the icons, no shadows, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. The background is fully transparent. The icons, row by row, left to right:
+1. a small grey hunched demon figure stepping into an ivory city gate with a plus sign above
+2. a stitched sage-green patchwork arm being sewn onto a large golem torso with thread
+3. an iron birdcage holding a slate-grey elf figure with long pointed ears and a violet cloak
+4. an iron birdcage holding a short stocky bearded dwarf figure with an ivory beard
+5. an iron birdcage holding a slender green-robed elf figure with long pointed ears
+6. an iron birdcage holding a plain ivory human figure with arms raised
+7. an iron birdcage holding a hulking sage-green orc head with two tusks
+8. a single grey wolf head beside a bigger wolf head, gold plus sign between them
+9. a tall gold kite shield with a white glowing rim and a gold sunburst boss
+10. a teal spring of water bursting upward from a small round stone basin
+11. a gold flame burning above an open ivory hand
+12. a round sand-coloured arena ring seen from above with two crossed gladius swords
+13. a gold war horn with three ivory musical notes rising from its bell
+14. a burning orange tree with tall red flames rising from its crown
+15. two ivory praying hands under a bright gold halo
+16. a gold eye shut tight with bright yellow rays bursting around it

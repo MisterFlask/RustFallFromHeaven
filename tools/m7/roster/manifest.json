@@ -42320,5 +42320,4295 @@
   "gen_size": "1024x1024",
   "quality": "medium",
   "model": "gpt-image-2.5-sunburst"
+ },
+ "ui_spell_add_to_city": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_city.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_city_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_city_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_flesh_golem": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_flesh_golem.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_flesh_golem_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_flesh_golem_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_dark_elf": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_dark_elf.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_dark_elf_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_dark_elf_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_dwarf": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_dwarf.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_dwarf_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_dwarf_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_elf": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_elf.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_elf_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_elf_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_human": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_human.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_human_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_human_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_orc": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_orc.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_freak_show_orc_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_freak_show_orc_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_wolf_pack": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_wolf_pack.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_add_to_wolf_pack_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_add_to_wolf_pack_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_aegis": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_aegis.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_aegis_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_aegis_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_wellspring": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_wellspring.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_wellspring_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_wellspring_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_ardor": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_ardor.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_ardor_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_ardor_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_arena_battle": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_arena_battle.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_arena_battle_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_arena_battle_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_battle_hymn": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_battle_hymn.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_battle_hymn_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_battle_hymn_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_blaze": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_blaze.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_blaze_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_blaze_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_bless": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_bless.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_bless_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_bless_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_blinding_light": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_blinding_light.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_blinding_light_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_blinding_light_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa01",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa01.txt",
+  "anchors": []
+ },
+ "ui_spell_bloom": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_bloom.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_bloom_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_bloom_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_blur": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_blur.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_blur_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_blur_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_bramble_snare": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_bramble_snare.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_bramble_snare_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_bramble_snare_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_breath_fire": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_breath_fire.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_breath_fire_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_breath_fire_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_burning_blood": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_burning_blood.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_burning_blood_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_burning_blood_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_call_blizzard": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_call_blizzard.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_call_blizzard_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_call_blizzard_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_call_blizzard_high_priest": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_call_blizzard_high_priest.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_call_blizzard_high_priest_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_call_blizzard_high_priest_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_call_form": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_call_form.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_call_form_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_call_form_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_call_of_the_grave": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_call_of_the_grave.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_call_of_the_grave_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_call_of_the_grave_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_chain_lightning": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_chain_lightning.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_chain_lightning_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_chain_lightning_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_charm_person": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_charm_person.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_charm_person_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_charm_person_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_chill": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_chill.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_chill_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_chill_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_commander_join": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_commander_join.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_commander_join_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_commander_join_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_commander_join_decius": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_commander_join_decius.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_commander_join_decius_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_commander_join_decius_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_commander_split": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_commander_split.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_commander_split_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_commander_split_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_confusion": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_confusion.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_confusion_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_confusion_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa02",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa02.txt",
+  "anchors": []
+ },
+ "ui_spell_consume_soul": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_consume_soul.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_consume_soul_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_consume_soul_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_contagion": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_contagion.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_contagion_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_contagion_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_convert_city_basium": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_convert_city_basium.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_convert_city_basium_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_convert_city_basium_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_convert_city_rantine": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_convert_city_rantine.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_convert_city_rantine_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_convert_city_rantine_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_corrode": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_corrode.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_corrode_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_corrode_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_courage": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_courage.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_courage_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_courage_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_battering_ram": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_battering_ram.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_battering_ram_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_battering_ram_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_den_bear": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_den_bear.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_den_bear_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_den_bear_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_den_lion": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_den_lion.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_den_lion_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_den_lion_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_puppet": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_puppet.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_puppet_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_puppet_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_puppet_loki": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_puppet_loki.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_create_puppet_loki_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_create_puppet_loki_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crew_buccaneers": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crew_buccaneers.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crew_buccaneers_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crew_buccaneers_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crew_longshoremen": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crew_longshoremen.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crew_longshoremen_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crew_longshoremen_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crew_normal_crew": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crew_normal_crew.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crew_normal_crew_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crew_normal_crew_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crew_skeleton_crew": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crew_skeleton_crew.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crew_skeleton_crew_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crew_skeleton_crew_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crown_of_brillance": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crown_of_brillance.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crown_of_brillance_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crown_of_brillance_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa03",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa03.txt",
+  "anchors": []
+ },
+ "ui_spell_crush": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crush.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_crush_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_crush_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_cure_disease": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_cure_disease.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_cure_disease_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_cure_disease_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_dance_of_blades": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_dance_of_blades.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_dance_of_blades_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_dance_of_blades_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_daze": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_daze.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_daze_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_daze_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_death_grip": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_death_grip.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_death_grip_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_death_grip_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_declare_nationality": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_declare_nationality.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_declare_nationality_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_declare_nationality_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_deluge": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_deluge.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_deluge_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_deluge_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_destroy_undead": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_destroy_undead.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_destroy_undead_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_destroy_undead_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_disjunction": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_disjunction.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_disjunction_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_disjunction_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_dispel_magic": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_dispel_magic.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_dispel_magic_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_dispel_magic_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_disrupt": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_disrupt.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_disrupt_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_disrupt_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_divine_retribution": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_divine_retribution.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_divine_retribution_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_divine_retribution_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_domination": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_domination.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_domination_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_domination_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_drop_crown_of_akharien": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_drop_crown_of_akharien.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_drop_crown_of_akharien_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_drop_crown_of_akharien_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_drop_dragons_horde": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_drop_dragons_horde.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_drop_dragons_horde_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_drop_dragons_horde_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_drop_sylivens_perfect_lyre": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_drop_sylivens_perfect_lyre.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_drop_sylivens_perfect_lyre_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_drop_sylivens_perfect_lyre_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa04",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa04.txt",
+  "anchors": []
+ },
+ "ui_spell_drown": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_drown.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_drown_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_drown_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_earthquake": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_earthquake.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_earthquake_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_earthquake_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_enchant_spellstaff": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_enchant_spellstaff.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_enchant_spellstaff_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_enchant_spellstaff_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_enchanted_blade": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_enchanted_blade.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_enchanted_blade_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_enchanted_blade_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_entangle": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_entangle.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_entangle_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_entangle_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_enter_portal": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_enter_portal.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_enter_portal_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_enter_portal_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_enter_the_delve": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_enter_the_delve.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_enter_the_delve_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_enter_the_delve_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_entertain": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_entertain.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_entertain_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_entertain_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_escape": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_escape.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_escape_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_escape_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_exaltation": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_exaltation.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_exaltation_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_exaltation_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_aifon_isle": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_aifon_isle.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_aifon_isle_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_aifon_isle_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_barrow": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_barrow.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_barrow_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_barrow_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_bradelines_well": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_bradelines_well.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_bradelines_well_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_bradelines_well_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_broken_sepulcher": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_broken_sepulcher.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_broken_sepulcher_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_broken_sepulcher_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_dungeon": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_dungeon.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_dungeon_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_dungeon_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_goblin_fort": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_goblin_fort.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_goblin_fort_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_goblin_fort_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa05",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa05.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_pyre_of_the_seraphic": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_pyre_of_the_seraphic.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_pyre_of_the_seraphic_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_pyre_of_the_seraphic_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_ruins": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_ruins.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_ruins_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_ruins_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_ship_wreck": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_ship_wreck.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_explore_lair_ship_wreck_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_explore_lair_ship_wreck_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_fair_winds": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_fair_winds.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_fair_winds_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_fair_winds_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_feast": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_feast.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_feast_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_feast_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_feed": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_feed.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_feed_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_feed_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_finger_of_death": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_finger_of_death.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_finger_of_death_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_finger_of_death_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_fireball": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_fireball.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_fireball_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_fireball_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_fireball_barge": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_fireball_barge.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_fireball_barge_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_fireball_barge_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_firebolt": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_firebolt.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_firebolt_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_firebolt_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_firestorm": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_firestorm.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_firestorm_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_firestorm_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_flaming_arrows": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_flaming_arrows.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_flaming_arrows_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_flaming_arrows_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_flare": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_flare.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_flare_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_flare_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_floating_eye": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_floating_eye.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_floating_eye_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_floating_eye_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_for_the_horde": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_for_the_horde.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_for_the_horde_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_for_the_horde_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa06",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa06.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_kilmorph": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_kilmorph.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_kilmorph_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_kilmorph_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_leaves": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_leaves.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_leaves_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_leaves_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_the_empyrean": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_the_empyrean.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_the_empyrean_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_the_empyrean_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_the_order": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_the_order.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_the_order_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_the_order_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_the_overlords": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_the_overlords.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_the_overlords_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_the_overlords_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_the_veil": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_the_veil.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_found_temple_of_the_veil_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_found_temple_of_the_veil_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_frost_lance": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_frost_lance.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_frost_lance_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_frost_lance_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_gift_vampirism": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_gift_vampirism.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_gift_vampirism_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_gift_vampirism_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_give_hammer_to_craftsman": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_give_hammer_to_craftsman.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_give_hammer_to_craftsman_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_give_hammer_to_craftsman_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_graft_flesh": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_graft_flesh.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_graft_flesh_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_graft_flesh_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_grave_touch": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_grave_touch.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_grave_touch_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_grave_touch_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_haste": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_haste.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_haste_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_haste_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_hasturs_razor": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hasturs_razor.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_hasturs_razor_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hasturs_razor_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_heal": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_heal.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_heal_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_heal_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_healing_light": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_healing_light.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_healing_light_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_healing_light_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_healing_salve": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_healing_salve.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_healing_salve_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_healing_salve_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa07",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa07.txt",
+  "anchors": []
+ },
+ "ui_spell_hellfire": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hellfire.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hellfire_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hellfire_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_heralds_call": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_heralds_call.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_heralds_call_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_heralds_call_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hide": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hide.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hide_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hide_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_archer": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_archer.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_archer_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_archer_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_chariot": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_chariot.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_chariot_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_chariot_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_goblin": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_goblin.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_goblin_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_goblin_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_units": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_units.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_units_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_units_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_wolf_rider": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_wolf_rider.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hire_wolf_rider_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hire_wolf_rider_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hold_the_line": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hold_the_line.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hold_the_line_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hold_the_line_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hope": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hope.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hope_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hope_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hyborems_whisper": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hyborems_whisper.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_hyborems_whisper_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_hyborems_whisper_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_impersonate_leader": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_impersonate_leader.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_impersonate_leader_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_impersonate_leader_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_inquisition": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_inquisition.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_inquisition_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_inquisition_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_inspiration": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_inspiration.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_inspiration_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_inspiration_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_into_the_mist": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_into_the_mist.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_into_the_mist_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_into_the_mist_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_ira_unleashed": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_ira_unleashed.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_ira_unleashed_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_ira_unleashed_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa08",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa08.txt",
+  "anchors": []
+ },
+ "ui_spell_keen_edge": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_keen_edge.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_keen_edge_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_keen_edge_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_kidnap": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_kidnap.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_kidnap_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_kidnap_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_legends": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_legends.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_legends_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_legends_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_lichdom": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_lichdom.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_lichdom_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_lichdom_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_loyalty": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_loyalty.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_loyalty_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_loyalty_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_maelstrom": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_maelstrom.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_maelstrom_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_maelstrom_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_march_of_the_trees": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_march_of_the_trees.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_march_of_the_trees_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_march_of_the_trees_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mask": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mask.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mask_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mask_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mend": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mend.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mend_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mend_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mezmerize_animal": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mezmerize_animal.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mezmerize_animal_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mezmerize_animal_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mirror": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mirror.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mirror_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mirror_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_morale": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_morale.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_morale_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_morale_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mutation": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mutation.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_mutation_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_mutation_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_nightfall": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_nightfall.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_nightfall_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_nightfall_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_open_chest": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_open_chest.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_open_chest_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_open_chest_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_peace": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_peace.png",
+  "size": [
+   96,
+   96
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 88,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
+ },
+ "ui_spell_peace_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_peace_s.png",
+  "size": [
+   64,
+   64
+  ],
+  "sheet": "spa09",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 0,
+  "fit": 60,
+  "prompt": "prompts/assets/ui_spa09.txt",
+  "anchors": []
  }
 }

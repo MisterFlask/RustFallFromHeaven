@@ -1,0 +1,17 @@
+Draw a sheet of 16 NEW interface icons for a fantasy strategy game in a clean MINIMALIST flat style, like the icons of a modern, restrained strategy-game interface. NOT pixel art, no visible pixels. Each icon is reduced to its essential silhouette: a few simple geometric shapes, flat solid fills, at most three colours per icon, no gradients, no texture, no fine detail, no tiny parts, generous negative space, crisp smooth edges, consistent rounded corners and consistent shape weight across the whole set. No outline, or only where two shapes must separate. Palette for the whole set: warm gold, ivory, and one muted accent colour per icon (deep red, teal, sage green, violet, sky blue or terracotta), chosen to read on a deep navy panel. Never use black or near-black for a main shape: dark subjects (masks, cloaks, iron, shadows, night) are drawn in mid-tone slate grey, plum or steel blue so they read on the deep navy panel. Every icon must still be recognisable at 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons, plates, badges or circles behind the icons, no shadows, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. The background is fully transparent. The icons, row by row, left to right:
+1. tall crimson flames rising from a crack in the ground
+2. a long gold herald's trumpet with a red banner hanging from it
+3. a slate-grey hooded cloak with an empty dark face opening
+4. a gold coin beside a wooden longbow with an arrow
+5. a gold coin beside a small wooden chariot wheel
+6. a gold coin beside a sage-green goblin head with big pointed ears
+7. a leather coin purse spilling gold coins in front of a steel helmet
+8. a gold coin beside a grey wolf head wearing a saddle strap
+9. three steel shields overlapping side by side in a row
+10. a white dove carrying a green olive sprig over a gold star
+11. a crimson horned demon head whispering into an ivory ear
+12. a gold crown resting on a smiling ivory theatre mask
+13. a burning torch crossed with a gold holy symbol and an iron chain
+14. a glowing gold light bulb shaped as a flame above an open ivory book
+15. a drifting pale grey mist cloud with a faded figure half visible inside
+16. a screaming red face of rage with flames for hair

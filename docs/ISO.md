@@ -176,10 +176,12 @@ Everything below is in `tools/m7/roster/` with its exact prompt in `tools/m7/pro
   as the longbowman and marksman, the ship ladder from galley to queen of the line, animals and
   packs, angels, demons, undead, elementals, the five great people as one family). Each took one
   round (the Ogre Warchief two), about $0.10 a unit at the ledger's prices; every one faces right
-  (accepted `--mirror` where the model drew it facing left), as the engine expects. Still on
-  stand-ins: the equipment pickups (`EQUIPMENT_*`), the illusions (`puppet`), and spell effects
-  that fit their alias (fireball, meteor, eye, shade, severed soul, guardian vines); Brigit held
-  and Rosier Oathtaker use their hero's sprite (`UNIT_ALIASES`). The older left-facing sprites
+  (accepted `--mirror` where the model drew it facing left), as the engine expects. The last stand-ins got
+  figures of their own on 2026-11-24: the 24 equipment pickups (`unit_equipment_<x>`, objects cut
+  at 52-70 px), the units that replace their class's (the Scorpion Clan's goblins, Illusionist,
+  Wizard, Ogre, the golems ...: drawn before their civilization's look of the class), the spell
+  effects (fireball, meteor, eye, shade, severed soul, guardian vines), the puppets, the Caravan
+  (a covered wagon), the Colonist, the Sentinel, Brigit held and Rosier Oathtaker. The older left-facing sprites
   (ogre, hyborem, priest of leaves and a few others) were left as they are.
 - **Civilization looks (2026-10-28):** each civilization's own warrior, axeman, adept, worker,
   settler and horseman (`unit_<civ>_<type>`, 107 sprites): the generic unit's pose and props kept
@@ -209,8 +211,7 @@ ask for solid nets; the cottage is deliberately small, padded to sit in the midd
 
 - **Roads, rivers and coasts** are drawn as lines and banks, not art: the README's main gap to the
   reference look (neighbour-aware river and coast overlays, roads along tile edges).
-- **Units:** every unit type has its own sprite but the equipment pickups and a few spell
-  effects (section 7). Civilization looks cover the warrior, axeman, adept, worker, settler and
+- **Units:** every unit type and equipment pickup has its own sprite (section 7). Civilization looks cover the warrior, axeman, adept, worker, settler and
   horseman; the archers, spearmen, swordsmen, priests and later units are shared.
 - **Resources** by family; the exact resource shows on hover.
 - The minimap is MapView's top-down one.
@@ -276,6 +277,11 @@ fills the page and the interface floats over it.
     `typeIcon`) and every promotion family (`ui_promo_<family>`: the type name without PROMOTION_
     and its level digit), the last drawn as a seal (`isoui.js` `isoPromotionIcon`: a gilt disc, the
     level as a Roman-numeral badge, the 2D art's afflictions with a red rim).
+  * every spell and ability (`ui_spell_<type>`: the type name without SPELL_, lower case;
+    `isoui.js` `spellIconName`; lists `prompts/ui/spa01`..`spa10`, `spb01`..`spb10`, drawn
+    2026-11-24), on its order's button and on the world-spell buttons; a spell without one shows
+    the shared `ui_spell`. Not drawn yet (the lists are written; the API's credit ran out): the 16
+    of `spa10` (Peace of the Seven Pines ... Recruit Mercenary) and `spell_form_wolf_pack`.
 
   The lists of the new ones are written by `tools/m7/prompts/ui/all_icons.py` (`icons01`..`icons22`,
   `icons23` holding better descriptions of 16) plus `sample_misc`, `sample_buildings` and
