@@ -539,7 +539,7 @@ impl Session {
             Command::EndTurn { .. } => 1,
             Command::AutoPlay { turns } if (1..=10_000).contains(turns) => *turns,
             Command::AutoPlay { .. } => return Err(CmdErr::Invalid("autoplay: 1 to 10000 turns".into())),
-            _ => return Err(CmdErr::Cannot(format!("observing an AI-only game: the AI plays every civilization (`{}` is not available; end_turn and autoplay play turns)", cmd.name()))),
+            _ => return Err(CmdErr::Cannot("In a game you observe the AI plays every civilization: only End Turn and Autoplay play turns.".into())),
         };
         self.journal(&Line::Cmd { stamp: Stamp::of(&self.g), cmd: cmd.to_json() });
         self.to_play = turns;

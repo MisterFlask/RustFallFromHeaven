@@ -325,11 +325,17 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
             continue;
         }
         let enabled = selection::can_do_command(g, units, CommandType::COMMAND_CAST, k, -1, false);
-        if let Some(card) = holder.and_then(|u| g.units[u].card) {
+        if let Some((h, card)) = holder.and_then(|u| g.units[u].card.map(|c| (u, c))) {
             extra.set("label", format!("Discover: {}", crate::names::display(d, card)));
             extra.set("card", Json::idx(card));
             if !enabled {
-                extra.set("why", crate::view::cards::card_why_not(v, card).unwrap_or_else(|| "Not possible now.".into()));
+                // The card's needs, else what the cast gate refused for the holder (the
+                // selection's combat first).
+                let why = crate::view::cards::card_why_not(v, card).unwrap_or_else(|| {
+                    let who: &[UnitId] = if selection::is_busy(g, units) { units } else { std::slice::from_ref(&h) };
+                    crate::view::reasons::command_refusal(g, who, CommandType::COMMAND_CAST, k, -1)
+                });
+                extra.set("why", why);
             }
         }
         // Explore Lair: the odds for the selected units that can cast it (each explores in turn).
@@ -392,7 +398,7 @@ fn targeted_action(v: &Viewer, caster: UnitId, s: SpellType, can: bool, targets:
     extra.set("targets", crate::view::cards::targets_json(v, caster, s, targets));
     let enabled = can && !targets.is_empty();
     if !can {
-        extra.set("why", "No unit of yours can cast it now.");
+        extra.set("why", crate::view::reasons::cast_refusal(g, caster, s));
     } else if targets.is_empty() {
         extra.set("why", "No valid target now.");
     }
@@ -521,7 +527,7 @@ pub fn world_actions(v: &Viewer) -> Json {
         } else {
             j.set("enabled", caster.is_some());
             if caster.is_none() {
-                j.set("why", "No unit of yours can cast it now.");
+                j.set("why", crate::view::reasons::cast_refusal(g, visible[0], s));
             }
             j.set("cmd", command_cmd(&[caster.unwrap_or(visible[0])], cast, k, -1));
         }

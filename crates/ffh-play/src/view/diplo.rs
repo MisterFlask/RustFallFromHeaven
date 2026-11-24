@@ -179,18 +179,46 @@ pub fn ai_willing_to_talk(g: &Game, ai: PlayerId, other: PlayerId) -> bool {
 pub fn contact(v: &Viewer, with: PlayerId) -> Result<(), String> {
     let (g, h) = (v.g, v.h);
     if !g.is_civ_player_slot(with) || with == h || g.player_is_barbarian(with) {
-        return Err(format!("player {} is not another civilization", with.0));
+        return Err(format!("{} is not another civilization.", crate::view::player_name(g, with)));
     }
     if !g.players[with].alive || !v.player_met(with) {
-        return Err(format!("player {} is unknown or dead", with.0));
+        return Err(if g.players[with].alive { "You have not met that civilization.".to_string() } else { format!("{} is dead.", crate::view::player_name(g, with)) });
     }
     if !g.player_can_contact(h, with) {
-        return Err(format!("player {} cannot be contacted now", with.0));
+        return Err(contact_refusal(g, h, with));
     }
     if !g.players[with].human && !ai_willing_to_talk(g, with, h) {
-        return Err(format!("player {} refuses to talk", with.0));
+        return Err(format!("{} refuses to talk.", crate::view::player_name(g, with)));
     }
     Ok(())
+}
+
+/// Why `h` cannot contact `with` (`player_can_contact` refuses; both alive, met, not
+/// barbarians): the check that fails, in the gate's order.
+fn contact_refusal(g: &Game, h: PlayerId, with: PlayerId) -> String {
+    let (t, o) = (g.players[h].team, g.players[with].team);
+    let name = crate::view::player_name(g, with);
+    if g.player_is_minor_civ(h) || g.player_is_minor_civ(with) {
+        return format!("{name} is a minor civilization: no diplomacy.");
+    }
+    if g.player_is_crusade_host(h) || g.player_is_crusade_host(with) {
+        return "A crusade's Host has no diplomacy.".to_string();
+    }
+    if t != o && g.at_war(t, o) {
+        if g.player_is_no_diplomacy_with_enemies(h) {
+            return "Your civilization has no diplomacy with its enemies.".to_string();
+        }
+        if let Some(r) = g.team_war_peace_refusal(t, o, false) {
+            return crate::view::reasons::war_refusal_text(g, t, o, r);
+        }
+        if (g.players[h].human || g.players[with].human) && g.is_option(GameOptionType::GAMEOPTION_ALWAYS_WAR) {
+            return "Always War is on in this game.".to_string();
+        }
+    }
+    if g.players[h].temp_player_timer > 0 {
+        return "A temporary civilization has no diplomacy.".to_string();
+    }
+    format!("{name} cannot be contacted.")
 }
 
 /// `trade {with}`: the trade tables both ways (`we_give` from the human's table, `they_give`
@@ -322,6 +350,26 @@ fn troops(v: &Viewer, with: PlayerId) -> Json {
     }
 }
 
+/// A trade item for people: its kind, and what it names (`Technologies: Mysticism`).
+fn item_label(g: &Game, t: &TradeData) -> String {
+    let d = g.d;
+    let kind = crate::names::display(d, t.item_type);
+    let n = t.data;
+    let ok = |len: usize| n >= 0 && (n as usize) < len;
+    let what = match t.item_type {
+        TradeableItem::TRADE_TECHNOLOGIES if ok(d.techs.len()) => Some(crate::names::display(d, TechType::from_usize(n as usize)).into_owned()),
+        TradeableItem::TRADE_RESOURCES if ok(d.bonuses.len()) => Some(crate::names::display(d, BonusType::from_usize(n as usize)).into_owned()),
+        TradeableItem::TRADE_CIVIC if ok(d.civics.len()) => Some(crate::names::display(d, CivicType::from_usize(n as usize)).into_owned()),
+        TradeableItem::TRADE_RELIGION if ok(d.religions.len()) => Some(crate::names::display(d, ReligionType::from_usize(n as usize)).into_owned()),
+        TradeableItem::TRADE_CITIES => (n >= 0).then(|| CityId(n as u32)).filter(|&c| g.cities.contains(c)).map(|c| crate::view::city_name(g, c)),
+        _ => None,
+    };
+    match what {
+        Some(w) => format!("{kind}: {w}"),
+        None => kind.into_owned(),
+    }
+}
+
 /// The deal checks of `propose_deal` (the diplomacy screen only offers these): `to` can be
 /// contacted and is willing to talk ([`contact`]); something is traded; every item is in its
 /// side's trade table (gold and gold per turn as an amount from 1 to the side's maximum), not
@@ -348,17 +396,17 @@ pub fn check_deal(g: &Game, h: PlayerId, to: PlayerId, give: &[TradeData], get: 
                 TradeableItem::TRADE_GOLD | TradeableItem::TRADE_GOLD_PER_TURN => {
                     let max = if t.item_type == TradeableItem::TRADE_GOLD { max_gold(g, from, other) } else { max_gold_per_turn(g, from, other) };
                     if !(1..=max).contains(&t.data) {
-                        return Err(CmdErr::Cannot(format!("field `{field}`: {} {} (1 to {max} possible)", crate::names::name(g.d, t.item_type), t.data)));
+                        return Err(CmdErr::Cannot(format!("{}: {}, from 1 to {max}.", item_label(g, t), t.data)));
                     }
                     table.iter().any(|u| u.item_type == t.item_type)
                 }
                 _ => table.iter().any(|u| u.item_type == t.item_type && u.data == t.data),
             };
             if !listed {
-                return Err(CmdErr::Cannot(format!("field `{field}`: {} {} is not tradeable", crate::names::name(g.d, t.item_type), t.data)));
+                return Err(CmdErr::Cannot(format!("{} is not on {} side of the table.", item_label(g, t), if field == "give" { "your" } else { "their" })));
             }
             if !g.player_can_trade_item(from, other, t, true) {
-                return Err(CmdErr::Cannot(format!("field `{field}`: {} {} is refused", crate::names::name(g.d, t.item_type), t.data)));
+                return Err(CmdErr::Cannot(format!("{} cannot be traded now.", item_label(g, t))));
             }
         }
         Ok(())

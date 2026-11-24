@@ -18,6 +18,93 @@ use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
 
+/// Why a unit cannot cast a spell (`Game::unit_cast_refusal`), a check of C++ `CvUnit::canCast`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpellRefusal {
+    /// Held in place for this many turns.
+    Immobile(i32),
+    /// No casting in boats.
+    InBoats,
+    /// Cast in a formation battle only (a battle spell, a battle summon).
+    BattleOnly,
+    /// The caster needs this promotion.
+    Promotion(PromotionType),
+    /// Only a unit of this class casts it.
+    UnitClass(UnitClassType),
+    /// Only this unit casts it.
+    Unit(UnitType),
+    /// Only a unit of this combat type casts it.
+    UnitCombat(UnitCombatType),
+    /// Cast in a city with this building.
+    Building(BuildingType),
+    /// The player needs a building of this class.
+    BuildingOwned(BuildingClassType),
+    /// Only this civilization casts it.
+    Civilization(CivilizationType),
+    /// Cast in a city with this corporation.
+    Corporation(CorporationType),
+    /// Cast on this improvement.
+    Improvement(ImprovementType),
+    /// The caster must follow this religion.
+    UnitReligion(ReligionType),
+    /// It requires this state religion.
+    StateReligion(ReligionType),
+    /// It requires this tech.
+    Tech(TechType),
+    /// The caster is a unit of this type already.
+    AlreadyConverted(UnitType),
+    /// World spells are off in this game.
+    NoWorldSpells,
+    /// Cast once a game, and cast already.
+    CastOnce,
+    /// The player places it; no unit casts it.
+    Placed,
+    /// It spends a charge of this ritual, and none is held.
+    RitualCharge(ProjectType),
+    /// It requires the slave trade.
+    SlaveTrade,
+    /// An equipment unit casts only its own spells.
+    Equipment,
+    /// The caster must be at least this level.
+    Level(i32),
+    /// The caster must be alive.
+    NotAlive,
+    /// The caster must not be a temporary unit (or, to refresh, be one).
+    Duration,
+    /// The player's spellcasting is disabled.
+    Disabled,
+    /// Another unit of the stack must have this promotion (and the caster not).
+    PromotionInStack(PromotionType),
+    /// Another unit of this type must be in the stack (and the caster not one).
+    UnitInStack(UnitType),
+    /// Cast on one of these features.
+    Feature(FeatureType, Option<FeatureType>),
+    /// The caster has cast this turn.
+    HasCast,
+    /// Cast next to water.
+    Water,
+    /// Cast in the player's borders.
+    Borders,
+    /// Cast in a city.
+    City,
+    /// The city must have more than this population.
+    Population(i32),
+    /// It costs this much gold.
+    Gold(i32),
+    /// It refreshes a caster that has cast this turn, and this one has not.
+    NotCast,
+    /// The summon cannot be made here (an enemy in view; the permanent summons at their limit).
+    CreateUnit,
+    /// The building cannot be made here.
+    CreateBuilding,
+    /// The spell's own requirement (its Python `req*`) is not met.
+    Requirement,
+    /// No valid target.
+    NoTarget,
+    /// None of the spell's effects applies here.
+    NoEffect,
+}
+
 /// C++ `CvPlot::getPlotCity()` (`getCity(IDInfo)`: NULL for a deleted city).
 fn live_plot_city(g: &Game, p: PlotIdx) -> Option<CityId> {
     g.map.plots[p].plot_city.filter(|&c| g.cities.contains(c))
@@ -185,7 +272,17 @@ impl Game {
         self.unit_can_cast_with(u, spell, test_visible, false)
     }
 
+    /// Why unit `u` cannot cast `spell` ([`Self::unit_can_cast`]): the first check of C++
+    /// `CvUnit::canCast` that fails, in its order; `None` when it can.
+    pub fn unit_cast_refusal(&self, u: UnitId, spell: SpellType, test_visible: bool) -> Option<SpellRefusal> {
+        self.unit_cast_refusal_with(u, spell, test_visible, true)
+    }
+
     fn unit_can_cast_with(&self, u: UnitId, spell: SpellType, test_visible: bool, with_targets: bool) -> bool {
+        self.unit_cast_refusal_with(u, spell, test_visible, with_targets).is_none()
+    }
+
+    fn unit_cast_refusal_with(&self, u: UnitId, spell: SpellType, test_visible: bool, with_targets: bool) -> Option<SpellRefusal> {
         let d = self.d;
         let info = &d.spells[spell];
         let unit = &self.units[u];
@@ -195,151 +292,151 @@ impl Game {
         let plot = || unit_plot.expect("CvUnit::canCast: unit is not on the map");
 
         if self.unit_get_immobile_timer(u) > 0 {
-            return false;
+            return Some(SpellRefusal::Immobile(self.unit_get_immobile_timer(u)));
         }
         // This game's (docs/NAVAL.md, 3.2): no casting in boats.
         if self.unit_is_in_boats(u) {
-            return false;
+            return Some(SpellRefusal::InBoats);
         }
         // This game's: a battle-only spell (Fireball) is its caster's spell in a formation battle,
         // never cast on the map (docs/ENGAGEMENTS.md).
         if info.battle_only {
-            return false;
+            return Some(SpellRefusal::BattleOnly);
         }
         // This game's: a battle summon (a temporary summon spell) calls its unit into its caster's
         // battles only (docs/ENGAGEMENTS.md, "Summons").
         if info.battle_summon {
-            return false;
+            return Some(SpellRefusal::BattleOnly);
         }
         // Change from FFH2: C++ refuses a spell without `bAllowAI` to every AI player. That is AI
         // policy, applied by the AIs themselves (ffh-ai casts such a spell only where it has logic
         // for it; docs/PORTING.md, "Changes from FFH2"), so the rule is the same for every player.
         if let Some(promotion) = info.promotion_prereq1 {
             if !unit.has_promotion[promotion] {
-                return false;
+                return Some(SpellRefusal::Promotion(promotion));
             }
         }
         if let Some(promotion) = info.promotion_prereq2 {
             if !unit.has_promotion[promotion] {
-                return false;
+                return Some(SpellRefusal::Promotion(promotion));
             }
         }
         if let Some(unit_class_prereq) = info.unit_class_prereq {
             if self.unit_get_unit_class_type(u) != unit_class_prereq {
-                return false;
+                return Some(SpellRefusal::UnitClass(unit_class_prereq));
             }
         }
         if let Some(unit_prereq) = info.unit_prereq {
             if unit.unit_type != unit_prereq {
-                return false;
+                return Some(SpellRefusal::Unit(unit_prereq));
             }
         }
         if let Some(unit_combat_prereq) = info.unit_combat_prereq {
             if self.unit_get_unit_combat_type(u) != Some(unit_combat_prereq) {
-                return false;
+                return Some(SpellRefusal::UnitCombat(unit_combat_prereq));
             }
         }
         if let Some(building_prereq) = info.building_prereq {
             if !self.plot_is_city(plot(), false, None) {
-                return false;
+                return Some(SpellRefusal::Building(building_prereq));
             }
             if let Some(city) = live_plot_city(self, plot()) {
                 if self.city_num_family(city, building_prereq) == 0 {
-                    return false;
+                    return Some(SpellRefusal::Building(building_prereq));
                 }
             }
         }
         if let Some(building_class) = info.building_class_owned_prereq {
             if self.players[owner].building_class_count[building_class] == 0 {
-                return false;
+                return Some(SpellRefusal::BuildingOwned(building_class));
             }
         }
         if let Some(civilization_prereq) = info.civilization_prereq {
             if self.unit_get_civilization_type(u) != civilization_prereq {
-                return false;
+                return Some(SpellRefusal::Civilization(civilization_prereq));
             }
         }
         if let Some(corporation_prereq) = info.corporation_prereq {
             if !self.plot_is_city(plot(), false, None) {
-                return false;
+                return Some(SpellRefusal::Corporation(corporation_prereq));
             }
             if let Some(city) = live_plot_city(self, plot()) {
                 if !self.cities[city].has_corporation[corporation_prereq] {
-                    return false;
+                    return Some(SpellRefusal::Corporation(corporation_prereq));
                 }
             }
         }
         if let Some(improvement_prereq) = info.improvement_prereq {
             if self.map.plots[plot()].improvement_type != Some(improvement_prereq) {
-                return false;
+                return Some(SpellRefusal::Improvement(improvement_prereq));
             }
         }
         if let Some(religion_prereq) = info.religion_prereq {
             if unit.religion != Some(religion_prereq) {
-                return false;
+                return Some(SpellRefusal::UnitReligion(religion_prereq));
             }
         }
         if let Some(state_religion_prereq) = info.state_religion_prereq {
             if self.player_get_state_religion(owner) != Some(state_religion_prereq) {
-                return false;
+                return Some(SpellRefusal::StateReligion(state_religion_prereq));
             }
         }
         if let Some(tech_prereq) = info.tech_prereq {
             if !self.team_is_has_tech(self.unit_get_team(u), Some(tech_prereq)) {
-                return false;
+                return Some(SpellRefusal::Tech(tech_prereq));
             }
         }
         if let Some(convert_unit_type) = info.convert_unit_type {
             if unit.unit_type == convert_unit_type {
-                return false;
+                return Some(SpellRefusal::AlreadyConverted(convert_unit_type));
             }
         }
         // This game's (docs/CARDS.md, "World rituals"): a world spell is no longer once a game;
         // it spends a charge of its ritual (`ritual_charge`, below).
         if info.global && self.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) {
-            return false;
+            return Some(SpellRefusal::NoWorldSpells);
         }
         // This game's: a card's world spell is cast once a game by the team that knows the card,
         // with its own flag (docs/CARDS.md), never the civilization's world spell.
         if info.once && self.player_cast_once(owner, spell) {
-            return false;
+            return Some(SpellRefusal::CastOnce);
         }
         // This game's (docs/CARDS.md, `ritual_charge`): a ritual's spell is cast from a city of its
         // owner holding a charge of the ritual; a world spell by any unit of an owner holding one.
         // A world spell the player places (`place_on_charge`: Wellspring) is never a unit's
         // cast: `Game::player_place`.
         if info.place_on_charge {
-            return false;
+            return Some(SpellRefusal::Placed);
         }
         if let Some(ritual) = info.ritual_charge {
             if !self.unit_has_ritual_charge(u, ritual) {
-                return false;
+                return Some(SpellRefusal::RitualCharge(ritual));
             }
         }
         if info.prereq_slave_trade && !self.player_is_slave_trade(owner) {
-            return false;
+            return Some(SpellRefusal::SlaveTrade);
         }
         if d.units[unit.unit_type].equipment_promotion.is_some() {
             // C++ compares `getUnitClassPrereq()` (-1 when unset) with the unit's class.
             if info.unit_class_prereq != Some(self.unit_get_unit_class_type(u)) {
-                return false;
+                return Some(SpellRefusal::Equipment);
             }
         }
         if info.caster_min_level != 0 && unit.level < info.caster_min_level {
-            return false;
+            return Some(SpellRefusal::Level(info.caster_min_level));
         }
         if info.caster_must_be_alive && !self.unit_is_alive(u) {
-            return false;
+            return Some(SpellRefusal::NotAlive);
         }
         if info.caster_no_duration && unit.duration != 0 {
-            return false;
+            return Some(SpellRefusal::Duration);
         }
         if self.players[owner].disable_spellcasting > 0 && !info.ability {
-            return false;
+            return Some(SpellRefusal::Disabled);
         }
         if let Some(promotion) = info.promotion_in_stack_prereq {
             if unit.has_promotion[promotion] {
-                return false;
+                return Some(SpellRefusal::PromotionInStack(promotion));
             }
             let mut valid = false;
             for &loop_unit in &self.map.plots[plot()].units {
@@ -348,12 +445,12 @@ impl Game {
                 }
             }
             if !valid {
-                return false;
+                return Some(SpellRefusal::PromotionInStack(promotion));
             }
         }
         if let Some(unit_in_stack) = info.unit_in_stack_prereq {
             if unit.unit_type == unit_in_stack {
-                return false;
+                return Some(SpellRefusal::UnitInStack(unit_in_stack));
             }
             let mut valid = false;
             for &loop_unit in &self.map.plots[plot()].units {
@@ -363,37 +460,37 @@ impl Game {
                 }
             }
             if !valid {
-                return false;
+                return Some(SpellRefusal::UnitInStack(unit_in_stack));
             }
         }
         if test_visible && info.display_when_disabled {
-            return true;
+            return None;
         }
         if let Some(feature_prereq1) = info.feature_or_prereq1 {
             let feature = self.map.plots[plot()].feature_type;
             if feature != Some(feature_prereq1) && (info.feature_or_prereq2.is_none() || feature != info.feature_or_prereq2) {
-                return false;
+                return Some(SpellRefusal::Feature(feature_prereq1, info.feature_or_prereq2));
             }
         }
         if !info.ignore_has_casted && unit.has_casted {
-            return false;
+            return Some(SpellRefusal::HasCast);
         }
         if info.adjacent_to_water_only && !self.plot_is_adjacent_to_water(plot()) {
-            return false;
+            return Some(SpellRefusal::Water);
         }
         if info.in_borders_only && self.map.plots[plot()].owner != Some(owner) {
-            return false;
+            return Some(SpellRefusal::Borders);
         }
         if info.in_city_only && !self.plot_is_city(plot(), false, None) {
-            return false;
+            return Some(SpellRefusal::City);
         }
         if info.change_population != 0 {
             if !self.plot_is_city(plot(), false, None) {
-                return false;
+                return Some(SpellRefusal::City);
             }
             if let Some(city) = live_plot_city(self, plot()) {
                 if self.cities[city].population <= -info.change_population {
-                    return false;
+                    return Some(SpellRefusal::Population(-info.change_population));
                 }
             }
         }
@@ -403,80 +500,80 @@ impl Game {
                 cost += (cost * self.players[owner].upgrade_cost_modifier) / 100;
             }
             if self.players[owner].gold < cost {
-                return false;
+                return Some(SpellRefusal::Gold(cost));
             }
         }
         if info.remove_has_casted {
             if !unit.has_casted {
-                return false;
+                return Some(SpellRefusal::NotCast);
             }
             if unit.duration > 0 {
-                return false;
+                return Some(SpellRefusal::Duration);
             }
         }
         if info.create_unit_type.is_some() && !self.unit_can_create_unit(u, spell) {
-            return false;
+            return Some(SpellRefusal::CreateUnit);
         }
         if info.create_building_type.is_some() && !self.unit_can_create_building(u, spell) {
-            return false;
+            return Some(SpellRefusal::CreateBuilding);
         }
         // This game's: a targeted spell needs a valid target (docs/DECKS.md, "Remote targeting").
         if info.target.is_some() {
             if !info.py_requirement.is_empty() && !self.py_can_cast(u, spell) {
-                return false;
+                return Some(SpellRefusal::Requirement);
             }
-            return !with_targets || !self.unit_spell_targets(u, spell).is_empty();
+            return (with_targets && self.unit_spell_targets(u, spell).is_empty()).then_some(SpellRefusal::NoTarget);
         }
         if !info.py_requirement.is_empty() {
             // Python `canCast(pCaster, eSpell)` decides alone once the XML prereqs pass.
-            return self.py_can_cast(u, spell);
+            return (!self.py_can_cast(u, spell)).then_some(SpellRefusal::Requirement);
         }
         if info.remove_has_casted && unit.has_casted {
-            return true;
+            return None;
         }
         if info.add_promotion_type1.is_some() && self.unit_can_add_promotion(u, spell) {
-            return true;
+            return None;
         }
         if info.remove_promotion_type1.is_some() && self.unit_can_remove_promotion(u, spell) {
-            return true;
+            return None;
         }
         if info.convert_unit_type.is_some() {
-            return true;
+            return None;
         }
         if info.create_feature_type.is_some() && self.unit_can_create_feature(u, spell) {
-            return true;
+            return None;
         }
         if info.create_improvement_type.is_some() && self.unit_can_create_improvement(u, spell) {
-            return true;
+            return None;
         }
         if info.spread_religion.is_some() && self.unit_can_spread_religion(u, spell) {
-            return true;
+            return None;
         }
         if info.create_building_type.is_some() {
-            return true;
+            return None;
         }
         if info.create_unit_type.is_some() {
-            return true;
+            return None;
         }
         if info.damage != 0 {
-            return true;
+            return None;
         }
         if info.dispel && self.unit_can_dispel(u, spell) {
-            return true;
+            return None;
         }
         if info.immobile_turns > 0 && self.unit_can_immobile(u, spell) {
-            return true;
+            return None;
         }
         if info.push && self.unit_can_push(u, spell) {
-            return true;
+            return None;
         }
         if info.change_population > 0 {
-            return true;
+            return None;
         }
         if !info.py_result.is_empty() {
-            return true;
+            return None;
         }
-        false
+        Some(SpellRefusal::NoEffect)
     }
 
     /// C++ `CvUnit::canCreateUnit` (CvUnit.cpp:14103-14140).

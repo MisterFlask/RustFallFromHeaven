@@ -751,7 +751,7 @@ export async function openCivics() {
     const summary = p
       ? h(
           "div.civic-summary",
-          p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : (p.changed ? h("span.warn", { title: "The revolution timer, a civic you cannot leave, or anarchy" }, "This change is not possible now.") : h("span.warn", "No change.")),
+          p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : (p.changed ? h("span.warn", p.why ?? "") : h("span.warn", "No change.")),
           // This game's governors: a governed civic governs every city; leaving one changes none.
           p.rule_change ? h("div.civic-rule-change", ruleChangeLine(p)) : null,
         )

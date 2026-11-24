@@ -142,7 +142,7 @@ const ERROR_SENTENCES = {
   invalid: "The game did not accept this order.",
   not_owner: "That is not yours.",
   gone: "That no longer exists.",
-  cannot: "Not possible now.",
+  cannot: "The game refused this order.",
   busy: "The game is busy. Try again in a moment.",
   crashed: "The game crashed.",
   no_game: "No game is loaded.",

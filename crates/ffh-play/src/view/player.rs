@@ -177,6 +177,8 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
         }
         let changed = set != g.players[h].civics;
         valid = valid && changed && g.player_can_revolution(h, Some(&set));
+        // Why a change cannot be made (the check that refuses it, as `update_civics` says it).
+        let why = if changed && !valid { crate::view::reasons::civics_change_refusal(g, h, with) } else { None };
         // This game's governors (docs/GOVERNORS.md): a governed civic governs every city; leaving
         // one changes no city.
         let govern_after = set.iter().flatten().any(|&c| d.civics[c].governed);
@@ -190,6 +192,7 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
             "civics" => Json::Arr(set.iter().map(|&c| Json::opt_idx(c)).collect()),
             "changed" => changed,
             "valid" => valid,
+            "why" => why,
             "anarchy" => if changed { g.player_get_civic_anarchy_length(h, &set) } else { 0 },
             "upkeep" => g.player_get_civic_upkeep(h, Some(&set), false),
             // `governed`: every city will be run by a governor; `stay`: a governed civic is left
@@ -238,44 +241,10 @@ fn civics_screen(v: &Viewer) -> Json {
 }
 
 /// Why player `p` cannot adopt civic `c`: the checks of C++ `CvPlayer::canDoCivics` that fail,
-/// in its order, as sentences ("Requires Code of Laws", "Only while at war", ...); a check the
-/// rules' Python makes says "Not possible now".
+/// in its order (ffh-core's `player_civic_refusals`), as lines ("Requires Code of Laws", "Only
+/// while at war", ...); empty when it can be adopted.
 pub fn civic_requires(g: &ffh_core::game::Game, p: PlayerId, c: CivicType) -> Vec<String> {
-    use crate::names::display;
-    let d = g.d;
-    let info = &d.civics[c];
-    let pl = &g.players[p];
-    let mut out = Vec::new();
-    if let Some(o) = info.civic_option_type {
-        if g.player_is_full_member(p, VoteSourceType(0)) && g.is_force_civic_option(o) && !g.is_force_civic(c) {
-            out.push("A resolution of the council forces another civic".to_string());
-            return out;
-        }
-        if !g.player_is_has_civic_option(p, o) && !g.team_is_has_tech(pl.team, info.tech_prereq) {
-            if let Some(t) = info.tech_prereq {
-                out.push(format!("Requires {}", display(d, t)));
-            }
-        }
-    }
-    if info.prereq_war && g.team_get_at_war_count(pl.team, true) == 0 {
-        out.push("Only while at war".to_string());
-    }
-    if let Some(a) = info.block_alignment.filter(|&a| pl.alignment == Some(a)) {
-        out.push(format!("Not for {} civilizations", display(d, a)));
-    }
-    if let Some(a) = info.prereq_alignment.filter(|&a| pl.alignment != Some(a)) {
-        out.push(format!("Only for {} civilizations", display(d, a)));
-    }
-    if let Some(civ) = info.prereq_civilization.filter(|&x| g.player_get_civilization_type(p) != Some(x)) {
-        out.push(format!("Only for the {}", display(d, civ)));
-    }
-    if let Some(r) = info.prereq_religion.filter(|&r| g.player_get_state_religion(p) != Some(r)) {
-        out.push(format!("Requires {} as state religion", display(d, r)));
-    }
-    if out.is_empty() {
-        out.push("Not possible now".to_string());
-    }
-    out
+    g.player_civic_refusals(p, c).into_iter().map(|r| crate::view::reasons::civic_refusal_text(g, r)).collect()
 }
 
 /// `religions`: the state religion, conversion, and every religion's founding and holy city (as

@@ -130,6 +130,8 @@ fn hut_json(v: &Viewer, p: PlotIdx, unit: Option<UnitId>) -> Json {
                 "ppm" => ppm_json(o.ppm),
                 "slots" => o.slots,
                 "allowed" => o.allowed,
+                // Why the unit cannot receive it (the rules' `canReceiveGoody` check that fails).
+                "why" => if o.allowed { None } else { g.player_goody_refusal(v.h, p, o.goody, unit).map(|r| crate::view::reasons::goody_refusal_text(g, r)) },
             }
         })
         .collect();

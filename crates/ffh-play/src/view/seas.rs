@@ -747,7 +747,9 @@ fn send_json(v: &Viewer, finder: &mut PathFinder, s: SeaId, plots: &[PlotIdx], u
         return crate::jobj! {
             "label" => format!("Patrol here with {who}"), "here" => true, "turns" => 0, "x" => fx, "y" => fy,
             "result" => patrol_preview(v, &ships, from), "units" => ids, "enabled" => can,
-            "why" => if can { Json::Null } else { Json::from("Patrol is not possible now.") },
+            // (Beyond `unit_can_plunder`, which every ship passes here, the mission refuses a
+            // selection in combat.)
+            "why" => if can { Json::Null } else { Json::from(crate::view::reasons::mission_refusal(g, &ships, MissionType::MISSION_PLUNDER, -1, -1, from)) },
         };
     }
     let Some(grp) = crate::selection::mirrors_group(g, &ships).or(g.units[ships[0]].group) else { return Json::Null };

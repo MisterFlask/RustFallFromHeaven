@@ -1522,7 +1522,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 }
             }
             if !selection::can_start_mission(g, units, *mission, *data1, *data2, plot, false) {
-                return Err(cannot(format!("{} is not possible", names::display(d, *mission))));
+                return Err(cannot(crate::view::reasons::mission_refusal(g, units, *mission, *data1, *data2, plot)));
             }
             if !confirm_end_siege && matches!(*mission, MissionType::MISSION_MOVE_TO | MissionType::MISSION_ROUTE_TO) {
                 let to = on_map(g, *data1, *data2)?;
@@ -1565,11 +1565,11 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 // handleAction: COMMAND_LOAD opens LOADUNIT, which loads into the only transport
                 // or asks which one (launchLoadUnitPopup).
                 if !selection::can_do_command(g, units, *command, *data1, *data2, false) {
-                    return Err(cannot("nothing to load into"));
+                    return Err(cannot(crate::view::reasons::command_refusal(g, units, *command, *data1, *data2)));
                 }
                 let transports = selection::load_targets(g, units);
                 return Ok(match transports.len() {
-                    0 => return Err(cannot("nothing to load into")),
+                    0 => return Err(cannot("No transport on this plot has room.")),
                     1 => {
                         let t = transports[0];
                         Plan::Apply(Action::DoCommand {
@@ -1584,7 +1584,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 });
             }
             if !selection::can_do_command(g, units, *command, *data1, *data2, false) {
-                return Err(cannot(format!("{} is not possible", names::display(d, *command))));
+                return Err(cannot(crate::view::reasons::command_refusal(g, units, *command, *data1, *data2)));
             }
             if !confirmed {
                 if d.commands[*command].confirm_command {
@@ -1998,12 +1998,12 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 TaskType::TASK_HURRY => {
                     let hurry = HurryType::from_usize(in_range("hurry", *data1, d.hurries.len())?);
                     if !g.city_can_hurry(c, hurry, false) {
-                        return Err(cannot("cannot hurry"));
+                        return Err(cannot(crate::view::reasons::hurry_refusal(g, c, hurry).unwrap_or_else(|| format!("{} cannot be used in {}.", names::display(d, hurry), crate::view::city_name(g, c)))));
                     }
                 }
                 TaskType::TASK_CONSCRIPT => {
                     if !g.city_can_conscript(c) {
-                        return Err(cannot("cannot draft"));
+                        return Err(cannot(crate::view::reasons::draft_refusal(g, c).unwrap_or_else(|| format!("{} cannot draft.", crate::view::city_name(g, c)))));
                     }
                 }
                 TaskType::TASK_SET_EMPHASIZE => {
@@ -2061,8 +2061,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::Research { tech, shift } => {
             if let Some(t) = tech {
-                if !g.player_can_ever_research(h, *t) {
-                    return Err(cannot(format!("{} cannot be researched", names::display(d, *t))));
+                if let Some(r) = g.player_ever_research_refusal(h, *t) {
+                    return Err(cannot(crate::view::reasons::ever_research_text(g, h, *t, r)));
                 }
             }
             Plan::Apply(Action::Research { tech: *tech, shift: *shift })
@@ -2085,13 +2085,15 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     return Err(invalid(format!("two civics for {}", names::name(d, o))));
                 }
                 seen.push(o);
-                if v[o] != Some(c) && !g.player_can_do_civics(h, Some(c)) {
-                    return Err(cannot(format!("{} is not available", names::display(d, c))));
+                if v[o] != Some(c) {
+                    if let Some(r) = g.player_civic_refusal(h, c) {
+                        return Err(cannot(format!("{}: {}.", names::display(d, c), crate::view::reasons::civic_refusal_text(g, r))));
+                    }
                 }
                 v[o] = Some(c);
             }
-            if !g.player_can_revolution(h, Some(&v)) {
-                return Err(cannot("no revolution possible (anarchy, the revolution timer, a forced civic, or no change)"));
+            if let Some(r) = g.player_revolution_refusal(h, Some(&v)) {
+                return Err(cannot(crate::view::reasons::revolution_refusal_text(g, r)));
             }
             Plan::Apply(Action::Revolution { civics: v })
         }
@@ -2109,16 +2111,16 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         }
 
         Command::Convert { religion } => {
-            if !g.player_can_convert(h, *religion) {
-                return Err(cannot("cannot convert"));
+            if let Some(r) = g.player_convert_refusal(h, *religion) {
+                return Err(cannot(crate::view::reasons::convert_refusal_text(g, r)));
             }
             Plan::Apply(Action::Convert { religion: *religion })
         }
 
         Command::DeclareWar { team: t } => {
             in_range("team", t.0 as i32, g.num_teams())?;
-            if !g.team_can_declare_war(team, *t) {
-                return Err(cannot(format!("cannot declare war on {}", team_name(g, *t))));
+            if let Some(r) = g.team_declare_war_refusal(team, *t) {
+                return Err(cannot(crate::view::reasons::war_refusal_text(g, team, *t, r)));
             }
             Plan::Apply(Action::DeclareWar { team: *t })
         }
@@ -2158,8 +2160,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if !d.event_triggers[data.trigger].events.contains(event) {
                 return Err(invalid(format!("{} is not an option of this event", names::name(d, *event))));
             }
-            if !g.player_can_do_event(h, *event, data) {
-                return Err(cannot(format!("{} is not available", names::display(d, *event))));
+            if let Some(r) = g.player_event_refusal(h, *event, data) {
+                return Err(cannot(crate::view::reasons::event_refusal_text(g, h, r)));
             }
             Plan::Apply(Action::Event { triggered: *triggered, event: *event })
         }
@@ -2402,12 +2404,6 @@ fn lend_error(e: LendError) -> String {
         LendError::NotLendable(_) => "a unit cannot be lent".into(),
         LendError::NoUnits => "no unit".into(),
     }
-}
-
-/// A team for people: the names of its players ("A & B"), as the client's `teamName`.
-fn team_name(g: &Game, t: TeamId) -> String {
-    let names: Vec<String> = g.player_ids().filter(|&p| g.players[p].team == t).map(|p| crate::view::player_name(g, p)).collect();
-    if names.is_empty() { "that team".to_string() } else { names.join(" & ") }
 }
 
 /// Why a loan cannot be made, for people.

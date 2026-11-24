@@ -53,7 +53,7 @@ export function exploreFull(e, dname) {
       const share = `${o.slots}/${e.slots_total}`;
       if (!who) lines.push(`[ICON_BULLET]${share} ${o.label}`);
       else if (o.allowed) lines.push(`[ICON_BULLET]${pct(o.ppm)} ${o.label} [COLOR_LIGHT_GREY](${share})[COLOR_REVERT]`);
-      else lines.push(`[ICON_BULLET][COLOR_LIGHT_GREY]0% ${o.label} (${share}, not possible now)[COLOR_REVERT]`);
+      else lines.push(`[ICON_BULLET][COLOR_LIGHT_GREY]0% ${o.label} (${share}${o.why ? `, ${o.why}` : ""})[COLOR_REVERT]`);
     }
     if (who && e.nothing_ppm > 0) lines.push(`[ICON_BULLET]${pct(e.nothing_ppm)} Nothing`);
     return lines.join("[NEWLINE]");

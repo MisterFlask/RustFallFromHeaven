@@ -390,30 +390,37 @@ impl Game {
 
     /// C++ `CvUnit::canFound` (CvUnit.cpp:6355-6379).
     pub fn unit_can_found(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
+        self.unit_found_refusal(u, plot, test_visible).is_none()
+    }
+
+    /// Why unit `u` cannot found a city at `plot` ([`Self::unit_can_found`]): the first check
+    /// that fails; `None` when it can.
+    pub fn unit_found_refusal(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> Option<crate::player::cities::FoundRefusal> {
+        use crate::player::cities::FoundRefusal;
         if !self.unit_is_found(u) {
-            return false;
+            return Some(FoundRefusal::NotFounder);
         }
 
         // This game's (docs/NAVAL.md, 3.2): not from boats.
         if self.unit_in_boats_at(u, plot) {
-            return false;
+            return Some(FoundRefusal::InBoats);
         }
 
         let (x, y) = self.map.xy(plot);
-        if !self.player_can_found(self.units[u].owner, x, y, test_visible) {
-            return false;
+        if let Some(r) = self.player_found_refusal(self.units[u].owner, x, y, test_visible) {
+            return Some(r);
         }
 
         // FfH: Added by Kael 05/06/2010
         if self.map.plots[plot].found_disabled {
-            return false;
+            return Some(FoundRefusal::Disabled);
         }
         if self.units[u].has_casted {
-            return false;
+            return Some(FoundRefusal::HasCast);
         }
         // FfH: End Add
 
-        true
+        None
     }
 
     /// C++ `CvUnit::found` (CvUnit.cpp:6382-6441).

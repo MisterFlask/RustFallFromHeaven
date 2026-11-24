@@ -56,6 +56,21 @@ pub struct UnitSupplyBreakdown {
     pub supply: i32,
 }
 
+/// Why a player can never research a tech (`Game::player_ever_research_refusal`), a check of
+/// C++ `CvPlayer::canEverResearch`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EverResearchRefusal {
+    /// The tech is disabled in the data.
+    Disabled,
+    /// This civilization does not research it.
+    Civilization(CivilizationType),
+    /// It requires this state religion.
+    StateReligion(ReligionType),
+    /// The rules' Python `cannotResearch` (a religion switched off by a game option, an agnostic
+    /// leader's religion tech, Seafaring for any civilization but the Lanun).
+    Script,
+}
+
 impl Game {
     /// C++ `GC.getHandicapInfo(getHandicapType())`: the player's own difficulty. Every player
     /// slot has one (C++ would index the table with -1 for NO_HANDICAP).
@@ -813,21 +828,27 @@ impl Game {
 
     /// C++ `CvPlayer::canEverResearch(eTech)`.
     pub fn player_can_ever_research(&self, p: PlayerId, tech: TechType) -> bool {
+        self.player_ever_research_refusal(p, tech).is_none()
+    }
+
+    /// Why player `p` can never research `tech` ([`Self::player_can_ever_research`]): the first
+    /// check that fails; `None` when it can.
+    pub fn player_ever_research_refusal(&self, p: PlayerId, tech: TechType) -> Option<EverResearchRefusal> {
         let d = self.d;
 
         if d.techs[tech].disable {
-            return false;
+            return Some(EverResearchRefusal::Disabled);
         }
 
         let civ = self.player_get_civilization_type(p).expect("player without a civilization");
         if d.civilizations[civ].civilization_disable_techs[tech] {
-            return false;
+            return Some(EverResearchRefusal::Civilization(civ));
         }
 
         //FfH Techs: Added by Kael 08/09/2007
         if let Some(prereq_religion) = d.techs[tech].prereq_religion {
             if self.player_get_state_religion(p) != Some(prereq_religion) {
-                return false;
+                return Some(EverResearchRefusal::StateReligion(prereq_religion));
             }
         }
         //FfH: End Add
@@ -835,11 +856,11 @@ impl Game {
         if d.defines.use_cannot_research_callback != 0 {
             // Python cannotResearch(ePlayer, eTech, False)
             if self.py_cannot_research(p, tech, false) {
-                return false;
+                return Some(EverResearchRefusal::Script);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::canResearch(eTech, bTrade = false)`.

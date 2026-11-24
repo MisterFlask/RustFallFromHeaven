@@ -29,7 +29,7 @@ mod combat;
 #[cfg(test)]
 mod duel_reference;
 mod ffh;
-pub use ffh::SummonHow;
+pub use ffh::{SpellRefusal, SummonHow};
 mod lifecycle;
 mod missions;
 mod movement;

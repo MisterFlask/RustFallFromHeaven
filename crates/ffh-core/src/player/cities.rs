@@ -109,6 +109,72 @@ fn disband_city_popup(g: &mut Game, p: PlayerId, c: CityId) {
     }
 }
 
+/// Why a city cannot be founded (`Game::player_found_refusal`, `Game::unit_found_refusal`), a
+/// check of C++ `CvPlayer::canFound` or `CvUnit::canFound`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FoundRefusal {
+    /// Off the map.
+    OffMap,
+    /// One City Challenge: a human founds one city.
+    OneCityChallenge,
+    /// The plot is impassable.
+    Impassable,
+    /// No city on Sea Ice.
+    SeaIce,
+    /// No city on this feature.
+    Feature(FeatureType),
+    /// The plot is in this player's borders.
+    Owned(PlayerId),
+    /// No city on this terrain (here: not coastal, no fresh water where it needs them).
+    Terrain(TerrainType),
+    /// A city within this many plots on the same landmass.
+    NearCity(i32),
+    /// No city on this permanent improvement.
+    Permanent(ImprovementType),
+    /// No city on a mana node.
+    Mana(BonusType),
+    /// An enemy unit is in view on the plot.
+    Enemy,
+    /// The unit founds no city.
+    NotFounder,
+    /// Not from boats.
+    InBoats,
+    /// Founding is disabled on this plot.
+    Disabled,
+    /// The unit has cast this turn.
+    HasCast,
+}
+
+/// Why a goody cannot be received (`Game::player_goody_refusal`), a check of C++
+/// `CvPlayer::canReceiveGoody`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GoodyRefusal {
+    /// It needs a unit (the hut's odds shown without one).
+    NoUnit,
+    /// Experience: the unit can acquire no promotion.
+    NoPromotion,
+    /// Not before this many turns of the game have passed (experience; an attack unit).
+    TooEarly(i32),
+    /// The unit must have lost this percent of its hit points (healing).
+    NotDamaged(i32),
+    /// No tech the hut can give is left to research.
+    NoTech,
+    /// The unit receives no bad result.
+    NoBadGoodies,
+    /// The civilization has no unit of the class.
+    NoCivUnit,
+    /// No attack unit in a multiplayer game.
+    MultiPlayer,
+    /// No settler for a human in One City Challenge.
+    OneCityChallenge,
+    /// Barbarians are off in this game.
+    NoBarbarians,
+    /// Barbarians need a city of the player.
+    NoCity,
+    /// Barbarians do not come within this many plots of the player's only city.
+    NearOnlyCity(i32),
+}
+
 impl Game {
     // ------------------------------------------------------------------ city / plot group lists
 
@@ -676,11 +742,17 @@ impl Game {
 
     /// C++ `CvPlayer::canFound(iX, iY, bTestVisible = false)`.
     pub fn player_can_found(&self, p: PlayerId, x: i32, y: i32, test_visible: bool) -> bool {
+        self.player_found_refusal(p, x, y, test_visible).is_none()
+    }
+
+    /// Why player `p` cannot found a city at (x, y) ([`Self::player_can_found`]): the first check
+    /// that fails, in the gate's order; `None` when it can.
+    pub fn player_found_refusal(&self, p: PlayerId, x: i32, y: i32, test_visible: bool) -> Option<FoundRefusal> {
         let d = self.d;
 
         // C++ dereferences the plot without a NULL check; off the map there is nothing to found on.
         let Some(plot) = self.map.plot_xy(x, y) else {
-            return false;
+            return Some(FoundRefusal::OffMap);
         };
 
         // `if (GC.getUSE_CANNOT_FOUND_CITY_CALLBACK())`: Python `cannotFoundCity(iPlayer, iX, iY)`
@@ -691,26 +763,26 @@ impl Game {
             && self.players[p].human
             && self.players[p].num_cities() > 0
         {
-            return false;
+            return Some(FoundRefusal::OneCityChallenge);
         }
 
         if self.plot_is_impassable(plot) {
-            return false;
+            return Some(FoundRefusal::Impassable);
         }
 
         // This game's: no city on Sea Ice.
         if self.map.plots[plot].sea_ice {
-            return false;
+            return Some(FoundRefusal::SeaIce);
         }
 
         if let Some(feature) = self.map.plots[plot].feature_type {
             if d.features[feature].no_city {
-                return false;
+                return Some(FoundRefusal::Feature(feature));
             }
         }
 
-        if self.plot_is_owned(plot) && self.map.plots[plot].owner != Some(p) {
-            return false;
+        if let Some(owner) = self.map.plots[plot].owner.filter(|&o| self.plot_is_owned(plot) && o != p) {
+            return Some(FoundRefusal::Owned(owner));
         }
 
         let terrain = self.map.plots[plot].terrain_type.expect("plot without terrain");
@@ -735,7 +807,7 @@ impl Game {
         // iY)` could validate a water plot (the define is 0 in FFH2; the function returns False).
 
         if !valid {
-            return false;
+            return Some(FoundRefusal::Terrain(terrain));
         }
 
         if !test_visible {
@@ -746,7 +818,7 @@ impl Game {
                 for dy in -range..=range {
                     if let Some(loop_plot) = self.plot_xy(x, y, dx, dy) {
                         if self.map.plots[loop_plot].plot_city.is_some() && self.map.plots[loop_plot].area == area {
-                            return false;
+                            return Some(FoundRefusal::NearCity(range));
                         }
                     }
                 }
@@ -756,24 +828,24 @@ impl Game {
         //FfH: Added by Kael 04/06/2010
         if let Some(improvement) = self.map.plots[plot].improvement_type {
             if d.improvements[improvement].permanent {
-                return false;
+                return Some(FoundRefusal::Permanent(improvement));
             }
         }
         if let Some(bonus) = self.map.plots[plot].bonus_type {
             let bonus_class = opt_to_i32(d.bonuses[bonus].bonus_class_type);
             if d.defines.bonusclass_mana != -1 && bonus_class == d.defines.bonusclass_mana {
-                return false;
+                return Some(FoundRefusal::Mana(bonus));
             }
             if d.defines.bonusclass_mana_raw != -1 && bonus_class == d.defines.bonusclass_mana_raw {
-                return false;
+                return Some(FoundRefusal::Mana(bonus));
             }
         }
         if self.plot_is_visible_enemy_unit(plot, p) {
-            return false;
+            return Some(FoundRefusal::Enemy);
         }
         //FfH: End Add
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::found(iX, iY)`: founds a city (barbarian defenders,
@@ -1246,20 +1318,29 @@ impl Game {
 
     /// C++ `CvPlayer::canReceiveGoody(pPlot, eGoody, pUnit)`.
     pub fn player_can_receive_goody(&self, p: PlayerId, plot: PlotIdx, goody: GoodyType, unit: Option<UnitId>) -> bool {
+        self.player_goody_refusal(p, plot, goody, unit).is_none()
+    }
+
+    /// Why player `p` (with `unit`) cannot receive `goody` at `plot`
+    /// ([`Self::player_can_receive_goody`]): the first check that fails; `None` when it can.
+    pub fn player_goody_refusal(&self, p: PlayerId, plot: PlotIdx, goody: GoodyType, unit: Option<UnitId>) -> Option<GoodyRefusal> {
         let d = self.d;
         let info = &d.goodies[goody];
 
         if info.experience > 0 {
-            match unit {
-                Some(u) if self.unit_can_acquire_promotion_any(u) && self.elapsed_game_turns >= 10 => {}
-                _ => return false,
+            let Some(u) = unit else { return Some(GoodyRefusal::NoUnit) };
+            if !self.unit_can_acquire_promotion_any(u) {
+                return Some(GoodyRefusal::NoPromotion);
+            }
+            if self.elapsed_game_turns < 10 {
+                return Some(GoodyRefusal::TooEarly(10));
             }
         }
 
         if info.damage_prereq > 0 {
-            match unit {
-                Some(u) if self.units[u].damage >= (self.unit_max_hit_points(u) * info.damage_prereq) / 100 => {}
-                _ => return false,
+            let Some(u) = unit else { return Some(GoodyRefusal::NoUnit) };
+            if self.units[u].damage < (self.unit_max_hit_points(u) * info.damage_prereq) / 100 {
+                return Some(GoodyRefusal::NotDamaged(info.damage_prereq));
             }
         }
 
@@ -1274,43 +1355,45 @@ impl Game {
             }
 
             if !tech_found {
-                return false;
+                return Some(GoodyRefusal::NoTech);
             }
         }
 
         if info.bad {
-            match unit {
-                Some(u) if !self.unit_is_no_bad_goodies(u) => {}
-                _ => return false,
+            let Some(u) = unit else { return Some(GoodyRefusal::NoUnit) };
+            if self.unit_is_no_bad_goodies(u) {
+                return Some(GoodyRefusal::NoBadGoodies);
             }
         }
 
         if let Some(unit_class) = info.unit_class_type {
             let Some(unit_type) = d.civ_unit(civ_of(self, p), unit_class) else {
-                return false;
+                return Some(GoodyRefusal::NoCivUnit);
             };
 
-            if d.units[unit_type].attack_rating() > 0
-                && !d.units[unit_type].only_defensive
-                && (self.is_game_multi_player() || self.elapsed_game_turns < 20)
-            {
-                return false;
+            if d.units[unit_type].attack_rating() > 0 && !d.units[unit_type].only_defensive {
+                if self.is_game_multi_player() {
+                    return Some(GoodyRefusal::MultiPlayer);
+                }
+                if self.elapsed_game_turns < 20 {
+                    return Some(GoodyRefusal::TooEarly(20));
+                }
             }
 
             if self.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && self.players[p].human && d.units[unit_type].found {
-                return false;
+                return Some(GoodyRefusal::OneCityChallenge);
             }
         }
 
         if info.barbarian_unit_class.is_some() {
             if self.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS) {
-                return false;
+                return Some(GoodyRefusal::NoBarbarians);
             }
 
             let num_cities = self.players[p].num_cities();
 
             if num_cities == 0 {
-                return false;
+                return Some(GoodyRefusal::NoCity);
             }
 
             if num_cities == 1 {
@@ -1318,13 +1401,13 @@ impl Game {
                 let team = self.players[p].team;
                 if let Some(city) = self.map_find_city(x, y, None, Some(team), true, false, None, None, None) {
                     if self.plot_distance(x, y, self.cities[city].x, self.cities[city].y) <= (8 - num_cities) {
-                        return false;
+                        return Some(GoodyRefusal::NearOnlyCity(8 - num_cities));
                     }
                 }
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvPlayer::receiveGoody(pPlot, eGoody, pUnit)`.
