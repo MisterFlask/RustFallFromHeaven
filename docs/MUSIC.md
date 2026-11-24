@@ -146,8 +146,15 @@ about 20 s). dBFS is the mean square against full scale; a peak of 1 is full sca
   5.6 kHz: a dark mix.
 - Pitch: the flute's notes read within 8 cents of the score (the width of its vibrato), the harp's
   strings within 0.1 cent.
-- In the game, in Chrome: silent until the first click, playing after it, off and on from Options,
-  no console message.
+- Two playings back to back on one orchestra, handed out by the `Conductor` (364 s offline): each
+  reads as it does alone (within 0.1 dB in every section), the silence between them is silent
+  (-143 dB), no NaN, peak 0.69. Hours of looping on one orchestra were not measured.
+- In the game, in Chrome, the gain of the node that feeds the speakers read back: no audio context
+  before the first click; 0.19 one second after it and 0.64 (the default volume 0.8, squared) once
+  the fade is over; 0 and a suspended context with Music unticked, 0.64 again when ticked; 0.16
+  with the slider at 40, also when it is moved during the fade in; suspended, its clock stopped,
+  while the page is hidden (the page was told so: headless Chrome hides none) and running again
+  when it is shown. No console message.
 
 What the numbers do not say is whether it is beautiful. Nobody had heard the piece when it was
 merged: its levels, pitches and balance are measured, its taste is not. Change the score and the
