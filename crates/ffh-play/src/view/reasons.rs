@@ -235,7 +235,6 @@ pub fn spell_refusal_text(g: &Game, u: UnitId, spell: SpellType, r: SpellRefusal
     let d = g.d;
     let unit = &g.units[u];
     let name = unit_label(g, u);
-    let plot = g.unit_plot_opt(u);
     match r {
         SpellRefusal::Immobile(n) => format!("{name} is held in place: {}.", turns(n)),
         SpellRefusal::InBoats => "No casting in boats.".to_string(),
@@ -292,22 +291,11 @@ pub fn spell_refusal_text(g: &Game, u: UnitId, spell: SpellType, r: SpellRefusal
         SpellRefusal::Population(n) => format!("The city's population must be more than {n}."),
         SpellRefusal::Gold(n) => gold_line(g.players[unit.owner].gold, n),
         SpellRefusal::NotCast => format!("{name} has not cast this turn."),
-        // `canCreateUnit`'s checks.
-        SpellRefusal::CreateUnit => {
-            if unit.duration > 0 && d.spells[spell].create_unit_type == Some(unit.unit_type) {
-                "A summon does not summon its own kind.".to_string()
-            } else if plot.is_some_and(|q| g.plot_is_visible_enemy_unit(q, unit.owner)) {
-                "An enemy unit is in view on the plot.".to_string()
-            } else {
-                "The limit of permanent summons is reached.".to_string()
-            }
-        }
-        SpellRefusal::CreateBuilding => format!("{} cannot be built in this city.", d.spells[spell].create_building_type.map_or(Cow::Borrowed("The building"), |b| display(d, b))),
-        // The spell's own Python requirement, and a spell none of whose effects applies: the
-        // gate says no more than that.
-        SpellRefusal::Requirement => format!("{name} cannot cast {} here.", display(d, spell)),
+        SpellRefusal::CreateUnit(r) => crate::view::reasons_spell::create_unit_text(r),
+        SpellRefusal::CreateBuilding(r) => crate::view::reasons_spell::create_building_text(g, r),
+        SpellRefusal::Requirement(r) => crate::view::reasons_spell::spell_unmet_text(g, u, spell, r),
         SpellRefusal::NoTarget => "No valid target.".to_string(),
-        SpellRefusal::NoEffect => format!("Nothing here for {} to affect.", display(d, spell)),
+        SpellRefusal::NoEffect(e) => crate::view::reasons_spell::no_effect_text(g, u, spell, e),
     }
 }
 
@@ -649,7 +637,7 @@ pub fn command_refusal(g: &Game, units: &[UnitId], command: CommandType, data1: 
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     /// The client's `plainDetail` (assets/app/dom.js): a refusal's detail is shown only when it

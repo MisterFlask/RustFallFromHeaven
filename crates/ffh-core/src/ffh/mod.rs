@@ -15,6 +15,7 @@ pub mod pycall;
 pub mod random_events;
 pub mod random_events_a;
 pub mod random_events_b;
+pub mod spell_unmet;
 pub mod spells;
 pub mod spells_a;
 pub mod spells_b;

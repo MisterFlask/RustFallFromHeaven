@@ -554,8 +554,8 @@ impl Game {
 // The callbacks.
 
 /// `reqPowderCharge(caster)`: next to a walled city at war with it.
-fn req_powder_charge(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.unit_powder_charge_city(caster).is_some()
+fn req_powder_charge(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(g.unit_powder_charge_city(caster).is_some(), SpellUnmet::Missing(Sought::WalledCity))
 }
 
 /// `spellPowderCharge(caster)`: every Sentinel of that city is breached (the spell uses the
@@ -571,17 +571,23 @@ fn spell_powder_charge(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqFalseColours(caster)`: a unit of its owner on its plot that can attack and is not under
 /// false colours yet.
-fn req_false_colours(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    let Some(plot) = g.unit_plot_opt(caster) else { return false };
+fn req_false_colours(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    let Some(plot) = g.unit_plot_opt(caster) else { return Some(SpellUnmet::Missing(Sought::FalseColoursUnit)) };
     let owner = g.units[caster].owner;
-    g.map.plots[plot].units.iter().any(|&u| u != caster && g.units[u].owner == owner && g.unit_can_attack(u) && !g.unit_has_false_colours(u))
+    need(
+        g.map.plots[plot].units.iter().any(|&u| u != caster && g.units[u].owner == owner && g.unit_can_attack(u) && !g.unit_has_false_colours(u)),
+        SpellUnmet::Missing(Sought::FalseColoursUnit),
+    )
 }
 
 /// `reqPackUp(caster)`: in a city of its owner that may pack up (the spell's `building_prereq` is
 /// the Wheeled City).
-fn req_pack_up(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    let Some(plot) = g.unit_plot_opt(caster) else { return false };
-    g.map.plots[plot].plot_city.filter(|&c| g.cities.contains(c)).is_some_and(|c| g.cities[c].owner == g.units[caster].owner && g.city_can_pack_up(c))
+fn req_pack_up(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    let Some(plot) = g.unit_plot_opt(caster) else { return Some(SpellUnmet::NotInOwnCity) };
+    let Some(c) = g.map.plots[plot].plot_city.filter(|&c| g.cities.contains(c)).filter(|&c| g.cities[c].owner == g.units[caster].owner) else {
+        return Some(SpellUnmet::NotInOwnCity);
+    };
+    need(g.city_can_pack_up(c), SpellUnmet::CannotPackUp)
 }
 
 /// `spellPackUp(caster, 'UNIT_X')`: the city becomes a caravan of that type.
@@ -593,8 +599,8 @@ fn spell_pack_up(g: &mut Game, caster: UnitId, call: &PyCall) {
 }
 
 /// `reqUnpack(caster)`: a caravan on a valid site within range of where it packed up.
-fn req_unpack(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.unit_can_unpack(caster)
+fn req_unpack(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(g.unit_can_unpack(caster), SpellUnmet::Missing(Sought::UnpackSite(UNPACK_RANGE)))
 }
 
 /// `spellUnpack(caster)`: the city is refounded (the spell uses the caravan up).

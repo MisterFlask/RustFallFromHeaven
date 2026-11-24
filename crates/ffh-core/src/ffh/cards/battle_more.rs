@@ -105,8 +105,11 @@ impl Game {
 
 /// `reqGildedLegion(caster)`: the caster stands in a city of its owner whose Gilded Legion has not
 /// chosen, and a civilization is there to choose.
-fn req_gilded_legion(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.unit_legion_city_to_choose(caster).is_some() && !g.legion_civ_choices(g.units[caster].owner).is_empty()
+fn req_gilded_legion(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    if g.unit_legion_city_to_choose(caster).is_none() {
+        return Some(SpellUnmet::Missing(Sought::LegionCity));
+    }
+    need(!g.legion_civ_choices(g.units[caster].owner).is_empty(), SpellUnmet::Missing(Sought::LegionCivilization))
 }
 
 /// `targetsGildedLegion(caster)`: the players of the civilizations it may choose.
@@ -142,7 +145,7 @@ fn spell_gilded_legion(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqRaiseCairn(caster)`: a plot of its owner or of nobody.
-fn req_raise_cairn(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_raise_cairn(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let plot = g.unit_plot(caster);
-    g.map.plots[plot].owner.map_or(true, |o| o == g.units[caster].owner)
+    need(g.map.plots[plot].owner.map_or(true, |o| o == g.units[caster].owner), SpellUnmet::PlotOwnedByOther)
 }

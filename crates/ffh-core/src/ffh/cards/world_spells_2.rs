@@ -162,8 +162,8 @@ pub fn sing_the_stones_ruins(g: &Game, p: PlayerId) -> Vec<PlotIdx> {
 }
 
 /// `reqSingTheStones(pCaster)`: a City Ruins to refound.
-fn req_sing_the_stones(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    !sing_the_stones_ruins(g, g.units[caster].owner).is_empty()
+fn req_sing_the_stones(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(!sing_the_stones_ruins(g, g.units[caster].owner).is_empty(), SpellUnmet::Missing(Sought::RuinsToRefound))
 }
 
 /// `spellSingTheStones(pCaster)`: each ruin, in plot order, becomes a city of size 3 (a ruin too
@@ -202,8 +202,8 @@ pub fn dragons_oath_city(g: &Game, p: PlayerId) -> Option<CityId> {
 }
 
 /// `reqDragonsOath(pCaster)`.
-fn req_dragons_oath(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    dragons_oath_city(g, g.units[caster].owner).is_some()
+fn req_dragons_oath(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(dragons_oath_city(g, g.units[caster].owner).is_some(), SpellUnmet::Missing(Sought::DragonsOathCapital))
 }
 
 /// `spellDragonsOath(pCaster)`.
@@ -381,8 +381,8 @@ pub fn decree_plots(g: &Game, p: PlayerId) -> Vec<(PlotIdx, ImprovementType)> {
 }
 
 /// `reqEarthshapersDecree(pCaster)`: a plot to improve.
-fn req_earthshapers_decree(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    !decree_plots(g, g.units[caster].owner).is_empty()
+fn req_earthshapers_decree(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(!decree_plots(g, g.units[caster].owner).is_empty(), SpellUnmet::Missing(Sought::DecreePlot))
 }
 
 /// `spellEarthshapersDecree(pCaster)`.

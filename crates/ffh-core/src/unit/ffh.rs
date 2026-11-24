@@ -93,16 +93,64 @@ pub enum SpellRefusal {
     Gold(i32),
     /// It refreshes a caster that has cast this turn, and this one has not.
     NotCast,
-    /// The summon cannot be made here (an enemy in view; the permanent summons at their limit).
-    CreateUnit,
-    /// The building cannot be made here.
-    CreateBuilding,
-    /// The spell's own requirement (its Python `req*`) is not met.
-    Requirement,
+    /// The summon cannot be made here ([`Game::unit_create_unit_refusal`]).
+    CreateUnit(CreateUnitRefusal),
+    /// The building cannot be made here ([`Game::unit_create_building_refusal`]).
+    CreateBuilding(CreateBuildingRefusal),
+    /// The spell's own requirement (its Python `req*`) is not met: the check that failed.
+    Requirement(crate::ffh::spell_unmet::SpellUnmet),
     /// No valid target.
     NoTarget,
     /// None of the spell's effects applies here.
-    NoEffect,
+    NoEffect(NoEffect),
+}
+
+/// Why a spell cannot create its unit here (`Game::unit_create_unit_refusal`), a check of C++
+/// `CvUnit::canCreateUnit`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CreateUnitRefusal {
+    /// A temporary unit does not create a unit of its own type.
+    OwnKind,
+    /// An enemy unit is visible on the plot.
+    VisibleEnemy,
+    /// The permanent summons are at their limit.
+    PermanentLimit,
+}
+
+/// Why a spell cannot create its building here (`Game::unit_create_building_refusal`), a check
+/// of C++ `CvUnit::canCreateBuilding`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CreateBuildingRefusal {
+    /// Not in a city.
+    NotInCity,
+    /// The city has the building (at some tier) already.
+    HasBuilding(BuildingType),
+}
+
+/// Which of a spell's effects did not apply ([`SpellRefusal::NoEffect`]): the effects whose
+/// own gate refused (`unit_can_add_promotion`, ...), named when there is one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NoEffect {
+    /// The spell has no effect that a gate checks, and none other.
+    Nothing,
+    /// No unit can gain the spell's promotion (its first).
+    AddPromotion(PromotionType),
+    /// No unit has the promotion the spell removes (its first).
+    RemovePromotion(PromotionType),
+    /// The spell's feature cannot be placed here.
+    Feature(FeatureType),
+    /// The spell's improvement cannot be placed here.
+    Improvement(ImprovementType),
+    /// The spell's religion cannot spread here.
+    SpreadReligion(ReligionType),
+    /// Nothing to dispel.
+    Dispel,
+    /// No unit to hold in place.
+    Immobile,
+    /// No unit to push.
+    Push,
+    /// Several effects, none of which applies.
+    Several,
 }
 
 /// C++ `CvPlot::getPlotCity()` (`getCity(IDInfo)`: NULL for a deleted city).
@@ -511,22 +559,28 @@ impl Game {
                 return Some(SpellRefusal::Duration);
             }
         }
-        if info.create_unit_type.is_some() && !self.unit_can_create_unit(u, spell) {
-            return Some(SpellRefusal::CreateUnit);
+        if info.create_unit_type.is_some() {
+            if let Some(r) = self.unit_create_unit_refusal(u, spell) {
+                return Some(SpellRefusal::CreateUnit(r));
+            }
         }
-        if info.create_building_type.is_some() && !self.unit_can_create_building(u, spell) {
-            return Some(SpellRefusal::CreateBuilding);
+        if info.create_building_type.is_some() {
+            if let Some(r) = self.unit_create_building_refusal(u, spell) {
+                return Some(SpellRefusal::CreateBuilding(r));
+            }
         }
         // This game's: a targeted spell needs a valid target (docs/DECKS.md, "Remote targeting").
         if info.target.is_some() {
-            if !info.py_requirement.is_empty() && !self.py_can_cast(u, spell) {
-                return Some(SpellRefusal::Requirement);
+            if !info.py_requirement.is_empty() {
+                if let Some(r) = self.py_cast_unmet(u, spell) {
+                    return Some(SpellRefusal::Requirement(r));
+                }
             }
             return (with_targets && self.unit_spell_targets(u, spell).is_empty()).then_some(SpellRefusal::NoTarget);
         }
         if !info.py_requirement.is_empty() {
             // Python `canCast(pCaster, eSpell)` decides alone once the XML prereqs pass.
-            return (!self.py_can_cast(u, spell)).then_some(SpellRefusal::Requirement);
+            return self.py_cast_unmet(u, spell).map(SpellRefusal::Requirement);
         }
         if info.remove_has_casted && unit.has_casted {
             return None;
@@ -573,11 +627,34 @@ impl Game {
         if !info.py_result.is_empty() {
             return None;
         }
-        Some(SpellRefusal::NoEffect)
+        // Every effect of the spell has a gate (the effects without one returned above), and
+        // every gate refused: name the effect when there is one.
+        let gated = [
+            info.add_promotion_type1.map(NoEffect::AddPromotion),
+            info.remove_promotion_type1.map(NoEffect::RemovePromotion),
+            info.create_feature_type.map(NoEffect::Feature),
+            info.create_improvement_type.map(NoEffect::Improvement),
+            info.spread_religion.map(NoEffect::SpreadReligion),
+            info.dispel.then_some(NoEffect::Dispel),
+            (info.immobile_turns > 0).then_some(NoEffect::Immobile),
+            info.push.then_some(NoEffect::Push),
+        ];
+        let mut effects = gated.into_iter().flatten();
+        Some(SpellRefusal::NoEffect(match (effects.next(), effects.next()) {
+            (None, _) => NoEffect::Nothing,
+            (Some(one), None) => one,
+            (Some(_), Some(_)) => NoEffect::Several,
+        }))
     }
 
     /// C++ `CvUnit::canCreateUnit` (CvUnit.cpp:14103-14140).
     pub fn unit_can_create_unit(&self, u: UnitId, spell: SpellType) -> bool {
+        self.unit_create_unit_refusal(u, spell).is_none()
+    }
+
+    /// Why unit `u` cannot create the unit of `spell` ([`Self::unit_can_create_unit`]): the
+    /// first check that fails; `None` when it can.
+    pub fn unit_create_unit_refusal(&self, u: UnitId, spell: SpellType) -> Option<CreateUnitRefusal> {
         let d = self.d;
         let info = &d.spells[spell];
         let unit = &self.units[u];
@@ -585,11 +662,11 @@ impl Game {
 
         // to prevent summons summoning spinlocks
         if unit.duration > 0 && info.create_unit_type == Some(unit.unit_type) {
-            return false;
+            return Some(CreateUnitRefusal::OwnKind);
         }
         // keeps invisible units from CtDing summoning on top of enemies
         if self.plot_is_visible_enemy_unit(self.unit_plot(u), owner) {
-            return false;
+            return Some(CreateUnitRefusal::VisibleEnemy);
         }
         if info.permanent_unit_create {
             let mut count = 0;
@@ -607,11 +684,11 @@ impl Game {
             if let Some(create_unit_type) = info.create_unit_type {
                 let unit_class = d.units[create_unit_type].unit_class_type.expect("CvUnitInfo without a unit class");
                 if count <= self.players[owner].unit_class_count[unit_class] {
-                    return false;
+                    return Some(CreateUnitRefusal::PermanentLimit);
                 }
             }
         }
-        true
+        None
     }
 
     /// C++ `CvUnit::canAddPromotion` (CvUnit.cpp:14142-14234).
@@ -653,18 +730,24 @@ impl Game {
 
     /// C++ `CvUnit::canCreateBuilding` (CvUnit.cpp:14236-14247).
     pub fn unit_can_create_building(&self, u: UnitId, spell: SpellType) -> bool {
+        self.unit_create_building_refusal(u, spell).is_none()
+    }
+
+    /// Why unit `u` cannot create the building of `spell` ([`Self::unit_can_create_building`]):
+    /// the first check that fails; `None` when it can.
+    pub fn unit_create_building_refusal(&self, u: UnitId, spell: SpellType) -> Option<CreateBuildingRefusal> {
         let plot = self.unit_plot(u);
         if !self.plot_is_city(plot, false, None) {
-            return false;
+            return Some(CreateBuildingRefusal::NotInCity);
         }
         // C++ reads `getNumBuilding(NO_BUILDING)` (out of bounds) for a spell that creates no
         // building; canCast and cast only ask for spells that do.
         if let (Some(city), Some(building)) = (live_plot_city(self, plot), self.d.spells[spell].create_building_type) {
             if self.city_num_family(city, building) > 0 {
-                return false;
+                return Some(CreateBuildingRefusal::HasBuilding(building));
             }
         }
-        true
+        None
     }
 
     /// C++ `CvUnit::canCreateFeature` (CvUnit.cpp:14249-14271).

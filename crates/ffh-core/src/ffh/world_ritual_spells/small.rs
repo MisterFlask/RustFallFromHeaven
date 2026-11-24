@@ -122,8 +122,8 @@ pub fn tithe_in_progress(g: &Game, p: PlayerId) -> bool {
 }
 
 /// `reqNameTheTithe(caster)`: not while the ritual has production.
-fn req_name_the_tithe(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    !tithe_in_progress(g, g.units[caster].owner)
+fn req_name_the_tithe(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(!tithe_in_progress(g, g.units[caster].owner), SpellUnmet::TitheInProgress)
 }
 
 /// `targetsNameTheTithe(caster)`: the rivals it may name, in player order.

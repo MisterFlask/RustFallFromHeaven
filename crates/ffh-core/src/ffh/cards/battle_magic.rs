@@ -65,8 +65,11 @@ impl Game {
 }
 
 /// `reqBindFamiliar(caster)`: a caster to bind to on its plot (`Game::familiar_bind_target`).
-fn req_bind_familiar(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.unit_is_familiar(caster) && g.familiar_bind_target(caster).is_some()
+fn req_bind_familiar(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    if !g.unit_is_familiar(caster) {
+        return Some(SpellUnmet::NotFamiliar);
+    }
+    need(g.familiar_bind_target(caster).is_some(), SpellUnmet::Missing(Sought::FamiliarCaster))
 }
 
 /// `spellBindFamiliar(caster)`: the familiar binds to that caster.

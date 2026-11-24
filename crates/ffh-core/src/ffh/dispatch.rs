@@ -16,8 +16,9 @@ use ffh_data::*;
 
 /// `spellX(pCaster, ...)` -- PyResult.
 pub type SpellFn = fn(&mut Game, UnitId, &PyCall);
-/// `reqX(pCaster, ...)` -- PyRequirement.
-pub type ReqFn = fn(&Game, UnitId, &PyCall) -> bool;
+/// `reqX(pCaster, ...)` -- PyRequirement: why the caster may not cast, `None` when it may.
+pub type ReqFn = fn(&Game, UnitId, &PyCall) -> Option<SpellUnmet>;
+pub use crate::ffh::spell_unmet::{need, Sought, SpellUnmet};
 /// This game's: a targeted spell's valid targets for a caster (`SpellInfo::py_targets`).
 pub type TargetsFn = fn(&Game, UnitId, &PyCall) -> Vec<crate::structs::SpellTarget>;
 /// This game's: a target of a targeted spell for a caster, for people (`SpellInfo::py_target_label`):

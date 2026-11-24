@@ -17,9 +17,14 @@ impl Game {
     }
     /// `canCast(pCaster, eSpell)`: evaluate the spell's `PyRequirement` (true if empty).
     pub fn py_can_cast(&self, caster: UnitId, spell: SpellType) -> bool {
+        self.py_cast_unmet(caster, spell).is_none()
+    }
+    /// Why the spell's `PyRequirement` refuses `caster` ([`Self::py_can_cast`]): the check that
+    /// failed; `None` when it may cast (or the spell names no requirement).
+    pub fn py_cast_unmet(&self, caster: UnitId, spell: SpellType) -> Option<crate::ffh::spell_unmet::SpellUnmet> {
         match &tables(self.d).spell_requirement[spell] {
             Some(b) => (b.f)(self, caster, &b.call),
-            None => true,
+            None => None,
         }
     }
     /// This game's: a targeted spell's valid targets for `caster` (its `py_targets`; none if

@@ -24,8 +24,16 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
 }
 
 /// `reqDiscoverCard(caster)`: the great person holds a card whose needs its team knows.
-fn req_discover_card(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.unit_can_discover_card(caster)
+fn req_discover_card(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    if g.unit_can_discover_card(caster) {
+        return None;
+    }
+    // Which of `unit_can_discover_card`'s checks refused, for people.
+    Some(match g.units[caster].card {
+        None => SpellUnmet::NoCard,
+        Some(card) if g.teams[g.unit_get_team(caster)].has_tech[card] => SpellUnmet::CardKnown(card),
+        Some(card) => SpellUnmet::CardNeeds(card),
+    })
 }
 
 /// `spellDiscoverCard(caster)`: its team learns the card (the spell uses the caster up).

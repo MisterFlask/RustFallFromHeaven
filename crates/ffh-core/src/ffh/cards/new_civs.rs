@@ -163,8 +163,8 @@ fn city(d: &GameData, plot: PlotIdx, buildings: &[&str], units: &[&str]) -> NewC
 }
 
 /// `reqPatrianAwakening(caster)`: the Patrians have their two sites.
-fn req_patrian_awakening(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    patrian_sites(g, g.units[caster].owner).is_some()
+fn req_patrian_awakening(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(patrian_sites(g, g.units[caster].owner).is_some(), SpellUnmet::Missing(Sought::PatrianSites))
 }
 
 /// `spellPatrianAwakening(caster)`: the Patrians, the caster's vassal (+4 attitude toward it), in
@@ -189,8 +189,8 @@ fn spell_patrian_awakening(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqDawnKnights(caster)`: there are two free sites within [`DAWN_RANGE`] of the caster's
 /// borders.
-fn req_dawn_knights(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    border_sites(g, g.units[caster].owner, DAWN_RANGE).is_some()
+fn req_dawn_knights(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(border_sites(g, g.units[caster].owner, DAWN_RANGE).is_some(), SpellUnmet::Missing(Sought::BorderSites(DAWN_RANGE)))
 }
 
 /// `spellDawnKnights(caster)`: the Knights of the Dawn, the caster's vassal (+4 attitude toward
@@ -214,8 +214,8 @@ fn spell_dawn_knights(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqFeyCourt(caster)`: an unclaimed forest region of [`FEY_FOREST_PLOTS`] plots or more has
 /// two free sites.
-fn req_fey_court(g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    fey_sites(g).is_some()
+fn req_fey_court(g: &Game, _caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(fey_sites(g).is_some(), SpellUnmet::Missing(Sought::FeySites(FEY_FOREST_PLOTS as i32)))
 }
 
 /// `spellFeyCourt(caster)`: the Fey Court, the caster's vassal, of the Fellowship of Leaves, in
@@ -237,8 +237,8 @@ fn spell_fey_court(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqCondottieri(caster)`: there are two free sites within [`CONDOTTIERI_RANGE`] of the
 /// caster's borders.
-fn req_condottieri(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    border_sites(g, g.units[caster].owner, CONDOTTIERI_RANGE).is_some()
+fn req_condottieri(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(border_sites(g, g.units[caster].owner, CONDOTTIERI_RANGE).is_some(), SpellUnmet::Missing(Sought::BorderSites(CONDOTTIERI_RANGE)))
 }
 
 /// `spellCondottieri(caster)`: the Free Companies, the caster's vassal, in two cities, with six
@@ -263,8 +263,8 @@ fn targets_free_city_charter(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<Sp
 }
 
 /// `reqFreeCityCharter(caster)`: always (the target is its own test).
-fn req_free_city_charter(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
+fn req_free_city_charter(_g: &Game, _caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    None
 }
 
 /// `spellFreeCityCharter(caster)` at a city: it becomes the Free City, a civilization of its own
@@ -300,8 +300,11 @@ fn mirror_gate(d: &GameData) -> BuildingType {
 
 /// `reqMirrorColony(caster)`: the caster's owner has a capital and the largest unclaimed region
 /// two free sites.
-fn req_mirror_colony(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.player_get_capital_city(g.units[caster].owner).is_some() && mirror_sites(g).is_some()
+fn req_mirror_colony(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    if g.player_get_capital_city(g.units[caster].owner).is_none() {
+        return Some(SpellUnmet::NoCapital);
+    }
+    need(mirror_sites(g).is_some(), SpellUnmet::Missing(Sought::UnclaimedSites))
 }
 
 /// `spellMirrorColony(caster)`: two cities of the caster's own on the largest unclaimed region; the
@@ -334,8 +337,8 @@ fn gate_city(g: &Game, u: UnitId) -> Option<CityId> {
 }
 
 /// `reqMirrorGate(caster)`: a land unit in a city of its owner's with a Mirror Gate.
-fn req_mirror_gate(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    gate_city(g, caster).is_some()
+fn req_mirror_gate(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(gate_city(g, caster).is_some(), SpellUnmet::Missing(Sought::GateCity(mirror_gate(g.d))))
 }
 
 /// `targetsMirrorGate(caster)`: its owner's other cities with a Mirror Gate and no enemy unit.

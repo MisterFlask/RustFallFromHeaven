@@ -213,8 +213,8 @@ pub fn necropolis_sites(g: &Game, p: PlayerId) -> Option<Vec<PlotIdx>> {
 }
 
 /// `reqRiteOfTheNecropolis(caster)`: the Necropolis has its ruins.
-fn req_rite_of_the_necropolis(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    necropolis_sites(g, g.units[caster].owner).is_some()
+fn req_rite_of_the_necropolis(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(necropolis_sites(g, g.units[caster].owner).is_some(), SpellUnmet::Missing(Sought::NecropolisSites(NECROPOLIS_RUINS as i32)))
 }
 
 /// `spellRiteOfTheNecropolis(caster)`: the Necropolis (+4 attitude toward the caster, -4 toward
@@ -318,8 +318,8 @@ pub fn hill_clan_sites(g: &Game, p: PlayerId) -> Option<Vec<PlotIdx>> {
 }
 
 /// `reqWakeTheHillClans(caster)`: the Hill Clans have their hills.
-fn req_wake_the_hill_clans(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    hill_clan_sites(g, g.units[caster].owner).is_some()
+fn req_wake_the_hill_clans(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(hill_clan_sites(g, g.units[caster].owner).is_some(), SpellUnmet::Missing(Sought::HillSites(HILL_PLOTS as i32, HILL_RANGE)))
 }
 
 /// `spellWakeTheHillClans(caster)`: the Hill Clans, the caster's vassal, in two cities on the
@@ -383,8 +383,8 @@ pub fn usurper_unit(g: &Game, q: PlayerId) -> Option<UnitType> {
 }
 
 /// `reqUsurpersCrown(caster)`: always (the target is its own test).
-fn req_usurpers_crown(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
+fn req_usurpers_crown(_g: &Game, _caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    None
 }
 
 /// `targetsUsurpersCrown(caster)`: [`usurper_targets`] of the caster's owner.
@@ -495,8 +495,8 @@ pub fn aifon_sites(g: &Game) -> Option<Vec<PlotIdx>> {
 }
 
 /// `reqCallTheAifon(caster)`: the Aifon have their coast.
-fn req_call_the_aifon(g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    aifon_sites(g).is_some()
+fn req_call_the_aifon(g: &Game, _caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(aifon_sites(g).is_some(), SpellUnmet::Missing(Sought::CoastalSites))
 }
 
 /// `spellCallTheAifon(caster)`: the Aifon, the caster's vassal, in two coastal cities, each with two

@@ -652,8 +652,8 @@ pub fn call_of_the_faithful(g: &Game, p: PlayerId) -> Option<(CityId, Vec<UnitTy
 }
 
 /// `reqCallOfTheFaithful(caster)`.
-fn req_call_of_the_faithful(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    call_of_the_faithful(g, g.units[caster].owner).is_some()
+fn req_call_of_the_faithful(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(call_of_the_faithful(g, g.units[caster].owner).is_some(), SpellUnmet::Missing(Sought::FaithfulHero))
 }
 
 /// `spellCallOfTheFaithful(caster)`: the missing heroes appear in the city.
@@ -705,9 +705,9 @@ pub fn grand_order_gain(g: &Game, c: CityId) -> Option<(i32, bool)> {
 }
 
 /// `reqGrandOrder(caster)`: some city of the owner has a build it advances.
-fn req_grand_order(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_grand_order(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
-    g.players[p].cities.iter().any(|&c| grand_order_gain(g, c).is_some())
+    need(g.players[p].cities.iter().any(|&c| grand_order_gain(g, c).is_some()), SpellUnmet::Missing(Sought::GrandOrderCity))
 }
 
 /// `spellGrandOrder(caster)`.

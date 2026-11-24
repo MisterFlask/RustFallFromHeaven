@@ -238,8 +238,8 @@ fn has_promotion_opt(g: &Game, u: UnitId, promotion: Option<PromotionType>) -> b
 
 /// `reqMarchOfTheTrees(caster)`. Change from FFH2: its only condition was AI-only (at war with two
 /// teams); it is AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_march_of_the_trees(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
+fn req_march_of_the_trees(_g: &Game, _caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    None
 }
 
 /// `spellMarchOfTheTrees(caster)`.
@@ -317,18 +317,18 @@ fn spell_open_chest(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqPromoteSettlement(caster)`.
-fn req_promote_settlement(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_promote_settlement(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let plot = g.unit_plot(caster);
     // A NULL CyCity answers isSettlement() False.
     if !g.map.plots[plot].plot_city.map_or(false, |c| g.cities[c].settlement) {
-        return false;
+        return Some(SpellUnmet::NotInSettlement);
     }
     let p = g.units[caster].owner;
     // The cap counts the player's own full cities.
     if g.player_full_cities(p, None) >= g.players[p].max_cities {
-        return false;
+        return Some(SpellUnmet::CityLimit(g.players[p].max_cities));
     }
-    true
+    None
 }
 
 /// `spellPromoteSettlement(caster)`.
@@ -355,13 +355,14 @@ fn spell_raise_skeleton(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqRally(caster)`. Change from FFH2: its AI-only branch (5 cities) is AI timing, in ffh-ai
 /// `world_spells` (docs/PORTING.md).
-fn req_rally(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_rally(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let p = g.units[caster].owner;
-    if g.players[p].civics[d.t::<CivicOptionType>("CIVICOPTION_CULTURAL_VALUES")] != Some(d.t::<CivicType>("CIVIC_CRUSADE")) {
-        return false;
+    let crusade = d.t::<CivicType>("CIVIC_CRUSADE");
+    if g.players[p].civics[d.t::<CivicOptionType>("CIVICOPTION_CULTURAL_VALUES")] != Some(crusade) {
+        return Some(SpellUnmet::Civic(crusade));
     }
-    true
+    None
 }
 
 /// `spellRally(caster)`.
@@ -413,19 +414,21 @@ fn spell_read_the_grimoire(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqRebuildBarnaxus(caster)`.
-fn req_rebuild_barnaxus(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_rebuild_barnaxus(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let plot = g.unit_plot(caster);
     let city_owner = g.map.plots[plot].plot_city.map(|c| g.cities[c].owner);
-    if g.units[caster].unit_type == d.t::<UnitType>("UNIT_BARNAXUS") {
-        return false;
+    let barnaxus = d.t::<UnitType>("UNIT_BARNAXUS");
+    if g.units[caster].unit_type == barnaxus {
+        return Some(SpellUnmet::UnitType(barnaxus));
     }
     // bInCityOnly; without a city `gc.getPlayer(-1)` is None and the Python raises (False).
-    let Some(city_owner) = city_owner else { return false };
-    if g.player_get_civilization_type(city_owner) != Some(d.t::<CivilizationType>("CIVILIZATION_LUCHUIRP")) {
-        return false;
+    let Some(city_owner) = city_owner else { return Some(SpellUnmet::NotInCity) };
+    let luchuirp = d.t::<CivilizationType>("CIVILIZATION_LUCHUIRP");
+    if g.player_get_civilization_type(city_owner) != Some(luchuirp) {
+        return Some(SpellUnmet::CityCivilization(luchuirp));
     }
-    true
+    None
 }
 
 /// `spellRebuildBarnaxus(caster)`.
@@ -526,12 +529,12 @@ fn spell_recruit(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqRecruitMercenary(caster)`.
-fn req_recruit_mercenary(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_recruit_mercenary(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let p = g.units[caster].owner;
     if !g.players[p].human {
         if g.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_KHAZAD")) {
-            return false;
+            return Some(SpellUnmet::AiOnly);
         }
         let (x, y) = (g.units[caster].x, g.units[caster].y);
         let team = g.players[p].team;
@@ -541,14 +544,14 @@ fn req_recruit_mercenary(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
                 for &u in &g.map.plots[plot].units {
                     let team2 = g.players[g.units[u].owner].team;
                     if g.teams[team].at_war[team2] {
-                        return true;
+                        return None;
                     }
                 }
             }
         }
-        return false;
+        return Some(SpellUnmet::AiOnly);
     }
-    true
+    None
 }
 
 /// `spellRecruitMercenary(caster)`.
@@ -574,8 +577,8 @@ fn spell_release_from_cage(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqReligiousFervor(caster)`. Change from FFH2: its AI-only branch (5 cities with the state
 /// religion) is AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_religious_fervor(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.player_get_state_religion(g.units[caster].owner).is_some()
+fn req_religious_fervor(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(g.player_get_state_religion(g.units[caster].owner).is_some(), SpellUnmet::NoStateReligion)
 }
 
 /// `spellReligiousFervor(caster)`.
@@ -641,15 +644,15 @@ impl RepairTargets {
 }
 
 /// `reqRepair(caster)`.
-fn req_repair(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_repair(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let targets = RepairTargets::new(g.d);
     let plot = g.unit_plot(caster);
     for &u in &g.map.plots[plot].units {
         if targets.matches(g, u) && g.units[u].damage > 0 {
-            return true;
+            return None;
         }
     }
-    false
+    Some(SpellUnmet::Missing(Sought::RepairTarget(targets.siege, targets.naval, targets.golem)))
 }
 
 /// `spellRepair(caster, amount)` (XML: `spellRepair(pCaster,20)`).
@@ -724,15 +727,15 @@ fn spell_ressurection_graveyard(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqReveal(caster)`.
-fn req_reveal(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_reveal(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     if g.units[caster].ignore_hide {
-        return false;
+        return Some(SpellUnmet::SeesHidden);
     }
     let plot = g.unit_plot(caster);
     if g.map.plots[plot].owner != Some(g.units[caster].owner) {
-        return false;
+        return Some(SpellUnmet::NotInOwnBorders);
     }
-    true
+    None
 }
 
 /// `spellReveal(caster)`.
@@ -742,12 +745,12 @@ fn spell_reveal(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqRevelry(caster)`. Change from FFH2: its AI-only branch (25 population) is AI timing, in
 /// ffh-ai `world_spells` (docs/PORTING.md).
-fn req_revelry(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_revelry(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
     if g.player_is_golden_age(p) {
-        return false;
+        return Some(SpellUnmet::GoldenAge);
     }
-    true
+    None
 }
 
 /// `spellRevelry(caster)`.
@@ -769,7 +772,7 @@ fn revelation_promotions(d: &GameData) -> [PromotionType; 4] {
 }
 
 /// `reqRevelation(caster)`.
-fn req_revelation(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_revelation(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
     let team = g.players[p].team;
     let (x, y) = (g.units[caster].x, g.units[caster].y);
@@ -781,22 +784,22 @@ fn req_revelation(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
                 if g.unit_get_team(u) != team {
                     let has = &g.units[u].has_promotion;
                     if has[hidden] {
-                        return true;
+                        return None;
                     }
                     if has[hidden_nationality] {
-                        return true;
+                        return None;
                     }
                     if has[invisible] {
-                        return true;
+                        return None;
                     }
                     if has[illusion] {
-                        return true;
+                        return None;
                     }
                 }
             }
         }
     }
-    false
+    Some(SpellUnmet::Missing(Sought::HiddenUnit(3, [hidden, hidden_nationality, invisible, illusion])))
 }
 
 /// `spellRevelation(caster)`.
@@ -863,7 +866,7 @@ fn spell_ring_of_flames(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqRoar(caster)`.
-fn req_roar(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_roar(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
     let team = g.players[p].team;
     let (x, y) = (g.units[caster].x, g.units[caster].y);
@@ -874,13 +877,13 @@ fn req_roar(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
                 if !g.unit_is_immune_to_fear(u) {
                     let team2 = g.players[g.units[u].owner].team;
                     if g.teams[team].at_war[team2] {
-                        return true;
+                        return None;
                     }
                 }
             }
         }
     }
-    false
+    Some(SpellUnmet::Missing(Sought::FearableEnemy(1)))
 }
 
 /// `spellRoar(caster)`.
@@ -909,12 +912,12 @@ fn spell_roar(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqRobGrave(caster)`.
-fn req_rob_grave(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_rob_grave(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
     if !g.players[p].human && g.players[p].alignment == Some(g.d.t::<AlignmentType>("ALIGNMENT_GOOD")) {
-        return false;
+        return Some(SpellUnmet::AiOnly);
     }
-    true
+    None
 }
 
 /// `spellRobGrave(caster)`.
@@ -972,24 +975,28 @@ fn spell_sacrifice_pyre(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqSanctify(caster)`.
-fn req_sanctify(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_sanctify(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let caster_plot = g.unit_plot(caster);
     // Python's `pPlot`: the caster's plot, reassigned by the loops below.
     let mut plot = Some(caster_plot);
     let mut valid = false;
-    if g.map.plots[caster_plot].improvement_type == Some(d.t::<ImprovementType>("IMPROVEMENT_CITY_RUINS")) {
-        return true;
+    let city_ruins = d.t::<ImprovementType>("IMPROVEMENT_CITY_RUINS");
+    let graveyard = d.t::<ImprovementType>("IMPROVEMENT_GRAVEYARD");
+    if g.map.plots[caster_plot].improvement_type == Some(city_ruins) {
+        return None;
     }
-    if g.map.plots[caster_plot].improvement_type == Some(d.t::<ImprovementType>("IMPROVEMENT_GRAVEYARD")) {
-        return true;
+    if g.map.plots[caster_plot].improvement_type == Some(graveyard) {
+        return None;
     }
     let (x, y) = g.map.xy(caster_plot);
+    let mut hell_terrains = None;
     if g.is_option(GameOptionType::GAMEOPTION_NO_PLOT_COUNTER) {
         let broken_lands = d.t::<TerrainType>("TERRAIN_BROKEN_LANDS");
         let burning_sands = d.t::<TerrainType>("TERRAIN_BURNING_SANDS");
         let fields_of_perdition = d.t::<TerrainType>("TERRAIN_FIELDS_OF_PERDITION");
         let shallows = d.t::<TerrainType>("TERRAIN_SHALLOWS");
+        hell_terrains = Some([broken_lands, burning_sands, fields_of_perdition, shallows]);
         for ix in x - 1..x + 2 {
             for iy in y - 1..y + 2 {
                 plot = g.map.plot_xy(ix, iy);
@@ -1018,20 +1025,20 @@ fn req_sanctify(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         }
     }
     if !valid {
-        return false;
+        return Some(SpellUnmet::Missing(Sought::Sanctify(city_ruins, graveyard, hell_terrains)));
     }
     let p = g.units[caster].owner;
     if !g.players[p].human {
         // Python quirk: `pPlot` is the last plot of the loops above, (x+1, y+1), not the
         // caster's plot; a NULL plot's getOwner() is -1.
         if Some(p) != plot.and_then(|lp| g.map.plots[lp].owner) {
-            return false;
+            return Some(SpellUnmet::AiOnly);
         }
         if g.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_INFERNAL")) {
-            return false;
+            return Some(SpellUnmet::AiOnly);
         }
     }
-    true
+    None
 }
 
 /// `spellSanctify(caster)`.
@@ -1093,12 +1100,12 @@ fn spell_sanctify(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqSanctuary(caster)`. Change from FFH2: its AI-only branch (at war with two teams) is AI
 /// timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_sanctuary(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_sanctuary(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
     if g.players[p].num_cities() == 0 {
-        return false;
+        return Some(SpellUnmet::NoCities);
     }
-    true
+    None
 }
 
 /// `spellSanctuary(caster)`.
@@ -1122,43 +1129,48 @@ fn spell_sanctuary(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqSandLion(caster)`.
-fn req_sand_lion(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_sand_lion(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let plot = g.unit_plot(caster);
     let terrain = g.map.plots[plot].terrain_type;
-    if terrain != Some(d.t::<TerrainType>("TERRAIN_DESERT")) && terrain != Some(d.t::<TerrainType>("TERRAIN_BURNING_SANDS")) {
-        return false;
+    let desert = d.t::<TerrainType>("TERRAIN_DESERT");
+    let burning_sands = d.t::<TerrainType>("TERRAIN_BURNING_SANDS");
+    if terrain != Some(desert) && terrain != Some(burning_sands) {
+        return Some(SpellUnmet::Terrain(desert, Some(burning_sands), None));
     }
-    true
+    None
 }
 
 /// `reqScorch(caster)`.
-fn req_scorch(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_scorch(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let plot = g.unit_plot(caster);
     let p = g.units[caster].owner;
     let terrain = g.map.plots[plot].terrain_type;
-    if terrain == Some(d.t::<TerrainType>("TERRAIN_PLAINS")) || terrain == Some(d.t::<TerrainType>("TERRAIN_FIELDS_OF_PERDITION")) {
+    let plains = d.t::<TerrainType>("TERRAIN_PLAINS");
+    let fields_of_perdition = d.t::<TerrainType>("TERRAIN_FIELDS_OF_PERDITION");
+    let snow = d.t::<TerrainType>("TERRAIN_SNOW");
+    if terrain == Some(plains) || terrain == Some(fields_of_perdition) {
         if !g.players[p].human && Some(p) == g.map.plots[plot].owner {
-            return false;
+            return Some(SpellUnmet::AiOnly);
         }
-        return true;
+        return None;
     }
-    if terrain == Some(d.t::<TerrainType>("TERRAIN_SNOW")) {
+    if terrain == Some(snow) {
         if !g.players[p].human {
             if Some(p) != g.map.plots[plot].owner {
-                return false;
+                return Some(SpellUnmet::AiOnly);
             }
             if g.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_DOVIELLO")) {
-                return false;
+                return Some(SpellUnmet::AiOnly);
             }
             if g.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_ILLIANS")) {
-                return false;
+                return Some(SpellUnmet::AiOnly);
             }
         }
-        return true;
+        return None;
     }
-    false
+    Some(SpellUnmet::Terrain(plains, Some(fields_of_perdition), Some(snow)))
 }
 
 /// `spellScorch(caster)`.
@@ -1186,18 +1198,19 @@ fn spell_sing(g: &mut Game, _caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqSironasTouch(caster)`.
-fn req_sironas_touch(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_sironas_touch(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
     if !g.players[p].feat_accomplished[FeatType::FEAT_HEAL_UNIT_PER_TURN] {
-        return false;
+        // The feat is set each turn by a city with the Shrine of Sirona, and spent by the cast.
+        return Some(SpellUnmet::BuildingOncePerTurn(g.d.t::<BuildingType>("BUILDING_SHRINE_OF_SIRONA")));
     }
     if g.units[caster].damage == 0 {
-        return false;
+        return Some(SpellUnmet::CasterUndamaged);
     }
     if !g.players[p].human && g.units[caster].damage < 15 {
-        return false;
+        return Some(SpellUnmet::AiOnly);
     }
-    true
+    None
 }
 
 /// `spellSironasTouch(caster)`.
@@ -1267,22 +1280,22 @@ fn spell_snowfall_greator(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqSpreadTheCouncilOfEsus(caster)`.
-fn req_spread_the_council_of_esus(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_spread_the_council_of_esus(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let esus = g.d.t::<ReligionType>("RELIGION_COUNCIL_OF_ESUS");
     let p = g.units[caster].owner;
     let plot = g.unit_plot(caster);
     // A NULL CyCity answers isHasReligion() False.
     if g.map.plots[plot].plot_city.map_or(false, |c| g.cities[c].has_religion[esus]) {
-        return false;
+        return Some(SpellUnmet::CityHasReligion(esus));
     }
     if !g.players[p].human && g.player_get_state_religion(p) != Some(esus) {
-        return false;
+        return Some(SpellUnmet::AiOnly);
     }
-    true
+    None
 }
 
 /// `reqSpring(caster)`.
-fn req_spring(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_spring(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let plot = g.unit_plot(caster);
     let p = g.units[caster].owner;
@@ -1299,20 +1312,22 @@ fn req_spring(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         }
     }
     if !has_flames {
-        if g.map.plots[plot].terrain_type != Some(d.t::<TerrainType>("TERRAIN_DESERT")) {
-            return false;
+        let desert = d.t::<TerrainType>("TERRAIN_DESERT");
+        if g.map.plots[plot].terrain_type != Some(desert) {
+            return Some(SpellUnmet::Missing(Sought::FlamesOrTerrain(flames, smoke, desert)));
         }
-        if g.map.plots[plot].feature_type == Some(d.t::<FeatureType>("FEATURE_FLOOD_PLAINS")) {
-            return false;
+        let flood_plains = d.t::<FeatureType>("FEATURE_FLOOD_PLAINS");
+        if g.map.plots[plot].feature_type == Some(flood_plains) {
+            return Some(SpellUnmet::FeatureHere(flood_plains));
         }
         if !g.players[p].human && Some(p) != g.map.plots[plot].owner {
-            return false;
+            return Some(SpellUnmet::AiOnly);
         }
     }
     if !g.players[p].human && g.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_INFERNAL")) {
-        return false;
+        return Some(SpellUnmet::AiOnly);
     }
-    true
+    None
 }
 
 /// `spellSpring(caster)`.
@@ -1345,15 +1360,16 @@ fn spell_spring(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqSprint(caster)`.
-fn req_sprint(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    if g.units[caster].has_promotion[g.d.t::<PromotionType>("PROMOTION_FATIGUED")] {
-        return false;
+fn req_sprint(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    let fatigued = g.d.t::<PromotionType>("PROMOTION_FATIGUED");
+    if g.units[caster].has_promotion[fatigued] {
+        return Some(SpellUnmet::CasterHas(fatigued));
     }
-    true
+    None
 }
 
 /// `reqSteal(caster)`.
-fn req_steal(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_steal(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let team = g.unit_get_team(caster);
     let plot = g.unit_plot(caster);
@@ -1361,7 +1377,7 @@ fn req_steal(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         if g.unit_get_team(u) != team {
             for promotion in d.promotions.keys() {
                 if g.units[u].has_promotion[promotion] && d.promotions[promotion].equipment {
-                    return true;
+                    return None;
                 }
             }
         }
@@ -1370,12 +1386,12 @@ fn req_steal(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         if g.city_team(city) != team {
             for building in d.buildings.keys() {
                 if g.cities[city].num_real_building[building] > 0 && d.buildings[building].equipment {
-                    return true;
+                    return None;
                 }
             }
         }
     }
-    false
+    Some(SpellUnmet::Missing(Sought::Equipment))
 }
 
 /// `spellSteal(caster)`.
@@ -1433,31 +1449,35 @@ fn spell_steal(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// Shared start of `reqTakeEquipmentBuilding/Promotion/Unit(caster, unit)`: `None` where the
 /// Python returns False, else the equipment unit type and its equipment promotion.
-fn take_equipment_checks(g: &Game, caster: UnitId, call: &PyCall) -> Option<(UnitType, Option<PromotionType>)> {
+fn take_equipment_checks(g: &Game, caster: UnitId, call: &PyCall) -> Result<(UnitType, Option<PromotionType>), SpellUnmet> {
     let d = g.d;
-    if g.unit_get_unit_combat_type(caster) == Some(d.t::<UnitCombatType>("UNITCOMBAT_NAVAL")) {
-        return None;
+    let naval = d.t::<UnitCombatType>("UNITCOMBAT_NAVAL");
+    if g.unit_get_unit_combat_type(caster) == Some(naval) {
+        return Err(SpellUnmet::UnitCombat(naval));
     }
-    if g.unit_get_unit_combat_type(caster) == Some(d.t::<UnitCombatType>("UNITCOMBAT_SIEGE")) {
-        return None;
+    let siege = d.t::<UnitCombatType>("UNITCOMBAT_SIEGE");
+    if g.unit_get_unit_combat_type(caster) == Some(siege) {
+        return Err(SpellUnmet::UnitCombat(siege));
     }
-    if g.unit_get_special_unit_type(caster) == Some(d.t::<SpecialUnitType>("SPECIALUNIT_SPELL")) {
-        return None;
+    let spell_unit = d.t::<SpecialUnitType>("SPECIALUNIT_SPELL");
+    if g.unit_get_special_unit_type(caster) == Some(spell_unit) {
+        return Err(SpellUnmet::SpecialUnit(spell_unit));
     }
-    if g.units[caster].has_promotion[d.t::<PromotionType>("PROMOTION_ILLUSION")] {
-        return None;
+    let illusion = d.t::<PromotionType>("PROMOTION_ILLUSION");
+    if g.units[caster].has_promotion[illusion] {
+        return Err(SpellUnmet::CasterHas(illusion));
     }
     let unit = equipment_unit(g, call);
     let promotion = d.units[unit].equipment_promotion;
-    if has_promotion_opt(g, caster, promotion) {
-        return None;
+    if let Some(held) = promotion.filter(|_| has_promotion_opt(g, caster, promotion)) {
+        return Err(SpellUnmet::CasterHas(held));
     }
-    Some((unit, promotion))
+    Ok((unit, promotion))
 }
 
 /// `reqTakeEquipmentBuilding(caster, unit)`.
-fn req_take_equipment_building(g: &Game, caster: UnitId, call: &PyCall) -> bool {
-    take_equipment_checks(g, caster, call).is_some()
+fn req_take_equipment_building(g: &Game, caster: UnitId, call: &PyCall) -> Option<SpellUnmet> {
+    take_equipment_checks(g, caster, call).err()
 }
 
 /// `spellTakeEquipmentBuilding(caster, unit)`.
@@ -1476,9 +1496,12 @@ fn spell_take_equipment_building(g: &mut Game, caster: UnitId, call: &PyCall) {
 }
 
 /// `reqTakeEquipmentPromotion(caster, unit)`.
-fn req_take_equipment_promotion(g: &Game, caster: UnitId, call: &PyCall) -> bool {
+fn req_take_equipment_promotion(g: &Game, caster: UnitId, call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
-    let Some((_, promotion)) = take_equipment_checks(g, caster, call) else { return false };
+    let (_, promotion) = match take_equipment_checks(g, caster, call) {
+        Ok(checked) => checked,
+        Err(r) => return Some(r),
+    };
     let p = g.units[caster].owner;
     let plot = g.unit_plot(caster);
     let mut holder = None;
@@ -1487,24 +1510,26 @@ fn req_take_equipment_promotion(g: &Game, caster: UnitId, call: &PyCall) -> bool
             holder = Some(u);
         }
     }
-    let Some(holder) = holder else { return false };
+    let Some(holder) = holder else { return Some(SpellUnmet::Missing(Sought::Holder(promotion))) };
     if g.units[holder].has_casted {
-        return false;
+        return Some(SpellUnmet::HolderHasCast);
     }
-    if g.units[holder].unit_type == d.t::<UnitType>("UNIT_BARNAXUS") && promotion == Some(d.t::<PromotionType>("PROMOTION_PIECES_OF_BARNAXUS")) {
-        return false;
+    let barnaxus = d.t::<UnitType>("UNIT_BARNAXUS");
+    let pieces = d.t::<PromotionType>("PROMOTION_PIECES_OF_BARNAXUS");
+    if g.units[holder].unit_type == barnaxus && promotion == Some(pieces) {
+        return Some(SpellUnmet::UnitKeeps(barnaxus, pieces));
     }
     if !g.players[p].human {
         // FfH: strength more than 2 above the holder's; rating more than 20 (docs/PORTING.md).
         if g.unit_rating(caster) - 20 <= g.unit_rating(holder) {
-            return false;
+            return Some(SpellUnmet::AiOnly);
         }
         // (`promotion` is set: the holder has it.)
         if promotion.map_or(false, |pr| d.units[g.units[holder].unit_type].free_promotions[pr]) {
-            return false;
+            return Some(SpellUnmet::AiOnly);
         }
     }
-    true
+    None
 }
 
 /// `spellTakeEquipmentPromotion(caster, unit)`.
@@ -1540,11 +1565,14 @@ fn equipment_unit_holder(g: &Game, p: PlayerId, plot: PlotIdx, unit: UnitType) -
 }
 
 /// `reqTakeEquipmentUnit(caster, unit)`.
-fn req_take_equipment_unit(g: &Game, caster: UnitId, call: &PyCall) -> bool {
-    let Some((unit, _)) = take_equipment_checks(g, caster, call) else { return false };
+fn req_take_equipment_unit(g: &Game, caster: UnitId, call: &PyCall) -> Option<SpellUnmet> {
+    let (unit, _) = match take_equipment_checks(g, caster, call) {
+        Ok(checked) => checked,
+        Err(r) => return Some(r),
+    };
     let p = g.units[caster].owner;
     let plot = g.unit_plot(caster);
-    equipment_unit_holder(g, p, plot, unit).is_some()
+    need(equipment_unit_holder(g, p, plot, unit).is_some(), SpellUnmet::Missing(Sought::Unit(unit)))
 }
 
 /// `spellTakeEquipmentUnit(caster, unit)`.
@@ -1558,7 +1586,7 @@ fn spell_take_equipment_unit(g: &mut Game, caster: UnitId, call: &PyCall) {
 }
 
 /// `reqTaunt(caster)`.
-fn req_taunt(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_taunt(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let (x, y) = (g.units[caster].x, g.units[caster].y);
     let p = g.units[caster].owner;
     let team = g.players[p].team;
@@ -1575,7 +1603,7 @@ fn req_taunt(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
             }
         }
     }
-    valid
+    need(valid, SpellUnmet::Missing(Sought::TauntTarget(1)))
 }
 
 /// `spellTaunt(caster)`: adjacent enemies that fail to resist attack the caster's plot.
@@ -1673,23 +1701,24 @@ impl Learners {
 }
 
 /// `reqTeachSpellcasting(caster)`.
-fn req_teach_spellcasting(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_teach_spellcasting(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let learners = Learners::new(g.d);
     let list = teachable_promotions(g, caster);
-    if !list.is_empty() {
-        let plot = g.unit_plot(caster);
-        let p = g.units[caster].owner;
-        for &u in &g.map.plots[plot].units {
-            if learners.matches(g, u, p) {
-                for &promotion in &list {
-                    if !g.units[u].has_promotion[promotion] {
-                        return true;
-                    }
+    if list.is_empty() {
+        return Some(SpellUnmet::Missing(Sought::SphereToTeach));
+    }
+    let plot = g.unit_plot(caster);
+    let p = g.units[caster].owner;
+    for &u in &g.map.plots[plot].units {
+        if learners.matches(g, u, p) {
+            for &promotion in &list {
+                if !g.units[u].has_promotion[promotion] {
+                    return None;
                 }
             }
         }
     }
-    false
+    Some(SpellUnmet::Missing(Sought::Learner))
 }
 
 /// `spellTeachSpellcasting(caster)`.
@@ -1728,15 +1757,15 @@ fn spell_treetop_defence(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqTrust(caster)`.
-fn req_trust(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_trust(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
     if g.players[p].feat_accomplished[FeatType::FEAT_TRUST] {
-        return false;
+        return Some(SpellUnmet::CastOnce);
     }
     if g.player_is_barbarian(p) {
-        return false;
+        return Some(SpellUnmet::Barbarian);
     }
-    true
+    None
 }
 
 /// `spellTrust(caster)` (its `pCity = pPlayer.getCapitalCity()` is unused).
@@ -1782,21 +1811,21 @@ fn spell_unyielding_order(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqUpgradeDovielloWarrior(caster)`.
-fn req_upgrade_doviello_warrior(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_upgrade_doviello_warrior(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let p = g.units[caster].owner;
     if !g.players[p].human {
         let team = g.players[p].team;
         if g.team_get_at_war_count(team, true) == 0 {
-            return false;
+            return Some(SpellUnmet::AiOnly);
         }
     }
-    true
+    None
 }
 
 /// `reqVeilOfNight(caster)`. Change from FFH2: its only condition was AI-only (25 units and at
 /// peace); it is AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_veil_of_night(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
+fn req_veil_of_night(_g: &Game, _caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    None
 }
 
 /// `spellVeilOfNight(caster)`.
@@ -1811,32 +1840,23 @@ fn spell_veil_of_night(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqVitalize(caster)`.
-fn req_vitalize(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_vitalize(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let plot = g.unit_plot(caster);
     if g.map.plots[plot].owner != Some(g.units[caster].owner) {
-        return false;
+        return Some(SpellUnmet::NotInOwnBorders);
     }
     if g.plot_is_water(plot) {
-        return false;
+        return Some(SpellUnmet::OnWater);
     }
     let terrain = g.map.plots[plot].terrain_type;
-    if terrain == Some(d.t::<TerrainType>("TERRAIN_GRASS")) {
-        return false;
+    for name in ["TERRAIN_GRASS", "TERRAIN_BURNING_SANDS", "TERRAIN_BROKEN_LANDS", "TERRAIN_FIELDS_OF_PERDITION", "TERRAIN_MARSH"] {
+        let t = d.t::<TerrainType>(name);
+        if terrain == Some(t) {
+            return Some(SpellUnmet::TerrainHere(t));
+        }
     }
-    if terrain == Some(d.t::<TerrainType>("TERRAIN_BURNING_SANDS")) {
-        return false;
-    }
-    if terrain == Some(d.t::<TerrainType>("TERRAIN_BROKEN_LANDS")) {
-        return false;
-    }
-    if terrain == Some(d.t::<TerrainType>("TERRAIN_FIELDS_OF_PERDITION")) {
-        return false;
-    }
-    if terrain == Some(d.t::<TerrainType>("TERRAIN_MARSH")) {
-        return false;
-    }
-    true
+    None
 }
 
 /// `spellVitalize(caster)`.
@@ -1859,28 +1879,31 @@ fn spell_vitalize(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqWane(caster)`.
-fn req_wane(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_wane(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
-    if g.unit_get_unit_combat_type(caster) == Some(d.t::<UnitCombatType>("UNITCOMBAT_ANIMAL")) {
-        return false;
+    let animal = d.t::<UnitCombatType>("UNITCOMBAT_ANIMAL");
+    if g.unit_get_unit_combat_type(caster) == Some(animal) {
+        return Some(SpellUnmet::UnitCombat(animal));
     }
-    if g.unit_get_unit_combat_type(caster) == Some(d.t::<UnitCombatType>("UNITCOMBAT_BEAST")) {
-        return false;
+    let beast = d.t::<UnitCombatType>("UNITCOMBAT_BEAST");
+    if g.unit_get_unit_combat_type(caster) == Some(beast) {
+        return Some(SpellUnmet::UnitCombat(beast));
     }
     if g.unit_is_immortal(caster) {
-        return false;
+        return Some(SpellUnmet::Immortal);
     }
     let p = g.units[caster].owner;
-    if g.players[p].unit_class_count[d.t::<UnitClassType>("UNITCLASS_SHADE")] >= 4 {
-        return false;
+    let shade = d.t::<UnitClassType>("UNITCLASS_SHADE");
+    if g.players[p].unit_class_count[shade] >= 4 {
+        return Some(SpellUnmet::ClassLimit(shade, 4));
     }
-    true
+    None
 }
 
 /// `reqWarcry(caster)`. Change from FFH2: its only condition was AI-only (25 units and at war); it
 /// is AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_warcry(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
+fn req_warcry(_g: &Game, _caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    None
 }
 
 /// `spellWarcry(caster)`.
@@ -1895,16 +1918,18 @@ fn spell_warcry(g: &mut Game, caster: UnitId, _call: &PyCall) {
 }
 
 /// `reqWhiteout(caster)`.
-fn req_whiteout(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+fn req_whiteout(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     let d = g.d;
     let plot = g.unit_plot(caster);
-    if g.units[caster].has_promotion[d.t::<PromotionType>("PROMOTION_HIDDEN")] {
-        return false;
+    let hidden = d.t::<PromotionType>("PROMOTION_HIDDEN");
+    if g.units[caster].has_promotion[hidden] {
+        return Some(SpellUnmet::CasterHas(hidden));
     }
-    if g.map.plots[plot].terrain_type != Some(d.t::<TerrainType>("TERRAIN_SNOW")) {
-        return false;
+    let snow = d.t::<TerrainType>("TERRAIN_SNOW");
+    if g.map.plots[plot].terrain_type != Some(snow) {
+        return Some(SpellUnmet::Terrain(snow, None, None));
     }
-    true
+    None
 }
 
 /// `spellWonder(caster)`: 3-5 random effects.
@@ -2054,11 +2079,11 @@ fn spell_wonder(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// `reqWorldbreak(caster)`. Change from FFH2: its AI-only branch (an Armageddon counter of 50) is
 /// AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_worldbreak(g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
+fn req_worldbreak(g: &Game, _caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
     if g.get_global_counter() == 0 {
-        return false;
+        return Some(SpellUnmet::ArmageddonCounterZero);
     }
-    true
+    None
 }
 
 /// `spellWorldbreak(caster)`.

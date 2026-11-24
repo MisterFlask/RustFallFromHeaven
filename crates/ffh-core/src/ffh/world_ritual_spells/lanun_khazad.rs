@@ -161,8 +161,8 @@ pub fn raging_seas_ok(g: &Game, caster: UnitId, t: PlotIdx) -> bool {
 }
 
 /// `reqRagingSeas(pCaster)`: no storm of the caster's owner holds.
-fn req_raging_seas(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.player_storm(g.units[caster].owner).is_none()
+fn req_raging_seas(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(g.player_storm(g.units[caster].owner).is_none(), SpellUnmet::StormActive)
 }
 
 /// `targetsRagingSeas(pCaster)`: the water plots the caster's team has revealed.
@@ -202,8 +202,11 @@ pub fn steer_ok(g: &Game, caster: UnitId, t: PlotIdx) -> bool {
 }
 
 /// `reqSteerTheStorm(pCaster)`: the owner's storm holds and has not moved this turn.
-fn req_steer_the_storm(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    g.player_storm(g.units[caster].owner).is_some_and(|i| g.area_effects[i].moved != g.game_turn())
+fn req_steer_the_storm(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    match g.player_storm(g.units[caster].owner) {
+        None => Some(SpellUnmet::NoStorm),
+        Some(i) => need(g.area_effects[i].moved != g.game_turn(), SpellUnmet::StormMoved),
+    }
 }
 
 /// `targetsSteerTheStorm(pCaster)`: where the storm may move.
@@ -260,8 +263,8 @@ pub fn delve_ok(g: &Game, caster: UnitId, t: PlotIdx) -> bool {
 }
 
 /// `reqTheDelve(pCaster)`.
-fn req_the_delve(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    delve_from_ok(g, caster)
+fn req_the_delve(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(delve_from_ok(g, caster), SpellUnmet::Missing(Sought::DelveHill))
 }
 
 /// `targetsTheDelve(pCaster)`: the hills the tunnel may lead to, in plot order.
@@ -306,8 +309,8 @@ pub fn enter_the_delve_to(g: &Game, u: UnitId) -> Option<PlotIdx> {
 }
 
 /// `reqEnterTheDelve(pCaster)`.
-fn req_enter_the_delve(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    enter_the_delve_to(g, caster).is_some()
+fn req_enter_the_delve(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(enter_the_delve_to(g, caster).is_some(), SpellUnmet::Missing(Sought::DelveEnd))
 }
 
 /// `spellEnterTheDelve(pCaster)`: the unit moves to the tunnel's other end, out of its group, with

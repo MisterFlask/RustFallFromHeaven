@@ -338,6 +338,19 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
                 extra.set("why", why);
             }
         }
+        // A spell shown but not castable now says why (the card holder's reason is set above):
+        // the refusal of the first selected unit that could ever cast it (the selection's
+        // combat first).
+        if !enabled && extra.get("why").is_none() {
+            let who: &[UnitId] = match units.iter().position(|&u| g.unit_can_cast(u, s, true)) {
+                Some(i) if !selection::is_busy(g, units) => &units[i..=i],
+                _ => units,
+            };
+            let why = crate::view::reasons::command_refusal(g, who, CommandType::COMMAND_CAST, k, -1);
+            if !why.is_empty() {
+                extra.set("why", why);
+            }
+        }
         // Explore Lair: the odds for the selected units that can cast it (each explores in turn).
         if info.py_result.starts_with("spellExploreLair") {
             let casters: Vec<UnitId> = units.iter().copied().filter(|&u| g.unit_can_cast(u, s, true)).collect();

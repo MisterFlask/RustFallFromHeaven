@@ -153,8 +153,8 @@ impl Game {
 }
 
 /// `reqBuyOut(caster)`: an enemy unit next to the Paymaster can be bought.
-fn req_buy_out(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    !g.unit_buy_out_targets(caster).is_empty()
+fn req_buy_out(g: &Game, caster: UnitId, _call: &PyCall) -> Option<SpellUnmet> {
+    need(!g.unit_buy_out_targets(caster).is_empty(), SpellUnmet::Missing(Sought::BuyOutTarget))
 }
 
 /// `targetsBuyOut(caster)`: the units it can buy out.
