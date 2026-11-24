@@ -1176,7 +1176,7 @@ fn strike_bar(g: &Game, p: PlayerId) -> i32 {
 
 /// The battles `p`'s units next to `tp` fight on it this turn, as the rules fight them: for each
 /// plot next to it that holds one of `units`, every unit of ours there that can attack it (an
-/// order from that plot commits them all: the formation, then the reserve on the next order),
+/// order from that plot commits them all: the strongest squad, then the next on the next order),
 /// the plot with the most first (`forecast::by_plot`'s order, which the strike follows).
 fn ring_attacks(g: &Game, p: PlayerId, tp: PlotIdx, units: &[UnitId]) -> crate::forecast::Attacks {
     let mut plots: Vec<PlotIdx> = units.iter().filter_map(|&u| g.unit_plot_opt(u)).collect();

@@ -230,11 +230,13 @@ impl Controller for Ai {
             outposts::turn(g, p); // outposts raised to cities (docs/NAVAL.md, 9.2)
             caravans::turn(self, g, p); // a Caravan for a trade route (docs/TRADE.md, section 8)
         }
+        // Squads massed (the best five places together) before the turn's plans and attacks: the
+        // forecasts fight the squads as they stand (docs/ENGAGEMENTS.md).
+        squads::turn(g, p);
         if !v.barbarian {
             campaign::plan(g, &mut v);
             casting::barrage(g, &v);
         }
-        squads::turn(g, p); // squads massed (the best five places together) before the turn's attacks (docs/ENGAGEMENTS.md)
         units::play(self, g, &mut v);
         squads::turn(g, p); // and again for the battles it defends (new arrivals massed in)
         if !v.barbarian {

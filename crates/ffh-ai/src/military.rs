@@ -393,7 +393,7 @@ fn old_field(g: &Game, grp: GroupId, q: PlotIdx, city: bool, capture: bool, foug
 }
 
 /// [`assault`] on the forecast (switch `FORECAST`): each attack is one engagement of the pool on
-/// the group's plot (the formation, then its reserve on the next order), decided before each on
+/// the group's plot (its strongest squad, then the next on the next order), decided before each on
 /// the forecast of the battles the units left there fight this turn ([`field_call`]).
 fn assault_forecast(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
     let p = v.p;

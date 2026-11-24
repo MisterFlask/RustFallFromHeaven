@@ -47,7 +47,7 @@ pub(crate) fn field(g: &Game, p: PlayerId, q: PlotIdx, s: &Sim, city: bool, acte
 
 /// `field2`: the rules' forecast ([`crate::forecast`]) of the battles player `p`'s attack from
 /// `from` on `q` fights this turn (the pool of `p`'s units on `from` that can attack it, as the
-/// rules pick it, then its reserve: [`crate::forecast::attack_turn`]), beside `field`: the same
+/// rules pick it, then its other squads: [`crate::forecast::attack_turn`]), beside `field`: the same
 /// outcome and horizon, pct the chance the plot falls, `acted` the old estimate's decision; ctx
 /// `one`: the chance it falls in the first battle alone.
 pub(crate) fn field2(g: &Game, cache: Option<&Cache>, p: PlayerId, from: PlotIdx, q: PlotIdx, city: bool, acted: bool, src: &'static str) {
@@ -81,7 +81,7 @@ fn est_ctx(e: &Est) -> Obj {
 
 /// `assault2` and `strike2` (`kind`): the rules' forecast of our `units` next to `city` taking it
 /// this turn: the battles they fight one after another, the plot with the most of them first,
-/// each plot's pool then its reserve ([`crate::forecast::by_plot`], [`crate::forecast::assault`]),
+/// each plot's squads one after another ([`crate::forecast::by_plot`], [`crate::forecast::assault`]),
 /// beside `assault` and `strike`: the same outcome and horizon, the old decision's `acted`; ctx
 /// `one`: the chance the first battle alone takes it.
 pub(crate) fn city2(g: &Game, cache: Option<&Cache>, kind: &'static str, p: PlayerId, city: CityId, units: &[UnitId], horizon: i32, acted: bool) {

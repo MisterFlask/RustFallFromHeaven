@@ -8,7 +8,7 @@
 //!   one attack fights): the chance the plot falls, our line is wiped out or repulsed, and the
 //!   losses on each side.
 //! - [`attack_turn`], [`assault`]: the battles our units next to a plot (a city) fight in a
-//!   turn, each plot's pool and then its reserve, until it falls.
+//!   turn, each plot's squads one after another (the strongest first), until it falls.
 //! - [`holds`]: the defensive question for one of our cities: each enemy stack we see that can
 //!   reach it within [`HOLD_STRIKE_TURNS`] turns (and the union of one player's stacks), its
 //!   attacks on the city as the garrison stands and with the units of ours that can get there
@@ -123,7 +123,7 @@ fn fnv(h: &mut u64, v: i64) {
 /// What a forecast reads that changes within a turn: every unit involved (and every unit on the
 /// target): where it is, its health, moves, attacks, experience, level, which promotions it has
 /// (each promotion's id, in id order: a spell that swaps one promotion for another changes the
-/// key) and fortification; the target's owner, feature and improvement, and its city's defence
+/// key), fortification, its squad and the battles that squad fought this turn; the target's owner, feature and improvement, and its city's defence
 /// damage and the damage of each of its Sentinels.
 fn fingerprint(g: &Game, units: &[UnitId], target: PlotIdx) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
@@ -143,6 +143,10 @@ fn fingerprint(g: &Game, units: &[UnitId], target: PlotIdx) -> u64 {
         }
         // The end of the unit's promotions (no promotion id is negative).
         fnv(&mut h, -1);
+        // Its squad, and the battles that squad fought this turn: a battle is one squad against
+        // one squad (the attacker's strongest; the defender's among those that fought the fewest).
+        fnv(&mut h, x.squad.map_or(-1, |s| s.0 as i64));
+        fnv(&mut h, x.squad.map_or(0, |s| g.squad_fought_this_turn(s) as i64));
     }
     let plot = &g.map.plots[target];
     fnv(&mut h, plot.owner.map_or(-1, |o| o.0 as i64));
@@ -172,7 +176,7 @@ pub fn forecast(g: &Game, cache: Option<&Cache>, attackers: &[UnitId], from: Plo
 }
 
 /// The rules' forecast of the battles `attacks` fight on `target` one after another in a turn
-/// (each group's pool, then its reserve: [`Game::engage_forecast_waves`]), against what stands
+/// (each group's squads, the strongest first: [`Game::engage_forecast_waves`]), against what stands
 /// there plus `extras`; as [`forecast`] otherwise.
 pub fn forecast_turn(g: &Game, cache: Option<&Cache>, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn) -> Option<Forecast> {
     forecast_in(g, cache, true, attacks, target, extras, runs, when, WarTest::AtWar)
@@ -461,7 +465,7 @@ pub fn holds(g: &Game, cache: Option<&Cache>, flood: &mut Flood, city: CityId) -
     }
     let by = |t: i32| -> Vec<UnitId> { arrive.iter().filter(|&&(_, at)| at <= t).map(|&(u, _)| u).collect() };
     let mut forecasts = 0;
-    // Each attack: its battles one after another (the stack's pool, then its reserve).
+    // Each attack: its battles one after another (the stack's squads, the strongest first).
     let mut fall = |attacks: &[(Vec<UnitId>, PlotIdx)], extras: &[UnitId]| -> Option<i32> {
         forecasts += 1;
         forecast_turn(g, cache, attacks, cp, extras, HOLD_RUNS, ForecastTurn::Next).map(|f| f.falls_permille)
