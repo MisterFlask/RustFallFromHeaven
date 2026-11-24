@@ -11,7 +11,6 @@ between playings where the piece has one (`gap`).
 | `onslaught` | Onslaught | Battle | E minor, four beats in a bar, 152 to the minute | 40 bars, about 1:03 (63.2 s); no silence: the last bar turns back into the first |
 | `harvest` | Harvest Round | Folk dance | D Dorian, a jig: six eighths in a bar, the eighth the beat, 348 to the minute, slowing to 300 at the end | 61 bars, about 1:03 (63.3 s); 3 s of silence |
 | `umbra` | Umbra | Arcane | A minor slipping to minor chords a third away (F minor, C sharp minor), four beats in a bar, 60 to the minute, slowing to 52 at the end | 26 bars, about 1:45 (104.9 s); 6 s of silence |
-| `banners` | Banners | 8-bit march | C major, four beats in a bar, 132 to the minute | 35 bars, about 1:04 (63.6 s); 2 s of silence |
 
 Vigil, in outline: a harp alone states the ground (a bass that walks down from D to A); a flute
 has the theme over it (bars 4-11); the strings and a choir join for its repeat (12-19); the horn
@@ -32,10 +31,6 @@ second twice (20-35), a third over little but the drum (36-51), and the first ag
 Umbra, in outline: a bell and a drone (bars 0-1); a celesta turns a figure of three notes against
 the bar's eight eighths, and a flute has a long note and its lower neighbour (2-9); the high
 strings over a choir (10-17); the flute again, ending on the ninth and its resolution (18-25).
-
-Banners, in outline: three console voices and a noise channel (a thin pulse for the tune, a square
-running the chord in sixteenths, a triangle for the bass): a fanfare (bars 0-1), the tune twice
-(2-17), a middle in A minor (18-25), the tune again and a close through A flat and B flat (26-34).
 
 ## The modules
 
@@ -128,10 +123,6 @@ soft ceiling and the listener's volume (`out`).
 | `shaker` | A very short burst of noise through a high bandpass; the note is ignored. |
 | `cymbal` | Two bursts of noise, highpassed and through a high bandpass, dying over a few tenths of a second; the note is ignored. |
 | `bell` | Decaying sine partials of a cast bell: the hum an octave under the note, a minor third, the fifth, the octave and the upper partials, the low ones ringing longest. |
-| `chipLead` | A pulse a quarter of the period wide (a band-limited wave), up at once, sinking to 0.7 of its level and stopped dead; a long note wavers. |
-| `chipHarm` | A square wave made the same way, sinking to half its level. |
-| `chipBass` | A triangle wave made the same way, held at its level. |
-| `chipNoise` | The console's drums, by the note: below C3 a kick (a sine that drops from 150 to 42 Hz), up to B4 a snare (bandpassed noise), from C5 a hat (highpassed noise). |
 | the hall | A `ConvolverNode` with a computed impulse response: early reflections, then noise that dies away, the highs first (3.6 s in the bass, 1.3 s at the top), different in each ear. |
 | the output | The mix through a `tanh` soft ceiling (a `WaveShaperNode`) in place of clipping, then the volume. |
 
@@ -226,10 +217,9 @@ against the dry sound; "speed" is the piece's length over the time the render to
 | Onslaught | -18.9 | 0.74 | -23.4, -16.2 | -10.6 | 1709 | 10x |
 | Harvest Round | -20.3 | 0.56 | -24.8, -17.5 | -12.9 | 1250 | 16x |
 | Umbra | -21.2 | 0.46 | -23.5, -19.8 | -4.5 | 309 | 16x |
-| Banners | -20.8 | 0.53 | -21.2, -20.2 | -39.2 | 1343 | 25x |
 
 - No NaN and no sample above 0.8 in any piece, in the first playing or the second.
-- At 48 kHz the four new pieces read within 0.3 dB of the above, with no NaN and no sample above
+- At 48 kHz the three new pieces read within 0.3 dB of the above, with no NaN and no sample above
   0.8 (peaks 0.51 to 0.72).
 - Two playings back to back on one orchestra, handed out by the `Conductor`: each reads as it does
   alone (within 0.2 dB), the silence between them is silent (-67 dB or less) where the piece has
@@ -238,12 +228,12 @@ against the dry sound; "speed" is the piece's length over the time the render to
   -26.8, marcato -27.9, bass -28.7, horn -28.6, timpani -29.1, pad -33.1, violins -37.6, snare
   -36.7, cymbal -46.0; Harvest Round's whistle -24.6, lute -26.2, fiddle -28.7, drum -30.5, bass
   -33.0, shaker -46.0; Umbra's flute -25.2, bass -29.1, celesta -30.7, choir -31.1, pad -31.2,
-  violins -33.9, harp -35.5, bell -35.7; Banners' bass -25.0, tune -25.3, square -28.3, noise
-  -30.6. A drum's figure is low because it sounds for a moment at a time: its peaks are 0.2 to 0.3.
-- `music-lint` on the four new pieces: no note out of range, no low thirds, no clash in Onslaught,
-  Harvest Round or Banners; Umbra's 31 are its half-second lower neighbours and anticipations and
-  the ninth it ends on, all written. The strong-beat notes outside the chord (12 in Onslaught, 3
-  in Banners) are half-beat appoggiaturas.
+  violins -33.9, harp -35.5, bell -35.7. A drum's figure is low because it sounds for a moment at
+  a time: its peaks are 0.2 to 0.3.
+- `music-lint` on the three new pieces: no note out of range, no low thirds, no clash in Onslaught
+  or Harvest Round; Umbra's 31 are its half-second lower neighbours and anticipations and the
+  ninth it ends on, all written. The 12 strong-beat notes outside the chord in Onslaught are
+  half-beat appoggiaturas.
 - Vigil reads as it did before the other pieces and their instruments were added: its compiled
   notes are identical, and so are the numbers below.
 
@@ -278,6 +268,8 @@ Vigil alone, in more detail (2026-11-23: 180.7 s with the tail, rendered in abou
   while the page is hidden (the page was told so: headless Chrome hides none) and running again
   when it is shown. No console message.
 
-What the numbers do not say is whether any of it is beautiful. Nobody had heard a piece when it
-was merged: levels, pitches and balance are measured, taste is not. Change the scores and the
-`MIX` by ear, then measure again.
+What the numbers do not say is whether any of it is beautiful: levels, pitches and balance are
+measured, taste is not. The owner listened on 2026-11-24 and kept Vigil, Onslaught, Harvest Round
+and Umbra. A fifth piece, Banners (a march on the pulse, square and triangle voices of an old game
+console), was dropped then, and its voices with it. Change the scores and the `MIX` by ear, then
+measure again.
