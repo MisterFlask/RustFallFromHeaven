@@ -149,10 +149,12 @@ fn our_ship(g: &Game, u: UnitId) -> bool {
     g.unit_get_domain_type(u) == DomainType::DOMAIN_SEA && !g.unit_is_cargo(u) && armed(g, u) && g.unit_get_cargo_units(u).is_empty()
 }
 
-/// An enemy sea unit of team `team` sees on `q`: at war with it, not hidden from it.
+/// An enemy sea unit team `team` sees: at war with it, or a ship of hidden nationality (a pirate:
+/// everyone's enemy by the rules' `unit_is_enemy`, which the guard's own test reads; with the
+/// war test alone a guard sailed out to a pirate and never attacked it), not hidden from it.
 fn enemy_ship(g: &Game, team: TeamId, e: UnitId) -> bool {
     let et = g.unit_get_team(e);
-    et != team && g.at_war(team, et) && g.unit_get_domain_type(e) == DomainType::DOMAIN_SEA && !g.unit_is_cargo(e) && !g.unit_is_invisible(e, team, false)
+    et != team && g.unit_is_enemy(e, Some(team), None) && g.unit_get_domain_type(e) == DomainType::DOMAIN_SEA && !g.unit_is_cargo(e) && !g.unit_is_invisible(e, team, false)
 }
 
 /// Visible enemy ships on water plot `q`.
