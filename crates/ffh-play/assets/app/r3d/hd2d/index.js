@@ -288,9 +288,25 @@ export class MapHd2d extends Map3D {
     saveConfig(cfg, STORE);
   }
 
-  /** The light of the frame: LIGHT, turned red and dim as the Armageddon counter climbs. */
+  /** The light of the frame: LIGHT at every Armageddon counter (the owner's call, 2026-11-23: the
+   *  counter changes the water only; `waterLight`). */
   light() {
-    return doomLight(this.doom().light);
+    return LIGHT;
+  }
+
+  /** The light the water is drawn in, as uniforms over the frame's (pipeline.js, the water's
+   *  draw): LIGHT turned red and dim as the Armageddon counter climbs (config.js doomLight), its
+   *  exposure folded into its colours (the frame's exposure stays LIGHT's). Null at counter 0. */
+  waterLight() {
+    const t = this.doom().light;
+    if (!(t > 0)) return null;
+    if (this.waterLightAt?.t !== t) {
+      const L = doomLight(t);
+      const e = L.exposure / LIGHT.exposure;
+      const lit = ([c, k]) => c.map((v) => v * k * e);
+      this.waterLightAt = { t, U: { uSunColor: lit(L.sun), uSkyColor: lit(L.sky), uGroundColor: lit(L.ground), uHazeColor: L.haze.map((v) => v * e), uShadowTint: L.shadowTint } };
+    }
+    return this.waterLightAt.U;
   }
 
   /** How far the world has gone toward its end (config.js doomOf): from the counter of the player
@@ -439,7 +455,7 @@ export class MapHd2d extends Map3D {
       farDepth: cam.dist * 2.2,
       mood: this.scene.tex.mood,
       mood2: this.scene.tex.mood2,
-      // The land's grade toward the end of the world (the mood pass's uDoom).
+      // The water's grade toward the end of the world (the mood pass's uDoom).
       doom: this.doom().land,
       dusk: this.doom().light,
       mapSize: [this.world.w, this.world.h],
@@ -448,6 +464,7 @@ export class MapHd2d extends Map3D {
       idle: this.cfg.animate && !v.reduceMotion() ? 1 : 0,
     };
     fr.uniforms.uExposure = fr.exposure;
+    fr.waterLight = this.waterLight();
   }
 }
 

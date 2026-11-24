@@ -2816,7 +2816,9 @@ void main() {
   // The paint filter spares the glitter (it would erase so small a mark); it blooms a little.
   oColor = vec4(col, clamp(glit * 3.0, 0.0, 0.9));
   oND = vec4(normalize((uView * vec4(0.0, 1.0, 0.0, 0.0)).xyz), zW);
-  oEmit = vec4(uSunColor * glit * 0.35, 0.0);
+  // (The object id -1: the water's mark, by which the HD-2D mood pass grades the water alone --
+  // the keep mask cannot tell it from a model's, also 0. No figure's id is negative.)
+  oEmit = vec4(uSunColor * glit * 0.35, -1.0);
 }`;
 
 // --------------------------------------------------------------------------------------------

@@ -402,7 +402,7 @@ export class Pipeline {
       // Seeing into the water and the mirror read the grabbed view depth, which only a float target
       // holds (an 8-bit one clamps it to 1): without one the water is drawn opaque, unmirrored.
       const hdr = this.hdr ? 1 : 0;
-      scene.drawWater(this.p.water, { ...SU, uSceneColor: this.t.sceneCopy, uSceneND: this.t.ndCopy, uReflect: (cfg.reflections ?? 1) * hdr, uRefract: (cfg.refraction ?? 1) * hdr }, false, this.p.river ?? null);
+      scene.drawWater(this.p.water, { ...SU, ...(fr.waterLight ?? {}), uSceneColor: this.t.sceneCopy, uSceneND: this.t.ndCopy, uReflect: (cfg.reflections ?? 1) * hdr, uRefract: (cfg.refraction ?? 1) * hdr }, false, this.p.river ?? null);
       // The packed scene into the three textures the later passes read.
       if (pk) {
         gl.disable(gl.DEPTH_TEST);

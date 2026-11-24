@@ -925,13 +925,19 @@ join now); the faces as paving (redrawn).
   under half, as with the region moods. At counter 0 the light is LIGHT itself and the pass adds
   nothing. Screenshots: `docs/hd2d/armageddon-0-50-100.jpg`. Not done: the sprites themselves
   (dead or bare trees, ash in the air) do not change.
-  Contrast kept (the owner's report, 2026-11-23: the map washed out and was hard to read as the
-  counter climbed; the screenshots above predate this): the sea keeps most of its colour at the
-  middle of the counter instead of dulling to a grey slate, and ends darker than the land (blood
-  at half its value, from two thirds); the red cast is a multiply by the pixel's value, heavy on
-  the shade and light on what is lit, instead of one flat multiply; the trees' dead foliage (the
-  cards) is a quarter darker than the dead grass under it; the ember haze of the distance and the
-  closing corners are halved (0.15 and 0.2).
+  **Water only** (the owner's call, 2026-11-23, after trying a version that kept more of the
+  land's contrast: the map was hard to read as the counter climbed). The counter no longer changes
+  the land: the frame's light is LIGHT at every counter, and the foliage's withering, the red cast
+  on the land, the cracks on all land, the ember distance and the closing corners over the land
+  are gone, so the paragraph above and its screenshots describe the land as it was. The water
+  (the sea and the rivers) keeps the whole treatment: it alone is lit by `doomLight`
+  (`hd2d/index.js waterLight`, uniforms laid over the frame's for the water's draw, the light's
+  exposure folded into its colours), and the mood pass's Armageddon block applies where the
+  water's shader left its mark (the object id -1 in the emission's alpha, `WATER_FS`; its keep
+  mask is 0 as a model's is, which had turned mountains and farms red with the sea). In it the
+  sea keeps most of its colour at the middle of the counter and deepens (no grey slate), then
+  goes to a dark blood-red; the red cast is heavier on its shade than on what is lit. Measured
+  on one scene at counters 50 and 100: the water's colour as before, the land's as at counter 0.
 * **No light shafts** (removed, the owner's call, 2026-11-21). The mode had a half-resolution pass
   (`RAYS_FS`, config `rays` 0.45): a sunlit haze scattered through the gaps of a drifting cloud
   layer, and broad soft beams painted fanning down from the sun beyond the upper left of the view.

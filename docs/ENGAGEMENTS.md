@@ -48,6 +48,9 @@ of up to 5 places, kept between battles (`Game::squads`, `Unit::squad`, `Unit::s
   units, marching recruits, the barbarians' units). An army unit stands only in its own army's or
   garrison's squads; a unit of no body may stand in any squad of its owner on its plot (a hero in
   an army's squad) and holds its cell only while it is on that plot.
+  Moving a unit to a squad of another army or of the garrison there moves the unit to that body
+  (as the army join and garrison commands do, with their conditions) and into the squad's free
+  cell; a refusal changes nothing, and a unit never swaps with a unit of another body.
 - *Auto and hand-set.* A squad is Auto until its owner moves a unit in or out of it: an Auto
   squad is arranged by the auto formation (below) whenever it is read. A hand-set squad keeps its
   units' cells; a unit that dies leaves its cell empty.
