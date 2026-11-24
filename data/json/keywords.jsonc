@@ -54,5 +54,93 @@
     "type": "KEYWORD_ROUTE",
     "description": "TXT_KEY_KEYWORD_ROUTE",
     "reminder": "TXT_KEY_KEYWORD_ROUTE_REMINDER"
+  },
+  // Engagement combat (docs/ENGAGEMENTS.md, "The rules"): the unit card names its rows' action
+  //     kinds and attack patterns, a splash and a large unit (crates/ffh-play/src/view/unit_card.rs);
+  //     the numbers in the reminders are the ENGAGEMENT_* defines (a test checks them).
+  {
+    "type": "KEYWORD_STRIKE",
+    "description": "TXT_KEY_KEYWORD_STRIKE",
+    "reminder": "TXT_KEY_KEYWORD_STRIKE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_CHARGE",
+    "description": "TXT_KEY_KEYWORD_CHARGE",
+    "reminder": "TXT_KEY_KEYWORD_CHARGE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_STAB",
+    "description": "TXT_KEY_KEYWORD_STAB",
+    "reminder": "TXT_KEY_KEYWORD_STAB_REMINDER"
+  },
+  {
+    "type": "KEYWORD_SHOOT",
+    "description": "TXT_KEY_KEYWORD_SHOOT",
+    "reminder": "TXT_KEY_KEYWORD_SHOOT_REMINDER"
+  },
+  {
+    "type": "KEYWORD_SPELL",
+    "description": "TXT_KEY_KEYWORD_SPELL",
+    "reminder": "TXT_KEY_KEYWORD_SPELL_REMINDER"
+  },
+  {
+    "type": "KEYWORD_BOMBARD",
+    "description": "TXT_KEY_KEYWORD_BOMBARD",
+    "reminder": "TXT_KEY_KEYWORD_BOMBARD_REMINDER"
+  },
+  {
+    "type": "KEYWORD_HEAL",
+    "description": "TXT_KEY_KEYWORD_HEAL",
+    "reminder": "TXT_KEY_KEYWORD_HEAL_REMINDER"
+  },
+  {
+    "type": "KEYWORD_VOLLEY",
+    "description": "TXT_KEY_KEYWORD_VOLLEY",
+    "reminder": "TXT_KEY_KEYWORD_VOLLEY_REMINDER"
+  },
+  {
+    "type": "KEYWORD_PIERCE",
+    "description": "TXT_KEY_KEYWORD_PIERCE",
+    "reminder": "TXT_KEY_KEYWORD_PIERCE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_SWEEP",
+    "description": "TXT_KEY_KEYWORD_SWEEP",
+    "reminder": "TXT_KEY_KEYWORD_SWEEP_REMINDER"
+  },
+  {
+    "type": "KEYWORD_CLEAVE",
+    "description": "TXT_KEY_KEYWORD_CLEAVE",
+    "reminder": "TXT_KEY_KEYWORD_CLEAVE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_TRAMPLE",
+    "description": "TXT_KEY_KEYWORD_TRAMPLE",
+    "reminder": "TXT_KEY_KEYWORD_TRAMPLE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_SPLASH",
+    "description": "TXT_KEY_KEYWORD_SPLASH",
+    "reminder": "TXT_KEY_KEYWORD_SPLASH_REMINDER"
+  },
+  {
+    "type": "KEYWORD_LARGE",
+    "description": "TXT_KEY_KEYWORD_LARGE",
+    "reminder": "TXT_KEY_KEYWORD_LARGE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_FIRST_STRIKE",
+    "description": "TXT_KEY_KEYWORD_FIRST_STRIKE",
+    "reminder": "TXT_KEY_KEYWORD_FIRST_STRIKE_REMINDER"
+  },
+  {
+    "type": "KEYWORD_WITHDRAWAL",
+    "description": "TXT_KEY_KEYWORD_WITHDRAWAL",
+    "reminder": "TXT_KEY_KEYWORD_WITHDRAWAL_REMINDER"
+  },
+  {
+    "type": "KEYWORD_COMBAT_LIMIT",
+    "description": "TXT_KEY_KEYWORD_COMBAT_LIMIT",
+    "reminder": "TXT_KEY_KEYWORD_COMBAT_LIMIT_REMINDER"
   }
 ]

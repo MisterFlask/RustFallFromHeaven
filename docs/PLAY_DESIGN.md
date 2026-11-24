@@ -636,6 +636,11 @@ properties first, then the marks of its texts), the implied ones after the keywo
 them (`src/view/keywords.rs`). The client never works out which apply (`app/keywords.js`
 `remindersNode`, `keywordChips`; tips.js lays out the boxes; pure helpers in `app/keyword_view.js`).
 
+A unit's battle keywords are attached by its properties too (`view/unit_card.rs` `keywords`: what
+its rows do, their patterns, Splash, First strike, Withdrawal, Combat limit, Large), so the Unit
+Card (docs/HUMAN.md) names an action or a pattern in its attack table and never says what it
+reaches or does.
+
 A text that restates a reminder is a bug: `crates/ffh-play/tests/keywords.rs` fails when a
 project's or spell's rules text holds a reminder sentence or a fragment listed for its keyword.
 Reference pages (the World Spells concept, the help display's "World rituals" topic) keep full

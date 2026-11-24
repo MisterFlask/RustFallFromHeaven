@@ -59,10 +59,139 @@ fn requires_list(d: &GameData, b: &mut String, items: &[String], sep_key: &str) 
     list(b, &start, items, &txt(d, sep_key, &[]));
 }
 
+/// A group of the unit card's lines ([`sections`]), in the card's order.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Section {
+    /// What it does in a battle beyond its rows and stats: the levers, first strikes, defensive
+    /// strike, withdrawal, combat limit, collateral damage; then the engagement notes.
+    Battle,
+    /// Its percentage modifiers, targets, bombard rates and typed damage.
+    Bonuses,
+    /// What it is or can do outside a battle.
+    Traits,
+    /// Unique unit, what it replaces, its limits.
+    Availability,
+    /// What it requires to be built.
+    Requires,
+    /// Its extra cost and what builds it faster.
+    Production,
+}
+
+impl Section {
+    pub const ALL: [Section; 6] = [Section::Battle, Section::Bonuses, Section::Traits, Section::Availability, Section::Requires, Section::Production];
+
+    pub fn key(self) -> &'static str {
+        match self {
+            Section::Battle => "battle",
+            Section::Bonuses => "bonuses",
+            Section::Traits => "traits",
+            Section::Availability => "availability",
+            Section::Requires => "requires",
+            Section::Production => "production",
+        }
+    }
+
+    pub fn title(self) -> &'static str {
+        match self {
+            Section::Battle => "In battle",
+            Section::Bonuses => "Bonuses",
+            Section::Traits => "Traits",
+            Section::Availability => "Availability",
+            Section::Requires => "Requirements",
+            Section::Production => "Production",
+        }
+    }
+}
+
+/// The help of a unit type as [`build`] writes it: the text, the section of each of its parts
+/// (`(byte offset, section)` from that offset to the next mark; `None`: a line the card shows by
+/// its structure, left out of the sections), the spells of its ability lines and the units of its
+/// "Upgrades To" line.
+struct Built {
+    text: String,
+    marks: Vec<(usize, Option<Section>)>,
+    abilities: Vec<SpellType>,
+    upgrades_to: Vec<UnitType>,
+    /// Its builds line as `effects` writes it (bullet removed) and as the card's traits say it.
+    builds_line: Option<(String, String)>,
+}
+
 /// What unit `u` does (Civ4 markup, lines joined by `[NEWLINE]`): its strength and moves, what it
-/// can do, its bonuses, what it requires. Every field of the unit is either described here or named
-/// as not shown, so that a new field cannot go unnoticed (the build fails until it is listed).
+/// can do, its bonuses, what it requires.
 pub fn effects(d: &GameData, u: UnitType) -> String {
+    finish(build(d, u).text)
+}
+
+/// The unit card's data of unit type `u` ([`effects`]' lines grouped): the spells of its ability
+/// lines (each once), the units it upgrades to, and its sections.
+pub struct Card {
+    pub abilities: Vec<SpellType>,
+    pub upgrades_to: Vec<UnitType>,
+    /// The non-empty sections in [`Section::ALL`]'s order, each with its lines (one line of
+    /// [`effects`] each, its leading `[ICON_BULLET]` removed; the battle section then the lines of
+    /// `help::engagement_notes` without its head).
+    pub sections: Vec<(Section, Vec<String>)>,
+}
+
+/// One line of the help without its leading bullet; `None` for an empty one.
+fn card_line(l: &str) -> Option<String> {
+    let l = l.strip_prefix("[ICON_BULLET]").unwrap_or(l);
+    (!l.trim().is_empty()).then(|| l.to_string())
+}
+
+/// Each line of [`effects`] with its section (`None`: left out of the sections), in order.
+fn lines(b: &Built) -> Vec<(Option<Section>, String)> {
+    let mut out = Vec::new();
+    for (k, &(at, sec)) in b.marks.iter().enumerate() {
+        let end = b.marks.get(k + 1).map_or(b.text.len(), |m| m.0);
+        for l in b.text[at..end].split(NEWLINE) {
+            if let Some(l) = card_line(l) {
+                out.push((sec, l));
+            }
+        }
+    }
+    out
+}
+
+/// Line `l` of section `s` as the card writes it: the battle section's without their leading "In
+/// battle: " or "In battle, " (the section says it), capitalised; the builds line's short form.
+fn card_form(b: &Built, s: Section, l: String) -> String {
+    if s == Section::Battle {
+        if let Some(rest) = l.strip_prefix("In battle: ").or_else(|| l.strip_prefix("In battle, ")) {
+            let mut c = rest.chars();
+            return c.next().map_or_else(String::new, |f| f.to_uppercase().chain(c).collect());
+        }
+    }
+    match &b.builds_line {
+        Some((line, short)) if s == Section::Traits && *line == l => short.clone(),
+        _ => l,
+    }
+}
+
+/// The unit card's data of unit type `u` ([`Card`]).
+pub fn card(d: &GameData, u: UnitType) -> Card {
+    let b = build(d, u);
+    let mut by: Vec<Vec<String>> = vec![Vec::new(); Section::ALL.len()];
+    for (sec, l) in lines(&b) {
+        if let Some(s) = sec {
+            by[s as usize].push(card_form(&b, s, l));
+        }
+    }
+    // Of the engagement notes, Blitz: first strikes, withdrawal, collateral damage and a combat
+    // limit are keywords of its battle sheet (`view::unit_card`).
+    for (key, l) in super::engagement_note_lines(d, "UnitType", u.idx()) {
+        if key == "TXT_KEY_ENGAGE_HELP_BLITZ" {
+            by[Section::Battle as usize].extend(card_line(&l));
+        }
+    }
+    let sections = Section::ALL.iter().zip(by).filter(|(_, l)| !l.is_empty()).map(|(&s, l)| (s, l)).collect();
+    Card { abilities: b.abilities, upgrades_to: b.upgrades_to, sections }
+}
+
+/// [`effects`] with its marks, abilities and upgrades ([`Built`]). Every field of the unit is either
+/// described here or named as not shown, so that a new field cannot go unnoticed (the build fails
+/// until it is listed).
+fn build(d: &GameData, u: UnitType) -> Built {
     let UnitInfo {
         base,
         unit_class_type,
@@ -309,6 +438,19 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     } = &d.units[u];
     let class = *unit_class_type;
     let mut b = String::new();
+    // The section of what follows (the unit card's groups, `card`): every line belongs to the
+    // last mark before it; `None` is a line the card shows by its structure.
+    let mut marks: Vec<(usize, Option<Section>)> = vec![(0, None)];
+    macro_rules! mark {
+        ($s:expr) => {
+            marks.push((b.len(), $s))
+        };
+    }
+    let (battle, bonuses, traits, availability, requires_sec, production) =
+        (Some(Section::Battle), Some(Section::Bonuses), Some(Section::Traits), Some(Section::Availability), Some(Section::Requires), Some(Section::Production));
+    let mut abilities: Vec<SpellType> = Vec::new();
+    let mut upgrades_to: Vec<UnitType> = Vec::new();
+    let mut builds_line: Option<(String, String)> = None;
 
     // ---- The strength (ships) and moves line (C++ `setBasicUnitHelp` without `bCivilopediaText`) ----
     if *domain_type == Some(DomainType::DOMAIN_AIR) {
@@ -349,6 +491,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             }
         }
     }
+    mark!(battle);
     super::promotion::lever_lines(&mut b, d, damage_vs, resist_vs, *armor, *armor_piercing, *pursuit);
     super::promotion::magic_lines(&mut b, d, magic);
     super::promotion::kit_lines(&mut b, kit);
@@ -357,6 +500,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         b.push_str(&format!("[ICON_BULLET]In battle: its physical attack deals {} damage (the target's resistance to it cuts the attack)", display(d, *dt).to_lowercase()));
     }
     // ---- This game's sea (docs/NAVAL.md, 3.1 and 3.4): range and wear ----
+    mark!(traits);
     let animal_unit = d.units[u].animal;
     if *domain_type == Some(DomainType::DOMAIN_SEA) && !animal_unit {
         let df = &d.defines;
@@ -382,6 +526,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]Heals only in a city of its team with a {}", display(d, *k)));
     }
+    mark!(battle);
     if *damage_vs_large != 0 {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]In battle: {damage_vs_large:+}% damage to large units"));
@@ -400,6 +545,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]In battle, round 1: {}{pattern} from any row, in place of its row's action", k.token().to_lowercase()));
     }
+    mark!(bonuses);
     if *bombard_range > 1 {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]Bombards a city up to {bombard_range} plots away (one its team has revealed)"));
@@ -408,10 +554,11 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]A city it bombards counts as besieged until the city's next turn");
     }
+    mark!(battle);
     if !target_preference.is_empty() {
         let names: Vec<String> = target_preference.iter().map(|&c| display(d, c).to_string()).collect();
         b.push_str(NEWLINE);
-        b.push_str(&format!("[ICON_BULLET]In battle: attacks {} units first", names.join(", ")));
+        b.push_str(&format!("[ICON_BULLET]In battle: attacks {} first", super::promotion::and_list(&names)));
     }
     // The rounds a battle has (`ENGAGEMENT_ROUNDS`); a value past them never applies.
     let rounds = (d.defines.engagement_rounds.max(1) as usize).min(ROWS);
@@ -423,6 +570,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     }
 
     // ---- setUnitHelp: unique unit, limited unit ----
+    mark!(availability);
     let default = class.and_then(|c| d.unit_classes[c].default_unit_index);
     let civ_unit = |civ: CivilizationType| class.and_then(|c| d.civilizations[civ].civilization_units(c, default));
     // C++ quirk: FfH calls a class unique when more than 19 civilizations (of FfH2's 23) cannot
@@ -468,6 +616,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     }
 
     // ---- setBasicUnitHelp ----
+    mark!(traits);
     if *golden_age {
         add(d, &mut b, "TXT_KEY_UNIT_GOLDEN_AGE", &[]);
     }
@@ -573,8 +722,12 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     let my_builds: Vec<String> = builds.iter_enumerated().filter(|(_, &x)| x).map(|(x, _)| display(d, x).into_owned()).collect();
     if my_builds.len() > d.builds.len() * 3 / 4 {
         add(d, &mut b, "TXT_KEY_UNIT_IMPROVE_PLOTS", &[]);
-    } else {
+    } else if !my_builds.is_empty() {
+        let at = b.len();
         list(&mut b, &format!("{} ", start("TXT_KEY_UNIT_CAN")), &my_builds, ", ");
+        // The card's form: "Can build: Air Node, Body Node" (each without its "Build").
+        let short: Vec<&str> = my_builds.iter().map(|x| ["Build an ", "Build a ", "Build "].iter().find_map(|p| x.strip_prefix(p)).unwrap_or(x)).collect();
+        builds_line = card_line(b[at..].trim_start_matches(NEWLINE)).map(|l| (l, format!("Can build: {}", short.join(", "))));
     }
     // This game's (docs/WORKS.md): what it adds to the crews of a city it stands in.
     if *crew_work != 0 {
@@ -586,6 +739,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     if *counter_spy {
         add(d, &mut b, "TXT_KEY_UNIT_EXPOSE_SPIES", &[]);
     }
+    mark!(battle);
     if first_strikes + chance_first_strikes > 0 {
         if *chance_first_strikes == 0 {
             if *first_strikes == 1 {
@@ -603,7 +757,13 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         }
     }
     if *first_strike_immune {
+        // In a land battle a first strike is speed and immunity to them does nothing
+        // (docs/ENGAGEMENTS.md): the card of a type with a stat sheet leaves the line out.
+        if stats.is_some() {
+            mark!(None);
+        }
         add(d, &mut b, "TXT_KEY_UNIT_IMMUNE_FIRST_STRIKES", &[]);
+        mark!(battle);
     }
     // FfH.
     if *defensive_strike_chance > 0 {
@@ -617,6 +777,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     if *immune_to_defensive_strike {
         add(d, &mut b, "TXT_KEY_PROMOTION_IMMUNE_TO_DEFENSIVE_STRIKE_PEDIA", &[]);
     }
+    mark!(traits);
     for (has, key) in [
         (*no_defensive_bonus, "TXT_KEY_UNIT_NO_DEFENSE_BONUSES"),
         (*flat_movement_cost, "TXT_KEY_UNIT_FLAT_MOVEMENT"),
@@ -626,15 +787,17 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             add(d, &mut b, key, &[]);
         }
     }
-    for (n, key) in [
-        (*interception_probability, "TXT_KEY_UNIT_INTERCEPT_AIRCRAFT"),
-        (*evasion_probability, "TXT_KEY_UNIT_EVADE_INTERCEPTION"),
-        (*withdrawal_probability, "TXT_KEY_UNIT_WITHDRAWL_PROBABILITY"),
+    for (n, key, sec) in [
+        (*interception_probability, "TXT_KEY_UNIT_INTERCEPT_AIRCRAFT", traits),
+        (*evasion_probability, "TXT_KEY_UNIT_EVADE_INTERCEPTION", traits),
+        (*withdrawal_probability, "TXT_KEY_UNIT_WITHDRAWL_PROBABILITY", battle),
     ] {
         if n > 0 {
+            mark!(sec);
             add(d, &mut b, key, &[Arg::N(n)]);
         }
     }
+    mark!(battle);
     let hp = d.defines.max_hit_points.max(1);
     if *combat_limit < hp && d.units[u].attack_rating() > 0 && !*only_defensive {
         add(d, &mut b, "TXT_KEY_UNIT_COMBAT_LIMIT", &[Arg::N(100 * combat_limit / hp)]);
@@ -647,6 +810,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             add(d, &mut b, "TXT_KEY_UNIT_COLLATERAL_IMMUNE", &[Arg::S(&display(d, uc))]);
         }
     }
+    mark!(bonuses);
     // A modifier for attack and defence: one "Strength" line when they are equal, else each.
     let strength_or_each = |b: &mut String, attack: i32, defense: i32, both: &str, att: &str, def: &str, what: &str, defense_first: bool| {
         if attack == defense {
@@ -679,7 +843,9 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         add(d, &mut b, "TXT_KEY_UNIT_ANIMAL_COMBAT_MOD", &[Arg::N(*animal_combat_modifier)]);
     }
     if *drop_range > 0 {
+        mark!(traits);
         add(d, &mut b, "TXT_KEY_UNIT_PARADROP_RANGE", &[Arg::N(*drop_range)]);
+        mark!(bonuses);
     }
     strength_or_each(
         &mut b,
@@ -754,8 +920,10 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     if *bombard_rate > 0 {
         add(d, &mut b, "TXT_KEY_UNIT_BOMBARD_RATE", &[Arg::N(bombard_rate * 100 / city_damage)]);
     }
+    mark!(None);
     let promotions: Vec<String> = free_promotions.iter_enumerated().filter(|(_, &x)| x).map(|(p, _)| display(d, p).into_owned()).collect();
     list(&mut b, &start("TXT_KEY_UNIT_STARTS_WITH"), &promotions, ", ");
+    mark!(production);
     if *extra_cost != 0 {
         add(d, &mut b, "TXT_KEY_UNIT_EXTRA_COST", &[Arg::N(*extra_cost)]);
     }
@@ -768,20 +936,33 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         }
     }
     // FfH.
+    mark!(bonuses);
     for (dt, &n) in damage_type_attack.iter_enumerated() {
         if n != 0 {
             add(d, &mut b, "TXT_KEY_DAMAGE_TYPE_COMBAT", &[Arg::N(n), Arg::S(&display(d, dt))]);
         }
     }
+    // One line per value, naming its resources (the Djinn has an affinity for every mana).
+    let mut affinities: Vec<(i32, Vec<String>)> = Vec::new();
     for (bonus, &n) in bonus_affinity.iter_enumerated() {
-        if n != 0 {
-            add(d, &mut b, "TXT_KEY_BONUS_AFFINITY", &[Arg::N(n), Arg::S(&display(d, bonus))]);
+        if n == 0 {
+            continue;
+        }
+        let name = display(d, bonus).into_owned();
+        match affinities.iter_mut().find(|(x, _)| *x == n) {
+            Some((_, names)) => names.push(name),
+            None => affinities.push((n, vec![name])),
         }
     }
+    for (n, names) in affinities {
+        add(d, &mut b, "TXT_KEY_BONUS_AFFINITY", &[Arg::N(n), Arg::S(&super::promotion::and_list(&names))]);
+    }
+    mark!(requires_sec);
     if *min_level > 0 {
         add(d, &mut b, "TXT_KEY_UNIT_CANT_BUILD", &[]);
         add(d, &mut b, "TXT_KEY_UNIT_MIN_LEVEL", &[Arg::N(*min_level)]);
     }
+    mark!(traits);
     if *disable_upgrade_to {
         add(d, &mut b, "TXT_KEY_UNIT_DISABLE_UPGRADE_TO", &[]);
     }
@@ -845,17 +1026,23 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     }
     // Its own spells: those of the unit or its class, without a civilization or religion
     // prerequisite (C++ checks the two independently; no FfH2 spell has both).
-    let ability = |b: &mut String, s: SpellType| add(d, b, "TXT_KEY_UNIT_SPELL_ABILITY", &[Arg::S(&display(d, s))]);
+    mark!(None);
+    let ability = |b: &mut String, abilities: &mut Vec<SpellType>, s: SpellType| {
+        add(d, b, "TXT_KEY_UNIT_SPELL_ABILITY", &[Arg::S(&display(d, s))]);
+        if !abilities.contains(&s) {
+            abilities.push(s);
+        }
+    };
     let of_class = |s: &SpellInfo| s.unit_class_prereq.is_some() && s.unit_class_prereq == class;
     let listed = |s: &SpellInfo| s.civilization_prereq.is_none() && s.religion_prereq.is_none() && (s.unit_prereq == Some(u) || of_class(s));
     for s in d.spells.keys() {
         let si = &d.spells[s];
         if si.civilization_prereq.is_none() && si.religion_prereq.is_none() {
             if si.unit_prereq == Some(u) {
-                ability(&mut b, s);
+                ability(&mut b, &mut abilities, s);
             }
             if of_class(si) {
-                ability(&mut b, s);
+                ability(&mut b, &mut abilities, s);
             }
         }
     }
@@ -884,28 +1071,31 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             && (equipment_promotion.is_none() || of_class(si))
             && (!si.battle_only || casts_in_battle);
         if tied && caster && !listed(si) {
-            ability(&mut b, s);
+            ability(&mut b, &mut abilities, s);
         }
     }
     // ffh-play's: what an equipment is when a unit carries it.
+    mark!(traits);
     if let Some(p) = equipment_promotion {
         b.push_str(NEWLINE);
         b.push_str(&super::fill("[ICON_BULLET]Equipment: carried as the [LINK=literal]%s1[\\LINK] promotion", &[Arg::S(&display(d, *p))]));
     }
     // ffh-play's: the units it upgrades to (FfH2's pedia panel "Upgrades To": the classes' default
     // units, none for a world unit, not those that cannot be upgraded to).
+    mark!(None);
     if !class.is_some_and(|c| d.unit_classes[c].max_global_instances != -1) {
-        let upgrades: Vec<String> = upgrade_unit_class
+        upgrades_to = upgrade_unit_class
             .iter_enumerated()
             .filter(|(_, &x)| x)
             .filter_map(|(c, _)| d.unit_classes[c].default_unit_index)
             .filter(|&x| !d.units[x].disable_upgrade_to)
-            .map(|x| display(d, x).into_owned())
             .collect();
+        let upgrades: Vec<String> = upgrades_to.iter().map(|&x| display(d, x).into_owned()).collect();
         list(&mut b, &format!("{NEWLINE}[ICON_BULLET]{}: ", txt(d, "TXT_KEY_PEDIA_UPGRADES_TO", &[])), &upgrades, ", ");
     }
 
     // ---- setUnitHelp: what it requires (without a city, all of it) ----
+    mark!(requires_sec);
     if let Some(r) = holy_city {
         // `%F1` is the religion's font icon: its name stands in for it.
         add_req(d, &mut b, "TXT_KEY_UNIT_REQUIRES_HOLY_CITY", &[Arg::S(&display(d, *r))]);
@@ -962,6 +1152,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
 
     // The resources that speed it up, as the Civilopedia writes them (the tooltip puts them after
     // its cost line).
+    mark!(production);
     for (bonus, &n) in bonus_production_modifier.iter_enumerated() {
         if n == 0 {
             continue;
@@ -976,12 +1167,13 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         });
     }
     // The XML help (no FfH2 unit has one).
+    mark!(traits);
     let help = crate::names::text(d, &base.help);
     if !base.help.is_empty() && help != base.help && !help.trim().is_empty() {
         b.push_str(NEWLINE);
         b.push_str(help);
     }
-    finish(b)
+    Built { text: b, marks, abilities, upgrades_to, builds_line }
 }
 
 #[cfg(test)]
@@ -1097,6 +1289,125 @@ mod tests {
             assert_eq!(h.matches("[LINK=").count(), h.matches("[\\LINK]").count(), "{name}: {h}");
             assert_eq!(h.matches("[COLOR_").count() - h.matches("[COLOR_REVERT]").count(), h.matches("[COLOR_REVERT]").count(), "{name}: {h}");
         }
+    }
+
+    /// A line the card leaves out of its sections: those it shows by its structure (the strength
+    /// and moves line (the first), the stat sheet, the row patterns, "Starts with", the ability
+    /// lines and "Upgrades To"), and a land type's (`sheet`) immunity to first strikes, which does
+    /// nothing in a land battle.
+    fn structural(d: &GameData, first: bool, sheet: bool, l: &str) -> bool {
+        let immune = txt(d, "TXT_KEY_UNIT_IMMUNE_FIRST_STRIKES", &[]);
+        if sheet && l == immune.strip_prefix("[ICON_BULLET]").unwrap_or(&immune) {
+            return true;
+        }
+        let ability = txt(d, "TXT_KEY_UNIT_SPELL_ABILITY", &[Arg::S("\u{1}")]);
+        let (pre, post) = ability.split_once('\u{1}').unwrap();
+        let pre = pre.strip_prefix("[ICON_BULLET]").unwrap_or(pre);
+        let starts = txt(d, "TXT_KEY_UNIT_STARTS_WITH", &[]);
+        let starts = starts.strip_prefix("[ICON_BULLET]").unwrap_or(&starts).to_string();
+        first
+            || l.starts_with("In battle: HP ")
+            || ["front", "middle", "rear"].iter().any(|r| l.starts_with(&format!("In battle, {r} row: ")))
+            || l.starts_with(&starts)
+            || (l.starts_with(pre) && l.ends_with(post))
+            || l.starts_with(&format!("{}: ", txt(d, "TXT_KEY_PEDIA_UPGRADES_TO", &[])))
+    }
+
+    /// Every line of `effects` is in exactly one place: one section of the card, or left out as a
+    /// line the card shows by its structure (and only those are left out); the sections' lines are
+    /// `effects`' in order, then the battle section's engagement notes.
+    #[test]
+    fn every_line_lands_in_one_section() {
+        let d = ffh_data::global();
+        for u in d.units.keys() {
+            let name = &d.units[u].base.type_;
+            let b = build(d, u);
+            let all: Vec<String> = effects(d, u).split(NEWLINE).filter_map(card_line).collect();
+            let got = lines(&b);
+            assert_eq!(got.iter().map(|(_, l)| l.clone()).collect::<Vec<_>>(), all, "{name}");
+            for (k, (sec, l)) in got.iter().enumerate() {
+                assert_eq!(sec.is_none(), structural(d, k == 0, d.units[u].stats.is_some(), l), "{name}: {sec:?} {l}");
+            }
+            let c = card(d, u);
+            let mut expect: Vec<(Section, Vec<String>)> = Vec::new();
+            for s in Section::ALL {
+                let mut ls: Vec<String> = got.iter().filter(|(x, _)| *x == Some(s)).map(|(_, l)| card_form(&b, s, l.clone())).collect();
+                if s == Section::Battle {
+                    if let Some(n) = super::super::engagement_notes(d, "UnitType", u.idx()) {
+                        ls.extend(n.split(NEWLINE).skip(1).filter_map(card_line).filter(|l| l.starts_with("Blitz")));
+                    }
+                }
+                if !ls.is_empty() {
+                    expect.push((s, ls));
+                }
+            }
+            assert_eq!(c.sections, expect, "{name}");
+            for (s, ls) in &c.sections {
+                assert!(ls.iter().all(|l| !l.starts_with("[ICON_BULLET]") && !l.trim().is_empty()), "{name}: {ls:?}");
+                assert!(ls.iter().all(|l| !l.starts_with("In battle") && !l.contains(" units units") && !l.contains("Units units")), "{name}: {s:?} {ls:?}");
+            }
+        }
+    }
+
+    fn section_of<'a>(c: &'a Card, s: Section) -> &'a [String] {
+        c.sections.iter().find(|(x, _)| *x == s).map_or(&[], |(_, l)| l.as_slice())
+    }
+
+    #[test]
+    fn sections_spot_checks() {
+        let d = ffh_data::global();
+        let axe = card(d, d.t::<UnitType>("UNIT_AXEMAN"));
+        assert!(section_of(&axe, Section::Requires).iter().any(|l| l.contains("Requires Bronze Working")), "{:?}", axe.sections);
+        assert!(section_of(&axe, Section::Bonuses).iter().any(|l| l == "+10% City Attack"), "{:?}", axe.sections);
+        assert!(axe.sections.iter().all(|(_, ls)| ls.iter().all(|l| !l.starts_with("In battle: HP"))));
+        let donal = card(d, d.t::<UnitType>("UNIT_DONAL"));
+        assert!(section_of(&donal, Section::Availability).iter().any(|l| l.starts_with("World Unit (")), "{:?}", donal.sections);
+        assert!(section_of(&donal, Section::Availability).iter().any(|l| l.contains("Unique Unit for")), "{:?}", donal.sections);
+        assert!(donal.abilities.contains(&d.t::<SpellType>("SPELL_HOPE")), "{:?}", donal.abilities);
+        let warrior = card(d, d.t::<UnitType>("UNIT_WARRIOR"));
+        assert!(warrior.upgrades_to.contains(&d.t::<UnitType>("UNIT_AXEMAN")), "{:?}", warrior.upgrades_to);
+        assert_eq!(warrior.sections.first().map(|(s, _)| *s), Some(Section::Bonuses), "{:?}", warrior.sections);
+        // The battle section without "In battle: "; the builds by their short names.
+        let catapult = card(d, d.t::<UnitType>("UNIT_CATAPULT"));
+        assert!(section_of(&catapult, Section::Battle).iter().any(|l| l == "+100% damage to large units"), "{:?}", catapult.sections);
+        assert!(!section_of(&catapult, Section::Battle).iter().any(|l| l.contains("Collateral damage splashes")), "{:?}", catapult.sections);
+        let mage = card(d, d.t::<UnitType>("UNIT_MAGE"));
+        assert!(section_of(&mage, Section::Traits).iter().any(|l| l.starts_with("Can build: Air Node, Body Node")), "{:?}", mage.sections);
+        // Each ability once, though a spell may be listed both by unit and by class.
+        for u in d.units.keys() {
+            let a = card(d, u).abilities;
+            let mut seen = a.clone();
+            seen.sort();
+            seen.dedup();
+            assert_eq!(seen.len(), a.len(), "{}", d.units[u].base.type_);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn print_sections() {
+        let d = ffh_data::global();
+        for n in ["UNIT_WARRIOR", "UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_DONAL", "UNIT_MAGE", "UNIT_CATAPULT", "UNIT_GALLEY", "UNIT_PROPHET", "UNIT_SETTLER", "UNIT_ARCHMAGE", "UNIT_PRIEST_OF_LEAVES", "UNIT_BERSERKER"] {
+            let c = card(d, d.t::<UnitType>(n));
+            println!("== {n} abilities {:?} upgrades {:?}", c.abilities, c.upgrades_to);
+            for (s, ls) in c.sections {
+                println!("  [{}]", s.title());
+                for l in ls {
+                    println!("    {l}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn dump_all_effects() {
+        let d = ffh_data::global();
+        let mut out = String::new();
+        for u in d.units.keys() {
+            out.push_str(&format!("== {}\n{}\n", d.units[u].base.type_, effects(d, u)));
+        }
+        std::fs::write(std::env::var("FFH_DUMP").unwrap(), out).unwrap();
     }
 
     #[test]

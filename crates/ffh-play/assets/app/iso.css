@@ -462,19 +462,38 @@ html.iso .richtip { max-width: 520px; }
 html.iso .ng-about { font-size: 20px; line-height: 24px; max-height: 440px; }
 html.iso .tip-strategy, html.iso .tip-hint { font-size: 20px; line-height: 24px; font-style: normal; }
 /* The unit card (unit_card.js) in the skin's lettering: the name at 20px, the rest at 16px. */
-html.iso .unit-card { --uc-gold: var(--iso-gold); --uc-rule: #8a6420; --uc-tile: var(--iso-deep); width: 23rem; font: 400 16px/20px var(--iso-font); color: var(--iso-ink); }
+html.iso .richtip:has(> .unit-card) { max-width: calc(100vw - 8px); }
+html.iso .unit-card { --uc-gold: var(--iso-gold); --uc-rule: #8a6420; --uc-tile: var(--iso-deep); width: 620px; max-width: calc(100vw - 40px); font: 400 16px/20px var(--iso-font); color: var(--iso-ink); }
 html.iso .uc-portrait { width: 72px; height: 72px; }
 html.iso .uc-name { font: 700 20px/24px var(--iso-font); color: #fff8e4; }
 html.iso .uc-sub, html.iso .uc-row-k, html.iso .uc-bar { font-size: 16px; line-height: 20px; color: var(--iso-dim); }
 html.iso .uc-bar { grid-template-columns: 26px 1fr auto; }
 html.iso .uc-bar-v { color: var(--iso-ink); }
-html.iso .uc-stat-k, html.iso .uc-label, html.iso .uc-row-here { font-size: 14px; line-height: 18px; }
+html.iso .uc-stat-k, html.iso .uc-label, html.iso .uc-row-here, html.iso .uc-th, html.iso .uc-mark { font-size: 14px; line-height: 18px; }
+html.iso .uc-stats { grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); }
 html.iso .uc-stat-k { color: var(--iso-gold); }
 html.iso .uc-stat-v { font-size: 20px; line-height: 24px; color: #fff8e4; }
+html.iso .uc-th { color: var(--iso-dim); }
+html.iso .uc-th.uc-ref { color: var(--iso-gold); }
+html.iso .uc-td { color: var(--iso-ink); line-height: 20px; }
+html.iso .uc-td.uc-rn { color: var(--iso-dim); }
+html.iso .uc-td.none, html.iso .uc-sep { color: #6c7690; }
+html.iso .uc-td.uc-dmg.uc-say { color: var(--iso-dim); }
+html.iso .uc-notes, html.iso .uc-strategy { font-size: 16px; line-height: 20px; color: var(--iso-dim); }
+html.iso .uc-sections { font-size: 16px; line-height: 20px; }
+html.iso .uc-sections.multi { column-gap: 20px; }
+html.iso .uc-line { padding-left: 10px; text-indent: -10px; }
+html.iso .uc-chip { font-size: 16px; line-height: 20px; color: #fff8e4; }
 html.iso .uc-warn { font-size: 16px; color: var(--iso-bad); }
 html.iso .uc-hint { font-size: 16px; line-height: 20px; color: var(--iso-dim); }
-html.iso .uc-promo-name { font-size: 16px; }
 html.iso .uc-chips .badge, html.iso .uc-chips .kw-chip { font-size: 16px; line-height: 20px; }
+@media (max-width: 599px) {
+  html.iso .uc-th, html.iso .uc-mark { font-size: 12px; line-height: 16px; white-space: normal; }
+  html.iso .uc-table, html.iso .uc-td { font-size: 14px; line-height: 18px; }
+  html.iso .uc-sections { font-size: 14px; line-height: 18px; }
+  html.iso .uc-stats { grid-template-columns: repeat(5, 1fr); }
+  html.iso .uc-stat-v { font-size: 16px; line-height: 20px; }
+}
 html.iso .parts-list { font-size: 20px; line-height: 24px; column-gap: 10px; }
 html.iso .parts-list.grouped .pl-n { padding-left: 20px; }
 html.iso .parts-list .pl-head { gap: 6px; margin-top: 6px; padding-bottom: 2px; border-bottom: 2px solid #6a4410; color: var(--iso-gold); }

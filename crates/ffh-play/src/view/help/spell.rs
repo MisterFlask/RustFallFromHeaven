@@ -457,7 +457,7 @@ mod tests {
             ("SPELL_FIREBOLT", "[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Fire damage, power 120%, one target"),
             ("SPELL_KEEN_EDGE", "[ICON_BULLET]Battle spell: own front row, for the battle: +20% damage dealt; cast with one of the caster's first spell actions"),
             ("SPELL_CHILL", "[ICON_BULLET]Battle spell: enemy front row, for the battle: +5% damage taken, -15 evasion, -3 speed; cast with one of the caster's first spell actions"),
-            ("SPELL_HEALING_LIGHT", "[ICON_BULLET]Battle spell: heals 80% of a hit to the most hurt ally, and 50% of it to each other hurt ally in its row; cast in place of the caster's damage spell when an ally lacks half of it or more"),
+            ("SPELL_HEALING_LIGHT", "[ICON_BULLET]Battle spell: [KW=KEYWORD_HEAL]heals[\\KW] 80% of a hit with [KW=KEYWORD_SWEEP]Sweep[\\KW]; cast in place of the caster's damage spell when an ally lacks half of it or more"),
         ] {
             let text = of(spell);
             assert!(text.contains(line), "{spell}: {text}");
@@ -554,12 +554,9 @@ fn battle_line(d: &GameData, damage_type: &Option<DamageType>, power: i32, patte
         return format!("[ICON_BULLET]Battle spell: {} {rows}, for the battle: {}; cast with one of the caster's first spell actions", side, parts.join(", "));
     }
     if heal > 0 {
-        let whom = if pattern == Some(AttackPattern::Sweep) {
-            format!("the most hurt ally, and {}% of it to each other hurt ally in its row", d.defines.engagement_sweep_percent)
-        } else {
-            "the most hurt ally".to_string()
-        };
-        return format!("[ICON_BULLET]Battle spell: heals {heal}% of a hit to {whom}; cast in place of the caster's damage spell when an ally lacks half of it or more");
+        // Whom it heals is the Heal keyword's reminder (and a sweep's, Sweep's): marked, not restated.
+        let sweep = if pattern == Some(AttackPattern::Sweep) { " with [KW=KEYWORD_SWEEP]Sweep[\\KW]" } else { "" };
+        return format!("[ICON_BULLET]Battle spell: [KW=KEYWORD_HEAL]heals[\\KW] {heal}% of a hit{sweep}; cast in place of the caster's damage spell when an ally lacks half of it or more");
     }
     let power = if power > 0 { power } else { 100 };
     match damage_type {

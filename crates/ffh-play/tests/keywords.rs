@@ -29,6 +29,25 @@ const FRAGMENTS: &[(&str, &[&str])] = &[
     ("KEYWORD_OUTSIDER", &["offered for a foreign house", "counts alignment and religion only"]),
     // Trade (docs/TRADE.md, section 9).
     ("KEYWORD_ROUTE", &["two caravans travel it", "each pays while it lives", "the destination of any number", "re-forms in the origin"]),
+    // Engagement combat (docs/ENGAGEMENTS.md, "The rules"): the unit card's action kinds, attack
+    // patterns, splash and large units.
+    ("KEYWORD_STRIKE", &["front unit of an enemy lane", "pushes the target back"]),
+    ("KEYWORD_CHARGE", &["where flanking works", "highest threat for its hp left"]),
+    ("KEYWORD_STAB", &["hits any enemy"]),
+    ("KEYWORD_SHOOT", &["back unit of an enemy lane", "lanes within one of its own first"]),
+    ("KEYWORD_SPELL", &["never misses or crits", "against the target's magic defense"]),
+    ("KEYWORD_BOMBARD", &["a city's sentinels first", "never crits"]),
+    ("KEYWORD_HEAL", &["the most hurt ally", "the action is spent"]),
+    ("KEYWORD_VOLLEY", &["in each lane beside the target's"]),
+    ("KEYWORD_PIERCE", &["every other unit in the target's lane"]),
+    ("KEYWORD_SWEEP", &["every other unit in the target's row"]),
+    ("KEYWORD_CLEAVE", &["front unit of each lane beside"]),
+    ("KEYWORD_TRAMPLE", &["nearest unit behind the target"]),
+    ("KEYWORD_SPLASH", &["beside, in front of and behind"]),
+    ("KEYWORD_LARGE", &["fills two cells", "counts 2 places"]),
+    ("KEYWORD_FIRST_STRIKE", &["speed in a battle", "rolled at the battle's start"]),
+    ("KEYWORD_WITHDRAWAL", &["rolls its withdrawal chance", "leaves the battle alive"]),
+    ("KEYWORD_COMBAT_LIMIT", &["never take a target below", "does not aim at a target already there"]),
 ];
 
 /// The forbidden pieces of every keyword: its fragments and each sentence of its reminder text.

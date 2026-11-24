@@ -130,6 +130,26 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("tier", u.tier);
             j.set("found", u.found);
             j.set("worker", u.builds.iter().any(|&b| b));
+            // The unit card (`view::unit_card`, `view::help::unit::card`): a fresh unit's battle
+            // sheet (land units that fight), its free promotions, the spells of its ability lines,
+            // the units it upgrades to and its help's lines in labelled groups.
+            let t = UnitType::from_usize(i);
+            if let Some(b) = crate::view::unit_card::type_battle(d, t) {
+                j.set("battle", b);
+            }
+            j.set("free_promotions", Json::Arr(u.free_promotions.iter_enumerated().filter(|(_, &x)| x).map(|(p, _)| Json::idx(p)).collect()));
+            let card = crate::view::help::unit::card(d, t);
+            j.set("abilities", Json::Arr(card.abilities.iter().map(|&s| Json::idx(s)).collect()));
+            j.set("upgrades_to", Json::Arr(card.upgrades_to.iter().map(|&x| Json::idx(x)).collect()));
+            j.set(
+                "sections",
+                Json::Arr(
+                    card.sections
+                        .into_iter()
+                        .map(|(s, lines)| crate::jobj! { "key" => s.key(), "title" => s.title(), "lines" => Json::Arr(lines.into_iter().map(Json::from).collect()) })
+                        .collect(),
+                ),
+            );
         }
         "BuildingType" => {
             let b = &d.buildings[BuildingType::from_usize(i)];
@@ -283,6 +303,11 @@ fn build(d: &GameData) -> Json {
             // Crusades' help (crusade.js): the unhappiness of defying a council, in turns at
             // normal speed.
             "defy_resolution_anger_divisor" => d.defines.defy_resolution_anger_divisor,
+            // The unit card (`view::unit_card`): a battle's rounds, a crit's damage, and the
+            // reference defences of each row's `dmg` (the stat sheet's scale).
+            "engagement_rounds" => d.defines.engagement_rounds,
+            "engagement_crit_damage_percent" => d.defines.engagement_crit_damage_percent,
+            "card_ref_defenses" => Json::Arr(crate::view::unit_card::CARD_REF_DEFENSES.iter().map(|&r| Json::from(r)).collect()),
         },
     }
 }

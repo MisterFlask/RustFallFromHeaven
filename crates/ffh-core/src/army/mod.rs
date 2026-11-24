@@ -79,8 +79,8 @@ pub struct Army {
 /// Why an army command is refused.
 pub type ArmyResult = Result<(), &'static str>;
 
-/// `PROMOTION_HERO` (looked up once: the army checks run over every unit type and unit).
-fn hero_promotion(d: &GameData) -> Option<PromotionType> {
+/// `PROMOTION_HERO` (looked up once: the army checks run over every unit type and unit; the view's unit card asks whether a type is a hero).
+pub fn hero_promotion(d: &GameData) -> Option<PromotionType> {
     static HERO: OnceLock<Option<PromotionType>> = OnceLock::new();
     *HERO.get_or_init(|| d.ty::<PromotionType>("PROMOTION_HERO"))
 }

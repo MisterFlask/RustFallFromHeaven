@@ -167,6 +167,14 @@ accessor per value resolves the unit: `Game::unit_stat` and `unit_engage_max_hp`
 `unit_engage_spell` (stats.rs, arrange.rs); the rules' fighters, the auto formation, the preview,
 the view and the client read these.
 
+**What the player is told** (docs/HUMAN.md, "The Unit Card"): a unit's and a unit type's card
+shows these per-unit values as a battle sheet the server computes (`ffh-play`'s
+`view/unit_card.rs`), a fresh unit of a type through the same functions as a unit
+(`stats::stat_value`, `engage_rows_of`, `engage_spell_of`, `magic_terms_of`;
+`formation::mean_damage`, `hit_chance`, `crit_chance_of`, `spread`). A change to a rule below
+that the keywords' reminders state (what a kind reaches, a pattern's extra hits, their
+percentages) needs its reminder in `data/text/en.tsv` changed with it.
+
 **Action kinds and reach** (`ffh_data::ActionKind`):
 - STRIKE: the front unit of each enemy lane; physical; a crit knocks the target back.
 - CHARGE: where flanking works (the defended plot has no city and no forest or jungle), every
