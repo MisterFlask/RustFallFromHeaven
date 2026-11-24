@@ -34,10 +34,6 @@ export const MIX = {
   shaker: { level: 0.6, pan: -0.3, hall: 0.2 },
   cymbal: { level: 0.5, pan: -0.2, hall: 0.5 },
   bell: { level: 0.45, pan: 0.1, hall: 0.7 },
-  chipLead: { level: 0.55, pan: 0, hall: 0.05 },
-  chipHarm: { level: 0.24, pan: 0, hall: 0.05 },
-  chipBass: { level: 0.26, pan: 0, hall: 0.03 },
-  chipNoise: { level: 0.66, pan: 0, hall: 0.04 },
 };
 
 /** The mix a piece is played with: `MIX`, with the piece's own `mix` laid over it voice by voice
@@ -63,7 +59,7 @@ export const RANGES = {
   harp: [24, 103], flute: [60, 96], horn: [41, 77], violins: [55, 100], pad: [48, 84], bass: [28, 55],
   choirAh: [40, 81], choirOo: [40, 81], timpani: [38, 57], celesta: [60, 108],
   spiccato: [28, 79], marcato: [55, 100], fiddle: [55, 96], brass: [43, 84], lute: [36, 84], drum: [36, 60],
-  whistle: [62, 98], bell: [45, 84], chipLead: [55, 96], chipHarm: [48, 91], chipBass: [28, 60],
+  whistle: [62, 98], bell: [45, 84],
 };
 
 /** The whole mix's level before the soft ceiling: set so the loudest bars stay under it. */
@@ -300,8 +296,6 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX, trim = TRIM,
     horn: wave(24, (k) => Math.exp(-k / 7) / k),
     brass: wave(32, (k) => Math.exp(-k / 12) / k ** 0.85),
     whistle: wave(4, (k) => [0, 1, 0.16, 0.05, 0.02][k]),
-    // A pulse a quarter of the period wide: the thin, nasal square of an old game console.
-    pulse: wave(48, (k) => (2 / (k * Math.PI)) * Math.sin(k * Math.PI * 0.25)),
   };
 
   /** When a note's oscillator has ended, lets go of what fed it and what it fed: the shared
@@ -615,60 +609,9 @@ export function createOrchestra(ctx, { seed = 7, mix: levels = MIX, trim = TRIM,
     burst(buses.cymbal, e.t, { type: "bandpass", freq: 9000, q: 2, level: e.v * 0.5, tau: 0.25 });
   };
 
-  // --- the chip: the three voices and the noise of an old game console. A note starts at once,
-  // sinks to `hold` of its level and stops dead; a long one wavers.
-  const chip = (kind) => (e) => {
-    const end = e.t + e.d;
-    const o = ctx.createOscillator();
-    if (kind.wave) o.setPeriodicWave(kind.wave);
-    else o.type = kind.type;
-    o.frequency.value = hz(e.m);
-    const g = gainNode(0);
-    g.gain.setValueAtTime(0, e.t);
-    g.gain.linearRampToValueAtTime(e.v, e.t + 0.003);
-    g.gain.setTargetAtTime(e.v * kind.hold, e.t + 0.003, 0.06);
-    g.gain.setTargetAtTime(0, Math.max(e.t + 0.01, end - 0.012), 0.006);
-    if (kind.waver && e.d > 0.5) {
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 6;
-      const depth = gainNode(0);
-      depth.gain.setValueAtTime(0, e.t + 0.25);
-      depth.gain.linearRampToValueAtTime(kind.waver, e.t + 0.4);
-      lfo.connect(depth);
-      depth.connect(o.detune);
-      lfo.start(e.t);
-      lfo.stop(end + 0.08);
-    }
-    o.connect(g);
-    g.connect(kind.bus);
-    o.start(e.t);
-    o.stop(end + 0.08);
-    o.onended = () => g.disconnect();
-  };
-  const chipLead = chip({ bus: buses.chipLead, wave: waves.pulse, hold: 0.7, waver: 10 });
-  const chipHarm = chip({ bus: buses.chipHarm, type: "square", hold: 0.5 });
-  const chipBass = chip({ bus: buses.chipBass, type: "triangle", hold: 1 });
-  /** The console's drums, by the note: low a kick (a tone that drops), middle a snare, high a hat. */
-  const chipNoise = (e) => {
-    if (e.m >= 72) return burst(buses.chipNoise, e.t, { type: "highpass", freq: 7000, level: e.v * 0.45, tau: 0.012 });
-    if (e.m >= 48) return burst(buses.chipNoise, e.t, { type: "bandpass", freq: 2400, q: 0.5, level: e.v * 0.8, tau: 0.04 });
-    const o = ctx.createOscillator();
-    o.frequency.setValueAtTime(150, e.t);
-    o.frequency.exponentialRampToValueAtTime(42, e.t + 0.09);
-    const g = gainNode(0);
-    g.gain.setValueAtTime(0, e.t);
-    g.gain.linearRampToValueAtTime(e.v, e.t + 0.002);
-    g.gain.setTargetAtTime(0, e.t + 0.002, 0.045);
-    o.connect(g);
-    g.connect(buses.chipNoise);
-    o.start(e.t);
-    o.stop(e.t + 0.4);
-    o.onended = () => g.disconnect();
-  };
-
   const voices = {
     harp, violins, pad, bass, choirAh: choir, choirOo: choir, flute, horn, timpani, celesta,
-    spiccato, marcato, fiddle, whistle, brass, lute, drum, snare, shaker, cymbal, bell, chipLead, chipHarm, chipBass, chipNoise,
+    spiccato, marcato, fiddle, whistle, brass, lute, drum, snare, shaker, cymbal, bell,
   };
 
   return {
