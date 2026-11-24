@@ -18,7 +18,12 @@
 use std::cmp::{max, min};
 
 use crate::defs::{CITY_HOME_PLOT, INVALID_PLOT_COORD, MIN_INT, NUM_CITY_PLOTS};
+use crate::city::turn::CityEventRefusal;
+use crate::ffh::event_unmet::EventUnmet;
 use crate::game::Game;
+use crate::plot::units::PlotEventRefusal;
+use crate::team::diplomacy::WarRefusal;
+use crate::unit::UnitEventRefusal;
 use crate::ids::*;
 use crate::structs::*;
 use crate::utils::{is_plot_event_trigger, set_trade_item};
@@ -98,14 +103,14 @@ pub enum EventRefusal {
     NoSpareBonus(BonusType),
     /// The civilization has no unit of the class.
     NoCivUnit,
-    /// The city does not meet the option's conditions (`canApplyEvent`).
-    City,
-    /// The other player's city does not meet the option's conditions.
-    OtherCity,
-    /// The plot does not meet the option's conditions.
-    Plot,
-    /// The unit does not meet the option's conditions.
-    Unit,
+    /// The city fails this check of `canApplyEvent`.
+    City(CityEventRefusal),
+    /// The other player's city fails this check of `canApplyEvent`.
+    OtherCity(CityEventRefusal),
+    /// The plot fails this check of `canApplyEvent`.
+    Plot(PlotEventRefusal),
+    /// The unit fails this check of `canApplyEvent`.
+    Unit(UnitEventRefusal),
     /// The resource is revealed already.
     BonusKnown(BonusType),
     /// No city left for the religion to spread to.
@@ -116,8 +121,9 @@ pub enum EventRefusal {
     HumanAttitude,
     /// The other player has no worst enemy (or it is this team).
     NoWorstEnemy,
-    /// War with the other player cannot be declared.
-    War,
+    /// `declarer` cannot declare war on `target` (the other player's team on this one is
+    /// checked first, then this one on it).
+    War { declarer: TeamId, target: TeamId, refusal: WarRefusal },
     /// The quest is done already.
     QuestDone,
     /// It requires this alignment.
@@ -132,8 +138,8 @@ pub enum EventRefusal {
     Religion(ReligionType),
     /// It requires this state religion.
     StateReligion(ReligionType),
-    /// The event's Python `canDo` callback refuses.
-    Script,
+    /// The event's Python `canDo` callback refuses: the check that failed.
+    Script(EventUnmet),
 }
 
 impl Game {
@@ -1316,32 +1322,36 @@ impl Game {
         }
 
         if k_event.city_effect {
-            let city = player_city(self, p, data.city);
-            if city.is_none_or(|c| !self.city_can_apply_event(c, event, data)) {
-                return Some(EventRefusal::City);
+            let Some(city) = player_city(self, p, data.city) else {
+                return Some(EventRefusal::City(CityEventRefusal::NoCity));
+            };
+            if let Some(r) = self.city_event_refusal(city, event, data) {
+                return Some(EventRefusal::City(r));
             }
         } else if k_event.other_player_city_effect {
             let Some(other) = data.other_player else {
                 return Some(EventRefusal::NoOtherPlayer);
             };
 
-            let city = player_city(self, other, data.other_player_city);
-            if city.is_none_or(|c| !self.city_can_apply_event(c, event, data)) {
-                return Some(EventRefusal::OtherCity);
+            let Some(city) = player_city(self, other, data.other_player_city) else {
+                return Some(EventRefusal::OtherCity(CityEventRefusal::NoCity));
+            };
+            if let Some(r) = self.city_event_refusal(city, event, data) {
+                return Some(EventRefusal::OtherCity(r));
             }
         }
 
         if is_plot_event_trigger(d, data.trigger) {
             if let Some(plot) = self.map.plot_xy(data.plot_x, data.plot_y) {
-                if !self.plot_can_apply_event(plot, event) {
-                    return Some(EventRefusal::Plot);
+                if let Some(r) = self.plot_event_refusal(plot, event) {
+                    return Some(EventRefusal::Plot(r));
                 }
             }
         }
 
         if let Some(unit) = player_unit(self, p, data.unit) {
-            if !self.unit_can_apply_event(unit, event) {
-                return Some(EventRefusal::Unit);
+            if let Some(r) = self.unit_event_refusal(unit, event) {
+                return Some(EventRefusal::Unit(r));
             }
         }
 
@@ -1437,8 +1447,11 @@ impl Game {
             };
 
             let other_team = self.players[other].team;
-            if !self.team_can_declare_war(other_team, team) || !self.team_can_declare_war(team, other_team) {
-                return Some(EventRefusal::War);
+            if let Some(refusal) = self.team_declare_war_refusal(other_team, team) {
+                return Some(EventRefusal::War { declarer: other_team, target: team, refusal });
+            }
+            if let Some(refusal) = self.team_declare_war_refusal(team, other_team) {
+                return Some(EventRefusal::War { declarer: team, target: other_team, refusal });
             }
         }
 
@@ -1492,8 +1505,10 @@ impl Game {
         }
         // FfH: End Add
 
-        if !k_event.python_can_do.is_empty() && !self.py_event_can_do(event, data) {
-            return Some(EventRefusal::Script);
+        if !k_event.python_can_do.is_empty() {
+            if let Some(unmet) = self.py_event_unmet(event, data) {
+                return Some(EventRefusal::Script(unmet));
+            }
         }
 
         None

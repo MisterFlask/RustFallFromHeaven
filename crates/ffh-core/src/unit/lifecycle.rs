@@ -37,6 +37,18 @@ fn has_promotion_define(game: &Game, u: UnitId, define: i32) -> bool {
     }
 }
 
+/// Why an event cannot apply to a unit (`Game::unit_event_refusal`), a check of C++
+/// `CvUnit::canApplyEvent`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnitEventRefusal {
+    /// The event gives experience, and the unit can take no promotion.
+    NoPromotion,
+    /// The unit has this promotion already.
+    HasPromotion(PromotionType),
+    /// The event holds the unit in place, and the unit cannot attack.
+    CannotAttack,
+}
+
 impl Game {
     /// C++ `CvUnit::init` (CvUnit.cpp:106-308).
     /// C++ `init(iID, eUnit, eUnitAI, eOwner, iX, iY, eFacingDirection)`: the slot `u` is allocated by the
@@ -1515,24 +1527,30 @@ impl Game {
 
     /// C++ `CvUnit::canApplyEvent` (CvUnit.cpp:18160-18197).
     pub fn unit_can_apply_event(&self, u: UnitId, event: EventType) -> bool {
+        self.unit_event_refusal(u, event).is_none()
+    }
+
+    /// Why `event` cannot apply to unit `u` ([`Self::unit_can_apply_event`]): the first check
+    /// that fails, in the gate's order; `None` when it can.
+    pub fn unit_event_refusal(&self, u: UnitId, event: EventType) -> Option<UnitEventRefusal> {
         let k_event = &self.d.events[event];
 
         if 0 != k_event.unit_experience && !self.unit_can_acquire_promotion_any(u) {
-            return false;
+            return Some(UnitEventRefusal::NoPromotion);
         }
 
         if let Some(promotion) = k_event.unit_promotion {
             // FfH: Modified by Kael 10/29/2007 (was `!canAcquirePromotion(..)`)
             if self.units[u].has_promotion[promotion] {
-                return false;
+                return Some(UnitEventRefusal::HasPromotion(promotion));
             }
         }
 
         if k_event.unit_immobile_turns > 0 && !self.unit_can_attack(u) {
-            return false;
+            return Some(UnitEventRefusal::CannotAttack);
         }
 
-        true
+        None
     }
 
     /// C++ `CvUnit::applyEvent` (CvUnit.cpp:18199-18245).

@@ -5,6 +5,7 @@
 //! Empty XML strings mean "no callback" (C++ checks `!empty()` first).
 
 use crate::ffh::dispatch::tables;
+use crate::ffh::event_unmet::EventUnmet;
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::EventTriggeredData;
@@ -40,9 +41,14 @@ impl Game {
     }
     /// Event `PythonCanDo(eEvent, triggerData)`.
     pub fn py_event_can_do(&self, event: EventType, data: &EventTriggeredData) -> bool {
+        self.py_event_unmet(event, data).is_none()
+    }
+    /// Why event `PythonCanDo(eEvent, triggerData)` refuses ([`Self::py_event_can_do`]): the
+    /// script's check that failed; `None` when it allows the option (or there is no script).
+    pub fn py_event_unmet(&self, event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
         match &tables(self.d).event_can_do[event] {
             Some(b) => (b.f)(self, event, data),
-            None => true,
+            None => None,
         }
     }
     /// Event `PythonCallback(eEvent, triggerData)`.

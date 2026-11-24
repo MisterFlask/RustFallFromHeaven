@@ -11,6 +11,30 @@ use crate::structs::*;
 use crate::utils::is_world_unit_class;
 use ffh_data::*;
 
+/// Why an event cannot apply to a city (`Game::city_event_refusal`), a check of C++
+/// `CvCity::canApplyEvent`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CityEventRefusal {
+    /// The event has no city (or the city is gone, or no longer the player's).
+    NoCity,
+    /// Stored food would fall below 0: `stored` now, `after` the change.
+    Food { stored: i32, after: i32 },
+    /// The population must be more than this.
+    Population(i32),
+    /// The culture (shown, not times 100) must be at least this.
+    Culture(i32),
+    /// The city's civilization has no building of this class.
+    NoCivBuilding(BuildingClassType),
+    /// The city must have this building.
+    LacksBuilding(BuildingType),
+    /// The city has this building already.
+    HasBuilding(BuildingType),
+    /// The city must have at most this many religions.
+    Religions(i32),
+    /// Improvements that can be pillaged on the city's own plots: `have` of `need`.
+    Pillage { have: i32, need: i32 },
+}
+
 impl Game {
     /// C++ `CvCity::init` (CvCity.cpp:146-348): founds city `c` for `owner` at (`x`, `y`).
     ///
@@ -1335,56 +1359,64 @@ impl Game {
 
     /// C++ `CvCity::canApplyEvent` (CvCity.cpp:13358-13456).
     pub fn city_can_apply_event(&self, c: CityId, event: EventType, triggered: &EventTriggeredData) -> bool {
+        self.city_event_refusal(c, event, triggered).is_none()
+    }
+
+    /// Why `event` cannot apply to city `c` ([`Self::city_can_apply_event`]): the first check that
+    /// fails, in the gate's order; `None` when it can.
+    pub fn city_event_refusal(&self, c: CityId, event: EventType, triggered: &EventTriggeredData) -> Option<CityEventRefusal> {
         let d = self.d;
         let k_event = &d.events[event];
 
         if !k_event.city_effect && !k_event.other_player_city_effect {
-            return true;
+            return None;
         }
 
         if triggered.city.is_none() && k_event.city_effect {
-            return false;
+            return Some(CityEventRefusal::NoCity);
         }
 
         if triggered.other_player_city.is_none() && k_event.other_player_city_effect {
-            return false;
+            return Some(CityEventRefusal::NoCity);
         }
 
         let city = &self.cities[c];
 
         if k_event.food + ((100 + k_event.food_percent) * city.food) / 100 < 0 {
-            return false;
+            return Some(CityEventRefusal::Food { stored: city.food, after: k_event.food + ((100 + k_event.food_percent) * city.food) / 100 });
         }
 
         if k_event.population_change + city.population <= 0 {
-            return false;
+            return Some(CityEventRefusal::Population(-k_event.population_change));
         }
 
         if 100 * k_event.culture + city.culture[city.owner] < 0 {
-            return false;
+            return Some(CityEventRefusal::Culture(-k_event.culture));
         }
 
         if let Some(building_class) = k_event.building_class {
-            let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) else { return false };
+            let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) else {
+                return Some(CityEventRefusal::NoCivBuilding(building_class));
+            };
 
             // FfH: Added by Kael 09/21/2008 (a building class without a change number makes
             // the event require that building in the city)
             if k_event.building_change == 0 && self.city_num_real_family(c, building) == 0 {
-                return false;
+                return Some(CityEventRefusal::LacksBuilding(building));
             }
             // FfH: End Add
 
             if k_event.building_change > 0 {
                 if self.city_num_family(c, building) >= d.defines.city_max_num_buildings {
-                    return false;
+                    return Some(CityEventRefusal::HasBuilding(building));
                 }
             } else if k_event.building_change < 0 && self.city_num_real_family(c, building) + k_event.building_change < 0 {
-                return false;
+                return Some(CityEventRefusal::LacksBuilding(building));
             }
         }
 
         if k_event.max_num_religions != -1 && self.city_religion_count(c) > k_event.max_num_religions {
-            return false;
+            return Some(CityEventRefusal::Religions(k_event.max_num_religions));
         }
 
         if k_event.min_pillage > 0 {
@@ -1405,11 +1437,11 @@ impl Game {
             }
 
             if num_improvements < k_event.min_pillage {
-                return false;
+                return Some(CityEventRefusal::Pillage { have: num_improvements, need: k_event.min_pillage });
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvCity::applyEvent` (CvCity.cpp:13458-13656).

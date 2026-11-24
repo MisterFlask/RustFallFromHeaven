@@ -31,6 +31,7 @@ mod duel_reference;
 mod ffh;
 pub use ffh::{CreateBuildingRefusal, CreateUnitRefusal, NoEffect, SpellRefusal, SummonHow};
 mod lifecycle;
+pub use lifecycle::UnitEventRefusal;
 mod missions;
 mod movement;
 mod promotions;

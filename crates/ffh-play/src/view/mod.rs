@@ -41,6 +41,7 @@ pub mod outposts;
 pub mod place;
 pub mod reasons;
 pub mod reasons_spell;
+pub mod reasons_event;
 pub mod refusal;
 pub mod rituals;
 pub mod sea;
