@@ -24,8 +24,8 @@ export const LIGHT = {
   exposure: 1.0,
 };
 
-/** The light as the world ends (docs/HD2D.md §6, "The Armageddon counter"): the light the map
- *  turns to as the counter climbs -- at 50 a golden dusk (a low amber sun, a warm haze), at 100 the
+/** The light as the world ends (docs/HD2D.md §6, "The Armageddon counter"): the light the water
+ *  (only the water: hd2d/index.js waterLight) turns to as the counter climbs -- at 50 a golden dusk (a low amber sun, a warm haze), at 100 the
  *  end (a red sun, a blood-red fill, a dark ember haze). `doomLight` blends LIGHT through them; the
  *  mood pass does the rest (the land's grade). (A straight blend from LIGHT's blue haze to the red
  *  one went through mauve.) */
@@ -66,10 +66,9 @@ export function doomLight(t) {
 }
 
 /** How far the world has gone toward its end, from the Armageddon counter (0..100 and over):
- *  `light` for the sun and sky, which turn first, and `land` for the grade of the land (dying
- *  foliage, the blood-red sea, the darkening), which comes later -- at counter 20 the map still
- *  reads green and cheerful, at 50 the light is half turned and the land a quarter, at 100 both
- *  whole. */
+ *  `light` for the water's sun and sky, which turn first, and `land` for the water's grade (the
+ *  blood-red sea, the darkening; the name is from when the land took it too), which comes later
+ *  -- at 50 the light is half turned and the grade a third, at 100 both whole. */
 export function doomOf(counter) {
   const x = Math.min(1, Math.max(0, (counter ?? 0) / 100));
   return { light: x, land: Math.pow(x, 1.6) };
