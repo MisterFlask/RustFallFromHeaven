@@ -1627,18 +1627,36 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 // the rest.
                 return validate(g, h, &Command::EmpireOrder { city: c, order: *order, data: *data, dest: None }, ctx);
             }
-            let ok = match *order {
+            // The rules' own reason (`view::refusal`): the check of the gate that failed.
+            let why = match *order {
                 OrderType::ORDER_TRAIN => {
                     let u = UnitType::from_usize(in_range("unit type", *data, d.units.len())?);
-                    g.city_offers_unit(c, u) && g.city_can_train(c, u, false, false, false, false)
+                    if !g.city_offers_unit(c, u) {
+                        Some(format!("{} is not trained in this city.", names::display(d, u)))
+                    } else {
+                        g.city_train_refusal(c, u, false, false, false, false).map(|r| crate::view::refusal::train_refusal_text(g, c, u, r))
+                    }
                 }
-                OrderType::ORDER_CONSTRUCT => g.city_can_construct(c, BuildingType::from_usize(in_range("building", *data, d.buildings.len())?), false, false, false),
-                OrderType::ORDER_CREATE => g.city_can_create(c, ProjectType::from_usize(in_range("project", *data, d.projects.len())?), false, false),
-                OrderType::ORDER_MAINTAIN => g.city_can_maintain(c, ProcessType::from_usize(in_range("process", *data, d.processes.len())?), false),
+                OrderType::ORDER_CONSTRUCT => {
+                    let b = BuildingType::from_usize(in_range("building", *data, d.buildings.len())?);
+                    g.city_construct_refusal(c, b, false, false, false).map(|r| crate::view::refusal::construct_refusal_text(g, c, b, r))
+                }
+                OrderType::ORDER_CREATE => {
+                    let p = ProjectType::from_usize(in_range("project", *data, d.projects.len())?);
+                    g.city_create_refusal(c, p, false, false).map(|r| crate::view::refusal::create_refusal_text(g, c, p, r))
+                }
+                OrderType::ORDER_MAINTAIN => {
+                    let p = ProcessType::from_usize(in_range("process", *data, d.processes.len())?);
+                    // `canMaintain`: an outpost, then the process's technology.
+                    (!g.city_can_maintain(c, p, false)).then(|| match d.processes[p].tech_prereq.filter(|_| !g.cities[c].outpost) {
+                        Some(t) => format!("Requires {}.", names::display(d, t)),
+                        None => "The city is an outpost.".to_string(),
+                    })
+                }
                 _ => return Err(invalid("field `order`: not a production order")),
             };
-            if !ok {
-                return Err(cannot("the city cannot build that"));
+            if let Some(why) = why {
+                return Err(cannot(why));
             }
             // CvGame::cityPushOrder: the flags it sends.
             let (shift, ctrl) = if g.city_production(c) > 0 {
