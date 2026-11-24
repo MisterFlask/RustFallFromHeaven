@@ -640,27 +640,29 @@ impl RepairTargets {
     }
 }
 
-/// `reqRepair(caster)`.
-fn req_repair(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    let targets = RepairTargets::new(g.d);
-    let plot = g.unit_plot(caster);
-    for &u in &g.map.plots[plot].units {
-        if targets.matches(g, u) && g.units[u].damage > 0 {
-            return true;
-        }
+impl Game {
+    /// Whether Repair (`reqRepair`/`spellRepair`) works on unit `u`: a siege or naval unit, or a
+    /// golem.
+    pub fn unit_is_repair_target(&self, u: UnitId) -> bool {
+        RepairTargets::new(self.d).matches(self, u)
     }
-    false
 }
 
-/// `spellRepair(caster, amount)` (XML: `spellRepair(pCaster,20)`).
+/// `reqRepair(caster)`: a damaged repair target on the caster's plot.
+fn req_repair(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
+    let plot = g.unit_plot(caster);
+    g.map.plots[plot].units.iter().any(|&u| g.unit_is_repair_target(u) && g.units[u].damage > 0)
+}
+
+/// `spellRepair(caster, amount)` (XML: `spellRepair(pCaster,20)`): each repair target on the
+/// caster's plot loses `amount` damage.
 fn spell_repair(g: &mut Game, caster: UnitId, call: &PyCall) {
     let amount = call.int_arg(1).expect("spellRepair(pCaster, amount)");
-    let targets = RepairTargets::new(g.d);
     let plot = g.unit_plot(caster);
     let n = g.map.plots[plot].units.len();
     for i in 0..n {
         let Some(u) = plot_unit_at(g, plot, i) else { continue };
-        if targets.matches(g, u) {
+        if g.unit_is_repair_target(u) {
             // `pUnit.changeDamage(-amount, 0)`: player 0.
             g.unit_change_damage(u, -amount, Some(PlayerId(0)));
         }
