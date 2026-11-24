@@ -251,6 +251,7 @@ html.iso.hd2d #iso-rail button::before { inset: 0 16px 0 0; background: linear-g
 html.iso.hd2d #iso-rail button:is(:hover:not([disabled]), :focus-visible)::before {
   background: linear-gradient(90deg, rgba(240, 236, 224, 0.36), rgba(240, 236, 224, 0.16) 60%, rgba(240, 236, 224, 0.75)), rgba(30, 29, 33, 0.94);
 }
+html.iso.hd2d #iso-rail button:is(:hover:not([disabled]), :focus-visible) { width: auto; min-width: 86px; padding: 0 34px 0 18px; }
 html.iso.hd2d #iso-rail button.attention::after { top: 6px; right: 34px; border: 1px solid var(--hd-ink); outline: 0; }
 html.iso.hd2d #bottom { left: calc(var(--iso-gap) + 92px); }
 @media (max-height: 880px) {
