@@ -84,8 +84,8 @@ fn arrivals_take_their_best_row_or_form_a_squad() {
         assert_eq!(w.g.squads[*s].body, SquadBody::Army(army));
         assert!(!w.g.squads[*s].hand_set);
     }
-    // 5 places fit one squad: the AI's rule sorts them.
-    assert_eq!(w.g.squad_bodies_to_sort(p0), vec![(from, SquadBody::Army(army))]);
+    // 5 places fit one squad: the AI's rule masses them.
+    assert_eq!(w.g.squad_bodies_to_mass(p0), vec![(from, SquadBody::Army(army))]);
 }
 
 /// A moved unit keeps its cell, both squads become hand-set, a unit there swaps with it, a full
@@ -142,7 +142,7 @@ fn auto_sort_evens_the_squads() {
     // Arrivals: [2 axemen + 3 archers], [3 archers], [1 archer]: three squads for 9 places.
     let sq = w.squads(p0, from);
     assert_eq!(sq.len(), 3, "{sq:?}");
-    assert_eq!(w.g.squad_bodies_to_sort(p0).len(), 1);
+    assert_eq!(w.g.squad_bodies_to_mass(p0).len(), 1);
     let ids: Vec<SquadId> = sq.iter().map(|s| s.0).collect();
     w.g.squad_auto_sort(p0, &ids).expect("sorted");
     let sq = w.squads(p0, from);
@@ -151,7 +151,8 @@ fn auto_sort_evens_the_squads() {
         assert!(!w.g.squads[*s].hand_set);
         assert!(units.iter().any(|&(u, c)| axemen.contains(&u) && c / 3 == 0), "each squad has an axeman in front: {units:?}");
     }
-    assert!(w.g.squad_bodies_to_sort(p0).is_empty());
+    // The snake splits the axemen; the AI's massed deal keeps them together: still to mass.
+    assert_eq!(w.g.squad_bodies_to_mass(p0).len(), 1);
 }
 
 /// A whole squad of two or more split off into a new army keeps its squad; a lone unit arrives.

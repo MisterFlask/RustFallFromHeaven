@@ -431,6 +431,9 @@ fn the_forecast_of_waves_carries_the_battle_on() {
     w.forest(to);
     let runs = 400;
     let att = w.units(p0, "UNIT_AXEMAN", from, 3);
+    // One squad of three (made one at a time they are three squads of one, and the forecast
+    // fights the squads as they stand).
+    assert_eq!(w.army(p0, from).len(), 1);
     w.units(p1, "UNIT_ARCHER", to, 2);
     w.units(p1, "UNIT_WARRIOR", to, 2);
     // The defenders one squad: the plot falls when it is wiped out.
@@ -455,6 +458,8 @@ fn the_forecast_of_waves_carries_the_battle_on() {
         for &a in &more {
             w.g.unit_change_extra_combat_percent(a, 200);
         }
+        // One army in squads of five (not 24 squads of one).
+        w.army(p0, from);
         let def_slots = w.g.engage_preview(&w.input()).unwrap().slots.def();
         w.units(p1, "UNIT_WARRIOR", to, def_slots as usize);
         let first = w.g.engage_forecast_if(&more, from, to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
@@ -550,4 +555,157 @@ fn preview_timing() {
         });
         println!("{size} v {size}: the plan {plan_ms:.1} ms ({} runs), the auto formation {auto_ms:.3} ms", g.d.defines.engagement_preview_runs);
     }
+}
+
+/// `n` axemen of `owner` on `at`, made one at a time (one-unit armies), each stronger than the
+/// one before (`extra_combat_percent` 0, 10, 20, ..): their strength order is their id order.
+fn graded_axemen(w: &mut World, owner: PlayerId, at: PlotIdx, n: usize) -> Vec<UnitId> {
+    let us = w.units(owner, "UNIT_AXEMAN", at, n);
+    for (i, &u) in us.iter().enumerate() {
+        w.g.unit_change_extra_combat_percent(u, 10 * i as i32);
+    }
+    us
+}
+
+/// Five defenders on `to` no attack can beat (one squad): every wave of a forecast is fought.
+fn unbeatable(w: &mut World) {
+    let (p1, to) = (w.p1, w.to);
+    for u in w.units(p1, "UNIT_AXEMAN", to, 5) {
+        w.g.unit_change_extra_combat_percent(u, 5000);
+    }
+    assert_eq!(w.army(p1, to).len(), 1);
+}
+
+fn sorted(mut v: Vec<UnitId>) -> Vec<UnitId> {
+    v.sort();
+    v
+}
+
+fn attackers(f: &ffh_core::engagement::Forecast) -> Vec<UnitId> {
+    f.per.iter().filter(|x| x.side == Side::Attacker).map(|x| x.unit).collect()
+}
+
+/// The forecast fights the squads as they stand: eight axemen of one army dealt by the snake into
+/// two squads of four commit the squad the preview commits (not the auto formation's best five
+/// of the eight), and the waves fight one battle per squad, the strongest first.
+#[test]
+fn the_forecast_fights_the_squads_as_they_stand() {
+    let mut w = world();
+    let (p0, from, to) = (w.p0, w.from, w.to);
+    let eight = graded_axemen(&mut w, p0, from, 8);
+    w.g.army_form(p0, &eight).expect("an army");
+    let body = w.g.unit_squad_body(eight[0]);
+    w.g.squad_auto_sort_body(p0, from, body).expect("sorted");
+    assert_eq!(w.g.squad_layouts_at(p0, from).len(), 2, "the snake: two squads of four");
+    unbeatable(&mut w);
+    let runs = w.g.d.defines.engagement_preview_runs;
+    let pv = w.g.engage_preview(&w.input()).unwrap();
+    let pool = w.g.engage_attackers(p0, from, to, WarTest::AtWar);
+    let f = w.g.engage_forecast_if(&pool, from, to, &[], runs, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
+    assert_eq!(f, pv.forecast, "a real attack: the preview's battle");
+    let committed = sorted(attackers(&f));
+    assert_eq!(committed, sorted(pv.formation.iter().map(|p| p.unit).collect()));
+    assert_eq!(committed.len(), 4);
+    let ctx = HitCtx::new(from, to);
+    let best5 = sorted(w.g.engage_auto_formation(&pool, Side::Attacker, &w.g.engage_slots(&ctx), &ctx).iter().map(|p| p.unit).collect());
+    assert_eq!(best5.len(), 5);
+    assert_ne!(committed, best5, "not the best five of the pool");
+    // The waves: both squads fight, the strongest (the preview's) first.
+    let waves = w.g.engage_forecast_waves(&[(pool.clone(), from)], to, &[], 100, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
+    let order = attackers(&waves);
+    assert_eq!(sorted(order.clone()), sorted(eight.clone()), "two battles: every axeman fights");
+    assert_eq!(sorted(order[..4].to_vec()), committed, "the strongest squad first");
+
+    // Nine squads of one (one-unit armies): one battle each, at most FORECAST_MAX_WAVES, the
+    // weakest left out; never two formations of five.
+    let mut w = world();
+    let (p0, from, to) = (w.p0, w.from, w.to);
+    let nine = graded_axemen(&mut w, p0, from, 9);
+    assert_eq!(w.g.squad_layouts_at(p0, from).len(), 9);
+    unbeatable(&mut w);
+    let f = w.g.engage_forecast_if(&nine, from, to, &[], 100, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
+    assert_eq!(attackers(&f), vec![nine[8]], "the strongest squad of one");
+    let waves = w.g.engage_forecast_waves(&[(nine.clone(), from)], to, &[], 100, ForecastSight::Attacker, ForecastTurn::Now).unwrap();
+    let order = attackers(&waves);
+    assert_eq!(order.len(), ffh_core::engagement::preview::FORECAST_MAX_WAVES);
+    assert_eq!(order, nine[1..].iter().rev().copied().collect::<Vec<_>>(), "the strongest first, one battle each");
+}
+
+/// Units of the pool standing on two plots are forecast in their own squads there (two
+/// battles), not merged into one formation.
+#[test]
+fn units_on_two_plots_fight_as_two_squads() {
+    let mut w = world();
+    let (p0, from, to) = (w.p0, w.from, w.to);
+    let (a, b) = far_plots(&w);
+    let three = w.units(p0, "UNIT_AXEMAN", a, 3);
+    let two = w.units(p0, "UNIT_AXEMAN", b, 2);
+    w.army(p0, a);
+    w.army(p0, b);
+    unbeatable(&mut w);
+    let all: Vec<UnitId> = three.iter().chain(&two).copied().collect();
+    let f = w.g.engage_forecast_if(&all, from, to, &[], 100, ForecastSight::Defender, ForecastTurn::Now).unwrap();
+    assert_eq!(sorted(attackers(&f)), sorted(three.clone()), "the stronger squad (three axemen) alone");
+    let waves = w.g.engage_forecast_waves(&[(all.clone(), from)], to, &[], 100, ForecastSight::Defender, ForecastTurn::Now).unwrap();
+    let order = attackers(&waves);
+    assert_eq!(order.len(), 5);
+    assert_eq!(sorted(order[..3].to_vec()), sorted(three), "first the squad of three");
+    assert_eq!(sorted(order[3..].to_vec()), sorted(two), "then the squad of two");
+}
+
+/// The AI's massed deal (`squad_mass_sort_body`): the first squad is the auto formation of the
+/// body's units, it is the strongest, every squad Auto, no unit lost or doubled, and the body is
+/// then settled (`squad_bodies_to_mass` empty). A body in one squad is never listed; squads of
+/// three archers are massed into as few as hold them.
+#[test]
+fn massing_puts_the_best_five_together() {
+    let mut w = world();
+    let (p0, from, to) = (w.p0, w.from, w.to);
+    let eight = graded_axemen(&mut w, p0, from, 8);
+    w.g.army_form(p0, &eight).expect("an army");
+    let body = w.g.unit_squad_body(eight[0]);
+    w.g.squad_auto_sort_body(p0, from, body).expect("sorted");
+    assert_eq!(w.g.squad_bodies_to_mass(p0), vec![(from, body)], "the snake is not massed");
+    w.g.squad_mass_sort_body(p0, from, body).expect("massed");
+    let layouts = w.g.squad_layouts_at(p0, from);
+    assert_eq!(layouts.len(), 2);
+    let members: Vec<Vec<UnitId>> = layouts.iter().map(|l| sorted(l.units().into_iter().map(|(u, _)| u).collect())).collect();
+    let best = sorted(w.g.engage_auto_formation(&eight, Side::Attacker, &w.g.engage_squad_slots(), &HitCtx::at(from)).iter().map(|p| p.unit).collect());
+    assert_eq!(members[0], best);
+    assert_eq!(members[0], sorted(eight[3..].to_vec()), "the five strongest");
+    assert_eq!(sorted(members.concat()), sorted(eight.clone()), "every unit once");
+    for l in &layouts {
+        let s = l.squad.expect("synced");
+        assert!(!w.g.squads[s].hand_set && w.g.squads[s].body == body);
+    }
+    let ctx = HitCtx::new(from, to);
+    let field = w.g.engage_attacking_squads(from, &eight, &ctx);
+    assert_eq!(w.g.engage_strongest_squad(&field, Side::Attacker, &ctx), Some(0));
+    assert_eq!(field[0].squad, layouts[0].squad);
+    assert!(w.g.squad_bodies_to_mass(p0).is_empty(), "settled");
+    // Again: nothing changes.
+    w.g.squad_mass_sort_body(p0, from, body).expect("massed");
+    assert_eq!(w.g.squad_layouts_at(p0, from), layouts);
+
+    // Five places in one squad: never listed.
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    w.units(p0, "UNIT_AXEMAN", from, 5);
+    assert_eq!(w.army(p0, from).len(), 1);
+    assert!(w.g.squad_bodies_to_mass(p0).is_empty());
+
+    // Twelve archers arriving one by one: squads of three (the middle row full); massed into
+    // ceil(12 / 5) = 3.
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    let archers = w.units(p0, "UNIT_ARCHER", from, 12);
+    w.g.army_form(p0, &archers).expect("an army");
+    let body = w.g.unit_squad_body(archers[0]);
+    assert_eq!(w.g.squad_layouts_at(p0, from).len(), 4, "squads of three");
+    assert_eq!(w.g.squad_bodies_to_mass(p0), vec![(from, body)]);
+    w.g.squad_mass_sort_body(p0, from, body).expect("massed");
+    let layouts = w.g.squad_layouts_at(p0, from);
+    assert_eq!(layouts.len(), 3);
+    assert_eq!(sorted(layouts.iter().flat_map(|l| l.units().into_iter().map(|(u, _)| u)).collect()), sorted(archers));
+    assert!(w.g.squad_bodies_to_mass(p0).is_empty());
 }

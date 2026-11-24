@@ -234,9 +234,9 @@ impl Controller for Ai {
             campaign::plan(g, &mut v);
             casting::barrage(g, &v);
         }
-        squads::turn(g, p); // squads of one sorted before the turn's attacks (docs/ENGAGEMENTS.md)
+        squads::turn(g, p); // squads massed (the best five places together) before the turn's attacks (docs/ENGAGEMENTS.md)
         units::play(self, g, &mut v);
-        squads::turn(g, p); // and for the battles it defends
+        squads::turn(g, p); // and again for the battles it defends (new arrivals massed in)
         if !v.barbarian {
             cards::end_turn(g, p); // the cards' content that acts once the units have moved
         }

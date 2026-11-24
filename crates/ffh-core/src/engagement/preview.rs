@@ -2,8 +2,9 @@
 //! Pure (`&self`): it plays the battle many times on a private RNG and never touches the game's.
 //!
 //! **The plan** ([`Game::engage_preview`]): the attacker's pool on the plot it attacks from, its
-//! slots and lanes, the formation (the one given, checked, or the rules' auto formation), the auto
-//! formation itself and the pool's units not in the formation; the defenders the attacker's team
+//! slots and lanes, its squads that can attack (`squads.rs`), the formation (the squad the order
+//! names, else the strongest, in its cells), the strongest squad's (`auto`) and the pool's units
+//! not in the formation; the defenders the attacker's team
 //! sees and their formation (the rules' auto formation of them, as the real fight forms them),
 //! the ground and its rules.
 //!
@@ -19,6 +20,11 @@
 //! plot: none in reserve, none that sat out), the chance the attacker's line is wiped out, and per
 //! committed fighter its chance to fall and to escape.
 //!
+//! **The hypothetical forecast** ([`Game::engage_forecast_if`], [`Game::engage_forecast_waves`]:
+//! the AI's estimator): the same battles for attackers that need not stand on the plot they attack
+//! from yet, each fighting in the squad it stands in now, the strongest squad first, one battle a
+//! squad: never the whole pool as one formation.
+//!
 //! **Frozen** ([`Game::engage_forecast_frozen`]): when a human attacker's attack whose battle gets
 //! a log is made, its plan is recomputed (the same seed: the numbers it saw) into the log
 //! (`report::FrozenForecast`).
@@ -29,7 +35,9 @@ use super::formation::{self, FighterIdx, Fate, Ground, GroundRule, Side};
 use super::pick::WarTest;
 use super::report::{ForecastFighter, FrozenForecast};
 use super::slots::Slots;
+use super::squads::FieldSquad;
 use super::stats::HitCtx;
+use std::collections::BTreeMap;
 use super::summons::{Called, SummonCall};
 use ffh_data::{SpellType, UnitType};
 use crate::game::Game;
@@ -124,8 +132,8 @@ pub struct EngagePreview {
     /// The defended plot's ground and its rules that apply.
     pub ground: Ground,
     pub rules: Vec<GroundRule>,
-    /// The attacker's pool, the plan's formation, the rules' auto formation of the pool, and the
-    /// pool's units not in the plan's formation.
+    /// The attacker's pool, the plan's formation, the strongest squad's formation (what fights
+    /// when no squad is named), and the pool's units not in the plan's formation.
     pub pool: Vec<UnitId>,
     pub formation: Vec<Place>,
     pub auto: Vec<Place>,
@@ -565,9 +573,10 @@ impl Game {
     /// the defenders now on `target` plus `extra_defenders` (units elsewhere now, as if they stood
     /// on `target`), in `runs` battles. Pure and deterministic as the preview: the same set-up,
     /// the same seed (both formations, the plots, the turn), so for a real attack (the attacker's
-    /// pool on `from`, no extras) whose strongest squad is the pool's auto formation (one Auto
-    /// squad) it is the preview's forecast at the same `runs`. The attackers are taken as one
-    /// force in the auto formation (5 places), not by their squads.
+    /// pool on `from`, no extras) it is the preview's forecast (no squad given) at the same `runs`.
+    /// The attackers fight as the squads they stand in now, wherever they stand
+    /// (`Game::engage_forecast_squads`: each arrives in its squad), and the strongest of them
+    /// fights, as the real fight picks it: one squad, not the best places of the whole pool.
     ///
     /// The pool is the attackers that could make the attack: one standing on `from` already as the
     /// real fight picks it ([`Game::unit_can_engage`]: moves and attacks left), any other one if
@@ -588,13 +597,16 @@ impl Game {
         let pool = self.engage_forecast_pool(attackers, from, target, when, WarTest::AtWar);
         let ctx = HitCtx::new(from, target);
         let slots = self.engage_slots(&ctx);
-        let auto = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
-        if auto.is_empty() {
+        // The strongest squad fights, as in the preview with no squad given.
+        let squads = self.engage_forecast_squads(&pool, from, &ctx);
+        let Some(sq) = self.engage_strongest_squad(&squads, Side::Attacker, &ctx).map(|i| &squads[i]) else {
             return Err("no unit can attack there");
-        }
-        let force: Vec<UnitId> = auto.iter().map(|q| q.unit).collect();
+        };
+        let formation = sq.places.clone();
+        let force = sq.units();
         let view = self.engage_forecast_view(p, target, &force, extra_defenders, WarTest::AtWar);
-        let plan = self.engage_plan_finish(ctx, slots, pool, auto.clone(), auto, view, true)?;
+        let mut plan = self.engage_plan_finish(ctx, slots, pool, formation.clone(), formation, view, true)?;
+        plan.setup.squads[Side::Attacker.index()] = sq.squad;
         let g = plan.scratch.as_deref().unwrap_or(self);
         let mut forecast = g.engage_forecast_sampled(&plan.setup, &plan.view, runs.max(1));
         forecast.per.retain(|x| !g.units[x.unit].battle_summon);
@@ -671,6 +683,19 @@ impl Game {
         pool
     }
 
+    /// The squads a hypothetical attack's `pool` fights in (`engage_forecast_if`): its units
+    /// grouped by the squad each stands in now, wherever it stands (a unit assumed to arrive on
+    /// `from` arrives in its squad): for each plot they stand on, in plot order, their squads
+    /// there ([`Game::engage_field_squads`]: units in no squad formed by the auto formation). A
+    /// unit on no plot counts as on `from`.
+    fn engage_forecast_squads(&self, pool: &[UnitId], from: PlotIdx, ctx: &HitCtx) -> Vec<FieldSquad> {
+        let mut at: BTreeMap<PlotIdx, Vec<UnitId>> = BTreeMap::new();
+        for &u in pool {
+            at.entry(self.unit_plot_opt(u).unwrap_or(from)).or_default().push(u);
+        }
+        at.into_iter().flat_map(|(plot, units)| self.engage_field_squads(plot, &units, Side::Attacker, ctx)).collect()
+    }
+
     /// The defense a hypothetical attack meets (`engage_forecast_if`): the real fight's view, and
     /// the extra defenders it would meet as if they stood on `target`.
     fn engage_forecast_view(&self, p: PlayerId, target: PlotIdx, force: &[UnitId], extra_defenders: &[UnitId], war: WarTest) -> DefView {
@@ -691,10 +716,11 @@ impl Game {
 
     /// The forecast of the battles that follow one another on `target` in a turn
     /// ([`Game::engage_forecast_if`] for each, the state carried from one to the next): each
-    /// entry of `attacks` is units attacking as if from a plot next to `target`; its pool attacks
-    /// in its auto formation, then the units of the pool not in it (the reserve, which has not
-    /// attacked) in theirs, and so on, every unit once, at most [`FORECAST_MAX_WAVES`] battles in
-    /// all; then the next entry. In each run the battles are fought in that order until the plot
+    /// entry of `attacks` is units attacking as if from a plot next to `target`; its pool fights
+    /// by the squads its units stand in now (as `engage_forecast_if` takes them), one battle per
+    /// squad, the strongest of the squads left first (as the real fight picks one when no order
+    /// names it), every unit once, at most [`FORECAST_MAX_WAVES`] battles in all; then the next
+    /// entry. In each run the battles are fought in that order until the plot
     /// falls (a battle the defenders lose with none of them left; one they win leaves the plot
     /// empty, and the next battle, if any, takes it unopposed): the defenders that fell or fled
     /// are gone, the survivors keep their damage (and the
@@ -706,7 +732,7 @@ impl Game {
     /// that it falls or the last battle fought wiped out the defender's line, `repulsed_permille`
     /// that it does not fall and the last battle fought wiped out the attacker's; losses over all
     /// the battles; `per` every unit committed in some run (attackers by battle, then the
-    /// defenders), `sentinel_fall_pct` empty. With one battle (a pool that fits one formation)
+    /// defenders), `sentinel_fall_pct` empty. With one battle (a pool in one squad)
     /// the battle is `engage_forecast_if`'s, sampled on a seed of its own. `Err`: as
     /// `engage_forecast_if` (for the first battle).
     pub fn engage_forecast_waves(&self, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extra_defenders: &[UnitId], runs: i32, sight: ForecastSight, when: ForecastTurn) -> Result<Forecast, &'static str> {
@@ -719,12 +745,14 @@ impl Game {
     pub fn engage_forecast_waves_war(&self, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extra_defenders: &[UnitId], runs: i32, sight: ForecastSight, when: ForecastTurn, war: WarTest) -> Result<Forecast, &'static str> {
         let froms: Vec<PlotIdx> = attacks.iter().map(|a| a.1).collect();
         let p = self.engage_forecast_check(attacks.iter().flat_map(|a| a.0.iter().copied()), &froms, target, sight)?;
-        // The battles: each attack's pool in formations, every unit once.
+        // The battles: each attack's pool by its squads, the strongest of those left first, every
+        // unit once.
         struct Wave {
             ctx: HitCtx,
             slots: Slots,
             pool: Vec<UnitId>,
             formation: Vec<Place>,
+            squad: Option<SquadId>,
         }
         let mut waves: Vec<Wave> = Vec::new();
         let mut used: Vec<UnitId> = Vec::new();
@@ -732,15 +760,14 @@ impl Game {
             let ctx = HitCtx::new(*from, target);
             let slots = self.engage_slots(&ctx);
             let mut left: Vec<UnitId> = self.engage_forecast_pool(units, *from, target, when, war).into_iter().filter(|u| !used.contains(u)).collect();
-            while !left.is_empty() && waves.len() < FORECAST_MAX_WAVES {
-                let formation = self.engage_auto_formation(&left, Side::Attacker, &slots, &ctx);
-                if formation.is_empty() {
-                    break;
-                }
+            let mut squads = self.engage_forecast_squads(&left, *from, &ctx);
+            while waves.len() < FORECAST_MAX_WAVES {
+                let Some(i) = self.engage_strongest_squad(&squads, Side::Attacker, &ctx) else { break };
+                let sq = squads.remove(i);
                 let pool = left.clone();
-                left.retain(|u| !formation.iter().any(|q| q.unit == *u));
-                used.extend(formation.iter().map(|q| q.unit));
-                waves.push(Wave { ctx, slots: slots.clone(), pool, formation });
+                left.retain(|u| !sq.places.iter().any(|q| q.unit == *u));
+                used.extend(sq.places.iter().map(|q| q.unit));
+                waves.push(Wave { ctx, slots: slots.clone(), pool, formation: sq.places, squad: sq.squad });
             }
         }
         if waves.is_empty() {
@@ -753,7 +780,8 @@ impl Game {
         let plan_of = |w: usize, alive: &[UnitId], gone: &[UnitId]| -> Option<(Plan, Vec<BattleEffect>)> {
             let wave = &waves[w];
             let view = DefView { candidates: alive.to_vec(), on_plot: view0.on_plot.iter().copied().filter(|u| !gone.contains(u)).collect(), declared: view0.declared.clone() };
-            let plan = self.engage_plan_finish(wave.ctx, wave.slots.clone(), wave.pool.clone(), wave.formation.clone(), wave.formation.clone(), view, true).ok()?;
+            let mut plan = self.engage_plan_finish(wave.ctx, wave.slots.clone(), wave.pool.clone(), wave.formation.clone(), wave.formation.clone(), view, true).ok()?;
+            plan.setup.squads[Side::Attacker.index()] = wave.squad;
             let pre = plan.scratch.as_deref().unwrap_or(self).engage_pre_battle(&plan.setup);
             Some((plan, pre))
         };

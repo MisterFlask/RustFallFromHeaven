@@ -38,6 +38,10 @@
 //! the units of the chosen squads into as few squads as hold them (guards first, strongest first,
 //! in snake order so each squad gets a front; then the other kinds in the auto formation's order),
 //! each arranged by the auto formation.
+//!
+//! **Massed** ([`Game::squad_mass_sort_body`], the AI's deal): one battle is one squad, so the
+//! AI keeps its best units together: a body's first squad is the auto formation of all its units
+//! as attackers, the second that of the rest, and so on, each Auto.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -572,45 +576,96 @@ impl Game {
             }
         }
         let bodies: BTreeSet<SquadBody> = chosen.iter().map(|l| l.body).collect();
+        let mut deals: Vec<(SquadBody, Vec<SquadId>, Vec<Vec<UnitId>>)> = Vec::new();
+        for body in bodies {
+            let ids: Vec<SquadId> = chosen.iter().filter(|l| l.body == body).filter_map(|l| l.squad).collect();
+            let pool: Vec<UnitId> = chosen.iter().filter(|l| l.body == body).flat_map(|l| l.units().into_iter().map(|(u, _)| u)).collect();
+            let bins = self.squad_snake_bins(&pool, plot);
+            deals.push((body, ids, bins));
+        }
+        self.squad_deal(p, plot, deals);
+        Ok(())
+    }
+
+    /// The snake deal of auto-sort (module comment, "Commands"): `pool` (one body's units on
+    /// `plot`) dealt into as few squads as hold them, guards first, strongest first, in snake order.
+    fn squad_snake_bins(&self, pool: &[UnitId], plot: PlotIdx) -> Vec<Vec<UnitId>> {
         let cap = self.squad_places();
         let ctx = HitCtx::at(plot);
-        let mut assign: Vec<(SquadId, Vec<UnitId>)> = Vec::new();
-        for body in bodies {
-            let mut ids: Vec<SquadId> = chosen.iter().filter(|l| l.body == body).filter_map(|l| l.squad).collect();
-            ids.sort();
-            let pool: Vec<UnitId> = chosen.iter().filter(|l| l.body == body).flat_map(|l| l.units().into_iter().map(|(u, _)| u)).collect();
-            let places: i32 = pool.iter().map(|&u| self.squad_size(u)).sum();
-            let k = ((places + cap - 1) / cap).max(1) as usize;
-            let mut keyed: Vec<(bool, i32, i64, UnitId)> = pool
-                .iter()
-                .map(|&u| {
-                    let kind = self.unit_engage_kind(u);
-                    let guard = matches!(kind, ActionKind::Strike | ActionKind::Charge);
-                    (!guard, kind_pick_order(kind, self.unit_engage_anti_flank(u)), -(self.engage_a_alone(u, Side::Defender, &ctx) as i64), u)
-                })
-                .collect();
-            keyed.sort();
-            let mut bins: Vec<Vec<UnitId>> = vec![Vec::new(); k];
-            let mut fill = vec![0i32; k];
-            let (mut i, mut dir) = (0usize, 1i32);
-            for &(_, _, _, u) in &keyed {
-                let size = self.squad_size(u);
-                // The next bin in snake order with room (there is always one: k bins hold them).
-                let mut tries = 0;
-                while fill[i] + size > cap && tries < 2 * k {
-                    (i, dir) = snake_step(i, dir, k);
-                    tries += 1;
-                }
-                if fill[i] + size > cap {
-                    // A large unit that fits nowhere whole: a squad of its own.
-                    bins.push(vec![u]);
-                    fill.push(size);
-                    continue;
-                }
-                bins[i].push(u);
-                fill[i] += size;
+        let places: i32 = pool.iter().map(|&u| self.squad_size(u)).sum();
+        let k = ((places + cap - 1) / cap).max(1) as usize;
+        let mut keyed: Vec<(bool, i32, i64, UnitId)> = pool
+            .iter()
+            .map(|&u| {
+                let kind = self.unit_engage_kind(u);
+                let guard = matches!(kind, ActionKind::Strike | ActionKind::Charge);
+                (!guard, kind_pick_order(kind, self.unit_engage_anti_flank(u)), -(self.engage_a_alone(u, Side::Defender, &ctx) as i64), u)
+            })
+            .collect();
+        keyed.sort();
+        let mut bins: Vec<Vec<UnitId>> = vec![Vec::new(); k];
+        let mut fill = vec![0i32; k];
+        let (mut i, mut dir) = (0usize, 1i32);
+        for &(_, _, _, u) in &keyed {
+            let size = self.squad_size(u);
+            // The next bin in snake order with room (there is always one: k bins hold them).
+            let mut tries = 0;
+            while fill[i] + size > cap && tries < 2 * k {
                 (i, dir) = snake_step(i, dir, k);
+                tries += 1;
             }
+            if fill[i] + size > cap {
+                // A large unit that fits nowhere whole: a squad of its own.
+                bins.push(vec![u]);
+                fill.push(size);
+                continue;
+            }
+            bins[i].push(u);
+            fill[i] += size;
+            (i, dir) = snake_step(i, dir, k);
+        }
+        bins
+    }
+
+    /// The massed deal (the AI's, [`Game::squad_mass_sort_body`]): of `pool` (one body's units on
+    /// `plot`), the first squad is the rules' auto formation of them all as attackers, the second
+    /// that of the rest, and so on; a unit no formation takes joins the last squad with room, else
+    /// a squad of its own.
+    fn squad_mass_bins(&self, pool: &[UnitId], plot: PlotIdx) -> Vec<Vec<UnitId>> {
+        let cap = self.squad_places();
+        let slots = self.engage_squad_slots();
+        let ctx = HitCtx::at(plot);
+        // By id: the same units are the same deal, whatever their order.
+        let mut rest: Vec<UnitId> = pool.to_vec();
+        rest.sort();
+        let mut bins: Vec<Vec<UnitId>> = Vec::new();
+        while !rest.is_empty() {
+            let f = self.engage_auto_formation(&rest, Side::Attacker, &slots, &ctx);
+            if f.is_empty() {
+                break;
+            }
+            rest.retain(|u| !f.iter().any(|q| q.unit == *u));
+            bins.push(f.iter().map(|q| q.unit).collect());
+        }
+        for u in rest {
+            let size = self.squad_size(u);
+            let fill = |b: &Vec<UnitId>| -> i32 { b.iter().map(|&x| self.squad_size(x)).sum() };
+            match bins.iter().rposition(|b| fill(b) + size <= cap) {
+                Some(i) => bins[i].push(u),
+                None => bins.push(vec![u]),
+            }
+        }
+        bins
+    }
+
+    /// Writes the deals (each a body, its squads' ids and the units dealt to each squad, in
+    /// order) on `plot` for player `p`: the bins take the body's squad ids in id order, new
+    /// squads for the bins beyond them; every squad Auto, arranged by the auto formation; then
+    /// the sync (squads left without units are gone).
+    fn squad_deal(&mut self, p: PlayerId, plot: PlotIdx, deals: Vec<(SquadBody, Vec<SquadId>, Vec<Vec<UnitId>>)>) {
+        let mut assign: Vec<(SquadId, Vec<UnitId>)> = Vec::new();
+        for (body, mut ids, bins) in deals {
+            ids.sort();
             for (j, bin) in bins.into_iter().enumerate() {
                 let id = match ids.get(j) {
                     Some(&s) => s,
@@ -629,15 +684,15 @@ impl Game {
             }
         }
         self.player_squad_sync(p);
-        Ok(())
     }
 
-    /// The bodies (each with its plot) of player `p` whose squads could be fewer: more squads than
-    /// `ceil(places / ENGAGEMENT_SQUAD_PLACES)` (units that arrived formed squads of one; the AI
-    /// auto-sorts those). Reads the layouts only.
-    pub fn squad_bodies_to_sort(&self, p: PlayerId) -> Vec<(PlotIdx, SquadBody)> {
+    /// The bodies (each with its plot) of player `p` with two or more squads on a plot whose
+    /// squads are not the massed deal ([`Game::squad_mass_sort_body`]): their memberships, in
+    /// squad order, differ from it, or a squad is hand-set. A body with more squads than it needs
+    /// (units that arrived formed squads of one) is among them: massing deals into as few as hold
+    /// the units. Reads the layouts only; a plot with one squad computes no formation.
+    pub fn squad_bodies_to_mass(&self, p: PlayerId) -> Vec<(PlotIdx, SquadBody)> {
         let plots: BTreeSet<PlotIdx> = self.players[p].units.iter().filter(|&&u| self.unit_in_squads(u)).filter_map(|&u| self.unit_plot_opt(u)).collect();
-        let cap = self.squad_places();
         let mut out = Vec::new();
         for plot in plots {
             let layouts = self.squad_layouts_at(p, plot);
@@ -647,8 +702,25 @@ impl Game {
             let bodies: BTreeSet<SquadBody> = layouts.iter().map(|l| l.body).collect();
             for body in bodies {
                 let of: Vec<&SquadLayout> = layouts.iter().filter(|l| l.body == body).collect();
-                let places: i32 = of.iter().map(|l| self.squad_layout_places(l)).sum();
-                if of.len() as i32 > (places + cap - 1) / cap {
+                if of.len() < 2 {
+                    continue;
+                }
+                let members = |l: &SquadLayout| -> Vec<UnitId> {
+                    let mut us: Vec<UnitId> = l.units().into_iter().map(|(u, _)| u).collect();
+                    us.sort();
+                    us
+                };
+                let now: Vec<Vec<UnitId>> = of.iter().map(|l| members(l)).collect();
+                let pool: Vec<UnitId> = now.iter().flatten().copied().collect();
+                let dealt: Vec<Vec<UnitId>> = self
+                    .squad_mass_bins(&pool, plot)
+                    .into_iter()
+                    .map(|mut b| {
+                        b.sort();
+                        b
+                    })
+                    .collect();
+                if dealt != now || of.iter().any(|l| l.hand_set) {
                     out.push((plot, body));
                 }
             }
@@ -656,11 +728,28 @@ impl Game {
         out
     }
 
-    /// Auto-sorts every squad of body `body` of player `p` on `plot` (after a sync).
+    /// Auto-sorts every squad of body `body` of player `p` on `plot` (after a sync): the snake
+    /// deal of [`Game::squad_auto_sort`].
     pub fn squad_auto_sort_body(&mut self, p: PlayerId, plot: PlotIdx, body: SquadBody) -> Result<(), &'static str> {
         self.player_squad_sync(p);
         let ids: Vec<SquadId> = self.squad_layouts_at(p, plot).iter().filter(|l| l.body == body).filter_map(|l| l.squad).collect();
         self.squad_auto_sort(p, &ids)
+    }
+
+    /// Masses every squad of body `body` of player `p` on `plot` (after a sync; the AI's deal,
+    /// module comment): the first squad is the auto formation of all their units as attackers,
+    /// the next that of the rest, and so on, all Auto, reusing the body's squad ids in order.
+    pub fn squad_mass_sort_body(&mut self, p: PlayerId, plot: PlotIdx, body: SquadBody) -> Result<(), &'static str> {
+        self.player_squad_sync(p);
+        let of: Vec<SquadLayout> = self.squad_layouts_at(p, plot).into_iter().filter(|l| l.body == body).collect();
+        if of.is_empty() {
+            return Err("no squads chosen");
+        }
+        let ids: Vec<SquadId> = of.iter().filter_map(|l| l.squad).collect();
+        let pool: Vec<UnitId> = of.iter().flat_map(|l| l.units().into_iter().map(|(u, _)| u)).collect();
+        let bins = self.squad_mass_bins(&pool, plot);
+        self.squad_deal(p, plot, vec![(body, ids, bins)]);
+        Ok(())
     }
 }
 
