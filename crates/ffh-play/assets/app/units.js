@@ -1372,7 +1372,7 @@ function description(a, label, key, help) {
   return h(
     "div.iso-desc-one",
     h("div.iso-desc-title", label, key ? h("kbd", key) : null, a.enabled ? null : h("span.dim", " (not now)")),
-    help ? h("div.iso-desc-text", markup(help)) : null,
+    help ? h(!a.enabled && a.why ? "div.iso-desc-text.why" : "div.iso-desc-text", markup(help)) : null,
   );
 }
 
