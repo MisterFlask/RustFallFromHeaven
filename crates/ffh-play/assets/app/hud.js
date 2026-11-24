@@ -9,7 +9,7 @@ import { render as markup } from "./markup.js";
 import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
 import { openCount, run } from "./commands.js";
 import { renderSpectatorBar, renderAutoplayBar, flagsView } from "./tools.js";
-import { isoSkin, isoIcon } from "./isoui.js";
+import { isoSkin, isoIcon, spellIconName } from "./isoui.js";
 import { effectsOf, partsList } from "./infotips.js";
 import { remindersNode } from "./keywords.js";
 import { calcTip } from "./calc.js";
@@ -419,7 +419,7 @@ function renderWorldActions(m, st) {
           tip,
           onclick: () => (a.target_kind ? castTargeted(a, { world: true }) : run(a.cmd)),
         },
-        isoSkin() ? isoIcon("spell", { px: 32 }) : h("span.icon", a.once ? "✦" : "✶"),
+        isoSkin() ? isoIcon(spellIconName(a.spell), { px: 32 }) : h("span.icon", a.once ? "✦" : "✶"),
         small(a.label ?? name, ".label"),
       );
     }),
@@ -477,7 +477,7 @@ function placeButton(a, name, yours) {
       tip,
       onclick: () => openPlacement(a),
     },
-    isoSkin() ? isoIcon("spell", { px: 32 }) : h("span.icon", "✶"),
+    isoSkin() ? isoIcon(spellIconName(a.spell), { px: 32 }) : h("span.icon", "✶"),
     small(label, ".label"),
   );
 }

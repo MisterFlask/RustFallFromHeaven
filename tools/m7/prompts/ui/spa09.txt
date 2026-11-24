@@ -1,0 +1,16 @@
+spell_keen_edge: a sharp steel blade edge with a bright gold glint at its tip
+spell_kidnap: a rough brown sack tied with rope at the neck
+spell_legends: an open scroll with a gold laurel wreath above it
+spell_lichdom: an ivory skull wearing a gold crown with violet glowing eye sockets
+spell_loyalty: a gold shield with two clasped hands on it
+spell_maelstrom: a sky blue swirling whirlwind with a lightning bolt in its centre
+spell_march_of_the_trees: a green walking tree with root legs and branch arms
+spell_mask: a plain slate-grey half mask with two eye holes
+spell_mend: a needle and gold thread stitching a small red cut closed
+spell_mezmerize_animal: a brown deer head with a violet hypnotic spiral in its eye
+spell_mirror: two identical ivory figures standing back to back reflected, one faded
+spell_morale: a red battle banner waving on a gold pole
+spell_mutation: a twisted sage-green arm sprouting an extra eye and tentacle
+spell_nightfall: a plum crescent moon with small stars in a dark cloud
+spell_open_chest: an open wooden treasure chest with gold coins glowing inside
+spell_peace: a white dove with spread wings holding a green olive branch

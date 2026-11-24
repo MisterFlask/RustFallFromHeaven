@@ -1,0 +1,16 @@
+spell_upgrade_doviello_warrior_slave: broken shackles with a gold upward chevron
+spell_upgrade_spectre: a pale plum ghost face with a gold upward chevron
+spell_upgrade_wolf_rider: a grey wolf head with a gold upward chevron
+spell_upgrade_wraith: a violet shroud and grey skeletal hand with a gold upward chevron
+spell_valor: a gold medal on a red ribbon
+spell_veil_of_night: a slate blue crescent moon with a plum veil draped beneath it
+spell_vitalize: a green leafy sprout growing from rich brown soil with a gold sparkle
+spell_wall_of_stone: a massive wall of grey stacked boulders
+spell_wane: a plum fading silhouette dissolving into small dots
+spell_warcry: a gold war horn with sound waves bursting from its mouth
+spell_ward: a teal glowing hexagon rune barrier
+spell_water_walking: an ivory footprint standing on blue water ripples
+spell_wave: a blue wave rolling to the right
+spell_whiteout: an ivory snow cloud hiding a slate grey cloaked figure
+spell_wild_edge: a magenta jagged blade crackling with chaotic sparks
+spell_the_cull: a grey wolf claw slashing through three marks

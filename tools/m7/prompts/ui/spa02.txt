@@ -1,0 +1,16 @@
+spell_bloom: a green sapling with two leaves sprouting from a mound of brown earth
+spell_blur: a plum-coloured running silhouette smeared into three trailing ghost copies
+spell_bramble_snare: a coil of thorny green bramble vines tangled into a loop
+spell_breath_fire: a dragon head in side view breathing a stream of orange fire
+spell_burning_blood: a red blood drop with small orange flames licking off its top
+spell_call_blizzard: a pale blue snow cloud with white snowflakes and wind swirls beneath
+spell_call_blizzard_high_priest: a white swirling snowstorm vortex with a pale blue crystal snowflake at its centre
+spell_call_form: a pale ghostly soul wisp pulling an ivory body silhouette toward it with a teal beam
+spell_call_of_the_grave: a cracked grey gravestone with violet wraith wisps rising out of it
+spell_chain_lightning: a sky blue lightning bolt forking and jumping between three small dots
+spell_charm_person: a pink heart with a gold spiral swirling in its centre
+spell_chill: a single pale blue snowflake with frost crystals
+spell_commander_join: a gold commander's helmet with a plus sign and an arrow pointing into it
+spell_commander_join_decius: a gold laurel wreath around a steel helmet with a red plume
+spell_commander_split: a gold commander's helmet with two arrows pointing apart away from it
+spell_confusion: a violet head silhouette with a tangled gold scribble spiral above it

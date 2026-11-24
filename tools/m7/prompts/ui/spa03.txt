@@ -1,0 +1,16 @@
+spell_consume_soul: a violet open mouth swallowing a small ivory soul wisp
+spell_contagion: a sickly sage-green skull exhaling a green cloud of spores
+spell_convert_city_basium: a gold winged angel sword planted in front of an ivory city tower
+spell_convert_city_rantine: a terracotta giant's fist gripping a small ivory city tower
+spell_corrode: a steel sword blade eaten away by dripping violet acid
+spell_courage: a red lion head with a golden mane
+spell_create_battering_ram: a wooden battering ram log with a steel ram head on a wheeled frame
+spell_create_den_bear: a brown bear head in front of a dark rocky cave mouth
+spell_create_den_lion: a golden lion head in front of a rocky cave mouth
+spell_create_puppet: a wooden marionette figure hanging from crossed control bars by strings
+spell_create_puppet_loki: a jester-hatted marionette with a sly face hanging from strings, violet accents
+spell_crew_buccaneers: a gold pirate tricorn hat with crossed cutlasses behind it
+spell_crew_longshoremen: a heavy wooden cargo crate hanging from a rope and hook
+spell_crew_normal_crew: a ship's wooden steering wheel with eight gold handles
+spell_crew_skeleton_crew: an ivory skull wearing a sailor's bandana with a ship anchor behind it
+spell_crown_of_brillance: a gold crown radiating long bright white rays of light

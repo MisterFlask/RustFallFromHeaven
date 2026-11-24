@@ -1,0 +1,17 @@
+Draw a sheet of 16 NEW interface icons for a fantasy strategy game in a clean MINIMALIST flat style, like the icons of a modern, restrained strategy-game interface. NOT pixel art, no visible pixels. Each icon is reduced to its essential silhouette: a few simple geometric shapes, flat solid fills, at most three colours per icon, no gradients, no texture, no fine detail, no tiny parts, generous negative space, crisp smooth edges, consistent rounded corners and consistent shape weight across the whole set. No outline, or only where two shapes must separate. Palette for the whole set: warm gold, ivory, and one muted accent colour per icon (deep red, teal, sage green, violet, sky blue or terracotta), chosen to read on a deep navy panel. Never use black or near-black for a main shape: dark subjects (masks, cloaks, iron, shadows, night) are drawn in mid-tone slate grey, plum or steel blue so they read on the deep navy panel. Every icon must still be recognisable at 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons, plates, badges or circles behind the icons, no shadows, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. The background is fully transparent. The icons, row by row, left to right:
+1. a large brown boulder slamming down onto the ground with crack lines
+2. a small glass vial with a green cross and a sparkle
+3. three curved steel blades whirling in a circle, red accents
+4. a circle of three small gold stars spinning in a ring
+5. a skeletal violet bone hand clenched in a grasping claw
+6. a gold banner flag on a pole unfurled with a mask cast aside below it
+7. a huge blue wave crashing downward
+8. a gold sunburst shattering an ivory skull into pieces
+9. a violet rune circle broken in two halves with a crack through it
+10. a violet sparkle star crossed out by a gold diagonal slash
+11. an ivory city tower with a cracked crimson lightning crack and a broken banner
+12. a gold sword of light pointing down from a white cloud
+13. a violet hand with puppet strings from its fingertips down to a small figure
+14. a gold crown with violet gems falling onto a small stone pedestal
+15. a heaped pile of gold coins and a gold goblet
+16. a gold lyre with ivory strings resting on a pedestal

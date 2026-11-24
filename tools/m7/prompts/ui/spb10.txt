@@ -1,0 +1,16 @@
+spell_wither: a drooping violet dead flower losing its petals
+spell_wonder: a magenta question mark surrounded by small gold stars
+spell_wonder_backfire: a red exploding star bursting back on a small staff
+spell_wonder_blessing: a gold halo above an ivory open hand
+spell_wonder_butterflies: three violet and gold butterflies flying together
+spell_wonder_doom: a slate grey storm cloud with a red skull shape inside
+spell_wonder_renewal: an ivory circular arrow around a green leaf
+spell_wonder_sanctuary: a gold bell jar dome over a small green sprout
+spell_wonder_smite: a gold fist striking downward with a burst
+spell_wonder_starfall: three gold falling stars with trailing tails
+spell_wonder_thunderclap: two sky blue lightning bolts clashing with a gold burst
+spell_wonder_time_warp: a gold hourglass twisted in a violet spiral
+spell_worldbreak: a cracked planet sphere splitting with red fire inside
+spell_wrath_of_the_wild: a green bear claw slashing with thorny vines
+promo_caravan_guard: a round wooden shield with a gold wagon wheel on it
+promo_summoners_bond: two linked gold chain rings with a small violet flame between them

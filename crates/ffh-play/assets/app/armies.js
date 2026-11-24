@@ -70,7 +70,8 @@ addHelp({
     h("h4", "Supply lines"),
     h(
       "ul",
-      h("li", "Each army needs a supply line: the cheapest path over land to one of your cities, or to one of your ships that can carry land units, within its budget. A road plot costs least, then your own territory; other land costs more. Enemy units, enemy cities, land next to a manned enemy fort and closed borders block it."),
+      h("li", "Within your borders an army needs no supply line. Outside them, each army needs one: the cheapest path over land to one of your cities, or to one of your ships that can carry land units, within its budget. A road plot costs least, then your own territory; other land costs more. Enemy units, enemy cities, land next to a manned enemy fort and closed borders block it."),
+      h("li", "An invested city is not counted as your territory: an army in it needs a supply line, and it moves out of the city only to attack until the siege lifts."),
       h("li", "The map draws your armies' lines, and the lines of other armies you see over the plots you have revealed. With an army selected, the plot under the pointer says whether it would be supplied there."),
       h("li", "Cut at the start of your turn: Hunger (no healing, no recruits), after a few turns Starvation (units lose HP each turn down to a floor, and deal less damage in battles). A restored line ends both at your next turn."),
     ),
@@ -349,7 +350,7 @@ export async function openArmies({ select, centerOn } = {}) {
           ? h("ul.army-on-order", a.on_order.map((o) => h("li", { "data-city": o.city }, h("span", `${dname("UnitType", o.unit)} in ${o.name}`), h("span.dim", ` · ${turns(o.turns)} · on order`))))
           : null,
         // Supply (docs/SUPPLY.md, section 5): the state in bare words.
-        h(`div.army-supply${a.supply?.state === "supplied" && (a.supply?.line || a.supply?.raiding) ? "" : ".warn"}`, { title: `Supply line: the cheapest path over land to one of your cities or ships, of cost ${r.supply_budget} at most. Cut: Hunger, then Starvation.` }, a.supply?.text ?? ""),
+        h(`div.army-supply${a.supply?.state === "supplied" && (a.supply?.line || a.supply?.raiding || a.supply?.home) ? "" : ".warn"}`, { title: `Supply line (outside your borders): the cheapest path over land to one of your cities or ships, of cost ${r.supply_budget} at most. Cut: Hunger, then Starvation.` }, a.supply?.text ?? ""),
         // Raids (docs/RAIDS.md, section 8): its Raid order, and Stop raiding.
         a.station?.kind === "raid"
           ? h("div.row.raid-station", h("span.warn", a.station.text), " ", h("button.small.stop-raid", { onclick: () => act({ c: "army_station", army: a.id, station: null }), title: "End the Raid order. A move order also ends it." }, "Stop raiding"))

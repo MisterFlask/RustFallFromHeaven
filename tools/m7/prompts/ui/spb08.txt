@@ -1,0 +1,16 @@
+spell_take_war_promotion: a gold open hand reaching for a red bladed great sword
+spell_take_war_unit: a red bladed great sword above a gold upward arrow
+spell_taunt: a jester cap with bells and a red angry exclamation burst
+spell_teach_spellcasting: an open ivory book with a violet sparkle rising from its pages
+spell_the_delve: a dark terracotta hill with a tunnel arch going through it
+spell_thornlash: a sage green thorny vine whip curling
+spell_tidal_surge: a large blue curling ocean wave crashing forward
+spell_treetop_defence: a green tree crown with a small gold shield in its branches
+spell_tremor: a terracotta ground split by a zigzag crack with tremor lines
+spell_trust: two gold hands clasped in a handshake
+spell_tsunami: a towering teal wave over a small ivory house
+spell_unyielding_order: a steel shield with a golden hammer emblem and a gold laurel
+spell_upgrade_archer: a goblin bow with a gold upward chevron
+spell_upgrade_chariot: a wooden chariot wheel with a gold upward chevron
+spell_upgrade_doviello_axeman: a wolf pelt hood with a gold upward chevron
+spell_upgrade_doviello_champion: a horned barbarian helmet with a gold upward chevron

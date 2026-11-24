@@ -1,0 +1,17 @@
+Draw a sheet of 16 NEW interface icons for a fantasy strategy game in a clean MINIMALIST flat style, like the icons of a modern, restrained strategy-game interface. NOT pixel art, no visible pixels. Each icon is reduced to its essential silhouette: a few simple geometric shapes, flat solid fills, at most three colours per icon, no gradients, no texture, no fine detail, no tiny parts, generous negative space, crisp smooth edges, consistent rounded corners and consistent shape weight across the whole set. No outline, or only where two shapes must separate. Palette for the whole set: warm gold, ivory, and one muted accent colour per icon (deep red, teal, sage green, violet, sky blue or terracotta), chosen to read on a deep navy panel. Never use black or near-black for a main shape: dark subjects (masks, cloaks, iron, shadows, night) are drawn in mid-tone slate grey, plum or steel blue so they read on the deep navy panel. Every icon must still be recognisable at 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons, plates, badges or circles behind the icons, no shadows, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. The background is fully transparent. The icons, row by row, left to right:
+1. a drooping violet dead flower losing its petals
+2. a magenta question mark surrounded by small gold stars
+3. a red exploding star bursting back on a small staff
+4. a gold halo above an ivory open hand
+5. three violet and gold butterflies flying together
+6. a slate grey storm cloud with a red skull shape inside
+7. an ivory circular arrow around a green leaf
+8. a gold bell jar dome over a small green sprout
+9. a gold fist striking downward with a burst
+10. three gold falling stars with trailing tails
+11. two sky blue lightning bolts clashing with a gold burst
+12. a gold hourglass twisted in a violet spiral
+13. a cracked planet sphere splitting with red fire inside
+14. a green bear claw slashing with thorny vines
+15. a round wooden shield with a gold wagon wheel on it
+16. two linked gold chain rings with a small violet flame between them

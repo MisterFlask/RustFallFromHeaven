@@ -1,0 +1,17 @@
+Draw a sheet of 16 NEW interface icons for a fantasy strategy game in a clean MINIMALIST flat style, like the icons of a modern, restrained strategy-game interface. NOT pixel art, no visible pixels. Each icon is reduced to its essential silhouette: a few simple geometric shapes, flat solid fills, at most three colours per icon, no gradients, no texture, no fine detail, no tiny parts, generous negative space, crisp smooth edges, consistent rounded corners and consistent shape weight across the whole set. No outline, or only where two shapes must separate. Palette for the whole set: warm gold, ivory, and one muted accent colour per icon (deep red, teal, sage green, violet, sky blue or terracotta), chosen to read on a deep navy panel. Never use black or near-black for a main shape: dark subjects (masks, cloaks, iron, shadows, night) are drawn in mid-tone slate grey, plum or steel blue so they read on the deep navy panel. Every icon must still be recognisable at 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons, plates, badges or circles behind the icons, no shadows, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. The background is fully transparent. The icons, row by row, left to right:
+1. a stone altar block with a red flame rising from its top
+2. a pile of logs with white feathered wings burning in gold flames
+3. a gold hand over a cracked red ground healing to green
+4. a gold dome shield over a small ivory temple
+5. a red sun over a cracked sand coloured desert ground
+6. a ghostly ivory soul silhouette split in two by a red line
+7. a slate grey footprint fading into violet shadow
+8. a plum hooded cloak with its face hidden in shadow
+9. a terracotta stone shield with a gold dwarven rune hammer on it
+10. a sky blue lightning bolt striking downward in a zigzag
+11. a gold musical note with a small open mouth singing
+12. a gold glowing open palm with a small ivory heart in it
+13. a gold coin above a pair of open iron shackles
+14. a pair of iron shackles above a gold coin stack and an arrow outward
+15. a pale blue snail shell with ice crystals on it
+16. three ivory snowflakes falling over a pale blue ground

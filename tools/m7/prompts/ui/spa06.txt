@@ -1,0 +1,16 @@
+spell_explore_lair_pyre_of_the_seraphic: a stone altar with a tall white and gold holy flame
+spell_explore_lair_ruins: broken ivory stone columns, two standing and one fallen
+spell_explore_lair_ship_wreck: a broken wooden ship hull tilted half sunk in blue water
+spell_fair_winds: a white billowing sail pushed by a sky blue wind swirl
+spell_feast: a gold goblet overflowing with red blood
+spell_feed: a red bat with open wings holding a drop of blood
+spell_finger_of_death: a bony violet finger pointing with a beam ending in a small skull
+spell_fireball: a large round orange fireball with a flaming tail
+spell_fireball_barge: a wooden river barge with a flaming orange fireball rising from its deck
+spell_firebolt: a narrow red-orange fire bolt shaped like a dart
+spell_firestorm: a spiralling tornado of red and orange flames
+spell_flaming_arrows: two arrows with burning orange flaming tips
+spell_flare: a bright yellow burst star with a short white flash
+spell_floating_eye: a large ivory eyeball with a violet iris and small floating sparkles beneath
+spell_for_the_horde: a crude orc war banner with a red tusked skull emblem
+spell_form_wolf_pack: three grey wolf heads howling together in a row

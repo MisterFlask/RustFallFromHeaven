@@ -1,0 +1,16 @@
+spell_drown: a teal fish-faced humanoid head with gills and webbed fins
+spell_earthquake: brown ground split by a jagged crack with rubble chunks flying up
+spell_enchant_spellstaff: a wooden wizard staff topped by a glowing teal crystal orb
+spell_enchanted_blade: a steel sword with teal magical sparkles along its blade
+spell_entangle: twisting green vines wrapped around a pair of boots
+spell_enter_portal: a swirling violet oval portal framed by two stone pillars
+spell_enter_the_delve: a dark stone tunnel arch going into a mountain with a gold arrow pointing in
+spell_entertain: a jester's hat with three bells, red and gold
+spell_escape: an ivory running figure leaping toward a small gold palace with a curved arrow
+spell_exaltation: an ivory figure with raised arms lifted on rays of gold light
+spell_explore_lair_aifon_isle: a small green island with a single palm tree and a gold star above
+spell_explore_lair_barrow: a grassy burial mound with a stone doorway in its side
+spell_explore_lair_bradelines_well: a round stone well with a wooden roof and a bucket
+spell_explore_lair_broken_sepulcher: a cracked stone sarcophagus with its lid slid off
+spell_explore_lair_dungeon: a heavy iron-barred dungeon door in a stone arch
+spell_explore_lair_goblin_fort: a crude wooden palisade fort with spiked logs and a goblin skull banner

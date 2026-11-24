@@ -112,9 +112,8 @@ pub(crate) fn may_move(g: &Game, grp: GroupId, dest: PlotIdx, city: Option<PlotI
     if end == here || city.is_some_and(|c| dist(g, end, c) <= two_turns(g, grp)) {
         return true;
     }
-    // Our own territory carries the line (1 a plot from a city of ours: it is cut there only when
-    // enemy units close every way home), so no search for it.
-    if g.plot_get_team(end) == Some(team) || g.plot_supply_line(p, end).is_some() {
+    // In our own territory an army needs no line (the rules' `plot_supply_home`).
+    if g.plot_is_supplied(p, end) {
         return true;
     }
     crate::trace!(g, p, "army {:?} does not move to {:?}: no supply line there", grp, g.map.xy(end));
@@ -167,8 +166,9 @@ pub(crate) fn fall_back(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> 
         }
         SupplyState::Starvation => {}
     }
-    // Where it stands it has a line again: its counter goes back to 0 at the next turn start.
-    if g.plot_supply_line(p, here).is_some() {
+    // Where it stands it is supplied again (a line, or our territory): its counter goes back to 0
+    // at the next turn start.
+    if g.plot_is_supplied(p, here) {
         return false;
     }
     if overseas {

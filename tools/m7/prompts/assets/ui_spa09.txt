@@ -1,0 +1,17 @@
+Draw a sheet of 16 NEW interface icons for a fantasy strategy game in a clean MINIMALIST flat style, like the icons of a modern, restrained strategy-game interface. NOT pixel art, no visible pixels. Each icon is reduced to its essential silhouette: a few simple geometric shapes, flat solid fills, at most three colours per icon, no gradients, no texture, no fine detail, no tiny parts, generous negative space, crisp smooth edges, consistent rounded corners and consistent shape weight across the whole set. No outline, or only where two shapes must separate. Palette for the whole set: warm gold, ivory, and one muted accent colour per icon (deep red, teal, sage green, violet, sky blue or terracotta), chosen to read on a deep navy panel. Never use black or near-black for a main shape: dark subjects (masks, cloaks, iron, shadows, night) are drawn in mid-tone slate grey, plum or steel blue so they read on the deep navy panel. Every icon must still be recognisable at 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons, plates, badges or circles behind the icons, no shadows, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. The background is fully transparent. The icons, row by row, left to right:
+1. a sharp steel blade edge with a bright gold glint at its tip
+2. a rough brown sack tied with rope at the neck
+3. an open scroll with a gold laurel wreath above it
+4. an ivory skull wearing a gold crown with violet glowing eye sockets
+5. a gold shield with two clasped hands on it
+6. a sky blue swirling whirlwind with a lightning bolt in its centre
+7. a green walking tree with root legs and branch arms
+8. a plain slate-grey half mask with two eye holes
+9. a needle and gold thread stitching a small red cut closed
+10. a brown deer head with a violet hypnotic spiral in its eye
+11. two identical ivory figures standing back to back reflected, one faded
+12. a red battle banner waving on a gold pole
+13. a twisted sage-green arm sprouting an extra eye and tentacle
+14. a plum crescent moon with small stars in a dark cloud
+15. an open wooden treasure chest with gold coins glowing inside
+16. a white dove with spread wings holding a green olive branch

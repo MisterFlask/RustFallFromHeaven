@@ -31,6 +31,8 @@
 //! two plots stays on the first (by plot index); the units on the other form a new squad there.
 //!
 //! **Commands** ([`Game::squad_move`], [`Game::squad_set_auto`], [`Game::squad_auto_sort`]): a
+//! move to a squad of another army or the garrison first moves the unit to that body
+//! ([`Game::squad_rehome`]), into a free cell (no swap); a
 //! move of one unit to a cell of a squad (a unit there of the same size swaps with it) or to a new
 //! squad makes both squads hand-set; Auto gives a squad back to the auto formation; auto-sort deals
 //! the units of the chosen squads into as few squads as hold them (guards first, strongest first,
@@ -42,6 +44,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use ffh_data::{ActionKind, ROWS};
 
 use crate::engagement::formation::{kind_pick_order, Side};
+use crate::army::ArmyDomain;
 use crate::engagement::HitCtx;
 use crate::game::Game;
 use crate::ids::*;
@@ -450,7 +453,20 @@ impl Game {
                 }
                 let target = &layouts[i];
                 if !self.squad_body_accepts(target.body, u, plot) {
-                    return Err("that unit cannot join that squad");
+                    // A drop on another body's squad moves the unit to that body (the army
+                    // commands' join and garrison), into the squad's free cell.
+                    let body = target.body;
+                    if body == SquadBody::Loose {
+                        return Err("that unit cannot join that squad");
+                    }
+                    if (0..size as u8).any(|k| target.cells[(cell + k) as usize].is_some()) {
+                        return Err("there is no room in that cell");
+                    }
+                    if self.squad_layout_places(target) + size > self.squad_places() {
+                        return Err("that squad is full");
+                    }
+                    self.squad_rehome(p, u, body)?;
+                    return self.squad_move(p, u, SquadDest::Squad(s), Some(cell));
                 }
                 let mut occupants: Vec<UnitId> = (0..size as u8).filter_map(|k| target.cells[(cell + k) as usize]).filter(|&x| x != u).collect();
                 occupants.dedup();
@@ -478,6 +494,52 @@ impl Game {
         }
         self.player_squad_sync(p);
         Ok(())
+    }
+
+    /// Moves army unit `u` of player `p` into `body` (an army or the garrison of the city) on its
+    /// plot, as the army commands do; nothing changes when they refuse.
+    pub fn squad_rehome(&mut self, p: PlayerId, u: UnitId, body: SquadBody) -> Result<(), &'static str> {
+        self.squad_rehome_check(p, u, body)?;
+        match body {
+            SquadBody::Army(a) => self.army_join(p, &[u], a)?,
+            SquadBody::Garrison(_) => self.army_to_garrison(p, &[u])?,
+            SquadBody::Loose => return Err("that unit cannot join that squad"),
+        }
+        if self.unit_squad_body(u) == body {
+            Ok(())
+        } else {
+            Err("that unit cannot join that squad")
+        }
+    }
+
+    /// Why unit `u` of player `p` cannot move into `body` on its plot, if so (what
+    /// [`Game::squad_rehome`] checks first).
+    pub fn squad_rehome_check(&self, p: PlayerId, u: UnitId, body: SquadBody) -> Result<(), &'static str> {
+        let plot = self.army_units_plot(p, &[u])?;
+        match body {
+            SquadBody::Army(a) => {
+                if !self.armies.contains(a) || self.armies[a].owner != p {
+                    return Err("no such army");
+                }
+                if self.army_plot(a) != Some(plot) {
+                    return Err("the army is not on their plot");
+                }
+                if self.unit_army_domain(u) != Some(self.armies[a].domain) {
+                    return Err("ships serve in fleets, land units in armies");
+                }
+                Ok(())
+            }
+            SquadBody::Garrison(c) => {
+                if self.unit_army_domain(u) == Some(ArmyDomain::Sea) {
+                    return Err("ships have no garrison: disband the fleet in port");
+                }
+                if !self.cities.contains(c) || self.cities[c].owner != p || self.city_plot(c) != plot {
+                    return Err("not in one of your cities");
+                }
+                Ok(())
+            }
+            SquadBody::Loose => Err("that unit cannot join that squad"),
+        }
     }
 
     /// Gives player `p`'s squad `s` back to the auto formation.

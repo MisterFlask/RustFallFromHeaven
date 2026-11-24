@@ -1,0 +1,16 @@
+spell_summon_djinn: a teal genie rising from a gold lamp spout in a swirl
+spell_summon_earth_elemental: a terracotta rock golem head made of boulders
+spell_summon_einherjar: a gold horned helmet of a spectral warrior host
+spell_summon_fire_elemental: an orange flame figure with two ivory eyes
+spell_summon_ice_elemental: a pale blue crystal ice figure with sharp shard shoulders
+spell_summon_kraken: a teal kraken head with curling tentacles rising from waves
+spell_summon_mistform: a pale grey wisp of mist shaped like a drifting ghost
+spell_summon_pit_beast: a violet snarling beast head with fangs and small horns
+spell_summon_sand_lion: a sand gold lion head with a flowing mane
+spell_summon_spectre: a pale plum hooded spectre face with hollow eyes
+spell_summon_tiger: an orange tiger head with dark stripes
+spell_summon_treant: a sage green tree trunk with an angry face and branch arms
+spell_summon_water_elemental: a blue water wave figure with two ivory eyes
+spell_summon_wraith: a violet floating shroud with a skeletal grey hand reaching out
+spell_sunburst: a gold sun bursting with many long rays outward
+spell_surge: a sage green muscled arm flexing with a gold upward arrow

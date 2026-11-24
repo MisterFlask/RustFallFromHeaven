@@ -208,3 +208,31 @@ fn the_defenders_rotate_their_squads() {
     assert!((in_a(&defenders[0]) && in_b(&defenders[1])) || (in_b(&defenders[0]) && in_a(&defenders[1])), "{defenders:?}");
     let _ = army_a;
 }
+
+/// A drop on another body's squad moves the unit to that body (army to army; army to garrison
+/// is the same path); a refusal changes nothing.
+#[test]
+fn a_move_to_another_bodys_squad_changes_its_body() {
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    let first = w.units(p0, "UNIT_AXEMAN", from, 2);
+    let second = w.units(p0, "UNIT_ARCHER", from, 3);
+    let third = w.units(p0, "UNIT_AXEMAN", from, 1);
+    let a = w.g.army_form(p0, &first).expect("an army");
+    let b = w.g.army_form(p0, &second).expect("another army");
+    let c = w.g.army_form(p0, &third).expect("a third army");
+    let target = w.g.units[second[0]].squad.expect("a squad");
+    assert_eq!(w.g.unit_squad_body(first[0]), SquadBody::Army(a));
+    // Room in the squad (3 of 5 places): the unit changes army and stands in the squad.
+    w.g.squad_move(p0, first[0], SquadDest::Squad(target), None).expect("a move into another army");
+    assert_eq!(w.g.unit_squad_body(first[0]), SquadBody::Army(b));
+    assert_eq!(w.g.units[first[0]].squad, Some(target));
+    // The last place; the first army is left without units and is gone.
+    w.g.squad_move(p0, first[1], SquadDest::Squad(target), None).expect("the last place");
+    assert_eq!(w.g.units[first[1]].squad, Some(target));
+    assert!(!w.g.armies.contains(a));
+    // The squad is full: a refusal changes nothing.
+    assert!(w.g.squad_move(p0, third[0], SquadDest::Squad(target), None).is_err(), "no place left");
+    assert_eq!(w.g.unit_squad_body(third[0]), SquadBody::Army(c));
+    assert_ne!(w.g.units[third[0]].squad, Some(target));
+}

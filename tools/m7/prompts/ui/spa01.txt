@@ -1,0 +1,16 @@
+spell_add_to_city: a small grey hunched demon figure stepping into an ivory city gate with a plus sign above
+spell_add_to_flesh_golem: a stitched sage-green patchwork arm being sewn onto a large golem torso with thread
+spell_add_to_freak_show_dark_elf: an iron birdcage holding a slate-grey elf figure with long pointed ears and a violet cloak
+spell_add_to_freak_show_dwarf: an iron birdcage holding a short stocky bearded dwarf figure with an ivory beard
+spell_add_to_freak_show_elf: an iron birdcage holding a slender green-robed elf figure with long pointed ears
+spell_add_to_freak_show_human: an iron birdcage holding a plain ivory human figure with arms raised
+spell_add_to_freak_show_orc: an iron birdcage holding a hulking sage-green orc head with two tusks
+spell_add_to_wolf_pack: a single grey wolf head beside a bigger wolf head, gold plus sign between them
+spell_aegis: a tall gold kite shield with a white glowing rim and a gold sunburst boss
+spell_wellspring: a teal spring of water bursting upward from a small round stone basin
+spell_ardor: a gold flame burning above an open ivory hand
+spell_arena_battle: a round sand-coloured arena ring seen from above with two crossed gladius swords
+spell_battle_hymn: a gold war horn with three ivory musical notes rising from its bell
+spell_blaze: a burning orange tree with tall red flames rising from its crown
+spell_bless: two ivory praying hands under a bright gold halo
+spell_blinding_light: a gold eye shut tight with bright yellow rays bursting around it

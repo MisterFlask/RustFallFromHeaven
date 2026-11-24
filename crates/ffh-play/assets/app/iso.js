@@ -240,16 +240,23 @@ export function civShortName(owner) {
 }
 
 /** The sprites that may stand in for unit type `type` of civilization `civ` (its short name), best
- *  first: `unit_<civ>_<type>`, `unit_<civ>_<class>`, the type and its aliases, the class and its
+ *  first: `unit_<civ>_<type>`, the type when it replaces its class's, `unit_<civ>_<class>`, the type and its aliases, the class and its
  *  aliases, settler or worker by ability, the combat type's and the domain's stand-ins, then the
  *  swordsman. The first that exists is the unit's sprite (also the HD-2D map's, docs/HD2D.md). */
 export function unitSpriteKeys(type, civ) {
   const info = S.data?.tables?.UnitType?.[type] ?? {};
-  const t = shortName(info.type, "UNIT_");
+  // An equipment item (EQUIPMENT_GODSLAYER) lies on the map as its own object, the treasure chest
+  // when it has none.
+  const item = shortName(info.type, "EQUIPMENT_");
+  const t = item ? `equipment_${item}` : shortName(info.type, "UNIT_");
   const c = shortName(tname("UnitClassType", info.class), "UNITCLASS_");
   const names = [];
   if (civ && t) names.push(`${civ}_${t}`);
+  // A unit that replaces its class's (the Illusionist, a Mage) is its own figure before its
+  // civilization's look of the class.
+  if (t && c && t !== c) names.push(t);
   if (civ && c) names.push(`${civ}_${c}`);
+  if (item) names.push("equipment_treasure");
   for (const n of [t, c]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
   if (info.found) names.push("settler");
   if (info.worker) names.push("worker");

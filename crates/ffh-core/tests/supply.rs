@@ -302,6 +302,37 @@ fn the_counter_hunger_starvation_and_supplied_again() {
 }
 
 #[test]
+fn within_its_borders_an_army_needs_no_line() {
+    let mut w = world();
+    let p0 = w.p0;
+    let a = w.army(p0, 20, 5, 2);
+    let here = w.at(20, 5);
+    assert!(!w.g.army_supply_home(a));
+    w.g.player_update_supply(p0);
+    assert_eq!(w.g.armies[a].unsupplied_turns, 1, "outside its borders, with no line: Hunger");
+    // The plot becomes its owner's (a pocket far from any city): no line, yet supplied.
+    w.g.plot_set_owner(here, Some(p0), false, false);
+    assert!(w.g.plot_supply_home(p0, here) && w.g.army_supply_home(a));
+    assert!(w.g.army_supply_line(a).is_none(), "the line itself is still cut");
+    assert!(w.g.plot_is_supplied(p0, here));
+    w.g.player_update_supply(p0);
+    assert_eq!(w.g.army_supply_state(a), SupplyState::Supplied);
+    assert!(w.logged("The 1st Army is supplied again"));
+    // Encircled by enemy units on its own land: still supplied.
+    w.war();
+    for (x, y) in [(19, 4), (20, 4), (21, 4), (19, 5), (21, 5), (19, 6), (20, 6), (21, 6)] {
+        w.unit(w.p1, "UNIT_WARRIOR", x, y);
+    }
+    w.g.player_update_supply(p0);
+    assert_eq!(w.g.armies[a].unsupplied_turns, 0);
+    // Another player's territory is not home.
+    w.g.plot_set_owner(here, Some(w.p1), false, false);
+    assert!(!w.g.plot_supply_home(p0, here));
+    w.g.player_update_supply(p0);
+    assert_eq!(w.g.armies[a].unsupplied_turns, 1);
+}
+
+#[test]
 fn a_player_without_a_city_has_no_supply_rule() {
     let mut w = world();
     let p1 = w.p1;
@@ -591,6 +622,7 @@ fn siege_hunger_blocks_every_heal_then_starves_once_with_army_hunger_and_never_k
     }
     w.g.player_update_supply(w.p0);
     assert_eq!(w.g.city_siege_state(w.city), SupplyState::Starvation);
+    // An invested city is not home territory: the army needs a line, and has none.
     assert!(w.g.armies[a].unsupplied_turns > w.g.d.defines.supply_hunger_turns);
     assert_eq!(w.g.units[warrior].damage, 30, "army and city starvation cause only one HP loss");
     for u in [worker, hero] {
@@ -740,4 +772,46 @@ fn bombard_and_starvation_floors_stack_without_healing_the_garrison() {
     assert_eq!(w.g.units[defender].damage, 60);
     for _ in 0..3 { w.g.player_update_supply(w.p0); }
     assert_eq!(w.g.units[defender].damage, 75);
+}
+
+#[test]
+fn an_army_held_in_an_invested_city_leaves_only_to_attack() {
+    let mut w = world();
+    w.war();
+    let a = w.army(w.p0, 5, 5, 2);
+    let grp = w.g.units[w.g.army_units(a)[0]].group.expect("a group");
+    for _ in 0..3 { w.unit(w.p1, "UNIT_WARRIOR", 6, 5); }
+    assert!(w.g.city_is_invested(w.city));
+    assert_eq!(w.g.group_siege_hold(grp), Some(w.city));
+    assert!(!w.g.plot_supply_home(w.p0, w.at(5, 5)), "an invested city is not home territory");
+    let city = w.at(5, 5);
+    assert!(w.g.group_find_path(grp, city, w.at(4, 5), 0).is_none(), "no step out of the city");
+    assert!(w.g.group_find_path(grp, city, w.at(3, 5), 0).is_none());
+    assert!(w.g.group_find_path(grp, city, w.at(6, 5), 0).is_some(), "an attack on the besiegers: a sally");
+    // A unit in no army (a garrison) is not held.
+    let lone = w.unit(w.p0, "UNIT_WARRIOR", 5, 5);
+    assert_eq!(w.g.unit_siege_hold(lone), None);
+    // A move order out of the city: it stays.
+    w.g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, 4, 5, 0, false, true, None, None, None);
+    assert_eq!(w.g.army_plot(a), Some(city), "held: no move out");
+    // A move order onto the besiegers: a battle (a sally).
+    w.g.players[w.p1].human = true;
+    let before = w.g.battle_report_next;
+    w.g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, 6, 5, MOVE_DIRECT_ATTACK, false, true, None, None, None);
+    assert!(w.g.battle_reports.iter().any(|r| r.id >= before), "the sally is fought");
+}
+
+#[test]
+fn the_hold_ends_when_the_siege_lifts() {
+    let mut w = world();
+    w.war();
+    let a = w.army(w.p0, 5, 5, 2);
+    let grp = w.g.units[w.g.army_units(a)[0]].group.expect("a group");
+    let besiegers: Vec<UnitId> = (0..3).map(|_| w.unit(w.p1, "UNIT_WARRIOR", 6, 5)).collect();
+    assert_eq!(w.g.group_siege_hold(grp), Some(w.city));
+    w.g.unit_kill(besiegers[0], false, None);
+    assert!(!w.g.city_is_invested(w.city), "two besiegers do not invest");
+    assert_eq!(w.g.group_siege_hold(grp), None);
+    assert!(w.g.plot_supply_home(w.p0, w.at(5, 5)));
+    assert!(w.g.group_find_path(grp, w.at(5, 5), w.at(4, 5), 0).is_some());
 }

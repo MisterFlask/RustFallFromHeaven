@@ -1,0 +1,16 @@
+spell_peace_seven_pines: seven small green pine trees in a row with a white dove above
+spell_pillar_of_fire: a tall vertical column of orange fire coming down from the sky
+spell_poisoned_blade: a steel dagger dripping bright green poison drops
+spell_potion_of_invisibility: a clear glass potion bottle fading into dotted outline, pale blue liquid
+spell_potion_of_restoration: a round red potion flask with a gold stopper and a sparkle
+spell_promote_settlement: a small hut with an upward gold arrow turning into a tower
+spell_quake: two terracotta rock slabs pushed apart with shaking lines between them
+spell_quicken: a gold hourglass with speed lines streaking behind it
+spell_rage: a red snarling mouth with bared teeth and steam puffs
+spell_raging_seas: a stormy blue sea wave under a dark storm cloud with lightning
+spell_raise_skeleton: a bony ivory skeleton hand clawing up out of brown soil
+spell_rally: a raised gold fist holding a red pennant
+spell_read_the_grimoire: an open plum-coloured book with a red demonic eye on its pages
+spell_rebuild_barnaxus: a bronze golem head with a gear and a wrench beside it
+spell_recruit: a beckoning ivory hand with three small figure silhouettes following
+spell_recruit_mercenary: a gold coin pressed into a steel gauntlet holding a sword

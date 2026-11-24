@@ -1,6 +1,10 @@
 //! Supply lines (this game's own rules, not FFH2's; docs/SUPPLY.md).
 //!
-//! **The line.** Every army needs a supply line: the cheapest path over land from its plot to a
+//! **Home territory.** An army on a land plot of its owner's team's territory needs no line
+//! ([`Game::plot_supply_home`]), except in an invested city, where it needs a line and is held
+//! (moves only to attack: [`Game::unit_siege_hold`]).
+//!
+//! **The line.** Every army outside it needs a supply line: the cheapest path over land from its plot to a
 //! source of its owner ([`Game::plot_supply_line`]): a city of its owner's team not in
 //! occupation, or a ship of its owner with room for land units standing in a sea not closed to
 //! its team with an open lane to a port of the team (docs/NAVAL.md, 4.6; the line then ends on a
@@ -9,8 +13,8 @@
 //! team's territory without one, `SUPPLY_COST_LAND` anywhere else; the line cannot enter water,
 //! impassable plots, a plot an enemy unit stands on (seen or not), an enemy city, a plot next to a
 //! fort an enemy unit holds, or territory its owner's borders bar. The army is supplied when the
-//! cheapest path costs at most `SUPPLY_LINE_BUDGET`; an army in a city of its owner's team is
-//! supplied unless investment cuts that source (an open harbour prevents the cut). Ties: the lower cost, the fewer plots, then the lower plot
+//! cheapest path costs at most `SUPPLY_LINE_BUDGET`; a city of its owner's team is a source
+//! unless investment cuts it (an open harbour prevents the cut). Ties: the lower cost, the fewer plots, then the lower plot
 //! index at the first difference. A crusade Host (docs/CRUSADE.md), which has no cities of its
 //! own at first, counts its lenders' and the victim's cities and land as its own team's.
 //!
@@ -448,6 +452,28 @@ impl Game {
         self.plot_is_water(start) && !self.plot_is_land_bridge(start) && !(self.team_strait_crossing(team) && self.plot_is_strait(start))
     }
 
+    /// Whether `plot` is home territory for `p`'s armies (docs/SUPPLY.md, section 2): a land plot
+    /// owned by `p`'s team (for a crusade Host, also its lenders' and the victim's), other than an
+    /// invested city's. An army there needs no supply line.
+    pub fn plot_supply_home(&self, p: PlayerId, plot: PlotIdx) -> bool {
+        let team = self.players[p].team;
+        if self.map.plots[plot].plot_city.is_some_and(|c| self.cities.contains(c) && self.city_is_invested(c)) {
+            return false;
+        }
+        !self.supply_at_sea(team, plot) && self.plot_get_team(plot).is_some_and(|t| self.supply_home(team, t))
+    }
+
+    /// Whether an army of `p` on `plot` is supplied: in home territory
+    /// ([`Game::plot_supply_home`]), or with a supply line ([`Game::plot_supply_line`]).
+    pub fn plot_is_supplied(&self, p: PlayerId, plot: PlotIdx) -> bool {
+        self.plot_supply_home(p, plot) || self.plot_supply_line(p, plot).is_some()
+    }
+
+    /// Whether army `a` stands in home territory, where it needs no supply line.
+    pub fn army_supply_home(&self, a: ArmyId) -> bool {
+        self.army_plot(a).is_some_and(|plot| self.plot_supply_home(self.armies[a].owner, plot))
+    }
+
     /// Army `a`'s supply line as it stands now (`None`: cut, or the army is not on the map).
     pub fn army_supply_line(&self, a: ArmyId) -> Option<SupplyLine> {
         let plot = self.army_plot(a)?;
@@ -532,7 +558,8 @@ impl Game {
             let Some(plot) = self.army_plot(a) else { continue };
             let before = self.armies[a].unsupplied_turns;
             // Raiders live off the land (docs/RAIDS.md, section 3): supplied whatever their line.
-            let after = if self.army_raid_city(a).is_some() || self.plot_supply_line(p, plot).is_some() { 0 } else { before + 1 };
+            // Within its own borders an army needs no line.
+            let after = if self.army_raid_city(a).is_some() || self.plot_is_supplied(p, plot) { 0 } else { before + 1 };
             self.armies[a].unsupplied_turns = after;
             let at = self.map.xy(plot);
             let name = self.armies[a].name.clone();
