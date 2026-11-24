@@ -147,7 +147,10 @@ pub(crate) fn civic_value(g: &Game, p: PlayerId, civic: CivicType) -> i32 {
     if info.happy_per_military_unit != 0 {
         v += info.happy_per_military_unit * 2 * (40 * capped + 10 * (n - capped));
     }
-    v -= info.food_consumption_per_population * pop * 20;
+    // A civic's food per citizen replaces the default each citizen eats (`city_food_consumption`).
+    if info.food_consumption_per_population != 0 {
+        v += (d.defines.food_consumption_per_population - info.food_consumption_per_population) * pop * 20;
+    }
     // Yields on the improvements we work.
     if info.improvement_yield_changes.iter().any(|y| y.iter().any(|&x| x != 0)) {
         for &c in &pl.cities {
@@ -282,5 +285,26 @@ fn sliders(g: &mut Game, p: PlayerId) {
             break;
         }
         culture = (culture - 20).max(0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testkit::one_landmass_game;
+
+    /// Sacrifice the Weak's food per citizen replaces the default: each citizen more is worth the
+    /// food it saves.
+    #[test]
+    fn sacrifice_the_weak_is_worth_the_food_it_saves() {
+        let mut g = one_landmass_game(7);
+        let p = PlayerId(0);
+        let civic = g.d.t::<CivicType>("CIVIC_SACRIFICE_THE_WEAK");
+        let saved = g.d.defines.food_consumption_per_population - g.d.civics[civic].food_consumption_per_population;
+        assert!(saved > 0);
+        let before = civic_value(&g, p, civic);
+        g.players[p].total_population += 10;
+        let after = civic_value(&g, p, civic);
+        assert_eq!(after - before, saved * 10 * 20);
     }
 }
