@@ -3,7 +3,9 @@
 //!
 //! **Production.** A governed city's production is the governor's, for the human's cities as
 //! for the AI's: the same choice ([`decide`]), reading the city's role. In order: a garrison the
-//! city's danger asks for (the city AI's garrison quota, plus the role's defenders); the best
+//! city's danger asks for (the city AI's garrison quota, plus the role's defenders,
+//! [`garrison_need`]); a building that opens units, by the AI's ladder's rules: a clearly better
+//! defender or attacker, our casters, at war our siege engines ([`unit_building`]); the best
 //! building by the city AI's value per turn of production, weighted by the role's flavors against
 //! the building's; a missionary for a role that weighs religion while its religion misses our
 //! cities; then the process the role prefers. Wonders, palaces, rituals and settlers are the
@@ -20,8 +22,11 @@
 //! own production ladder (`production::decide`) is asked, and what it picks becomes an empire
 //! order when the governor would not build it (settlers, wonders, rituals, heroes, field units,
 //! ships...); the ladder's fillers wait for the governor's next choice, and there an ordinary
-//! building the ladder names gives way to a wonder it ranks nearly as high. A city whose garrison
-//! is missing or overwhelmed drops its empire orders for the governor's defender.
+//! building the ladder names gives way to a wonder it ranks nearly as high. In a governed city the
+//! ladder stops at a step the governor owns only where the governor will do it: it counts the
+//! governor's garrison quota, and passes over its steps that ask for one particular ordinary
+//! building (the governor builds what opens units itself). A city whose garrison is missing or
+//! overwhelmed drops its empire orders for the governor's defender.
 //!
 //! **Who runs the AI's cities** ([`choose_governance`], [`wants_governors`]): every city goes to a
 //! governor unless its government is Despotism or God King, and under those two every city is
@@ -34,7 +39,10 @@ use ffh_data::*;
 use crate::production::{self as prod, Choice, Role};
 use crate::Ai;
 
-/// What a governed city builds now, and why.
+/// What a governed city builds now, and why: the garrison its quota asks for ([`garrison_need`];
+/// also a second defender, or more defenders while the threat overwhelms the garrison), a probe's
+/// choice, the building that opens units ([`unit_building`]), its best ranked building
+/// ([`ranked_buildings`]), a missionary, a process.
 pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     let d = g.d;
     let city = &g.cities[c];
@@ -50,15 +58,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     let held = prod::garrison_holds(g, p, plot, threat, defense);
 
     // 1. The garrison the city's danger asks for.
-    let mut needed = 1 + i32::from(threat > 0 && !held) + crate::defense::rival_defenders(g, c) + profile.map_or(0, |pr| pr.defenders);
-    if prod::barbarian_lair_near(g, p, plot, 3) || !held && prod::barbarians_near(g, p, plot, 3) {
-        needed += 1;
-    }
-    if !crate::economy::can_afford_unit(g, p, true, prod::civ_enemies_at_war(g, p)) && threat == 0 && !crate::probes::keeps_garrison(g, p) {
-        needed = needed.min(1);
-    }
-    // A probe's garrison (probes.rs).
-    let needed = crate::probes::garrison_need(g, p, needed, true);
+    let needed = garrison_need(g, c, threat, held);
     let overwhelmed = threat > 0 && defense * 3 / 2 < threat && defenders < needed + 2;
     let second = prod::second_defender_wanted(g, p, c, plot, defenders, threat, defense) && !crate::probes::skips_second_defender(g, p);
     if defenders == 0 || overwhelmed || defenders < needed || second {
@@ -70,6 +70,11 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     // A probe's army and buildings (probes.rs).
     if let Some((choice, why)) = crate::probes::production(g, c, threat) {
         return Some((choice, why));
+    }
+
+    // 2. A building that opens units (`unit_building`).
+    if let Some(b) = unit_building(g, c, threat, defense) {
+        return Some((Choice::Construct(b), "governor_unit_building"));
     }
 
     // 3. The best building for the role (an ambitious governor: the costliest it may build).
@@ -105,10 +110,68 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     best_process.map(|(pr, _)| (Choice::Maintain(pr), "governor_process"))
 }
 
-/// The buildings city `c`'s governor may choose, best first by its score (ties: the first
-/// building type): the city AI's value (`building_value`) per turn of production, up to half again
-/// for a building all of whose flavor its role weighs 5. Not a wonder or a palace
-/// (the player's empire orders), nothing of no value, nothing taking more than 50 turns.
+/// The garrison governed city `c` keeps (`threat` the threat around it, `held` whether its
+/// garrison holds it, `production::garrison_holds`): one defender, one more while a threat the
+/// garrison does not hold is in sight, the rival civilizations' (`defense::rival_defenders`), the
+/// role's defenders, one more near a barbarian lair or near barbarians the garrison does not hold;
+/// at most one when the empire cannot afford another unit and nothing threatens the city (unless a
+/// probe keeps its garrison); then a probe's garrison (`probes::garrison_need`). The AI's ladder
+/// uses this quota for its governed cities, so that it asks for a defender only when the governor
+/// trains one.
+pub(crate) fn garrison_need(g: &Game, c: CityId, threat: i32, held: bool) -> i32 {
+    let p = g.cities[c].owner;
+    let plot = g.city_plot(c);
+    let role_defenders = g.city_role(c).map_or(0, |k| g.d.city_roles[k].defenders);
+    let mut needed = 1 + i32::from(threat > 0 && !held) + crate::defense::rival_defenders(g, c) + role_defenders;
+    if prod::barbarian_lair_near(g, p, plot, 3) || !held && prod::barbarians_near(g, p, plot, 3) {
+        needed += 1;
+    }
+    if !crate::economy::can_afford_unit(g, p, true, prod::civ_enemies_at_war(g, p)) && threat == 0 && !crate::probes::keeps_garrison(g, p) {
+        needed = needed.min(1);
+    }
+    // A probe's garrison (probes.rs).
+    crate::probes::garrison_need(g, p, needed, true)
+}
+
+/// The building governed city `c` builds ahead of its ranked buildings because it opens units
+/// (`threat` the threat around it, `defense` its garrison's defense), by the AI's ladder's own
+/// rules, the first of: the building that opens a clearly better defender or attacker
+/// (`production::enabler_building`), while the threat is at most half the defense and the city
+/// has at least 2 population; the building that trains our casters (`casters::caster_building`);
+/// at war with a civilization or preparing one, the building that trains our siege engines
+/// (`campaign::siege_building`). A candidate counts only if the governor may build it as it may
+/// its ranked buildings (an ordinary building, within 50 turns); one that fails gives way to the
+/// next.
+fn unit_building(g: &Game, c: CityId, threat: i32, defense: i32) -> Option<BuildingType> {
+    let p = g.cities[c].owner;
+    let ok = |b: &BuildingType| {
+        let b = *b;
+        prod::building_allowed(g, c, b)
+            && g.city_can_construct(c, b, false, false, false)
+            && !g.order_may_be_empire(OrderType::ORDER_CONSTRUCT, b.i())
+            && g.city_production_turns_left_building(c, b, 0) <= 50
+    };
+    if threat * 2 <= defense && g.cities[c].population >= 2 {
+        if let Some(b) = prod::enabler_building(g, c, threat).filter(ok) {
+            return Some(b);
+        }
+    }
+    if let Some(b) = crate::casters::caster_building(g, c).filter(ok) {
+        return Some(b);
+    }
+    if crate::campaign::candidates_war(g, p) {
+        if let Some(b) = crate::campaign::siege_building(g, c).filter(ok) {
+            return Some(b);
+        }
+    }
+    None
+}
+
+/// The buildings city `c`'s governor may choose by their value, best first by its score (ties: the
+/// first building type): the city AI's value (`building_value`) per turn of production, up to half
+/// again for a building all of whose flavor its role weighs 5. Not a wonder or a palace (the
+/// player's empire orders), nothing of no value, nothing taking more than 50 turns. A building
+/// whose only worth is the units it opens has no value here; [`unit_building`] chooses those.
 fn ranked_buildings(g: &Game, c: CityId, threat: i32) -> Vec<(BuildingType, i64)> {
     let d = g.d;
     let profile = g.city_role(c).map(|k| &d.city_roles[k]);
@@ -146,11 +209,16 @@ fn ranked_buildings(g: &Game, c: CityId, threat: i32) -> Vec<(BuildingType, i64)
 }
 
 /// The next `n` buildings city `c`'s governor means to build, in the order [`decide`] would pick
-/// them (the client shows them as the governor's plan; docs/GOVERNORS.md): its candidates ranked
-/// once by the same score, without simulating what each one built would change.
+/// them (the client shows them as the governor's plan; docs/GOVERNORS.md): the building that opens
+/// units ([`unit_building`]) when there is one, then its ranked buildings ([`ranked_buildings`])
+/// without repeating it, without simulating what each one built would change.
 pub fn plan(g: &Game, c: CityId, n: usize) -> Vec<BuildingType> {
-    let threat = prod::local_threat(g, g.cities[c].owner, g.city_plot(c), 3);
-    ranked_buildings(g, c, threat).into_iter().take(n).map(|(b, _)| b).collect()
+    let p = g.cities[c].owner;
+    let plot = g.city_plot(c);
+    let threat = prod::local_threat(g, p, plot, 3);
+    let defense = prod::garrison(g, p, plot).1;
+    let first = unit_building(g, c, threat, defense);
+    first.into_iter().chain(ranked_buildings(g, c, threat).into_iter().map(|(b, _)| b).filter(|&b| Some(b) != first)).take(n).collect()
 }
 
 // -------------------------------------------------------------------------------------------
@@ -443,7 +511,12 @@ mod tests {
     /// The one-landmass game with player 0 under Aristocracy (every city governed) holding cities
     /// at `spots` (the first its capital), each queue empty.
     fn governed(spots: &[(i32, i32)]) -> (Game, Vec<CityId>) {
-        let mut g = crate::testkit::one_landmass_game(4);
+        governed_with(&[], spots)
+    }
+
+    /// [`governed`] with the first players' civilizations given.
+    fn governed_with(civs: &[&str], spots: &[(i32, i32)]) -> (Game, Vec<CityId>) {
+        let mut g = crate::testkit::one_landmass_game_with(4, civs);
         let cities: Vec<CityId> = spots.iter().map(|&(x, y)| g.player_init_city(P0, x, y, true, true)).collect();
         let civic = g.d.t::<CivicType>("CIVIC_ARISTOCRACY");
         let option = g.d.civics[civic].civic_option_type.expect("a civic option");
@@ -601,6 +674,76 @@ mod tests {
         assert_eq!(distinct.len(), plain.len());
         assert!(matches!(decide(&g, c), Some((Choice::Construct(b), ..)) if b == plain[0]));
         assert!(plain.iter().all(|&b| !g.order_may_be_empire(OrderType::ORDER_CONSTRUCT, b.i())), "no wonder in the plan");
+    }
+
+    /// A governed Bannor capital of size 3 with four Warriors, Bronze Working known (Axemen, twice
+    /// a Warrior's strength, need a Training Yard), its Training Yard all but built (so it finishes
+    /// within 20 turns at any production), and a settler of ours in the field (the ladder's settler
+    /// step waits for it). Also the Training Yard.
+    fn training_yard_city() -> (Game, CityId, BuildingType) {
+        let (mut g, cities) = governed_with(&["CIVILIZATION_BANNOR"], &[(4, 5)]);
+        let c = cities[0];
+        let d = g.d;
+        defenders(&mut g, c, 4);
+        let team = g.players[P0].team;
+        g.team_set_has_tech(team, d.t::<TechType>("TECH_BRONZE_WORKING"), true, Some(P0), false, false);
+        g.city_set_population(c, 3);
+        let civ = g.player_get_civilization_type(P0).expect("a civilization");
+        let yard = d.civ_building(civ, d.t::<BuildingClassType>("BUILDINGCLASS_TRAINING_YARD")).expect("the Bannor's Training Yard");
+        let yard = g.city_building_variant(c, yard);
+        g.cities[c].building_production[yard] = g.city_production_needed_building(c, yard) - 1;
+        g.player_init_unit(P0, d.t::<UnitType>("UNIT_SETTLER"), 8, 5, Some(UnitAIType::UNITAI_SETTLE), None);
+        (g, c, yard)
+    }
+
+    /// A governed city builds the building that opens a clearly better unit ahead of its ranked
+    /// buildings, its plan names it first, and once it stands neither names it.
+    #[test]
+    fn the_governor_builds_what_opens_a_better_unit() {
+        let (mut g, c, yard) = training_yard_city();
+        assert_eq!(decide(&g, c), Some((Choice::Construct(yard), "governor_unit_building")));
+        assert_eq!(plan(&g, c, 3)[0], yard);
+        g.city_set_num_real_building(c, yard, 1);
+        assert!(!matches!(decide(&g, c), Some((Choice::Construct(b), _)) if b == yard));
+        assert!(!plan(&g, c, 3).contains(&yard));
+    }
+
+    /// The AI's ladder leaves the building that opens units to a governed city's governor: it
+    /// does not ask for it there, and asks for it in the same city run by hand.
+    #[test]
+    fn the_ladder_leaves_what_opens_units_to_the_governor() {
+        let (mut g, c, yard) = training_yard_city();
+        let ai = crate::Ai::new();
+        assert!(g.city_is_governed(c));
+        assert_ne!(prod::decide(&ai, &g, c).map(|(_, why)| why), Some("unit_enabler"));
+        let despotism = g.d.t::<CivicType>("CIVIC_DESPOTISM");
+        let option = g.d.civics[despotism].civic_option_type.unwrap();
+        g.player_set_civics(P0, option, Some(despotism));
+        assert!(!g.city_is_governed(c));
+        assert_eq!(prod::decide(&ai, &g, c), Some((Choice::Construct(yard), "unit_enabler")));
+    }
+
+    /// In a governed capital the ladder asks for a city defender only when the governor trains
+    /// one: whatever the garrison, from none to four.
+    #[test]
+    fn the_ladder_asks_for_a_defender_only_when_the_governor_trains_one() {
+        let ai = crate::Ai::new();
+        let mut asked = 0;
+        for n in 0..=4 {
+            let (mut g, cities) = governed(&[(4, 5), (12, 5)]);
+            let c = cities[0];
+            assert!(g.city_is_capital(c));
+            defenders(&mut g, c, n);
+            if let Some((Choice::Train(_, UnitAIType::UNITAI_CITY_DEFENSE), why)) = prod::decide(&ai, &g, c) {
+                asked += 1;
+                assert!(
+                    matches!(decide(&g, c), Some((Choice::Train(_, UnitAIType::UNITAI_CITY_DEFENSE), _))),
+                    "{n} defenders: the ladder asks for one ({why}), the governor builds {:?}",
+                    decide(&g, c)
+                );
+            }
+        }
+        assert!(asked > 0, "an empty city asks for its garrison");
     }
 
     /// At peace the priorities are the roles of the leader's strongest flavors; a civilization at
