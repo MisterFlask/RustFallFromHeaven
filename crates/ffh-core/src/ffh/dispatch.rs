@@ -40,8 +40,8 @@ pub type TriggerCityFn = fn(&Game, EventTriggerType, PlayerId, CityId) -> bool;
 pub type TriggerUnitFn = fn(&Game, EventTriggerType, PlayerId, UnitId) -> bool;
 /// Trigger `PythonCallback(triggerData, ePlayer)`.
 pub type TriggerCallbackFn = fn(&mut Game, &EventTriggeredData, PlayerId);
-/// Event `PythonCanDo(eEvent, triggerData)`.
-pub type EventCanDoFn = fn(&Game, EventType, &EventTriggeredData) -> bool;
+/// Event `PythonCanDo(eEvent, triggerData)`: `None` allows the option, else the check that failed.
+pub type EventCanDoFn = fn(&Game, EventType, &EventTriggeredData) -> Option<crate::ffh::event_unmet::EventUnmet>;
 /// Event `PythonCallback(eEvent, triggerData)`.
 pub type EventCallbackFn = fn(&mut Game, EventType, &EventTriggeredData);
 /// Event `PythonExpireCheck(eEvent, triggerData)`.

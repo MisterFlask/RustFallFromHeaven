@@ -10,6 +10,26 @@ use crate::map::coord_range;
 use crate::utils::{final_improvement_upgrade, get_sign};
 use ffh_data::*;
 
+/// Why an event cannot apply to a plot (`Game::plot_event_refusal`), a check of C++
+/// `CvPlot::canApplyEvent`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlotEventRefusal {
+    /// The plot has an improvement (a feature is to grow on it).
+    HasImprovement,
+    /// The plot cannot have this feature.
+    Feature(FeatureType),
+    /// The plot has no feature to remove.
+    NoFeature,
+    /// The plot cannot have this improvement.
+    Improvement(ImprovementType),
+    /// The plot has no improvement to remove.
+    NoImprovement,
+    /// The plot has no route to remove.
+    NoRoute,
+    /// A city's route is not removed.
+    CityRoute,
+}
+
 impl Game {
     // ------------------------------------------------------------------
     // Unit list (`getNumUnits`, `getUnitByIndex`, `headUnitNode`, ... are `units` field ops)
@@ -1258,42 +1278,51 @@ impl Game {
 
     /// C++ `CvPlot::canApplyEvent`.
     pub fn plot_can_apply_event(&self, p: PlotIdx, event: EventType) -> bool {
+        self.plot_event_refusal(p, event).is_none()
+    }
+
+    /// Why `event` cannot apply to plot `p` ([`Self::plot_can_apply_event`]): the first check
+    /// that fails, in the gate's order; `None` when it can.
+    pub fn plot_event_refusal(&self, p: PlotIdx, event: EventType) -> Option<PlotEventRefusal> {
         let k_event = &self.d.events[event];
         let plot = &self.map.plots[p];
 
         if k_event.feature_change > 0 {
             if let Some(feature) = k_event.feature {
-                if plot.improvement_type.is_some() || !self.plot_can_have_feature(p, Some(feature)) {
-                    return false;
+                if plot.improvement_type.is_some() {
+                    return Some(PlotEventRefusal::HasImprovement);
+                }
+                if !self.plot_can_have_feature(p, Some(feature)) {
+                    return Some(PlotEventRefusal::Feature(feature));
                 }
             }
         } else if k_event.feature_change < 0 && plot.feature_type.is_none() {
-            return false;
+            return Some(PlotEventRefusal::NoFeature);
         }
 
         if k_event.improvement_change > 0 {
             if let Some(improvement) = k_event.improvement {
                 if !self.plot_can_have_improvement(p, improvement, self.plot_get_team(p), false) {
-                    return false;
+                    return Some(PlotEventRefusal::Improvement(improvement));
                 }
             }
         } else if k_event.improvement_change < 0 && plot.improvement_type.is_none() {
-            return false;
+            return Some(PlotEventRefusal::NoImprovement);
         }
 
         //FfH: Modified by Kael 03/19/2008 (the BTS bonus checks are commented out)
 
         if k_event.route_change < 0 {
             if plot.route_type.is_none() {
-                return false;
+                return Some(PlotEventRefusal::NoRoute);
             }
 
             if plot.plot_city.is_some() {
-                return false;
+                return Some(PlotEventRefusal::CityRoute);
             }
         }
 
-        true
+        None
     }
 
     /// C++ `CvPlot::applyEvent`.

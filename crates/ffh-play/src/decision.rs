@@ -567,6 +567,8 @@ pub struct EventOption {
     pub event: EventType,
     /// `canDoEvent`.
     pub enabled: bool,
+    /// Why it cannot be chosen (the check of `canDoEvent` that fails), as a sentence.
+    pub why: Option<String>,
     /// What it does, from the `EventInfo` fields (the help text `CvGameTextMgr::setEventHelp`
     /// would show is not ported).
     pub effects: Vec<String>,
@@ -804,6 +806,7 @@ impl Pending {
                 "options" => Json::Arr(e.options.iter().map(|o| crate::jobj! {
                     "event" => Json::idx(o.event),
                     "enabled" => o.enabled,
+                    "why" => o.why.as_deref(),
                     "effects" => Json::Arr(o.effects.iter().map(Json::from).collect()),
                 }).collect()),
                 "city" => e.city,
@@ -856,8 +859,14 @@ pub fn event_available(g: &Game, p: PlayerId, id: TriggeredId) -> bool {
 pub fn pending_event(g: &Game, p: PlayerId, id: TriggeredId) -> Option<PendingEvent> {
     let data = g.player_get_event_triggered(p, id)?;
     let trigger = &g.d.event_triggers[data.trigger];
-    let enabled: Vec<bool> = trigger.events.iter().map(|&e| g.player_can_do_event(p, e, data)).collect();
-    let options = trigger.events.iter().zip(enabled).map(|(&event, enabled)| EventOption { event, enabled, effects: event_effects(g, p, event, data) }).collect();
+    let options = trigger
+        .events
+        .iter()
+        .map(|&event| {
+            let why = g.player_event_refusal(p, event, data).map(|r| crate::view::reasons::event_refusal_text(g, p, r));
+            EventOption { event, enabled: why.is_none(), why, effects: event_effects(g, p, event, data) }
+        })
+        .collect();
     let plot = (data.plot_x != ffh_core::defs::INVALID_PLOT_COORD && data.plot_y != ffh_core::defs::INVALID_PLOT_COORD).then_some((data.plot_x, data.plot_y));
     Some(PendingEvent { triggered: id, trigger: data.trigger, text: data.text.clone(), options, city: data.city, plot })
 }

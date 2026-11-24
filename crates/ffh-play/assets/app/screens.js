@@ -28,6 +28,8 @@ export async function openEvent(ev) {
         "button.option",
         {
           disabled: !o.enabled,
+          // Why it cannot be chosen: the check of the rules' gate that fails (`why`).
+          title: o.enabled ? null : (o.why ?? null),
           "data-event": o.event,
           onclick: async () => {
             const reply = await run({ c: "event", triggered: ev.triggered, event: o.event });
@@ -39,6 +41,7 @@ export async function openEvent(ev) {
         },
         h("span", markup(dname("EventType", o.event))),
         o.effects?.length ? h("small", o.effects.map((e) => plain(e)).join(" · ")) : null,
+        !o.enabled && o.why ? h("span.dim.small.event-why", o.why) : null,
       ),
     ),
   );

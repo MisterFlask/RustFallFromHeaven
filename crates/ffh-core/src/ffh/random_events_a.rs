@@ -44,6 +44,7 @@
 
 use crate::defs::INVALID_PLOT_COORD;
 use crate::ffh::dispatch::*;
+use crate::ffh::event_unmet::EventUnmet;
 use crate::ffh::game_utils::py_div;
 use crate::game::Game;
 use crate::ids::*;
@@ -531,8 +532,8 @@ fn permanent_trait(g: &Game, p: PlayerId) -> Option<TraitType> {
 }
 
 /// `canApplyTraitX`: the leader's permanent trait is not `trait_type`.
-fn can_apply_trait(g: &Game, data: &EventTriggeredData, trait_type: TraitType) -> bool {
-    permanent_trait(g, data.player) != Some(trait_type)
+fn can_apply_trait(g: &Game, data: &EventTriggeredData, trait_type: TraitType) -> Option<EventUnmet> {
+    if permanent_trait(g, data.player) != Some(trait_type) { None } else { Some(EventUnmet::PermanentTrait(trait_type)) }
 }
 
 /// `doTraitX`: drop every selectable trait but the leader's permanent one, then gain `trait_type`.
@@ -1038,10 +1039,11 @@ fn do_dissent2(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
 }
 
 /// `canApplyDissent4(argsList)`: the player runs Social Order.
-fn can_apply_dissent4(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_dissent4(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     let d = g.d;
     let cultural_values = d.t::<CivicOptionType>("CIVICOPTION_CULTURAL_VALUES");
-    g.players[data.player].civics[cultural_values] == Some(d.t::<CivicType>("CIVIC_SOCIAL_ORDER"))
+    let social_order = d.t::<CivicType>("CIVIC_SOCIAL_ORDER");
+    if g.players[data.player].civics[cultural_values] == Some(social_order) { None } else { Some(EventUnmet::Civic(social_order)) }
 }
 
 /// `applyExploreLairDepths1(argsList)`: a big bad or big good lair result, 50/50.
@@ -1553,8 +1555,9 @@ fn can_trigger_mutate_unit(g: &Game, _trigger: EventTriggerType, _p: PlayerId, u
 }
 
 /// `canApplyNoOrder(argsList)`.
-fn can_apply_no_order(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
-    g.player_get_state_religion(data.player) != Some(g.d.t::<ReligionType>("RELIGION_THE_ORDER"))
+fn can_apply_no_order(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
+    let order = g.d.t::<ReligionType>("RELIGION_THE_ORDER");
+    if g.player_get_state_religion(data.player) != Some(order) { None } else { Some(EventUnmet::NotStateReligion(order)) }
 }
 
 /// `doOrderVsVeil1(argsList)`: side with the Order.
@@ -1602,10 +1605,10 @@ fn do_order_vs_veil3(g: &mut Game, _event: EventType, data: &EventTriggeredData)
 }
 
 /// `canApplyOrderVsVeil4(argsList)`: the city has a dungeon.
-fn can_apply_order_vs_veil4(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_order_vs_veil4(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     let dungeon = g.d.t::<BuildingType>("BUILDING_DUNGEON");
     // NULL city: getNumRealBuilding() is -1, not 0.
-    data_city(g, data).map_or(true, |c| g.city_num_real_family(c, dungeon) != 0)
+    if data_city(g, data).map_or(true, |c| g.city_num_real_family(c, dungeon) != 0) { None } else { Some(EventUnmet::CityLacks(dungeon)) }
 }
 
 /// `doOrderVsVeilTemple1(argsList)`: side with the Order; the Veil temple is torn down.
@@ -2189,7 +2192,7 @@ fn do_slave_revolt(g: &mut Game, data: &EventTriggeredData, _p: PlayerId) {
 }
 
 /// `canApplyTraitAggressive(argsList)`.
-fn can_apply_trait_aggressive(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_aggressive(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_AGGRESSIVE"))
 }
 
@@ -2200,7 +2203,7 @@ fn do_trait_aggressive(g: &mut Game, _event: EventType, data: &EventTriggeredDat
 }
 
 /// `canApplyTraitArcane(argsList)`.
-fn can_apply_trait_arcane(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_arcane(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_ARCANE"))
 }
 
@@ -2211,7 +2214,7 @@ fn do_trait_arcane(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
 }
 
 /// `canApplyTraitCharismatic(argsList)`.
-fn can_apply_trait_charismatic(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_charismatic(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_CHARISMATIC"))
 }
 
@@ -2222,7 +2225,7 @@ fn do_trait_charismatic(g: &mut Game, _event: EventType, data: &EventTriggeredDa
 }
 
 /// `canApplyTraitCreative(argsList)`.
-fn can_apply_trait_creative(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_creative(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_CREATIVE"))
 }
 
@@ -2233,7 +2236,7 @@ fn do_trait_creative(g: &mut Game, _event: EventType, data: &EventTriggeredData)
 }
 
 /// `canApplyTraitExpansive(argsList)`.
-fn can_apply_trait_expansive(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_expansive(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_EXPANSIVE"))
 }
 
@@ -2244,7 +2247,7 @@ fn do_trait_expansive(g: &mut Game, _event: EventType, data: &EventTriggeredData
 }
 
 /// `canApplyTraitFinancial(argsList)`.
-fn can_apply_trait_financial(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_financial(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_FINANCIAL"))
 }
 
@@ -2255,7 +2258,7 @@ fn do_trait_financial(g: &mut Game, _event: EventType, data: &EventTriggeredData
 }
 
 /// `canApplyTraitIndustrious(argsList)`.
-fn can_apply_trait_industrious(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_industrious(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_INDUSTRIOUS"))
 }
 
@@ -2310,7 +2313,7 @@ fn do_trait_insane(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
 }
 
 /// `canApplyTraitOrganized(argsList)`.
-fn can_apply_trait_organized(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_organized(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_ORGANIZED"))
 }
 
@@ -2321,7 +2324,7 @@ fn do_trait_organized(g: &mut Game, _event: EventType, data: &EventTriggeredData
 }
 
 /// `canApplyTraitPhilosophical(argsList)`.
-fn can_apply_trait_philosophical(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_philosophical(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_PHILOSOPHICAL"))
 }
 
@@ -2332,7 +2335,7 @@ fn do_trait_philosophical(g: &mut Game, _event: EventType, data: &EventTriggered
 }
 
 /// `canApplyTraitRaiders(argsList)`.
-fn can_apply_trait_raiders(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_raiders(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_RAIDERS"))
 }
 
@@ -2343,7 +2346,7 @@ fn do_trait_raiders(g: &mut Game, _event: EventType, data: &EventTriggeredData) 
 }
 
 /// `canApplyTraitSpiritual(argsList)`.
-fn can_apply_trait_spiritual(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_trait_spiritual(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     can_apply_trait(g, data, g.d.t::<TraitType>("TRAIT_SPIRITUAL"))
 }
 
@@ -2536,8 +2539,8 @@ fn apply_wb_splintered_court_parith_yes(g: &mut Game, _event: EventType, _data: 
 }
 
 /// `canDoWBTheBlackTowerPickCivBannor(argsList)`.
-fn can_do_wb_the_black_tower_pick_civ_bannor(g: &Game, _event: EventType, _data: &EventTriggeredData) -> bool {
-    g.is_has_trophy("TROPHY_WB_THE_RADIANT_GUARD_CAPRIA_ALLY")
+fn can_do_wb_the_black_tower_pick_civ_bannor(g: &Game, _event: EventType, _data: &EventTriggeredData) -> Option<EventUnmet> {
+    if g.is_has_trophy("TROPHY_WB_THE_RADIANT_GUARD_CAPRIA_ALLY") { None } else { Some(EventUnmet::Trophy) }
 }
 
 /// `applyWBTheBlackTowerPickCivBannor(argsList)`.
@@ -2559,8 +2562,8 @@ fn apply_wb_the_black_tower_pick_civ_lanun(g: &mut Game, _event: EventType, data
 }
 
 /// `canDoWBTheBlackTowerPickCivLjosalfar(argsList)`.
-fn can_do_wb_the_black_tower_pick_civ_ljosalfar(g: &Game, _event: EventType, _data: &EventTriggeredData) -> bool {
-    g.is_has_trophy("TROPHY_WB_THE_SPLINTERED_COURT_LJOSALFAR")
+fn can_do_wb_the_black_tower_pick_civ_ljosalfar(g: &Game, _event: EventType, _data: &EventTriggeredData) -> Option<EventUnmet> {
+    if g.is_has_trophy("TROPHY_WB_THE_SPLINTERED_COURT_LJOSALFAR") { None } else { Some(EventUnmet::Trophy) }
 }
 
 /// `applyWBTheBlackTowerPickCivLjosalfar(argsList)`.
@@ -2570,8 +2573,8 @@ fn apply_wb_the_black_tower_pick_civ_ljosalfar(g: &mut Game, _event: EventType, 
 }
 
 /// `canDoWBTheBlackTowerPickCivLuchuirp(argsList)`.
-fn can_do_wb_the_black_tower_pick_civ_luchuirp(g: &Game, _event: EventType, _data: &EventTriggeredData) -> bool {
-    g.is_has_trophy("TROPHY_WB_THE_MOMUS_BEERI_ALLY")
+fn can_do_wb_the_black_tower_pick_civ_luchuirp(g: &Game, _event: EventType, _data: &EventTriggeredData) -> Option<EventUnmet> {
+    if g.is_has_trophy("TROPHY_WB_THE_MOMUS_BEERI_ALLY") { None } else { Some(EventUnmet::Trophy) }
 }
 
 /// `applyWBTheBlackTowerPickCivLuchuirp(argsList)`.
@@ -2581,8 +2584,8 @@ fn apply_wb_the_black_tower_pick_civ_luchuirp(g: &mut Game, _event: EventType, d
 }
 
 /// `canDoWBTheBlackTowerPickCivSvartalfar(argsList)`.
-fn can_do_wb_the_black_tower_pick_civ_svartalfar(g: &Game, _event: EventType, _data: &EventTriggeredData) -> bool {
-    g.is_has_trophy("TROPHY_WB_THE_SPLINTERED_COURT_SVARTALFAR")
+fn can_do_wb_the_black_tower_pick_civ_svartalfar(g: &Game, _event: EventType, _data: &EventTriggeredData) -> Option<EventUnmet> {
+    if g.is_has_trophy("TROPHY_WB_THE_SPLINTERED_COURT_SVARTALFAR") { None } else { Some(EventUnmet::Trophy) }
 }
 
 /// `applyWBTheBlackTowerPickCivSvartalfar(argsList)`.
@@ -2716,8 +2719,8 @@ fn do_wedding_feud3(g: &mut Game, _event: EventType, data: &EventTriggeredData) 
 }
 
 /// `canDoWeddingFeud3(argsList)`.
-fn can_do_wedding_feud3(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
-    can_pay_ten_per_city(g, data.player)
+fn can_do_wedding_feud3(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
+    if can_pay_ten_per_city(g, data.player) { None } else { Some(EventUnmet::Gold(10 * g.players[data.player].num_cities())) }
 }
 
 /// `canTriggerBabyBoom(argsList)`: at peace with everyone, and a peace began last turn.
@@ -2730,11 +2733,11 @@ fn can_trigger_baby_boom(g: &mut Game, data: &mut EventTriggeredData) -> bool {
 }
 
 /// `canApplyLooters3(argsList)`: the other player's city has a cheap building to loot.
-fn can_apply_looters3(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_apply_looters3(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     // NO_PLAYER: gc.getPlayer(-1) is None and `otherPlayer.getCity` raises.
-    let Some(other) = data.other_player else { return false };
+    let Some(other) = data.other_player else { return Some(EventUnmet::NoOtherPlayer) };
     let city = player_get_city(g, other, data.other_player_city);
-    !destructible_buildings(g, city, true).is_empty()
+    if !destructible_buildings(g, city, true).is_empty() { None } else { Some(EventUnmet::NoBuildingToLose { other: true, max_cost: Some(100) }) }
 }
 
 /// `applyLooters3(argsList)`: one or two cheap buildings of the other player's city are destroyed.
@@ -2755,42 +2758,43 @@ fn apply_looters3(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
 
 /// `canTriggerBrothersInNeed(argsList)`.
 fn can_trigger_brothers_in_need(g: &mut Game, data: &mut EventTriggeredData) -> bool {
-    brothers_in_need(g, data)
+    brothers_in_need(g, data).is_none()
 }
 
 /// The body of `canTriggerBrothersInNeed` (also `canDoBrothersInNeed1`): the player can trade
 /// with the other player, has a spare strategic resource the other lacks, and a third team is
 /// at war with the other player but not with the player.
-fn brothers_in_need(g: &Game, data: &EventTriggeredData) -> bool {
+fn brothers_in_need(g: &Game, data: &EventTriggeredData) -> Option<EventUnmet> {
     const RESOURCES: [&str; 4] = ["BONUS_COPPER", "BONUS_IRON", "BONUS_HORSE", "BONUS_IVORY"];
     let d = g.d;
     let p = data.player;
     // NO_PLAYER: CvPlayer::canTradeNetworkWith(NO_PLAYER) reads GET_PLAYER(-1); the trigger
     // always picks the other player.
-    let Some(other) = data.other_player else { return false };
+    let Some(other) = data.other_player else { return Some(EventUnmet::NoOtherPlayer) };
     if !g.player_can_trade_network_with(p, other) {
-        return false;
+        return Some(EventUnmet::NoTrade);
     }
     let found = RESOURCES.iter().any(|&name| {
         let resource = d.t::<BonusType>(name);
         g.player_get_num_tradeable_bonuses(p, resource) > 1 && g.player_get_num_available_bonuses(other, resource) <= 0
     });
     if !found {
-        return false;
+        return Some(EventUnmet::NoSpareStrategic);
     }
     let team = g.players[p].team;
     let other_team = g.players[other].team;
-    g.civ_team_ids().any(|t| {
+    let war = g.civ_team_ids().any(|t| {
         t != team
             && t != other_team
             && g.team_is_alive(t)
             && g.teams[t].at_war[other_team]
             && !g.teams[t].at_war[team]
-    })
+    });
+    if war { None } else { Some(EventUnmet::NoThirdPartyWar) }
 }
 
 /// `canDoBrothersInNeed1(argsList)`: `canTriggerBrothersInNeed((kTriggeredData, ))`.
-fn can_do_brothers_in_need1(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
+fn can_do_brothers_in_need1(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
     brothers_in_need(g, data)
 }
 
@@ -2810,13 +2814,13 @@ fn can_trigger_hurricane_city(g: &Game, _trigger: EventTriggerType, _p: PlayerId
 }
 
 /// `canApplyHurricane1(argsList)`: the city has a building to lose.
-fn can_apply_hurricane1(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
-    !destructible_buildings(g, data_city(g, data), false).is_empty()
+fn can_apply_hurricane1(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
+    if !destructible_buildings(g, data_city(g, data), false).is_empty() { None } else { Some(EventUnmet::NoBuildingToLose { other: false, max_cost: None }) }
 }
 
 /// `canApplyHurricane2(argsList)`: `not canApplyHurricane1(argsList)`.
-fn can_apply_hurricane2(g: &Game, event: EventType, data: &EventTriggeredData) -> bool {
-    !can_apply_hurricane1(g, event, data)
+fn can_apply_hurricane2(g: &Game, event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
+    if can_apply_hurricane1(g, event, data).is_some() { None } else { Some(EventUnmet::BuildingToLose) }
 }
 
 /// `applyHurricane1(argsList)`: one cheap and one expensive building are destroyed.
@@ -2869,8 +2873,8 @@ fn can_trigger_monsoon_city(g: &Game, _trigger: EventTriggerType, _p: PlayerId, 
 }
 
 /// `canApplyVolcano1(argsList)`: an improvement next to the volcano.
-fn can_apply_volcano1(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
-    !volcano_plots(g, data).is_empty()
+fn can_apply_volcano1(g: &Game, _event: EventType, data: &EventTriggeredData) -> Option<EventUnmet> {
+    if !volcano_plots(g, data).is_empty() { None } else { Some(EventUnmet::NoAdjacentImprovement) }
 }
 
 /// `applyVolcano1(argsList)`: two or three improvements next to the volcano are destroyed
@@ -3265,7 +3269,7 @@ mod tests {
             ("TRAIT_RAIDERS", can_apply_trait_raiders),
             ("TRAIT_SPIRITUAL", can_apply_trait_spiritual),
         ] {
-            assert_eq!(f(&g, event, &ev), permanent != d.ty::<TraitType>(name), "{name}");
+            assert_eq!(f(&g, event, &ev).is_none(), permanent != d.ty::<TraitType>(name), "{name}");
         }
     }
 
@@ -3277,7 +3281,7 @@ mod tests {
         let ev = data(p);
         // No cities: the cost is 0.
         g.players[p].gold = 0;
-        assert!(can_do_wedding_feud3(&g, event, &ev));
+        assert!(can_do_wedding_feud3(&g, event, &ev).is_none());
     }
 
     #[test]
@@ -3301,10 +3305,10 @@ mod tests {
         // Volcano: an improvement on a neighbour (not the volcano plot itself) counts.
         let mushrooms = g.d.t::<ImprovementType>("IMPROVEMENT_MUSHROOMS");
         g.map.plots[plot].improvement_type = Some(mushrooms);
-        assert!(!can_apply_volcano1(&g, event, &ev));
+        assert!(can_apply_volcano1(&g, event, &ev).is_some());
         let neighbour = g.map.plot_xy(3, 2).unwrap();
         g.map.plots[neighbour].improvement_type = Some(mushrooms);
-        assert!(can_apply_volcano1(&g, event, &ev));
+        assert!(can_apply_volcano1(&g, event, &ev).is_none());
         assert_eq!(volcano_plots(&g, &ev), vec![neighbour]);
     }
 

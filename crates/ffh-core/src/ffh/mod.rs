@@ -8,6 +8,7 @@
 pub mod cards;
 pub mod custom;
 pub mod dispatch;
+pub mod event_unmet;
 pub mod events;
 pub mod game_utils;
 pub mod lairs;
