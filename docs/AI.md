@@ -1800,7 +1800,7 @@ goes on only while the city it attacks (its operation's target, else an enemy ci
 within two plots; otherwise, and always when starving, it goes toward the nearest city of ours on
 its landmass it has a path to (of the three nearest; else a plot of ours, or nearest that city,
 within three turns; the AI keeps no memory of its last line, so not along it) until it stands
-where it has a line. A plot of our own territory counts as supplied without a search. A cut army does not stop to heal in the field (it cannot), and it is re-planned at
+where it has a line. A plot of our own territory is supplied (the rules: an army within its borders needs no line). A cut army does not stop to heal in the field (it cannot), and it is re-planned at
 the start of each turn (`units::play` clears its multi-turn order). Cost: at most one path search
 and one line search per gated move, one line search and up to three path searches per cut army a
 turn; the line is never searched per candidate plot. Not gated: crusade Hosts (`crusade.rs`), amphibious landings (`naval.rs`), the

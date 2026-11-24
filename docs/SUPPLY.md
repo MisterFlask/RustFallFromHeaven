@@ -20,7 +20,14 @@ to come and fight.
 
 ## 2. The line
 
-Every army (docs/ARMIES.md: a named body of land army units) needs a supply line. Garrisons,
+Every army (docs/ARMIES.md: a named body of land army units) outside its owner's borders needs a
+supply line. **Within its borders an army needs none** (the owner's decision, 2026-11-23): an army
+on a land plot owned by its owner's team (for a crusade Host, also its lenders' and the victim's)
+is supplied whatever its line, even when enemy units close every way to a source
+(`Game::plot_supply_home`; `Game::plot_is_supplied` is the test the rules, the view and the AI
+read). The exception is an invested city (section 3.1): its plot is not home, so an army standing
+in it needs a line like any other (and is held there: section 3.2).
+Garrisons,
 units in no army (heroes, mages, recon units, settlers, summons) and the barbarians need no
 individual line. Every unit in an invested city is subject to the city counter below, including
 units outside armies and barbarians.
@@ -35,10 +42,10 @@ units outside armies and barbarians.
   ship's plot. (Before docs/NAVAL.md, phase 2: a ship in a water area on which the owner's team had
   a coastal city.)
 
-An army standing in a city of its owner's team is supplied unless investment cuts that city's
-supply. An invested city with no open harbour is no source, including for an army standing in
-it. Another eligible city or ship can still supply that army through a valid line; the city's
-own Hunger and Starvation counter still applies to units standing there.
+A city of the owner's team is a source unless investment cuts its supply: an invested city with
+no open harbour is no source, including for an army standing in it. Another eligible city or ship
+can still supply that army through a valid line; the city's own Hunger and Starvation counter
+(3.1) still applies to the units standing there.
 
 **Tracing.** The line is the cheapest path over land from the army's plot to a source, by plot
 entered:
@@ -137,6 +144,22 @@ Implementation: `city/siege.rs`, `army/supply.rs`, unit healing and the existing
 hook. Tests: the supply and siege suites in core and play. Stages: `siege-hunger`,
 `siege-starvation`, `siege-relief` and `siege-attacker`.
 
+### 3.2 Armies held in an invested city (built)
+
+The owner's decision, 2026-11-23. A land unit of a land army, not cargo, standing in an invested
+city of its team (`city_is_invested`, the test of 3.1, open harbour or not) is **held**
+(`Game::unit_siege_hold`, `Game::group_siege_hold`): until the investment ends, its group's path
+out of the city must be an attack, a step onto a plot holding a visible enemy defender (a sally).
+Entering the city is allowed, so a relief army that goes in is held too. A unit that is not in an
+army (a garrison, a hero) is not held. Rules effects that move a unit (routs, bumps, spells,
+teleports) are not voluntary moves and still move it. The test is in the path finder's step
+(`path_valid_step`, run for a held group), so the human's moves, the AI's and the client's path
+preview agree.
+
+The army's panel and the Armies screen say `Besieged in Vallus: moves only to attack until the
+siege lifts.` (the army's `held`); a path query out of the city that is no attack is refused with
+the same words (`held`), shown in the path's tooltip in place of `No path`.
+
 ## 4. Defines (`rules_defines.jsonc`)
 
 `SUPPLY_LINE_BUDGET` 24, `SUPPLY_COST_ROAD` 1, `SUPPLY_COST_OWN` 1, `SUPPLY_COST_LAND` 3,
@@ -165,7 +188,10 @@ hook. Tests: the supply and siege suites in core and play. Stages: `siege-hunger
 
 ## 5. What the player sees
 
-- **The line on the map**: for each of the player's armies, an animated line along its supply
+- **Within the borders**: no line is drawn for an army in its owner's territory (the player's or
+  another's), and its state reads `Supplied: in your territory, no supply line needed.`; the move
+  preview says `Supplied (your territory)`.
+- **The line on the map**: for each of the player's armies outside its borders, an animated line along its supply
   path from the army to its source (a slow flow toward the army). Hunger: the line is gone and
   the army carries a Hunger marker with the turns left before Starvation; Starvation: its marker.
   The lines of other players' armies the player sees are drawn over the plots the player has
@@ -207,8 +233,8 @@ A rules change: the AI does something reasonable with it, ad hoc (CLAUDE.md, "AI
   within two plots. "Its last line toward its source" is not remembered (the AI keeps nothing
   outside `Game`): it goes toward the nearest of the three nearest cities of ours on its landmass
   that it has a path to (else to the plot of our territory, or nearest that city, it reaches within
-  three turns), and stops falling back as soon as the plot it stands on has a line (its counter goes
-  to 0 at the next turn start).
+  three turns), and stops falling back as soon as the plot it stands on is supplied (a line, or our
+  territory: its counter goes to 0 at the next turn start).
 - A cut army does not stop to heal in the field (it cannot), and it is re-planned at the start of
   every turn: its multi-turn order is cleared (`units::play`).
 - Cost: at most one path search and one line search per gated move; for a cut army, one line search

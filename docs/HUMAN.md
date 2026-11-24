@@ -152,7 +152,8 @@ the path: dots from plot to plot that march, a roundel with the
 turn of arrival at each turn's end, the part beyond this turn's moves dimmer, ochre for a route
 to build; an attack ends in crimson brackets with the odds of winning on a chip, and the tooltip
 gives the odds of winning and retreating with both strengths and their modifiers; with an army
-selected it also says whether the army would be supplied there, "Supplied (cost 14 of 24)" or
+selected it also says whether the army would be supplied there, "Supplied (your territory)",
+"Supplied (cost 14 of 24)" or
 "No supply line" (docs/SUPPLY.md), worked out from what you see: an enemy unit you do not see does
 not cut it, so it can be wrong. **Supply lines** (`app/supply.js`): each of your armies' line
 runs from the army to its source (a city, or a ship that can carry land units) as dashes in
@@ -686,7 +687,9 @@ the tech whose first discoverer founds it), their holy cities as far as you know
 with each, and "Convert" (with the anarchy).
 **Armies** (`F5`, the menu's Armies; with armies on): every army with its name
 (type to rename), units, place (click: select it on the map), its supply in bare words
-(`Supplied: 14 of 24, from Ithralia.`, `Hunger: turn 1 of 2. No healing, no recruits.`,
+(`Supplied: 14 of 24, from Ithralia.`, `Supplied: in your territory, no supply line needed.`;
+an army in an invested city adds `Besieged in Vallus: moves only to attack until the siege lifts.`,
+and a move out of the city that is no attack shows those words in place of `No path`), `Hunger: turn 1 of 2. No healing, no recruits.`,
 `Starvation: -10% HP a turn (to 25%), -25% damage dealt.`, or `No supply line: Hunger from your
 next turn.` for an army supplied this turn that stands where it has no line now; a hungry or
 starving army whose line is back adds `Supply line again: ... Supplied from your next turn.`;

@@ -106,6 +106,18 @@ fn each_army_s_supply_is_in_the_view_with_its_line_and_words() {
     let sup = there.get("supply").expect("supply");
     assert_eq!(sup.get("ok").and_then(Json::as_bool), Some(false), "{sup:?}");
     assert!(sup.get("cost").is_some_and(Json::is_null));
+    // In the human's territory: supplied with no line, and the readout says so.
+    let sup = at(st.ox, st.oy);
+    let sup = sup.get("supply").expect("supply");
+    assert_eq!((sup.get("ok").and_then(Json::as_bool), sup.get("home").and_then(Json::as_bool)), (Some(true), Some(true)), "{sup:?}");
+
+    // The army in the human's territory: supplied, no line drawn, its words.
+    let army = view_army(&s, st.home);
+    let sup = army.get("supply").expect("supply");
+    assert_eq!(text(sup, "state"), "supplied");
+    assert!(sup.get("line").is_some_and(Json::is_null), "{sup:?}");
+    assert_eq!(sup.get("home").and_then(Json::as_bool), Some(true));
+    assert_eq!(text(sup, "text"), "Supplied: in your territory, no supply line needed.");
 }
 
 /// The lines of other players' armies: an AI army the human sees next to the AI's city has its
@@ -126,6 +138,9 @@ fn the_lines_of_other_players_armies_the_human_sees_are_on_its_map() {
     g.player_init_unit(h, w, wx, wy, None, None);
     let team = g.players[h].team;
     let plot = g.map.plot_xy(ax, ay).unwrap();
+    // Outside its borders (within them an army needs no line, and none is drawn).
+    g.plot_set_owner(plot, None, false, false);
+    assert!(!g.plot_supply_home(ai, plot));
     assert!(g.plot_is_visible(plot, team), "the human sees the AI army");
     assert!(g.army_supply_line(ai_army).is_some(), "the AI army next to its city is supplied");
 
@@ -286,4 +301,34 @@ fn other_players_lines_bend_only_around_the_units_the_human_sees() {
         set_seen(&mut s.g, q, team, true);
     }
     assert!(entry(&s).is_none(), "an army with no known line has no entry");
+}
+
+/// An army in an invested city of the human's (docs/SUPPLY.md, 3.2): the army says it is held,
+/// and the path query refuses a move out of the city with the same words.
+#[test]
+fn an_army_held_in_an_invested_city_says_so_in_the_panel_and_the_path() {
+    let dir = common::TempDir::new("supply-held");
+    let st = ffh_play::stage::supply(&dir.0).expect("staged");
+    let mut s = load(&st.save);
+    let h = s.human;
+    let g = &mut s.g;
+    let city = g.city_plot(st.capital);
+    let (cx, cy) = g.map.xy(city);
+    let w = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, w, cx, cy, None, None)).collect();
+    let a = g.army_form(h, &units).expect("an army");
+    let ring = ring_of_barbarians(g, city);
+    assert!(ring.len() >= 3 && g.city_is_invested(st.capital), "invested");
+    let name = ffh_play::view::city_name(g, st.capital);
+    let want = format!("Besieged in {name}: moves only to attack until the siege lifts.");
+    let army = view_army(&s, a);
+    assert_eq!(army.get("held").and_then(Json::as_str), Some(want.as_str()), "{army:?}");
+    // A move out of the city (two plots away, past the ring): refused, with the reason.
+    let (tx, ty) = (cx + 2, cy);
+    let ids: Vec<String> = units.iter().map(|u| u.0.to_string()).collect();
+    let path = q(&s, &format!(r#"{{"q":"path","units":[{}],"x":{tx},"y":{ty}}}"#, ids.join(",")));
+    assert_eq!(path.get("ok").and_then(Json::as_bool), Some(false), "{path:?}");
+    assert_eq!(path.get("held").and_then(Json::as_str), Some(want.as_str()));
+    // The army standing outside is not held.
+    assert!(view_army(&s, st.supplied).get("held").is_some_and(Json::is_null));
 }

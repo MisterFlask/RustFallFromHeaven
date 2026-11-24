@@ -1041,7 +1041,8 @@ function showTip() {
   if (c?.valid) lines.push(combatLines(c, { x, y }));
   const path = preview.path;
   if (path && S.sel) {
-    if (!path.ok) lines.push(h("div.warn", "No path"));
+    // An army held in an invested city (docs/SUPPLY.md 3.2): it moves only to attack.
+    if (!path.ok) lines.push(h("div.warn.tip-held", path.held ?? "No path"));
     else {
       const bits = [`${turns(path.turns)}`];
       if (path.attack) bits.push("attack");
@@ -1054,7 +1055,7 @@ function showTip() {
     if (path.supply) {
       const s = path.supply;
       // At sea (docs/NAVAL.md 3.3): in range of a port.
-      lines.push(h(`div.tip-supply${s.ok ? "" : ".warn"}`, !s.ok ? (s.sea_why ? `No supply line: ${s.sea_why}` : "No supply line") : s.sea_port ? `Supplied: at sea, in range of ${s.sea_port}` : `Supplied (cost ${s.cost} of ${s.budget})`));
+      lines.push(h(`div.tip-supply${s.ok ? "" : ".warn"}`, !s.ok ? (s.sea_why ? `No supply line: ${s.sea_why}` : "No supply line") : s.home ? "Supplied (your territory)" : s.sea_port ? `Supplied: at sea, in range of ${s.sea_port}` : `Supplied (cost ${s.cost} of ${s.budget})`));
     }
     // The sea (docs/NAVAL.md section 10): where the path goes in boats, and out of range.
     for (const t of path.sea?.lines ?? []) lines.push(h(`div.tip-sea${seaLineWarns(t) ? ".warn" : ""}`, t));
@@ -1662,7 +1663,9 @@ function armyLine() {
     " ",
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
     // Supply (docs/SUPPLY.md, section 5): its state in bare words.
-    a.supply?.text ? h(`div.army-supply${a.supply.state === "supplied" && (a.supply.line || a.supply.raiding) ? ".dim" : ".warn"}`, a.supply.text) : null,
+    a.supply?.text ? h(`div.army-supply${a.supply.state === "supplied" && (a.supply.line || a.supply.raiding || a.supply.home) ? ".dim" : ".warn"}`, a.supply.text) : null,
+    // Held in an invested city (docs/SUPPLY.md 3.2).
+    a.held ? h("div.warn.army-held", a.held) : null,
   );
 }
 

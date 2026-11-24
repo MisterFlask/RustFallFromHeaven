@@ -861,19 +861,24 @@ pub struct StagedSupply {
     pub save: PathBuf,
     pub supplied: ffh_core::ids::ArmyId,
     pub hungry: ffh_core::ids::ArmyId,
+    /// An army on a plot of the capital's territory (no line needed: docs/SUPPLY.md, section 2).
+    pub home: ffh_core::ids::ArmyId,
     pub capital: ffh_core::ids::CityId,
     pub x: i32,
     pub y: i32,
     pub hx: i32,
     pub hy: i32,
+    /// The home army's plot.
+    pub ox: i32,
+    pub oy: i32,
     pub turn: i32,
 }
 
 impl StagedSupply {
     pub fn to_json(&self) -> Json {
         crate::jobj! {
-            "stage" => "supply", "save" => self.save.display().to_string(), "supplied" => self.supplied, "hungry" => self.hungry,
-            "capital" => self.capital, "x" => self.x, "y" => self.y, "hx" => self.hx, "hy" => self.hy, "turn" => self.turn,
+            "stage" => "supply", "save" => self.save.display().to_string(), "supplied" => self.supplied, "hungry" => self.hungry, "home" => self.home,
+            "capital" => self.capital, "x" => self.x, "y" => self.y, "hx" => self.hx, "hy" => self.hy, "ox" => self.ox, "oy" => self.oy, "turn" => self.turn,
         }
     }
 }
@@ -891,12 +896,20 @@ pub fn supply(dir: &Path) -> Result<StagedSupply, String> {
     // (off the capital's land, distance, plot index): the nearest on the capital's land first.
     let mut supplied = None;
     let mut hungry = None;
+    let mut homes = Vec::new();
     for q in g.map.plot_ids() {
         if !free(g, q) {
             continue;
         }
         let (x, y) = g.map.xy(q);
         let key = (g.map.plots[q].area != area, g.plot_distance(x, y, cx, cy));
+        // (Within the human's borders an army needs no line: both staged armies stand outside.)
+        if g.plot_supply_home(h, q) {
+            if !key.0 && key.1 == 1 {
+                homes.push((key, q));
+            }
+            continue;
+        }
         match g.plot_supply_line(h, q) {
             Some(l) if !key.0 && (3..=5).contains(&key.1) && l.path.len() >= 3 => {
                 if supplied.is_none_or(|(b, _)| key < b) {
@@ -913,6 +926,13 @@ pub fn supply(dir: &Path) -> Result<StagedSupply, String> {
     }
     let (_, sp) = supplied.ok_or("no supplied plot 3 to 5 plots from the capital")?;
     let (_, hp) = hungry.ok_or("no land plot without a supply line")?;
+    // Not next to the supplied army (a ring of enemy units around it must close every way out).
+    homes.sort();
+    let (sx, sy) = g.map.xy(sp);
+    let (_, op) = *homes
+        .iter()
+        .find(|(_, q)| { let (x, y) = g.map.xy(*q); g.plot_distance(x, y, sx, sy) > 1 })
+        .ok_or("no free plot of the capital's territory next to it")?;
     let w = d.t::<UnitType>("UNIT_WARRIOR");
     let form = |g: &mut ffh_core::game::Game, q: ffh_core::ids::PlotIdx| {
         let (x, y) = g.map.xy(q);
@@ -921,14 +941,15 @@ pub fn supply(dir: &Path) -> Result<StagedSupply, String> {
     };
     let a = form(g, sp)?;
     let b = form(g, hp)?;
+    let o = form(g, op)?;
     g.armies[b].unsupplied_turns = 1;
     g.player_army_sync(h);
-    if g.army_supply_line(a).is_none() || g.army_supply_line(b).is_some() {
+    if g.army_supply_line(a).is_none() || g.army_supply_line(b).is_some() || !g.army_supply_home(o) {
         return Err("the staged armies' lines are not as staged".into());
     }
-    let ((x, y), (hx, hy)) = (g.map.xy(sp), g.map.xy(hp));
+    let ((x, y), (hx, hy), (ox, oy)) = (g.map.xy(sp), g.map.xy(hp), g.map.xy(op));
     let paths = s.save("supply").map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedSupply { save: paths.save, supplied: a, hungry: b, capital, x, y, hx, hy, turn: s.g.game_turn() })
+    Ok(StagedSupply { save: paths.save, supplied: a, hungry: b, home: o, capital, x, y, hx, hy, ox, oy, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point (turn 3 of a duel, seed 15) where both players run a
@@ -1481,6 +1502,8 @@ pub fn siege(dir: &Path, kind: &str) -> Result<Json, String> {
     let warrior = s.g.d.t("UNIT_WARRIOR");
     let mut defenders = Vec::new();
     for _ in 0..2 { defenders.push(s.g.player_init_unit(owner, warrior, cx, cy, None, None)); }
+    // The human defending: its defenders are an army, held in the city (docs/SUPPLY.md, 3.2).
+    let army = if attacker { None } else { Some(s.g.army_form(owner, &defenders)?) };
     let at = (0..DirectionType::NUM).filter_map(|i| s.g.plot_direction(cx, cy, DirectionType::from_usize(i))).find(|&q| !s.g.plot_is_water(q) && s.g.map.plots[q].plot_city.is_none()).ok_or("no investing plot")?;
     let (x, y) = s.g.map.xy(at);
     let besiegers: Vec<_> = (0..3).map(|_| s.g.player_init_unit(enemy, warrior, x, y, None, None)).collect();
@@ -1506,7 +1529,7 @@ pub fn siege(dir: &Path, kind: &str) -> Result<Json, String> {
     let paths = s.save(kind).map_err(|e| format!("save: {e:?}"))?;
     Ok(crate::jobj! { "stage" => kind, "save" => paths.save.display().to_string(), "city" => c,
         "unit" => if attacker { besiegers[0] } else { defenders[0] },
-        "withdraw" => crate::jarr![ax, ay], "defenders" => defenders, "besiegers" => besiegers })
+        "withdraw" => crate::jarr![ax, ay], "defenders" => defenders, "besiegers" => besiegers, "army" => army, "turn" => s.g.game_turn() })
 }
 
 /// A saved game at a human control point (turn 4 of a duel as the Bannor, seed 11) with the dead
