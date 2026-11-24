@@ -18,8 +18,9 @@
 //!   the strike's own order, each against the defender the rules put up against it; every fight
 //!   takes the defender's expected health and its chance to be alive down (a lost fight still
 //!   wounds), collateral damage hits the other defenders. The force covers the city when every
-//!   defender is 90% sure to be dead (70% once positioned); siege engines that can bring the
-//!   walls down within a few turns count as having done so. The same simulation, in the rules'
+//!   defender is 90% sure to be dead (70% once positioned); the city's defence counts only while
+//!   its Sentinels stand, and siege engines that can breach them within a few turns count as
+//!   having done so ([`crate::combat_sim::wall_cut`]). The same simulation, in the rules'
 //!   group-attack order, decides every field attack (`military::field_go`).
 //! - **Phases** ([`Phase`]): while the committed force falls short, stacks gather in the rally
 //!   city (our city nearest the target; against barbarians they stay where they are) and
@@ -283,7 +284,7 @@ fn need_for(g: &Game, team: TeamId, cand: &Cand, force: &[UnitId]) -> i32 {
     if cand.visible && !force.is_empty() {
         let defs = visible_defenders(g, team, cand.plot);
         let all: Vec<UnitId> = force.iter().copied().take(24).collect();
-        let s = simulate(g, cand.plot, &defs, &all, wall_cut(g, cand.city, &all), Order::Strike, 100, 100);
+        let s = simulate(g, cand.plot, &defs, &all, wall_cut(g, cand.city, &all, true), Order::Strike, 100, 100);
         match s.used {
             // (Every defender 90% sure to fall: the reserve is in the sureness.)
             Some(n) => n as i32,
@@ -971,11 +972,42 @@ fn approach(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, op: &Op, ring: 
     }
 }
 
-/// Siege engines in the group bombard the target's walls.
+/// Siege engines in the group bombard the target: its Sentinels and its soldiers (docs/SIEGES.md).
+/// The mission's own test is the rule's: a unit that can bombard (`Game::unit_can_bombard`) has
+/// a city in reach whose bombard would hurt something (`Game::city_bombard_hurts`).
 fn bombard(g: &mut Game, grp: GroupId, op: &Op) {
-    if g.cities.contains(op.city) && g.cities[op.city].defense_damage < 100 && crate::units::can_start(g, grp, MissionType::MISSION_BOMBARD, -1, -1) {
+    if g.cities.contains(op.city) && crate::units::can_start(g, grp, MissionType::MISSION_BOMBARD, -1, -1) {
         crate::units::push(g, grp, MissionType::MISSION_BOMBARD, -1, -1, 0, false);
     }
+}
+
+/// `Game::group_get_bombard_turns` for unit `u` alone in its group against city `c`: the strike
+/// takes each attacker out of its stack before ordering its attack, so this is the group the rule
+/// weighs. -1: no bombard rate (nor a bomber in the area); 0: no Sentinel standing, or the
+/// least damaged one breached within the turn.
+fn lone_bombard_turns(g: &Game, u: UnitId, c: CityId) -> i32 {
+    let owner = g.units[u].owner;
+    let has_bomber = g.map.areas[g.unit_area(u)].num_ai_units[owner][UnitAIType::UNITAI_ATTACK_AIR] > 0;
+    let rate = g.unit_bombard_rate(u);
+    let ignore = has_bomber || rate > 0 && g.unit_ignore_building_defense(u);
+    let total = if has_bomber { 16 } else { 0 } + rate.max(0);
+    if total == 0 {
+        return -1;
+    }
+    let mut turns = g.city_sentinels_standing(c).iter().map(|&k| 100 - g.city_sentinel_damage(c, k)).max().unwrap_or(0);
+    if !ignore {
+        turns = turns * 100 / 25.max(100 - g.cities[c].building_bombard_defense);
+    }
+    turns / 8.max(total)
+}
+
+/// Would the rules turn an attack order of unit `u` (alone in its group) on city `c` into a
+/// bombard? `Game::group_attack_force`: an AI group's attack on an enemy city bombards instead
+/// (and ends the group's moves) while its bombard turns are 1 to 7. Such a siege engine waits in
+/// the strike: there is a wall left to batter.
+fn attack_would_bombard(g: &Game, u: UnitId, c: CityId) -> bool {
+    let team = g.unit_get_team(u);
+    !g.players[g.units[u].owner].human && g.plot_get_team(g.city_plot(c)).is_some_and(|t| g.teams[team].at_war[t]) && (1..8).contains(&lone_bombard_turns(g, u, c))
 }
 
 /// Is the group committed to an operation past gathering (marching, stepping in, striking)?
@@ -1193,14 +1225,14 @@ fn strike_forecast(g: &mut Game, v: &mut View, op: &Op, pool: &[UnitId]) -> i32 
         if defs.is_empty() {
             break;
         }
-        // Who may order an attack: siege engines with walls left to batter wait (their order
-        // would only bombard), and a caster that marches with the stack orders none.
-        let walls = g.city_defense_modifier(op.city, false) > 0;
+        // Who may order an attack: siege engines with walls left to batter wait (the rules would
+        // turn their order into a bombard: [`attack_would_bombard`]), and a caster that marches
+        // with the stack orders none.
         let launchers: Vec<UnitId> = pool
             .iter()
             .copied()
             .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
-            .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0) && !crate::magic::spared_caster(g, u))
+            .filter(|&u| !attack_would_bombard(g, u, op.city) && !crate::magic::spared_caster(g, u))
             .collect();
         let attacks = ring_attacks(g, p, tp, &launchers);
         if attacks.is_empty() {
@@ -1219,7 +1251,7 @@ fn strike_forecast(g: &mut Game, v: &mut View, op: &Op, pool: &[UnitId]) -> i32 
                 .iter()
                 .copied()
                 .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
-                .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0))
+                .filter(|&u| !attack_would_bombard(g, u, op.city))
                 .filter(|&u| !crate::magic::spared_caster(g, u) || odds(g, u) >= crate::magic::SPARED_CASTER_ODDS)
                 .collect();
             let old_takes = !able.is_empty() && covers(g, op.city, tp, &defs, &able, fights == 0 && op.probe, false);
@@ -1351,14 +1383,14 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
         if defs.is_empty() {
             break;
         }
-        // Siege engines with walls left to batter wait (their attack would only bombard).
-        let walls = g.city_defense_modifier(op.city, false) > 0;
+        // Siege engines with walls left to batter wait (the rules would turn their attack into a
+        // bombard: [`attack_would_bombard`]).
         let odds = |g: &Game, u: UnitId| g.plot_get_best_defender(tp, None, Some(p), Some(u), false, false, false).map_or(1000, |d| g.get_combat_odds(u, d));
         let able: Vec<UnitId> = pool
             .iter()
             .copied()
             .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
-            .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0))
+            .filter(|&u| !attack_would_bombard(g, u, op.city))
             // A caster that marches with the stack attacks only at war wizard odds.
             .filter(|&u| !crate::magic::spared_caster(g, u) || odds(g, u) >= crate::magic::SPARED_CASTER_ODDS)
             .collect();
@@ -1420,7 +1452,8 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
         let best_odds = with_odds.iter().map(|&(_, o)| o).max().unwrap_or(0);
         let collateral = defs.len() >= 2 && with_odds.iter().any(|&(u, _)| g.unit_collateral_damage(u) > 0);
         // The damage `u` is expected to deal the defender it meets when it loses.
-        let dent = |u: UnitId| g.plot_get_best_defender(tp, None, Some(p), Some(u), false, false, false).map_or(0, |d| fight(g, u, d, tp, g.unit_curr_hit_points(d), 0).1);
+        let cut = wall_cut(g, op.city, &[], false);
+        let dent = |u: UnitId| g.plot_get_best_defender(tp, None, Some(p), Some(u), false, false, false).map_or(0, |d| fight(g, u, d, tp, g.unit_curr_hit_points(d), cut).1);
         let sacrifice = |u: UnitId| {
             let cost = g.d.units[g.units[u].unit_type].production_cost.max(1) as i64;
             let strength = dent(u) as i64 * 100;
@@ -1760,5 +1793,36 @@ mod tests {
         let v = View::new(&g, us);
         crate::military::assault(&mut g, &v, stack, q);
         assert!(g.units.contains(mage2) && !g.units[mage2].made_attack, "the Mage was not sent at the Warrior");
+    }
+
+    /// The strike's siege engines wait exactly when the rules would turn their attack into a
+    /// bombard: never against a city without walls, however much culture defence it has.
+    #[test]
+    fn engines_wait_only_while_the_rules_would_bombard() {
+        let (mut g, c, _) = crate::combat_sim::tests::culture_city();
+        let cat = g.player_init_unit(PlayerId(0), g.d.t::<UnitType>("UNIT_CATAPULT"), 11, 5, Some(UnitAIType::UNITAI_ATTACK_CITY), None);
+        let grp = g.units[cat].group.expect("a group");
+        assert_eq!(g.groups[grp].units.len(), 1);
+        assert_eq!(lone_bombard_turns(&g, cat, c), g.group_get_bombard_turns(grp, c));
+        assert!(!attack_would_bombard(&g, cat, c), "no walls: the catapult attacks");
+
+        let (mut g, c, _) = crate::combat_sim::tests::walled_city();
+        let cat = g.player_init_unit(PlayerId(0), g.d.t::<UnitType>("UNIT_CATAPULT"), 11, 5, Some(UnitAIType::UNITAI_ATTACK_CITY), None);
+        let grp = g.units[cat].group.expect("a group");
+        for dmg in [0, 50, 90, 99, 100] {
+            for k in 0..g.city_sentinel_count(c) {
+                g.city_set_sentinel_damage(c, k, dmg);
+            }
+            let turns = g.group_get_bombard_turns(grp, c);
+            assert_eq!(lone_bombard_turns(&g, cat, c), turns, "damage {dmg}");
+            assert_eq!(attack_would_bombard(&g, cat, c), (1..8).contains(&turns), "damage {dmg}");
+        }
+        g.city_set_sentinel_damage(c, 0, 50);
+        g.city_set_sentinel_damage(c, 1, 50);
+        assert!(attack_would_bombard(&g, cat, c), "half-battered walls: the catapult bombards");
+        for k in 0..g.city_sentinel_count(c) {
+            g.city_set_sentinel_damage(c, k, 100);
+        }
+        assert!(!attack_would_bombard(&g, cat, c), "breached walls: the catapult attacks");
     }
 }

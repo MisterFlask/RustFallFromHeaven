@@ -1,6 +1,7 @@
 //! The combat simulator the AI decides its attacks on (moved out of `campaign.rs`): an attack
 //! played out in expected values with the rules' combat odds (fortification, city defense, first
-//! strikes, the attacker's health) as it will be fought -- every attack by the attacker the order
+//! strikes, the attacker's health) as it will be fought (the duel's terms; a city's defence
+//! modifier stands for its Sentinels and counts only while they stand: [`wall_cut`]) -- every attack by the attacker the order
 //! picks next ([`Order::Strike`] for a siege operation's strike, [`Order::Group`] for a stack's
 //! group attack), against the defender the rules put up against it ([`simulate`]). The siege
 //! operations judge their force with it ([`covers`], `campaign.rs`), every field attack too
@@ -42,9 +43,10 @@ fn remodify(strength: i32, from: i32, to: i32) -> i32 {
 }
 
 /// One fight of the simulation: attacker `a` against defender `d` (on `dp`) at `hp` hit points
-/// with `wall_cut` points of city defense bombarded away. Returns (odds per mille, expected
-/// damage `a` deals when it loses). The odds are the rules' `getCombatOdds` with those two
-/// changes.
+/// with `wall_cut` points of the city's defence modifier taken off the defender ([`wall_cut`]:
+/// the part that does not stand in the way; at most what the city gave `d`). Returns (odds per
+/// mille, expected damage `a` deals when it loses). The odds are the rules' `getCombatOdds`
+/// with those two changes.
 pub(crate) fn fight(g: &Game, a: UnitId, d: UnitId, dp: PlotIdx, hp: i32, wall_cut: i32) -> (i32, i32) {
     pair(g, a, d, dp, wall_cut).fight(g, hp)
 }
@@ -78,8 +80,15 @@ struct Pair {
 fn pair(g: &Game, a: UnitId, d: UnitId, dp: PlotIdx, wall_cut: i32) -> Pair {
     let mut det = CombatDetails::default();
     let mut d_max = g.unit_max_combat_str(d, Some(dp), Some(a), Some(&mut det));
-    if wall_cut > 0 {
-        d_max = remodify(d_max, det.modifier_total, det.modifier_total - wall_cut);
+    // Never more than the city gave this defender against this attacker (none to a unit without
+    // defensive bonuses; less against one that ignores building defence).
+    let given = match g.map.plots[dp].plot_city {
+        Some(c) if g.cities.contains(c) && !g.unit_no_defensive_bonus(d) => g.city_defense_modifier(c, g.unit_ignore_building_defense(a)).max(0),
+        _ => 0,
+    };
+    let cut = wall_cut.min(given);
+    if cut > 0 {
+        d_max = remodify(d_max, det.modifier_total, det.modifier_total - cut);
     }
     Pair {
         d_max,
@@ -292,7 +301,8 @@ pub(crate) fn worth(g: &Game, u: UnitId) -> i64 {
 /// chance the attacker is lost (unless it withdraws). Collateral damage hits the others. A
 /// defender has fallen when it is alive with a chance of `sure` per mille or less; `used` counts
 /// the attackers until all have. What the kills and losses are worth ([`worth`], kills counting
-/// `kill_pct` percent) gives `gain`. `wall_cut`: city defense points bombarded away first.
+/// `kill_pct` percent) gives `gain`. `wall_cut`: the points of the city's defence modifier that
+/// do not stand in the way ([`wall_cut`]; 0 for a plot without a city).
 /// (Before round 7g -- switch `SIM_FAITHFUL` off, removed once kept -- the strike was played
 /// strongest first against the defender strongest without regard to the attacker while the strike
 /// sent its sacrifices first, a defender at an eighth of its expected health counted as dead, and
@@ -458,17 +468,43 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
     Sim { used: if alive.is_empty() { Some(used) } else { None }, n_def, hp_left, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain, first: first_odds, p_fall: p_fall(&ds) }
 }
 
-/// City defense our siege engines in `units` can bombard away within three turns (0 without
-/// siege engines).
-pub(crate) fn wall_cut(g: &Game, c: CityId, units: &[UnitId]) -> i32 {
-    let rate: i32 = units.iter().map(|&u| g.unit_bombard_rate(u)).sum();
+/// The turns of bombards [`wall_cut`] counts on before the strike.
+pub(crate) const WALL_CUT_BOMBARD_TURNS: i32 = 3;
+
+/// The percent of every standing Sentinel's HP one bombard of unit `u` takes on city `c`, by the
+/// rule's own steps (`Game::unit_bombard`, `Game::city_bombard_damage`): its rate, less the walls'
+/// bombard defence unless it ignores building defence, less the Sentinels' ranged resistance.
+/// 0 for a unit without a bombard rate.
+fn bombard_pct(g: &Game, c: CityId, u: UnitId) -> i32 {
+    let rate = g.unit_bombard_rate(u);
     if rate <= 0 {
         return 0;
     }
-    let ignore = units.iter().any(|&u| g.unit_bombard_rate(u) > 0 && g.unit_ignore_building_defense(u));
-    let def = g.city_defense_modifier(c, ignore);
-    let per_turn = if ignore { rate } else { rate * (100 - g.cities[c].building_bombard_defense).max(0) / 100 };
-    def.min(per_turn * 3).max(0)
+    let modifier = if g.unit_ignore_building_defense(u) { 0 } else { -g.cities[c].building_bombard_defense };
+    let pct = rate * (100 + modifier).max(0) / 100;
+    pct.max(0) * (100 - g.city_sentinel_ranged_resist(c)) / 100
+}
+
+/// The part of city `c`'s defence modifier that does not stand in the way of `units`. In this
+/// model the modifier is a proxy for the Sentinels: a battle adds no city defence to the
+/// defenders (docs/SIEGES.md), its walls fight as Sentinels, and a walled city falls only once
+/// they are breached. So:
+/// - no Sentinel standing (no walls, all breached, the city in occupation): the whole modifier,
+///   whatever `units` and `siege` are: it protects nobody;
+/// - Sentinels standing: the modifier counts in proportion to the HP left to the least damaged
+///   of them after [`WALL_CUT_BOMBARD_TURNS`] turns of the bombards of `units` (with `siege`;
+///   without, or with no unit that bombards, as they stand).
+///
+/// [`pair`] takes it off a defender's strength, never more than the city gave that defender.
+pub(crate) fn wall_cut(g: &Game, c: CityId, units: &[UnitId], siege: bool) -> i32 {
+    let def = g.city_defense_modifier(c, false).max(0);
+    let standing = g.city_sentinels_standing(c);
+    if standing.is_empty() {
+        return def;
+    }
+    let turns_pct = if siege { WALL_CUT_BOMBARD_TURNS * units.iter().map(|&u| bombard_pct(g, c, u)).sum::<i32>() } else { 0 };
+    let left = standing.iter().map(|&k| (100 - g.city_sentinel_damage(c, k) - turns_pct).max(0)).max().unwrap_or(0);
+    def * (100 - left) / 100
 }
 
 /// Does `units` take city `c` (plot `tp`, defenders `defs`)? With `spare`, with a reserve: every
@@ -495,7 +531,7 @@ pub(crate) fn covers_sim(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], unit
 
 #[allow(clippy::too_many_arguments)]
 fn covers_sim_with(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], casters: &[UnitId], spare: bool, siege: bool) -> Sim {
-    let cut = if siege { wall_cut(g, c, units) } else { 0 };
+    let cut = wall_cut(g, c, units, siege);
     // The confidence is the simulation's own -- every defender 90% sure to fall with a reserve to
     // spare, 70% sure without -- in place of attackers held in reserve against an estimate that
     // was optimistic. (At 95% and 80%, every civilization took 23% fewer cities, at no gain:
@@ -504,4 +540,137 @@ fn covers_sim_with(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[U
     let bold = bold_striker(g, owner);
     let soften = if casters.is_empty() { Vec::new() } else { crate::magic::planned_soften(g, tp, defs, casters) };
     simulate_softened(g, tp, defs, &soften, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 })
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::*;
+    use crate::testkit::one_landmass_game;
+
+    /// An enemy city (player 1, at war with player 0) with culture defence and no walls, and the
+    /// plot west of it for our units.
+    pub(crate) fn culture_city() -> (Game, CityId, PlotIdx) {
+        let d = ffh_data::global();
+        let mut g = one_landmass_game(21);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        g.player_init_city(us, 4, 5, true, true);
+        let city = g.player_init_city(them, 12, 5, true, true);
+        let (ut, tt) = (g.players[us].team, g.players[them].team);
+        g.team_declare_war(ut, tt, false, None);
+        let level = d.culture_levels.keys().find(|&l| d.culture_levels[l].city_defense_modifier > 0).expect("a culture level with defence");
+        g.cities[city].culture_level = Some(level);
+        assert!(g.city_defense_modifier(city, false) > 0, "the city has culture defence");
+        let from = g.map.plot_xy(11, 5).unwrap();
+        (g, city, from)
+    }
+
+    /// [`culture_city`] with Walls.
+    pub(crate) fn walled_city() -> (Game, CityId, PlotIdx) {
+        let (mut g, city, from) = culture_city();
+        let b = g.d.t::<BuildingType>("BUILDING_WALLS");
+        if let Some(class) = g.d.buildings[b].building_class_type {
+            g.cities[city].building_tiers[class] = BuildingTierType::STANDARD;
+        }
+        g.city_set_num_real_building(city, b, 1);
+        g.city_sync_sentinels(city);
+        assert!(!g.city_sentinels_standing(city).is_empty(), "the walls give Sentinels");
+        (g, city, from)
+    }
+
+    fn catapults(g: &mut Game, n: usize) -> Vec<UnitId> {
+        let t = g.d.t::<UnitType>("UNIT_CATAPULT");
+        (0..n).map(|_| g.player_init_unit(PlayerId(0), t, 11, 5, Some(UnitAIType::UNITAI_ATTACK_CITY), None)).collect()
+    }
+
+    /// One catapult's bombard on the city, by the rule's formula (no ranged resistance here).
+    fn catapult_pct(g: &Game, c: CityId, u: UnitId) -> i32 {
+        assert!(!g.unit_ignore_building_defense(u));
+        assert_eq!(g.city_sentinel_ranged_resist(c), 0);
+        g.unit_bombard_rate(u) * (100 - g.cities[c].building_bombard_defense) / 100
+    }
+
+    #[test]
+    fn an_unwalled_citys_defence_protects_nobody() {
+        let (mut g, c, _) = culture_city();
+        let def = g.city_defense_modifier(c, false);
+        assert_eq!(wall_cut(&g, c, &[], false), def);
+        assert_eq!(wall_cut(&g, c, &[], true), def);
+        let cats = catapults(&mut g, 2);
+        assert_eq!(wall_cut(&g, c, &cats, false), def);
+        assert_eq!(wall_cut(&g, c, &cats, true), def);
+    }
+
+    #[test]
+    fn whole_sentinels_keep_the_whole_defence() {
+        let (mut g, c, _) = walled_city();
+        assert_eq!(wall_cut(&g, c, &[], false), 0);
+        assert_eq!(wall_cut(&g, c, &[], true), 0);
+        let cats = catapults(&mut g, 4);
+        assert_eq!(wall_cut(&g, c, &cats, false), 0, "engines that will not bombard cut nothing");
+    }
+
+    #[test]
+    fn engines_cut_the_defence_by_the_sentinel_hp_they_take() {
+        let (mut g, c, _) = walled_city();
+        let def = g.city_defense_modifier(c, false);
+        let cats = catapults(&mut g, 4);
+        let pct = catapult_pct(&g, c, cats[0]);
+        assert!(pct > 0);
+        // Enough to breach: the whole modifier.
+        let need = (100 + WALL_CUT_BOMBARD_TURNS * pct - 1) / (WALL_CUT_BOMBARD_TURNS * pct);
+        assert!(need as usize <= cats.len(), "four catapults breach the walls in three turns");
+        assert_eq!(wall_cut(&g, c, &cats[..need as usize], true), def);
+        // One: a proportional part.
+        let left = (100 - WALL_CUT_BOMBARD_TURNS * pct).max(0);
+        assert!(left > 0, "one catapult does not breach them");
+        assert_eq!(wall_cut(&g, c, &cats[..1], true), def * (100 - left) / 100);
+        // The least damaged Sentinel decides; damage already done counts.
+        g.city_set_sentinel_damage(c, 0, 50);
+        assert_eq!(wall_cut(&g, c, &[], false), 0, "the other Sentinel is whole");
+        g.city_set_sentinel_damage(c, 1, 40);
+        assert_eq!(wall_cut(&g, c, &[], false), def * 40 / 100);
+        let left = (100 - 40 - WALL_CUT_BOMBARD_TURNS * pct).max(0);
+        assert_eq!(wall_cut(&g, c, &cats[..1], true), def * (100 - left) / 100);
+    }
+
+    #[test]
+    fn breached_sentinels_protect_nobody() {
+        let (g0, c, _) = walled_city();
+        let mut g = g0;
+        let def = g.city_defense_modifier(c, false);
+        for k in 0..g.city_sentinel_count(c) {
+            g.city_set_sentinel_damage(c, k, 100);
+        }
+        assert!(g.city_sentinels_standing(c).is_empty());
+        assert_eq!(wall_cut(&g, c, &[], false), def);
+        assert_eq!(wall_cut(&g, c, &[], true), def);
+    }
+
+    /// The rule's bombard takes the percent [`wall_cut`] counts on.
+    #[test]
+    fn a_bombard_takes_what_the_model_counts() {
+        let (mut g, c, from) = walled_city();
+        g.players[PlayerId(0)].turn_active = true;
+        let cats = catapults(&mut g, 1);
+        let pct = catapult_pct(&g, c, cats[0]);
+        assert!(g.unit_can_bombard(cats[0], from));
+        assert!(g.unit_bombard(cats[0]));
+        for k in g.city_sentinels_standing(c) {
+            assert_eq!(g.city_sentinel_damage(c, k), pct);
+        }
+    }
+
+    /// The cut never takes off more than the city gave the defender.
+    #[test]
+    fn the_cut_is_capped_at_what_the_city_gives() {
+        let (mut g, c, _) = culture_city();
+        let tp = g.city_plot(c);
+        let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+        let d = g.player_init_unit(PlayerId(1), warrior, 12, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+        let a = g.player_init_unit(PlayerId(0), warrior, 11, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+        let def = g.city_defense_modifier(c, false);
+        let full = pair(&g, a, d, tp, def).d_max;
+        assert_eq!(pair(&g, a, d, tp, def + 500).d_max, full, "a cut past the city's defence takes nothing more");
+        assert!(full < pair(&g, a, d, tp, 0).d_max);
+    }
 }

@@ -124,7 +124,7 @@ fn fnv(h: &mut u64, v: i64) {
 /// target): where it is, its health, moves, attacks, experience, level, which promotions it has
 /// (each promotion's id, in id order: a spell that swaps one promotion for another changes the
 /// key) and fortification; the target's owner, feature and improvement, and its city's defence
-/// damage.
+/// damage and the damage of each of its Sentinels.
 fn fingerprint(g: &Game, units: &[UnitId], target: PlotIdx) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     fnv(&mut h, g.game_turn() as i64);
@@ -149,6 +149,14 @@ fn fingerprint(g: &Game, units: &[UnitId], target: PlotIdx) -> u64 {
     fnv(&mut h, plot.feature_type.map_or(-1, |f| f.idx() as i64));
     fnv(&mut h, plot.improvement_type.map_or(-1, |i| i.idx() as i64));
     fnv(&mut h, plot.plot_city.map_or(-1, |c| g.cities.get(c).map_or(-2, |c| c.defense_damage as i64)));
+    // The city's Sentinels: a bombard changes their damage, not the defence damage.
+    if let Some(city) = plot.plot_city.and_then(|c| g.cities.get(c)) {
+        for &dmg in &city.sentinel_damage {
+            fnv(&mut h, dmg as i64);
+        }
+    }
+    // The end of the Sentinels (no damage is negative).
+    fnv(&mut h, -1);
     h
 }
 
@@ -512,5 +520,27 @@ pub fn holds(g: &Game, cache: Option<&Cache>, flood: &mut Flood, city: CityId) -
             o
         },
         forecasts,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A bombard changes the Sentinels' damage, not the city's defence damage: the forecast's key
+    /// changes with it.
+    #[test]
+    fn the_key_reads_the_sentinels() {
+        let (mut g, c, _) = crate::combat_sim::tests::walled_city();
+        let cat = g.player_init_unit(PlayerId(0), g.d.t::<UnitType>("UNIT_CATAPULT"), 11, 5, None, None);
+        let tp = g.city_plot(c);
+        let before = fingerprint(&g, &[cat], tp);
+        assert_eq!(before, fingerprint(&g, &[cat], tp));
+        g.city_set_sentinel_damage(c, 1, 30);
+        let after = fingerprint(&g, &[cat], tp);
+        assert_ne!(before, after);
+        g.city_set_sentinel_damage(c, 1, 0);
+        g.city_set_sentinel_damage(c, 0, 30);
+        assert_ne!(after, fingerprint(&g, &[cat], tp), "which Sentinel is hurt counts");
     }
 }
