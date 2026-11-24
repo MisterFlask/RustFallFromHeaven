@@ -645,7 +645,8 @@ fn tech_item(t: TechType) -> TradeData {
 /// project's "do not prop up a rival" rule: the gift tech is the CHEAPEST one we can give (determin-
 /// istic -- ffh-ai draws no RNG -- and this avoids handing over an expensive key enabler) rather than
 /// the C++ random pick; and we never gift a civ that is our victory rival. Giving does not raise
-/// attitude: `relation()` does not track gifts (C++ `AI_getTradeAttitude` unported), as with
+/// attitude: this deal is ours (`implement_deal`), and ffh-core's `tribute` records only a proposed
+/// gift (`relation()` reads those; C++ `AI_getTradeAttitude` is unported), as with
 /// resource/open-borders trading. The per-turn contact-timer + 1/iContactRand roll is replaced by the
 /// deterministic `offers::contact_due` cadence (period = contact_delay + contact_rand, ~150 turns).
 fn give_help(g: &mut Game, p: PlayerId, other: PlayerId, plan: &crate::victory::Plan) {

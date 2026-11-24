@@ -432,7 +432,7 @@ fn assault_forecast(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
             break;
         }
         let pool = g.engage_attackers(p, from, q, ffh_core::engagement::WarTest::AtWar);
-        // The first battle is the group's order; the next ones (the reserve the formation left)
+        // The first battle is the group's order; the next ones (the stack's other squads)
         // are ordered by a unit of the pool that can still attack, out of its group: a group
         // whose other units have attacked cannot start a move (before, the forecast counted the
         // reserve and the group's order then did nothing).
