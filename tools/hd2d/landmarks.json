@@ -256,6 +256,75 @@
           "height": 112
         }
       ]
+    },
+    {
+      "name": "works",
+      "prompt": "Create a production sprite sheet matching the EXACT pixel art style, palette, outline thickness, and camera angle of the three reference sprites. EXACTLY NINE different isolated fantasy strategy map-improvement sprites arranged on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous pure white gutters between them. Solid plain pure white (#FFFFFF) background. Full object in each cell, no clipping, no text, no captions, no grid lines, no cast shadows, no ground tiles or diamond bases. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive, warm brown, ochre, terracotta, and slate-grey palette, dark one-pixel outlines, strong upper-left sunlight highlights and lower-right shadows. Front-on three-quarter view looking down about 35 degrees at the front of the objects. Draw exactly these nine objects, left to right across the three rows: Mine; Cottage; Fort; Goblin Fort; Graveyard; Lumbermill; Windmill; Workshop; Camp.",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_MINE",
+          "key": "bld_site_mine",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_COTTAGE",
+          "key": "bld_site_cottage",
+          "height": 92
+        },
+        {
+          "type": "IMPROVEMENT_FORT",
+          "key": "bld_site_fort",
+          "height": 120
+        },
+        {
+          "type": "IMPROVEMENT_GOBLIN_FORT",
+          "key": "bld_site_goblin_fort",
+          "height": 116
+        },
+        {
+          "type": "IMPROVEMENT_GRAVEYARD",
+          "key": "bld_site_graveyard",
+          "height": 108
+        },
+        {
+          "type": "IMPROVEMENT_LUMBERMILL",
+          "key": "bld_site_lumbermill",
+          "height": 114
+        },
+        {
+          "type": "IMPROVEMENT_WINDMILL",
+          "key": "bld_site_windmill",
+          "height": 134
+        },
+        {
+          "type": "IMPROVEMENT_WORKSHOP",
+          "key": "bld_site_workshop",
+          "height": 114
+        },
+        {
+          "type": "IMPROVEMENT_CAMP",
+          "key": "bld_site_camp",
+          "height": 102
+        }
+      ]
+    },
+    {
+      "name": "sea_works",
+      "prompt": "Standalone HD-2D sea improvement sprites (fishing boats and whaling boats) matching the exact 16-bit pixel art style, palette, dark one-pixel outline, and 35-degree front-on three-quarter view on plain white background with no water patch.",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_FISHING_BOATS",
+          "key": "bld_site_fishing_boats",
+          "height": 104,
+          "standalone": true
+        },
+        {
+          "type": "IMPROVEMENT_WHALING_BOATS",
+          "key": "bld_site_whaling_boats",
+          "height": 112,
+          "standalone": true
+        }
+      ]
     }
   ]
 }

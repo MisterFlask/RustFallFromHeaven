@@ -641,15 +641,17 @@ the map (`MapHd2d.setConfig`).
 
 ## 5e. Bespoke map sites and resources
 
-The HD-2D map has dedicated art for all 17 unique landmarks and for the lairs,
+The HD-2D map has dedicated art for all 17 unique landmarks, the lairs,
 ruins, special sites and settlement stages that previously shared generic forts,
-caves, ruins or mana-node sprites: 45 improvements in total. The Guardian of
-Pristin Pass is a stone giant with gargoyles in its shoulder alcoves; Barrows are
-grass-covered burial mounds with a clear stone trilithon entrance, separate from
-bear dens, lion dens and dungeons. Another 27 resource cards distinguish the
-previously shared crops, animals, trade goods and rare resources. Established
-works retain their existing artwork. Mana has another 35 sphere-specific cards (§5),
-generated on 2026-11-15; Ice remains a resource of Letum Frigus rather than a buildable shrine.
+caves, ruins or mana-node sprites, and the 11 remaining standing worker and sea
+improvements (mine, cottage, fort, goblin fort, graveyard, lumbermill, windmill,
+workshop, camp, fishing boats and whaling boats): 56 improvements in total. The
+Guardian of Pristin Pass is a stone giant with gargoyles in its shoulder alcoves;
+Barrows are grass-covered burial mounds with a clear stone trilithon entrance,
+separate from bear dens, lion dens and dungeons. Another 27 resource cards
+distinguish the previously shared crops, animals, trade goods and rare resources.
+Mana has another 35 sphere-specific cards (§5), generated on 2026-11-15; Ice
+remains a resource of Letum Frigus rather than a buildable shrine.
 
 `tools/hd2d/landmarks.json`, `resources.json` and `mana.json` retain each sheet's exact image
 generation prompt, reading order, type mapping and art-pixel height. These sheets
