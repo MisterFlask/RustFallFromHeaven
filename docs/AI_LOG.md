@@ -38,7 +38,10 @@ An audit of the AI against the rules added since FFH2 found five places where it
 rule: it judged or acted on a rule as it used to be, or not at all. Four were fixed; the fifth,
 squads, was built, measured and not kept (item 4). They were found by reading code, not counted in
 games first (CLAUDE.md, "AI changes", step 1); the games below say what the fixes did where they
-fire.
+fire. The four kept, together (64 games, seeds 1-64, 6 civs, standard map, 300 turns, against
+master d6f34817): cities taken between civilizations 819 against 806, from barbarians 268 against
+273, by barbarians 178 against 174, eliminations 103 against 117, no game crashed; 30.3 ms a turn
+against 30.6 (16 games, 4 at a time).
 
 1. **Deals** (`diplomacy.rs` `judge_offer`, `trade.rs`). `trade::deal_val` prices technologies,
    resources, gold, gold per turn and a war on a third party, and counts every other kind 0, and
