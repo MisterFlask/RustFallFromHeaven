@@ -573,6 +573,9 @@ void main() {
     float Ld = lum(col);
     float leaf = smoothstep(55.0, 80.0, hs.x) * (1.0 - smoothstep(150.0, 175.0, hs.x)) * smoothstep(0.05, 0.2, hs.y);
     vec3 dead = mix(sat(col, 0.35), Ld * vec3(1.25, 0.86, 0.6), 0.6);
+    // A card's foliage (the trees: keep mask 0.9 or more) dies darker than the grass under it, so
+    // a forest still reads against the open ground.
+    dead *= mix(1.0, 0.74, step(0.89, src.a));
     col = mix(col, dead, leaf * d * 0.72 * (1.0 - hot));
     // The sea: by its keep mask (its glints', mostly 0: not a hue, which the grade's colour
     // moves), not the unknown's light parchment (also 0). It dulls to slate first, then goes to a
@@ -580,19 +583,25 @@ void main() {
     vec2 hs0 = hueSat(src.rgb);
     float parch = smoothstep(0.45, 0.65, lum(src.rgb)) * (1.0 - smoothstep(60.0, 80.0, hs0.x)) * smoothstep(0.08, 0.2, hs0.y);
     float sea = (1.0 - smoothstep(0.3, 0.6, src.a)) * (1.0 - parch);
-    vec3 slate = mix(vec3(Ld) * vec3(0.92, 0.95, 1.02), col, 0.35);
-    vec3 blood = Ld * 0.66 * vec3(1.18, 0.64, 0.56) + vec3(0.02, 0.0, 0.0);
+    // (Readability, the owner's report, 2026-11-23: a grey slate sea at the land's value washed the
+    // middle of the counter out, and a red sea at the land's value the end. The sea keeps most of
+    // its colour and deepens instead, and ends clearly darker than the land.)
+    vec3 slate = mix(vec3(Ld) * vec3(0.9, 0.95, 1.04), col, 0.7) * 0.8;
+    vec3 blood = Ld * 0.5 * vec3(1.3, 0.52, 0.46) + vec3(0.02, 0.0, 0.0);
     col = mix(col, mix(slate, blood, smoothstep(0.35, 0.95, d)), sea * min(1.0, d * 2.0) * 0.92 * (1.0 - hot));
     // The dusk's golden cast (the sun's colour does not reach the cards: they are tinted by its
     // strength only), strongest at the counter's middle, given way to the red as the end comes.
     float dusk = min(1.0, uDusk * 2.0) * (1.0 - d);
     col *= mix(vec3(1.0), vec3(1.1, 0.97, 0.78), dusk * 0.8 * (1.0 - hot));
-    col *= mix(vec3(1.0), vec3(0.74, 0.58, 0.52), d * (1.0 - hot * 0.8));
+    // The red cast falls on the shade more than on the light: a flat multiply took the whole
+    // range down together and the land's values closed up.
+    vec3 redCast = mix(vec3(0.6, 0.44, 0.42), vec3(0.96, 0.78, 0.66), smoothstep(0.12, 0.55, lum(col)));
+    col *= mix(vec3(1.0), redCast, d * (1.0 - hot * 0.8));
     float shade = 1.0 - smoothstep(0.04, 0.35, lum(col));
     col = mix(col, col * vec3(1.1, 0.72, 0.72), shade * d * 0.5);
-    col = mix(col, vec3(0.26, 0.07, 0.04), far * d * 0.3);
+    col = mix(col, vec3(0.26, 0.07, 0.04), far * d * 0.15);
     vec2 vc = (vUv - 0.5) * vec2(1.25, 1.0);
-    col *= 1.0 - smoothstep(0.3, 0.85, length(vc)) * 0.42 * d;
+    col *= 1.0 - smoothstep(0.3, 0.85, length(vc)) * 0.2 * d;
   }
   // A town takes about half the grade: it keeps its colours, its fires their heat.
   if (!figure && src.a > 0.93) col = mix(src.rgb, col, 0.45);
