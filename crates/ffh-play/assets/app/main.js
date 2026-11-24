@@ -45,6 +45,7 @@ import { h, $, toast, compactScreen, setErrorHook, errorText } from "./dom.js";
 import { dname, turns, me, tname, info } from "./state.js";
 import { look, loadLook, setLookData, rendererChoice, decorate, undecorate } from "./look.js";
 import { setIsoSkin, isoSkin, renderCityPanel } from "./isoui.js";
+import { music } from "./music.js";
 
 let mapView = null;
 let syncing = false;
@@ -857,6 +858,12 @@ function gameRunning() {
 async function boot() {
   // The phone's orientation, and the lock chosen in Options (orient.js): before anything lays out.
   initOrientation();
+  // The music (docs/MUSIC.md): the remembered choice, and the first key or click it waits for.
+  try {
+    music.init();
+  } catch (e) {
+    console.warn("music:", e);
+  }
   wire();
   // Battles open the battle screens as they come, except while the AI plays the player's slot.
   muteBattlesWhen(() => tools.spectating() || observing());

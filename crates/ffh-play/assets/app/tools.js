@@ -1,5 +1,5 @@
 // Options (the gear: the player options `set_option` changes, how battles open, the map's renderer,
-// the phone's orientation) and, behind it, the rules-testing tools (design §5.1 "Rules-testing
+// the phone's orientation, the music) and, behind it, the rules-testing tools (design §5.1 "Rules-testing
 // tools", §7 P6): the raw inspector (`inspect`), debug reveal (`session debug`), the Armageddon
 // counter (`set_armageddon`), AI autoplay (`autoplay`), taking over a slot of an AI save (`session take_over`), the raw request box, and
 // the optional spectator mode: the AI plays every civilization (the human slot too, through FfH's
@@ -15,6 +15,7 @@ import { rawRequest, loadScreen } from "./screens.js";
 import { plotIndex } from "./tiles.js";
 import { setRendererChoice } from "./look.js";
 import { orientChoice, setOrientChoice, orientOffered } from "./orient.js";
+import { music } from "./music.js";
 
 /** The debug tools (Options → Debug tools…; the only way to the raw request). Without a game
  *  (the title screen) only those that need none: taking over a slot of a save, the raw request. */
@@ -534,8 +535,8 @@ function radios(name, idPart, choices, current, set) {
 /** One section of Options: its heading and its rows. */
 const section = (title, ...rows) => h("section.options-sec", h("h4", title), ...rows);
 
-/** Options: the player's options in this game, how battles open, the map's renderer and (phones)
- *  the screen's orientation; the gear opens it. It ends with the way to the debug tools. */
+/** Options: the player's options in this game, how battles open, the map's renderer, (phones)
+ *  the screen's orientation and the music's switch and volume; the gear opens it. It ends with the way to the debug tools. */
 export function openOptions() {
   const my = me();
   // Game: the player options (`set_option`); a refusal puts the box back and says why (run's toast).
@@ -638,6 +639,41 @@ export function openOptions() {
         ),
       )
     : null;
+  // Sound: the music's switch and volume (music.js; remembered by this browser). Where it
+  // cannot play (no Web Audio, or it failed) both are shown disabled, with a line that says so.
+  const can = music.available;
+  const volume = h("input#opt-music-volume", {
+    type: "range",
+    min: 0,
+    max: 100,
+    step: 1,
+    value: Math.round(music.volume * 100),
+    disabled: !can || !music.on,
+    "aria-label": "Volume",
+    oninput: (ev) => music.setVolume(Number(ev.target.value) / 100),
+  });
+  const sound = section(
+    "Sound",
+    h(
+      "div.checks.single",
+      h(
+        "label.toggle",
+        h("input#opt-music", {
+          type: "checkbox",
+          checked: music.on,
+          disabled: !can,
+          onchange: (ev) => {
+            const box = ev.target;
+            music.setOn(box.checked);
+            volume.disabled = !music.available || !music.on;
+          },
+        }),
+        " Music",
+      ),
+      h("label.toggle.options-volume", h("span", "Volume"), volume),
+    ),
+    can ? null : h("p.dim", "Music is not available in this browser."),
+  );
   // The debug tools: behind Options (the inspector, debug reveal, autoplay, spectate, take over,
   // the raw request).
   const debug = h(
@@ -647,7 +683,7 @@ export function openOptions() {
   return openModal({
     title: "Options",
     tag: "options",
-    body: [game, battles, map, screen, debug],
+    body: [game, battles, map, screen, sound, debug],
     buttons: [{ label: "Close", value: null }],
   });
 }

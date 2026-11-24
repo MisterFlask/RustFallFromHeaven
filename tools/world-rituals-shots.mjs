@@ -746,7 +746,7 @@ async function main() {
   if (!pw) return skipped("world-rituals-shots", "no playwright package");
   fs.mkdirSync(OUT, { recursive: true });
   const saves = tempDir("rituals-shots");
-  const browser = await pw.chromium.launch({ headless: true });
+  const browser = await pw.chromium.launch({ headless: true, args: ["--mute-audio"] });
   try {
     if (want("rituals")) await shotsRituals(browser, bin, saves);
     if (want("charged")) await shotsCharged(browser, bin, saves);

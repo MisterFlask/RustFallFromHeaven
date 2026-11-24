@@ -784,8 +784,9 @@ of its turn and the one before again.
 a refused change puts the box back and says why; without a game, a note), **Battles** (remembered
 by this browser: "Battles fought against you": Watch, the default, Report, or Turn report only, see
 "Engagement combat"; "Your attacks": Watch or Report, the battle plan's switch), **Map** (the
-renderer: HD-2D, the default, isometric 2.5D or flat) and, on a phone, **Screen** (below). It
-ends with **Debug tools…**, the only way to the Tools dialog.
+renderer: HD-2D, the default, isometric 2.5D or flat), **Screen** (on a phone only; below) and
+**Sound** (remembered by this browser: Music on or off, its Volume; disabled, with a line that says so, in a
+browser without Web Audio; docs/MUSIC.md). It ends with **Debug tools…**, the only way to the Tools dialog.
 
 **Tools** (Options → Debug tools…): **Debug reveal** (the whole map and every unit and city; the top
 bar says DEBUG REVEAL); **Armageddon counter…** (sets the counter, 0 to 100, on your turn:

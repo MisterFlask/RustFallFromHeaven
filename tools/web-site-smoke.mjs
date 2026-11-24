@@ -458,7 +458,7 @@ async function main() {
   for (const f of fs.readdirSync(OUT)) if (f.endsWith(".png")) fs.rmSync(path.join(OUT, f));
   let browser = null;
   try {
-    browser = await pw.chromium.launch({ headless: !args.headed });
+    browser = await pw.chromium.launch({ headless: !args.headed, args: ["--mute-audio"] });
     const context = await browser.newContext({ viewport: VIEW });
     // No service workers, as in a browser without them (Playwright's `serviceWorkers: "block"`
     // instead makes register() resolve with undefined, which no browser does).

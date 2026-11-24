@@ -916,6 +916,13 @@ pre.report.inspect { max-height: 60vh; overflow: auto; font-size: 11px; }
 .options-sec > h4 { margin: 6px 0 2px; }
 .options-sec > .small.dim { margin-top: 4px; }
 .checks.single.options-inline { flex-direction: row; flex-wrap: wrap; gap: 2px 18px; padding: 2px 0 4px; }
+/* Sound: the volume slider, a bare range in every skin (the skins' framed input boxes, `html.art
+   input`, `html.iso input`, `html.iso.hd2d input`, would wrap its track: the id outranks them);
+   gold like the checkboxes outside the isometric skin. */
+.options-volume > span { min-width: 4.5em; margin-left: 4px; }
+#opt-music-volume { flex: 0 1 220px; min-width: 120px; margin: 0; padding: 0; border: none; border-image: none; background: none; }
+html:not(.iso) #opt-music-volume { accent-color: var(--c-gold); }
+#opt-music-volume:disabled { opacity: 0.45; cursor: default; }
 .options-debug { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(128, 128, 128, 0.35); }
 
 /* The unit panel: cargo under its transport, the promote button. */

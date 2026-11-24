@@ -82,7 +82,7 @@ async function run(pw, bin) {
   const problems = [];
   const saves = tempDir("pad-saves");
   const server = await startServer({ bin, saves, extra: ["--new", "--seed", String(SEED), ...ASSETS] });
-  const browser = await pw.chromium.launch({ headless: !args.headed });
+  const browser = await pw.chromium.launch({ headless: !args.headed, args: ["--mute-audio"] });
   try {
     const check = (ok, what) => {
       if (!ok) throw new Error(what);

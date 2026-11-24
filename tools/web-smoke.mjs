@@ -12,7 +12,8 @@
 // researches), the doctrine (research path) chooser (an adoption), civics (F3, a pick, the revolution),
 // religion (F7), the sliders (F2 and the top bar), diplomacy (F4, the trade screen when a player was met), the cities list (F1), the keys
 // (?), the go-to mode (G, Esc), the map layers, the inspector, debug reveal, AI autoplay and the
-// spectator mode (play, pause, step, stop), and the trade screen (`stage trade`: gold offered and
+// spectator mode (play, pause, step, stop), the music (playing since the first click, switched
+// off and on in Options; the browser is muted), and the trade screen (`stage trade`: gold offered and
 // accepted). The default map (the HD-2D one, or its isometric fallback); the classic interface on
 // the flat map (the bitmap type, a frame's time, the zoom steps), which the steps above drive,
 // Options and `?renderer=flat`; `?renderer=iso`, the isometric renderer (its sprites,
@@ -87,7 +88,8 @@ async function loadPlaywright() {
 /** Playwright's Chromium as the smoke test's browser. */
 async function playwrightBrowser(pw, problems) {
   // FFH_CHROMIUM_CHANNEL=chrome: the installed Chrome (as the r3d tools, web-lib.mjs chromiumLaunch).
-  const browser = await pw.chromium.launch({ headless: !args.headed, ...(process.env.FFH_CHROMIUM_CHANNEL ? { channel: process.env.FFH_CHROMIUM_CHANNEL } : {}) });
+  // Muted: the game plays its music from the first click (docs/MUSIC.md), and a test makes no sound.
+  const browser = await pw.chromium.launch({ headless: !args.headed, args: ["--mute-audio"], ...(process.env.FFH_CHROMIUM_CHANNEL ? { channel: process.env.FFH_CHROMIUM_CHANNEL } : {}) });
   const page = await browser.newPage({ viewport: VIEW });
   page.on("console", (m) => m.type() === "error" && problems.push(`console: ${m.text()}`));
   page.on("pageerror", (e) => problems.push(`page error: ${e.message}`));
@@ -143,6 +145,7 @@ async function cdpBrowser(exe, problems) {
     "--no-default-browser-check",
     "--disable-gpu",
     "--no-sandbox",
+    "--mute-audio",
     `--window-size=${VIEW.width},${VIEW.height}`,
     "about:blank",
   ], { stdio: ["ignore", "ignore", "pipe"] });
@@ -1280,6 +1283,27 @@ async function toolsAndSpectate() {
   steps.push(`spectator mode: turns ${turn}-${paused} played, paused, one step, stopped`);
 }
 
+/** The music (docs/MUSIC.md): on unless switched off, playing since the first click; Options →
+ *  Sound switches it off (the volume slider then disabled) and on again. The browser is muted;
+ *  the page's audio context runs all the same. */
+async function musicOptions() {
+  const music = (expr) => b.eval(`import("./app/music.js").then(({ music }) => (${expr}))`);
+  if (!(await music("music.available"))) throw new Error("the music is not available in this browser");
+  await until(() => music("music.on && music.playing"), "the music playing since the first click");
+  await click("#btn-tools");
+  await dialog("Options");
+  const sliderOff = () => b.eval(`document.getElementById("opt-music-volume").disabled`);
+  if (await sliderOff()) throw new Error("the volume slider is disabled while the music is on");
+  await click("#opt-music");
+  await until(() => music("!music.on && !music.playing"), "the music off");
+  if (!(await sliderOff())) throw new Error("the volume slider is not disabled while the music is off");
+  await click("#opt-music");
+  await until(() => music("music.on && music.playing"), "the music on again");
+  await shot("options-sound");
+  await closeDialog("Options");
+  steps.push("the music: playing since the first click, switched off and on in Options");
+}
+
 async function saveAndLoad() {
   await click("#btn-save");
   await until(async () => (await modalTitles()).includes("Save the game"), "the save dialog");
@@ -2302,6 +2326,7 @@ async function main() {
     await empireScreens();
     await keysAndLayers();
     await toolsAndSpectate();
+    await musicOptions();
     await saveAndLoad();
     await stagedAttack(bin, saves);
     await stagedCapture(bin, saves);

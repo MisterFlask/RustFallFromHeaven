@@ -149,11 +149,11 @@ export function chromiumLaunch(gpu = false) {
   // `FFH_ANGLE=vulkan` picks ANGLE's backend: on Windows the default, Direct3D 11, takes seconds over
   // the 3D renderer's large shaders, twice (docs/R3D.md §11.1).
   if (gpu) {
-    const args = ["--ignore-gpu-blocklist", "--enable-gpu", "--force_high_performance_gpu"];
+    const args = ["--mute-audio", "--ignore-gpu-blocklist", "--enable-gpu", "--force_high_performance_gpu"];
     if (process.env.FFH_ANGLE) args.push(`--use-angle=${process.env.FFH_ANGLE}`);
     return { headless: true, channel: process.env.FFH_CHROMIUM_CHANNEL || "chromium", args };
   }
-  return { headless: true, ...(process.env.FFH_CHROMIUM_CHANNEL ? { channel: process.env.FFH_CHROMIUM_CHANNEL } : {}), args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] };
+  return { headless: true, ...(process.env.FFH_CHROMIUM_CHANNEL ? { channel: process.env.FFH_CHROMIUM_CHANNEL } : {}), args: ["--mute-audio", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] };
 }
 
 /** The name of the WebGL renderer a page draws with (a GPU's name, or SwiftShader). */

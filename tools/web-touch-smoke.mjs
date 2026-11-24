@@ -66,7 +66,7 @@ async function run(pw, bin, phone) {
   const problems = [];
   const saves = tempDir("touch-saves");
   const server = await startServer({ bin, saves, extra: ["--new", "--seed", String(SEED), ...ASSETS] });
-  const browser = await pw.chromium.launch({ headless: !args.headed });
+  const browser = await pw.chromium.launch({ headless: !args.headed, args: ["--mute-audio"] });
   try {
     const ctx = await browser.newContext({ viewport: { width: phone.width, height: phone.height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
     const page = await ctx.newPage();
