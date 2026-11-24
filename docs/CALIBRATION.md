@@ -166,8 +166,10 @@ same game with telemetry on and off.
   `target` plus `extra_defenders` as if they stood there. It builds the preview's own plan
   (`engage_plan_finish`: the defender's formation, the summons in a copy of the game, the set-up)
   and samples it with the preview's per-battle code (`engage_sample_battle`) on the preview's seed
-  (both formations, the plots, the turn). For a real attack (the pool on `from`, no extras) it
-  equals `engage_preview(..).forecast` at the same runs (test
+  (both formations, the plots, the turn). The attackers are taken as one force in the auto
+  formation (5 places), not by their squads. For a real attack (the pool on `from`, no extras)
+  whose strongest squad is the pool's auto formation it equals `engage_preview(..).forecast` at
+  the same runs (test
   `the_forecast_if_is_the_preview_of_the_battle_it_imagines`, which also moves the imagined units
   there for real and gets the same numbers).
   - The pool: units on `from` that can attack now as the real fight picks them, others if they
@@ -216,7 +218,8 @@ battles (waves).
 - `Cache`: one per player and game turn, kept by the controller (`Ai::forecasts`) and lent to the
   `View`; entries keyed by the inputs (sorted) and checked against a fingerprint of what changes
   within a turn (every unit involved and on the target: place, damage, moves, attacks, experience,
-  level, promotions, fortification; the target's owner and its city's defence damage).
+  level, promotions, fortification; the target's owner, feature and improvement, its city's
+  defence damage and each of its Sentinels' damage).
 
 Calls (16 games, 300 turns, telemetry on, every shadow prediction above): 5,190 forecasts asked per
 game (17 per game turn; 6.5 per player-turn call that asked any), 4% answered by the cache; the

@@ -709,10 +709,11 @@ declare; and the forecast.
   a few microseconds.
 - **Hypothetical forecasts** (the AI's estimator, docs/CALIBRATION.md, "The battle forecast"):
   `Game::engage_forecast_if` is the same forecast for units that stand elsewhere, as if on a plot next
-  to the target, against the defenders there plus others as if on it (for a real attack it equals the
-  preview's forecast); `Game::engage_forecast_waves` the battles a turn's attacks fight one after
+  to the target, against the defenders there plus others as if on it (for a real attack whose strongest
+  squad is the pool's auto formation it equals the preview's forecast); `Game::engage_forecast_waves` the battles a turn's attacks fight one after
   another (each plot's pool, then its reserve), the defenders' losses and damage carried from one to
-  the next. Both pure, on the preview's set-up code and the same per-battle sampling.
+  the next. Both take the attackers as one force in the auto formation (5 places), not by their
+  squads. Both pure, on the preview's set-up code and the same per-battle sampling.
 
 ## Telemetry
 
