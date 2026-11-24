@@ -1,0 +1,17 @@
+Draw a sheet of 16 NEW interface icons for a fantasy strategy game in a clean MINIMALIST flat style, like the icons of a modern, restrained strategy-game interface. NOT pixel art, no visible pixels. Each icon is reduced to its essential silhouette: a few simple geometric shapes, flat solid fills, at most three colours per icon, no gradients, no texture, no fine detail, no tiny parts, generous negative space, crisp smooth edges, consistent rounded corners and consistent shape weight across the whole set. No outline, or only where two shapes must separate. Palette for the whole set: warm gold, ivory, and one muted accent colour per icon (deep red, teal, sage green, violet, sky blue or terracotta), chosen to read on a deep navy panel. Never use black or near-black for a main shape: dark subjects (masks, cloaks, iron, shadows, night) are drawn in mid-tone slate grey, plum or steel blue so they read on the deep navy panel. Every icon must still be recognisable at 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons, plates, badges or circles behind the icons, no shadows, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. The background is fully transparent. The icons, row by row, left to right:
+1. a teal genie rising from a gold lamp spout in a swirl
+2. a terracotta rock golem head made of boulders
+3. a gold horned helmet of a spectral warrior host
+4. an orange flame figure with two ivory eyes
+5. a pale blue crystal ice figure with sharp shard shoulders
+6. a teal kraken head with curling tentacles rising from waves
+7. a pale grey wisp of mist shaped like a drifting ghost
+8. a violet snarling beast head with fangs and small horns
+9. a sand gold lion head with a flowing mane
+10. a pale plum hooded spectre face with hollow eyes
+11. an orange tiger head with dark stripes
+12. a sage green tree trunk with an angry face and branch arms
+13. a blue water wave figure with two ivory eyes
+14. a violet floating shroud with a skeletal grey hand reaching out
+15. a gold sun bursting with many long rays outward
+16. a sage green muscled arm flexing with a gold upward arrow
