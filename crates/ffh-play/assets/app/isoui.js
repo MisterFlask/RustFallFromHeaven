@@ -100,6 +100,14 @@ export function isoIconFor(artName, { title, cls } = {}) {
   return name ? isoIcon(name, { px: m[1] === "8" ? 16 : 32, title, cls }) : null;
 }
 
+/** The M7 icon name of spell `spell` (a SpellType index or name): its own (`spell_<type>`, SPELL_
+ *  dropped, lower case), the shared spell icon when it has none. */
+export function spellIconName(spell) {
+  const t = typeof spell === "number" ? tname("SpellType", spell) : spell;
+  const n = t ? `spell_${String(t).replace(/^SPELL_/, "").toLowerCase()}` : null;
+  return n && Object.hasOwn(SPRITES, `ui_${n}_s`) ? n : "spell";
+}
+
 /** A building's own M7 icon (`ui_building_<type>`, BUILDING_ dropped, lower case) at `px` CSS px,
  *  or null when it has none. */
 export function isoBuildingIcon(type, { px = 32, title, cls } = {}) {
@@ -120,7 +128,7 @@ export function isoPromotionIcon(type, { px = 32, title, harmful = false } = {})
   const m = /^PROMOTION_(.+?)(\d)?$/.exec(type ?? "");
   if (!m) return null;
   // A promotion without an icon of its own borrows one (Wounded: Withered's).
-  const im = isoIcon(`promo_${(ISO_PROMO_ALIAS[m[1]] ?? m[1]).toLowerCase()}`, { px: px >= 32 ? 32 : 16 });
+  const im = isoIcon(`promo_${(ISO_PROMO_ALIAS[m[1]] ?? m[1]).toLowerCase().replace(/_$/, "")}`, { px: px >= 32 ? 32 : 16 });
   if (!im) return null;
   const el = h(`span.iso-seal${harmful ? ".bad" : ""}`, { style: { width: `${px}px`, height: `${px}px` } }, im);
   const lv = m[2] ? ROMAN[Number(m[2])] ?? m[2] : "";
@@ -205,7 +213,7 @@ export function actionIcon(a, px = 40) {
     name = COMMAND_ICONS[c] ?? (a.kind === "load" ? "board" : "cancel");
   }
   else if (a.kind === "automate") name = AUTOMATE_ICONS[tname("AutomateType", a.automate)] ?? "automate";
-  else if (a.kind === "spell") name = "spell";
+  else if (a.kind === "spell") name = spellIconName(a.spell);
   else if (a.kind === "promotion") name = "promote";
   else if (a.kind === "upgrade") {
     const key = unitKeyOf(a.unit, me()?.player);

@@ -11,7 +11,7 @@ import { run, actionCommand, sending } from "./commands.js";
 import { plotDistance, plotIndex, humanize } from "./tiles.js";
 import { render as markup } from "./markup.js";
 import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } from "./look.js";
-import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn, unitFigure, updateInsets } from "./isoui.js";
+import { isoSkin, isoIcon, spellIconName, actionIcon, portrait, isoBar, focusOn, unitFigure, updateInsets } from "./isoui.js";
 import { effectsOf, infoTip, partsList } from "./infotips.js";
 import { marchLine } from "./armies.js";
 import { exploreShort, exploreFull } from "./explore.js";
@@ -1320,7 +1320,7 @@ const actionType = (a) =>
  *  would all look alike), with the icon each label carries. */
 const LISTED = ["spell", "promotion", "upgrade", "army", "trade"];
 const ARMY_ICONS = { form: "units", split: "units", join: "units", garrison: "defense", disband: "disband", upgrade: "upgrade", raid: "plunder", stop_raid: "cancel", escort_caravan: "commerce", stop_escort: "cancel" };
-const listedIcon = (a) => (a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : a.kind === "army" ? (ARMY_ICONS[a.army] ?? "units") : a.kind === "trade" ? "commerce" : "upgrade");
+const listedIcon = (a) => (a.kind === "spell" ? spellIconName(a.spell) : a.kind === "promotion" ? "promote" : a.kind === "army" ? (ARMY_ICONS[a.army] ?? "units") : a.kind === "trade" ? "commerce" : "upgrade");
 
 /** Whether the card lists action `a` as a labelled button: spells, promotions, upgrades and army
  *  actions, and on
