@@ -32,6 +32,121 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## FFH2 rules the AI used wrongly (2026-11-24; from a code audit, then counted in games)
+
+An audit of the AI against the rules that came from FFH2 0.41 (does it use each one as an expert
+would?) found six places where it used one wrongly. The first, deals, was fixed the night before
+(the entry below, item 1). Four are fixed here; the sixth, rituals, is not (item 5). What the
+audit found unused rather than wrong is in docs/AI.md, "Known gaps". Measured against master
+`b7a75a6d`: 8 traced games (seeds 1-8) and 64 games (seeds 1-64), 6 civilizations, standard map,
+300 turns.
+
+1. **Governed cities and the buildings that open units** (`governor.rs`, `production.rs`
+   `decide`). Two faults in how the ladder and the governors share a city (every city ran the
+   ladder until governors came on 2026-10-30; from then each AI ran four cities by hand, and
+   since 2026-11-10 none under a governing civic):
+   - A governor ranks buildings by `building_value` and drops those worth nothing; the Training
+     Yard, Stable, Siege Workshop, Mage Guild and Hunting Lodge have no effect but the units they
+     open (their Fine and Grand tiers had one, from 2026-11-05 until tiers went on 2026-11-15), so
+     no governor chose one, and a governed city cannot be ordered to build one. They came only
+     from hand-run cities (Despotism, God King) and the fallback: 321 Training Yards and 9 Siege
+     Workshops stood at turn 300 in the 64 games.
+   - The AI's ladder, asked every turn in its capital and three best governed cities, answered
+     `unit_enabler` (or the caster corps' Mage Guild) again and again; the answer cannot be an
+     empire order, so nothing was placed and no step below was reached: 6,409 city-turns in the 8
+     games (runs of up to 53 turns), 552 more on a Mage Guild. Its garrison quota differed from
+     the governor's too (capital +1, victory guard), so it could wait on a defender no governor
+     trains. And at those turns the wonder step took the unit building's value of 0 as its bar and
+     put any wonder ahead: that step placed 383 of the 1,732 empire orders (22 of 2,342 after).
+
+   Now the governor builds what opens units ahead of its ranked buildings, by the ladder's own
+   rules (`unit_building`), and in a governed city the ladder counts the governor's garrison
+   quota and passes over a step that asks for one particular ordinary building or a process
+   (docs/AI.md, "Governors"). The same 8 games after: no city-turn waiting on a unit building;
+   empire orders 1,732 to 2,342 (`army_interleave` 384 to 1,106, `campaign_army` 56 to 134,
+   `siege` 14 to 108, heroes 16 to 28, `caster_corps` 6 to 32, wonders by `wonder_beside` 383 to
+   22 and by `wonder_slot` 9 to 41); Training Yards started 76 to 233, Stables 6 to 97, Siege
+   Workshops 2 to 76, Mage Guilds 8 to 92. City-turns waiting on a defender the governor is
+   training rose from 4,033 to 6,706 (the ladder now reaches that step).
+2. **Warships** (`warships.rs` `military_hammers`). The cap on warships (20% of the military's
+   hammers) counted as military only units with `strength`, which land units no longer have: the
+   share was 100% from the first ship, a Galley included, and no second warship was trained. It
+   counts every unit with an attack rating.
+3. **Sacrifice the Weak** (`empire.rs` `civic_value`). The civic's food per citizen replaces the
+   default (1 in place of 2); the value subtracted it, charging the civic 20 a citizen for
+   halving the food eaten. Its weight of 700 a city chose it anyway, so no game changes.
+4. **Repair** (`casting.rs` `ffh_value`, core `unit_is_repair_target`). An ability whose effect
+   is all in its callback, with no `ai_weight`: worth 0, never cast. It is worth the hit points
+   it restores now, as Heal. **It did not fire**: 0 casts in 8 games with the Luchuirp forced in,
+   before and after (their casters cast 111 spells, 20 of them Enchanted Blade, so casters with
+   Enchantment I exist). The caster is not where the damaged golems are; bringing it there is the
+   missing part, and its situation has not been counted.
+5. **Rituals (not fixed).** `best_project` skipped Samhain, The Draw, Purge the Unfaithful, Bane
+   Divine and Glory Everlasting as "left to dedicated logic" that was never written (the Illians'
+   module builds The White Hand and Stir From Slumber). The skip is right for a flat weight (The
+   Draw declares war on every team and halves every city; FfH's own AI never built Purge), so
+   only the comment changed. Ascension needs The Draw, so the Illians never reach it: when The
+   Draw is worth its price is a decision for the owner, not a default.
+
+**The 64 games** (base / the governed-city change alone / all four):
+
+| | base | governed | all four |
+|---|---|---|---|
+| cities taken between civilizations | 819 | 867 | 888 |
+| taken from barbarians / by barbarians | 268 / 178 | 307 / 196 | 317 / 200 |
+| civilizations eliminated | 103 | 149 | 122 |
+| military units of a starting civilization, turn 100 / 200 / 300 | 11.9 / 30.7 / 36.6 | 11.9 / 32.6 / 43.8 | 11.9 / 32.7 / 43.6 |
+| its research, turn 250 / 300 | 262 / 317 | 204 / 282 | 205 / 272 |
+| its techs, turn 300 | 44.2 | 42.5 | 42.5 |
+| Warriors, all civilizations, turn 300 | 6,970 | 3,849 | 3,743 |
+| Axemen / Swordsmen / Champions | 1,236 / 284 / 384 | 2,105 / 1,348 / 1,242 | 2,135 / 1,266 / 1,145 |
+| Catapults / Adepts / Mages | 13 / 25 / 34 | 399 / 306 / 131 | 292 / 357 / 121 |
+| Training Yards / Stables / Siege Workshops / Mage Guilds | 321 / 46 / 9 / 101 | 1,213 / 419 / 348 / 493 | 1,189 / 411 / 318 / 514 |
+| Libraries / Markets / Forges | 1,317 / 1,500 / 512 | 922 / 1,150 / 152 | 912 / 1,178 / 186 |
+| world wonders / national wonders standing | 764 / 1,018 | 450 / 360 | 444 / 364 |
+| warships (not Galleys), turn 300 | 529 | 483 | 789 |
+
+Eliminations are noise at this sample: the two right-hand columns differ only by the three small
+fixes, and the variant below gave 152. Cities lost to barbarians are a little up in every build
+with the change (196, 200, 191 against 174 to 191 in the last runs of master); not followed.
+Turn time (16 games, 4 at a time, each side twice): base 46.3 and 62.6 ms a turn (the second run
+disturbed), all four 43.5 and 45.1. Step 7 (CLAUDE.md, "AI changes") was not run: a probe plays
+on the same binary as the players it meets, so it gets the change too, and base against new
+would compare two attackers as well as two defenders.
+
+**What it cost.** Wonders and research. The wonders standing at turn 300 fall by two fifths
+(world) and two thirds (national): the count before was made by the fault (a wonder ahead of a
+building worth 0, at every turn the ladder was stuck). Roughly, per starting civilization, the
+world wonders are near what the AIs built before governors v2 (1.2 against 1.3 in the 8 games of
+2026-11-10, with 8 civilizations and other seeds; master was at 2.0), and the national wonders
+below it (Heroic Epic 0.26 a civilization, National Epic 0.15, against 0.375 each then and 0.66
+and 0.64 on master): `wonder_beside` now fires only where
+it was meant to, and that is seldom. Research at turn 300 is 14% lower and techs 4% lower:
+Libraries -31%, Markets -21%, Forges -64%, their hammers gone to the army (the ladder's orders)
+and to unit buildings.
+
+**A variant measured and not kept**: the unit building not ahead of the ranked buildings but
+among them, worth what that much more military production would be (the gain over the best unit
+now, 100% at most, times a quarter of the city's production, as `building_value` values a
+military production modifier). With the three other fixes: Libraries 1,141 and research 297 at
+turn 300 (-13% and -6% against the base), wonders 485 / 394, but Warriors 7,162 (none fewer than
+the base), Swordsmen 467, Champions 497, Catapults 161, Training Yards 457; 152 eliminations.
+Only the productive cities got the buildings, and every other garrison stayed Warriors. Kept
+instead: the ladder's rule as it stood (about half the cities, a unit a third better; "Unique
+units" below, measured when every city ran the ladder), extended to governed cities. It puts a
+Training Yard ahead of a Research city's Library, for a human's governors too, who cannot
+overrule it; by value, or by role (a Garrison or Production city first), are the other ways, the
+second not measured. The owner's call.
+
+**What it implies.** (a) The AI of 2026-11-10 to 2026-11-24 was weaker in the field than its
+measurements said: an army of Warriors with 13 Catapults in 64 games, measured only against
+itself. Probes that mass one unit line would have shown it (CLAUDE.md, step 7). (b) Whether
+governed cities should build more wonders, and by what rule, is open: `wonder_beside`'s bar (three
+quarters of the building the ladder names) was tuned while the fault fed it. (c) A step of the
+ladder that the governor owns must be one the governor acts on; `governor::tests` holds the two
+cases found (the unit building, the defender), and a new ladder step that returns an ordinary
+building needs the same care.
+
 ## Five wrong uses of this game's own rules (2026-11-23; from a code audit, not from games)
 
 An audit of the AI against the rules added since FFH2 found five places where it played against a

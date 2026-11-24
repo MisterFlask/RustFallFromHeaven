@@ -98,8 +98,9 @@ it sets, the defenders it adds to the garrison, and four key building classes:
   the proposal ends the overrule. Overruling has no cost of its own: its price is the difference
   in suitability, which is what the city's buildings of that role will be worth.
 
-A role has no modifier of its own. It decides what the governor builds first and what the citizens
-work; the tiers decide what that is worth.
+A role has no modifier of its own. It decides what the governor builds first among the buildings
+it ranks (after the garrison and a building that opens units: "What a governor builds") and what
+the citizens work; the tiers decide what that is worth.
 
 **Empire priorities.** A player names up to two roles (`GOVERNOR_MAX_PRIORITIES`) as priorities.
 They weigh in every proposal of a governed city (above). The game reports diagnoses over the
@@ -115,10 +116,18 @@ experience modifiers, there is no bench, and nothing is assigned.
 
 **What a governor builds** (ffh-ai `governor.rs`, for the human's cities and the AI's alike):
 1. the garrison the city's danger asks for (the city AI's quota and the role's defenders; against a Foment Revolt or Flip City aimed at the city, defenders up to three);
-2. the best building by the city AI's value per turn of production, weighted by the role (up to
+2. a building that opens units (since 2026-11-24; such a building has no value of its own, and a
+   governed city cannot be ordered to build one, so before this no governed city got one): the
+   building that lets the city train a defender or attacker a third better than its best now, in
+   a city of size 2 or more whose garrison holds, built within 20 turns, until half the empire's
+   cities have that building (Training Yard, Archery Range, Stable, Hunting Lodge...); else the
+   building that trains casters while no city has one (Mage Guild), in a city with at least half
+   the best city's production; else, at war with a civilization, the building that trains siege
+   engines while no city can train one (Siege Workshop), in the most productive city;
+3. the best building by the city AI's value per turn of production, weighted by the role (up to
    +50% for a building whose flavors are all ones the role weighs 5);
-3. a missionary, for a role that weighs religion, while the state religion misses our cities;
-4. the process the role prefers (research, gold or culture).
+4. a missionary, for a role that weighs religion, while the state religion misses our cities;
+5. the process the role prefers (research, gold or culture).
 
 It never builds a wonder, a palace, a ritual, a settler or a unit for the field: those are empire
 orders. Its next buildings are shown as its plan.

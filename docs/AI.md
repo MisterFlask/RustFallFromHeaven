@@ -1277,7 +1277,10 @@ civilization whose ships seen are not stronger than ours: one per sea of its rev
 reaches into our range, at most `BLOCKADERS_MAX` 3) + 1 for a seafaring civilization (coastal
 capital and a sea unit class of its own in the data) when any reason holds. Trained only while
 warships (alive and in training) are fewer than wanted and our armed sea units hold under
-`HAMMER_SHARE_PCT` (20%) of the military's hammers; the best sea unit with strength and the attack
+`HAMMER_SHARE_PCT` (20%) of the military's hammers (every unit of ours with an attack rating;
+until 2026-11-24 only units with `strength`, which land units no longer have, so the share was
+100% from the first ship, a Galley included, and the cap stopped the second warship: 529
+warships at turn 300 in 64 games before, 789 after); the best sea unit with strength and the attack
 or escort sea AI the city can train, by strength squared per turn (Trireme, Frigate, Man-o-War...
 may be transport types: trained as `UNITAI_ATTACK_SEA`, they serve `naval.rs` when it needs a ship).
 
@@ -1890,7 +1893,11 @@ governed. Three things live here: what a governor builds (the human's governed c
 the AI's), the AI's empire priorities, and the AI's empire orders.
 
 - **The governor's production** (`decide`, called by `production::choose` for a governed city): the
-  garrison the city's danger asks for (the AI's own quota, plus the role's defenders); the best building by `building_value` per turn
+  garrison the city's danger asks for (`garrison_need`: one defender, the threat's, the rival
+  civilizations', the role's); a building that opens units, by the ladder's own rules
+  (`unit_building`: `production::enabler_building` in a safe city of size 2, else
+  `casters::caster_building`, else at war `campaign::siege_building`; such a building is worth
+  nothing to `building_value`, so until 2026-11-24 no governor chose one); the best building by `building_value` per turn
   of production, up to half again for the role's flavors (`ranked_buildings`); a missionary for a role that weighs religion; the role's process. Never
   a wonder or a palace (those are empire orders). `plan(g, c, n)` is the next `n` buildings in the
   order `decide` picks them (one ranking by the same score, no simulation of what each one changes;
@@ -1912,6 +1919,20 @@ the AI's), the AI's empire priorities, and the AI's empire orders.
   drops its empire orders (their progress kept with each item) and its governor chooses again
   (`yield_to_defense`), which puts the defender first. Traced (`governors: empire order in ...`)
   and in telemetry (decision `empire_order` with the ladder's reason).
+  The ladder is asked every turn and its first answer is taken, so an answer the governor owns
+  and will not act on stops every step below it for as long as it is given. In a governed city
+  the ladder therefore stops at such a step only where the governor does the same
+  (`production::decide`, `governed`): its garrison quota is the governor's (`garrison_need`, not
+  the hand-run quota with its capital defender and victory guard), its `unit_enabler` step is
+  skipped, and a hook that asks for one particular ordinary building or a process (the caster
+  corps' Mage Guild, the campaign's Siege Workshop, a civilization's or a trait's building, the
+  culture process of a victory) is passed over. Its general building steps
+  (`building_interleave`, `building`, `economy_building_strained`) still stop it: they mean "a
+  building now", which is the governor's own order. Before 2026-11-24 the ladder answered
+  `unit_enabler` for 6,409 city-turns in 8 games of 300 turns (runs of up to 53 turns), and the
+  wonder step, which compares a wonder with the building the ladder names, took the Training
+  Yard's value of 0 as its bar and put any wonder ahead (docs/AI_LOG.md, "FFH2 rules the AI
+  used wrongly").
 - **Priorities** (`set_priorities`, once a turn, set only when they change): at war with a
   civilization whose combat units we know of stand within 3 plots of one of our cities, the
   garrison and production roles, kept until there is no war with a civilization left; otherwise
@@ -2820,9 +2841,10 @@ earlier cast is the first thing to measure.
   production (`enabler_building` and `campaign::siege_building` read only `PrereqBuildingClass`),
   and `research::unit_available` skipped such units. Now `production::unit_building` gives both
   the unit's `PrereqBuilding` or its civilization's building of the `PrereqBuildingClass`, and
-  `unit_available` counts such units unless the building needs a religion. Still open: the Mage
-  Guild (all adepts) has a value of 0 and `enabler_building` takes only defenders and attackers,
-  so only `civs::unique_casters` builds one (docs/ENTITIES.md).
+  `unit_available` counts such units unless the building needs a religion. The Mage Guild (all
+  adepts) has a value of 0 and `enabler_building` takes only defenders and attackers: the caster
+  corps and `civs::unique_casters` ask for one in a hand-run city, and a governor builds the
+  empire's first (`governor::unit_building`, 2026-11-24).
 - **Foreign units through `UpgradeCiv`** (fixed; the owner's decision: a bug, closed in the
   rules). FfH's `canTrain` checks a unit with `UpgradeCiv` (Kuriotates Centaurs, the Clan's Ogres,
   Goblins and Wolf Riders, Calabim Vampires and Brujah, the Infernal Balor) only against that
@@ -4128,6 +4150,40 @@ through `campaign::strike`; a borrower does not seek peace (`diplomacy::want_pea
 its loan general is fighting. None of this runs in the default game, so it moves no win rate there.
 
 ## Known gaps (future work)
+
+- **FFH2 rules the AI does not use, or uses without reading what they are for** (a code audit,
+  2026-11-24, at `ee70e2c3`; read in the code, not counted in games, so each is a candidate for
+  the work list once its situation is counted: CLAUDE.md, "AI changes", steps 1 and 2). What the
+  audit found wrong and fixed is in docs/AI_LOG.md ("FFH2 rules the AI used wrongly").
+  - *Rituals.* `production::best_project` builds a ritual with an `ai_weight` only when a city has
+    no building left, and skips Samhain, The Draw and Purge the Unfaithful, which nothing else
+    builds: Ascension needs The Draw, so the Illians never reach it. Rites of Oghma, Nature's
+    Revolt, Elegy of the Sheaim, Hallowing of the Elohim and Birthright Regained have no weight
+    and are never built, so nobody raises or lowers the Armageddon counter on purpose.
+  - *Great people* (`units.rs`): a technology is discovered whenever one can be; a golden age and
+    joining a city come only when none can; no trade mission, no Academy or other building but a
+    shrine. A Great Commander goes to the capital and stays.
+  - *Never asked for*: the draft; a religious victory (neither pursued nor seen in a rival); the
+    great person for the first to discover a technology; lair exploration (an AI unit destroys a
+    lair it enters: docs/AI_ONLY_RULES.md, A4, waits on the owner); the buildings units construct
+    other than shrines (the Freak Show, animal cages); the spells without `allow_ai` except the
+    four in `unflagged.rs` (Taunt, Burning Blood, Hire Units, Tsunami, Promote Settlement...:
+    docs/AI_ONLY_RULES.md, D, waits on the owner).
+  - *Promotions* (`units::promotion_value`): a promotion's bonus against a unit combat, on a
+    terrain or feature, its collateral damage, healing while moving and seeing invisible units
+    are not read, so Shock and its like, Woodsman, Guerilla, Barrage and March score 1, and
+    Mobility I outscores Combat I for a unit that is not a defender.
+  - *Civics and religion* (`empire.rs`): `civic_value` does not read a civic's great people
+    rate, building and feature happiness, free unit upkeep, hurry types, specialist limits,
+    conscription or anarchy length; the state religion is the one most of our cities hold, never
+    what it gives or the alignment it sets.
+  - *Magic*: every battle-only spell is worth the same when a caster picks a sphere
+    (`BATTLE_SPELL_WORTH`; choosing by role was tried, docs/AI_LOG.md); priests are trained only
+    as garrison candidates; `ai_weight_war` on eight spells is read by nothing.
+  - *Peace and war*: war weariness is in no peace decision; culture revolt in no garrison; a
+    rival near a victory is stopped by war only; standing deals between AIs are never cancelled.
+  - *Civilizations* (from the readers, not re-read): Lanun Pirates and boarding, the Kuriotates
+    Airship, Hippus mercenaries, Corlindale's Peace, the Calabim Governor's Manor's production.
 
 - Leader traits (`traits.rs`): Charismatic, Creative, Defender, Organized and Magic Resistant have
   no play of their own (their effects reach every decision that reads the game). Candidates if
