@@ -5,8 +5,8 @@
 //!   a queue and once a game turn);
 //! - **not delayed without loss**: a ritual with production that is not its city's first build
 //!   (taken off the queue, or put behind another order) loses all its production in that city
-//!   ([`Game::city_check_rituals`], after every change to the head of a queue); the armies'
-//!   requisitions and the empire orders do not go in front of one in progress;
+//!   ([`Game::city_check_rituals`], after every change to the head of a queue); the empire
+//!   orders do not go in front of one in progress;
 //! - **not hurried with gold**: a hurry with a gold cost (`gold_per_production`) is refused while
 //!   the city's first build is a ritual ([`Game::city_can_hurry`]). Hurrying with population and a
 //!   great person's hurry are allowed (in FFH2 a project took neither).

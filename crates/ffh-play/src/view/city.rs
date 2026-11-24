@@ -148,14 +148,7 @@ fn queue(v: &Viewer, c: CityId) -> Json {
             OrderType::ORDER_CREATE if ok(d.projects.len()) => Json::from(g.city_production_turns_left_project(c, ProjectType::from_usize(k as usize), i as i32)),
             _ => Json::Null,
         };
-        let mut j = crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns, "empire" => o.empire };
-        // This game's armies: where a trained land combat unit goes.
-        if o.order_type == OrderType::ORDER_TRAIN && ok(d.units.len()) && g.unit_type_is_army_unit(UnitType::from_usize(k as usize)) {
-            j.set("dest", crate::command::recruit_dest_json(o.dest));
-            j.set("dest_name", o.dest.map_or_else(|| "the city's default".to_string(), |x| g.recruit_dest_name(x)));
-            j.set("requisition", o.requisition);
-        }
-        j
+        crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns, "empire" => o.empire }
     });
     Json::Arr(out.collect())
 }
@@ -629,7 +622,10 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "hurries" => Json::Arr(hurries),
         "can_conscript" => g.city_can_conscript(c),
         "buildable" => buildable(v, c),
-        "recruit" => crate::view::armies::recruit(v, c),
+        // This game's armies (docs/ARMIES.md): the units of the city's garrison (unit ids).
+        "army_garrison" => crate::view::armies::garrison(v, c),
+        // Waypoints (docs/ARMIES.md): the city's waypoint and the armies it may name.
+        "waypoint" => crate::view::armies::city_waypoint(v, c),
         "governance" => crate::view::governors::city(v, c),
         // This game's outposts (docs/NAVAL.md, 9 and 10): the lane, starving, raising; null for a city.
         "outpost" => crate::view::outposts::city(v, c),

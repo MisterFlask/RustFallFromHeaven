@@ -2,10 +2,8 @@
 //! `governance`, the Governors screen (`governors` query: who runs the cities, the empire
 //! priorities, the diagnoses, a role card per governed city) and the two steps of an empire order
 //! (`empire_items`: what may be ordered, and how many governed cities can build each;
-//! `empire_cities`: for one item, every governed city able to build it, with a suggestion). (An
-//! army's requisition interrupts a governed city as any city: the Armies screen, `view::armies`.)
+//! `empire_cities`: for one item, every governed city able to build it, with a suggestion).
 
-use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
 use ffh_core::governors::GovDiagnosis;
 use ffh_core::ids::*;
@@ -22,8 +20,7 @@ fn government(g: &Game, h: PlayerId) -> Option<CivicType> {
 }
 
 /// Order `i` of city `c`'s queue: `index`, `order`, `type`, `turns` (left to finish it there),
-/// `empire`, `requisition`, `dest_name` (a unit's destination; null for the city's own garrison
-/// or default).
+/// `empire`.
 pub fn order_json(g: &Game, c: CityId, i: usize) -> Json {
     let o = &g.cities[c].order_queue[i];
     crate::jobj! {
@@ -32,15 +29,13 @@ pub fn order_json(g: &Game, c: CityId, i: usize) -> Json {
         "type" => o.data1,
         "turns" => g.city_order_turns_left(c, i),
         "empire" => o.empire,
-        "requisition" => o.requisition,
-        "dest_name" => o.dest.map(|x| g.recruit_dest_name(x)),
     }
 }
 
 /// The role card of governed city `c`: every role with its suitability and whether the human may
 /// choose it (`why` not), the current role's key buildings with the city's tier of each (`none`:
 /// its civilization cannot build the class), the governor's plan (`ffh_ai::governor::plan`), the
-/// city's empire and requisition orders, and the governor's own order (`governor_order`: the first
+/// city's empire orders, and the governor's own order (`governor_order`: the first
 /// order behind them, or null).
 fn role_card(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
@@ -103,8 +98,6 @@ fn city_json(v: &Viewer, c: CityId, card: bool) -> Json {
         "suitability" => g.city_role(c).map(|r| g.city_role_suitability(c, r)),
         "production" => g.city_yield_rate(c, YieldType::YIELD_PRODUCTION),
         "population" => city.population,
-        // This game's armies: the armies that requisition from the city (their names).
-        "requisitioned_by" => g.players[v.h].armies.iter().filter(|&&a| g.armies.contains(a) && g.armies[a].requisition.contains(&c)).map(|&a| Json::from(g.armies[a].name.as_str())).collect::<Vec<_>>(),
     };
     if card && governed {
         j.set("card", role_card(v, c));
@@ -188,32 +181,17 @@ fn city_shows(g: &Game, c: CityId, order: OrderType, data: i32) -> bool {
     }
 }
 
-/// The human's army `a` (`Gone` / `NotOwner` otherwise).
-fn army_of(v: &Viewer, a: ArmyId) -> Result<(), QueryErr> {
-    match v.g.armies.get(a) {
-        None => Err(QueryErr::Gone),
-        Some(x) if x.owner != v.h => Err(QueryErr::NotOwner),
-        Some(_) => Ok(()),
-    }
-}
-
-/// `empire_items {army?}`: what the human may order from its governed cities: every unit,
-/// wonder, palace and project one of its cities shows in its build list, each with `cities` (how
-/// many governed cities can build it now: 0 is unavailable) and, for a unit, `army_unit`. With
-/// `army`, only the units that serve in armies. `governed`: how many governed cities the human has.
-pub fn empire_items(v: &Viewer, army: Option<ArmyId>) -> Result<Json, QueryErr> {
+/// `empire_items`: what the human may order from its governed cities: every unit, wonder, palace
+/// and project one of its cities shows in its build list, each with `cities` (how many governed
+/// cities can build it now: 0 is unavailable) and, for a unit, `army_unit`. `governed`: how many
+/// governed cities the human has.
+pub fn empire_items(v: &Viewer) -> Result<Json, QueryErr> {
     let g = v.g;
-    if let Some(a) = army {
-        army_of(v, a)?;
-    }
     let cities: Vec<CityId> = g.players[v.h].cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
     let governed: Vec<CityId> = cities.iter().copied().filter(|&c| g.city_is_governed(c)).collect();
     let mut items = Vec::new();
     for (order, data) in empire_kinds(g) {
         let army_unit = order == OrderType::ORDER_TRAIN && g.unit_type_is_army_unit(UnitType::from_usize(data as usize));
-        if army.is_some() && !army_unit {
-            continue;
-        }
         if !cities.iter().any(|&c| city_shows(g, c, order, data)) {
             continue;
         }
@@ -224,17 +202,16 @@ pub fn empire_items(v: &Viewer, army: Option<ArmyId>) -> Result<Json, QueryErr> 
         }
         items.push(j);
     }
-    Ok(crate::jobj! { "army" => army, "governed" => governed.len(), "items" => Json::Arr(items) })
+    Ok(crate::jobj! { "governed" => governed.len(), "items" => Json::Arr(items) })
 }
 
-/// `empire_cities {order, data, army?}`: every governed city of the human's that can build the
-/// item (`city_check_empire_order`), each with `turns` (to finish it there, behind the orders
-/// ahead of it: `ahead` of them, `ahead_turns` turns), `own_turns` (the item's own), `displaces`
-/// (the governor's order it goes ahead of, with its turns; null: none) delayed by `own_turns`,
-/// `distance` (plots to the army, with one), `cost_percent` (a wonder's cost there, from its
-/// building tier) and one `suggested` (with an army: the nearest, ties to the fewest turns;
-/// without: the fewest turns, ties to the first city).
-pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyId>) -> Result<Json, QueryErr> {
+/// `empire_cities {order, data}`: every governed city of the human's that can build the item
+/// (`city_check_empire_order`), each with `turns` (to finish it there, behind the orders ahead of
+/// it: `ahead` of them, `ahead_turns` turns), `own_turns` (the item's own), `displaces` (the
+/// governor's order it goes ahead of, with its turns; null: none) delayed by `own_turns`,
+/// `cost_percent` (a wonder's cost there, from its building tier) and one `suggested` (the fewest
+/// turns, ties to the first city).
+pub fn empire_cities(v: &Viewer, order: OrderType, data: i32) -> Result<Json, QueryErr> {
     let g = v.g;
     let d = g.d;
     let n = match order {
@@ -246,19 +223,12 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
     if data < 0 || data as usize >= n {
         return Err(crate::query::invalid(format!("field `data`: {data} out of range 0..{n}")));
     }
-    if let Some(a) = army {
-        army_of(v, a)?;
-        if order != OrderType::ORDER_TRAIN {
-            return Err(crate::query::invalid("field `army`: only a unit goes to an army"));
-        }
-    }
-    let army_at = army.and_then(|a| g.army_plot(a)).map(|q| g.map.xy(q));
     let own_turns = |c: CityId, num: i32| match order {
         OrderType::ORDER_TRAIN => g.city_production_turns_left_unit(c, UnitType::from_usize(data as usize), num),
         OrderType::ORDER_CONSTRUCT => g.city_production_turns_left_building(c, BuildingType::from_usize(data as usize), num),
         _ => g.city_production_turns_left_project(c, ProjectType::from_usize(data as usize), num),
     };
-    let mut rows: Vec<(CityId, i32, Option<i32>, Json)> = Vec::new();
+    let mut rows: Vec<(CityId, i32, Json)> = Vec::new();
     let mut cities: Vec<CityId> = g.players[v.h].cities.clone();
     cities.sort();
     for c in cities {
@@ -272,7 +242,6 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
         let ahead_turns: i32 = (0..lead).map(|i| g.city_order_turns_left(c, i)).sum();
         let own = own_turns(c, lead as i32);
         let q = &g.cities[c].order_queue;
-        let distance = army_at.map(|(ax, ay)| g.step_distance(g.cities[c].x, g.cities[c].y, ax, ay));
         let mut j = crate::jobj! {
             "city" => c,
             "name" => city_name(g, c),
@@ -283,7 +252,6 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
             "ahead" => lead,
             "ahead_turns" => ahead_turns,
             "displaces" => (lead < q.len()).then(|| order_json(g, c, lead)),
-            "distance" => distance,
         };
         if order == OrderType::ORDER_CONSTRUCT {
             let b = BuildingType::from_usize(data as usize);
@@ -292,13 +260,13 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
                 j.set("tier", Json::idx(g.city_building_tier(c, b)));
             }
         }
-        rows.push((c, ahead_turns + own, distance, j));
+        rows.push((c, ahead_turns + own, j));
     }
-    let best = rows.iter().enumerate().min_by_key(|(_, (c, turns, distance, _))| (distance.unwrap_or(0), *turns, *c)).map(|(i, _)| i);
+    let best = rows.iter().enumerate().min_by_key(|(_, (c, turns, _))| (*turns, *c)).map(|(i, _)| i);
     let out: Vec<Json> = rows
         .into_iter()
         .enumerate()
-        .map(|(i, (_, _, _, mut j))| {
+        .map(|(i, (_, _, mut j))| {
             j.set("suggested", Some(i) == best);
             j
         })
@@ -306,26 +274,6 @@ pub fn empire_cities(v: &Viewer, order: OrderType, data: i32, army: Option<ArmyI
     Ok(crate::jobj! {
         "order" => Json::idx(order),
         "type" => data,
-        "army" => army,
-        "dest" => crate::command::recruit_dest_json(army.map(RecruitDest::Army)),
         "cities" => Json::Arr(out),
     })
-}
-
-/// The empire orders bound for army `a` in the human's cities (the Armies screen): `city`, `name`,
-/// `unit`, `index`, `turns`.
-pub fn army_empire_orders(v: &Viewer, a: ArmyId) -> Json {
-    let g = v.g;
-    let mut out = Vec::new();
-    for &c in &g.players[v.h].cities {
-        if !g.cities.contains(c) {
-            continue;
-        }
-        for (i, o) in g.cities[c].order_queue.iter().enumerate() {
-            if o.empire && o.order_type == OrderType::ORDER_TRAIN && o.dest == Some(RecruitDest::Army(a)) {
-                out.push(crate::jobj! { "city" => c, "name" => city_name(g, c), "unit" => o.data1, "index" => i, "turns" => g.city_order_turns_left(c, i) });
-            }
-        }
-    }
-    Json::Arr(out)
 }

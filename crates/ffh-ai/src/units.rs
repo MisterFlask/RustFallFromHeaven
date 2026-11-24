@@ -147,9 +147,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
     // stack, a caster marching with one, would wait for its promotions); a group's head gets its
     // own again before it acts.
     for u in g.players[p].units.clone() {
-        // (A marching recruit takes no orders, promotions and upgrades included, until it
-        // arrives: docs/ARMIES.md.)
-        if !g.units.contains(u) || g.unit_march(u).is_some() || g.units[u].group.is_none() || g.unit_in_route(u) {
+        if !g.units.contains(u) || g.units[u].group.is_none() || g.unit_in_route(u) {
             continue;
         }
         upkeep(g, u);
@@ -195,12 +193,6 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             && g.group_get_head_unit(grp).is_some_and(|h| !g.unit_is_cargo(h));
         // Units aboard a ship go where the ship takes them (the transport lands them).
         if g.group_get_head_unit(grp).is_some_and(|h| g.unit_is_cargo(h) && g.unit_get_domain_type(h) == DomainType::DOMAIN_LAND) {
-            g.groups[grp].force_update = false;
-            continue;
-        }
-        // A marching recruit goes where the rules take it (docs/ARMIES.md): no orders until it
-        // arrives (the rules keep it alone in its group).
-        if g.groups[grp].units.iter().any(|&u| g.unit_march(u).is_some()) {
             g.groups[grp].force_update = false;
             continue;
         }

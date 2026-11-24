@@ -217,7 +217,6 @@ fn a_city_gained_is_run_by_hand_unless_a_governed_civic_governs_it() {
     let (x, y) = free_plot(&g);
     let founded = g.player_init_city(P1, x, y, true, true);
     assert!(g.city_is_governed(founded) && g.city_role(founded).is_some());
-    assert!(g.cities[founded].recruit_default.is_none());
 }
 
 #[test]
@@ -409,7 +408,7 @@ fn empire_orders_are_units_wonders_palaces_and_projects() {
 }
 
 #[test]
-fn requisition_then_empire_orders_lead_the_governors_choice() {
+fn empire_orders_lead_the_governors_choice() {
     let (mut g, cities) = governed_game(2);
     let c = cities[1];
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
@@ -420,31 +419,21 @@ fn requisition_then_empire_orders_lead_the_governors_choice() {
     let own = g.cities[c].order_queue.clone();
     assert_eq!(own.len(), 1);
     // An empire order goes ahead of it.
-    g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, warrior.i(), -1, None).unwrap();
-    // An army's requisition goes ahead of the empire order.
-    let (x, y) = free_plot(&g);
-    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(P0, warrior, x, y, None, None)).collect();
-    let army = g.army_form(P0, &units).expect("formed");
-    g.army_set_target_size(P0, army, 3).unwrap();
-    g.army_add_requisition(P0, army, c).unwrap();
-    g.player_do_requisition(P0);
-    // A second empire order goes behind the first, an army as its destination.
-    let dest = Some(ffh_core::army::RecruitDest::Army(army));
-    g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, scout.i(), -1, dest).unwrap();
-    let q = &g.cities[c].order_queue;
-    assert_eq!(q.len(), 4);
-    assert!(q[0].requisition && !q[0].empire);
-    assert!(q[1].empire && q[1].data1 == warrior.i() && !q[1].save);
-    assert!(q[2].empire && q[2].data1 == scout.i() && q[2].dest == dest);
-    assert_eq!(q[3], own[0], "the governor's choice behind them");
-    assert_eq!(g.city_lead_orders(c), 3);
-    // Removal: the player's own empire orders only.
-    assert!(g.city_remove_empire_order(P0, c, 0).is_err(), "a requisition order");
-    assert!(g.city_remove_empire_order(P0, c, 3).is_err(), "the governor's order");
-    g.city_remove_empire_order(P0, c, 1).unwrap();
+    g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, warrior.i(), -1).unwrap();
+    // A second empire order goes behind the first.
+    g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, scout.i(), -1).unwrap();
     let q = &g.cities[c].order_queue;
     assert_eq!(q.len(), 3);
+    assert!(q[0].empire && q[0].data1 == warrior.i() && !q[0].save);
     assert!(q[1].empire && q[1].data1 == scout.i());
+    assert_eq!(q[2], own[0], "the governor's choice behind them");
+    assert_eq!(g.city_lead_orders(c), 2);
+    // Removal: the player's own empire orders only.
+    assert!(g.city_remove_empire_order(P0, c, 2).is_err(), "the governor's order");
+    g.city_remove_empire_order(P0, c, 0).unwrap();
+    let q = &g.cities[c].order_queue;
+    assert_eq!(q.len(), 2);
+    assert!(q[0].empire && q[0].data1 == scout.i());
 }
 
 #[test]
@@ -455,7 +444,7 @@ fn the_governor_is_not_asked_while_an_empire_order_leads_and_is_asked_after() {
     g.controllers[P0] = counting.clone();
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
     g.cities[c].order_queue.clear();
-    g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, warrior.i(), -1, None).unwrap();
+    g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, warrior.i(), -1).unwrap();
     g.cities[c].ai_choose_production_dirty = true;
     g.city_do_production(c, false);
     assert_eq!(counting.asked.load(Ordering::SeqCst), 0, "not asked while the empire order leads");
@@ -466,7 +455,7 @@ fn the_governor_is_not_asked_while_an_empire_order_leads_and_is_asked_after() {
 }
 
 #[test]
-fn a_city_handed_over_keeps_its_requisition_and_empire_orders_only() {
+fn a_city_handed_over_keeps_its_empire_orders_only() {
     let (mut g, cities) = game(2);
     let c = cities[1];
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
@@ -474,12 +463,10 @@ fn a_city_handed_over_keeps_its_requisition_and_empire_orders_only() {
     g.cities[c].order_queue.clear();
     g.city_push_order(c, OrderType::ORDER_CONSTRUCT, granary.i(), -1, false, false, true, true);
     g.city_push_order(c, OrderType::ORDER_TRAIN, warrior.i(), -1, true, false, true, true);
-    g.cities[c].recruit_default = Some(ffh_core::army::RecruitDest::Garrison(cities[0]));
     government(&mut g, P0, "CIVIC_ARISTOCRACY");
     let q = &g.cities[c].order_queue;
     assert_eq!(q.len(), 1, "{q:?}");
     assert!(q[0].empire && q[0].data1 == warrior.i() && !q[0].save, "the unit is an empire order; the granary gave way");
-    assert_eq!(g.cities[c].recruit_default, None);
     // Taken back: the queue kept, as ordinary orders.
     government(&mut g, P0, "CIVIC_DESPOTISM");
     assert!(g.cities[c].order_queue.iter().any(|o| o.empire), "leaving Aristocracy changes no city");
@@ -498,7 +485,7 @@ fn governors_v2_survive_a_save() {
     g.player_set_governor_priorities(P0, vec![research]).unwrap();
     let commerce = role(&g, "ROLE_COMMERCE");
     g.player_set_city_role(P0, c, commerce).unwrap();
-    g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, warrior.i(), -1, None).unwrap();
+    g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, warrior.i(), -1).unwrap();
     let bytes = g.save();
     let h = Game::load(g.d, &bytes).unwrap();
     assert_eq!(h.cities[c].role, Some(commerce));

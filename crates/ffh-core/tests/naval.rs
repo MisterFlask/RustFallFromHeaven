@@ -461,42 +461,6 @@ fn an_ai_ship_stays_in_range_unless_already_out() {
 
 // ---- Found in review ----
 
-/// A bay (x 12, y 2..=8) cuts the land between two cities of player 0, (10, 5) and (14, 5): by
-/// land the way goes round its end (8 steps), across it in boats it is 4.
-fn bay(w: &mut World) -> (CityId, CityId) {
-    let coast = w.g.d.t::<TerrainType>("TERRAIN_COAST");
-    for y in 2..=8 {
-        let q = w.at(12, y);
-        w.g.plot_set_plot_type(q, PlotType::PLOT_OCEAN, false);
-        w.g.plot_set_terrain_type(q, coast, false);
-    }
-    w.g.map_recalculate_areas();
-    w.g.update_plot_groups();
-    let a = w.g.player_init_city(w.p0, 10, 5, true, true);
-    let b = w.g.player_init_city(w.p0, 14, 5, true, true);
-    (a, b)
-}
-
-#[test]
-fn a_human_players_recruit_marches_by_land_not_in_boats() {
-    use ffh_core::army::RecruitDest;
-    let mut w = world();
-    let (a, b) = bay(&mut w);
-    w.g.players[w.p0].human = true;
-    let u = w.unit(w.p0, "UNIT_WARRIOR", 10, 5);
-    w.g.unit_recruit_to(u, a, RecruitDest::Garrison(b));
-    for _ in 0..12 {
-        if !w.g.units.contains(u) || w.g.units[u].march.is_none() {
-            break;
-        }
-        w.g.player_do_march(w.p0);
-        assert!(!w.g.unit_is_in_boats(u), "the rules marched the recruit into boats at {:?}", w.g.map.xy(w.g.unit_plot(u)));
-        w.rest(u);
-    }
-    assert!(w.g.units[u].march.is_none(), "it arrived");
-    assert_eq!(w.g.map.xy(w.g.unit_plot(u)), (14, 5));
-}
-
 #[test]
 fn a_flat_movement_unit_in_boats_still_crosses_one_water_plot_a_turn() {
     let mut w = world();

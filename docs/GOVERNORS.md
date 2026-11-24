@@ -40,7 +40,7 @@ cities it governs, what a governor builds, its plan, the AI's priorities and emp
 (`assets/app/city.js`), the civics preview (`view/player.rs`, `assets/app/empire.js`). Tests:
 `crates/ffh-core/tests/governors.rs`, `crates/ffh-play/tests/governors.rs`; the harness checks
 that under a governed civic every city is governed, that a governed city has production and a
-role, and that requisition orders, then empire orders, lead its queue (`ffh_harness::check`).
+role, and that empire orders lead its queue (`ffh_harness::check`).
 
 Every game has governors (no game option).
 
@@ -65,9 +65,9 @@ government is about them). A civic may carry `governed`; City States and Aristoc
 
 Whatever hands a city over or takes it back (the owner, a governed civic adopted), the same rule:
 
-- *Handed over*: the city's queue keeps its requisition orders and the orders that may be empire
-  orders (they become empire orders); its other orders are dropped. Its default recruitment
-  destination is dropped and its role's citizen emphasis is set.
+- *Handed over*: the city's queue keeps the orders that may be empire orders (they become empire
+  orders); its other orders are dropped. Its role's citizen emphasis is set. Its waypoint stays
+  (docs/ARMIES.md, "Waypoints"): only the empire orders' units follow it.
 - *Taken back*: the queue is kept, the emphasis is dropped.
 
 Despotism and God King cost more with size (2026-11-10, when they were the two hand-run civics;
@@ -125,18 +125,18 @@ orders. Its next buildings are shown as its plan.
 
 **Empire orders.** In a governed city the player cannot queue buildings or processes, and may
 place:
-- a unit, any the city can train, bound for an army, a garrison or nowhere (settlers, heroes,
-  missionaries, ships);
+- a unit, any the city can train (it appears in the city as any unit, and follows the city's
+  waypoint if it has one and the unit can follow it: docs/ARMIES.md, "Waypoints");
 - a world, national or team wonder, or a palace;
 - a ritual (project).
 
 The order goes ahead of the governor's choice, which keeps its progress and resumes after: an
-order's cost is delay. The queue's order is requisition orders (docs/ARMIES.md), then empire orders
-as placed, then the governor's choice. The player may take an empire order off. Empire orders do not
-repeat. This is how an army's composition is the player's: ask for a unit type for an army, see the
-cities that can train it with what each would delay, pick one (the client pre-selects the nearest
-capable city). The standing requisition (an army's target size and the cities it draws on) is
-unchanged and fills by its role mix.
+order's cost is delay. The queue's order is the empire orders as placed (its lead orders), then the
+governor's choice. The player may take an empire order off. Empire orders do not
+repeat. This is how an army's composition is the player's: ask for a unit type, see the cities that can
+train it with what each would delay, pick one; a city whose waypoint is the army sends it there.
+The standing requisition of an army (its target size and the cities it drew on) was removed on
+2026-11-23 (docs/ARMIES.md).
 
 **There are no cultural channels.** Until 2026-11-21 a city's cultural channel (Court, Guard,
 Spread Religion) was the player's, and a governor never set, changed or ended one (the owner's
@@ -188,13 +188,10 @@ history of docs/CULTURE.md).
   and its Growth suitability its Harbor. Key buildings the city can never build should probably be
   left out.
 - **A great-people role**, and whether every role should have an empire-level output shown.
-- **The standing requisition** fills by a role mix the player does not choose; with unit orders it
-  may no longer be needed for the human.
 - **The AI's wonders.** With empire orders the AIs build about 60% more world wonders by turn 300
   than before the change (8 seeds; docs/AI.md, "Governors"); founding, captures and army sizes are
   level. The bar of the AI's wonder step can be raised if that is too many.
-- **An empire order's destination** is set when it is placed and cannot be changed after.
-- **Supply** (docs/SUPPLY.md) is not shown when a city is picked for an army's unit.
+- **Supply** (docs/SUPPLY.md) is not shown when a city is picked for an empire unit order.
 
 ## The production audit (history: the rules before 2026-11-10)
 

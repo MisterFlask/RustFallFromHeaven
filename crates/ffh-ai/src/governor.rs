@@ -7,9 +7,10 @@
 //! building by the city AI's value per turn of production, weighted by the role's flavors against
 //! the building's; a missionary for a role that weighs religion while its religion misses our
 //! cities; then the process the role prefers. Wonders, palaces, rituals and settlers are the
-//! player's empire orders, not the governor's choice. An army's requisition and the player's
-//! empire orders (docs/ARMIES.md, docs/GOVERNORS.md) go ahead of the governor's choice, which
-//! resumes after them (the rules do not ask the governor while they lead the queue).
+//! player's empire orders, not the governor's choice. The player's empire orders
+//! (docs/GOVERNORS.md; the AI's include the units its main army lacks, `armies::turn`) go ahead
+//! of the governor's choice, which resumes after them (the rules do not ask the governor while
+//! they lead the queue).
 //!
 //! [`plan`] is the governor's next buildings in the order it would build them.
 //!
@@ -26,7 +27,6 @@
 //! governor unless its government is Despotism or God King, and under those two every city is
 //! run by hand, through the rules call a human uses (`Game::player_set_city_governed`).
 
-use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;
@@ -34,8 +34,8 @@ use ffh_data::*;
 use crate::production::{self as prod, Choice, Role};
 use crate::Ai;
 
-/// What a governed city builds now, why, and where a unit goes (`None`: its own garrison).
-pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<RecruitDest>)> {
+/// What a governed city builds now, and why.
+pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     let d = g.d;
     let city = &g.cities[c];
     let p = city.owner;
@@ -63,18 +63,18 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
     let second = prod::second_defender_wanted(g, p, c, plot, defenders, threat, defense) && !crate::probes::skips_second_defender(g, p);
     if defenders == 0 || overwhelmed || defenders < needed || second {
         if let Some(u) = prod::best_unit(g, c, Role::Defense) {
-            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "governor_garrison", None));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "governor_garrison"));
         }
     }
 
     // A probe's army and buildings (probes.rs).
     if let Some((choice, why)) = crate::probes::production(g, c, threat) {
-        return Some((choice, why, None));
+        return Some((choice, why));
     }
 
     // 3. The best building for the role (an ambitious governor: the costliest it may build).
     if let Some(&(b, _)) = ranked_buildings(g, c, threat).first() {
-        return Some((Choice::Construct(b), "governor_building", None));
+        return Some((Choice::Construct(b), "governor_building"));
     }
 
     // 4. A zealot spreads the state religion to our cities without it.
@@ -83,7 +83,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
             let missing = g.players[p].cities.iter().any(|&o| !g.cities[o].has_religion[r]);
             if missing && prod::count_ai(g, p, UnitAIType::UNITAI_MISSIONARY) == 0 {
                 if let Some(u) = prod::best_missionary(g, c, r) {
-                    return Some((Choice::Train(u, UnitAIType::UNITAI_MISSIONARY), "governor_missionary", None));
+                    return Some((Choice::Train(u, UnitAIType::UNITAI_MISSIONARY), "governor_missionary"));
                 }
             }
         }
@@ -102,7 +102,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
             best_process = Some((pr, v));
         }
     }
-    best_process.map(|(pr, _)| (Choice::Maintain(pr), "governor_process", None))
+    best_process.map(|(pr, _)| (Choice::Maintain(pr), "governor_process"))
 }
 
 /// The buildings city `c`'s governor may choose, best first by its score (ties: the first
@@ -292,7 +292,7 @@ fn wonder_beside(g: &Game, c: CityId, best: BuildingType) -> Option<BuildingType
 const FILLERS: [&str; 4] = ["army_interleave", "army", "attacker", "elite"];
 
 /// Whether governed city `c` is where a directly ruled city would choose its next build: its
-/// governor's own order (behind the requisition and empire orders) is none, a process, or one not
+/// governor's own order (behind the empire orders) is none, a process, or one not
 /// yet started (no production in it: chosen at the end of the last turn).
 fn at_choice_point(g: &Game, c: CityId) -> bool {
     let city = &g.cities[c];
@@ -307,8 +307,7 @@ fn at_choice_point(g: &Game, c: CityId) -> bool {
 }
 
 /// The production choice `choice` (made for `why`) becomes an empire order in governed city `c`
-/// if it is one ([`empire_order`]; a unit keeps its unit AI, and goes where the rules send an
-/// order without a destination: its garrison, or the main army for a field unit, `armies::turn`).
+/// if it is one ([`empire_order`]; a unit keeps its unit AI and stands in the city when trained).
 /// Whether it was placed.
 pub(crate) fn place(g: &mut Game, c: CityId, choice: Choice, why: &'static str) -> bool {
     let p = g.cities[c].owner;
@@ -316,7 +315,7 @@ pub(crate) fn place(g: &mut Game, c: CityId, choice: Choice, why: &'static str) 
         crate::trace!(g, p, "governors: {} leaves {} to its governor ({why})", g.d.text.name(&g.cities[c].name), prod::choice_name(g, choice));
         return false;
     };
-    match g.city_push_empire_order(p, c, order, data1, data2, None) {
+    match g.city_push_empire_order(p, c, order, data1, data2) {
         Ok(()) => {
             crate::trace!(g, p, "governors: empire order in {}: {} ({why})", g.d.text.name(&g.cities[c].name), prod::choice_name(g, choice));
             g.tel_decision(p, "empire_order", prod::type_name(g, choice), why, 0, String::new);
@@ -579,7 +578,7 @@ mod tests {
         let ai = crate::Ai::new();
         let w = warrior(&g);
         for &c in &cities {
-            g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, w.i(), UnitAIType::UNITAI_ATTACK.i(), None).unwrap();
+            g.city_push_empire_order(P0, c, OrderType::ORDER_TRAIN, w.i(), UnitAIType::UNITAI_ATTACK.i()).unwrap();
             yield_to_defense(&ai, &mut g, c);
         }
         assert!(g.cities[held].order_queue[0].empire, "a held city keeps it");

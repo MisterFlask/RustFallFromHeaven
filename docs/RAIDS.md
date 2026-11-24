@@ -376,7 +376,7 @@ pub fn unit_pillage_refusal(&self, u: UnitId, plot: PlotIdx) -> Option<&'static 
 - **The guard** is built from the plot's squads (`engage_field_squads` of the owner's units that
   stand in squads), keeping the garrison's and the owner's armies' squads (a loose unit the owner
   placed in a garrison squad is in it). A unit can sally when it is alive, can attack, is a land
-  unit that is not a missile, a battle summon or a marching recruit, and is within its combat
+  unit that is not a missile or a battle summon, and is within its combat
   limit against the plot; its moves and attacks are not read. "No squad that can fight" also
   covers a plot with nobody the guard can fight.
 - **Battles a plot gets**: the number of enemy squads (`engage_field_squads` of the defenders the

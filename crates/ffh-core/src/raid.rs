@@ -203,13 +203,12 @@ impl Game {
     }
 
     /// Whether unit `u` of city `c`'s guard can fight a sally against `to`: a living land unit
-    /// that can attack (not a missile, not a summon called into a battle, not marching) within its
+    /// that can attack (not a missile, not a summon called into a battle) within its
     /// combat limit there. Its moves and attacks this turn are not read (section 5.1).
     fn raid_unit_can_sally(&self, u: UnitId, to: PlotIdx) -> bool {
         let unit = &self.units[u];
         !self.unit_is_dead(u)
             && !unit.battle_summon
-            && unit.march.is_none()
             && !self.unit_is_suicide(u)
             && self.unit_engages_on_land(u)
             && self.unit_can_attack(u)

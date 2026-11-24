@@ -167,8 +167,8 @@ went wrong", below.)
   `(rating - the source's) / 10 + 20 + levels` (strengths), its source the highest rating;
   Kidnap's chance ATK x 8 / 10 % (strength x 8); Domination's target rating + (100 - resist)
   (10 x strength); Pillar of Fire's and the Citadel event's targets half the ratings (5 x
-  strength); Rantine's Convert City, The Cull's order, the best land unit, upgrade and
-  requisition picks by rating; the AI-only gates of Commander Join (rating above 50) and Take
+  strength); Rantine's Convert City, The Cull's order, the best land unit and upgrade
+  picks by rating; the AI-only gates of Commander Join (rating above 50) and Take
   Equipment (rating more than 20 above the holder's). Crusade and loan **force** (was strength)
   is the rating with the combat bonus, shown on the sheet's scale (an Axeman's 40, was 4).
   Save format 59.
@@ -262,7 +262,7 @@ flag.
   population (Slavery), and a great person's hurry (a Great Engineer) adds its production to one;
   in FFH2 neither hurried a project, and the world rituals of 2026-11-11 refused every hurry and
   every one-step addition of production (now a Soul Forge's or a Great Engineer's production goes
-  into a world ritual as into any build). An army's requisition or an empire order does not go in
+  into a world ritual as into any build). An empire order does not go in
   front of any ritual in progress. Why: a ritual is a commitment of the city that builds it, which
   money cannot shortcut; its rules are told once, as the keyword `Ritual`'s reminder text.
 - **A ritual in production is seen by everyone** (the owner's request, 2026-11-17; save format 43;
@@ -365,23 +365,21 @@ flag.
 
 - **Armies** (docs/ARMIES.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): land combat units (not mages, recon units,
   heroes, summons or animals: animals since 2026-11-10, docs/SUPPLY.md "Second pass" B) serve in named armies, kept one selection group each, or in a city's
-  garrison. An army requisitions soldiers from the cities its owner picks for it (any city,
-  directly ruled or governed) while it is short of its target size: an order at the front of the
-  city's queue that interrupts its production (which keeps its progress) and cannot be taken off
-  by hand. A trained land combat unit goes to its order's destination (the city's garrison by
-  default, another city's garrison, or an army): anywhere but its own garrison it is created in
-  the city as any unit and marches there, moved by the rules once a turn at the end of its
-  owner's turn, after its owner moved (it takes no orders, never attacks, can be attacked and
-  killed), advancing toward an army only
-  while the army is in supply (its supply line not cut: docs/SUPPLY.md, below); 5 turns without
-  progress or a destination gone send it to the nearest garrison it can reach. Form, split, join
-  and merge, garrison, rename, disband (march to the nearest garrison), upgrade all, target size,
-  requisition cities. Save format 9 (2026-10-31, the owner's design: requisition and marching recruits
-  replace the invisible transit, "Reinforce to N" and the governed cities' feed mode of formats
-  6-8).
+  garrison. A trained unit appears in the city that trained it (an army unit in its garrison).
+  A city may have a waypoint (2026-11-23, the owner's decision): a plot, or one of its owner's
+  armies (a fleet for a coastal city's ships); a unit it trains that can follow it gets an ordinary
+  go-to order there, is in no army or garrison on the way, and joins the army (or the oldest army on
+  the plot, or a garrison) on arrival; any order its owner gives it ends the waypoint. In a governed
+  city only the empire orders' units follow. Form, split, join and merge, garrison, rename, disband
+  (a go-to to the nearest garrison), upgrade all. Save format 9 (2026-10-31) replaced the invisible
+  transit, "Reinforce to N" and the governed cities' feed mode of formats 6-8 with requisition and
+  marching recruits (an army's orders at the front of picked cities' queues, recruits moved by the
+  rules and out of their owner's hands); format 68 (2026-11-23) removed them for waypoints: the measurements showed no benefit in conquest, about one recruit in twelve died
+  on the way, half the requisition orders were withdrawn, and the player lost control of units and
+  queue entries (docs/AI_LOG.md, "Requisition and marching recruits").
 - **Governors** (docs/GOVERNORS.md; every game has them, the AI-only ones too; the rules of
-  2026-11-10, the owner's design "Governors and army requisition", which replaced the first rules
-  of 2026-10-29: four directly ruled cities, a bench, profiles, numeric traits, a swap penalty and
+  2026-11-10, the owner's design "Governors and army requisition" (its requisition removed
+  2026-11-23), which replaced the first rules of 2026-10-29: four directly ruled cities, a bench, profiles, numeric traits, a swap penalty and
   cooldown). Who runs cities (the owner's decision of 2026-11-21, docs/HOUSES.md rule 13): under
   City States and Aristocracy (the civics' `governed`, which replaced `direct_rule`) every city is
   governed, the capital included, and adopting one hands every city over; under any other civic a
@@ -467,7 +465,7 @@ flag.
   ship of its owner in a home water area, costing at most 24 (1 a plot with a road or in its own
   territory, 3 elsewhere; enemy units, enemy cities, manned forts' neighbours, water and closed
   borders cannot be crossed). Cut, the army is hungry for 2 of its owner's turns (its units do not
-  heal, its recruits wait), then starving (each unit loses 10% of its full HP a turn, down to 25%,
+  heal), then starving (each unit loses 10% of its full HP a turn, down to 25%,
   never killed; it deals 25% less damage in battles). It replaces the old supply rule (within
   `ARMY_SUPPLY_RANGE` of the trade network, which only paused recruits). Save format 29.
   Since 2026-11-23 (the owner's decision) an army within its owner's borders needs no line: on a
@@ -528,8 +526,8 @@ flag.
 - **The sea, phase 3: fleets** (docs/NAVAL.md, section 7; 2026-11-11, the owner's direction). A
   player's warships and ships with cargo room serve in named fleets ("1st Fleet"), the armies'
   container at sea (`Army::domain`): kept in one group, formed, split, joined, merged, renamed,
-  disbanded (the ships sail to the nearest port, then belong to no fleet), a target size, requisition
-  from coastal cities (the ship sails to the fleet over water in range), upgrade all; no supply line,
+  disbanded (the ships sail to the nearest port, then belong to no fleet), a coastal city's
+  waypoint (its ships sail to the fleet), upgrade all; no supply line,
   no battle tactic, no garrison (a ship in port in no fleet is simply a ship; a lone ship at sea is a
   one-ship fleet). A fleet holds a standing order the rules carry out: Patrol of a sea (it sails
   there and patrols) or Escort of an army or group (it moves onto its target's water plot after each
@@ -544,7 +542,7 @@ flag.
   cost) founds one, and the Settler can (`MISSION_FOUND` with data1 1), on a coastal site off the
   capital's landmass: population 2 at most, radius 1 (borders at culture level 1 at most), builds
   nothing, no governor, no maintenance, not counted in the number-of-cities costs (maintenance,
-  civic upkeep, anarchy, the Kuriotates' limit), never a capital, cannot requisition; a player left
+  civic upkeep, anarchy, the Kuriotates' limit), never a capital; a player left
   with outposts only is eliminated; captured, it stays an outpost; raised to a city for 150 gold
   (times the speed's construct percent). *Lanes*: at its owner's turn start an outpost's lane to the
   nearest non-outpost city of its owner is traced; while cut or missing the outpost and its plots
@@ -1386,7 +1384,7 @@ flag.
   four Archers). The AI needs nothing new: it is the Defense role's best pick while it costs 50 hammers
   (`production::best_unit`, city defence 550 against the Warrior's 375; at 250 hammers the
   production turns put it behind), it never passes Attack (no `ATTACK` AI), so the spare-production
-  step does not take it, and requisition never takes a limited class, so it garrisons. Measured
+  step does not take it, and it garrisons. Measured
   (seeds 1-8, 150 turns, 4 civilizations): 59 trained, one in most civilizations by turn 50 and
   two in 21 of 32 by turn 100, when no civilization had an Archer yet, none with more than two by
   turn 150; 9 kills and 3 losses. (Two AI fixes for the national price: the unit choice weighs a
@@ -1645,7 +1643,7 @@ that no player chooses):
 - **Governors' military need** counts a war with a rival whose city is near, not any war (every
   civ is at war with the barbarians, so every nearby rival read as a war).
 - **An army disbanding into a city that is lost** becomes an army again (it stayed "disbanding"
-  for good, refusing requisitions).
+  for good).
 
 **Human play (ffh-play; docs/PLAY_DESIGN.md §10)**
 

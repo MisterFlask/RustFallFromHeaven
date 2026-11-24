@@ -33,7 +33,7 @@ function header(u, figure) {
   const name = u.name ?? dname("UnitType", u.type);
   const sub = [
     u.level !== undefined && u.level !== null ? `Level ${u.level}` : null,
-    u.moves !== undefined && u.moves !== null && !u.march ? `${moves(u.moves)}/${moves(u.max_moves)} moves` : null,
+    u.moves !== undefined && u.moves !== null ? `${moves(u.moves)}/${moves(u.max_moves)} moves` : null,
     u.strength !== undefined && u.strength !== null ? `strength ${u.strength}` : null,
   ].filter(Boolean);
   const bhp = battleHp(u);

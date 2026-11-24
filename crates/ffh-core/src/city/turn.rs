@@ -205,7 +205,7 @@ impl Game {
 
         // Interface: clear the city selection.
 
-        // This game's armies: it leaves every requisition; recruits marching to it go elsewhere.
+        // This game's armies: an army disbanding into it stays an army.
         self.city_army_lost(c);
 
         let plot = self.city_plot(c);
@@ -610,26 +610,22 @@ impl Game {
     /// building / project / process type, `data2` = UnitAI for `ORDER_TRAIN`, -1 = the unit's
     /// default). Python events `cityBuildingUnit` / `cityBuildingBuilding`.
     ///
-    /// This game's armies and governors (docs/ARMIES.md, docs/GOVERNORS.md): requisition orders,
-    /// then a governed city's empire orders, stay at the front of the queue (its lead orders,
-    /// [`Game::city_lead_orders`]). An order pushed to the front (`!append`) goes behind them, and
-    /// `pop` takes off the first order behind them (what the city builds next), never a lead order.
+    /// This game's governors (docs/GOVERNORS.md): a governed city's empire orders stay at the front
+    /// of the queue (its lead orders, [`Game::city_lead_orders`]). An order pushed to the front
+    /// (`!append`) goes behind them, and `pop` takes off the first order behind them (what the
+    /// city builds next), never a lead order.
     #[allow(clippy::too_many_arguments)]
     pub fn city_push_order(&mut self, c: CityId, order: OrderType, data1: i32, data2: i32, save: bool, pop: bool, append: bool, force: bool) {
         self.city_push_order_kind(c, order, data1, data2, save, pop, append, force, OrderKind::Own);
     }
 
-    /// The number of orders leading city `c`'s queue: its requisition orders, then its empire
-    /// orders (docs/ARMIES.md, docs/GOVERNORS.md).
+    /// The number of orders leading city `c`'s queue: its empire orders (docs/GOVERNORS.md).
     pub fn city_lead_orders(&self, c: CityId) -> usize {
-        let q = &self.cities[c].order_queue;
-        let req = q.iter().take_while(|o| o.requisition).count();
-        req + q[req..].iter().take_while(|o| o.empire).count()
+        self.cities[c].order_queue.iter().take_while(|o| o.empire).count()
     }
 
-    /// [`Game::city_push_order`] for an order of `kind`: an own order as there; a requisition
-    /// order behind the other requisition orders; an empire order behind the requisition orders
-    /// and the earlier empire orders (`append` is for own orders only; lead orders never repeat).
+    /// [`Game::city_push_order`] for an order of `kind`: an own order as there; an empire order
+    /// behind the earlier empire orders (`append` is for own orders only; lead orders never repeat).
     /// Returns where the order went in the queue (`None`: it was not valid).
     #[allow(clippy::too_many_arguments)]
     pub fn city_push_order_kind(&mut self, c: CityId, order: OrderType, data1: i32, data2: i32, save: bool, pop: bool, append: bool, force: bool, kind: OrderKind) -> Option<usize> {
@@ -641,14 +637,10 @@ impl Game {
             self.city_pop_order(c, lead as i32, false, false);
         }
 
-        // This game's rituals (`ffh::rituals`): an army's requisition or an empire order does not
-        // go in front of a ritual in progress (its production would be lost).
-        if kind != OrderKind::Own && self.city_ritual_in_progress(c).is_some() {
-            let q = &self.cities[c].order_queue;
-            let index = if kind == OrderKind::Requisition { q.iter().take_while(|o| o.requisition).count() } else { self.city_lead_orders(c) };
-            if index == 0 {
-                return None;
-            }
+        // This game's rituals (`ffh::rituals`): an empire order does not go in front of a ritual
+        // in progress (its production would be lost).
+        if kind != OrderKind::Own && self.city_ritual_in_progress(c).is_some() && self.city_lead_orders(c) == 0 {
+            return None;
         }
 
         let mut valid = false;
@@ -706,16 +698,13 @@ impl Game {
         }
 
         let own = kind == OrderKind::Own;
-        let order_data = OrderData { order_type: order, data1, data2, save: save && own, dest: None, requisition: kind == OrderKind::Requisition, empire: kind == OrderKind::Empire };
+        let order_data = OrderData { order_type: order, data1, data2, save: save && own, empire: kind == OrderKind::Empire };
 
         // (The Python event above may have changed the queue: count the lead orders again.)
-        let q = &self.cities[c].order_queue;
-        let requisitions = q.iter().take_while(|o| o.requisition).count();
         let lead = self.city_lead_orders(c);
         let (index, front) = match kind {
-            OrderKind::Own if append => (q.len(), false),
+            OrderKind::Own if append => (self.cities[c].order_queue.len(), false),
             OrderKind::Own | OrderKind::Empire => (lead, lead == 0),
-            OrderKind::Requisition => (requisitions, requisitions == 0),
         };
         if front {
             self.city_stop_head_order(c);
@@ -759,14 +748,7 @@ impl Game {
         let order = self.cities[c].order_queue[index].clone();
 
         if finish && order.save {
-            let len = self.cities[c].order_queue.len();
             self.city_push_order(c, order.order_type, order.data1, order.data2, true, false, true, false);
-            // (this game's armies: the repeated order keeps its destination; a requisition never
-            // repeats, its army requisitions again while it is short)
-            if self.cities[c].order_queue.len() > len {
-                let o = self.cities[c].order_queue.last_mut().expect("pushed");
-                o.dest = order.dest;
-            }
         }
 
         let mut train_unit = None;
@@ -831,12 +813,10 @@ impl Game {
                         }
                     }
 
-                    // This game's armies (docs/ARMIES.md): a unit bound elsewhere (an army, another
-                    // city's garrison) marches there; an army standing here takes it at once.
+                    // This game's armies (docs/ARMIES.md): a trained unit stays in its city, unless
+                    // the city's waypoint sends it on (`army/waypoint.rs`).
                     if self.units.contains(new_unit) && self.cities.contains(c) {
-                        if let Some(dest) = self.city_recruit_dest(c, order.dest, unit) {
-                            self.unit_recruit_to(new_unit, c, dest);
-                        }
+                        self.city_send_to_waypoint(c, new_unit, order.empire);
                     }
                 }
             }

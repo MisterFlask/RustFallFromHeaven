@@ -471,7 +471,7 @@ fn a_defector_leaves_its_army_and_the_game_saves() {
             assert!(g.groups[grp].units.iter().all(|&u| g.units.contains(u) && g.units[u].owner == p));
         }
     }
-    assert!(g.players[np].units.iter().all(|&u| g.units[u].army.is_none() && g.units[u].march.is_none()));
+    assert!(g.players[np].units.iter().all(|&u| g.units[u].army.is_none()));
     let bytes = g.save();
     let h = Game::load(d, &bytes).expect("reload");
     assert_eq!(h.save(), bytes, "the same game");

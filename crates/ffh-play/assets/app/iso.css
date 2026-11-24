@@ -344,7 +344,6 @@ html.iso .unit-chip .chip-moves.full { background: #5ee05e; }
 html.iso .unit-chip .chip-moves.part { background: #f0c040; }
 html.iso .unit-chip .chip-moves.spent { background: #8a2a20; }
 html.iso .unit-chip .chip-mark { position: absolute; right: 1px; top: 1px; }
-html.iso .unit-chip .chip-mark.march { color: #e0a040; line-height: 16px; }
 html.iso .unit-chip .chip-count { position: absolute; right: 3px; bottom: 7px; color: #fff8e4; line-height: 16px; text-shadow: 0 0 2px #000, 1px 1px 0 #000; }
 
 /* On a wide screen the strip stands over the card, on the map (its rows grow upwards; the gaps

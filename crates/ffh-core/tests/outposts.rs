@@ -426,21 +426,10 @@ fn outposts_survive_a_save() {
 // ---- With fleets and armies (docs/NAVAL.md, 7 and 9) ----
 
 #[test]
-fn an_outpost_is_no_requisition_city_and_a_colonist_serves_in_no_army() {
-    let mut w = world();
-    let c = w.outpost();
+fn a_colonist_serves_in_no_army() {
+    let w = world();
     let d = w.g.d;
     assert_eq!(w.g.unit_type_army_domain(d.t::<UnitType>("UNIT_COLONIST")), None, "a Colonist is neither an army's nor a fleet's");
-    // An army and a fleet, both refused the outpost; both take the port.
-    let men: Vec<UnitId> = (0..2).map(|_| w.unit(w.p0, "UNIT_WARRIOR", 12, 10)).collect();
-    let army = w.g.army_form(w.p0, &men).unwrap();
-    assert_eq!(w.g.army_add_requisition(w.p0, army, c), Err("an outpost sends no recruits"));
-    assert!(w.g.army_add_requisition(w.p0, army, w.port).is_ok());
-    let ships: Vec<UnitId> = (0..2).map(|_| w.unit(w.p0, "UNIT_TRIREME", 13, 10)).collect();
-    let fleet = w.g.army_form(w.p0, &ships).unwrap();
-    assert!(w.g.army_is_fleet(fleet));
-    assert_eq!(w.g.army_add_requisition(w.p0, fleet, c), Err("an outpost sends no recruits"));
-    assert!(w.g.army_add_requisition(w.p0, fleet, w.port).is_ok());
 }
 
 #[test]

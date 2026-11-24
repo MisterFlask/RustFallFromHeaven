@@ -212,7 +212,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `House::perk_on`; `LogMark::House`, `LogTag::House`.
 /// - 65: the merge of raids and Houses.
 /// - 67: the merge of trade (master's 63 to 66) with raids and Houses: all three sets of fields.
-pub const FORMAT_VERSION: u32 = 67;
+/// - 68: recruitment removed (docs/ARMIES.md): no `Unit::march`, `Army::requisition`,
+///   `OrderData::dest`, `requisition`, `City::recruit_default`; waypoints: `City::waypoint`,
+///   `Unit::waypoint`.
+pub const FORMAT_VERSION: u32 = 68;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

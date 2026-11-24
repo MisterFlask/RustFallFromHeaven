@@ -1048,7 +1048,7 @@ plot falls or the odds turn bad, and moves in.
   of the sea it decides to patrol, and an Escort order of a loaded assault transport at sea that
   has none (ended when the cargo is gone or the escort worn, out of range or hurt); a fleet that
   decides again leaves its order first. Its armies' logistics (`armies.rs`), tactics and supply
-  telemetry leave fleets out. It requisitions no ship.
+  telemetry leave fleets out. It places no ship orders for a fleet and sets no waypoints.
 
 - **Overseas sites**: when no site is left on a landmass where we have cities, `sites.rs` also
   scores the coastal plots of other landmasses within 14 plots of our coastal cities.
@@ -1662,112 +1662,55 @@ are rare by then, and a building nearly always outscores a gold a turn.
 
 ## Armies (`armies.rs`)
 
-This game's own system (docs/ARMIES.md). The rules' army sync gives every
-group of army units an army, so the AI's movement logic (`military.rs`, `campaign.rs`) drives each
-army unchanged: a city-attack stack is an army, a city's defenders are its garrison. What an
-expert adds is logistics, once a turn before the governed cities. Since
-the owner's redesign of 2026-10-31 (docs/ARMIES.md, "Requisition", "Marching recruits") the
-reinforcements are requisitioned and march on the map; before, the governed cities nearest the
-enemy fed the main army and every reinforcement travelled off the map.
+This game's own system (docs/ARMIES.md). The rules' army sync gives every group of army units an
+army, so the AI's movement logic (`military.rs`, `campaign.rs`) drives each army unchanged: a
+city-attack stack is an army, a city's defenders are its garrison. A trained unit stands in the
+city that trained it; the AI sets no waypoints. What an expert adds is the army's reinforcements,
+once a turn before the governed cities. The rules' requisition and marching recruits, which this
+section described until 2026-11-23, were removed with the rules (docs/AI_LOG.md, "Requisition and
+marching recruits").
 
 - **The main army and its target size.** At war, or preparing one, the main field army is the
   largest army of at least two units in supply and not disbanding (the nearest to the enemy's
-  cities on ties); its target size is the army the war needs (`diplomacy::army_needed_for_war`),
-  and no other army has one (at peace, none). The main army so far stays the main one while it is
-  at least two thirds the size of the largest; out of supply it is no main army for the turn
-  (rather than a pair of units at home), unless an army in supply is as large by that measure.
-  Switching whenever another stack was a unit larger (the AI's stacks split for strikes and merge
-  again) withdrew 35% of the requisition orders placed in the first six games, 27% with the rule
-  (most of them re-placed at once in the same cities for the same unit, whose progress the rules
-  keep with the unit type).
-- **Requisition** (`requisition_cities`). While the main army is short of its target (the rules'
-  shortfall: its units, the recruits marching to it, its requisition orders and the orders bound
-  for it at the head of a queue counted), it requisitions from as many cities as it lacks units,
-  the ones an expert draws on: the city whose unit would join soonest (its production turns there
-  plus its march by land, within 20 turns; a guess from the distance ranks them, the land path
-  confirms the first ones), governed cities first (their production is the governor's
-  development), a directly ruled city only when what it would interrupt is worth less (not a
-  wonder, a ritual, a settler, a worker, a hero or a ship, not the last 3 turns of a building, not
-  an attacker already bound for the army, which counts toward the target as it is). Never a city
-  that needs its production for itself: one without a defender, under a threat its garrison would
-  not hold (`production::emergency`'s test), short of the defenders against revolt pressure, or
-  training a defender of its own; a city in that state is released, its order withdrawn. A city
-  whose order is under way keeps it while it can spare it; through a turn without a main army
-  while the war lasts, the orders under way stay where the city can still spare them and no new
-  ones are placed. The unit
-  (`requisition_unit`, the AI's `Controller::requisition_unit`, the governors' old feeding
-  choice): siege while siege is less than a third of the army (its recruits and requisition
-  orders counted), then the best attacker against cities; only army units.
-- **Directly ruled cities' attackers.** The attack units the directly ruled cities choose to train
-  (attack, city attack, collateral, counter roles) go to the main army too: they march to it.
-  The rules count such an order at the head of a queue against the army's shortfall, and a city
-  training one is not requisitioned on top of it, so the two never count twice; a requisition
-  beyond the shortfall is withdrawn by the rules. Defenders and everything else stay in their
-  city's garrison.
-- **Marching recruits are the rules' to move.** `units::play` gives a group with a marching unit
-  no orders (checked before the force-update re-plan, which would wake the rules' held marchers),
-  `military::is_army_unit`
-  leaves them out of the stacks, the transports and every count of our stacks (`campaign.rs`,
-  `naval.rs`), `production::garrison` and the sortie test do not count them among the defenders of
-  the city they stand in, and no escort, disbanding, cast (end-of-turn spells, barrage, world
-  spells, the Sidar's Wane, the Balseraphs' Arena, the Infernals' Manes, the Bannor's Recruit),
-  promotion or upgrade takes one. The empire-wide counts of units (the armed forces, the staged
-  army before a declaration) still include them.
-- **Requisition orders are the army's.** Where the AI clears a city's queue (the emergency switch
-  to a defender, the rebuild in financial trouble, the governor's defence against revolt
-  pressure, a process giving way) it keeps the requisition orders at the front
-  (`production::clear_own_orders`); a city with only requisition orders queued chooses what comes
-  after them; a requisition unit is not the city's own fighter for the emergency switch nor its
-  emergency for a hurry.
+  cities on ties); its target size (`Army::target_size`, the AI's bookkeeping: the rules do not
+  read it) is the army the war needs (`diplomacy::army_needed_for_war`), and no other army has one
+  (at peace, none). The main army so far stays the main one while it is at least two thirds the
+  size of the largest; out of supply it is no main army for the turn (rather than a pair of units
+  at home), unless an army in supply is as large by that measure. (Switching whenever another
+  stack was a unit larger, as the AI's stacks split for strikes and merge again, withdrew a third
+  of the requisition orders placed in the first games.)
+- **Orders for the army** (`order_cities`). While the main army is short of its target size
+  (`shortfall`: its units, our field units outside it on its landmass, and the field orders in our
+  queues, the empire orders and a directly ruled city's own field unit at the head of its queue,
+  counted), the AI places empire unit orders (docs/GOVERNORS.md: ahead of the governor's choice) in
+  as many governed cities as the army lacks units, one per city: cities on the army's landmass
+  whose unit can reach it by land, the soonest to deliver first (its production turns there plus
+  its march by land, within 20 turns, `ORDER_HORIZON`; a guess from the distance ranks them, the
+  land path confirms them). Not a city that needs its production for itself (`can_spare`: one
+  without a defender, under a threat its garrison would not hold, or training a defender of its
+  own), nor one with an empire order already queued or a ritual under way. Nothing is withdrawn:
+  an order beyond the need completes, and a city in danger drops its empire orders for a defender
+  (`governor::yield_to_defense`). Directly ruled cities get no such orders: they choose by
+  `production.rs`. The unit (`reinforcement_unit`): siege while siege is less than a third of the
+  army, then the best attacker against cities; only army units.
+- **Gathering.** The new attackers stand in their cities as any unit; the campaign's movement
+  (`campaign.rs`) commits the stacks near the war's target and gathers them, and an idle field
+  stack with nothing else to do this turn on the main army's landmass walks to it
+  (`armies::join_main_army`, `military::army`'s last resort, not beyond our supply line).
+- **Empire orders are the player's.** Where the AI clears a city's own orders (the emergency switch
+  to a defender, the rebuild in financial trouble, a process giving way) it keeps the empire orders
+  at the front (`production::clear_own_orders`); the one case that drops them is a governed city
+  in danger (`governor::yield_to_defense`, above); a unit of an empire order is the army's, not the
+  city's own fighter for the emergency switch.
 - **Defenders in the garrison.** A city defender that walked to another of its cities was an army
   of one there (the rules keep an army that enters a city an army); it joins that city's garrison,
   so the garrison shows what holds the city and the Armies screen only the field armies (a taken-over
-  turn-180 game had 10 armies of one unit, most of them defenders in cities). Units on their way to
-  such an army go to that garrison.
+  turn-180 game had 10 armies of one unit, most of them defenders in cities).
 
-The measurements below name the switches `ARMIES` (off: every unit stayed in its city's garrison
-when trained and no army requisitioned) and `REQUISITION` (off: no army requisitioned; the
-directly ruled cities' attackers still marched to the main army), removed 2026-11-10. The `ffh`
-runner's controller wrappers (`Timed`, `CppCitizens` in
-`ffh-cli/src/run.rs`) now forward `requisition_unit` (and `govern_cities`): without it every
-`ffh stats` / `ffh autoplay` game took the rules' default unit, not the AI's.
-
-Measured (2026-10-31; 8 civs, standard map, 400 turns, seeds 1-6, armies, governors and cultural
-actions on; telemetry `march` / `transit` and `requisition`, totals over the six games):
-
-| | sent | arrived (turns) | diverted | stopped | killed | requisitions placed / withdrawn | cities taken by conquest | civ cities changing hands | wars declared |
-|---|---|---|---|---|---|---|---|---|---|
-| master 5a91f5a (feed mode, transit off the map) | 1013 | 982 (5.2) | 72 | 0 | 0 | - | 98 | 143 | 87 |
-| rules only (no AI requisition, the AI moving marchers) | 541 | 483 (5.1) | 70 | 0 | 45 | 0 / 0 | 132 | 165 | 78 |
-| this AI | 1053 | 925 (5.5) | 111 | 3 | 104 | 953 / 257 | 166 | 150 | 78 |
-| this AI, `REQUISITION` off | 608 | 529 (5.1) | 54 | 0 | 68 | 0 / 0 | 125 | 165 | 79 |
-
-The requisition brings the reinforcements back to the feed mode's volume (1053 recruits against
-1013 sent off the map; without it 608, the directly ruled cities' attackers alone), and more of
-the wars end in conquests (166 cities taken against 125 with it off on the same binary). The
-march costs what transit did not: a tenth of the recruits die on the way (104 of 1053; 68 of 608
-with the requisition off, the same share), mostly in their last turns near the front, where the
-army fights (killed 4.7 turns after setting out on average, against 5.5 for an arrival). In one
-game with the event stream (seed 3), 228 recruits marched to an army: 186 joined it (3.8 turns on
-average, 4.2 estimated), 26 were diverted to a garrison after waiting 5 turns, 11 were killed on
-the way. Turn times (`ffh bench`, all CPU slots, two rounds alternating): seed 1 33.3 / 34.9 ms
-a turn on master, 32.2 / 30.3 with the requisition; seed 3 44.2 / 43.7 and 40.4 / 38.2 (other
-games, so only "no slower"). Not yet measured for win rate (the spec's tuning phase).
-
-Firings (seed 3, `FFH_AI_TRACE`), each forked there (`tools/ai-branch.sh --switch REQUISITION`):
-
-- Turn 125, the Luchuirp prepare a war: their 1st Army (2 of 9) requisitions from the directly
-  ruled Ithralia (a Warrior in 2 turns, 2 to march), at turn 129 from Mutanbo (4 + 4); by turn 138
-  it has 9 and takes one more from Ithralia; at turn 154 it is full and requisitions from none.
-  Forked: 16-17 field units at turns 133-135 against 14-15 without, the war declared at turn 139
-  (141 without), two cities taken by turn 151 against one, peace at turn 153.
-- Turn 138, the Hippus prepare a war: their 1st Army (2 of 10) requisitions from the governed
-  Conrond Mor (9 + 3), Gaene (9 + 4) and Feiss Mabdon (9 + 7) and the directly ruled Urgortheth
-  (4 + 0); a turn later Urgortheth, now threatened, is released and the governed Clar Marrachir
-  (3 + 6) takes its place. Forked: 22-23 field units from turn 147 against 18-20 without, but a
-  second city is lost at turn 151 (kept without), peace comes at turn 152 (154 without), and once
-  at peace the larger army's upkeep puts them in financial trouble: 14 units disbanded at turn
-  157 (3 in the whole branch without). A war the requisition fed but did not win.
+A sanity run (2026-11-23; `ffh-stress`, 4 seeds, 150 turns; not compared against the base, not a
+verdict): no panic or check failure; main armies of 4.8 to 6.7 units on average at war (max 8, the
+stack limit), 7 to 65 such empire orders a game, 1 to 2 civilization cities conquered a game by
+turn 150.
 
 ## Battle tactics (`tactics.rs`)
 
@@ -1932,10 +1875,10 @@ the AI's), the AI's empire priorities, and the AI's empire orders.
   of production, up to half again for the role's flavors (`ranked_buildings`); a missionary for a role that weighs religion; the role's process. Never
   a wonder or a palace (those are empire orders). `plan(g, c, n)` is the next `n` buildings in the
   order `decide` picks them (one ranking by the same score, no simulation of what each one changes;
-  the client shows it as the governor's plan). An army's requisition and the empire orders go
+  the client shows it as the governor's plan). The empire orders go
   ahead of the governor's choice, which resumes after them. The AI's emergency switch to a
   defender and its rebuild in financial trouble judge a governed city by this choice and keep the
-  requisition and empire orders; the wonder emphasis and the Philosophical great-people emphasis
+  empire orders; the wonder emphasis and the Philosophical great-people emphasis
   keep to directly ruled cities (a governed city's emphasis is its role's).
 - **Empire orders** (`turn`, once a turn before `armies::turn`, for an AI player whose cities are
   governed). In its capital and its three most productive other governed cities (`empire_cities`:
@@ -1945,8 +1888,8 @@ the AI's), the AI's empire priorities, and the AI's empire orders.
   governor does it itself (`empire_order`: a city defender, an ordinary building, a process). So
   settlers, wonders, rituals and world projects, heroes, casters, missionaries, explorers, ships,
   siege and field attackers come from those cities as they did from the directly ruled ones; a
-  field unit without a destination goes to the main army (`armies::turn` gives it one the same
-  turn). A governed city without a defender, or whose garrison the threat around it overwhelms,
+  field unit stands in its city when trained and the campaign's movement takes it to the main
+  army ("Armies"). A governed city without a defender, or whose garrison the threat around it overwhelms,
   drops its empire orders (their progress kept with each item) and its governor chooses again
   (`yield_to_defense`), which puts the defender first. Traced (`governors: empire order in ...`)
   and in telemetry (decision `empire_order` with the ladder's reason).

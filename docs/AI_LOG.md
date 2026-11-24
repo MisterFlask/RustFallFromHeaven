@@ -32,6 +32,41 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Requisition and marching recruits (2026-10-31 to 2026-11-23; removed, the owner's decision)
+
+A rules system with its AI, removed with the rules on 2026-11-23 and replaced by waypoints
+(docs/ARMIES.md). An army requisitioned soldiers from cities its owner picked: an order at the
+front of the city's queue while the army was short of its target size; every land-unit order had a
+destination (a garrison or an army, else the city's default); a unit bound elsewhere marched there,
+moved by the rules at the end of its owner's turn and out of its owner's hands until it arrived
+(diverted after `ARMY_TRANSIT_STALL_TURNS`, 5, turns without progress; waiting while its army was
+out of supply). The AI requisitioned for its main army (the soonest cities to deliver within 20
+turns, governed cities first) and sent its directly ruled cities' attackers to it.
+
+1. **Why it made sense**: the governed cities' feed mode and the off-map transit before it were
+   invisible; an army reinforced on the map, from cities the player chose, can be seen and cut,
+   and an expert keeps feeding the stack he fights with.
+2. **What the games showed** (8 civs, standard map, 400 turns, seeds 1-6, totals; against the same
+   binary with the AI's requisition off, `FFH_AI_REQUISITION_OFF=ALL`, a switch since removed):
+   recruits sent 1339 (877 with the requisition off), joined 1188 in 4.4 turns on average,
+   diverted 123, killed on the way 111 (8%; 6% with it off). Requisition orders placed 1045,
+   withdrawn 510: in seed 1, 25 of 41 withdrawals came from the main army changing (its losses
+   made another army the largest), about half of them placed again the same turn in the same city
+   for the new main army; the rest were orders beyond the shortfall. Cities taken by the
+   civilizations' conquest: 110, against 121 with the requisition off; the difference is seed 1
+   alone (5 against 22; the other seeds split both ways, from -5 to +10), within the seed noise.
+   In that seed one civilization lost 18 of its 24 recruits marching: a directly ruled city
+   trained a Warrior almost every turn for its army at war (its build destination, which the
+   requisition-off game sends as well). `ffh bench` was no slower. The first run (2026-10-31, the
+   same settings, an earlier build) had shown more conquests with the
+   requisition (166 cities against 125 off; a tenth of 1053 recruits killed on the way), which the
+   later run above did not confirm.
+3. **What it implies**: no measurable gain in conquest, about one recruit in twelve lost on the
+   way, half the requisition orders withdrawn, and the player lost control of the units and of
+   queue entries. Waypoints keep the one useful part (a city's units go to an army on the map)
+   under ordinary orders the player can override. The AI now places empire unit orders for its
+   main army in governed cities and gathers the units by its own movement (docs/AI.md, "Armies").
+
 ## Houses over a civilization's own cities (2026-11-21; a rules change, not measured)
 
 docs/HOUSES.md. Cultural channels and Houses as vassal players were removed, and a House became a

@@ -71,7 +71,7 @@ fn caster(g: &Game, units: &[UnitId], spell: SpellType, target: Option<SpellTarg
     units
         .iter()
         .copied()
-        .filter(|&u| g.units.contains(u) && g.unit_march(u).is_none())
+        .filter(|&u| g.units.contains(u))
         .filter(|&u| match target {
             Some(t) => g.unit_can_cast_at(u, spell, t),
             None => g.unit_can_cast(u, spell, false),
@@ -239,8 +239,9 @@ fn start_ritual(g: &mut Game, c: CityId, pr: ProjectType, why: &str) -> bool {
     if !g.city_can_create(c, pr, false, false) || g.city_production_turns_left_project(c, pr, 0) > RITUAL_MAX_TURNS {
         return false;
     }
-    // (An army's requisition stays at the head of the queue; a world ritual under way too.)
-    if g.cities[c].order_queue.first().is_some_and(|o| o.requisition) || crate::world_rituals::locked(g, c) {
+    // (A field unit ordered for the army stays at the head of the queue; a world ritual under
+    // way too.)
+    if g.cities[c].order_queue.first().is_some_and(|o| crate::armies::is_army_order(g, o)) || crate::world_rituals::locked(g, c) {
         return false;
     }
     let p = g.cities[c].owner;

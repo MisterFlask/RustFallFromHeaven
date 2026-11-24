@@ -92,7 +92,7 @@ fn each_army_s_supply_is_in_the_view_with_its_line_and_words() {
     assert!(sup.get("line").is_some_and(Json::is_null), "{sup:?}");
     let of = d.defines.supply_hunger_turns as i64;
     assert_eq!((int(sup, "turn"), int(sup, "of"), int(sup, "turns_to_starvation")), (1, of, of));
-    assert_eq!(text(sup, "text"), format!("Hunger: turn 1 of {of}. No healing, no recruits."));
+    assert_eq!(text(sup, "text"), format!("Hunger: turn 1 of {of}. No healing."));
     assert!(!army.get("in_supply").and_then(Json::as_bool).unwrap());
 
     // The path query's readout, for the units of one army: supplied on its own plot, not where

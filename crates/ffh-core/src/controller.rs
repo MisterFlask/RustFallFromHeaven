@@ -29,14 +29,6 @@ pub trait Controller: Send + Sync {
     /// C++ `CvCityAI::AI_chooseProduction`: push at least one order if the queue is empty.
     fn choose_production(&self, _g: &mut Game, _c: CityId) {}
 
-    /// This game's armies (docs/ARMIES.md): the unit (and its UnitAI) city `c` trains for army
-    /// `a`'s requisition, `None` when it can train none for it (the city is skipped this turn).
-    /// Called in the owner's turn processing. Default: [`Game::requisition_unit_default`] (siege
-    /// while it is less than a third of the army, else the strongest unit against cities).
-    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
-        g.requisition_unit_default(c, a)
-    }
-
     /// This game's city works (docs/WORKS.md): the build city `c`'s crews work on next and its
     /// plot, `None` for nothing now. Called in the city's turn when its crews have no build they
     /// can go on with; an answer [`Game::city_crews_can_build`] refuses counts as `None`. Default:

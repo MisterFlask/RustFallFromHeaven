@@ -15,7 +15,7 @@ import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "
 import * as T from "./tiles.js";
 import { stackHead, stackReady } from "./stacks.js";
 import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
-import { IsoMap, ISO_DEFAULT_ZOOM, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
+import { IsoMap, ISO_DEFAULT_ZOOM, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { starHit, plateHitAt, plateTip } from "./plates.js";
 import { drawTradeFlat } from "./trade.js";
@@ -1547,12 +1547,8 @@ export class MapView {
           g.fillStyle = f > 0.6 ? "#4caf50" : f > 0.3 ? "#e0b030" : "#e04030";
           g.fillRect(bx + 2, by + s - 4, (s - 4) * f, 3);
         }
-        // Moves pip (own units): green with moves left, red without, grey when asleep; a
-        // marching recruit's march mark instead (this game's armies: the rules move it).
-        if (marchMark(top, mine) && s >= 10) {
-          const r = Math.max(3.5, s / 6);
-          drawMarchMark(g, bx + r + 0.5, by + r + 0.5, r, 1);
-        } else if (top.owner === mine && s >= 10) {
+        // Moves pip (own units): green with moves left, red without, grey when asleep.
+        if (top.owner === mine && s >= 10) {
           const r = Math.max(2, s / 9);
           const asleep = ASLEEP.includes(tname("ActivityType", top.activity));
           g.fillStyle = asleep ? "#9a9a9a" : stackReady(units, top, mine, sel) ? "#3fdc5a" : "#d03a2a";

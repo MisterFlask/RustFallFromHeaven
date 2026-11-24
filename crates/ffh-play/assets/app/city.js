@@ -4,8 +4,7 @@
 // garrison; hurry, draft, emphasis, automated citizens and production; the production queue
 // and the chooser (units, buildings, projects (FfH rituals) and processes with cost and turns):
 // click replaces the current production, Shift-click appends, Ctrl-click inserts at the front
-// (C++ `CvNetPushOrder`'s flags), ✕ removes an order while the queue holds several (not an
-// army's requisition order: "Requisitioned by the 1st Army", released on the Armies screen).
+// (C++ `CvNetPushOrder`'s flags), ✕ removes an order while the queue holds several.
 //
 // Every button sends what the Civ4 city screen sends (`do_task`, `push_order`, `pop_order`), and
 // the server says which are possible (the `city` query: `plus`/`minus` per specialist,
@@ -21,7 +20,7 @@ import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, isoIcon, queueIcon, refreshCityPanel } from "./isoui.js";
 import { plotState } from "./citywork.js";
 import { infoTip, moodTip, roomText } from "./infotips.js";
-import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
+import { garrisonView, waypointView } from "./armies.js";
 import { governanceView } from "./governors.js";
 import { houseCityView } from "./houses.js";
 import { addHelp } from "./help.js";
@@ -190,7 +189,7 @@ export async function openCity(id, { popup = false } = {}) {
     if (m.closed || n !== loading) return;
     current = c;
     m.el.dataset.city = String(cityId);
-    m.setBody(popup ? promptView(c, { choose, remove, tap: [tapMode, setTapMode], reload: load }) : screen(c, { task, choose, remove, go, overlay, tap: [tapMode, setTapMode], reload: load }));
+    m.setBody(popup ? promptView(c, { choose, remove, tap: [tapMode, setTapMode], reload: load }) : screen(c, { task, choose, remove, go, overlay, tap: [tapMode, setTapMode], reload: load, close: () => m.close(null) }));
     if (overlay) {
       const mine = me()?.player;
       // A click works the plot of the city these plots are of (Previous / Next may have moved on).
@@ -882,9 +881,9 @@ function crewsLine(c) {
   return h("div.row.dim", { id: "city-crews", title: `Work rate: ${crews.rate}` }, `Work crews: ${what}`);
 }
 
-/** The production queue (`ol.queue`). `compact` (the build prompt): the orders' names, turns and
- *  ✕ only, without the garrison destinations; an empty queue is the one line. */
-function queueView(c, remove, reload, { compact = false } = {}) {
+/** The production queue (`ol.queue`). `compact` (the build prompt): an empty queue is the one
+ *  line. */
+function queueView(c, remove, { compact = false } = {}) {
   // This game's governors: a governed city's production is its governor's; the player places
   // empire orders there (units, wonders, palaces, rituals), which can be taken off.
   const locked = !!c.governance?.governed;
@@ -896,14 +895,11 @@ function queueView(c, remove, reload, { compact = false } = {}) {
             "li",
             h("span", orderName(o.order, o.type)),
             h("span.dim", o.turns !== null ? ` ${turns(o.turns)}` : ""),
-            // This game's armies: where a land combat unit goes when trained; a requisition order
-            // is its army's.
-            o.requisition ? requisitionTag(o) : locked || compact ? [o.empire ? h("span.dim.empire-tag", " · empire order") : null, o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null] : recruitControls(c, i, o, reload),
+            o.empire ? h("span.dim.empire-tag", " · empire order") : null,
             // The exe pops an order only while the queue holds more than one (CvGameInterface
-            // `getOrderQueueLength() > 1`); the only order is replaced by choosing another. A
-            // requisition order is released on the Armies screen, not here.
+            // `getOrderQueueLength() > 1`); the only order is replaced by choosing another.
             // In a governed city only an empire order comes off (the governor resumes after it).
-            (locked ? o.empire : c.queue.length > 1 && !o.requisition) ? h("button.small", { title: locked ? "Take the empire order off" : "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
+            (locked ? o.empire : c.queue.length > 1) ? h("button.small", { title: locked ? "Take the empire order off" : "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
           ),
         )
       : h("li.dim", locked ? "Nothing yet: the governor chooses when your turn ends." : compact ? "Nothing is being built." : "Nothing: choose below."),
@@ -983,7 +979,7 @@ function buildLists(c, choose) {
 
 /** The full screen's production: the current build's progress, the queue, what a tap does, then
  *  the build lists (in a governed city, what may be an empire order). */
-function productionView(c, choose, remove, tap, reload) {
+function productionView(c, choose, remove, tap) {
   const prod = c.production;
   // This game's governors: a governed city's production is its governor's; the player places
   // empire orders there.
@@ -999,8 +995,8 @@ function productionView(c, choose, remove, tap, reload) {
         prod.current ? `${prod.stored}/${prod.needed ?? "-"} (+${prod.rate} per turn)` : h("span.warn", "Nothing is being built."),
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
-      queueView(c, remove, reload),
-      locked ? [h("p.dim.governed-note", "Empire orders: units, wonders, palaces and rituals. The governor builds the rest: see Governance below."), requisitionNote(c)] : null,
+      queueView(c, remove),
+      locked ? h("p.dim.governed-note", "Empire orders: units, wonders, palaces and rituals. The governor builds the rest: see Governance below.") : null,
       locked ? null : chooseModes(tap, true),
     ),
     ...buildLists(c, choose),
@@ -1013,23 +1009,25 @@ function promptView(c, { choose, remove, tap, reload }) {
   const locked = !!c.governance?.governed;
   return [
     h("div.city-summary.prompt-summary", summaryRow(c, { prompt: true }), specialtyView(c, reload)),
-    queueView(c, remove, null, { compact: true }),
+    queueView(c, remove, { compact: true }),
     locked ? h("p.dim.governed-note", "Empire orders: units, wonders, palaces and rituals. The governor builds the rest.") : chooseModes(tap, true),
     h("div.prompt-builds", buildLists(c, choose)),
   ];
 }
 
-function screen(c, { task, choose, remove, overlay, tap, reload }) {
+function screen(c, { task, choose, remove, overlay, tap, reload, close }) {
   // On the map (the isometric interface) the plots are worked there: citywork.js draws the
   // citizens on them; the dialog shows them as a grid.
   const plots = overlay ? null : plotGrid(c, task);
   const left = h("div.city-col", siegeView(c), raidView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), routesView(c), buildingsView(c, reload));
-  // What to build first; then the orders, where trained units go (armies.js) and the governance.
+  // What to build first; then the orders, the garrison and the waypoint (armies.js) and the
+  // governance.
   // An outpost builds nothing and has no governor: its lane and Raise to city instead.
   if (c.outpost) return [summaryView(c, reload, overlay), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];
-  const garrison = c.governance?.governed ? null : recruitView(c, reload);
+  const garrison = garrisonView(c);
+  const waypoint = waypointView(c, reload, close);
   // The sally posture beside the garrison (docs/RAIDS.md, section 4).
-  const right = h("div.city-col", productionView(c, choose, remove, tap, reload), manageView(c, task), garrison ? h("div.section.recruit", garrison) : null, sallyView(c, reload), governanceView(c, reload));
+  const right = h("div.city-col", productionView(c, choose, remove, tap), manageView(c, task), garrison || waypoint ? h("div.section.garrison-section", garrison, waypoint) : null, sallyView(c, reload), governanceView(c, reload));
   // This game's Houses (docs/HOUSES.md, rule 15): the city's House under its governance (houses.js).
   const house = c.owner === me()?.player ? houseCityView(c) : null;
   if (house) right.append(house);

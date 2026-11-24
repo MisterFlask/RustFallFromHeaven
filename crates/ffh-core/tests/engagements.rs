@@ -3,7 +3,7 @@
 //! `unit_attack`) on small staged worlds: a squad's places and lanes, each kind's reach in the log
 //! and a city's capture; the plot that falls only when no defender is left (a squad in reserve);
 //! an ordered squad and the strongest; large units; siege units' caps on either side; defensive
-//! strikes from the reserve and splash; fear; withdrawals on both sides; a marching recruit's; a
+//! strikes from the reserve and splash; fear; withdrawals on both sides; a
 //! held line; hidden nationality in the report; the defenders left; an immortal reborn; a
 //! conversion once after two kills; battle XP before the per-kill effects; captures and slaves
 //! outside the army; Hidden's quirk with no free plot; Blitz; Taunt; the AI's preamble; a missile
@@ -20,7 +20,6 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use ffh_core::army::{March, RecruitDest};
 use ffh_core::controller::{AiHook, Controller};
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
 use ffh_core::engagement::report::{BattleLog, BattleReport, DecidedBy, LogEvent, LogFate, SatOutWhy};
@@ -148,23 +147,6 @@ impl World {
 
     fn alive(&self, u: UnitId) -> bool {
         self.g.units.contains(u) && !self.g.unit_is_dead(u)
-    }
-
-    /// A land plot with no unit and no owner at least `dist` plots from `near`.
-    fn far_plot(&self, near: PlotIdx, dist: i32) -> PlotIdx {
-        let (nx, ny) = self.g.map.xy(near);
-        self.g
-            .map
-            .plot_ids()
-            .find(|&p| {
-                let (x, y) = self.g.map.xy(p);
-                !self.g.plot_is_water(p)
-                    && !self.g.plot_is_peak(p)
-                    && self.g.map.plots[p].owner.is_none()
-                    && self.g.map.plots[p].units.is_empty()
-                    && self.g.plot_distance(x, y, nx, ny) >= dist
-            })
-            .expect("a far plot")
     }
 }
 
@@ -832,33 +814,6 @@ fn reports_survive_a_save() {
     assert_eq!(killed, reports[0].sides[1].lost.iter().map(|(_, n)| n).sum::<i32>());
 }
 
-/// A marching recruit on the defended plot defends like any unit there; one that withdraws (outside
-/// a city) flees and still marches, in no army. Every battle.
-#[test]
-fn a_marching_recruit_defends_and_keeps_its_march() {
-    let mut w = world();
-    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    let home = w.far_plot(to, 6);
-    let c = w.city(p1, home, 0);
-    let recruit = w.unit(p1, "UNIT_WARRIOR", to);
-    w.g.unit_change_extra_withdrawal(recruit, 100);
-    let dest = RecruitDest::Garrison(c);
-    w.g.units[recruit].march = Some(March { dest, stalled: 0, left_turn: 0, from_city: c, diverted: false });
-    w.g.player_army_sync(p1);
-    let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
-    w.army(p0, &axemen);
-    for seed in 0..4 {
-        let mut f = w.fork(seed);
-        let (_, reports) = f.attack(axemen[0]);
-        let r = &reports[0];
-        assert_eq!(r.sides[1].committed, 1, "seed {seed}: the recruit defends");
-        assert_eq!(r.sides[1].escaped, 1, "seed {seed}");
-        assert!(f.alive(recruit) && f.g.unit_plot(recruit) != to, "seed {seed}: it fled");
-        assert_eq!(f.g.units[recruit].march.as_ref().map(|m| m.dest), Some(dest), "seed {seed}: it still marches");
-        assert_eq!(f.g.units[recruit].army, None, "seed {seed}");
-    }
-}
-
 /// The report counts the defender's units still on the plot (its reserve and its line's
 /// survivors), also for a hidden-nationality attack at peace. In a city, where nobody is pushed
 /// back. Every battle.
@@ -1125,7 +1080,6 @@ fn a_missile_kill_counts_in_telemetry() {
     assert!(json.contains("\"kill_by\":{\"UNIT_FIREBALL\":[1,"), "{json}");
     assert!(json.contains("\"engage_missile\":{\"kill\":[1,"), "{json}");
 }
-
 
 /// Each action's hit on its target in `log`, by unit: (actor, target, round, kind, expected,
 /// the pair's A and Dv). Misses left out.

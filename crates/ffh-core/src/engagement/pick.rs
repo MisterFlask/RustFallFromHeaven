@@ -1,7 +1,7 @@
 //! Who can fight an engagement (plan 5.2).
 //!
 //! **Who attacks** ([`Game::unit_can_engage`]): a land unit next to the land plot it attacks,
-//! able to attack, with moves left, not marching, not a missile, that may still attack this turn
+//! able to attack, with moves left, not a missile, that may still attack this turn
 //! (one attack a turn, Blitz one more: [`Game::unit_has_attack_left`], counting engagements,
 //! bombards and missile strikes) and that the move rules let attack the plot
 //! (`unit_can_move_into` with its attack gates under the option: the attack count, and for a
@@ -15,7 +15,7 @@
 //! nationality works as in the duel) and is not invisible to the attacking team (G5); a
 //! declare-war preview also counts every team the declaration would bring into the war
 //! ([`WarTest::DeclareWar`]). Ships never
-//! defend land; marching units and immobile units with strength do. A unit defends any number of
+//! defend land; immobile units with strength do. A unit defends any number of
 //! times a turn. Under the option `plot_get_best_defender` (and its "better defender" ratings)
 //! no longer picks the land defender; it stays for its other callers.
 //!
@@ -63,8 +63,7 @@ impl Game {
         if self.step_distance(fx, fy, tx, ty) != 1 {
             return false;
         }
-        let unit = &self.units[u];
-        if unit.march.is_some() || self.unit_is_suicide(u) || !self.unit_can_attack(u) || !self.unit_can_move(u) {
+        if self.unit_is_suicide(u) || !self.unit_can_attack(u) || !self.unit_can_move(u) {
             return false;
         }
         let declare_war = matches!(war, WarTest::DeclareWar(_));
@@ -126,7 +125,7 @@ impl Game {
     /// Whether unit `u`, wherever it stands now, could attack `to` from `from` in an engagement
     /// were it there with moves left (the hypothetical forecast's pool, `Game::engage_forecast_if`):
     /// [`Game::unit_can_engage`]'s tests that do not depend on where it is or on what it did this
-    /// turn -- a land unit able to attack, not marching, not a missile, not a battle summon, within
+    /// turn -- a land unit able to attack, not a missile, not a battle summon, within
     /// its combat limit -- and it could stand on `from` (land, or water it walks on; a peak only
     /// if it can climb it). `war`: the war its combat limit is tested under (the defenders it
     /// meets).
@@ -134,8 +133,7 @@ impl Game {
         if !self.engage_applies(u, to) || self.units[u].battle_summon || self.unit_is_dead(u) {
             return false;
         }
-        let unit = &self.units[u];
-        if unit.march.is_some() || self.unit_is_suicide(u) || !self.unit_can_attack(u) {
+        if self.unit_is_suicide(u) || !self.unit_can_attack(u) {
             return false;
         }
         if self.plot_is_water(from) && !self.unit_can_move_all_terrain(u) && !self.unit_walks_on_water(u, from) {

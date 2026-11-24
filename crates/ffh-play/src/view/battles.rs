@@ -1092,9 +1092,9 @@ pub fn combat_fields(v: &Viewer, units: &[UnitId], plot: PlotIdx, mut j: Json) -
 
 /// Whether unit `u` could fight in an attack on `plot` once it is next to it and can attack:
 /// [`Game::unit_can_engage`]'s tests but the place, the moves and the attacks left (a land unit
-/// on a land plot, able to attack, not marching, not a missile).
+/// on a land plot, able to attack, not a missile).
 fn could_engage(g: &Game, u: UnitId, plot: PlotIdx) -> bool {
-    g.engage_applies(u, plot) && g.units[u].march.is_none() && !g.unit_is_suicide(u) && g.unit_can_attack(u)
+    g.engage_applies(u, plot) && !g.unit_is_suicide(u) && g.unit_can_attack(u)
 }
 
 /// A unit's engagement fields (the view's units, under engagements): what it does from each row

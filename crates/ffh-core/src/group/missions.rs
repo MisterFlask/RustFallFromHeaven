@@ -192,8 +192,32 @@ impl Game {
     /// C++ `CvSelectionGroup::pushMission` (C++ defaults: `iData1 = -1, iData2 = -1,
     /// iFlags = 0, bAppend = false, bManual = false, eMissionAI = NO_MISSIONAI,
     /// pMissionAIPlot = NULL, pMissionAIUnit = NULL`).
+    ///
+    /// This game's waypoints (`army/waypoint.rs`): a mission pushed here is its owner's order, which
+    /// ends the waypoints of the group's units; the rules' own pushes that keep them go through
+    /// [`Game::group_push_mission_keep_waypoints`].
     #[allow(clippy::too_many_arguments)]
     pub fn group_push_mission(
+        &mut self,
+        g: GroupId,
+        mission: MissionType,
+        data1: i32,
+        data2: i32,
+        flags: i32,
+        append: bool,
+        manual: bool,
+        mission_ai: Option<MissionAIType>,
+        mission_ai_plot: Option<PlotIdx>,
+        mission_ai_unit: Option<UnitId>,
+    ) {
+        self.group_clear_waypoints(g);
+        self.group_push_mission_keep_waypoints(g, mission, data1, data2, flags, append, manual, mission_ai, mission_ai_plot, mission_ai_unit);
+    }
+
+    /// [`Game::group_push_mission`] without ending the waypoints of the group's units: the rules'
+    /// own pushes (a waypoint's go-to, a transport's landing).
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn group_push_mission_keep_waypoints(
         &mut self,
         g: GroupId,
         mission: MissionType,

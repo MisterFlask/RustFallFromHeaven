@@ -3,10 +3,9 @@
 //! hand, of a mixed empire and under a governed government, cities handed over and taken back by
 //! command, roles and priorities set by commands, empire orders placed
 //! and taken off (by their own commands and through the city screen's `push_order` /
-//! `pop_order`), the two steps of an empire order (`empire_items`, `empire_cities`), the Armies
-//! screen's units on order, and the civics preview of who will run the cities.
+//! `pop_order`), the two steps of an empire order (`empire_items`, `empire_cities`) and the civics
+//! preview of who will run the cities.
 
-use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::setup::GameSetup;
@@ -66,19 +65,6 @@ fn soldier(g: &Game, a: CityId, b: CityId) -> UnitType {
         .keys()
         .find(|&u| g.unit_type_is_army_unit(u) && [a, b].iter().all(|&c| g.city_offers_unit(c, u) && g.city_can_train(c, u, false, false, false, false)))
         .expect("a unit both cities train")
-}
-
-/// An army of `n` warriors next to city `c`.
-fn army_near(g: &mut Game, c: CityId, n: usize) -> ArmyId {
-    let (x, y) = (g.cities[c].x, g.cities[c].y);
-    let (ox, oy) = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)]
-        .into_iter()
-        .map(|(dx, dy)| (x + dx, y + dy))
-        .find(|&(ox, oy)| g.map.plot_xy(ox, oy).is_some_and(|q| !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].plot_city.is_none()))
-        .expect("land next to the city");
-    let w = warrior(g);
-    let units: Vec<UnitId> = (0..n).map(|_| g.player_init_unit(H, w, ox, oy, None, None)).collect();
-    g.army_form(H, &units).expect("formed")
 }
 
 /// Validates `cmd` for the human and applies it (the rules' own refusal, if any, as `Cannot`).
@@ -154,8 +140,8 @@ fn cities_run_by_hand_show_the_mode_and_the_civics_preview_says_who_will_run_the
     }
     // Empire orders need a governed city.
     let w = warrior(&g).idx() as i32;
-    assert!(refused(run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w, dest: None })).contains("governed"));
-    let items = view::governors::empire_items(&Viewer::new(&g, H, false), None).unwrap();
+    assert!(refused(run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w })).contains("governed"));
+    let items = view::governors::empire_items(&Viewer::new(&g, H, false)).unwrap();
     assert_eq!(int(&items, "governed"), 0, "{items}");
 }
 
@@ -177,7 +163,7 @@ fn a_city_is_handed_over_and_taken_back_by_command_and_the_screens_show_a_mixed_
     assert!(!flag(&ea, "governed") && ea.get("card").is_none() && ea.get("toggle_why") == Some(&Json::Null), "{ea}");
     assert!(flag(&eb, "governed") && eb.get("card").is_some() && eb.get("toggle_why") == Some(&Json::Null), "{eb}");
     // Empire orders: from the governed city only.
-    let items = view::governors::empire_items(&Viewer::new(&g, H, false), None).unwrap();
+    let items = view::governors::empire_items(&Viewer::new(&g, H, false)).unwrap();
     assert_eq!(int(&items, "governed"), 1, "{items}");
     // Taken back.
     run(&mut g, &Command::GovernCity { city: b, governed: false }).unwrap();
@@ -294,7 +280,7 @@ fn empire_orders_are_placed_and_taken_off_and_the_city_screen_offers_only_them()
     run(&mut g, &Command::PopOrder { city: b, index: 0 }).unwrap();
     assert_eq!(g.cities[b].order_queue.len(), own);
     assert!(!g.cities[b].order_queue.iter().any(|o| o.empire));
-    run(&mut g, &Command::EmpireOrder { city: b, order: OrderType::ORDER_TRAIN, data: w.idx() as i32, dest: None }).unwrap();
+    run(&mut g, &Command::EmpireOrder { city: b, order: OrderType::ORDER_TRAIN, data: w.idx() as i32 }).unwrap();
     let card = screen_city(&g, b).get("card").cloned().unwrap();
     let orders = arr(&card, "orders");
     assert_eq!(orders.len(), 1, "{card}");
@@ -303,61 +289,40 @@ fn empire_orders_are_placed_and_taken_off_and_the_city_screen_offers_only_them()
     assert!(refused(run(&mut g, &Command::EmpireOrderRemove { city: b, index: 0 })).contains("governor"));
     // In the other city too; taken back (Despotism first: leaving Aristocracy changes no city) its
     // empire order is an ordinary order.
-    run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w.idx() as i32, dest: None }).unwrap();
+    run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w.idx() as i32 }).unwrap();
     government(&mut g, "CIVIC_DESPOTISM");
     assert!(g.cities[a].order_queue.iter().any(|o| o.empire));
     run(&mut g, &Command::GovernCity { city: a, governed: false }).unwrap();
     assert!(!g.cities[a].order_queue.iter().any(|o| o.empire));
-    assert!(refused(run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w.idx() as i32, dest: None })).contains("governed"));
+    assert!(refused(run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_TRAIN, data: w.idx() as i32 })).contains("governed"));
 }
 
 #[test]
-fn an_empire_order_for_an_army_lists_the_capable_cities_suggests_the_nearest_and_shows_on_the_army() {
+fn an_empire_order_lists_the_capable_cities_and_suggests_the_fewest_turns() {
     let (mut g, a, b) = game();
     government(&mut g, "CIVIC_ARISTOCRACY");
-    let army = army_near(&mut g, b, 2);
     let w = soldier(&g, a, b);
     let v = Viewer::new(&g, H, false);
-    // Step 1: with an army, only the units that serve in armies; the warrior from both cities.
-    let items = view::governors::empire_items(&v, Some(army)).unwrap();
+    // Step 1: the soldier from both cities; every entry an empire order.
+    let items = view::governors::empire_items(&v).unwrap();
     assert_eq!(int(&items, "governed"), 2);
     let list = arr(&items, "items");
-    assert!(list.iter().all(|x| int(x, "order") == OrderType::ORDER_TRAIN.idx() as i64 && flag(x, "army_unit")), "{items}");
-    let wi = list.iter().find(|x| int(x, "type") == w.idx() as i64).expect("the warrior");
+    let wi = list.iter().find(|x| int(x, "type") == w.idx() as i64 && int(x, "order") == OrderType::ORDER_TRAIN.idx() as i64).expect("the soldier");
     assert_eq!(int(wi, "cities"), 2, "{wi}");
-    // Without an army, wonders and projects may be listed too; every entry an empire order.
-    let all = view::governors::empire_items(&v, None).unwrap();
-    for x in arr(&all, "items") {
+    assert!(flag(wi, "army_unit"), "{wi}");
+    for x in list {
         assert!(g.order_may_be_empire(OrderType::from_usize(int(&x, "order") as usize), int(&x, "type") as i32), "{x}");
     }
-    // Step 2: both cities, one suggestion: the nearer to the army (b).
-    let cities = view::governors::empire_cities(&v, OrderType::ORDER_TRAIN, w.idx() as i32, Some(army)).unwrap();
+    // Step 2: both cities, one suggestion: the fewest turns.
+    let cities = view::governors::empire_cities(&v, OrderType::ORDER_TRAIN, w.idx() as i32).unwrap();
     let rows = arr(&cities, "cities");
     assert_eq!(rows.len(), 2, "{cities}");
+    assert!(rows.iter().all(|x| int(x, "turns") >= int(x, "own_turns")), "{cities}");
     let suggested: Vec<&Json> = rows.iter().filter(|x| flag(x, "suggested")).collect();
     assert_eq!(suggested.len(), 1, "{cities}");
-    assert_eq!(int(suggested[0], "city"), b.0 as i64, "{cities}");
-    assert!(rows.iter().all(|x| int(x, "turns") >= int(x, "own_turns") && x.get("distance").and_then(Json::as_i64).is_some()), "{cities}");
-    // Without an army the suggestion is the fewest turns.
-    let plain = view::governors::empire_cities(&v, OrderType::ORDER_TRAIN, w.idx() as i32, None).unwrap();
-    let rows = arr(&plain, "cities");
     let best = rows.iter().map(|x| int(x, "turns")).min().unwrap();
-    assert!(rows.iter().any(|x| flag(x, "suggested") && int(x, "turns") == best), "{plain}");
-    // Malformed: a process, data out of range, a foreign or missing army.
-    assert!(view::governors::empire_cities(&v, OrderType::ORDER_MAINTAIN, 0, None).is_err());
-    assert!(view::governors::empire_cities(&v, OrderType::ORDER_TRAIN, 100_000, None).is_err());
-    assert!(view::governors::empire_cities(&v, OrderType::ORDER_TRAIN, w.idx() as i32, Some(ArmyId(9999))).is_err());
-    // The order, with the army as destination: on the Armies screen as on order at b.
-    run(&mut g, &Command::EmpireOrder { city: b, order: OrderType::ORDER_TRAIN, data: w.idx() as i32, dest: Some(RecruitDest::Army(army)) }).unwrap();
-    let s = view::armies::screen(&Viewer::new(&g, H, false));
-    let e = arr(&s, "armies").into_iter().find(|j| int(j, "id") == army.0 as i64).unwrap();
-    let on = arr(&e, "on_order");
-    assert_eq!(on.len(), 1, "{e}");
-    assert_eq!((int(&on[0], "city"), int(&on[0], "unit")), (b.0 as i64, w.idx() as i64), "{e}");
-    // A destination for a wonder is refused.
-    let wonder = g.d.buildings.keys().find(|&x| g.order_may_be_empire(OrderType::ORDER_CONSTRUCT, x.idx() as i32) && g.city_check_empire_order(H, a, OrderType::ORDER_CONSTRUCT, x.idx() as i32).is_ok());
-    if let Some(x) = wonder {
-        let why = refused(run(&mut g, &Command::EmpireOrder { city: a, order: OrderType::ORDER_CONSTRUCT, data: x.idx() as i32, dest: Some(RecruitDest::Army(army)) }));
-        assert!(why.contains("Only a unit"), "{why}");
-    }
+    assert_eq!(int(suggested[0], "turns"), best, "{cities}");
+    // Malformed: a process, data out of range.
+    assert!(view::governors::empire_cities(&v, OrderType::ORDER_MAINTAIN, 0).is_err());
+    assert!(view::governors::empire_cities(&v, OrderType::ORDER_TRAIN, 100_000).is_err());
 }

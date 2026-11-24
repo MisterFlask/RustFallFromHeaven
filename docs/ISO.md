@@ -235,7 +235,7 @@ fills the page and the interface floats over it.
   them, so pointing moves nothing); spells, promotions and upgrades as labelled buttons. The
   units on the plot stand over the card as a strip of icons on the map (Civ4's unit buttons;
   `units.js` `unitChip`): each its figure with its health under it, a pip for its moves (green:
-  all left, amber: some, dark red: spent) and a corner mark (a promotion waiting, else marching,
+  all left, amber: some, dark red: spent) and a corner mark (a promotion waiting, else
   automated or its activity), the selected ones lit and the card's lead brightest, the rest in
   its tooltip; rows grow upwards. A city panel at the right (your capital, or the city last
   opened or selected: its picture in its owner's colour, population and growth, production,

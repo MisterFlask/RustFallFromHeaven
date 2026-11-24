@@ -1,9 +1,9 @@
 //! Supply lines (docs/SUPPLY.md): the line (sources, costs, what it cannot enter, the budget, the
-//! tie rule) and Hunger and Starvation (the counter, no healing, recruits waiting, the HP loss and
+//! tie rule) and Hunger and Starvation (the counter, no healing, the HP loss and
 //! its floor, the damage dealt in battle, split, merge and form, save), on situations built by
 //! hand on a flat map.
 
-use ffh_core::army::{RecruitDest, SupplySource, SupplyState};
+use ffh_core::army::{SupplySource, SupplyState};
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
 use ffh_core::engagement::report::LogEvent;
 use ffh_core::engagement::{PreviewInput, WarTest};
@@ -391,26 +391,6 @@ fn starvation_takes_hp_to_a_floor_and_never_kills() {
     }
     assert_eq!(damage(&w), [75, 75, 80]);
     assert!(units.iter().all(|&u| w.g.units.contains(u)), "never kills");
-}
-
-#[test]
-fn recruits_wait_for_a_hungry_army() {
-    let mut w = world();
-    let p0 = w.p0;
-    let a = w.army(p0, 16, 5, 2);
-    let u = w.unit(p0, "UNIT_WARRIOR", 5, 5);
-    w.g.unit_recruit_to(u, w.city, RecruitDest::Army(a));
-    w.g.player_update_supply(p0);
-    assert!(!w.g.army_in_supply(a));
-    w.g.player_do_march(p0);
-    assert_eq!(w.g.unit_plot(u), w.at(5, 5), "it waits where it is");
-    assert!(w.logged("waits: the army has no supply line"));
-    // Supplied again: it marches.
-    w.road(6..=15, 5);
-    w.g.player_update_supply(p0);
-    w.g.player_do_turn_units(p0);
-    w.g.player_do_march(p0);
-    assert_ne!(w.g.unit_plot(u), w.at(5, 5), "on its way");
 }
 
 #[test]

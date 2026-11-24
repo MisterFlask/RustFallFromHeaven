@@ -57,11 +57,11 @@ pub enum Query {
     /// diagnoses, each governed city's role card.
     Governors,
     /// An empire order's first step (docs/GOVERNORS.md): what the human may order from its
-    /// governed cities (with `army`: the units that serve in armies).
-    EmpireItems { army: Option<ArmyId> },
+    /// governed cities.
+    EmpireItems,
     /// An empire order's second step: the governed cities able to build `order` `data`, with a
-    /// suggestion (with `army`: the nearest).
-    EmpireCities { order: ffh_data::OrderType, data: i32, army: Option<ArmyId> },
+    /// suggestion.
+    EmpireCities { order: ffh_data::OrderType, data: i32 },
     /// Engagement combat (docs/ENGAGEMENTS.md): the plan of an attack on `to` by `by` in
     /// `squad` (else the strongest squad that can attack; docs/ENGAGEMENTS.md, "Squads"): the pool, both formations, the slots and
     /// lanes, the ground, the defenders seen and their formation, and the forecast
@@ -173,8 +173,8 @@ pub const QUERY_FIELDS: &[(&str, &[&str])] = &[
     ("players", &[]),
     ("armies", &[]),
     ("governors", &[]),
-    ("empire_items", &["army"]),
-    ("empire_cities", &["order", "data", "army"]),
+    ("empire_items", &[]),
+    ("empire_cities", &["order", "data"]),
     ("engage_preview", &["army", "units", "from", "to", "squad"]),
     ("battle_log", &["report"]),
     ("battle_reports", &[]),
@@ -267,7 +267,7 @@ impl Query {
             Query::Players => "players",
             Query::Armies => "armies",
             Query::Governors => "governors",
-            Query::EmpireItems { .. } => "empire_items",
+            Query::EmpireItems => "empire_items",
             Query::EmpireCities { .. } => "empire_cities",
             Query::EngagePreview { .. } => "engage_preview",
             Query::BattleLog { .. } => "battle_log",
@@ -319,11 +319,11 @@ impl Query {
             "players" => Query::Players,
             "armies" => Query::Armies,
             "governors" => Query::Governors,
-            "empire_items" => Query::EmpireItems { army: j.opt("army")? },
+            "empire_items" => Query::EmpireItems,
             "empire_cities" => {
                 let d = ffh_data::global();
                 let order = crate::names::field::<ffh_data::OrderType>(d, j, "order")?;
-                Query::EmpireCities { order, data: crate::command::order_data(d, j, order)?, army: j.opt("army")? }
+                Query::EmpireCities { order, data: crate::command::order_data(d, j, order)? }
             }
             "engage_preview" => Query::EngagePreview {
                 by: crate::command::EngageBy::from_json(j)?,
@@ -386,8 +386,7 @@ impl Query {
             Query::Path { units, x, y, flags } => j.with("units", ids(units)).with("x", *x).with("y", *y).with("flags", *flags),
             Query::Combat { units, x, y } => j.with("units", ids(units)).with("x", *x).with("y", *y),
             Query::City { city } => j.with("city", *city),
-            Query::EmpireItems { army } => j.with("army", *army),
-            Query::EmpireCities { order, data, army } => j.with("order", Json::idx(*order)).with("data", *data).with("army", *army),
+            Query::EmpireCities { order, data } => j.with("order", Json::idx(*order)).with("data", *data),
             Query::EngagePreview { by, to, squad } => {
                 by.put(j).with("to", crate::command::plot_json(to.0, to.1)).with("squad", *squad)
             }
@@ -494,8 +493,8 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::Players => view::player::players(&v),
         Query::Armies => view::armies::screen(&v),
         Query::Governors => view::governors::screen(&v),
-        Query::EmpireItems { army } => view::governors::empire_items(&v, *army)?,
-        Query::EmpireCities { order, data, army } => view::governors::empire_cities(&v, *order, *data, *army)?,
+        Query::EmpireItems => view::governors::empire_items(&v)?,
+        Query::EmpireCities { order, data } => view::governors::empire_cities(&v, *order, *data)?,
         Query::EngagePreview { by, to, squad } => view::battles::engage_preview(&v, by, *to, *squad)?,
         Query::BattleLog { report } => view::battles::battle_log(&v, *report)?,
         Query::BattleReports => view::battles::battle_reports(&v),
@@ -570,10 +569,9 @@ mod tests {
             Query::Players,
             Query::Armies,
             Query::Governors,
-            Query::EmpireItems { army: None },
-            Query::EmpireItems { army: Some(ArmyId(2)) },
-            Query::EmpireCities { order: ffh_data::OrderType::ORDER_TRAIN, data: 4, army: Some(ArmyId(1)) },
-            Query::EmpireCities { order: ffh_data::OrderType::ORDER_CONSTRUCT, data: 7, army: None },
+            Query::EmpireItems,
+            Query::EmpireCities { order: ffh_data::OrderType::ORDER_TRAIN, data: 4 },
+            Query::EmpireCities { order: ffh_data::OrderType::ORDER_CONSTRUCT, data: 7 },
             Query::EngagePreview { by: crate::command::EngageBy::Army(ArmyId(2)), to: (3, 4), squad: None },
             Query::EngagePreview { by: crate::command::EngageBy::Units(vec![UnitId(1)]), to: (3, 4), squad: Some(ffh_core::ids::SquadId(3)) },
             Query::EngagePreview { by: crate::command::EngageBy::From(2, 4), to: (3, 4), squad: None },

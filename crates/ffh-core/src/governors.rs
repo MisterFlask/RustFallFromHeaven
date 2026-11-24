@@ -17,9 +17,8 @@
 //!
 //! **Production.** A governed city's production is the governor's (the controller's production
 //! choice). The player places empire orders there ([`Game::city_push_empire_order`]: a unit, a
-//! wonder, a palace, a project), which go behind an army's requisition orders (docs/ARMIES.md) and
-//! ahead of the governor's choice, which keeps its progress and resumes after them. The governor
-//! is not asked while a requisition or empire order leads the queue.
+//! wonder, a palace, a project), which go ahead of the governor's choice, which keeps its progress
+//! and resumes after them. The governor is not asked while an empire order leads the queue.
 
 use std::collections::BTreeSet;
 
@@ -97,8 +96,8 @@ impl Game {
     }
 
     /// Player `p` hands its city `c` to a governor (`governed`) or takes it back, at no cost and
-    /// at once ([`Game::player_check_city_governed`]). Handed over, the city keeps its requisition
-    /// orders and the orders that may be empire orders (as empire orders), drops the others and
+    /// at once ([`Game::player_check_city_governed`]). Handed over, the city keeps the orders that
+    /// may be empire orders (as empire orders), drops the others and
     /// takes its role and its role's emphasis; with an empty queue its governor chooses at once.
     /// Taken back, it keeps its queue (empire orders as ordinary orders) and drops the emphasis.
     pub fn player_set_city_governed(&mut self, p: PlayerId, c: CityId, governed: bool) -> Result<(), String> {
@@ -331,7 +330,6 @@ impl Game {
             return;
         }
         self.cities[c].production_automated = true;
-        self.cities[c].recruit_default = None;
         if assign {
             self.city_become_governed(c);
         }
@@ -378,26 +376,22 @@ impl Game {
         controller.choose_city_governance(self, p);
     }
 
-    /// City `c` goes to its governor: production automated, its units for its own garrison, its
-    /// role proposed (unless the player chose one) and its emphasis applied. Its queue keeps the requisition orders and the orders
-    /// that may be empire orders (they become empire orders); the others are dropped, and the
-    /// governor chooses.
+    /// City `c` goes to its governor: production automated, its role proposed (unless the player
+    /// chose one) and its emphasis applied. Its queue keeps the orders that may be empire orders
+    /// (they become empire orders); the others are dropped, and the governor chooses.
     fn city_become_governed(&mut self, c: CityId) {
         self.cities[c].direct_rule = false;
         self.cities[c].production_automated = true;
-        self.cities[c].recruit_default = None;
         if self.cities[c].role.is_none() || !self.cities[c].role_overridden {
             self.cities[c].role_overridden = false;
             self.cities[c].role = Some(self.city_role_proposal(c));
         }
         self.city_apply_role_emphasis(c);
-        // The queue: requisition orders stay, empire orders qualify, the rest gives way.
+        // The queue: empire orders qualify, the rest gives way.
         let mut i = 0;
         while self.cities.contains(c) && i < self.cities[c].order_queue.len() {
             let o = self.cities[c].order_queue[i].clone();
-            if o.requisition {
-                i += 1;
-            } else if self.order_may_be_empire(o.order_type, o.data1) {
+            if self.order_may_be_empire(o.order_type, o.data1) {
                 let o = &mut self.cities[c].order_queue[i];
                 o.empire = true;
                 o.save = false;
@@ -471,39 +465,26 @@ impl Game {
         Ok(())
     }
 
-    /// Player `p` places an empire order in governed city `c`: behind its requisition orders and
-    /// earlier empire orders, ahead of the governor's choice (which keeps its progress). `data2` is
-    /// the unit AI of a unit (-1: its default), `dest` where it goes (a unit only; `None`: the
-    /// city's own garrison).
-    pub fn city_push_empire_order(&mut self, p: PlayerId, c: CityId, order_type: OrderType, data1: i32, data2: i32, dest: Option<crate::army::RecruitDest>) -> GovResult {
+    /// Player `p` places an empire order in governed city `c`: behind its earlier empire orders,
+    /// ahead of the governor's choice (which keeps its progress). `data2` is the unit AI of a unit
+    /// (-1: its default); a unit trained stays in the city, as any.
+    pub fn city_push_empire_order(&mut self, p: PlayerId, c: CityId, order_type: OrderType, data1: i32, data2: i32) -> GovResult {
         self.city_check_empire_order(p, c, order_type, data1)?;
-        if let Some(dest) = dest {
-            if order_type != OrderType::ORDER_TRAIN {
-                return Err("Only a unit has a destination.");
-            }
-            if !self.recruit_dest_valid(p, dest) {
-                return Err("Not a destination of yours.");
-            }
-        }
         let data2 = if order_type == OrderType::ORDER_TRAIN { data2 } else { -1 };
-        let Some(index) = self.city_push_order_kind(c, order_type, data1, data2, false, false, false, false, OrderKind::Empire) else {
+        if self.city_push_order_kind(c, order_type, data1, data2, false, false, false, false, OrderKind::Empire).is_none() {
             return Err("The city cannot build this.");
-        };
-        if self.cities.contains(c) && dest.is_some() {
-            self.cities[c].order_queue[index].dest = dest;
         }
         Ok(())
     }
 
     /// Whether player `p` may take the order at `index` of governed city `c`'s queue off (else why
-    /// not): only its own empire orders (requisition orders: `city_check_remove_order`).
+    /// not): only its own empire orders.
     pub fn city_check_remove_empire_order(&self, p: PlayerId, c: CityId, index: usize) -> GovResult {
         if !self.cities.contains(c) || self.cities[c].owner != p || !self.city_is_governed(c) {
             return Err("Not a governed city of yours.");
         }
         match self.cities[c].order_queue.get(index) {
             Some(o) if o.empire => Ok(()),
-            Some(o) if o.requisition => Err("A requisition order: release the city from the army's requisition."),
             Some(_) => Err("The governor's order: only empire orders can be removed."),
             None => Err("No such order."),
         }

@@ -45,7 +45,7 @@ of up to 5 places, kept between battles (`Game::squads`, `Unit::squad`, `Unit::s
 * 3 + lane`).
 
 - *Bodies.* A squad belongs to an army, a city's garrison, or none (loose: heroes, mages, recon
-  units, marching recruits, the barbarians' units). An army unit stands only in its own army's or
+  units, units on their way to a city's waypoint, the barbarians' units). An army unit stands only in its own army's or
   garrison's squads; a unit of no body may stand in any squad of its owner on its plot (a hero in
   an army's squad) and holds its cell only while it is on that plot.
   Moving a unit to a squad of another army or of the garrison there moves the unit to that body

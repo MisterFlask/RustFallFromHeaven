@@ -822,18 +822,14 @@ pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> us
     // A civic tried over the current ones (the reply says whether it may be adopted).
     ask(Query::Civics { with: vec![CivicType::from_usize(0)] }, May::Answer);
     // The empire orders: what the governed cities may build, then the cities for one of them.
-    let items = ask(Query::EmpireItems { army: None }, May::Answer);
+    let items = ask(Query::EmpireItems, May::Answer);
     let item = items.as_ref().and_then(|j| arr(j, "items").first().cloned());
     let (order, data) = match &item {
         Some(i) => (i.get("order").and_then(Json::as_i64).map_or(OrderType::ORDER_TRAIN, |o| OrderType::from_usize(o as usize)), int(i, "type") as i32),
         None => (OrderType::ORDER_TRAIN, 0),
     };
-    ask(Query::EmpireCities { order, data, army: None }, May::BeInvalid);
-    if let Some(armies) = ask(Query::Armies, May::Answer) {
-        if let Some(a) = arr(&armies, "armies").iter().chain(arr(&armies, "fleets")).next() {
-            ask(Query::EmpireItems { army: Some(ArmyId(int(a, "id") as u32)) }, May::BeInvalid);
-        }
-    }
+    ask(Query::EmpireCities { order, data }, May::BeInvalid);
+    ask(Query::Armies, May::Answer);
     if let Some(players) = ask(Query::Players, May::Answer) {
         for p in arr(&players, "players").iter().filter(|p| !flag(p, "barbarian") && flag(p, "alive") && int(p, "id") != me) {
             let with = PlayerId(int(p, "id") as u8);

@@ -4,7 +4,7 @@
 //! by side in one row and counting 2. One battle is one squad against one squad.
 //!
 //! **Where squads live.** Each squad belongs to a body ([`SquadBody`]): an army, a city's garrison,
-//! or none (`Loose`: heroes, mages, recon units, marching recruits, the barbarians' units, any
+//! or none (`Loose`: heroes, mages, recon units, the barbarians' units, any
 //! unit in no army and no garrison). An army unit stands only in its own army's or garrison's
 //! squads; a unit of no body may stand in any squad of its owner on its plot (a hero in an army's
 //! squad), and holds its cell only while it is on that plot.

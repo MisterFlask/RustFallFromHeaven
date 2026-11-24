@@ -571,7 +571,7 @@ impl Game {
     ///
     /// The pool is the attackers that could make the attack: one standing on `from` already as the
     /// real fight picks it ([`Game::unit_can_engage`]: moves and attacks left), any other one if
-    /// it is a land unit able to attack (not marching, not a missile, not a battle summon) that
+    /// it is a land unit able to attack (not a missile, not a battle summon) that
     /// could stand on `from` (land, or water it walks on; a peak it can climb) within its combat
     /// limit; its moves are not counted (it is assumed to arrive). The defenders are those the
     /// attack would meet there (the real fight's candidates: invisible units are never one), the

@@ -265,12 +265,6 @@ impl Controller for Ai {
         governor::wants_governors(g, g.cities[c].owner)
     }
 
-    /// The unit a city trains for an army's requisition (docs/ARMIES.md): siege up to a third
-    /// of the army, then the best attacker against cities (`armies::requisition_unit`).
-    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
-        armies::requisition_unit(g, c, a)
-    }
-
     /// What a city's work crews build next (docs/WORKS.md): `workers::choose_crew_build`.
     fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
         workers::choose_crew_build(g, c)

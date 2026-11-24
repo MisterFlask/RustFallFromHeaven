@@ -61,12 +61,11 @@ use crate::view::View;
 /// resort: docs/SUPPLY.md, "Second pass", B).
 pub(crate) const STRANDED_TURNS: i32 = 10;
 
-/// The army the group's head belongs to (an AI army of a player that is no barbarian, and not a
-/// marching recruit).
+/// The army the group's head belongs to (an AI army of a player that is no barbarian).
 pub(crate) fn army_of(g: &Game, grp: GroupId) -> Option<ArmyId> {
     let head = g.group_get_head_unit(grp)?;
     let a = g.units[head].army.filter(|&a| g.armies.contains(a))?;
-    if g.player_is_barbarian(g.armies[a].owner) || g.units[head].march.is_some() {
+    if g.player_is_barbarian(g.armies[a].owner) {
         return None;
     }
     Some(a)
@@ -237,7 +236,7 @@ pub(crate) fn stranded_at(g: &Game, v: &View, q: PlotIdx) -> bool {
         return false;
     }
     let p = v.p;
-    let army = g.map.plots[q].units.iter().any(|&o| g.units[o].owner == p && !g.unit_is_cargo(o) && g.units[o].army.is_some() && g.units[o].march.is_none());
+    let army = g.map.plots[q].units.iter().any(|&o| g.units[o].owner == p && !g.unit_is_cargo(o) && g.units[o].army.is_some());
     if !army {
         return false;
     }

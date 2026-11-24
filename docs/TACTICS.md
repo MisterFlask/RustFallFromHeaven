@@ -363,8 +363,8 @@ with the strongest first (Line 17.8% and 18.0% against each), the score against 
   rear, a Luchuirp tactic around its golems). Not in this change; the data table makes room.
 - **Seeing an enemy's tactic** before attacking: the preview shows it as it shows the defender's
   formation today. Whether it should be hidden without a scout is undecided.
-- **Requisition by tactic**: an army's requisition filling the mix its tactic wants (a Volley army
-  asks for archers) is undecided.
+- **Reinforcement by tactic**: the units ordered for an army filling the mix its tactic wants (a
+  Volley army asks for archers) is undecided.
 
 ## 10. Tried and not shipped
 

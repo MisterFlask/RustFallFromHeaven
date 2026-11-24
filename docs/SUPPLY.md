@@ -83,15 +83,18 @@ army's line is traced: supplied sets the counter to 0, cut adds 1.
 | Counter | State | Effects |
 |---|---|---|
 | 0 | Supplied | none |
-| 1 to `SUPPLY_HUNGER_TURNS` (2) | **Hunger** | the army's units do not heal; recruits bound for it wait where they are |
+| 1 to `SUPPLY_HUNGER_TURNS` (2) | **Hunger** | the army's units do not heal |
 | above | **Starvation** | as Hunger; and at the start of each of the owner's turns every unit of the army loses `STARVATION_DAMAGE_PERCENT` (10) % of its full HP, never going below `STARVATION_FLOOR_PERCENT` (25) % of it (a unit already below is not healed up to it); and the army's units deal `STARVATION_DAMAGE_DEALT_PERCENT` (-25) % damage in a battle |
 
 Starvation never kills. A restored line ends both at the owner's next turn start: the counter
-goes to 0, healing and recruits resume, nothing lingers.
+goes to 0, healing resumes, nothing lingers.
 
 A unit that leaves a hungry or starving army for a garrison or no army is out of it at once. An
 army split from one takes its counter; a merged army takes the higher counter. An army's counter
-is 0 when it forms from a garrison.
+is 0 when it forms from a garrison. A unit on its way to an army (a city's waypoint,
+docs/ARMIES.md "Waypoints") is in no army, so it has no line and no counter; on arrival the army
+keeps its own counter. (Until 2026-11-23 a hungry army's recruits also waited where they were; the
+marching recruits were removed then.)
 
 The battle effect goes through the engagement's pre-battle hook (`engage_pre_battle`,
 docs/ENGAGEMENTS.md "Open", phase 7: a modifier on the side's damage), applies to the units of
@@ -99,8 +102,7 @@ starving armies on the field only, and shows in the attack preview and the battl
 line.
 
 The old rule goes: `ARMY_SUPPLY_RANGE`, `Game::plot_in_supply` and `army_in_supply`'s network
-test. "In supply" for marching recruits (docs/ARMIES.md, "Supply gates progress") means the
-army's counter is 0.
+test. "In supply" (`army_in_supply`) means the army's counter is 0.
 
 ### 3.1 Starving an invested garrison (built)
 
@@ -178,9 +180,9 @@ the same words (`held`), shown in the path's tooltip in place of `No path`.
 - The battle effect is `BattleEffect::Dealt` (every hit of the fighter, its pairs' damage
   percentage), returned by `engage_pre_battle`; the preview lists the units (`EngagePreview::
   starving`), the battle log has a `LogEvent::Starvation` line before the morale check.
-- Messages: `The 1st Army has no supply line: Hunger, turn 1 of 2. No healing, no recruits.`, `The
+- Messages: `The 1st Army has no supply line: Hunger, turn 1 of 2. No healing.`, `The
   1st Army is starving: units lose HP each turn, deal less damage.`, `The 1st Army is supplied
-  again.` (at the army's plot); a waiting recruit's reason is `the army has no supply line`.
+  again.` (at the army's plot).
 - The known line ("Second pass", A) is `Game::plot_supply_line_known(p, plot, viewer)`, the same
   search with the viewer's knowledge (`Plot::revealed`, `plot_is_visible`, `unit_is_invisible`,
   `city_is_revealed`; a ship's coastal city counts only if revealed); who is an enemy, owners,
@@ -199,7 +201,7 @@ the same words (`held`), shown in the path's tooltip in place of `No path`.
 - **Before a move**: with an army selected, the plot under the pointer says whether the army would
   be supplied there (the path preview's line: "Supplied (cost 14 of 24)" or "No supply line").
 - **The Armies screen and the unit panel**: the army's state in bare words: `Supplied: 14 of 24,
-  from Ithralia.` / `Hunger: turn 1 of 2. No healing, no recruits.` / `Starvation: -10% HP a turn
+  from Ithralia.` / `Hunger: turn 1 of 2. No healing.` / `Starvation: -10% HP a turn
   (to 25%), -25% damage dealt.`
 - **Messages** at the start of the turn an army becomes hungry, starts starving, or is supplied
   again, with the army's plot.

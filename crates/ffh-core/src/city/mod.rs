@@ -270,9 +270,8 @@ pub struct City {
     /// FFH2 GrowthControl (`m_iEmphasizeAvoidUnhealthyCitizensCount`).
     pub ai_emphasize_avoid_unhealthy_citizens_count: i32,
     // ---- This game's own rules (not FFH2's) ----
-    /// Where the city's trained land combat units go when their order names no destination
-    /// (docs/ARMIES.md); `None`: its own garrison.
-    pub recruit_default: Option<crate::army::RecruitDest>,
+    /// Where the units it trains go (docs/ARMIES.md, `army/waypoint.rs`); `None`: they stay.
+    pub waypoint: Option<crate::army::Waypoint>,
     /// This game's governors (docs/GOVERNORS.md): run by hand (else governed); its owner's choice
     /// (`Game::player_set_city_governed`), governed under a governed civic.
     pub direct_rule: bool,
@@ -529,7 +528,7 @@ impl City {
             ai_emphasize_commerce_count: [0; CommerceType::NUM],
             ai_emphasize_avoid_angry_citizens_count: 0,
             ai_emphasize_avoid_unhealthy_citizens_count: 0,
-            recruit_default: None,
+            waypoint: None,
             direct_rule: true,
             role: None,
             role_overridden: false,
@@ -610,7 +609,7 @@ fn unit_domain_of(d: &GameData, unit: UnitType) -> DomainType {
 /// current production and wants to be asked again next turn sets the flag again.
 ///
 /// This game's governors (docs/GOVERNORS.md): a governed city's governor is not asked while a
-/// requisition or empire order leads its queue; it is asked once they are done (an emptied queue).
+/// an empire order leads its queue; it is asked once they are done (an emptied queue).
 fn ai_choose_production(g: &mut Game, c: CityId) {
     g.cities[c].ai_choose_production_dirty = false;
     if g.city_lead_orders(c) > 0 && g.city_is_governed(c) {

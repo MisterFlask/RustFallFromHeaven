@@ -20,9 +20,9 @@
 //!
 //! **Hunger and Starvation.** `Army::unsupplied_turns`, traced at the start of its owner's turn
 //! before its units heal ([`Game::player_update_supply`]): supplied sets it to 0, cut adds 1.
-//! From 1 to `SUPPLY_HUNGER_TURNS` the army is hungry (its units do not heal, recruits bound for
-//! it wait); above, it starves: as Hunger, and each unit loses `STARVATION_DAMAGE_PERCENT` of its
-//! full HP at each of its owner's turn starts, never below `STARVATION_FLOOR_PERCENT`, and deals
+//! From 1 to `SUPPLY_HUNGER_TURNS` the army is hungry (its units do not heal); above, it starves:
+//! as Hunger, and each unit loses `STARVATION_DAMAGE_PERCENT` of its full HP at each of its
+//! owner's turn starts, never below `STARVATION_FLOOR_PERCENT`, and deals
 //! `STARVATION_DAMAGE_DEALT_PERCENT` damage in battles (the engagement's pre-battle hook).
 
 use std::cmp::{Ordering, Reverse};
@@ -64,7 +64,7 @@ pub enum SupplyState {
     /// Its counter is 0.
     Supplied,
     /// Its line was cut at the start of `turn` of its owner's turns in a row, of the `of`
-    /// (`SUPPLY_HUNGER_TURNS`) turns of Hunger: no healing, no recruits.
+    /// (`SUPPLY_HUNGER_TURNS`) turns of Hunger: no healing.
     Hunger { turn: i32, of: i32 },
     /// Cut for more turns than Hunger lasts.
     Starvation,
@@ -498,7 +498,7 @@ impl Game {
         }
     }
 
-    /// Whether army `a` is supplied: its counter is 0 (its recruits march, its units heal).
+    /// Whether army `a` is supplied: its counter is 0 (its units heal).
     pub fn army_in_supply(&self, a: ArmyId) -> bool {
         self.armies[a].unsupplied_turns == 0
     }
@@ -566,7 +566,7 @@ impl Game {
             if before > 0 && after == 0 {
                 self.log.msg_at(turn, Some(p), at, || format!("The {name} is supplied again."));
             } else if before == 0 && after > 0 {
-                self.log.msg_at(turn, Some(p), at, || format!("The {name} has no supply line: Hunger, turn 1 of {hunger}. No healing, no recruits."));
+                self.log.msg_at(turn, Some(p), at, || format!("The {name} has no supply line: Hunger, turn 1 of {hunger}. No healing."));
             } else if after == hunger + 1 {
                 self.log.msg_at(turn, Some(p), at, || format!("The {name} is starving: units lose HP each turn, deal less damage."));
             }

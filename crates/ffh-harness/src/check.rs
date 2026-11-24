@@ -233,17 +233,26 @@ pub fn check(g: &Game) {
                 if g.armies.get(a).map_or(true, |army| army.owner != p) {
                     fail(format!("unit {u:?} of player {} is in army {a:?}, dead or not its owner's", p.0));
                 }
-                if g.units[u].march.is_some() {
-                    fail(format!("unit {u:?} of player {} marches but is in army {a:?}", p.0));
-                }
                 // Fleets (docs/NAVAL.md, 7.1): ships in fleets, land units in armies.
                 if g.armies.get(a).is_some_and(|army| g.unit_army_domain(u).is_some_and(|d| d != army.domain)) {
                     fail(format!("unit {u:?} of player {} is in army {a:?} of another domain", p.0));
                 }
+                // Waypoints (docs/ARMIES.md): a unit on its way is in no army.
+                if g.units[u].waypoint.is_some() {
+                    fail(format!("unit {u:?} of player {} is on its way to a waypoint and in army {a:?}", p.0));
+                }
+            }
+            if let Some(wp) = g.units[u].waypoint {
+                check_waypoint(g, p, wp, &format!("unit {u:?}"));
             }
         }
-        // Requisition orders, then empire orders, lead their city's queue (docs/GOVERNORS.md);
-        // empire orders only in governed cities.
+        for &c in &g.players[p].cities {
+            if let Some(wp) = g.cities[c].waypoint {
+                check_waypoint(g, p, wp, &format!("city {c:?}"));
+            }
+        }
+        // Empire orders lead their city's queue (docs/GOVERNORS.md); empire orders only in
+        // governed cities.
         for &c in &g.players[p].cities {
             // Raids (docs/RAIDS.md): the modifier is none, contested's or overrun's; the counters
             // within their bounds.
@@ -255,18 +264,11 @@ pub fn check(g: &Game) {
                 fail(format!("city {} of player {} has raid percent {}, turns {}, stripped {}", city.name, p.0, city.raid_percent, city.raid_turns, city.raid_stripped));
             }
             let q = &g.cities[c].order_queue;
-            let req = q.iter().take_while(|o| o.requisition).count();
-            if q[req..].iter().any(|o| o.requisition) {
-                fail(format!("city {} of player {} has a requisition order behind its own production", g.cities[c].name, p.0));
-            }
             let lead = g.city_lead_orders(c);
             if q[lead..].iter().any(|o| o.empire) {
                 fail(format!("city {} of player {} has an empire order behind its own production", g.cities[c].name, p.0));
             }
-            if q.iter().any(|o| o.empire && o.requisition) {
-                fail(format!("city {} of player {} has an order both empire and requisition", g.cities[c].name, p.0));
-            }
-            if lead > req && !g.city_is_governed(c) {
+            if lead > 0 && !g.city_is_governed(c) {
                 fail(format!("directly ruled city {} of player {} has empire orders", g.cities[c].name, p.0));
             }
         }
@@ -392,6 +394,24 @@ pub fn check(g: &Game) {
 /// its origin, at most `HOUSE_MAX_CITIES`, never an outpost; a minor leader leads one House at
 /// most and no living player; every perk is a House perk; and after its owner's turn processing
 /// no city is unhoused but those the rules let wait.
+/// A waypoint of player `p`'s (`what`: whose, for the message): an army or fleet names an
+/// existing army of `p`'s, a plot is on the map.
+fn check_waypoint(g: &Game, p: PlayerId, wp: ffh_core::army::Waypoint, what: &str) {
+    use ffh_core::army::Waypoint;
+    match wp {
+        Waypoint::Army(a) => {
+            if g.armies.get(a).is_none_or(|army| army.owner != p) {
+                panic!("invariant: {what} of player {} has the waypoint army {a:?}, dead or not its owner's (turn {})", p.0, g.game_turn());
+            }
+        }
+        Waypoint::Plot(q) => {
+            if q.idx() >= g.map.plots.len() {
+                panic!("invariant: {what} of player {} has the waypoint plot {q:?}, off the map (turn {})", p.0, g.game_turn());
+            }
+        }
+    }
+}
+
 fn check_houses(g: &Game) {
     let fail = |msg: String| -> ! { panic!("invariant: Houses: {msg} (turn {})", g.game_turn()) };
     let d = g.d;

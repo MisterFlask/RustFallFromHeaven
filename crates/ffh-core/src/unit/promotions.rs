@@ -699,7 +699,10 @@ impl Game {
         // FfH: End Modify
 
         let group = unit_group_of(self, u);
+        // (This game's waypoints: the upgrade is no order; the new unit keeps the old one's way.)
+        let waypoint = self.units[u].waypoint.take();
         self.unit_join_group(upgrade_unit, group, true);
+        self.units[u].waypoint = waypoint;
 
         self.unit_convert(upgrade_unit, u);
         // C++ keeps using `pUpgradeUnit`; a promotion effect applied by `convert` that killed it

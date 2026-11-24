@@ -96,9 +96,6 @@ impl Controller for Timed {
     fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
         self.time(|| self.inner.choose_house_leader(g, p, offer))
     }
-    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
-        self.time(|| self.inner.requisition_unit(g, c, a))
-    }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.time(|| self.inner.govern_cities(g, p))
     }
@@ -262,9 +259,6 @@ impl Controller for CppCitizens {
     }
     fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
         self.inner.update_automated_group(g, grp)
-    }
-    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
-        self.inner.requisition_unit(g, c, a)
     }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.inner.govern_cities(g, p)
@@ -1135,9 +1129,6 @@ impl Controller for FreeRider {
     }
     fn choose_house_leader(&self, g: &Game, p: PlayerId, offer: &ffh_core::houses::HouseOffer) -> usize {
         self.inner.choose_house_leader(g, p, offer)
-    }
-    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
-        self.inner.requisition_unit(g, c, a)
     }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.inner.govern_cities(g, p)

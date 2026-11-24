@@ -343,7 +343,17 @@ impl Game {
     /// C++ `CvSelectionGroup::groupAttack`: returns `(attack made, bFailedAlreadyFighting)`.
     /// [`Game::group_attack_force`] with no force: a refusal is no attack.
     pub fn group_attack(&mut self, g: GroupId, x: i32, y: i32, flags: i32) -> (bool, bool) {
-        self.group_attack_force(g, x, y, flags, None).unwrap_or((false, false))
+        self.group_attack_force_inner(g, x, y, flags, None).unwrap_or((false, false))
+    }
+
+    /// [`Game::group_attack_force_inner`] ordered directly (an engagement its owner launches): an
+    /// order, which ends the waypoints of the group's units (`army/waypoint.rs`); a move mission's
+    /// attack goes through [`Game::group_attack`].
+    pub fn group_attack_force(&mut self, g: GroupId, x: i32, y: i32, flags: i32, squad: Option<SquadId>) -> Result<(bool, bool), &'static str> {
+        if self.groups.contains(g) {
+            self.group_clear_waypoints(g);
+        }
+        self.group_attack_force_inner(g, x, y, flags, squad)
     }
 
     /// C++ `CvSelectionGroup::groupAttack` with a formation (spec 1.8): the one attack entry for
@@ -355,7 +365,7 @@ impl Game {
     /// refused, no battle; nothing changed but what an AI owner's preamble did (its pre-attack
     /// spells, a war it declared on the plot's owner, which may have pushed the defenders off the
     /// plot).
-    pub fn group_attack_force(&mut self, g: GroupId, x: i32, y: i32, flags: i32, squad: Option<SquadId>) -> Result<(bool, bool), &'static str> {
+    fn group_attack_force_inner(&mut self, g: GroupId, x: i32, y: i32, flags: i32, squad: Option<SquadId>) -> Result<(bool, bool), &'static str> {
         // This game's raids (docs/RAIDS.md, section 3): an attack ends the army's Raid order.
         self.group_attack_ends_raid(g);
         let mut dest_plot = self.map.plot_xy(x, y);
@@ -717,7 +727,9 @@ impl Game {
                             }
                             if self.group_can_all_move(cargo_group) {
                                 debug_assert!(!self.group_at(cargo_group, plot_x, plot_y));
-                                self.group_push_mission(
+                                // (the rules' landing, part of the transport's move: no order of
+                                // the cargo's)
+                                self.group_push_mission_keep_waypoints(
                                     cargo_group,
                                     MissionType::MISSION_MOVE_TO,
                                     plot_x,

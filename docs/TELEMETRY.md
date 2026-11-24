@@ -57,8 +57,7 @@ described in docs/AUTOPSY.md.
 | `revolution` | `n` | anarchy turns |
 | `civic` | civic adopted | – |
 | `convert` | religion | – |
-| `march` | `sent`, `arrived`, `diverted`, `stopped`, `killed` (marching recruits: docs/ARMIES.md; `stopped`: no city it could reach, an ordinary unit again; `killed`: died on the way) | `sent`: the estimated march in turns; the others: turns since it set out |
-| `requisition` | `placed`, `withdrawn` (an army's requisition orders: docs/ARMIES.md) | – |
+| `waypoint` | `sent` (a trained unit set out for its city's waypoint, or arrived at once), `arrived`, `ended` (its owner's order, no way there, its army gone): docs/ARMIES.md, "Waypoints"; a unit killed on the way counts only `sent`, so `sent` can exceed `arrived` + `ended` | – |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -153,8 +152,7 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `hurry` and `upgrade`;
 - `tech`, `civics`, `religion` and `project`;
 - `vassal` and `vote` (a council result: the vote type, its text and whether it passed);
-- `march` (a marching recruit: `how` sent / arrived / diverted / stopped / killed, `to_army`,
-  `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
+- `waypoint` (`how` sent / arrived / ended; docs/ARMIES.md, "Waypoints");
 - `house` (the Houses, docs/HOUSES.md: `how` formed / state / ended and `what`: home, foreign or
   outsider; the new state; `no_city`);
 - `raid_order` (an army took the Raid order: `vs` the city's owner, `x`, `y`) and `raid_take` (a

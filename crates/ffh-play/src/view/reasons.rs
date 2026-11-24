@@ -311,13 +311,9 @@ pub fn spell_refusal_text(g: &Game, u: UnitId, spell: SpellType, r: SpellRefusal
     }
 }
 
-/// Why unit `u` cannot cast `spell` now, for the world actions and a targeted spell: a march
-/// (this game's armies), then the command's checks ([`command_refusal`]: combat, a trade route,
-/// boats, the cast gate).
+/// Why unit `u` cannot cast `spell` now, for the world actions and a targeted spell: the
+/// command's checks ([`command_refusal`]: combat, a trade route, boats, the cast gate).
 pub fn cast_refusal(g: &Game, u: UnitId, spell: SpellType) -> String {
-    if let Some(m) = g.unit_march_refusal(u) {
-        return format!("{} is {m}.", unit_label(g, u));
-    }
     command_refusal(g, &[u], CommandType::COMMAND_CAST, spell.idx() as i32, -1)
 }
 

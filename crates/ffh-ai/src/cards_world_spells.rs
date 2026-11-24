@@ -85,7 +85,7 @@ fn holds(g: &Game, p: PlayerId, spell: SpellType) -> bool {
 /// turn, a city defender first (the army keeps its turn).
 fn casters(g: &Game, p: PlayerId) -> Vec<UnitId> {
     let mut units: Vec<UnitId> =
-        g.players[p].units.iter().copied().filter(|&u| g.units.contains(u) && g.unit_march(u).is_none() && !g.units[u].has_casted && g.unit_plot_opt(u).is_some()).collect();
+        g.players[p].units.iter().copied().filter(|&u| g.units.contains(u) && !g.units[u].has_casted && g.unit_plot_opt(u).is_some()).collect();
     units.sort_by_key(|&u| (g.units[u].ai_type != Some(UnitAIType::UNITAI_CITY_DEFENSE), u));
     units
 }
@@ -437,9 +437,9 @@ fn bazaar_of_wonders(g: &mut Game, v: &View, spell: SpellType) {
     let d = g.d;
     let mut best: Option<(i32, CityId, BuildingType)> = None;
     for &c in &g.players[p].cities {
-        // (An army's requisition stays at the head of the queue: the wonder would not be; a
-        // world ritual under way is not set aside.)
-        if g.cities[c].order_queue.first().is_some_and(|o| o.requisition) || crate::world_rituals::locked(g, c) {
+        // (A field unit ordered for the army stays at the head of the queue: the wonder would not
+        // be; a world ritual under way is not set aside.)
+        if g.cities[c].order_queue.first().is_some_and(|o| crate::armies::is_army_order(g, o)) || crate::world_rituals::locked(g, c) {
             continue;
         }
         for b in d.buildings.keys() {

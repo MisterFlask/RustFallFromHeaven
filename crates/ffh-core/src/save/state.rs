@@ -64,7 +64,7 @@ persist_struct!(House {
     id, owner, name, leader, origin, alignment, religion, sympathy, perk, outsider, formed_turn, cities, told_state, perk_on,
 });
 
-use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Squad, SquadBody, Station};
+use crate::army::{Army, ArmyDomain, EscortTarget, Squad, SquadBody, Station, Waypoint};
 
 // ---- trade (docs/TRADE.md) ----
 
@@ -79,7 +79,7 @@ persist_enum!(RouteRefusal {
 });
 persist_struct!(CaravanSlot { unit, reform_turns, bound, cargo, lost_turn, lost_to, pay_x100, delivering, premium });
 persist_struct!(Route { id, owner, origin, destination, established, arrived, growth, slots, closed, closed_since, path, length, dest_pay_x100 });
-persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, requisition, unsupplied_turns, domain, station, carried });
+persist_struct!(Army { id, owner, name, group, target_size, disband_to, formed_turn, unsupplied_turns, domain, station, carried });
 persist_struct!(Squad { id, owner, body, hand_set, fought_turn, fought });
 impl Persist for SquadBody {
     fn write(&self, w: &mut Writer) {
@@ -101,6 +101,27 @@ impl Persist for SquadBody {
             1 => Ok(SquadBody::Garrison(CityId::read(r)?)),
             2 => Ok(SquadBody::Loose),
             t => Err(LoadError::Corrupt(format!("squad body tag {t}"))),
+        }
+    }
+}
+impl Persist for Waypoint {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            Waypoint::Plot(q) => {
+                0u8.write(w);
+                q.write(w);
+            }
+            Waypoint::Army(a) => {
+                1u8.write(w);
+                a.write(w);
+            }
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        match u8::read(r)? {
+            0 => Ok(Waypoint::Plot(PlotIdx::read(r)?)),
+            1 => Ok(Waypoint::Army(ArmyId::read(r)?)),
+            t => Err(LoadError::Corrupt(format!("waypoint tag {t}"))),
         }
     }
 }
@@ -161,34 +182,11 @@ impl Persist for Station {
         }
     }
 }
-persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
-
-impl Persist for RecruitDest {
-    fn write(&self, w: &mut Writer) {
-        match self {
-            RecruitDest::Garrison(c) => {
-                0u8.write(w);
-                c.write(w);
-            }
-            RecruitDest::Army(a) => {
-                1u8.write(w);
-                a.write(w);
-            }
-        }
-    }
-    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
-        match u8::read(r)? {
-            0 => Ok(RecruitDest::Garrison(CityId::read(r)?)),
-            1 => Ok(RecruitDest::Army(ArmyId::read(r)?)),
-            t => Err(LoadError::Corrupt(format!("recruit destination tag {t}"))),
-        }
-    }
-}
 
 // ---- CvStructs.h ----
 
 persist_struct!(XYCoords { x, y });
-persist_struct!(OrderData { order_type, data1, data2, save, dest, requisition, empire });
+persist_struct!(OrderData { order_type, data1, data2, save, empire });
 persist_struct!(MissionData { mission_type, data1, data2, flags, push_turn });
 persist_struct!(TradeData { item_type, data, offering, hidden });
 persist_struct!(Tribute { other, turn, value, demand });
@@ -446,7 +444,7 @@ persist_struct!(Unit {
     terrain_double_move_count, feature_double_move_count, extra_terrain_attack_percent,
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
-    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
+    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, waypoint,
     squad, squad_cell, stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
     battle_summon, sea_turns, sea_out_of_range, intercepted, shore_fired, reinforced, wounds, route,
 });
@@ -503,7 +501,7 @@ persist_struct!(City {
     building_happy_change, building_health_change, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
-    ai_emphasize_avoid_unhealthy_citizens_count, recruit_default, direct_rule, role, role_overridden,
+    ai_emphasize_avoid_unhealthy_citizens_count, waypoint, direct_rule, role, role_overridden,
     specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
     outpost, lane_cut_turns, lane, sally, raid_percent, raid_turns, raid_stripped, house,

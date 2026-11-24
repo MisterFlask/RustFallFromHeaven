@@ -497,7 +497,7 @@ pub fn incoming(g: &Game, cache: Option<&Cache>, flood: &mut Flood, t: &Threats,
         .filter_map(|u| {
             let unit = &g.units[u];
             let at = g.unit_plot_opt(u)?;
-            if at == cp || unit.march.is_some() || g.unit_get_domain_type(u) != DomainType::DOMAIN_LAND || !g.unit_can_defend(u, None) {
+            if at == cp || g.unit_get_domain_type(u) != DomainType::DOMAIN_LAND || !g.unit_can_defend(u, None) {
                 return None;
             }
             let info = &g.d.units[unit.unit_type];

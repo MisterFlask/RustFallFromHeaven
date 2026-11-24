@@ -172,7 +172,7 @@ same game with telemetry on and off.
   there for real and gets the same numbers).
   - The pool: units on `from` that can attack now as the real fight picks them, others if they
     could stand on `from` and attack (`engage_could_attack_from_war`: a land unit able to attack, not
-    marching, not a missile, within its combat limit; moves not counted). `when`:
+    a missile, within its combat limit; moves not counted). `when`:
     `ForecastTurn::Now`, or `ForecastTurn::Next` (moves and attacks restored: an enemy stack
     forecast during our turn; without it, enemy stacks next to a city with their moves spent had
     no attacker and the city looked safe).

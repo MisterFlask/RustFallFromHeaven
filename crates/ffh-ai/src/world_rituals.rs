@@ -68,8 +68,8 @@ pub fn turn(g: &mut Game, v: &View) {
     if !g.city_can_create(c, pr, false, false) || g.city_production_turns_left_project(c, pr, 0) > MAX_TURNS {
         return;
     }
-    // (An army's requisition or an empire order stays at the head of the queue.)
-    if g.cities[c].order_queue.first().is_some_and(|o| o.requisition || o.empire) || locked(g, c) {
+    // (An empire order stays at the head of the queue.)
+    if g.cities[c].order_queue.first().is_some_and(|o| o.empire) || locked(g, c) {
         return;
     }
     let d = g.d;

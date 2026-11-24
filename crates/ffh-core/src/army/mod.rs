@@ -1,5 +1,4 @@
-//! Armies, garrisons, requisition, marching recruits and supply (this game's own rules, not
-//! FFH2's; docs/ARMIES.md).
+//! Armies, garrisons and supply (this game's own rules, not FFH2's; docs/ARMIES.md).
 //!
 //! **Armies.** An army is a persistent, named container of land combat units (`Army`,
 //! `Unit::army`): it moves as one, as a selection group does (its units are kept in one group by
@@ -8,7 +7,7 @@
 //! along with an army's group. An army unit on its own (after a split, a move out of a city) is
 //! a one-unit army.
 //!
-//! **Garrisons.** An army unit in one of its owner's cities, in no army and not marching, is in
+//! **Garrisons.** An army unit in one of its owner's cities, in no army, is in
 //! that city's garrison. The garrison does not move: a unit that leaves the city leaves the
 //! garrison (and becomes, or joins, an army). Units go from the garrison into an army on the
 //! city's plot and back freely; the garrison and every army on the plot defend the city together
@@ -19,24 +18,17 @@
 //! after each army command and in the player's turn processing (`player_do_turn`, Civ4's doTurn
 //! at the end of its turn): each group of army units keeps one army, the oldest group holding
 //! units of an army keeps that army (a split-off part becomes a new army), a group whose units had
-//! no army gets a new one, and an army without units is gone. Marching recruits are left out (they
-//! are in no army until they arrive). An army whose units all went to another army's group (Civ4's
-//! Group button) hands it its recruits, requisition and production orders and city defaults; a
-//! destroyed army's orders fall back to their city's default, its requisition orders are
-//! withdrawn and its recruits on the way go to the nearest garrison.
+//! no army gets a new one, and an army without units is gone (an army whose units all went to
+//! another army's group, Civ4's Group button, hands that army the fleets escorting it).
 //!
-//! **Recruitment** (`requisition.rs`, `march.rs`). An army requisitions units from the cities its
-//! owner picks for it (`Army::requisition`) while it is short of its target size: an order at the
-//! front of the city's queue, which interrupts what the city was building. A finished land combat
-//! unit goes to its order's destination (`OrderData::dest`, else the city's default
-//! `City::recruit_default`, else the city's own garrison): to the garrison it stays, as without
-//! armies; to another city's garrison or to an army it is created in the city as any unit and
-//! *marches* there (`Unit::march`): the rules move it once a turn, at the end of its owner's turn
-//! (after its owner moved, before the cities produce), and it takes no orders until it arrives.
+//! **Recruitment.** A trained unit appears in the city that trained it, an ordinary unit (in its
+//! garrison when it is an army unit). A city's waypoint (`waypoint.rs`) sends the units it trains
+//! to a plot or an army under an ordinary go-to order; on their way they are in no army and no
+//! garrison (the sync leaves them out).
 //!
 //! **Supply** (`supply.rs`, docs/SUPPLY.md). Every army needs a supply line back to a city or a
-//! ship of its owner; cut, it is hungry (no healing, its recruits wait), then starving (HP lost
-//! each turn, less damage dealt).
+//! ship of its owner; cut, it is hungry (no healing), then starving (HP lost each turn, less
+//! damage dealt).
 
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 use std::cmp::Reverse;
@@ -48,15 +40,14 @@ use crate::game::Game;
 use crate::ids::*;
 
 mod fleet;
-mod march;
-mod requisition;
 mod squad;
 mod supply;
+mod waypoint;
 
 pub use fleet::{ArmyDomain, EscortTarget, Station};
-pub use march::March;
 pub use squad::{Squad, SquadBody, SquadDest, SquadLayout, SQUAD_CELLS, SQUAD_LANES};
 pub use supply::{SupplyLine, SupplyShipRefusal, SupplySource, SupplyState};
+pub use waypoint::Waypoint;
 
 /// A persistent army (`Game::armies`).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -66,15 +57,12 @@ pub struct Army {
     pub name: String,
     /// The group its units are in (set by `player_army_sync`).
     pub group: Option<GroupId>,
-    /// The size it is to be kept at: its requisition fills it (0 = none: it requisitions nothing).
+    /// The size its owner's AI means it to have (0: none); the rules do not read it.
     pub target_size: i32,
     /// Disbanded: it marches to this city, whose garrison its units join on arrival.
     pub disband_to: Option<CityId>,
     /// The game turn it was formed.
     pub formed_turn: i32,
-    /// The cities it requisitions units from, in the order its owner picked them (only its
-    /// owner's cities: a city lost, traded, razed or flipped leaves every list).
-    pub requisition: Vec<CityId>,
     /// Its owner's turn starts in a row its supply line was cut at (docs/SUPPLY.md): 0 supplied,
     /// 1 to `SUPPLY_HUNGER_TURNS` hungry, above starving ([`Game::army_supply_state`]).
     pub unsupplied_turns: i32,
@@ -86,15 +74,6 @@ pub struct Army {
     /// that stand on one plot are put back into one group (each carried unit has a group of its
     /// own while aboard).
     pub carried: bool,
-}
-
-/// Where a recruited unit goes.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum RecruitDest {
-    /// A city's garrison (the producing city's own is the default).
-    Garrison(CityId),
-    /// An army.
-    Army(ArmyId),
 }
 
 /// Why an army command is refused.
@@ -116,6 +95,12 @@ fn ordinal(n: i32) -> String {
         _ => "th",
     };
     format!("{n}{suffix}")
+}
+
+/// "a Warrior", "an Axeman".
+pub(crate) fn with_article(name: &str) -> String {
+    let vowel = name.chars().next().is_some_and(|c| "AEIOUaeiou".contains(c));
+    format!("{} {name}", if vowel { "an" } else { "a" })
 }
 
 impl Game {
@@ -156,11 +141,11 @@ impl Game {
         hero_promotion(self.d).is_some_and(|h| self.units[u].has_promotion[h])
     }
 
-    /// The city whose garrison unit `u` is in, if any: an army unit in no army and not marching,
-    /// in one of its owner's cities.
+    /// The city whose garrison unit `u` is in, if any: an army unit in no army and not on its way
+    /// to a waypoint, in one of its owner's cities.
     pub fn unit_garrison_city(&self, u: UnitId) -> Option<CityId> {
         let unit = &self.units[u];
-        if unit.army.is_some() || unit.march.is_some() || !self.unit_is_army_unit(u) {
+        if unit.army.is_some() || unit.waypoint.is_some() || !self.unit_is_army_unit(u) {
             return None;
         }
         let plot = self.unit_plot_opt(u)?;
@@ -197,22 +182,15 @@ impl Game {
         };
         let name = (1..).map(|n| format!("{} {kind}", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
         let turn = self.game_turn();
-        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, disband_to: None, formed_turn: turn, requisition: Vec::new(), unsupplied_turns: 0, domain, station: Station::None, carried: false });
+        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, disband_to: None, formed_turn: turn, unsupplied_turns: 0, domain, station: Station::None, carried: false });
         self.players[p].armies.push(a);
         a
     }
 
-    /// Army `a` is gone. Its units belong to no army; production orders and city defaults naming
-    /// it fall back to the city's default, its requisition orders are withdrawn (what was put into
-    /// them stays with the unit type), and its recruits on the way go to the nearest garrison.
+    /// Army `a` is gone. Its units belong to no army; the waypoints naming it are cleared.
     fn army_delete(&mut self, a: ArmyId) {
         let owner = self.armies[a].owner;
-        let marching = self.army_marching(a);
-        // (Not chosen anew here: the city's turn chooses for an emptied automated queue, and an
-        // emptied queue of a directly ruled city waits for its owner, as any.)
-        for c in self.players[owner].cities.clone() {
-            self.city_withdraw_requisitions(c, a, false);
-        }
+        self.army_waypoints_gone(a);
         self.armies.remove(a);
         self.players[owner].armies.retain(|&x| x != a);
         // Fleets escorting it wait where they are (docs/NAVAL.md, 7.2).
@@ -222,51 +200,13 @@ impl Game {
                 self.units[u].army = None;
             }
         }
-        for c in self.players[owner].cities.clone() {
-            let city = &mut self.cities[c];
-            if city.recruit_default == Some(RecruitDest::Army(a)) {
-                city.recruit_default = None;
-            }
-            for o in city.order_queue.iter_mut() {
-                if o.dest == Some(RecruitDest::Army(a)) {
-                    o.dest = None;
-                }
-            }
-        }
-        for u in marching {
-            self.unit_march_divert(u, "its army is gone", None);
-        }
     }
 
-    /// Everything of `p` bound for army `from` goes to army `to` instead (`from` was merged into
-    /// it): the recruits on the way, the requisition (its cities join `to`'s list) and production
-    /// orders, the cities' defaults.
+    /// Army `from` of `p` was merged into army `to`: the fleets escorting it escort `to`, and the
+    /// waypoints naming it name `to`.
     fn army_redirect(&mut self, p: PlayerId, from: ArmyId, to: ArmyId) {
-        // Fleets escorting it escort the army it joined.
         self.fleet_target_gone(p, from, Some(to));
-        for u in self.army_marching(from) {
-            if let Some(m) = self.units[u].march.as_mut() {
-                m.dest = RecruitDest::Army(to);
-            }
-        }
-        if self.armies.contains(from) && self.armies.contains(to) {
-            for c in self.armies[from].requisition.clone() {
-                if !self.armies[to].requisition.contains(&c) {
-                    self.armies[to].requisition.push(c);
-                }
-            }
-        }
-        for c in self.players[p].cities.clone() {
-            let city = &mut self.cities[c];
-            if city.recruit_default == Some(RecruitDest::Army(from)) {
-                city.recruit_default = Some(RecruitDest::Army(to));
-            }
-            for o in city.order_queue.iter_mut() {
-                if o.dest == Some(RecruitDest::Army(from)) {
-                    o.dest = Some(RecruitDest::Army(to));
-                }
-            }
-        }
+        self.army_waypoints_redirect(p, from, to);
     }
 
     /// Settles player `p`'s armies with its groups (see the module comment): every group of
@@ -274,6 +214,11 @@ impl Game {
     /// a disbanded army in the city it marched to joins its garrison; armies without units go.
     pub fn player_army_sync(&mut self, p: PlayerId) {
         self.player_army_sync_armies(p);
+        // Units on their way to a waypoint that stand on its plot arrive (waypoint.rs), once the
+        // armies are settled with the groups; then the armies again.
+        if !self.player_is_barbarian(p) && self.player_waypoint_arrivals(p) {
+            self.player_army_sync_armies(p);
+        }
         // The squads follow the armies (squad.rs).
         self.player_squad_sync(p);
     }
@@ -284,10 +229,10 @@ impl Game {
         }
         // Units that are no army units (a hero now, a summon) belong to no army; nor does a unit
         // to an army that is gone or not its owner's or of another domain (a ship in an army, a
-        // land unit in a fleet), nor a marching recruit.
+        // land unit in a fleet), nor a unit on its way to a waypoint.
         for u in self.players[p].units.clone() {
             if let Some(a) = self.units[u].army {
-                if !self.armies.contains(a) || self.armies[a].owner != p || self.unit_army_domain(u) != Some(self.armies[a].domain) || self.units[u].march.is_some() {
+                if !self.armies.contains(a) || self.armies[a].owner != p || self.unit_army_domain(u) != Some(self.armies[a].domain) || self.units[u].waypoint.is_some() {
                     self.units[u].army = None;
                 }
             }
@@ -303,7 +248,7 @@ impl Game {
                 continue;
             }
             // (Units carried by a ship are settled below: each has a group of its own aboard.)
-            let members: Vec<UnitId> = self.groups[grp].units.iter().copied().filter(|&u| self.units.contains(u) && self.unit_army_domain(u).is_some() && self.units[u].march.is_none() && !self.unit_is_cargo(u)).collect();
+            let members: Vec<UnitId> = self.groups[grp].units.iter().copied().filter(|&u| self.units.contains(u) && self.unit_army_domain(u).is_some() && self.units[u].waypoint.is_none() && !self.unit_is_cargo(u)).collect();
             let Some(plot) = self.group_plot(grp) else { continue };
             if members.is_empty() {
                 continue;
@@ -348,7 +293,7 @@ impl Game {
         // has the group of its first carried unit.
         let mut carried: BTreeSet<ArmyId> = BTreeSet::new();
         for u in self.players[p].units.clone() {
-            if !self.unit_is_cargo(u) || self.units[u].march.is_some() {
+            if !self.unit_is_cargo(u) || self.units[u].waypoint.is_some() {
                 continue;
             }
             let Some(a) = self.units[u].army.filter(|&a| self.armies.contains(a)) else { continue };
@@ -381,7 +326,7 @@ impl Game {
             // (plot, group) of its units ashore, in its owner's unit order.
             let mut by_plot: BTreeMap<PlotIdx, Vec<GroupId>> = BTreeMap::new();
             for u in self.army_units(a) {
-                if self.unit_is_cargo(u) || self.units[u].march.is_some() {
+                if self.unit_is_cargo(u) || self.units[u].waypoint.is_some() {
                     continue;
                 }
                 let (Some(plot), Some(grp)) = (self.unit_plot_opt(u), self.units[u].group.filter(|&gr| self.groups.contains(gr))) else { continue };
@@ -423,9 +368,6 @@ impl Game {
             if units.first().is_some_and(|&f| self.unit_army_domain(f) != Some(domain)) {
                 return Err("ships serve in fleets, land units in armies: not both at once");
             }
-            if self.units[u].march.is_some() {
-                return Err("a marching recruit takes no orders until it arrives");
-            }
             let q = self.unit_plot_opt(u).ok_or("a unit is not on the map")?;
             if plot.is_some_and(|x| x != q) {
                 return Err("the units are not on one plot");
@@ -438,6 +380,10 @@ impl Game {
     /// Forms a new army of `units` (army units of `p` on one plot), in one group of their own.
     pub fn army_form(&mut self, p: PlayerId, units: &[UnitId]) -> Result<ArmyId, &'static str> {
         self.army_units_plot(p, units)?;
+        // An order: the units' waypoints end (waypoint.rs).
+        for &u in units {
+            self.unit_clear_waypoint(u);
+        }
         // Its supply counter: the highest of the armies its units came from (0 from a garrison).
         let unsupplied = self.units_unsupplied_turns(units);
         let domain = self.unit_army_domain(units[0]).expect("army units");
@@ -475,8 +421,37 @@ impl Game {
     }
 
     /// `units` (army units of `p`, from armies or a garrison) join army `into` on their plot. An
-    /// army left without units is gone, and its recruits, requisition and orders follow.
+    /// army left without units is gone (the fleets escorting it escort `into`).
     pub fn army_join(&mut self, p: PlayerId, units: &[UnitId], into: ArmyId) -> ArmyResult {
+        self.army_check_join(p, units, into)?;
+        // An order: the units' waypoints end (waypoint.rs).
+        for &u in units {
+            self.unit_clear_waypoint(u);
+        }
+        self.army_join_units(p, units, into)?;
+        self.player_army_sync(p);
+        Ok(())
+    }
+
+    /// Whether `units` may join army `into` ([`Game::army_join`]), else why not.
+    fn army_check_join(&self, p: PlayerId, units: &[UnitId], into: ArmyId) -> ArmyResult {
+        if !self.armies.contains(into) || self.armies[into].owner != p {
+            return Err("no such army");
+        }
+        let plot = self.army_units_plot(p, units)?;
+        if self.army_plot(into) != Some(plot) {
+            return Err("the army is not on their plot");
+        }
+        if self.unit_army_domain(units[0]) != Some(self.armies[into].domain) {
+            return Err("ships serve in fleets, land units in armies");
+        }
+        self.armies[into].group.ok_or("the army has no group")?;
+        Ok(())
+    }
+
+    /// [`Game::army_join`] without the army sync (the caller settles the armies) and without
+    /// ending waypoints: the explicit join, `into` keeping its name, order and counters.
+    pub(crate) fn army_join_units(&mut self, p: PlayerId, units: &[UnitId], into: ArmyId) -> ArmyResult {
         if !self.armies.contains(into) || self.armies[into].owner != p {
             return Err("no such army");
         }
@@ -506,7 +481,6 @@ impl Game {
                 self.army_redirect(p, a, into);
             }
         }
-        self.player_army_sync(p);
         Ok(())
     }
 
@@ -526,6 +500,10 @@ impl Game {
             return Err("ships have no garrison: disband the fleet in port");
         }
         let c = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.cities[c].owner == p).ok_or("not in one of your cities")?;
+        // An order: the units' waypoints end (waypoint.rs).
+        for &u in units {
+            self.unit_clear_waypoint(u);
+        }
         // The garrison's own group (any group of garrison units there), else a new one.
         let garrison_group = self.city_garrison_units(c).into_iter().find(|u| !units.contains(u)).and_then(|u| self.units[u].group);
         for (i, &u) in units.iter().enumerate() {
@@ -556,25 +534,14 @@ impl Game {
         Ok(())
     }
 
-    /// Sets the size army `a` is to be kept at (0: none, it requisitions nothing). Its requisition
-    /// follows in its owner's next turn processing.
-    pub fn army_set_target_size(&mut self, p: PlayerId, a: ArmyId, size: i32) -> ArmyResult {
-        if !self.armies.contains(a) || self.armies[a].owner != p {
-            return Err("no such army");
-        }
-        self.armies[a].target_size = size.clamp(0, 99);
-        Ok(())
-    }
-
     /// The highest supply counter (`Army::unsupplied_turns`) of the armies `units` are in (0: none
     /// is in an army).
     fn units_unsupplied_turns(&self, units: &[UnitId]) -> i32 {
         units.iter().filter_map(|&u| self.units[u].army).filter(|&a| self.armies.contains(a)).map(|a| self.armies[a].unsupplied_turns).max().unwrap_or(0)
     }
 
-    /// Disbands army `a`: its units join the garrison of their city, or march to the nearest city
-    /// of `p` and join its garrison there. Its recruits on the way go to that garrison; its
-    /// requisition ends (its orders are withdrawn).
+    /// Disbands army `a`: its units join the garrison of their city, or go to the nearest city of
+    /// `p` (a move order) and join its garrison there.
     pub fn army_disband(&mut self, p: PlayerId, a: ArmyId) -> ArmyResult {
         if !self.armies.contains(a) || self.armies[a].owner != p {
             return Err("no such army");
@@ -592,15 +559,8 @@ impl Game {
         }
         self.armies[a].station = Station::None;
         let Some(c) = target else { return Err("you have no city to go to") };
-        for u in self.army_marching(a) {
-            if let Some(m) = self.units[u].march.as_mut() {
-                m.dest = RecruitDest::Garrison(c);
-            }
-        }
-        self.armies[a].requisition.clear();
-        for o in self.players[p].cities.clone() {
-            self.city_withdraw_requisitions(o, a, true);
-        }
+        // Disbanded, it is no waypoint (waypoint.rs).
+        self.army_waypoints_gone(a);
         if here.is_some() {
             let units = self.army_units(a);
             if fleet {
@@ -660,22 +620,23 @@ impl Game {
         self.players[p].cities.iter().copied().min_by_key(|&c| (self.plot_distance(x, y, self.cities[c].x, self.cities[c].y), c))
     }
 
-    // ---------------------------------------------------------------------------------------
-    // Recruitment destinations
-    // ---------------------------------------------------------------------------------------
-
-    /// The plot of a destination, if it exists and is `p`'s (an army disbanding is none).
-    pub fn recruit_dest_plot(&self, p: PlayerId, dest: RecruitDest) -> Option<PlotIdx> {
-        match dest {
-            RecruitDest::Garrison(c) => (self.cities.contains(c) && self.cities[c].owner == p).then(|| self.city_plot(c)),
-            RecruitDest::Army(a) => (self.armies.contains(a) && self.armies[a].owner == p && self.armies[a].disband_to.is_none()).then(|| self.army_plot(a)).flatten(),
+    /// An army's name in messages ("the 2nd Army"; "an army" when it is gone).
+    pub fn army_display_name(&self, a: ArmyId) -> String {
+        match self.armies.get(a) {
+            Some(army) => format!("the {}", army.name),
+            None => "an army".to_string(),
         }
     }
 
-    /// Whether a destination is valid for a city of `p` to recruit to.
-    pub fn recruit_dest_valid(&self, p: PlayerId, dest: RecruitDest) -> bool {
-        self.recruit_dest_plot(p, dest).is_some()
+    /// Whether units of `unit` are siege (`UNITCOMBAT_SIEGE`).
+    pub fn unit_type_is_siege(&self, unit: UnitType) -> bool {
+        let siege = self.d.ty::<UnitCombatType>("UNITCOMBAT_SIEGE");
+        siege.is_some() && self.d.units[unit].unit_combat_type == siege
     }
+
+    // ---------------------------------------------------------------------------------------
+    // March estimates
+    // ---------------------------------------------------------------------------------------
 
     /// The cost (in `MOVE_DENOMINATOR`ths of a move) for a unit of `unit_type` with `base_moves`
     /// of `team` to step from `from` to `to`: the rules' terrain and route costs without the
@@ -705,8 +666,7 @@ impl Game {
 
     /// An estimate of the march in turns of a unit of `unit_type` of `p` from `from` to `to` over
     /// land (terrain and roads; other units, borders and war ignored), or `None` when there is no
-    /// land path. For choosing and showing; the march itself follows the rules' path
-    /// ([`Game::unit_march_eta`]).
+    /// land path. For choosing and showing; a unit's own moves follow the rules' path.
     pub fn march_turns(&self, p: PlayerId, unit_type: UnitType, from: PlotIdx, to: PlotIdx) -> Option<i32> {
         if from == to {
             return Some(0);
@@ -757,50 +717,17 @@ impl Game {
         None
     }
 
-    /// Where a unit of city `c`'s order goes (`order_dest`, else the city's default, else its own
-    /// garrison); `None` = it stays here (the city's own garrison, a destination gone, no armies).
-    pub fn city_recruit_dest(&self, c: CityId, order_dest: Option<RecruitDest>, unit_type: UnitType) -> Option<RecruitDest> {
-        let domain = self.unit_type_army_domain(unit_type)?;
-        let owner = self.cities[c].owner;
-        let dest = order_dest.or(self.cities[c].recruit_default)?;
-        if !self.recruit_dest_valid(owner, dest) || dest == RecruitDest::Garrison(c) {
-            return None;
-        }
-        // A ship goes only to a fleet, a land unit only to an army or a garrison.
-        match dest {
-            RecruitDest::Army(a) if self.armies[a].domain != domain => None,
-            RecruitDest::Garrison(_) if domain == ArmyDomain::Sea => None,
-            _ => Some(dest),
-        }
-    }
-
-    /// A destination's name for messages ("the 2nd Army", "the garrison of Ithralia").
-    pub fn recruit_dest_name(&self, dest: RecruitDest) -> String {
-        match dest {
-            RecruitDest::Army(a) if self.armies.contains(a) => format!("the {}", self.armies[a].name),
-            RecruitDest::Army(_) => "an army".to_string(),
-            RecruitDest::Garrison(c) if self.cities.contains(c) => format!("the garrison of {}", self.d.text.name(&self.cities[c].name)),
-            RecruitDest::Garrison(_) => "a garrison".to_string(),
-        }
-    }
-
-    /// City `c` leaves its owner (captured, traded, flipped, razed: the start of `city_kill`): it
-    /// leaves every army's requisition, and the recruits marching to its garrison go to the
-    /// nearest other one.
+    /// City `c` leaves its owner (captured, traded, flipped, razed: the start of `city_kill`): an
+    /// army disbanding into it stays an army (its owner can disband it again; otherwise it would
+    /// never reach a garrison), and it has no waypoint.
     pub fn city_army_lost(&mut self, c: CityId) {
         let owner = self.cities[c].owner;
         for a in self.players[owner].armies.clone() {
-            self.armies[a].requisition.retain(|&x| x != c);
-            // An army disbanding into `c` stays an army (its owner can disband it again);
-            // otherwise it would refuse requisitions and never reach a garrison.
             if self.armies[a].disband_to == Some(c) {
                 self.armies[a].disband_to = None;
             }
         }
-        for u in self.players[owner].units.clone() {
-            if self.units[u].march.as_ref().is_some_and(|m| m.dest == RecruitDest::Garrison(c)) {
-                self.unit_march_divert(u, "the city is lost", Some(c));
-            }
-        }
+        // Its waypoint is not the new owner's (waypoint.rs).
+        self.cities[c].waypoint = None;
     }
 }

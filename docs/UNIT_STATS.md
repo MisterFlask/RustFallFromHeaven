@@ -308,7 +308,7 @@ before: for every land unit, strength 0 and a sheet value 0 coincide); Target We
 defensive strike -DEF/5; spell damage resistance DEF/5; the Fear check
 `(own rating - source's rating) / 10 + 20 + levels`, its source the highest rating; Kidnap
 ATK x 8 / 10 %; Domination rating + (100 - resist); Pillar of Fire and the Citadel event half the
-rating; Rantine's Convert City, The Cull's order, the best land unit, upgrade and requisition picks
+rating; Rantine's Convert City, The Cull's order, the best land unit and upgrade picks
 by rating; Commander Join (AI) rating above 50; Take Equipment (AI) rating more than 20 above the
 holder's. A crusade's or loan's **force** (`crusade_unit_force`) is the rating with the unit's
 combat bonus, x10, scaled by health, shown /10 (a healthy Axeman's 40).

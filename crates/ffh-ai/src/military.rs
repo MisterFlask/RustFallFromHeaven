@@ -33,14 +33,11 @@ pub struct Target {
 }
 
 /// A field unit of ours the AI's stacks command (attack, city attack, collateral, counter, reserve
-/// and pillage roles, on land): not a marching recruit, which goes where the rules take it
-/// (docs/ARMIES.md), so no stack takes it in, no transport loads it and no count of our stacks has
-/// it.
+/// and pillage roles, on land).
 pub fn is_army_unit(g: &Game, u: UnitId) -> bool {
     let unit = &g.units[u];
     let info = &g.d.units[unit.unit_type];
-    unit.march.is_none()
-        && info.attack_rating() > 0
+    info.attack_rating() > 0
         && !info.found
         && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
         && matches!(
@@ -857,6 +854,16 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
         if let Some((q, _)) = best.filter(|&(q, _)| crate::supply::may_move(g, grp, q, None)) {
             move_to(g, grp, q, 0);
             finish(g, grp);
+            return;
+        }
+    }
+    // At war (or preparing one), a stack with nothing else to do joins the main army (a unit
+    // trained in a home city the campaign leaves out: armies.rs), not beyond our supply line.
+    if let Some(q) = crate::armies::join_main_army(g, p, grp).filter(|&q| crate::supply::may_move(g, grp, q, None)) {
+        crate::trace!(g, p, "stack {:?} ({} units) at {:?} joins the main army at {:?}", grp, g.groups[grp].units.len(), g.map.xy(here), g.map.xy(q));
+        move_to(g, grp, q, 0);
+        finish(g, grp);
+        if !alive(g, grp) || !g.group_ready_to_move(grp, false) {
             return;
         }
     }

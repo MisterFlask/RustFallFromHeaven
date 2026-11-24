@@ -150,8 +150,8 @@ fn putting_it_behind_or_taking_it_off_loses_its_production() {
     // Appended behind it: kept.
     g.city_push_order(a, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, true, false);
     assert_eq!(g.cities[a].project_production[pr], 6);
-    // An army's requisition does not go in front of it.
-    assert_eq!(g.city_push_order_kind(a, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, false, false, OrderKind::Requisition), None);
+    // An empire order does not go in front of it.
+    assert_eq!(g.city_push_order_kind(a, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, false, false, OrderKind::Empire), None);
     // Put behind a new order: abandoned.
     g.city_push_order(a, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, false, false);
     assert_eq!(g.cities[a].project_production[pr], 0);

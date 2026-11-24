@@ -428,8 +428,8 @@ Warships and ships with cargo room serve in named **fleets**: the armies' contai
 (docs/ARMIES.md) with a domain. `Army::domain` is land or sea; a sea army is shown and named as a
 fleet ("1st Fleet", numbered apart from the armies). It has what an army has that makes sense at
 sea: one group that moves as one, the sync with the groups, form / split / join / merge / rename /
-disband, a target size, requisition from the cities its owner picks (coastal ones; the ship is
-built there and sails to the fleet as a recruit marches), upgrade all. It has no supply line
+disband, upgrade all, and being a city's waypoint (a coastal city's only: the ships it trains
+sail to the fleet under an ordinary go-to, docs/ARMIES.md "Waypoints"). It has no supply line
 (range and wear instead), no tactic, no garrison (a ship in no fleet is simply a ship), and it
 fights the duel. A lone warship outside a city is a one-ship fleet, as a lone army unit is a
 one-unit army. Barbarian ships are in no fleet.
@@ -454,18 +454,17 @@ Where the code is:
 - `crates/ffh-core/src/army/fleet.rs`: `ArmyDomain` (`Land`, `Sea`), `Station` (`None`,
   `Patrol(SeaId)`, `Escort(EscortTarget)`), `EscortTarget` (`Army`, `Group`); which units serve
   (`unit_type_is_fleet_unit`, `unit_is_fleet_unit`, `unit_army_domain`, `unit_type_army_domain`,
-  `unit_type_fits_army`, `army_is_fleet`); `fleet_nearest_port`; the fleet's requisition
-  (`fleet_check_requisition_city`, `fleet_requisition_unit_default`); the standing orders
+  `unit_type_fits_army`, `army_is_fleet`); `fleet_nearest_port`; the standing orders
   (`army_set_station`, `fleet_patrol_seas`, `escort_target_plot`, `escort_target_name`,
   `player_fleet_stations` at the end of the owner's turn (its turn processing, after the army sync),
   `army_station_step`, `group_escort_step` called at the end of `group_move`,
   `group_order_ends_station` called at the start of `group_push_mission`).
 - `Army::domain`, `Army::station`, `Army::carried` (`army/mod.rs`); the sync, the names and the
   commands take the domain (`player_army_sync`, `army_create`, `army_units_plot`, `army_form`,
-  `army_join`, `army_to_garrison`, `army_set_tactic`, `army_disband`, `city_recruit_dest`,
-  `march_turns` over water for a ship); the landing (`player_army_regroup_landed`).
-- The march of a ship (`army/march.rs`): `MOVE_SEA_RANGE` (`defs.rs`, honoured in `path.rs` for
-  any ship group whose search carries it); no supply for fleets (`player_update_supply`).
+  `army_join`, `army_to_garrison`, `army_set_tactic`, `army_disband`, `march_turns` over water for
+  a ship, `city_check_waypoint`: a fleet only for a coastal city); the landing
+  (`player_army_regroup_landed`); no supply for fleets (`player_update_supply`).
+  `MOVE_SEA_RANGE` (`defs.rs`, honoured in `path.rs` for any ship group whose search carries it).
 - The AI (`crates/ffh-ai/src/warships.rs`): its ships' groups become fleets through the sync; a
   Patrol it decides (guard, siege blockade, blockade, guard post: `go_patrol`) is also the fleet's
   Patrol standing order (a ship in port forms a fleet for it: `fleet_for`); a warship with an
@@ -474,7 +473,7 @@ Where the code is:
   wakes, when the target carries no army or is gone, or the fleet is worn, out of range or hurt
   (`escort_ends`); a ship group of ours that decides again leaves its standing order first
   (`clear_station`, from `units::play`). `armies.rs`, `tactics.rs` and `supply.rs` leave fleets out.
-  The AI requisitions no ship.
+  The AI places no ship orders for a fleet and sets no waypoints.
 - The client: `crates/ffh-play/src/view/armies.rs` (`fleet_json`, `station_view`, the screen's
   `fleets`, `seas`, `escort_targets`), the unit panel's fleet actions (`view/units.rs`,
   `army_actions`), the command `army_station` (`command.rs`), `assets/app/armies.js` (the Fleets
@@ -498,14 +497,12 @@ Choices made where this spec was silent (each open to change):
 - **Disband**: a fleet in port is gone at once, its ships in no fleet; at sea it sails to the
   nearest port of its owner (a city next to water, one on the fleet's water first; plot distance,
   ties to the older city) and is gone there. Refused with no port.
-- **Requisition**: only coastal cities (a city next to water); the rules' ship (the human's) is
-  the strongest warship the city can train (no world or national unit; ties: the cheaper), else the
-  ship with the most cargo room. The ship sails as a recruit marches, on a path over water in its
-  team's range (`MOVE_SEA_RANGE`); with no such way it waits, and after `ARMY_TRANSIT_STALL_TURNS`
-  turns it stops sailing and is an ordinary ship where it stands (a ship has no garrison to go to;
-  the same when its fleet is gone). The march estimate for a ship is the water steps in range, one
-  move a plot. A land unit's order naming a fleet, or a ship's naming an army or a garrison, keeps
-  the unit in its city. The city screen offers no fleet as a land unit's destination.
+- **Waypoints** (2026-11-23; the fleets' requisition was removed then, docs/ARMIES.md): a fleet
+  is a waypoint only for a coastal city (a city next to water). A ship the city trains follows it
+  (an ordinary go-to over water, the rules' path); a land unit does not, and a ship does not follow
+  an army. A plot waypoint takes ships to a water plot, land units to a land plot. On arrival the
+  ship joins the fleet; with no way there, or its fleet gone, it waits for orders where it is. The
+  march estimate for a ship is the water steps in range, one move a plot.
 - **No tactic**: `army_set_tactic` refuses a fleet; its `tactic` fields stay unused. Battles never
   include ships, so the engagement set-up and the commander auras never meet a fleet; the client's
   `engage` refuses a fleet and the largest-army launcher skips fleets.
@@ -580,7 +577,7 @@ An **outpost** is a city with `City::outpost` set.
   land area other than the one its owner's capital stands on.
 - **What it is.** Population at most `OUTPOST_MAX_POP` (2). Its borders and the plots it works are
   the 8 plots around it and do not grow. It builds nothing (no queue, no hurry, no buildings of
-  its own), has no governor, sends no recruits, pays no maintenance and does not count as a city
+  its own), has no governor, pays no maintenance and does not count as a city
   for any maintenance, civic or victory count. Its crews improve its land (docs/WORKS.md). It is a
   port. Its resources reach its owner while its lane is open (9.3).
 - **Raising it.** For `OUTPOST_RAISE_COST` (150, scaled by game speed) gold its owner makes it a
@@ -627,7 +624,7 @@ Where the code is:
   `city_num_city_plots`/`plot_city`/`plot_update_working_city`/`city_set_plot_radius` (radius 1),
   maintenance (none; not counted in the number-of-cities maintenance), civic upkeep and anarchy (not
   counted), the Kuriotates' city limit, `city_is_governed`, `player_find_new_capital`,
-  `player_verify_alive`, `army_check_requisition_city`, `city_is_port` and the range field (a
+  `player_verify_alive`, `city_is_port` and the range field (a
   starved outpost is no port), `player_acquire_city` (the flag kept, the lane traced),
   `MISSION_FOUND` with data1 `FOUND_OUTPOST` (`group/missions.rs`).
 - Data: `UNIT_COLONIST`/`UNITCLASS_COLONIST` (the Settler's entry, cost 60, `found_outpost`, no
@@ -673,8 +670,7 @@ Choices made where this spec was silent (each open to change):
   strongest enemy team on Patrol there (shared as the cut's gold). Raid gold is new gold: the
   outpost's owner pays nothing.
 - **Wheeled City** (a card): an outpost cannot be packed up (`city_pack_up_refusal`: `An outpost
-  cannot be packed up.`). Neither an army nor a fleet requisitions from an outpost; a Colonist
-  serves in neither. A starved outpost is no port for a fleet either (its nearest port, the Patrol
+  cannot be packed up.`). A Colonist serves in neither an army nor a fleet. A starved outpost is no port for a fleet either (its nearest port, the Patrol
   seas: both read the range field).
 - **Starving** from the turn start where the count passes `LANE_STARVE_TURNS`; the range fields are
   dropped when an outpost starts or stops starving. **Divergence**: a lane's "in range" also counts
@@ -826,7 +822,8 @@ holding the Patrol standing order 136, 325, 297, 219). Warship-turns on Patrol: 
 against the base's 126, 274, 245, 179 on the same seeds (the games diverge once the first fleets
 sail, near turn 200, with turns above and below the base in both). Escort orders: none (no loaded
 assault transport at sea in these games, as in the base's measures above). Ships requisitioned: 0
-(the AI does not requisition ships). A first version carried the orders out at the start of the
+(the AI did not requisition ships; the requisition was removed on 2026-11-23). A first version
+carried the orders out at the start of the
 turn and lost a third of the patrol ship-turns in three games: a worn ship the AI sent to port was
 put back on Patrol, its moves spent, every turn (now at the end of the turn, 7.3).
 

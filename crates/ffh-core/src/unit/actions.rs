@@ -157,6 +157,26 @@ impl Game {
         // (C++ FAssert: the unit has an owner.)
 
         if self.unit_can_do_command(u, command, data1, data2, false, true) {
+            // This game's waypoints (`army/waypoint.rs`): a command that changes what the unit's
+            // group does is an order, which ends their waypoints (a promotion, an upgrade, a spell
+            // do not).
+            if matches!(
+                command,
+                CommandType::COMMAND_AUTOMATE
+                    | CommandType::COMMAND_WAKE
+                    | CommandType::COMMAND_CANCEL
+                    | CommandType::COMMAND_CANCEL_ALL
+                    | CommandType::COMMAND_STOP_AUTOMATION
+                    | CommandType::COMMAND_LOAD
+                    | CommandType::COMMAND_LOAD_UNIT
+                    | CommandType::COMMAND_UNLOAD
+                    | CommandType::COMMAND_UNLOAD_ALL
+            ) {
+                match self.units[u].group.filter(|&g| self.groups.contains(g)) {
+                    Some(g) => self.group_clear_waypoints(g),
+                    None => self.unit_clear_waypoint(u),
+                }
+            }
             match command {
                 CommandType::COMMAND_PROMOTION => {
                     self.unit_promote(u, opt_from_i32(data1), command_leader(data2));

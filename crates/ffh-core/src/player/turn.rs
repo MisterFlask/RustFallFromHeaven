@@ -208,13 +208,10 @@ impl Game {
             }
         }
 
-        // This game's armies (docs/ARMIES.md): the marching recruits march (the armies settled with
-        // the groups first), with the moves they kept through the turn, to where their
-        // destinations are after their owner moved, and join them there (an army's moves this
-        // turn are over); then the armies are settled with the groups.
-        self.player_do_march(p);
-        self.player_march_join(p);
+        // This game's armies (docs/ARMIES.md): the armies are settled with the groups, then the
+        // units on their way to a waypoint arrive or follow it (`army/waypoint.rs`).
         self.player_army_sync(p);
+        self.player_waypoints_turn(p);
         // This game's fleets (docs/NAVAL.md, 7.2): their standing orders, with the moves their
         // owner left them (after its own orders: an order it gave this turn is not undone).
         self.player_fleet_stations(p);
@@ -230,9 +227,6 @@ impl Game {
         self.player_houses_turn(p);
         // This game's governors (docs/GOVERNORS.md): the cities in the mode the civics give.
         self.player_governance_turn(p);
-        // This game's armies: the requisition, before the cities produce (a new requisition order
-        // takes this turn's production).
-        self.player_do_requisition(p);
 
         if self.players[p].revolution_timer > 0 {
             self.players[p].revolution_timer -= 1;
@@ -391,11 +385,6 @@ impl Game {
         }
 
         // Interface path finder reset, waypoints/selection/unit info dirty bits: UI.
-
-        // This game's armies (docs/ARMIES.md): the marching recruits, which their groups' turn
-        // just woke, hold through the turn (they march at its end, `player_do_turn`): their owner
-        // does not move them, and they wait for no orders.
-        self.player_march_hold(p);
 
         // AI: AI_doTurnUnitsPost() (AI promotions, FfH auto-spellcasting of human units with an
         // auto-cast spell, BETTER AI regrouping and mage casting) -- left to the controller.

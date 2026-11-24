@@ -1,9 +1,7 @@
-//! Armies, garrisons, requisition, marching recruits and supply (docs/ARMIES.md).
+//! Armies and garrisons (docs/ARMIES.md).
 
-use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::map::{Map, MapInitData};
 use ffh_core::setup::GameSetup;
 use ffh_data::*;
 
@@ -69,73 +67,15 @@ fn army_near(g: &mut Game, c: CityId, n: usize) -> ArmyId {
     g.army_form(PlayerId(0), &units).expect("formed")
 }
 
-/// City `c` finishes a warrior for `dest` (an order with that destination, completed at once);
-/// returns the new unit.
-fn train_for(g: &mut Game, c: CityId, dest: Option<RecruitDest>) -> UnitId {
+/// City `c` finishes a warrior (an order completed at once); returns the new unit.
+fn train(g: &mut Game, c: CityId) -> UnitId {
     let p0 = PlayerId(0);
     let w = warrior(g);
     g.city_push_order(c, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, false, false);
-    g.cities[c].order_queue[0].dest = dest;
     g.cities[c].unit_production[w] = g.city_production_needed_unit(c, w);
     let before: Vec<UnitId> = g.players[p0].units.clone();
     g.city_pop_order(c, 0, true, false);
     *g.players[p0].units.iter().find(|u| !before.contains(u)).expect("a new unit")
-}
-
-/// A duel game with armies on whose map is one flat block of grassland (x 2..=17, y 3..=8) in an
-/// ocean, revealed to both players (as ffh-ai's testkit), its starting units gone and player 0's
-/// turn active (so that a go-to order starts at once).
-fn flat_game() -> Game {
-    let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_NO_BARBARIANS] = true;
-    let mut g = Game::new(d, setup);
-    g.game_init();
-    g.log.enabled = true;
-    for u in g.players.iter().flat_map(|pl| pl.units.clone()).collect::<Vec<_>>() {
-        if g.units.contains(u) {
-            g.unit_kill(u, false, None);
-        }
-    }
-    let (np, nt) = (g.num_players(), g.num_teams());
-    g.map = Map::new(d, &MapInitData { grid_w: 20, grid_h: 12, ..Default::default() }, np, nt);
-    let (grass, coast) = (d.t::<TerrainType>("TERRAIN_GRASS"), d.t::<TerrainType>("TERRAIN_COAST"));
-    for q in g.map.plot_ids() {
-        let (x, y) = g.map.xy(q);
-        let land = (3..=8).contains(&y) && (2..=17).contains(&x);
-        g.plot_set_plot_type(q, if land { PlotType::PLOT_LAND } else { PlotType::PLOT_OCEAN }, false);
-        g.plot_set_terrain_type(q, if land { grass } else { coast }, false);
-    }
-    g.map_recalculate_areas();
-    g.update_plot_groups();
-    for t in g.team_ids() {
-        for q in g.map.plot_ids() {
-            g.plot_set_revealed(q, t, true, false, None, false);
-        }
-    }
-    g.update_plot_groups();
-    g.players[PlayerId(0)].turn_active = true;
-    g
-}
-
-/// The start of player 0's turn: its units' turn (their moves back; the marching recruits hold).
-fn turn_start(g: &mut Game) {
-    g.player_do_turn_units(PlayerId(0));
-}
-
-/// The end of player 0's turn, as its turn processing begins: the marching recruits march with the
-/// moves they kept and join on their destination's plot, then the armies are settled.
-fn turn_end(g: &mut Game) {
-    let p0 = PlayerId(0);
-    g.player_do_march(p0);
-    g.player_march_join(p0);
-    g.player_army_sync(p0);
-}
-
-/// A turn of player 0's without its own moves: [`turn_start`], then [`turn_end`].
-fn march_turn(g: &mut Game) {
-    turn_start(g);
-    turn_end(g);
 }
 
 #[test]
@@ -190,161 +130,12 @@ fn form_split_merge_and_garrison() {
     assert!(!g.armies.contains(army), "an army without units is gone");
 }
 
+/// A trained unit appears in the city that trained it, in its garrison: an army standing in the
+/// city does not take it.
 #[test]
-fn a_recruit_is_a_real_unit_that_marches_to_its_army_and_joins_it() {
-    let (mut g, a, b) = game();
+fn a_trained_unit_stays_in_its_city() {
+    let (mut g, a, _) = game();
     let p0 = PlayerId(0);
-    let army = army_near(&mut g, b, 2);
-    let units = g.army_units(army);
-    let u = train_for(&mut g, a, Some(RecruitDest::Army(army)));
-    // On the map in the city that trained it, marching: in no army and no garrison, no orders.
-    assert_eq!(g.unit_plot(u), g.city_plot(a));
-    assert_eq!(g.unit_march(u).map(|m| m.dest), Some(RecruitDest::Army(army)));
-    assert_eq!(g.units[u].army, None);
-    assert_eq!(g.unit_garrison_city(u), None);
-    assert!(g.city_garrison_units(a).is_empty());
-    assert_eq!(g.army_marching(army), vec![u]);
-    assert_eq!(g.unit_march_refusal(u).as_deref(), Some("marching to the 1st Army"));
-    assert!(g.army_form(p0, &[u]).is_err(), "army commands refuse it");
-    assert!(g.log.entries.iter().any(|m| m.text.contains("marches to the 1st Army")), "told");
-    // The sync leaves it alone.
-    g.player_army_sync(p0);
-    assert_eq!(g.units[u].army, None);
-    let eta = g.unit_march_eta(u).expect("a way there");
-    assert!(eta >= 1, "some turns away: {eta}");
-    let mut turns = 0;
-    let mut last = g.unit_plot(u);
-    while g.units[u].march.is_some() {
-        turns += 1;
-        assert!(turns <= 20, "arrived");
-        // Through its owner's turn it holds where it is (its owner does not move it)...
-        turn_start(&mut g);
-        assert_eq!(g.unit_plot(u), last, "it waits for the turn's end");
-        assert_eq!(g.groups[g.units[u].group.unwrap()].activity_type, ActivityType::ACTIVITY_HOLD);
-        // ...and the rules move it at the turn's end.
-        turn_end(&mut g);
-        if g.units[u].march.is_some() {
-            assert_ne!(g.unit_plot(u), last, "progress each turn");
-            assert_eq!(g.groups[g.units[u].group.unwrap()].activity_type, ActivityType::ACTIVITY_HOLD);
-        }
-        last = g.unit_plot(u);
-    }
-    assert!(turns <= eta, "joined a stationary army within its estimate: {turns} turns, {eta} estimated");
-    assert_eq!(g.units[u].army, Some(army), "joined the army");
-    assert_eq!(g.army_units(army).len(), units.len() + 1);
-    assert_eq!(g.unit_plot(u), g.army_plot(army).unwrap());
-    assert_eq!(g.units[u].group, g.armies[army].group, "in its group");
-    assert!(g.log.entries.iter().any(|m| m.text.contains("joined the 1st Army")), "told");
-}
-
-/// The march runs at the end of its owner's turn, after the army moved: a recruit faster than an
-/// army on a multi-turn go-to (a Horseman, 3 moves, behind two Warriors walking one plot a turn)
-/// catches up with it on the way, within its estimated arrival and a turn. (Marching as the turn
-/// began, it stopped on the army's plot of that moment and the army walked on: it never joined
-/// while the army moved.)
-#[test]
-fn a_faster_recruit_catches_up_with_an_army_on_the_move() {
-    let mut g = flat_game();
-    let p0 = PlayerId(0);
-    // Cities along the way keep the army in supply (its supply line short, docs/SUPPLY.md).
-    let home = g.player_init_city(p0, 3, 4, true, true);
-    for x in [8, 13] {
-        g.player_init_city(p0, x, 4, true, true);
-    }
-    let w = warrior(&g);
-    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 9, 5, None, None)).collect();
-    let army = g.army_form(p0, &units).unwrap();
-    let grp = g.armies[army].group.unwrap();
-    // A go-to seven plots east: it starts at once (this turn's step), then a plot a turn.
-    g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, 16, 5, 0, false, false, None, None, None);
-    assert_eq!(g.army_plot(army), g.map.plot_xy(10, 5));
-    // As the turn ends, the home city trains a Horseman for the army.
-    let horseman = g.d.t::<UnitType>("UNIT_HORSEMAN");
-    assert_eq!(g.d.units[horseman].moves, 3);
-    let u = g.player_init_unit(p0, horseman, 3, 4, None, None);
-    g.unit_recruit_to(u, home, RecruitDest::Army(army));
-    let eta = g.unit_march_eta(u).expect("a way there");
-    assert!(eta >= 2, "a march of some turns: {eta}");
-    let mut turns = 0;
-    while g.units[u].march.is_some() {
-        turns += 1;
-        assert!(turns <= eta + 1, "joined within its estimate and a turn ({eta})");
-        let held = g.unit_plot(u);
-        turn_start(&mut g);
-        // The army walks on (its owner's move), the recruit holds...
-        let before = g.army_plot(army);
-        g.group_auto_mission(grp);
-        assert_ne!(g.army_plot(army), before, "the army moves every turn");
-        assert_eq!(g.unit_plot(u), held, "the recruit holds through its owner's turn");
-        // ...and marches after it in the real turn processing as the turn ends.
-        g.player_do_turn(p0);
-        assert!(g.army_in_supply(army));
-    }
-    assert_eq!(g.units[u].army, Some(army), "joined the army");
-    assert_eq!(g.units[u].group, Some(grp), "in its group");
-    let (ax, _) = g.map.xy(g.army_plot(army).unwrap());
-    assert!(ax < 16, "on the way, before the army's go-to ended (at x {ax})");
-    assert!(g.log.entries.iter().any(|m| m.text.contains("joined the 1st Army")), "told");
-}
-
-/// A recruit trained next to a stationary army joins it at the end of its owner's next turn, as
-/// soon as it can first move (as before the march moved to the turn's end).
-#[test]
-fn a_recruit_trained_next_to_a_stationary_army_joins_the_next_turn() {
-    let mut g = flat_game();
-    let p0 = PlayerId(0);
-    let home = g.player_init_city(p0, 3, 4, true, true);
-    let w = warrior(&g);
-    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 4, 5, None, None)).collect();
-    let army = g.army_form(p0, &units).unwrap();
-    let u = train_for(&mut g, home, Some(RecruitDest::Army(army)));
-    turn_start(&mut g);
-    assert!(g.unit_march(u).is_some(), "it holds through the turn");
-    assert_eq!(g.unit_plot(u), g.city_plot(home));
-    assert_eq!(g.unit_march_eta(u), Some(1), "with its moves back: there as this turn ends");
-    turn_end(&mut g);
-    assert!(g.unit_march(u).is_none(), "arrived");
-    assert_eq!(g.units[u].army, Some(army));
-    assert_eq!(g.army_units(army).len(), 3);
-}
-
-/// Its owner's moves this turn regroup its armies (Civ4's Group button puts the 1st Army's units
-/// into the 2nd's group, and the 1st's group is gone): the march settles the armies with the
-/// groups first, so the recruit follows the merged army instead of taking its own for gone.
-#[test]
-fn the_march_first_settles_the_armies_regrouped_during_the_turn() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
-    let (ox, oy) = next_to(&g, b);
-    let first: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, ox, oy)).collect();
-    let second: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, ox, oy)).collect();
-    let one = g.army_form(p0, &first).unwrap();
-    let two = g.army_form(p0, &second).unwrap();
-    let u = train_for(&mut g, a, Some(RecruitDest::Army(one)));
-    turn_start(&mut g);
-    let grp = g.armies[two].group.unwrap();
-    for &v in &first {
-        g.unit_join_group(v, Some(grp), false);
-    }
-    turn_end(&mut g);
-    assert!(!g.armies.contains(one), "merged into the 2nd Army");
-    let follows = g.units[u].army == Some(two) || g.unit_march(u).is_some_and(|m| m.dest == RecruitDest::Army(two) && !m.diverted);
-    assert!(follows, "the recruit follows the 2nd Army: {:?}", g.unit_march(u));
-    assert!(!g.log.entries.iter().any(|m| m.text.contains("its army is gone")), "not diverted");
-}
-
-#[test]
-fn production_for_the_own_garrison_stays_and_an_army_in_the_city_takes_the_unit_at_once() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
-    // Another city's garrison: on the map at once, marching there.
-    let u = train_for(&mut g, a, Some(RecruitDest::Garrison(b)));
-    assert_eq!(g.unit_march(u).map(|m| m.dest), Some(RecruitDest::Garrison(b)));
-    // The city's own garrison (the default): as without armies.
-    let v = train_for(&mut g, a, None);
-    assert!(g.unit_march(v).is_none());
-    assert_eq!(g.unit_garrison_city(v), Some(a));
-    // An army standing in the city takes the unit at once.
     let (x, y) = (g.cities[a].x, g.cities[a].y);
     let (ox, oy) = next_to(&g, a);
     let units: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, ox, oy)).collect();
@@ -353,18 +144,21 @@ fn production_for_the_own_garrison_stays_and_an_army_in_the_city_takes_the_unit_
         g.unit_set_xy(w, x, y, true);
     }
     g.player_army_sync(p0);
-    let r = train_for(&mut g, a, Some(RecruitDest::Army(army)));
-    assert!(g.unit_march(r).is_none());
-    assert_eq!(g.units[r].army, Some(army));
+    let r = train(&mut g, a);
+    g.player_army_sync(p0);
+    assert_eq!(g.unit_plot(r), g.city_plot(a));
+    assert_eq!(g.units[r].army, None);
+    assert_eq!(g.unit_garrison_city(r), Some(a));
+    assert_eq!(g.army_units(army).len(), 2);
+    // An ordinary unit: army commands take it.
+    g.army_join(p0, &[r], army).expect("joined");
+    assert_eq!(g.army_units(army).len(), 3);
 }
 
-/// A hero type is no army unit type (no army keeps a hero), so its orders have no destination; the
-/// rules' default requisition takes no world or national unit (their classes have an instance
-/// limit: the player places those).
+/// A hero type is no army unit type (no army keeps a hero).
 #[test]
-fn heroes_stay_home_and_the_default_requisition_takes_no_limited_unit() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
+fn heroes_are_no_army_units() {
+    let g = game().0;
     let d = g.d;
     let hero = d.t::<PromotionType>("PROMOTION_HERO");
     let sphener = d.t::<UnitType>("UNIT_SPHENER");
@@ -372,286 +166,21 @@ fn heroes_stay_home_and_the_default_requisition_takes_no_limited_unit() {
     for t in d.units.keys().filter(|&t| d.units[t].free_promotions[hero]) {
         assert!(!g.unit_type_is_army_unit(t), "{}", d.units[t].base.type_);
     }
-    let paladin = d.t::<UnitType>("UNIT_PALADIN");
-    assert!(g.unit_type_is_army_unit(paladin) && !g.unit_type_is_requisition_default(paladin), "national: an army unit the requisition leaves alone");
-    let axeman = d.t::<UnitType>("UNIT_AXEMAN");
-    assert!(g.unit_type_is_requisition_default(axeman));
-    let army = army_near(&mut g, b, 1);
-    assert_eq!(g.city_recruit_dest(a, Some(RecruitDest::Army(army)), sphener), None, "a hero stays in its city");
-    assert_eq!(g.city_recruit_dest(a, Some(RecruitDest::Army(army)), axeman), Some(RecruitDest::Army(army)));
-    // Every tech and a Training Yard: national units (a Berserker, a Phalanx, ...) can be trained,
-    // and the default takes none of them.
-    let team = g.players[p0].team;
-    for t in d.techs.keys() {
-        g.team_set_has_tech(team, t, true, Some(p0), false, false);
-    }
-    let civ = g.player_get_civilization_type(p0).expect("a civilization");
-    let yard = d.civ_building(civ, d.t::<BuildingClassType>("BUILDINGCLASS_TRAINING_YARD")).expect("a Training Yard");
-    g.city_set_num_real_building(a, yard, 1);
-    let limited = |g: &Game, t: UnitType| g.unit_type_is_army_unit(t) && !g.unit_type_is_requisition_default(t);
-    assert!(d.units.keys().any(|t| limited(&g, t) && g.city_can_train(a, t, false, false, false, false)), "a national unit to train");
-    let (u, _) = g.requisition_unit_default(a, army).expect("a unit");
-    assert!(g.unit_type_is_requisition_default(u), "{}", d.units[u].base.type_);
 }
 
 #[test]
-fn requisition_puts_front_orders_and_stops_at_the_target_size() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
-    let army = army_near(&mut g, b, 2);
-    // City a was building something: the requisition interrupts it, which keeps its progress.
-    let building = g.d.buildings.keys().find(|&k| g.city_can_construct(a, k, false, false, false)).expect("a building");
-    g.city_push_order(a, OrderType::ORDER_CONSTRUCT, building.idx() as i32, -1, false, false, true, false);
-    g.cities[a].building_production[building] = 7;
-    // No target size: nothing requisitioned.
-    g.army_add_requisition(p0, army, a).unwrap();
-    g.army_add_requisition(p0, army, b).unwrap();
-    assert!(g.army_add_requisition(p0, army, b).is_err(), "once");
-    assert_eq!(g.armies[army].requisition, vec![a, b]);
-    g.player_do_requisition(p0);
-    assert!(g.army_requisition_orders(army).is_empty(), "no target size, no requisition");
-    // Four wanted, two there: one order in each city, at the front.
-    g.army_set_target_size(p0, army, 4).unwrap();
-    assert_eq!(g.army_shortfall(army), 2);
-    g.player_do_requisition(p0);
-    for c in [a, b] {
-        let o = &g.cities[c].order_queue[0];
-        assert!(o.requisition, "a requisition at the front of {c:?}");
-        assert_eq!(o.dest, Some(RecruitDest::Army(army)));
-        assert!(g.unit_type_is_army_unit(UnitType::from_usize(o.data1 as usize)));
-    }
-    assert_eq!(g.cities[a].order_queue[1].data1, building.idx() as i32, "the building waits behind it");
-    assert_eq!(g.cities[a].building_production[building], 7, "with its progress");
-    assert_eq!(g.army_shortfall(army), 0);
-    assert!(g.log.entries.iter().any(|m| m.text.contains("requisitions")), "told");
-    // Once a turn, one per city: nothing more.
-    g.player_do_requisition(p0);
-    assert_eq!(g.army_requisition_orders(army).len(), 2);
-    // Not by hand: removing it is refused, replacing the head replaces what is behind it, and an
-    // order pushed to the front goes behind it.
-    assert!(g.city_check_remove_order(a, 0).unwrap_err().contains("requisitioned by the 1st Army"));
-    assert!(g.city_check_remove_order(a, 1).is_ok());
-    let w = warrior(&g);
-    g.city_push_order(a, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, true, false, false);
-    assert!(g.cities[a].order_queue[0].requisition, "still first");
-    assert_eq!(g.cities[a].order_queue[1].data1, w.idx() as i32, "the building was replaced");
-    g.city_push_order(a, OrderType::ORDER_CONSTRUCT, building.idx() as i32, -1, false, false, false, false);
-    assert!(g.cities[a].order_queue[0].requisition);
-    assert_eq!(g.cities[a].order_queue[1].data1, building.idx() as i32, "pushed to the front: behind it");
-    // The army needs fewer: the order that would join last is withdrawn.
-    g.army_set_target_size(p0, army, 3).unwrap();
-    g.player_do_requisition(p0);
-    assert_eq!(g.army_requisition_orders(army).len(), 1);
-    // Released: its order goes at once.
-    let (c, _) = g.army_requisition_orders(army)[0];
-    g.army_remove_requisition(p0, army, c).unwrap();
-    assert!(g.army_requisition_orders(army).is_empty());
-    assert!(g.cities[c].order_queue.iter().all(|o| !o.requisition));
-}
-
-#[test]
-fn a_requisition_unit_marches_and_counts_toward_the_target() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
-    let army = army_near(&mut g, b, 1);
-    g.army_set_target_size(p0, army, 2).unwrap();
-    g.army_set_requisition(p0, army, &[a]).unwrap();
-    g.player_do_requisition(p0);
-    assert_eq!(g.army_requisition_orders(army), vec![(a, 0)]);
-    // Finished: it marches, and the army is not short any more.
-    let unit = UnitType::from_usize(g.cities[a].order_queue[0].data1 as usize);
-    g.cities[a].unit_production[unit] = g.city_production_needed_unit(a, unit);
-    g.city_pop_order(a, 0, true, false);
-    assert_eq!(g.army_marching(army).len(), 1);
-    assert_eq!(g.army_shortfall(army), 0);
-    g.player_do_requisition(p0);
-    assert!(g.army_requisition_orders(army).is_empty(), "nothing more");
-}
-
-#[test]
-fn supply_gates_the_march_and_a_long_stall_goes_to_a_garrison() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
-    // An army out of supply (docs/SUPPLY.md): on our landmass, two plots or more from both
-    // cities, encircled by barbarian warriors (its supply line cut).
-    let area = g.map.plots[g.city_plot(a)].area;
-    let far = g
-        .map
-        .plot_ids()
-        .filter(|&q| {
-            let (qx, qy) = g.map.xy(q);
-            !g.plot_is_water(q)
-                && !g.plot_is_impassable(q)
-                && g.map.plots[q].area == area
-                && g.map.plots[q].plot_city.is_none()
-                && [a, b].iter().all(|&c| g.plot_distance(qx, qy, g.cities[c].x, g.cities[c].y) >= 2)
-                && (-1..=1).all(|dy| (-1..=1).all(|dx| g.map.plot_xy(qx + dx, qy + dy).is_some_and(|n| g.map.plots[n].plot_city.is_none())))
-        })
-        .min_by_key(|&q| {
-            let (qx, qy) = g.map.xy(q);
-            (g.plot_distance(qx, qy, g.cities[a].x, g.cities[a].y), q)
-        });
-    let (fx, fy) = g.map.xy(far.expect("land on our landmass"));
-    let barb = g.barbarian_player();
-    let w = warrior(&g);
-    for dy in -1..=1 {
-        for dx in -1..=1 {
-            let n = g.map.plot_xy(fx + dx, fy + dy).unwrap();
-            if (dx, dy) != (0, 0) && !g.plot_is_water(n) && !g.plot_is_impassable(n) {
-                g.player_init_unit(barb, w, fx + dx, fy + dy, None, None);
-            }
-        }
-    }
-    let army_units: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, fx, fy)).collect();
-    let army = g.army_form(p0, &army_units).unwrap();
-    assert!(g.army_supply_line(army).is_none(), "encircled");
-    g.player_update_supply(p0);
-    assert!(!g.army_in_supply(army));
-    let u = train_for(&mut g, a, Some(RecruitDest::Army(army)));
-    let at = g.unit_plot(u);
-    let stall = g.d.defines.army_transit_stall_turns;
-    for turn in 1..stall {
-        march_turn(&mut g);
-        assert_eq!(g.unit_plot(u), at, "it waits where it is");
-        assert_eq!(g.unit_march(u).map(|m| m.stalled), Some(turn));
-    }
-    assert!(g.log.entries.iter().any(|m| m.text.contains("waits: the army has no supply line")), "told");
-    // The last turn of the stall: to the nearest garrison it can reach (the city it stands in).
-    march_turn(&mut g);
-    assert!(g.unit_march(u).is_none(), "arrived");
-    assert_eq!(g.unit_garrison_city(u), Some(a));
-    assert!(g.log.entries.iter().any(|m| m.text.contains("instead: the army has no supply line")), "told");
-    let _ = b;
-}
-
-#[test]
-fn the_destination_gone_sends_the_recruit_to_the_nearest_garrison() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
-    let army = army_near(&mut g, b, 1);
-    let u = train_for(&mut g, a, Some(RecruitDest::Army(army)));
-    march_turn(&mut g);
-    assert!(g.unit_march(u).is_some_and(|m| m.dest == RecruitDest::Army(army)));
-    // The army is destroyed on the way: at once to the nearest garrison.
-    for v in g.army_units(army) {
-        g.unit_kill(v, false, None);
-    }
-    g.player_army_sync(p0);
-    assert!(!g.armies.contains(army));
-    let m = g.unit_march(u).cloned();
-    if let Some(m) = m {
-        assert!(matches!(m.dest, RecruitDest::Garrison(_)) && m.diverted, "{m:?}");
-        let mut turns = 0;
-        while g.units[u].march.is_some() {
-            turns += 1;
-            assert!(turns < 20, "arrived");
-            march_turn(&mut g);
-        }
-    }
-    assert!(g.unit_garrison_city(u).is_some(), "in a garrison");
-    assert!(g.log.entries.iter().any(|m| m.text.contains("instead: its army is gone")), "told");
-    // A garrison lost: the recruit goes to another (here the city it stands in).
-    let v = train_for(&mut g, a, Some(RecruitDest::Garrison(b)));
-    assert!(g.unit_march(v).is_some());
-    g.city_kill(b, true);
-    assert!(g.unit_march(v).is_none());
-    assert_eq!(g.unit_garrison_city(v), Some(a));
-}
-
-#[test]
-fn a_disbanded_army_sends_its_recruits_to_its_city_and_a_merged_one_to_the_other_army() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
-    let (ox, oy) = next_to(&g, b);
-    let first: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, ox, oy)).collect();
-    let second: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, ox, oy)).collect();
-    let one = g.army_form(p0, &first).unwrap();
-    let two = g.army_form(p0, &second).unwrap();
-    let u = train_for(&mut g, a, Some(RecruitDest::Army(two)));
-    g.army_set_target_size(p0, two, 5).unwrap();
-    g.army_add_requisition(p0, two, a).unwrap();
-    g.army_add_requisition(p0, one, b).unwrap();
-    let w = warrior(&g);
-    g.city_push_order(a, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, false, false);
-    g.cities[a].order_queue[0].dest = Some(RecruitDest::Army(two));
-    // Civ4's Group button: the second army's units join the first's group.
-    let grp = g.armies[one].group.unwrap();
-    for &v in &second {
-        g.unit_join_group(v, Some(grp), false);
-    }
-    g.player_army_sync(p0);
-    assert!(!g.armies.contains(two));
-    assert_eq!(g.army_units(one).len(), 4);
-    assert_eq!(g.unit_march(u).map(|m| m.dest), Some(RecruitDest::Army(one)), "the recruit follows");
-    assert_eq!(g.cities[a].order_queue[0].dest, Some(RecruitDest::Army(one)), "so does the order");
-    assert_eq!(g.armies[one].requisition, vec![b, a], "and the requisition");
-    // Disbanded: the recruit goes to the city the army marches to; the requisition ends.
-    g.army_disband(p0, one).unwrap();
-    let to = g.armies[one].disband_to.expect("marching home");
-    assert_eq!(g.unit_march(u).map(|m| m.dest), Some(RecruitDest::Garrison(to)));
-    assert!(g.armies[one].requisition.is_empty());
-    // The army destroyed: the order falls back to the city's default.
-    for v in g.army_units(one) {
-        g.unit_kill(v, false, None);
-    }
-    g.player_army_sync(p0);
-    assert_eq!(g.cities[a].order_queue[0].dest, None);
-}
-
-#[test]
-fn a_recruit_can_be_killed_on_the_way() {
-    let (mut g, a, b) = game();
-    let army = army_near(&mut g, b, 1);
-    let u = train_for(&mut g, a, Some(RecruitDest::Army(army)));
-    march_turn(&mut g);
-    g.unit_kill(u, false, Some(PlayerId(1)));
-    assert!(!g.units.contains(u));
-    assert!(g.log.entries.iter().any(|m| m.text.contains("was killed on its way to the 1st Army")), "told");
-    assert!(g.army_marching(army).is_empty());
-}
-
-#[test]
-fn armies_requisition_and_marching_recruits_survive_a_save() {
-    let (mut g, a, b) = game();
+fn armies_survive_a_save() {
+    let (mut g, _, b) = game();
     let p0 = PlayerId(0);
     let army = army_near(&mut g, b, 2);
     g.army_rename(p0, army, "The Iron Host").unwrap();
-    g.army_set_target_size(p0, army, 6).unwrap();
-    g.army_set_requisition(p0, army, &[b, a]).unwrap();
-    let u = train_for(&mut g, a, Some(RecruitDest::Army(army)));
-    march_turn(&mut g);
-    g.player_do_requisition(p0);
-    g.cities[a].recruit_default = Some(RecruitDest::Army(army));
-    assert!(!g.army_requisition_orders(army).is_empty());
+    g.armies[army].target_size = 6;
     let bytes = g.save();
     let h = Game::load(g.d, &bytes).unwrap();
     assert_eq!(h.armies[army], g.armies[army]);
-    assert_eq!(h.armies[army].requisition, vec![b, a]);
-    assert_eq!(h.units[u].march, g.units[u].march);
-    assert!(h.units[u].march.is_some());
-    assert_eq!(h.army_requisition_orders(army), g.army_requisition_orders(army));
-    assert_eq!(h.cities[a].recruit_default, Some(RecruitDest::Army(army)));
+    assert_eq!(h.armies[army].target_size, 6);
+    assert_eq!(h.army_units(army), g.army_units(army));
     assert_eq!(h.save(), bytes);
-}
-
-#[test]
-fn the_march_is_deterministic() {
-    let (mut g, a, b) = game();
-    let p0 = PlayerId(0);
-    let army = army_near(&mut g, b, 1);
-    for c in [a, b] {
-        train_for(&mut g, c, Some(RecruitDest::Army(army)));
-    }
-    let u = train_for(&mut g, b, Some(RecruitDest::Garrison(a)));
-    // The same game from a save, played on in the same way: the same game.
-    let mut h = Game::load(g.d, &g.save()).unwrap();
-    for _ in 0..6 {
-        march_turn(&mut g);
-        march_turn(&mut h);
-        assert_eq!(g.save(), h.save());
-    }
-    assert!(g.unit_march(u).is_none(), "the garrison recruit arrived");
-    let _ = p0;
 }
 
 #[test]
@@ -675,8 +204,8 @@ fn disbanding_marches_the_units_home() {
 }
 
 #[test]
-fn garrison_units_join_an_army_and_a_whole_army_merges_with_its_recruits() {
-    let (mut g, a, b) = game();
+fn garrison_units_join_an_army_and_a_whole_army_merges() {
+    let (mut g, a, _) = game();
     let p0 = PlayerId(0);
     let (x, y) = (g.cities[a].x, g.cities[a].y);
     let g1 = unit_at(&mut g, x, y);
@@ -692,14 +221,12 @@ fn garrison_units_join_an_army_and_a_whole_army_merges_with_its_recruits() {
     g.army_join(p0, &[g1], army).expect("joined");
     assert_eq!(g.units[g1].army, Some(army));
     assert_eq!(g.army_units(army).len(), 3);
-    // A second army here, with a recruit on its way, merges into the first: the recruit follows.
+    // A second army here merges into the first.
     let more: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, x, y)).collect();
     let other = g.army_form(p0, &more).unwrap();
-    let r = train_for(&mut g, b, Some(RecruitDest::Army(other)));
     g.army_merge(p0, other, army).expect("merged");
     assert!(!g.armies.contains(other));
     assert_eq!(g.army_units(army).len(), 5);
-    assert_eq!(g.unit_march(r).map(|m| m.dest), Some(RecruitDest::Army(army)));
     // Not on the army's plot: refused, nothing changes.
     let away = unit_at(&mut g, ox, oy);
     assert!(g.army_join(p0, &[away], army).is_err());

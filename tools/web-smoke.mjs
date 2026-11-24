@@ -19,10 +19,9 @@
 // Options and `?renderer=flat`; `?renderer=iso`, the isometric renderer (its sprites,
 // picking a unit by its figure, zoom, layers); `?renderer=hd2d`, the HD-2D map, the default (its
 // frame, the cards, picking, selection, zoom, pan, layers, a lost context's fallback). Phase 7: the automate buttons (`stage automate`: a
-// scout exploring with a click), this game's armies (`stage
-// armies`: a marching recruit that takes no orders, a city added to an army's requisition on the
-// Armies screen, a requisition order in a city's queue),
-// supply lines (`stage supply` on the HD-2D map: a line drawn, a Hunger marker, the readout under
+// scout exploring with a click), waypoints (`stage waypoints`: a city's waypoint set to an army
+// on the city screen, its line, the army's card on the Armies screen, cleared there; a unit on its
+// way in the unit panel), supply lines (`stage supply` on the HD-2D map: a line drawn, a Hunger marker, the readout under
 // the pointer, the words on the Armies screen), the secretary general's election
 // popup (`stage election`);
 // crusades (`stage crusade`: the call popup, lending with the war confirmation, the Crusades
@@ -764,7 +763,7 @@ async function cityQueue() {
 
 /** This game's armies (docs/ARMIES.md; the new-game screen starts with them on): an army unit's
  *  panel has the Army section, F5 opens the Armies screen (an army renamed there), and the city
- *  screen has the recruitment destination. */
+ *  screen has the garrison line. */
 async function armiesUi() {
   const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.army_unit) || null; })()`);
   if (!unit) return steps.push("armies: no army unit to try");
@@ -787,10 +786,10 @@ async function armiesUi() {
   await until(async () => !(await modalTitles()).length, "the Armies screen closed");
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
   await b.eval(`window.ffh.emit("open-city", ${city.id})`);
-  await until2(`!!document.querySelector("#modals .backdrop:not(.under) select.recruit-default-dest")`, "the city's recruitment default");
+  await until2(`/^Garrison: /.test(document.querySelector("#modals .backdrop:not(.under) .army-garrison")?.textContent ?? "")`, "the city's garrison line");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
-  steps.push(`armies: the panel's army actions, F5 lists ${armies} arm${armies === 1 ? "y" : "ies"}${renamed}; the city's recruitment`);
+  steps.push(`armies: the panel's army actions, F5 lists ${armies} arm${armies === 1 ? "y" : "ies"}${renamed}; the city's garrison`);
 }
 
 /** This game's governors (docs/GOVERNORS.md): the game starts in Despotism, where a city is run by
@@ -824,9 +823,9 @@ async function governorsUi() {
 }
 
 /** Governors v2 under a governed government (`stage governors`: Aristocracy, two governed cities,
- *  an army by the capital): F9 has the mode line, a priority toggled, a role card per city; the
- *  Armies screen's Order unit picks a unit, then the city (the suggestion pre-selected: one click),
- *  and the army shows it on order; a second one is ordered with a click on an outlined city on the
+ *  an army by the capital): F9 has the mode line, a priority toggled, a role card per city; F9's
+ *  Empire order picks a unit, then the city (the suggestion pre-selected: one click), and the
+ *  order is in the city's queue; a second one is ordered with a click on an outlined city on the
  *  map; the capital's city screen offers empire orders only and says so; the civics screen's
  *  preview of Despotism says the cities stay governed. */
 async function stagedGovernors(bin, saves) {
@@ -844,25 +843,24 @@ async function stagedGovernors(bin, saves) {
   await shot("governors-governed");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the Governors screen closed");
-  // The Armies screen: Order unit -> the unit -> the city (suggested) -> one click.
-  const onOrder = `(async () => (await window.ffh.api.query("armies")).armies.find((a) => a.id === ${st.army}).on_order.length)()`;
+  // F9's Empire order -> the unit -> the city (suggested) -> one click.
+  const onOrder = `(async () => { let n = 0; for (const c of [${st.capital}, ${st.city}]) n += (await window.ffh.api.query("city", { city: c })).queue.filter((o) => o.empire).length; return n; })()`;
   const orderUnit = async () => {
-    await b.key("F5");
-    await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
-    await clickSteady(`#modals .army-card[data-army="${st.army}"] button.army-order-unit`);
-    await dialog(/^Order a unit for the /);
-    await clickSteady(`${TOP} button.empire-item:not([disabled])`);
+    await b.key("F9");
+    await until(async () => (await modalTitles()).includes("Governors"), "the Governors screen");
+    await clickSteady(`#modals button.empire-order`);
+    await dialog("Empire order");
+    // (An item both governed cities can build: the second order is placed in `st.city` on the map.)
+    await clickSteady(`${TOP} button.empire-item[data-order="0"]:not([disabled])[title^="2 governed"]`);
     await dialog(/: which city\?$/);
     await until2(`document.querySelectorAll(${q(`${TOP} tr.empire-city.picked`)}).length === 1 && /suggested/.test(document.querySelector(${q(`${TOP} tr.empire-city.picked`)}).textContent)`, "the suggested city pre-selected");
   };
   await orderUnit();
   await shot("empire-order-city");
   await click(`${TOP} .modal-buttons button.primary`);
-  await until2(`(async () => (await ${onOrder}) === 1)()`, "the unit on order for the army");
-  await until2(`!!document.querySelector(${q(`#modals .army-card[data-army="${st.army}"] ul.army-on-order li`)})`, "the unit on order on the army's card");
-  await shot("army-on-order");
+  await until2(`(async () => (await ${onOrder}) === 1)()`, "the empire order placed");
   await b.key("Escape");
-  await until(async () => !(await modalTitles()).length, "the Armies screen closed");
+  await until(async () => !(await modalTitles()).length, "the Governors screen closed");
   // A second one through the map: the capable cities outlined, a click on one orders it there.
   await orderUnit();
   await clickSteady(`${TOP} .modal-buttons button:nth-child(2)`);
@@ -888,7 +886,7 @@ async function stagedGovernors(bin, saves) {
   await clickSteady(`${TOP} button.civic[data-civic="${despotism}"]`);
   await until2(`/Your cities stay governed until you take them back\\./.test(document.querySelector(${q(`${TOP} .civic-rule-change`)})?.textContent ?? "")`, "the civics preview of who runs the cities");
   await closeDialog("Civics");
-  steps.push(`governors (stage governors): "${mode}"; a priority set, a role card per city; a unit ordered for the army from the Armies screen in one click on the suggestion, a second by a click on an outlined city on the map; the governed city screen; the civics preview`);
+  steps.push(`governors (stage governors): "${mode}"; a priority set, a role card per city; an empire order from F9 in one click on the suggestion, a second by a click on an outlined city on the map; the governed city screen; the civics preview`);
 }
 
 async function moveUnit() {
@@ -1634,53 +1632,77 @@ async function stagedAutomate(bin, saves) {
   steps.push("automate buttons (stage automate): a scout (explore) automated with a click");
 }
 
-/** This game's armies, `stage armies` (docs/ARMIES.md): a marching recruit shows its march, no
- *  orders, is not in the cycle and refuses a move, naming where it goes; the Armies screen's
- *  picker adds a second city to the army's requisition; the capital's queue shows its
- *  requisition order ("Requisitioned by the 1st Army") without a remove button, and taking it off
- *  by hand is refused. */
-async function stagedArmies(bin, saves) {
-  const st = await loadStaged(bin, saves, "armies");
-  // (the army's name: "2nd Army" when the starting units outside the capital formed the 1st)
-  const army = await S(`S.view.armies.find((a) => a.id === ${st.army}).name`);
-  const named = (s) => new RegExp(`${s} the ${army}`, "i");
-  await selectUnit(st.recruit);
-  await until2(`${named("Marching to")}.test(document.querySelector("#unit-panel .march-line")?.textContent ?? "")`, "the recruit's march in the unit panel");
-  const orders = await b.eval(`document.querySelectorAll("#unit-panel button.action").length`);
-  if (orders) throw new Error(`the marching recruit offers ${orders} orders`);
-  const cycle = await S(`(() => { const g = S.groups.get(S.units.get(${st.recruit}).group); return !!g && (g.selectable || g.ready); })()`);
-  if (cycle) throw new Error("the marching recruit waits for orders");
-  await shot("marching-recruit");
-  const at = await S(`[S.units.get(${st.recruit}).x, S.units.get(${st.recruit}).y]`);
-  const move = await b.eval(`window.ffh.api.send({ k: "cmd", c: "move", units: [${st.recruit}], x: ${at[0]}, y: ${at[1] + 1}, append: false }).then((r) => (r.ok ? "applied" : r.detail))`);
-  if (!named("marching to").test(move ?? "")) throw new Error(`a move of the marching recruit: ${move}`);
-  await b.eval(`window.ffh.units.clearSelection()`);
-  // The Armies screen: the army requisitions from the capital; the second city is ticked.
+/** Waypoints, `stage waypoints` (docs/ARMIES.md): the capital's waypoint set to the army with the
+ *  city screen's selector and its line; the army's card on the Armies screen says which cities and
+ *  how many units are on the way, and an untick there clears the capital's; the city screen's
+ *  Plot… picks a plot on the map (Esc cancels); the unit on its way shows its waypoint in the unit
+ *  panel and keeps its orders. */
+async function stagedWaypoints(bin, saves) {
+  const st = await loadStaged(bin, saves, "waypoints");
+  const armyName = await S(`S.view.armies.find((a) => a.id === ${st.army}).name`);
+  const line = `${TOP} .city-waypoint .waypoint-line`;
+  const lineText = `(document.querySelector(${q(line)})?.textContent ?? "")`;
+  // The city screen: none, then the army.
+  await b.eval(`window.ffh.emit("open-city", ${st.capital})`);
+  await until2(`${lineText} === "Waypoint: none"`, "the capital's waypoint line");
+  await b.eval(`(() => { const s = document.querySelector(${q(`${TOP} select.city-waypoint-pick`)}); s.value = "army:${st.army}"; s.dispatchEvent(new Event("change")); })()`);
+  await until2(`${lineText} === ${q(`Waypoint: the ${armyName}`)}`, "the capital's waypoint set to the army");
+  await shot("city-waypoint");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  // The Armies screen: both cities, one unit on the way; the capital unticked.
+  const names = await S(`[S.cities.get(${st.capital}).name, S.cities.get(${st.city}).name]`);
   await b.key("F5");
   await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
   const card = `#modals .army-card[data-army="${st.army}"]`;
-  const box = `${card} label.requisition-city[data-city="${st.city}"] input`;
-  await until2(`!!document.querySelector(${q(box)}) && /Requisition from/.test(document.querySelector(${q(card)}).textContent)`, "the requisition picker");
-  await b.eval(`document.querySelector(${q(`${card} details.requisition-pick`)}).open = true`);
-  await click(box);
-  await until2(`!!window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.requisition.cities.includes(${st.city})`, "the city added to the army's requisition");
-  await until2(`!!document.querySelector(${q(`${box}:checked`)})`, "the city ticked on the screen");
-  await shot("armies-requisition");
+  const of = `(document.querySelector(${q(`${card} .waypoint-of > span`)})?.textContent ?? "")`;
+  await until2(`/^Waypoint of: /.test(${of}) && ${of}.includes(${q(names[0])}) && ${of}.includes(${q(names[1])})`, "the army's Waypoint of");
+  await until2(`/^On the way: 1/.test(document.querySelector(${q(`${card} .waypoint-units`)})?.textContent ?? "")`, "the army's unit on the way");
+  await b.eval(`document.querySelector(${q(`${card} details.waypoint-pick`)}).open = true`);
+  await shot("army-waypoint");
+  await click(`${card} label.waypoint-city[data-city="${st.capital}"] input`);
+  await until2(`(async () => !(await window.ffh.api.query("armies")).armies.find((a) => a.id === ${st.army}).waypoint_cities.some((c) => c.city === ${st.capital}))()`, "the capital's waypoint cleared");
+  await until2(`!(${of}).includes(${q(names[0])})`, "the capital gone from Waypoint of");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the Armies screen closed");
-  // The capital's queue: the requisition order first, tagged, without a remove button.
-  await b.eval(`window.ffh.emit("open-city", ${st.capital})`);
-  const first = `${TOP} ol.queue li:first-child`;
-  await until2(`${named("Requisitioned by")}.test(document.querySelector(${q(first)})?.textContent ?? "")`, "the requisition order in the capital's queue");
-  if (await b.eval(`!!document.querySelector(${q(`${first} button[data-index]`)})`)) throw new Error("the requisition order has a remove button");
-  const pop = await b.eval(`window.ffh.api.send({ k: "cmd", c: "pop_order", city: ${st.capital}, index: 0 }).then((r) => (r.ok ? "applied" : r.detail))`);
-  if (!named("requisitioned by").test(pop ?? "")) throw new Error(`taking the requisition order off by hand: ${pop}`);
-  // Where the city's units go.
-  await until2(`!!document.querySelector(${q(`${TOP} .recruit-default select.recruit-default-dest`)})`, "the city's recruit destination");
-  await shot("city-requisition");
+  // Plot…: the city screen closes into a pick on the map; Esc ends it with nothing set; again,
+  // a click on the army's plot (revealed land, no city) sets the waypoint there; then cleared.
+  const wpKind = `(async () => (await window.ffh.api.query("city", { city: ${st.capital} })).waypoint)()`;
+  const openCapital = async () => {
+    await b.eval(`window.ffh.emit("open-city", ${st.capital})`);
+    await until2(`/^Waypoint: /.test(${lineText})`, "the capital's waypoint line");
+  };
+  await openCapital();
+  await click(`${TOP} button.waypoint-plot`);
+  await until(async () => !(await modalTitles()).length, "the city screen closed for the map");
+  await until2(`document.body.classList.contains("picking")`, "the plot pick on the map");
+  await b.key("Escape");
+  await until2(`!document.body.classList.contains("picking")`, "the plot pick ended by Esc");
+  if ((await b.eval(`${wpKind}.then((w) => w.kind)`)) !== "none") throw new Error("Esc in the plot pick set a waypoint");
+  await openCapital();
+  await click(`${TOP} button.waypoint-plot`);
+  await until2(`document.body.classList.contains("picking")`, "the plot pick on the map, again");
+  const [px, py] = await S(`(() => { const a = S.view.armies.find((a) => a.id === ${st.army}); return [a.x, a.y]; })()`);
+  const pp = await plotPos(px, py);
+  await new Promise((r) => setTimeout(r, 300));
+  await shot("waypoint-plot-pick");
+  await b.mouse(pp.x, pp.y);
+  await until2(`(async () => { const w = await ${wpKind}; return w.kind === "plot" && w.x === ${px} && w.y === ${py}; })()`, "the capital's waypoint set to the plot");
+  await openCapital();
+  await until2(`${lineText} === ${q(`Waypoint: plot ${px}, ${py}`)}`, "the city screen's plot waypoint line");
+  await shot("city-waypoint-plot");
+  await b.eval(`(() => { const s = document.querySelector(${q(`${TOP} select.city-waypoint-pick`)}); s.value = "none"; s.dispatchEvent(new Event("change")); })()`);
+  await until2(`${lineText} === "Waypoint: none"`, "the capital's waypoint cleared");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
-  steps.push("armies (stage armies): a marching recruit shows its march, offers no orders and refuses a move; the Armies screen adds a city to the requisition; the capital's requisition order is tagged and cannot be removed; the city's recruit destination");
+  // The unit on its way: its line in the unit panel, and its orders.
+  await b.eval(`window.ffh.units.select([${st.unit}])`);
+  await until2(`/^Waypoint: the .+ \\(\\d+ turns?\\)$/.test(document.querySelector("#unit-panel .waypoint-line")?.textContent ?? "")`, "the unit's waypoint line");
+  const orders = await b.eval(`document.querySelectorAll("#unit-panel button.action").length`);
+  if (!orders) throw new Error("the unit on its way offers no orders");
+  await shot("unit-waypoint");
+  await b.eval(`window.ffh.units.clearSelection()`);
+  steps.push(`waypoints (stage waypoints): the capital's waypoint set to the ${armyName} on the city screen; the army's Waypoint of and On the way on the Armies screen, the capital cleared there; Plot…: Esc sets nothing, a click on the map sets plot ${px}, ${py}, then cleared; the unit on its way in the unit panel with ${orders} orders`);
 }
 
 /** Waits until the battle overlay shows screen `name` and it is ready. */
@@ -1975,7 +1997,7 @@ async function supplyHd2d(url, bin, saves) {
   await b.key("F5");
   await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
   const words = (id) => `document.querySelector('#modals .army-card[data-army="${id}"] .army-supply')?.textContent ?? ""`;
-  await until2(`/^Supplied: \\d+ of \\d+, from .+\\.$/.test(${words(st.supplied)}) && /^Hunger: turn 1 of \\d+\\. No healing, no recruits\\.$/.test(${words(st.hungry)}) && (${words(st.home)}) === "Supplied: in your territory, no supply line needed."`, "the armies' supply in words on the Armies screen");
+  await until2(`/^Supplied: \\d+ of \\d+, from .+\\.$/.test(${words(st.supplied)}) && /^Hunger: turn 1 of \\d+\\. No healing\\.$/.test(${words(st.hungry)}) && (${words(st.home)}) === "Supplied: in your territory, no supply line needed."`, "the armies' supply in words on the Armies screen");
   await b.eval(`document.querySelector('#modals .army-card[data-army="${st.home}"]')?.scrollIntoView({ block: "center" })`);
   await shot("hd2d-supply-armies");
   await closeDialog("Armies");
@@ -2334,7 +2356,7 @@ async function main() {
     await stagedBreakaway(bin, saves);
     await stagedDiplomacy(bin, saves);
     await stagedAutomate(bin, saves);
-    await stagedArmies(bin, saves);
+    await stagedWaypoints(bin, saves);
     await stagedRaid(bin, saves);
     await stagedGovernors(bin, saves);
     await stagedEngagement(bin, saves);

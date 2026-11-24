@@ -54,13 +54,6 @@ pub enum Command {
     ArmyDisband { army: ArmyId },
     /// Upgrade the army's units, the most experienced first, while the gold lasts.
     ArmyUpgrade { army: ArmyId },
-    /// The size the army is to be kept at (0: none); while it is short of it, it requisitions.
-    ArmyTarget { army: ArmyId, size: i32 },
-    /// Army `army` requisitions from city `city` (`on`: last in its list) or no longer does (its
-    /// requisition order there is withdrawn).
-    ArmyRequisition { army: ArmyId, city: CityId, on: bool },
-    /// Army `army` requisitions from `cities` (in that order) and from no other.
-    ArmyRequisitionSet { army: ArmyId, cities: Vec<CityId> },
     /// A fleet's standing order (docs/NAVAL.md, 7.2): none, Patrol of a sea, Escort of an army
     /// or a group.
     ArmyStation { army: ArmyId, station: ffh_core::army::Station },
@@ -90,10 +83,6 @@ pub enum Command {
     /// Auto-sort (`Game::squad_auto_sort`): the units of `squads` (on one plot) dealt into as few
     /// squads as hold them, each body's apart, all Auto.
     SquadSort { squads: Vec<SquadId> },
-    /// Where city `city`'s trained land combat units go: production order `index`'s, or the
-    /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
-    /// garrison (for the city). A unit bound elsewhere marches there.
-    RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest> },
     /// This game's governors (docs/GOVERNORS.md): governed city `city` is run for `role` (the
     /// proposal, or a role of suitability `GOVERNOR_ROLE_MIN_SUITABILITY` and more).
     GovernRole { city: CityId, role: CityRoleType },
@@ -103,13 +92,16 @@ pub enum Command {
     /// (`Game::player_set_city_governed`; refused under a governed civic).
     GovernCity { city: CityId, governed: bool },
     /// An empire order in governed city `city` (a unit, a wonder, a palace, a project): ahead of
-    /// the governor's choice. `dest`: where a unit goes (`None`: the city's garrison).
-    EmpireOrder { city: CityId, order: OrderType, data: i32, dest: Option<ffh_core::army::RecruitDest> },
+    /// the governor's choice.
+    EmpireOrder { city: CityId, order: OrderType, data: i32 },
     /// Take the empire order at `index` of governed city `city`'s queue off.
     EmpireOrderRemove { city: CityId, index: i32 },
     /// Raids (docs/RAIDS.md, section 4): city `city`'s sally posture (`posture`: `Never`,
     /// `Favoured` or `Always`, `Sally::name`).
     CitySally { city: CityId, posture: ffh_core::raid::Sally },
+    /// Waypoints (docs/ARMIES.md): city `city`'s waypoint, an army of the human's or a plot
+    /// (`to`; `None`: none), for the units it trains from now on.
+    CityWaypoint { city: CityId, to: Option<WaypointTo> },
     Research { tech: Option<TechType>, shift: bool },
     /// Commit to research path `path` (docs/PORTING.md, "Research paths").
     ResearchPath { path: ResearchPathType },
@@ -448,9 +440,6 @@ pub const COMMAND_NAMES: &[&str] = &[
     "army_rename",
     "army_disband",
     "army_upgrade",
-    "army_target",
-    "army_requisition",
-    "army_requisition_set",
     "army_station",
     "raise_outpost",
     "establish_route",
@@ -460,13 +449,13 @@ pub const COMMAND_NAMES: &[&str] = &[
     "squad_move",
     "squad_auto",
     "squad_sort",
-    "recruit_dest",
     "govern_role",
     "govern_priorities",
     "govern_city",
     "empire_order",
     "empire_order_remove",
     "city_sally",
+    "city_waypoint",
     "research",
     "research_path",
     "update_civics",
@@ -510,9 +499,6 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("army_rename", &["army", "name"]),
     ("army_disband", &["army"]),
     ("army_upgrade", &["army"]),
-    ("army_target", &["army", "size"]),
-    ("army_requisition", &["army", "city", "on"]),
-    ("army_requisition_set", &["army", "cities"]),
     ("army_station", &["army", "station"]),
     ("raise_outpost", &["city"]),
     ("establish_route", &["unit", "city", "cargo"]),
@@ -522,13 +508,13 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("squad_move", &["unit", "squad", "cell"]),
     ("squad_auto", &["squad"]),
     ("squad_sort", &["squads"]),
-    ("recruit_dest", &["city", "index", "dest"]),
     ("govern_role", &["city", "role"]),
     ("govern_priorities", &["roles"]),
     ("govern_city", &["city", "governed"]),
-    ("empire_order", &["city", "order", "data", "dest"]),
+    ("empire_order", &["city", "order", "data"]),
     ("empire_order_remove", &["city", "index"]),
     ("city_sally", &["city", "posture"]),
+    ("city_waypoint", &["city", "to"]),
     ("research", &["tech", "shift"]),
     ("research_path", &["path"]),
     ("update_civics", &["civics"]),
@@ -609,16 +595,6 @@ pub(crate) fn order_data(d: &GameData, j: &Json, o: OrderType) -> Result<i32, Fi
     }
 }
 
-/// `{"garrison": city}`, `{"army": id}` or null (this game's armies).
-pub fn recruit_dest_json(dest: Option<ffh_core::army::RecruitDest>) -> Json {
-    use ffh_core::army::RecruitDest;
-    match dest {
-        None => Json::Null,
-        Some(RecruitDest::Garrison(c)) => crate::jobj! { "garrison" => c },
-        Some(RecruitDest::Army(a)) => crate::jobj! { "army" => a },
-    }
-}
-
 /// A fleet's standing order (docs/NAVAL.md, 7.2) or a land army's Raid (docs/RAIDS.md) as
 /// `army_station` takes it: null (none), `{"patrol": sea}`, `{"escort": army}`,
 /// `{"escort_group": group}`, `{"escort_caravan": route, "slot": 0 | 1}` (docs/TRADE.md 4.4: a
@@ -675,26 +651,47 @@ fn cargo_field(d: &GameData, j: &Json) -> Result<[Option<BonusType>; 2], FieldEr
 }
 
 /// The `posture` field of `city_sally`: a posture's name (`Never`, `Favoured`, `Always`).
+/// A city's waypoint as `city_waypoint` takes it (`to`): an army of the human's, or a plot by its
+/// coordinates (checked against the map when the command is validated).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WaypointTo {
+    Army(ArmyId),
+    Plot(i32, i32),
+}
+
+impl WaypointTo {
+    /// `{"army": id}` or `{"plot": [x, y]}`.
+    pub fn to_json(self) -> Json {
+        match self {
+            WaypointTo::Army(a) => crate::jobj! { "army" => a },
+            WaypointTo::Plot(x, y) => crate::jobj! { "plot" => crate::jarr![x, y] },
+        }
+    }
+
+    /// The rules' waypoint (`None`: a plot off the map).
+    pub fn resolve(self, g: &Game) -> Option<ffh_core::army::Waypoint> {
+        match self {
+            WaypointTo::Army(a) => Some(ffh_core::army::Waypoint::Army(a)),
+            WaypointTo::Plot(x, y) => g.map.plot_xy(x, y).map(ffh_core::army::Waypoint::Plot),
+        }
+    }
+}
+
+/// The `to` field of `city_waypoint`: null, `{"army": id}` or `{"plot": [x, y]}`.
+fn waypoint_field(j: &Json) -> Result<Option<WaypointTo>, FieldError> {
+    let Some(v) = j.opt_value("to")?.filter(|v| !v.is_null()) else { return Ok(None) };
+    if let Some(a) = v.opt::<ArmyId>("army")? {
+        return Ok(Some(WaypointTo::Army(a)));
+    }
+    if let Some((x, y)) = plot_field(v, "plot")? {
+        return Ok(Some(WaypointTo::Plot(x, y)));
+    }
+    Err(FieldError::wrong("to", "null, {\"army\": id} or {\"plot\": [x, y]}", v))
+}
+
 fn sally_field(j: &Json) -> Result<ffh_core::raid::Sally, FieldError> {
     let name: String = j.req("posture")?;
     ffh_core::raid::Sally::from_name(&name).ok_or_else(|| FieldError::new("posture", format!("expected Never, Favoured or Always, got {name:?}")))
-}
-
-/// The `dest` field of `recruit_dest` ([`recruit_dest_json`]'s form).
-fn recruit_dest_field(j: &Json) -> Result<Option<ffh_core::army::RecruitDest>, FieldError> {
-    use ffh_core::army::RecruitDest;
-    match j.opt_value("dest")? {
-        None | Some(Json::Null) => Ok(None),
-        Some(v) => {
-            if let Some(c) = v.opt::<CityId>("garrison")? {
-                Ok(Some(RecruitDest::Garrison(c)))
-            } else if let Some(a) = v.opt::<ArmyId>("army")? {
-                Ok(Some(RecruitDest::Army(a)))
-            } else {
-                Err(FieldError::wrong("dest", "{\"garrison\": city} or {\"army\": id} or null", v))
-            }
-        }
-    }
 }
 
 fn task_data1(d: &GameData, j: &Json, t: TaskType) -> Result<i32, FieldError> {
@@ -727,9 +724,6 @@ impl Command {
             Command::ArmyRename { .. } => "army_rename",
             Command::ArmyDisband { .. } => "army_disband",
             Command::ArmyUpgrade { .. } => "army_upgrade",
-            Command::ArmyTarget { .. } => "army_target",
-            Command::ArmyRequisition { .. } => "army_requisition",
-            Command::ArmyRequisitionSet { .. } => "army_requisition_set",
             Command::ArmyStation { .. } => "army_station",
             Command::RaiseOutpost { .. } => "raise_outpost",
             Command::EstablishRoute { .. } => "establish_route",
@@ -739,13 +733,13 @@ impl Command {
             Command::SquadMove { .. } => "squad_move",
             Command::SquadAuto { .. } => "squad_auto",
             Command::SquadSort { .. } => "squad_sort",
-            Command::RecruitDest { .. } => "recruit_dest",
             Command::GovernRole { .. } => "govern_role",
             Command::GovernPriorities { .. } => "govern_priorities",
             Command::GovernCity { .. } => "govern_city",
             Command::EmpireOrder { .. } => "empire_order",
             Command::EmpireOrderRemove { .. } => "empire_order_remove",
             Command::CitySally { .. } => "city_sally",
+            Command::CityWaypoint { .. } => "city_waypoint",
             Command::Research { .. } => "research",
             Command::ResearchPath { .. } => "research_path",
             Command::UpdateCivics { .. } => "update_civics",
@@ -839,9 +833,6 @@ impl Command {
             "army_rename" => Command::ArmyRename { army: j.req("army")?, name: j.req("name")? },
             "army_disband" => Command::ArmyDisband { army: j.req("army")? },
             "army_upgrade" => Command::ArmyUpgrade { army: j.req("army")? },
-            "army_target" => Command::ArmyTarget { army: j.req("army")?, size: j.req("size")? },
-            "army_requisition" => Command::ArmyRequisition { army: j.req("army")?, city: j.req("city")?, on: j.req("on")? },
-            "army_requisition_set" => Command::ArmyRequisitionSet { army: j.req("army")?, cities: j.req("cities")? },
             "army_station" => Command::ArmyStation { army: j.req("army")?, station: station_field(j)? },
             "raise_outpost" => Command::RaiseOutpost { city: j.req("city")? },
             "establish_route" => Command::EstablishRoute { unit: j.req("unit")?, city: j.req("city")?, cargo: cargo_field(d, j)? },
@@ -861,16 +852,16 @@ impl Command {
             },
             "squad_auto" => Command::SquadAuto { squad: j.req("squad")? },
             "squad_sort" => Command::SquadSort { squads: j.req("squads")? },
-            "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
             "govern_role" => Command::GovernRole { city: j.req("city")?, role: names::field(d, j, "role")? },
             "govern_priorities" => Command::GovernPriorities { roles: names::list_field(d, j, "roles")? },
             "govern_city" => Command::GovernCity { city: j.req("city")?, governed: j.req("governed")? },
             "empire_order" => {
                 let order = names::field::<OrderType>(d, j, "order")?;
-                Command::EmpireOrder { city: j.req("city")?, order, data: order_data(d, j, order)?, dest: recruit_dest_field(j)? }
+                Command::EmpireOrder { city: j.req("city")?, order, data: order_data(d, j, order)? }
             }
             "empire_order_remove" => Command::EmpireOrderRemove { city: j.req("city")?, index: j.req("index")? },
             "city_sally" => Command::CitySally { city: j.req("city")?, posture: sally_field(j)? },
+            "city_waypoint" => Command::CityWaypoint { city: j.req("city")?, to: waypoint_field(j)? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "research_path" => Command::ResearchPath { path: names::field(d, j, "path")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
@@ -969,9 +960,6 @@ impl Command {
             Command::ArmyJoin { units, army } => j.with("units", ids(units)).with("army", *army),
             Command::ArmyRename { army, name } => j.with("army", *army).with("name", name.as_str()),
             Command::ArmyDisband { army } | Command::ArmyUpgrade { army } => j.with("army", *army),
-            Command::ArmyTarget { army, size } => j.with("army", *army).with("size", *size),
-            Command::ArmyRequisition { army, city, on } => j.with("army", *army).with("city", *city).with("on", *on),
-            Command::ArmyRequisitionSet { army, cities } => j.with("army", *army).with("cities", Json::Arr(cities.iter().map(|&c| Json::from(c)).collect())),
             Command::ArmyStation { army, station } => j.with("army", *army).with("station", station_json(*station)),
             Command::RaiseOutpost { city } => j.with("city", *city),
             Command::EstablishRoute { unit, city, cargo } => j.with("unit", *unit).with("city", *city).with("cargo", Json::Arr(cargo.iter().map(|&c| Json::opt_idx(c)).collect())),
@@ -985,15 +973,13 @@ impl Command {
             Command::SquadMove { unit, squad, cell } => j.with("unit", *unit).with("squad", *squad).with("cell", *cell),
             Command::SquadAuto { squad } => j.with("squad", *squad),
             Command::SquadSort { squads } => j.with("squads", Json::Arr(squads.iter().map(|&s| Json::from(s)).collect())),
-            Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
             Command::GovernRole { city, role } => j.with("city", *city).with("role", Json::idx(*role)),
             Command::GovernPriorities { roles } => j.with("roles", Json::Arr(roles.iter().map(|&r| Json::idx(r)).collect())),
             Command::GovernCity { city, governed } => j.with("city", *city).with("governed", *governed),
-            Command::EmpireOrder { city, order, data, dest } => {
-                j.with("city", *city).with("order", Json::idx(*order)).with("data", *data).with("dest", recruit_dest_json(*dest))
-            }
+            Command::EmpireOrder { city, order, data } => j.with("city", *city).with("order", Json::idx(*order)).with("data", *data),
             Command::EmpireOrderRemove { city, index } => j.with("city", *city).with("index", *index),
             Command::CitySally { city, posture } => j.with("city", *city).with("posture", posture.name()),
+            Command::CityWaypoint { city, to } => j.with("city", *city).with("to", to.map_or(Json::Null, |t| t.to_json())),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::ResearchPath { path } => j.with("path", Json::idx(*path)),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
@@ -1095,9 +1081,7 @@ impl Command {
             Command::GovernPriorities { roles } => format!("priorities {}", roles.iter().map(|&r| names::name(d, r)).collect::<Vec<_>>().join(", ")),
             Command::GovernCity { city, governed: true } => format!("city {} handed to a governor", city.0),
             Command::GovernCity { city, governed: false } => format!("city {} run by hand", city.0),
-            Command::EmpireOrder { city, order, data, dest } => {
-                format!("city {} empire order {} {}{}", city.0, names::name(d, *order), data, dest.map_or(String::new(), |x| format!(" to {x:?}")))
-            }
+            Command::EmpireOrder { city, order, data } => format!("city {} empire order {} {}", city.0, names::name(d, *order), data),
             other => other.to_json().to_string(),
         }
     }
@@ -1202,17 +1186,12 @@ pub struct Ctx<'a> {
     pub events: &'a [TriggeredId],
 }
 
-/// A unit of the human's that takes orders: a marching recruit (this game's armies,
-/// docs/ARMIES.md) takes none until it arrives, so every unit command, the automations and the
-/// army commands refuse it, naming where it marches.
+/// A unit of the human's.
 fn unit_of(g: &Game, h: PlayerId, u: UnitId) -> Result<(), CmdErr> {
     match g.units.get(u) {
         None => Err(CmdErr::Gone),
         Some(unit) if unit.owner != h => Err(CmdErr::NotOwner),
-        Some(unit) => match g.unit_march_refusal(u) {
-            Some(why) => Err(cannot(format!("the {} is {why}: it takes no orders until it arrives", names::display(g.d, unit.unit_type)))),
-            None => Ok(()),
-        },
+        Some(_) => Ok(()),
     }
 }
 
@@ -1347,10 +1326,6 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyRename { army, name } => g.army_rename(h, *army, name),
         Command::ArmyDisband { army } => g.army_disband(h, *army),
         Command::ArmyUpgrade { army } => g.army_upgrade_all(h, *army).map(|_| ()),
-        Command::ArmyTarget { army, size } => g.army_set_target_size(h, *army, *size),
-        Command::ArmyRequisition { army, city, on: true } => g.army_add_requisition(h, *army, *city),
-        Command::ArmyRequisition { army, city, on: false } => g.army_remove_requisition(h, *army, *city),
-        Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
         Command::ArmyStation { army, station } => g.army_set_station(h, *army, *station),
         Command::SquadMove { unit, squad, cell } => g.squad_move(h, *unit, squad.map_or(ffh_core::army::SquadDest::New, ffh_core::army::SquadDest::Squad), *cell),
         Command::SquadAuto { squad } => g.squad_set_auto(h, *squad),
@@ -1373,16 +1348,12 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         }
         Command::GovernRole { city, role } => g.player_set_city_role(h, *city, *role),
         Command::GovernPriorities { roles } => g.player_set_governor_priorities(h, roles.clone()),
-        Command::EmpireOrder { city, order, data, dest } => g.city_push_empire_order(h, *city, *order, *data, -1, *dest),
+        Command::EmpireOrder { city, order, data } => g.city_push_empire_order(h, *city, *order, *data, -1),
         Command::EmpireOrderRemove { city, index } => g.city_remove_empire_order(h, *city, *index as usize),
         Command::CitySally { city, posture } => g.city_set_sally(h, *city, *posture),
-        Command::RecruitDest { city, index, dest } => {
-            if *index < 0 {
-                g.cities[*city].recruit_default = *dest;
-            } else if let Some(o) = g.cities[*city].order_queue.get_mut(*index as usize) {
-                o.dest = *dest;
-            }
-            Ok(())
+        Command::CityWaypoint { city, to } => {
+            let wp = to.and_then(|t| t.resolve(g));
+            g.city_set_waypoint(h, *city, wp)
         }
         _ => Ok(()),
     };
@@ -1628,7 +1599,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if g.city_is_governed(c) {
                 // A governed city takes empire orders only (docs/GOVERNORS.md): the governor builds
                 // the rest.
-                return validate(g, h, &Command::EmpireOrder { city: c, order: *order, data: *data, dest: None }, ctx);
+                return validate(g, h, &Command::EmpireOrder { city: c, order: *order, data: *data }, ctx);
             }
             // The rules' own reason (`view::refusal`): the check of the gate that failed.
             let why = match *order {
@@ -1681,9 +1652,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 // Only an empire order comes off (the governor resumes after it).
                 return validate(g, h, &Command::EmpireOrderRemove { city: *city, index: *index }, ctx);
             }
-            // This game's armies: a requisition order is the army's, released on the Armies screen
-            // (the reason to give first: pushing a replacement would not remove it either).
-            g.city_check_remove_order(*city, *index as usize).map_err(cannot)?;
             // selectedCitiesGameNetMessage(GAMEMESSAGE_POP_ORDER): only while the queue has more
             // than one order.
             if len <= 1 {
@@ -1729,38 +1697,10 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
-        Command::ArmyDisband { army } | Command::ArmyUpgrade { army } | Command::ArmyTarget { army, .. } => {
+        Command::ArmyDisband { army } | Command::ArmyUpgrade { army } => {
             army_of(g, h, *army)?;
             if matches!(cmd, Command::ArmyDisband { .. }) && (g.army_plot(*army).is_none() || g.players[h].cities.is_empty()) {
                 return Err(cannot("you have no city for its units"));
-            }
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::ArmyRequisition { army, city, on } => {
-            army_of(g, h, *army)?;
-            city_of(g, h, *city)?;
-            let listed = g.armies[*army].requisition.contains(city);
-            if *on {
-                g.army_check_requisition_city(h, *army, *city).map_err(cannot)?;
-                if listed {
-                    return Err(cannot("the army already requisitions from this city"));
-                }
-            } else if !listed {
-                return Err(cannot("the army does not requisition from this city"));
-            }
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::ArmyRequisitionSet { army, cities } => {
-            army_of(g, h, *army)?;
-            g.army_check_requisition(h, *army).map_err(cannot)?;
-            for (i, c) in cities.iter().enumerate() {
-                city_of(g, h, *c)?;
-                if cities[..i].contains(c) {
-                    return Err(invalid(format!("field `cities`: city {} twice", c.0)));
-                }
-                g.army_check_requisition_city(h, *army, *c).map_err(cannot)?;
             }
             Plan::Apply(Action::Army(cmd.clone()))
         }
@@ -1878,7 +1818,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
-        Command::EmpireOrder { city, order, data, dest } => {
+        Command::EmpireOrder { city, order, data } => {
             city_of(g, h, *city)?;
             match *order {
                 OrderType::ORDER_TRAIN => in_range("unit type", *data, d.units.len())?,
@@ -1888,15 +1828,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 _ => return Err(invalid("field `order`: not a production order")),
             };
             g.city_check_empire_order(h, *city, *order, *data).map_err(cannot)?;
-            if let Some(dst) = dest {
-                if *order != OrderType::ORDER_TRAIN {
-                    return Err(cannot("Only a unit has a destination."));
-                }
-                if !g.recruit_dest_valid(h, *dst) {
-                    return Err(cannot("no such army or city of yours"));
-                }
-            }
-            Plan::Apply(Action::Army(Command::EmpireOrder { city: *city, order: *order, data: *data, dest: *dest }))
+            Plan::Apply(Action::Army(Command::EmpireOrder { city: *city, order: *order, data: *data }))
         }
 
         Command::EmpireOrderRemove { city, index } => {
@@ -1908,6 +1840,15 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::CitySally { city, .. } => {
             city_of(g, h, *city)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::CityWaypoint { city, to } => {
+            city_of(g, h, *city)?;
+            if let Some(WaypointTo::Plot(x, y)) = to {
+                on_map(g, *x, *y)?;
+            }
+            g.city_check_waypoint(h, *city, to.and_then(|t| t.resolve(g))).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -1985,30 +1926,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
-        Command::RecruitDest { city, index, dest } => {
-            city_of(g, h, *city)?;
-            not_governed(g, *city)?;
-            if *index >= 0 {
-                let i = in_range("queue index", *index, g.cities[*city].order_queue.len())?;
-                let o = &g.cities[*city].order_queue[i];
-                let is_army_unit = o.order_type == OrderType::ORDER_TRAIN && (o.data1 as usize) < d.units.len() && g.unit_type_is_army_unit(UnitType::from_usize(o.data1 as usize));
-                if !is_army_unit {
-                    return Err(cannot("only land combat units are recruited to a destination"));
-                }
-                if o.requisition {
-                    return Err(cannot("a requisition order goes to its army"));
-                }
-            } else if *index != -1 {
-                return Err(invalid("field `index`: an order's index, or -1 for the city's default"));
-            }
-            if let Some(dst) = dest {
-                if !g.recruit_dest_valid(h, *dst) {
-                    return Err(cannot("no such army or city of yours"));
-                }
-            }
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
         Command::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
             city_of(g, h, *city)?;
             let c = *city;
@@ -2066,14 +1983,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 TaskType::TASK_RALLY_PLOT => {
                     on_map(g, *data1, *data2)?;
                 }
-                TaskType::TASK_SET_AUTOMATED_PRODUCTION => not_governed(g, c)?,
-                TaskType::TASK_CLEAR_ORDERS => {
-                    not_governed(g, c)?;
-                    // Clearing the queue would take its requisition orders off too.
-                    for i in 0..g.cities[c].order_queue.len() {
-                        g.city_check_remove_order(c, i).map_err(cannot)?;
-                    }
-                }
+                TaskType::TASK_SET_AUTOMATED_PRODUCTION | TaskType::TASK_CLEAR_ORDERS => not_governed(g, c)?,
                 TaskType::TASK_SET_AUTOMATED_CITIZENS | TaskType::TASK_CLEAR_RALLY_PLOT => {}
                 _ => return Err(invalid("field `task`: unknown task")),
             }
@@ -2598,8 +2508,7 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
                     // UNOFFICIAL_PATCH: the type is read before the loop.
                     let unit_type = g.units[u].unit_type;
                     for lu in g.players[h].units.clone() {
-                        // (not a marching recruit: it takes no orders, docs/ARMIES.md)
-                        if g.units.get(lu).is_some_and(|unit| unit.unit_type == unit_type && unit.march.is_none()) {
+                        if g.units.get(lu).is_some_and(|unit| unit.unit_type == unit_type) {
                             g.unit_do_command(lu, *command, *data1, *data2);
                         }
                     }
@@ -2730,11 +2639,6 @@ mod tests {
             Command::ArmyRename { army: ArmyId(1), name: "The Iron Host".into() },
             Command::ArmyDisband { army: ArmyId(1) },
             Command::ArmyUpgrade { army: ArmyId(1) },
-            Command::ArmyTarget { army: ArmyId(1), size: 8 },
-            Command::ArmyRequisition { army: ArmyId(1), city: CityId(4), on: true },
-            Command::ArmyRequisition { army: ArmyId(1), city: CityId(4), on: false },
-            Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![CityId(4), CityId(2)] },
-            Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![] },
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::None },
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Patrol(SeaId(2)) },
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Army(ArmyId(3))) },
@@ -2752,19 +2656,19 @@ mod tests {
             Command::SquadMove { unit: UnitId(3), squad: None, cell: None },
             Command::SquadAuto { squad: SquadId(2) },
             Command::SquadSort { squads: vec![SquadId(2), SquadId(5)] },
-            Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))) },
-            Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))) },
-            Command::RecruitDest { city: CityId(1), index: -1, dest: None },
             Command::GovernRole { city: CityId(2), role: CityRoleType::from_usize(1) },
             Command::GovernPriorities { roles: vec![] },
             Command::GovernCity { city: CityId(2), governed: true },
             Command::GovernCity { city: CityId(2), governed: false },
             Command::GovernPriorities { roles: vec![CityRoleType::from_usize(0), CityRoleType::from_usize(3)] },
-            Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_TRAIN, data: 5, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(1))) },
-            Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_CONSTRUCT, data: 9, dest: None },
+            Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_TRAIN, data: 5 },
+            Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_CONSTRUCT, data: 9 },
             Command::EmpireOrderRemove { city: CityId(2), index: 1 },
             Command::CitySally { city: CityId(2), posture: ffh_core::raid::Sally::Always },
             Command::CitySally { city: CityId(0), posture: ffh_core::raid::Sally::Never },
+            Command::CityWaypoint { city: CityId(2), to: Some(WaypointTo::Army(ArmyId(3))) },
+            Command::CityWaypoint { city: CityId(2), to: Some(WaypointTo::Plot(14, 9)) },
+            Command::CityWaypoint { city: CityId(2), to: None },
             Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Raid(CityId(4)) },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },

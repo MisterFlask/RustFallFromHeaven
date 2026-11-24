@@ -1,12 +1,11 @@
 //! Engagement combat's slots, who can fight and where they stand
 //! (`engagement/slots.rs`, `engagement/pick.rs`, `engagement/arrange.rs`): a squad's 5 places and
 //! 3 lanes a side on every ground, a city's Sentinels at no place, the river's Wading in place of
-//! its slots; the attack count with Blitz and bombards, the combat limit and marching units in
+//! its slots; the attack count with Blitz and bombards, the combat limit in
 //! `unit_can_engage` and the gates it shares with `unit_can_move_into`; the defender's
 //! candidates; the rules' auto formation (one of each kind first, healthy and strong first, home
 //! rows, large units).
 
-use ffh_core::army::{March, RecruitDest};
 use ffh_core::engagement::formation::{GroundRule, Params, RuleUnits};
 use ffh_core::engagement::{HitCtx, Place, Side, Slots, WarTest};
 use ffh_core::game::Game;
@@ -545,18 +544,12 @@ fn the_pool_and_the_defenders() {
     let worker = w.unit(p1, "UNIT_SLAVE", to);
     let hidden = w.unit(p1, "UNIT_WARRIOR", to);
     w.promote(hidden, "PROMOTION_HIDDEN");
-    let marcher = w.unit(p1, "UNIT_WARRIOR", to);
-    // (Only whether it marches matters here: the city is a placeholder.)
-    let march = March { dest: RecruitDest::Garrison(CityId(0)), stalled: 0, left_turn: 0, from_city: CityId(0), diverted: false };
-    w.g.units[marcher].march = Some(march.clone());
     let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     assert!(w.g.unit_is_invisible(hidden, w.g.players[p0].team, true));
     assert!(!w.g.unit_can_defend(worker, Some(to)));
-    assert_eq!(w.g.engage_defenders(to, p0, &[axeman], WarTest::AtWar), vec![warrior, marcher], "no slave, no invisible unit; the marching unit defends");
+    assert_eq!(w.g.engage_defenders(to, p0, &[axeman], WarTest::AtWar), vec![warrior], "no slave, no invisible unit");
 
-    // The pool: no marching unit, no unit out of moves, no missile, nothing not next to `to`.
-    let own_marcher = w.unit(p0, "UNIT_AXEMAN", from);
-    w.g.units[own_marcher].march = Some(march);
+    // The pool: no unit out of moves, no missile, nothing not next to `to`.
     let tired = w.unit(p0, "UNIT_AXEMAN", from);
     w.g.units[tired].moves = w.g.unit_max_moves(tired);
     let worker0 = w.unit(p0, "UNIT_SLAVE", from);

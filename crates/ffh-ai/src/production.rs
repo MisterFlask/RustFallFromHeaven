@@ -28,8 +28,8 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
     let p = g.cities[c].owner;
     // Asked again with an order of its own queued (production made dirty, or the head is a process
     // the rules re-ask about every turn): a process gives way to a fresh choice; anything else
-    // keeps being built. An army's requisition orders at the front are the army's, not the city's
-    // (docs/ARMIES.md): behind them the city chooses as with an empty queue.
+    // keeps being built. The empire orders at the front are the player's, not the city's
+    // (docs/GOVERNORS.md): behind them the city chooses as with an empty queue.
     match own_order(g, c).map(|o| o.order_type == OrderType::ORDER_MAINTAIN) {
         Some(true) => clear_own_orders(g, c),
         Some(false) => return,
@@ -47,13 +47,13 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
     if !g.player_is_barbarian(p) && garrison(g, p, plot).0 == 0 {
         let spare = g.map.plots[plot].units.iter().copied().find(|&u| {
             let unit = &g.units[u];
-            unit.owner == p && unit.march.is_none() && g.d.units[unit.unit_type].attack_rating() > 0 && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && matches!(unit.ai_type, Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_COUNTER) | Some(UnitAIType::UNITAI_RESERVE))
+            unit.owner == p && g.d.units[unit.unit_type].attack_rating() > 0 && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && matches!(unit.ai_type, Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_COUNTER) | Some(UnitAIType::UNITAI_RESERVE))
         });
         if let Some(u) = spare {
             g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_CITY_DEFENSE);
         }
     }
-    if let Some((choice, why, dest)) = decide_city(ai, g, c) {
+    if let Some((choice, why)) = decide_city(ai, g, c) {
         crate::trace!(g, p, "{} size {} builds {}", g.cities[c].name, g.cities[c].population, choice_name(g, choice));
         if let (true, Choice::Construct(b)) = (crate::trace_on(p), choice) {
             let coded = crate::code_effects::building_value(g, c, b, 0);
@@ -63,9 +63,6 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
         }
         g.tel_decision(p, "production", type_name(g, choice), why, 0, String::new);
         push(g, c, choice);
-        if let (Some(dest), Some(o)) = (dest, g.cities[c].order_queue.last_mut()) {
-            o.dest = Some(dest);
-        }
     }
     if g.cities[c].order_queue.is_empty() {
         // Never leave a city idle: anything it can make.
@@ -97,10 +94,10 @@ pub fn choice_name(g: &Game, choice: Choice) -> String {
     }
 }
 
-/// City `c`'s first order that is not an army's requisition or the player's empire order: what
-/// it builds for itself next (they lead the queue, docs/ARMIES.md, docs/GOVERNORS.md).
+/// City `c`'s first order that is not the player's empire order: what it builds for itself next
+/// (they lead the queue, docs/GOVERNORS.md).
 pub(crate) fn own_order(g: &Game, c: CityId) -> Option<&ffh_core::structs::OrderData> {
-    g.cities[c].order_queue.iter().find(|o| !o.requisition && !o.empire)
+    g.cities[c].order_queue.iter().find(|o| !o.empire)
 }
 
 /// The unit city `c` trains for itself next ([`own_order`]), if that is a unit.
@@ -109,8 +106,7 @@ fn own_production_unit(g: &Game, c: CityId) -> Option<UnitType> {
 }
 
 /// City `c`'s own orders are taken off its queue (what was put into them stays with each item, as
-/// the rules keep it): the armies' requisition orders and the player's empire orders at its front
-/// stay, they are the army's and the player's (docs/ARMIES.md, docs/GOVERNORS.md).
+/// the rules keep it): the player's empire orders at its front stay (docs/GOVERNORS.md).
 pub(crate) fn clear_own_orders(g: &mut Game, c: CityId) {
     // (A world ritual under way stays: taken off, it would be abandoned.)
     if crate::world_rituals::locked(g, c) {
@@ -161,7 +157,7 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
         let plot = g.city_plot(c);
         let threat = local_threat(g, p, plot, 2);
         let (defenders, defense) = garrison(g, p, plot);
-        // (A unit an army requisitioned goes to the army: not a fighter for the city.)
+        // (A unit of an empire order goes to the army (`armies::turn`): not a fighter for the city.)
         let building_fighter = own_production_unit(g, c).is_some_and(|u| g.d.units[u].attack_rating() > 0);
         if threat == 0 {
             // A long build in a city that should have a second defender by now (decide puts
@@ -188,19 +184,19 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
 }
 
 /// What city `c` builds next: [`decide`] for a directly ruled city, its governor's choice
-/// (`governor::decide`, docs/GOVERNORS.md) for a governed one, with the unit's destination.
-fn decide_city(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<ffh_core::army::RecruitDest>)> {
+/// (`governor::decide`, docs/GOVERNORS.md) for a governed one.
+fn decide_city(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     if g.city_is_governed(c) {
         crate::governor::decide(g, c)
     } else {
-        decide(ai, g, c).map(|(choice, why)| (choice, why, None))
+        decide(ai, g, c)
     }
 }
 
 /// Would clearing city `c`'s queue get a fighter: does [`decide_city`] put one first? (It does not
 /// read the queue.)
 fn switch_gets_fighter(ai: &Ai, g: &Game, c: CityId) -> bool {
-    matches!(decide_city(ai, g, c), Some((Choice::Train(u, _), _, _)) if g.d.units[u].attack_rating() > 0)
+    matches!(decide_city(ai, g, c), Some((Choice::Train(u, _), _)) if g.d.units[u].attack_rating() > 0)
 }
 
 /// Last resort when the priority list found nothing: the cheapest useful building, else the
@@ -255,16 +251,14 @@ fn besieging(g: &Game, p: PlayerId) -> bool {
     })
 }
 
-/// Our units on the city plot able to defend it, and their summed defense power. A marching
-/// recruit passing through (or just trained there) is not among them: it leaves next turn
-/// (docs/ARMIES.md).
+/// Our units on the city plot able to defend it, and their summed defense power.
 pub fn garrison(g: &Game, p: PlayerId, plot: PlotIdx) -> (i32, i32) {
     let mut n = 0;
     let mut power = 0;
     for &u in &g.map.plots[plot].units {
         let unit = &g.units[u];
         // (A Caravan is no defender: in a route it moves by the rules, else it is bound for one.)
-        if unit.owner != p || unit.march.is_some() || g.unit_is_caravan(u) {
+        if unit.owner != p || g.unit_is_caravan(u) {
             continue;
         }
         let info = &g.d.units[unit.unit_type];
@@ -1043,7 +1037,7 @@ pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
 /// empire runs into financial trouble (`CvPlayerAI::AI_doCheckFinancialTrouble`,
 /// `CvCityAI::AI_chooseProduction`), keeping items within 3 turns of done, wonders, world
 /// projects and heroes. Here a city in the middle of a longer build re-runs the ladder
-/// ([`decide`]; a governed city its governor's, [`decide_city`]; an army's requisition order is
+/// ([`decide`]; a governed city its governor's, [`decide_city`]; an empire order is
 /// kept) and switches only when it now picks an economy building (commerce, research,
 /// specialists, trade or maintenance savings make up most of its value: Market, Library,
 /// Courthouse...) -- the building it needs now. Also kept: units without combat (settlers,
@@ -1064,8 +1058,8 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
         if (turn + c.0 as i32) % 5 != 0 || g.cities[c].order_queue.is_empty() || g.city_is_production_process(c) || g.city_production_turns_left(c) <= 3 {
             continue;
         }
-        // An army's requisition order stays (docs/ARMIES.md: it is the army's, not the city's).
-        if g.cities[c].order_queue.first().is_some_and(|o| o.requisition || o.empire) {
+        // An empire order stays (the player's, not the city's: docs/GOVERNORS.md).
+        if g.cities[c].order_queue.first().is_some_and(|o| o.empire) {
             continue;
         }
         let plot = g.city_plot(c);
@@ -1086,7 +1080,7 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
             continue;
         }
         // A governed city: its governor's choice (docs/GOVERNORS.md).
-        let Some((Choice::Construct(b), why, _)) = decide_city(ai, g, c) else { continue };
+        let Some((Choice::Construct(b), why)) = decide_city(ai, g, c) else { continue };
         let limited = d.buildings[b].building_class_type.is_some_and(|k| ffh_core::utils::is_limited_wonder_class(d, k));
         if limited || Some(b) == g.city_production_building(c) || !is_finance_building(g, c, b, threat) {
             continue;

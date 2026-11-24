@@ -618,34 +618,31 @@ pub fn cards(dir: &Path) -> Result<StagedCards, String> {
     })
 }
 
-/// A saved game at a human control point (turn 4 of a duel, seed 11, armies and governors on)
-/// with this game's armies in play (docs/ARMIES.md): the human's `army` of two warriors next to
-/// its capital `capital` (not its 1st Army when a starting unit outside the capital formed one),
-/// with a target size of 4 and requisitioning from the capital, whose
-/// requisition order leads its queue (ahead of a warrior it was building); a second city `city`
-/// that no army requisitions from; and `recruit`, a warrior `city` trained for the army, marching
-/// to it (the rules move it: it takes no orders until it arrives).
-pub struct StagedArmies {
+/// A saved game at a human control point (turn 4 of a duel, seed 11) with waypoints
+/// (docs/ARMIES.md): the human's `capital` (no waypoint), a second city `city` 5 to 7 plots away
+/// whose waypoint is `army`, two warriors standing in the field 3 plots from the capital, and
+/// `unit`, a warrior `city` trained, on its way to the army.
+pub struct StagedWaypoints {
     pub save: PathBuf,
     pub army: ffh_core::ids::ArmyId,
     pub capital: ffh_core::ids::CityId,
     pub city: ffh_core::ids::CityId,
-    pub recruit: UnitId,
+    pub unit: UnitId,
     pub turn: i32,
 }
 
-impl StagedArmies {
+impl StagedWaypoints {
     pub fn to_json(&self) -> Json {
         crate::jobj! {
-            "stage" => "armies", "save" => self.save.display().to_string(), "army" => self.army, "capital" => self.capital,
-            "city" => self.city, "recruit" => self.recruit, "turn" => self.turn,
+            "stage" => "waypoints", "save" => self.save.display().to_string(), "army" => self.army, "capital" => self.capital,
+            "city" => self.city, "unit" => self.unit, "turn" => self.turn,
         }
     }
 }
 
-/// Writes a [`StagedArmies`] into `dir` (a game directory).
-pub fn armies(dir: &Path) -> Result<StagedArmies, String> {
-    use ffh_core::army::RecruitDest;
+/// Writes a [`StagedWaypoints`] into `dir` (a game directory).
+pub fn waypoints(dir: &Path) -> Result<StagedWaypoints, String> {
+    use ffh_core::army::Waypoint;
     let d = ffh_data::global();
     let mut s = duel_with(dir, 11, 4, None, &[])?;
     let h = s.human;
@@ -653,48 +650,50 @@ pub fn armies(dir: &Path) -> Result<StagedArmies, String> {
     let capital = *g.players[h].cities.first().ok_or("no city")?;
     let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
     let area = g.map.plots[g.city_plot(capital)].area;
-    // The second city 5 to 7 plots away on the capital's land: a recruit needs some turns to march.
+    let open = |g: &ffh_core::game::Game, q: ffh_core::ids::PlotIdx| g.map.plots[q].area == area && g.map.plots[q].units.is_empty() && g.map.plots[q].plot_city.is_none() && !g.plot_is_impassable(q);
     let mut site = None;
     for q in g.map.plot_ids() {
         let (x, y) = g.map.xy(q);
         let dist = g.plot_distance(x, y, cx, cy);
-        if (5..=7).contains(&dist) && g.map.plots[q].area == area && g.player_can_found(h, x, y, false) && g.map.plots[q].units.is_empty() && site.map_or(true, |(b, _, _)| dist < b) {
+        if (5..=7).contains(&dist) && open(g, q) && g.player_can_found(h, x, y, false) && site.map_or(true, |(b, _, _)| dist < b) {
             site = Some((dist, x, y));
         }
     }
     let (_, x, y) = site.ok_or("no city site 5 to 7 plots from the capital")?;
     let city = g.player_init_city(h, x, y, true, true);
+    // The army in the field: 3 plots from the capital, farther from the second city.
+    let field = g
+        .map
+        .plot_ids()
+        .filter(|&q| open(g, q))
+        .map(|q| g.map.xy(q))
+        .filter(|&(fx, fy)| g.plot_distance(fx, fy, cx, cy) == 3 && g.plot_distance(fx, fy, x, y) >= 5)
+        .min_by_key(|&(fx, fy)| (fy, fx))
+        .ok_or("no plot in the field for the army")?;
     let w = d.t::<UnitType>("UNIT_WARRIOR");
-    let &(ax, ay) = free_plots_near_capital(g, h)?.first().ok_or("no free plot near the capital")?;
-    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, w, ax, ay, None, None)).collect();
+    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, w, field.0, field.1, None, None)).collect();
     let army = g.army_form(h, &units)?;
-    g.army_set_target_size(h, army, 4)?;
-    // The second city finishes a warrior for the army: it appears there and marches.
+    g.city_set_waypoint(h, city, Some(Waypoint::Army(army)))?;
+    // The second city finishes a warrior: it sets out for the army.
     g.city_push_order(city, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, false, false);
-    g.cities[city].order_queue[0].dest = Some(RecruitDest::Army(army));
     g.cities[city].unit_production[w] = g.city_production_needed_unit(city, w);
     let before = g.players[h].units.clone();
     g.city_pop_order(city, 0, true, false);
-    let recruit = g.players[h].units.iter().copied().find(|u| !before.contains(u)).ok_or("no recruit")?;
-    if g.unit_march(recruit).is_none() {
-        return Err("the recruit does not march".into());
+    let unit = g.players[h].units.iter().copied().find(|u| !before.contains(u)).ok_or("no new unit")?;
+    if g.units[unit].waypoint.is_none() {
+        return Err("the new unit is not on its way to the army".into());
     }
-    // The capital builds a warrior; the army's requisition puts its order ahead of it.
-    g.city_push_order(capital, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, true, false);
-    g.army_add_requisition(h, army, capital)?;
-    g.player_do_requisition(h);
-    if !g.cities[capital].order_queue.first().is_some_and(|o| o.requisition) {
-        return Err("no requisition order in the capital".into());
-    }
+    // Its own production next (else its screen opens as the production prompt).
+    g.city_push_order(city, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, false, false);
     g.player_army_sync(h);
-    let paths = s.save("armies").map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedArmies { save: paths.save, army, capital, city, recruit, turn: s.g.game_turn() })
+    let paths = s.save("waypoints").map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedWaypoints { save: paths.save, army, capital, city, unit, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point (turn 4 of a duel, seed 11) under a governed government
 /// (docs/GOVERNORS.md): the human has adopted Aristocracy, so its `capital` and a second city
 /// `city` (5 to 7 plots away) are governed, each with a governor and a role; its `army` of two
-/// warriors stands next to the capital, with no requisition.
+/// warriors stands next to the capital.
 pub struct StagedGovernors {
     pub save: PathBuf,
     pub army: ffh_core::ids::ArmyId,

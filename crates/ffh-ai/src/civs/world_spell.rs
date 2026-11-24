@@ -28,7 +28,7 @@ pub fn cast_at(g: &mut Game, p: PlayerId, name: &str, target: ffh_core::structs:
     let caster = units
         .iter()
         .copied()
-        .filter(|&u| g.unit_march(u).is_none() && g.unit_can_cast_at(u, spell, target))
+        .filter(|&u| g.unit_can_cast_at(u, spell, target))
         .min_by_key(|&u| (g.units[u].ai_type != Some(UnitAIType::UNITAI_CITY_DEFENSE), u));
     let Some(u) = caster else { return false };
     crate::trace!(g, p, "world spell {} by {} at {:?}", name, g.d.units[g.units[u].unit_type].base.type_, target);
@@ -40,6 +40,6 @@ pub fn cast_at(g: &mut Game, p: PlayerId, name: &str, target: ffh_core::structs:
 /// A unit of player `p` that can cast `name` now (its targets aside), for listing its targets.
 pub fn caster(g: &Game, p: PlayerId, name: &str) -> Option<(UnitId, SpellType)> {
     let spell = g.d.ty::<SpellType>(name)?;
-    let u = g.players[p].units.iter().copied().find(|&u| g.unit_march(u).is_none() && g.unit_can_cast_untargeted(u, spell, false))?;
+    let u = g.players[p].units.iter().copied().find(|&u| g.unit_can_cast_untargeted(u, spell, false))?;
     Some((u, spell))
 }

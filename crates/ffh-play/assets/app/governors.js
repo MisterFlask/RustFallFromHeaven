@@ -6,11 +6,10 @@
 // it back at will (`govern_city`); an empire may be mixed. A governed city has a role (proposed
 // from its building tiers, or chosen by the player when it suits the city well enough), and its
 // governor builds by it. The player sets up to two empire priorities (roles that weigh more in the
-// proposals) and places empire orders in governed cities: a unit (for an army too), a wonder, a
-// palace or a ritual, ahead of the governor's choice. The `governors` query has the screen;
-// `empire_items` and `empire_cities` the order's two steps; the buttons send `govern_city`,
-// `govern_role`, `govern_priorities`, `empire_order` and `empire_order_remove`, which the server
-// checks.
+// proposals) and places empire orders in governed cities: a unit, a wonder, a palace or a ritual,
+// ahead of the governor's choice. The `governors` query has the screen; `empire_items` and
+// `empire_cities` the order's two steps; the buttons send `govern_city`, `govern_role`,
+// `govern_priorities`, `empire_order` and `empire_order_remove`, which the server checks.
 
 import * as api from "./api.js";
 import { S, dname, turns, orderName, emit } from "./state.js";
@@ -48,8 +47,7 @@ addHelp({
     h("h4", "Empire orders"),
     h(
       "ul",
-      h("li", "In a governed city you may order a unit (for an army too), a wonder, a palace or a ritual. It goes ahead of the governor's choice, which keeps its progress and resumes after it."),
-      h("li", "An army's requisition goes first, as in any city: you pick the cities on the Armies screen [F5]."),
+      h("li", "In a governed city you may order a unit, a wonder, a palace or a ritual. It goes ahead of the governor's choice, which keeps its progress and resumes after it."),
     ),
   ],
 });
@@ -75,7 +73,7 @@ function modeLine(r) {
 }
 
 /** What handing a city to a governor changes (docs/GOVERNORS.md, "Handed over"). */
-const HAND_OVER_TIP = "Kept: requisition orders; units, wonders, palaces and rituals as empire orders. Dropped: other orders.";
+const HAND_OVER_TIP = "Kept: units, wonders, palaces and rituals as empire orders. Dropped: other orders.";
 /** What taking a city back changes ("Taken back"). */
 const TAKE_BACK_TIP = "Kept: the queue, empire orders as ordinary orders. Production and emphasis: yours.";
 
@@ -132,15 +130,13 @@ function diagnosisLine(x, go) {
   }
 }
 
-/** A queue order of a role card: "Warrior · 4 turns · to the 1st Army" with a remove button for an
- *  empire order. */
+/** A queue order of a role card: "Warrior · 4 turns" with a remove button for an empire order. */
 function orderLine(c, o, act) {
   return h(
     "li",
     { "data-index": o.index },
     h("span", orderName(o.order, o.type)),
     h("span.dim", ` · ${turns(o.turns)}`),
-    o.requisition ? h("span.dim", ` · requisition${o.dest_name ? ` for ${o.dest_name}` : ""}`) : o.dest_name ? h("span.dim", ` · to ${o.dest_name}`) : null,
     o.empire ? h("button.small.empire-remove", { title: "Take the empire order off (what was put into it stays)", "aria-label": "Remove", onclick: () => act({ c: "empire_order_remove", city: c.city, index: o.index }) }, "✕") : null,
   );
 }
@@ -293,12 +289,12 @@ const GROUPS = [
   [2, "Rituals"],
 ];
 
-/** Step 1: what to order. With `army` (an army id), the units that serve in armies, those no
- *  governed city can train shown unavailable. Resolves with `{order, type}` or null. */
-export async function pickEmpireItem({ army = null, title = null } = {}) {
+/** Step 1: what to order, those no governed city can build shown unavailable. Resolves with
+ *  `{order, type}` or null. */
+export async function pickEmpireItem({ title = null } = {}) {
   let r;
   try {
-    r = await api.query("empire_items", army !== null ? { army } : {});
+    r = await api.query("empire_items");
   } catch (e) {
     toast(errorText(e), "error");
     return null;
@@ -345,13 +341,12 @@ function displaced(x) {
 
 /** Step 2: where. Every governed city able to build the item, the suggestion pre-selected (Enter
  *  or Order confirms it: one click); "On the map" outlines the cities on the map, where a click on
- *  one orders it there (`beforeMap` first closes the screen that asked). Sends `empire_order`
- *  (with `army` as the destination). Resolves with whether the order was placed (null when it
- *  went to the map). */
-export async function orderEmpire({ order, data, army = null, beforeMap = null }) {
+ *  one orders it there (`beforeMap` first closes the screen that asked). Sends `empire_order`.
+ *  Resolves with whether the order was placed (null when it went to the map). */
+export async function orderEmpire({ order, data, beforeMap = null }) {
   let r;
   try {
-    r = await api.query("empire_cities", { order, data, ...(army !== null ? { army } : {}) });
+    r = await api.query("empire_cities", { order, data });
   } catch (e) {
     toast(errorText(e), "error");
     return false;
@@ -361,7 +356,7 @@ export async function orderEmpire({ order, data, army = null, beforeMap = null }
     return false;
   }
   const what = orderName(order, data);
-  const send = (c) => run({ c: "empire_order", city: c.city, order, data, dest: r.dest });
+  const send = (c) => run({ c: "empire_order", city: c.city, order, data });
   let picked = r.cities.find((c) => c.suggested) ?? r.cities[0];
   const m = openModal({ title: `${what}: which city?`, body: [], tag: "empire-city", wide: true, buttons: [] });
   const render = () => {
@@ -374,14 +369,13 @@ export async function orderEmpire({ order, data, army = null, beforeMap = null }
         h("td.num", turns(c.turns)),
         h("td", c.ahead ? h("span.dim", `${c.ahead} ahead (${turns(c.ahead_turns)})`) : h("span.dim", "-")),
         h("td", displaced(c)),
-        army !== null ? h("td.num", c.distance === null || c.distance === undefined ? "-" : `${c.distance}`) : null,
         h("td", c.cost_percent !== undefined ? h(`span${tierSel(c.tier)}`, `Cost: ${c.cost_percent}%`) : null),
       ),
     );
     m.setBody(
       h(
         "table.governors.empire-cities",
-        h("thead", h("tr", h("th", ""), h("th", "City"), h("th", "Turns"), h("th", "Ahead"), h("th", "Delays"), army !== null ? h("th", { title: "Plots to the army" }, "Distance") : null, h("th", ""))),
+        h("thead", h("tr", h("th", ""), h("th", "City"), h("th", "Turns"), h("th", "Ahead"), h("th", "Delays"), h("th", ""))),
         h("tbody", rows),
       ),
     );

@@ -4,9 +4,8 @@
 //! and ships with cargo room (not animals, not summons, not the barbarians') serve in named fleets
 //! ("1st Fleet", numbered apart from the armies), kept in one group by the same army sync. A lone
 //! such ship outside a city is a one-ship fleet; a ship in a city in no fleet is simply a ship.
-//! What a fleet shares with an army: the sync, form / split / join / merge / rename / disband, a
-//! target size, requisition (from coastal cities: the ship sails to the fleet as a recruit
-//! marches), upgrade all. What it has not: a supply line, a garrison.
+//! What a fleet shares with an army: the sync, form / split / join / merge / rename / disband,
+//! upgrade all. What it has not: a supply line, a garrison.
 //!
 //! **Standing orders** (`Army::station`, 7.2), carried out by the rules:
 //!
@@ -26,11 +25,9 @@
 //!   ([`Game::group_order_ends_station`], called by `group_push_mission`); the rules' own moves
 //!   for the order keep it.
 
-use std::cmp::Reverse;
-
 use ffh_data::*;
 
-use super::{ArmyResult, RecruitDest};
+use super::ArmyResult;
 use crate::defs::MOVE_SEA_RANGE;
 use crate::game::Game;
 use crate::ids::*;
@@ -128,28 +125,6 @@ impl Game {
             .min_by_key(|&c| (!area.is_some_and(|ar| self.plot_is_adjacent_to_area(self.city_plot(c), ar)), self.plot_distance(x, y, self.cities[c].x, self.cities[c].y), c))
     }
 
-    /// Whether fleet `a` of `p` may requisition from city `c` (else why not): a coastal city.
-    pub(crate) fn fleet_check_requisition_city(&self, a: ArmyId, c: CityId) -> ArmyResult {
-        if self.armies[a].domain == ArmyDomain::Sea && !self.city_is_port(c) {
-            return Err("a fleet requisitions only from coastal cities");
-        }
-        Ok(())
-    }
-
-    /// The rules' choice of the ship city `c` trains for fleet `a`'s requisition (the default of
-    /// `Controller::requisition_unit` for a fleet, the human's): the strongest warship the city
-    /// can train, no world or national unit (ties: the cheaper, then the first); else the ship with
-    /// the most cargo room.
-    pub(crate) fn fleet_requisition_unit_default(&self, c: CityId) -> Option<(UnitType, UnitAIType)> {
-        let d = self.d;
-        let ok = |t: UnitType| self.unit_type_is_fleet_unit(t) && !d.units[t].unit_class_type.is_some_and(|k| crate::utils::is_limited_unit_class(d, k)) && self.city_can_train(c, t, false, false, false, false);
-        let candidates: Vec<UnitType> = d.units.keys().filter(|&t| ok(t)).collect();
-        if let Some(t) = candidates.iter().copied().filter(|&t| d.units[t].strength > 0).max_by_key(|&t| (d.units[t].strength, Reverse(d.units[t].production_cost), Reverse(t))) {
-            return Some((t, UnitAIType::UNITAI_ATTACK_SEA));
-        }
-        candidates.into_iter().max_by_key(|&t| (d.units[t].cargo_space, Reverse(d.units[t].production_cost), Reverse(t))).map(|t| (t, UnitAIType::UNITAI_ASSAULT_SEA))
-    }
-
     /// Whether units of `unit` may join army `a` (an army unit type for an army, a fleet unit
     /// type for a fleet).
     pub fn unit_type_fits_army(&self, unit: UnitType, a: ArmyId) -> bool {
@@ -188,9 +163,9 @@ impl Game {
     /// A target's name in messages and the views ("the 2nd Army", "a Galleon").
     pub fn escort_target_name(&self, target: EscortTarget) -> String {
         match target {
-            EscortTarget::Army(b) => self.recruit_dest_name(RecruitDest::Army(b)),
+            EscortTarget::Army(b) => self.army_display_name(b),
             EscortTarget::Group(gr) => match self.groups.get(gr).and_then(|_| self.group_get_head_unit(gr)) {
-                Some(u) => super::march::with_article(self.d.text.name(&self.d.units[self.units[u].unit_type].base.description)),
+                Some(u) => super::with_article(self.d.text.name(&self.d.units[self.units[u].unit_type].base.description)),
                 None => "a group".to_string(),
             },
             EscortTarget::Caravan(r, slot) => match self.routes.get(r) {

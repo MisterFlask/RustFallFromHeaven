@@ -31,7 +31,7 @@
 //!    (`Unit::battle_heal_turn`). Then phase 7's post-battle hook
 //!    ([`Game::engage_post_battle_spells`], empty).
 //! 7. Withdrawn defenders (outside cities only) flee to the nearest valid plot (or die with none);
-//!    a marching one keeps its march. (The round model's Fear rout after a won battle is gone.)
+//!    (The round model's Fear rout after a won battle is gone.)
 //! 7b. **Push-back** (the owner's rule, 2026-11-21): when the defenders lost (step 9) outside a
 //!    city, their units left on the plot (the line's survivors, those that sat out, the reserve)
 //!    are pushed back to a plot next to it, the farthest from the attacking plot of those every

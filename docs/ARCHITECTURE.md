@@ -106,7 +106,7 @@ asks its decisions through `Controller` methods, and is described in its own doc
 
 | System | Module | State | Doc |
 |---|---|---|---|
-| Armies, requisition, march, supply, fleets | `army/` | `Game::armies`, `Unit::army`, `Unit::march` | ARMIES.md, SUPPLY.md |
+| Armies, waypoints, squads, supply, fleets | `army/` | `Game::armies`, `Unit::army`, `City::waypoint`, `Unit::waypoint` | ARMIES.md, SUPPLY.md |
 | Engagement combat (land battles) | `engagement/` | `Game::battle_reports` | ENGAGEMENTS.md, TACTICS.md, SIEGES.md |
 | Crusades and loans | `crusade/` | `Game::crusades`, `crusade_reports` | CRUSADE.md |
 | The Armageddon deck | `deck/` | `Game::doom` | DECKS.md |
@@ -122,8 +122,8 @@ How they attach to the ported rules:
 
 - **Turn processing calls each system by name**, one line each with its place in the order
   explained: the game turn in `game/turn.rs` (`crusade_do_turn`, `doom_do_turn`,
-  `area_effects_do_turn`, `seas_refresh_all`), the player turn in `player/turn.rs` (march, army
-  sync, governance, requisition, supply, sea), a city's death in `city/turn.rs`.
+  `area_effects_do_turn`, `seas_refresh_all`), the player turn in `player/turn.rs` (army sync,
+  waypoints, governance, supply, sea), a city's death in `city/turn.rs`.
 - **Passive effects are data.** A card that only uses existing effect keys is a data file;
   spells and Armageddon cards are found by name through registries (`ffh/cards/mod.rs`,
   `deck/doom_cards.rs`), like the ported Python callbacks (`ffh/dispatch.rs`).

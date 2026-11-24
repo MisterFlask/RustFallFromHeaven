@@ -80,7 +80,7 @@ pub fn frozen_passage_target(g: &Game, p: PlayerId, targets: &[PlotIdx]) -> Opti
 /// Casts Frozen Passage when `p`'s cast is pending (module doc).
 fn frozen_passage(g: &mut Game, p: PlayerId) {
     let Some(spell) = g.d.ty::<SpellType>("SPELL_FROZEN_PASSAGE") else { return };
-    let Some(u) = g.players[p].units.iter().copied().find(|&u| g.units.contains(u) && g.unit_march(u).is_none() && g.unit_can_cast_untargeted(u, spell, false)) else {
+    let Some(u) = g.players[p].units.iter().copied().find(|&u| g.units.contains(u) && g.unit_can_cast_untargeted(u, spell, false)) else {
         return;
     };
     let targets: Vec<PlotIdx> = g.unit_spell_targets(u, spell).into_iter().filter_map(|t| if let SpellTarget::Plot(q) = t { Some(q) } else { None }).collect();

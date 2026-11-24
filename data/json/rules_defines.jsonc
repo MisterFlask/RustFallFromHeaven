@@ -1,11 +1,9 @@
 {
   // Tuning values of this game's own rules (not FFH2's): read after GlobalDefines.xml,
   //     GlobalDefinesAlt.xml and PythonCallbackDefines.xml, like them. Each system's doc lists
-  //     its values: docs/ARMIES.md for the ARMY_* ones, docs/GOVERNORS.md for the
+  //     its values: docs/GOVERNORS.md for the
   //     GOVERNOR_* ones; the ENGAGEMENT_* ones are engagement combat's (phase 6). Percentages are integers
   //     (100 = 1.0).
-  // ==== Armies (GAMEOPTION_ARMIES, docs/ARMIES.md) ====
-  "ARMY_TRANSIT_STALL_TURNS": 5,
   // ==== Supply lines (docs/SUPPLY.md) ====
   // the most a supply line may cost: an army is supplied when the cheapest path from it to a
   //      source (a city of its owner's team not in occupation, a ship of its owner) costs at most this

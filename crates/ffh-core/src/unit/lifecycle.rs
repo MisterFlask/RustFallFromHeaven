@@ -198,12 +198,12 @@ impl Game {
     /// `from` is C++ `pUnit` (the unit being replaced; it is killed with delay at the end).
     pub fn unit_convert(&mut self, u: UnitId, from: UnitId) {
         let d = self.d;
-        // This game's armies: the new unit takes the old one's place in its army or march (not
-        // when it changes hands: a dominated unit joins no army of its old owner's, and the
-        // recruit is lost on the way).
+        // This game's armies: the new unit takes the old one's place in its army and on its way
+        // to a waypoint (not when it changes hands: a dominated unit joins no army of its old
+        // owner's).
         if self.units[u].owner == self.units[from].owner {
             self.units[u].army = self.units[from].army;
-            self.units[u].march = self.units[from].march.take();
+            self.units[u].waypoint = self.units[from].waypoint;
         }
         // This game's sea (docs/NAVAL.md, 3.1 and 3.4): an upgrade or conversion at sea keeps the
         // ship's wear (only a port clears it) and the out-of-range state of its message.
@@ -447,10 +447,6 @@ impl Game {
         let fallen = self.unit_fallen_record(u);
         if self.telemetry.on() {
             self.tel_unit_died(u);
-        }
-        // This game's armies: a recruit killed on its way.
-        if self.units[u].march.is_some() {
-            self.unit_march_lost(u);
         }
         self.change_global_counter(-info.modify_global_counter);
         for promotion in d.promotions.keys() {
@@ -827,6 +823,15 @@ impl Game {
     pub fn unit_join_group(&mut self, u: UnitId, group: Option<GroupId>, rejoin: bool) {
         let owner = self.units[u].owner;
         let old_group = self.unit_group(u);
+
+        // This game's waypoints (`army/waypoint.rs`): joining a group that holds other units ends
+        // the waypoints of the unit and of the group's units.
+        if let Some(g) = group.filter(|&g| Some(g) != old_group && self.groups.contains(g)) {
+            if self.groups[g].units.iter().any(|&o| o != u) {
+                self.unit_clear_waypoint(u);
+                self.group_clear_waypoints(g);
+            }
+        }
 
         if group != old_group || old_group.is_none() {
             let plot = self.unit_plot_opt(u);

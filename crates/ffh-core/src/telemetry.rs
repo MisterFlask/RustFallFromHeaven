@@ -370,20 +370,6 @@ impl Game {
         });
     }
 
-    /// A marching recruit (docs/ARMIES.md): `sent` (to an army or a garrison; turns: the estimated
-    /// march), `arrived`, `diverted`, `stopped` (no city it can reach), `killed` (turns: since it
-    /// set out); counted as `march` by kind, the sum the turns.
-    pub(crate) fn tel_march(&self, p: PlayerId, kind: &'static str, to_army: bool, turns: i32) {
-        if !self.telemetry.on() {
-            return;
-        }
-        let turn = self.game_turn();
-        self.telemetry.with(|t| {
-            t.count(p, "march", kind, turns.max(0) as i64);
-            t.event(|| ev(turn, "march", p).s("how", kind).b("to_army", to_army).i("turns", turns as i64).end());
-        });
-    }
-
     /// Trade (docs/TRADE.md, section 10): counted under `cat` by `key`, the sum `value`:
     /// `trade_route` (domestic / foreign: established), `trade_caravan_lost_by` (war / hidden /
     /// barbarians / other), `trade_caravan_lost_at` (own / foreign / unowned / water / other),
@@ -399,15 +385,16 @@ impl Game {
         });
     }
 
-    /// A requisition order (docs/ARMIES.md): `placed` or `withdrawn`, counted as `requisition`.
-    pub(crate) fn tel_requisition(&self, p: PlayerId, kind: &'static str) {
+    /// A waypoint (`army/waypoint.rs`): `sent` (a unit set out), `arrived`, `ended` (by its
+    /// owner's order, no way there, its army gone); counted as `waypoint` by kind.
+    pub(crate) fn tel_waypoint(&self, p: PlayerId, kind: &'static str) {
         if !self.telemetry.on() {
             return;
         }
         let turn = self.game_turn();
         self.telemetry.with(|t| {
-            t.count(p, "requisition", kind, 1);
-            t.event(|| ev(turn, "requisition", p).s("how", kind).end());
+            t.count(p, "waypoint", kind, 1);
+            t.event(|| ev(turn, "waypoint", p).s("how", kind).end());
         });
     }
 

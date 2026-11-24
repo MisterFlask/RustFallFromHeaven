@@ -46,7 +46,7 @@ fn distance(g: &Game, a: PlotIdx, b: PlotIdx) -> i32 {
 fn caster(g: &Game, p: PlayerId, spell: SpellType) -> Option<UnitId> {
     let mut units = g.players[p].units.clone();
     units.sort();
-    units.into_iter().find(|&u| g.units.contains(u) && g.unit_march(u).is_none() && g.unit_can_cast_untargeted(u, spell, false))
+    units.into_iter().find(|&u| g.units.contains(u) && g.unit_can_cast_untargeted(u, spell, false))
 }
 
 /// Per plot: the strength of the units of teams at war with `p`'s that a storm would strike there,
@@ -158,7 +158,7 @@ fn the_delve(g: &mut Game, p: PlayerId) {
     // (length, unit, target): the longest tunnel.
     let mut best: Option<(i32, UnitId, PlotIdx)> = None;
     for u in units {
-        if !g.units.contains(u) || g.unit_march(u).is_some() || !g.unit_can_cast_untargeted(u, spell, false) {
+        if !g.units.contains(u) || !g.unit_can_cast_untargeted(u, spell, false) {
             continue;
         }
         let at = g.unit_plot(u);

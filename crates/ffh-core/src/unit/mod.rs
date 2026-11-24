@@ -550,9 +550,9 @@ pub struct Unit {
     // ---- This game's own rules (not FFH2's) ----
     /// The army it is in (docs/ARMIES.md); `None` for a unit in a garrison or outside armies.
     pub army: Option<ArmyId>,
-    /// A recruit marching to its army or garrison (docs/ARMIES.md): the rules move it, it takes
-    /// no orders, it is in no army and no garrison until it arrives.
-    pub march: Option<crate::army::March>,
+    /// On its way to this waypoint (docs/ARMIES.md, `army/waypoint.rs`): under an ordinary go-to,
+    /// in no army and no garrison until it arrives; any order of its owner's ends it.
+    pub waypoint: Option<crate::army::Waypoint>,
     /// The squad it stands in and its cell there (`row * 3 + lane`; docs/ENGAGEMENTS.md,
     /// "Squads"; settled by `player_squad_sync`).
     pub squad: Option<SquadId>,
@@ -778,9 +778,9 @@ impl Unit {
             ai_allowed_patrol: true,
             ai_allowed_explore: true,
             army: None,
+            waypoint: None,
             squad: None,
             squad_cell: 0,
-            march: None,
             stat_flat: [0; StatType::NUM],
             stat_pct: [0; StatType::NUM],
             attacks_made: 0,

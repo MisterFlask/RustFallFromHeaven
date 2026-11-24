@@ -33,26 +33,17 @@ pub struct OrderData {
     pub data2: i32,
     /// C++ `bSave`: keep the order in the queue after completion (repeat).
     pub save: bool,
-    /// This game's armies (docs/ARMIES.md): where a trained land combat unit goes (`None`: the
-    /// city's default, `City::recruit_default`, else its own garrison).
-    pub dest: Option<crate::army::RecruitDest>,
-    /// A requisition order of the army `dest` names (docs/ARMIES.md): at the front of the queue,
-    /// not taken off by hand.
-    pub requisition: bool,
     /// An empire order (docs/GOVERNORS.md): the player's order in a governed city (a unit, a
-    /// wonder, a palace, a project), behind the requisition orders and ahead of the governor's
-    /// choice. Never repeats.
+    /// wonder, a palace, a project), at the front of the queue, ahead of the governor's choice.
+    /// Never repeats.
     pub empire: bool,
 }
 
-/// Not in C++: what kind of order `Game::city_push_order_kind` places (this game's armies and
-/// governors).
+/// Not in C++: what kind of order `Game::city_push_order_kind` places (this game's governors).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum OrderKind {
     /// The city's own order (the player's in a directly ruled city, the governor's in a governed one).
     Own,
-    /// An army's requisition order (`OrderData::requisition`).
-    Requisition,
     /// The player's empire order in a governed city (`OrderData::empire`).
     Empire,
 }

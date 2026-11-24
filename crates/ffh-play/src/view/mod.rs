@@ -430,12 +430,12 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("summon_turns", (unit.duration > 0).then_some(unit.duration));
         // A great person's card (docs/CARDS.md).
         j.set("card", Json::opt_idx(unit.card));
-        // This game's armies (docs/ARMIES.md): its army, or the city whose garrison it is in, or
-        // its march (a recruit on its way: it takes no orders until it arrives).
+        // This game's armies (docs/ARMIES.md): its army, or the city whose garrison it is in.
         j.set("army", unit.army);
         j.set("garrison", g.unit_garrison_city(u));
         j.set("army_unit", g.unit_is_army_unit(u));
-        j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
+        // Waypoints: where it is on its way to (its name; null: none).
+        j.set("waypoint", unit.waypoint.map(|wp| g.waypoint_name(wp)));
         // Squads (docs/ENGAGEMENTS.md, "Squads"): its squad, its number on the plot, its cell and
         // whether the squad is Auto (null: in no squad).
         j.set("squad", squads::unit_squad(g, u));
@@ -544,10 +544,8 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         "cities" => cities(v),
         "units" => units(v),
         "groups" => groups(v),
-        // This game's armies (null without them): the human's armies and the recruits marching
-        // to garrisons (unit ids: each unit's `march` says where and how long).
+        // This game's armies: the human's armies.
         "armies" => armies::armies(v),
-        "garrison_marching" => armies::garrison_marching(v),
         // Supply lines (docs/SUPPLY.md): the lines of the other players' armies the human sees,
         // clipped to the plots it has revealed (its own armies' are each army's `supply.line`).
         "supply_lines" => armies::foreign_supply_lines(v),

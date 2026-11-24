@@ -470,12 +470,10 @@ ol.queue button { margin-left: 8px; }
 .tap-mode.always { display: flex; }
 button.build .cost { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
 .swatch { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border: 1px solid var(--c-void); vertical-align: 0; }
-/* This game's armies (armies.js): the unit row's army badge, the Armies screen's cards with
-   their requisition, the production queue's destination and requisition orders, a marching
-   recruit's line in the unit panel. */
+/* This game's armies (armies.js): the unit row's army badge, the Armies screen's cards, the city
+   screen's garrison line. */
 .badge.army { color: var(--c-vellum); border-color: var(--c-ochre); }
 .badge.army.warn, .badge.warn { color: var(--warn); border-color: var(--warn); }
-.badge.march { color: var(--c-vellum); border-color: var(--c-ochre); border-style: dashed; }
 /* The decks (docs/CARDS.md): a great person's card, spent card spells, the Armageddon deck's slots. */
 .badge.card { color: var(--c-vellum); border-color: var(--c-lilac); }
 .card-line { margin: 4px 0; }
@@ -489,25 +487,27 @@ button.build .cost { display: inline-flex; align-items: center; gap: 2px; white-
 .doom-slot.hidden { opacity: 0.6; }
 .doom-slot.fired .doom-card { text-decoration: line-through; }
 .doom-slot .doom-help { margin-left: 2.5em; font-size: 0.92em; }
-.army-line, .march-line { margin: 4px 0; }
+.army-line { margin: 4px 0; }
 .army-list { display: grid; gap: 8px; }
 .army-card { border: 1px solid var(--c-iron); padding: 6px 8px; }
 .army-card .row { margin-top: 4px; gap: 8px; align-items: center; flex-wrap: wrap; }
 .army-title { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
 input.army-name { font-weight: bold; width: 14em; max-width: 100%; }
-input.army-target { width: 3.5em; }
-ul.army-transit, ul.garrisons, ul.requisition-orders { margin: 2px 0; padding-left: 20px; }
-.requisition { margin-top: 4px; }
-.requisition-pick summary { cursor: pointer; }
-.requisition-pick p { margin: 2px 0; }
-.requisition-cities { display: grid; gap: 2px; margin: 2px 0 4px; }
-label.requisition-city { display: block; }
-label.requisition-city .badge { margin-left: 4px; }
-.requisition-tag { margin-left: 6px; color: var(--c-ochre); }
-.requisition-note { margin: 2px 0; }
-.recruit { margin-left: 6px; }
-select.recruit-dest { max-width: 15em; }
-.recruit-default { margin: 4px 0; }
+ul.garrisons { margin: 2px 0; padding-left: 20px; }
+.army-garrison { margin: 4px 0; }
+/* Waypoints (armies.js): the city screen's line, an army card's Waypoint of / On the way, the unit
+   panel's line and badge. */
+.city-waypoint { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+.city-waypoint .waypoint-governed { flex-basis: 100%; }
+select.city-waypoint-pick { max-width: 14em; }
+.waypoint-of { margin-top: 4px; }
+details.waypoint-pick { display: inline; }
+.waypoint-pick summary { cursor: pointer; display: inline; text-decoration: underline dotted; }
+.waypoint-cities { display: grid; gap: 2px; margin: 2px 0 4px 12px; }
+label.waypoint-city { display: block; }
+ul.waypoint-unit-list { margin: 2px 0; padding-left: 20px; }
+.waypoint-line { margin: 4px 0; }
+.badge.waypoint { color: var(--c-vellum); border-color: var(--c-ochre); border-style: dashed; }
 /* Trade (trade.js; docs/TRADE.md, section 9). */
 .trade-limits { margin: 2px 0 6px; font-weight: bold; }
 .trade-offers { display: grid; gap: 4px; }
@@ -552,7 +552,7 @@ table.governors th, table.governors td { text-align: left; padding: 2px 6px; bor
 table.governors td.num { text-align: right; }
 .governors-mode { font-weight: bold; }
 .priorities { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-ul.diagnoses, ul.role-keys, ul.role-orders, ul.army-on-order { margin: 2px 0; padding-left: 20px; }
+ul.diagnoses, ul.role-keys, ul.role-orders { margin: 2px 0; padding-left: 20px; }
 .role-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 8px; }
 .role-card { border: 1px solid var(--c-iron); padding: 4px 8px; }
 .role-others { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin: 2px 0; }

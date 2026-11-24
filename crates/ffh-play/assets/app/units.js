@@ -13,7 +13,6 @@ import { render as markup } from "./markup.js";
 import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } from "./look.js";
 import { isoSkin, isoIcon, spellIconName, actionIcon, portrait, isoBar, focusOn, unitFigure, updateInsets } from "./isoui.js";
 import { effectsOf, infoTip, partsList } from "./infotips.js";
-import { marchLine } from "./armies.js";
 import { exploreShort, exploreFull } from "./explore.js";
 import { battleTerrain, openPlan, preferredRow, flashBattle, engageBrief } from "./engagements.js";
 import { unitCard } from "./unit_card.js";
@@ -423,7 +422,7 @@ export function click(x, y, ev) {
       const i = groups.indexOf(currentGroup());
       g = groups[(i + 1) % groups.length];
     }
-    if (ev?.shiftKey) select(allHere(own));
+    if (ev?.shiftKey) select(own.map((u) => u.id));
     else selectGroup(g);
     return;
   }
@@ -800,31 +799,10 @@ export function shiftReleased() {
   return shiftChain.then(() => flushed);
 }
 
-/** The units here that take orders: not a marching recruit (this game's armies: the rules move
- *  it until it arrives). */
-const orderable = (units) => units.filter((u) => !u.march);
-
-/** The units "All" and Shift-click select on a plot: those that take orders (a marching recruit
- *  among them would leave the selection without orders), or all when none does (to look at). */
-const allHere = (units) => {
-  const ready = orderable(units);
-  return (ready.length ? ready : units).map((u) => u.id);
-};
-
-/** The march of the first selected marching recruit (it takes no orders), or null. */
-export function selectionMarch() {
-  for (const id of S.sel?.units ?? []) {
-    const m = S.units.get(id)?.march;
-    if (m) return m;
-  }
-  return null;
-}
-
-/** Merges the units here into one group (`join_group` of each into the first's); marching
- *  recruits stay out (they take no orders). */
+/** Merges the units here into one group (`join_group` of each into the first's). */
 export async function groupAll() {
   if (!S.sel) return;
-  const own = orderable(ownUnitsAt(S.sel.x, S.sel.y));
+  const own = ownUnitsAt(S.sel.x, S.sel.y);
   if (!own.length) return;
   const head = S.sel.units.find((id) => own.some((u) => u.id === id)) ?? own[0].id;
   const headGroup = S.units.get(head)?.group;
@@ -834,11 +812,10 @@ export async function groupAll() {
   select(own.map((u) => u.id));
 }
 
-/** Splits the selection: each selected unit its own group (a marching recruit is alone in its
- *  group already). */
+/** Splits the selection: each selected unit its own group. */
 export async function splitAll() {
   if (!S.sel) return;
-  const ids = S.sel.units.filter((id) => !S.units.get(id)?.march);
+  const ids = [...S.sel.units];
   if (!ids.length) return;
   for (const u of ids) await run({ c: "join_group", unit: u, head: null }, { quiet: true });
   select([ids[0]]);
@@ -881,8 +858,7 @@ async function loadPreview(x, y) {
       api.query("plot", sel ? { x, y, units: sel.units } : { x, y }).then((r) => still() && (preview.plot = r)).catch(() => {}),
     );
   }
-  // (A marching recruit takes no orders: no move to preview.)
-  if (sel && S.status?.phase === "human" && !(sel.x === x && sel.y === y) && !selectionMarch()) {
+  if (sel && S.status?.phase === "human" && !(sel.x === x && sel.y === y)) {
     jobs.push(
       api.query("path", { units: sel.units, x, y }).then((r) => {
         if (!still()) return;
@@ -1004,8 +980,8 @@ function showTip() {
     for (const u0 of units) {
       const u = { ...u0, ...(known.get(u0.id) ?? {}) };
       const health = u.hp < u.max_hp ? Math.round((100 * u.hp) / u.max_hp) : 100;
-      // A line that is the unit's own (Wounds, a card, a march) keeps it apart.
-      const own = u.wounds || (u.card !== null && u.card !== undefined) || u.march || u.caravan;
+      // A line that is the unit's own (Wounds, a card) keeps it apart.
+      const own = u.wounds || (u.card !== null && u.card !== undefined) || u.caravan;
       const key = own ? null : `${u.owner}|${u.type}|${u.name ?? ""}|${u.level}|${health}`;
       const same = key && rows.find((r) => r.key === key);
       if (same) same.n += 1;
@@ -1021,8 +997,6 @@ function showTip() {
         u.wounds ? h("div.warn", u.wounds.text) : null,
         // A great person of ours holding a card (docs/CARDS.md).
         u.card !== null && u.card !== undefined ? h("div.tip-card", `Card: ${dname("TechType", u.card)}`) : null,
-        // This game's armies: a recruit of ours marching to its destination.
-        u.march ? h("div.tip-march", marchLine(u.march)) : null,
         // Trade (docs/TRADE.md 9): a caravan's route and what killing it brings.
         u.caravan ? h("div.tip-caravan", caravanTipLines(u).join(" ")) : null,
       ),
@@ -1473,11 +1447,11 @@ export function armyById(id) {
   return id === null || id === undefined ? null : (S.view?.armies ?? []).find((a) => a.id === id) ?? null;
 }
 
-/** The unit's army (its name; out of supply in warning colours), "garrison", or "marching" (a
- *  recruit on its way, which takes no orders); null without armies or for a unit outside them
- *  (heroes, mages, recon units, summons, ships, workers). */
+/** The unit's army (its name; out of supply in warning colours), "garrison", or "waypoint" (on
+ *  its way to a city's waypoint: in no army and no garrison); null without armies or for a unit
+ *  outside them (heroes, mages, recon units, summons, ships, workers). */
 function armyBadge(u) {
-  if (u.march) return h("span.badge.march", { title: `${marchLine(u.march)}: it takes no orders until it arrives` }, "marching");
+  if (u.waypoint) return h("span.badge.waypoint", { title: `Waypoint: ${u.waypoint}` }, "waypoint");
   const a = armyById(u.army);
   if (a) return h(`span.badge.army${a.in_supply ? "" : ".warn"}`, { title: `${a.name}${a.supply?.text ? `. ${a.supply.text}` : ""}` }, a.name);
   if (u.garrison !== null && u.garrison !== undefined) return h("span.badge.garrison", { title: `In the garrison of ${S.cities.get(u.garrison)?.name ?? "the city"}` }, "garrison");
@@ -1637,29 +1611,26 @@ function cardOf(u, hint = null) {
 
 const CLICK_HINT = "Click: select its group. Ctrl-click: add or remove this unit.";
 
-/** The selection's army in one line: its size (and target), its recruits marching to it and in
- *  training for it, its supply; the Armies screen [F5] has the
- *  rest. Null unless every selected unit is in one army. */
+/** The selection's army in one line: its size, its standing order, its supply; the Armies
+ *  screen [F5] has the rest. Null unless every selected unit is in one army. */
 function armyLine() {
   const ids = (S.sel?.units ?? []).map((id) => S.units.get(id)?.army);
   const a = ids.length && ids.every((x) => x === ids[0]) ? armyById(ids[0]) : null;
   if (!a) return null;
   const n = a.units.length;
   const fleet = a.domain === "sea";
-  const training = (a.requisition?.orders?.length ?? 0) + (a.requisition?.head_orders ?? 0);
   return h(
     "div.army-line",
     h("b", a.name),
-    h("span.dim", ` · ${n} ${fleet ? "ship" : "unit"}${n === 1 ? "" : "s"}${a.target_size ? ` of ${a.target_size}` : ""}`),
+    h("span.dim", ` · ${n} ${fleet ? "ship" : "unit"}${n === 1 ? "" : "s"}`),
     // A fleet's standing order (docs/NAVAL.md, 7.2); a land army's Raid (docs/RAIDS.md, 8).
     fleet && a.station?.text ? h("div.dim.fleet-station-line", a.station.text) : null,
     !fleet && a.station?.kind === "raid" ? h("span.warn.raid-station-line", ` · ${a.station.text}`) : null,
     // Trade (docs/TRADE.md 4.4): a land army's Escort of a caravan, and why it waits.
     !fleet && a.station?.kind === "escort" ? h("div.dim.escort-station-line", a.station.text) : null,
     a.station?.kind === "escort" && a.station.wait ? h("div.warn.escort-wait", a.station.wait) : null,
-    a.marching.length ? h("span.dim", { title: "Recruits marching to it" }, ` · ${a.marching.length} marching to it`) : null,
-    training ? h("span.dim", { title: "Units cities train for it: its requisition's, and those they build next for it" }, ` · ${training} in training`) : null,
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
+    a.waypoint_units?.length ? h("span.dim", ` · on the way: ${a.waypoint_units.length}`) : null,
     " ",
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
     // Supply (docs/SUPPLY.md, section 5): its state in bare words.
@@ -1764,21 +1735,19 @@ function automated(u) {
 
 /** One unit of the isometric card's strip (Civ4's unit buttons over its bottom panel): the unit's
  *  figure, its health under it, a pip for its moves (green: all left, amber: some, dark red: none)
- *  and a corner mark (a promotion waiting, else marching, automated or what it is doing); lit when
+ *  and a corner mark (a promotion waiting, else automated or what it is doing); lit when
  *  selected, brightest for the unit the card describes. The rest is in its tooltip. */
 function unitChip(u, selected, lead) {
   const name = u.name ?? dname("UnitType", u.type);
   const act = activityOf(u);
   const mark = u.promo_ready
     ? isoIcon("promote", { px: 16, cls: "chip-mark" })
-    : u.march
-      ? h("span.chip-mark.march", "»")
-      : automated(u)
-        ? isoIcon("automate", { px: 16, cls: "chip-mark" })
-        : act && ACTIVITY_ICONS[act]
-          ? isoIcon(ACTIVITY_ICONS[act], { px: 16, cls: "chip-mark" })
-          : null;
-  const mv = u.moves === undefined || u.march ? null : u.moves <= 0 ? "spent" : u.moves < u.max_moves ? "part" : "full";
+    : automated(u)
+      ? isoIcon("automate", { px: 16, cls: "chip-mark" })
+      : act && ACTIVITY_ICONS[act]
+        ? isoIcon(ACTIVITY_ICONS[act], { px: 16, cls: "chip-mark" })
+        : null;
+  const mv = u.moves === undefined ? null : u.moves <= 0 ? "spent" : u.moves < u.max_moves ? "part" : "full";
   const frac = u.hp / Math.max(1, u.max_hp);
   return h(
     "button.unit-chip",
@@ -1915,12 +1884,11 @@ export function renderPanel() {
     for (const c of own.filter((c) => c.transport === u.id)) ordered.push(c);
   }
   const list = h("div.unit-list", ordered.map((u) => unitRow({ ...u, ...(details.get(u.id) ?? {}) }, S.sel.units.includes(u.id))));
-  const march = selectionMarch();
   const tools = h(
     "div.row",
-    h("button", { onclick: () => select(allHere(own)), disabled: orderable(own).length < 2, title: "Select every unit here that takes orders (not a marching recruit)" }, "All"),
-    h("button", { onclick: groupAll, disabled: orderable(own).length < 2, title: "Join the units here into one group (not a marching recruit)" }, "Group"),
-    h("button", { onclick: splitAll, disabled: S.sel.units.filter((id) => !S.units.get(id)?.march).length < 2, title: "Each selected unit its own group" }, "Split"),
+    h("button", { onclick: () => select(own.map((u) => u.id)), disabled: own.length < 2, title: "Select every unit here" }, "All"),
+    h("button", { onclick: groupAll, disabled: own.length < 2, title: "Join the units here into one group" }, "Group"),
+    h("button", { onclick: splitAll, disabled: S.sel.units.length < 2, title: "Each selected unit its own group" }, "Split"),
     h("button", { onclick: () => selectNext(), title: "Next unit waiting for orders [Tab]" }, "Next"),
   );
   if (r?.actions?.some((a) => a.kind === "promotion" && a.enabled)) {
@@ -1936,22 +1904,14 @@ export function renderPanel() {
     tools.append(h("button", { onclick: () => emit("open-city", city.id), title: "Open the city (or double-click it)" }, `Open ${city.name}`));
   }
   const status = [];
-  // This game's armies: a marching recruit goes on its own and takes no orders until it arrives.
-  if (march) {
-    status.push(
-      h(
-        "div.march-line",
-        { title: "The rules march it there; it takes no orders until it arrives." },
-        h("b", marchLine(march)),
-        march.from ? h("span.dim", ` · from ${march.from}`) : null,
-      ),
-    );
-  }
   // Engagement combat: the lead unit's role, A, Dv and battle HP.
   const engage = engageLine(lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null);
   if (engage && !isoSkin()) status.push(engage);
   const army = armyLine();
   if (army) status.push(army);
+  // Waypoints (docs/ARMIES.md): a selected unit on its way ("Waypoint: the 2nd Army (3 turns)").
+  const wpLine = S.sel.units.map((id) => details.get(id)?.waypoint_line).find(Boolean);
+  if (wpLine) status.push(h("div.waypoint-line", { title: "Any order to the unit ends its waypoint." }, wpLine.text));
   // A hero's Wounds: the line, its calculation in the tooltip.
   const wounded = lead ? (details.get(lead.id) ?? lead).wounds ?? lead.wounds : null;
   if (wounded) status.push(withCalc(h("div.warn.wounds-line", wounded.text), wounded.calc));
@@ -1964,8 +1924,9 @@ export function renderPanel() {
   // Trade (docs/TRADE.md 9): a Caravan's route, where it is bound, its plunder; no orders.
   const tradeInfo = lead ? details.get(lead.id)?.trade : null;
   if (tradeInfo?.lines?.length) status.push(h("div.trade-lines", tradeInfo.lines.map((t, i) => h(`div${i ? ".trade-line" : ".trade-route-line"}`, t))));
-  if (grp?.missions?.length) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
-  if (grp && !grp.ready && !march) status.push(h("div.dim", grp.busy ? "Busy" : "Done for this turn"));
+  // (A unit on its way: its waypoint line says where its go-to leads.)
+  if (grp?.missions?.length && !wpLine) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
+  if (grp && !grp.ready) status.push(h("div.dim", grp.busy ? "Busy" : "Done for this turn"));
   const actions = [];
   if (r?.error) actions.push(h("p.warn", r.error));
   else if (!r?.actions) actions.push(h("p.dim", "…"));

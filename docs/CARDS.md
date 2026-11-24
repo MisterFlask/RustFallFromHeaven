@@ -336,7 +336,7 @@ immediately"); at a completion the spell becomes the owner's pending cast
   - Not parked: with production in it, it stays the head of its city's queue; taken off or put
     behind another order, its production is lost (`city_check_rituals`, after every insertion and
     removal in `city_push_order_kind` / `city_pop_order`; the "abandoned" news only for a world
-    ritual). Requisitions and empire orders are refused in front of one in progress
+    ritual). Empire orders are refused in front of one in progress
     (`city_push_order_kind` returns `None`).
   - Not hurried with gold: a hurry with a gold cost (`gold_per_production > 0`) is refused while
     the city's first build is a ritual (`city_can_hurry`: shown, disabled). Hurrying with
@@ -509,7 +509,7 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   unit of the parent on the plot of one of the parent's cities. A candidate that fails is passed
   over and the next is tried. **The transfer** (`crusade_change_owner`, as a crusade loan): it
   becomes the faction's unit of the same type in the faction's capital, with its promotions,
-  experience, level and damage; the old unit is gone at once, out of its army, march and group.
+  experience, level and damage; the old unit is gone at once, out of its army, its waypoint and its group.
   (The new unit also takes the faction's free promotions, a leader trait's among them: the
   faction may end above its parent by at most the last defector's gain.) The log line gives the
   count defected. **Its leader** (the owner's decision, 2026-11-15): a random available

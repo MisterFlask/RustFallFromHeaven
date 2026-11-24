@@ -51,7 +51,7 @@ pub fn world_caster(g: &Game, p: PlayerId, spell: SpellType) -> Option<UnitId> {
         .units
         .iter()
         .copied()
-        .filter(|&u| g.unit_march(u).is_none() && g.unit_can_cast_untargeted(u, spell, false))
+        .filter(|&u| g.unit_can_cast_untargeted(u, spell, false))
         .min_by_key(|&u| (g.units[u].ai_type != Some(UnitAIType::UNITAI_CITY_DEFENSE), loses(u), u))
 }
 

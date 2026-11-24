@@ -1,107 +1,14 @@
 //! This game's armies as the human sees them (docs/ARMIES.md): the view's `armies` (the human's
-//! armies and fleets, their supply, requisition and the recruits marching to them), each marching
-//! unit's `march`, the Armies screen (`armies` query: its armies, its fleets, docs/NAVAL.md
-//! section 7) and the recruitment choices of the city screen.
+//! armies and fleets, their supply), the Armies screen (`armies` query: its armies, its fleets,
+//! docs/NAVAL.md section 7), the city screen's garrison and the cities' waypoints.
 
-use ffh_core::army::{ArmyDomain, EscortTarget, RecruitDest, Station, SupplyLine, SupplySource, SupplyState};
+use ffh_core::army::{ArmyDomain, EscortTarget, Station, SupplyLine, SupplySource, SupplyState, Waypoint};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_data::{Idx, OrderType, UnitType};
+use ffh_data::Idx;
 
-use crate::command::recruit_dest_json;
 use crate::json::Json;
 use crate::view::{city_name, Viewer};
-
-/// A marching recruit's march (the unit's `march`, and the Armies screen's `recruits`): where it
-/// goes (`dest`, `to` its name), where it comes from, the turns it needs along the rules' path
-/// (`turns_left`; `null`: no way there now), the turns it has made no progress (`stalled`), and
-/// whether it was sent to a garrison instead of its first destination (`diverted`).
-pub fn march_json(v: &Viewer, u: UnitId) -> Json {
-    let g = v.g;
-    let m = g.unit_march(u).expect("a marching unit");
-    crate::jobj! {
-        "dest" => recruit_dest_json(Some(m.dest)),
-        "to" => g.recruit_dest_name(m.dest),
-        "from" => g.cities.contains(m.from_city).then(|| city_name(g, m.from_city)),
-        "turns_left" => g.unit_march_eta(u),
-        "stalled" => m.stalled,
-        "diverted" => m.diverted,
-        "since" => m.left_turn,
-    }
-}
-
-/// A recruit on the Armies screen: the unit (`id`, `unit` its type, where it is) and its march.
-fn recruit_json(v: &Viewer, u: UnitId) -> Json {
-    let g = v.g;
-    let mut j = march_json(v, u);
-    j.set("id", u);
-    j.set("unit", Json::idx(g.units[u].unit_type));
-    j.set("x", g.units[u].x);
-    j.set("y", g.units[u].y);
-    j
-}
-
-/// Army `a`'s requisition orders in production: the city, the unit, its place in the queue and
-/// its production turns.
-fn requisition_orders(v: &Viewer, a: ArmyId) -> Vec<(CityId, Json)> {
-    let g = v.g;
-    g.army_requisition_orders(a)
-        .into_iter()
-        .map(|(c, i)| {
-            let o = &g.cities[c].order_queue[i];
-            let unit = (o.order_type == OrderType::ORDER_TRAIN && o.data1 >= 0 && (o.data1 as usize) < g.d.units.len()).then(|| UnitType::from_usize(o.data1 as usize));
-            let j = crate::jobj! {
-                "city" => c,
-                "name" => city_name(g, c),
-                "unit" => unit.map(Json::idx),
-                "index" => i,
-                "turns" => unit.map(|t| g.city_production_turns_left_unit(c, t, i as i32)),
-            };
-            (c, j)
-        })
-        .collect()
-}
-
-/// Army `a`'s requisition: the cities it requisitions from (`cities`, in the order picked), its
-/// orders in production (`orders`), the other orders bound for it that its cities build next
-/// (`head_orders`: a count; their destination or the city's default names the army) and how many
-/// it lacks of its target size counting its units, its marching recruits and both kinds of orders
-/// (`shortfall`; 0 or less: none). With `candidates`
-/// (the Armies screen), every city of the human's that it may requisition from: whether picked,
-/// governed, the unit it would train there (the rules' choice for the human), its production
-/// turns, its march turns to the army over land (`null`: no way by land), its order in progress.
-fn requisition_json(v: &Viewer, a: ArmyId, candidates: bool) -> Json {
-    let g = v.g;
-    let army = &g.armies[a];
-    let orders = requisition_orders(v, a);
-    let mut j = crate::jobj! {
-        "cities" => army.requisition.iter().copied().filter(|&c| g.cities.contains(c)).collect::<Vec<_>>(),
-        "orders" => Json::Arr(orders.iter().map(|(_, o)| o.clone()).collect()),
-        "head_orders" => g.army_head_orders(a),
-        "shortfall" => g.army_shortfall(a),
-    };
-    if candidates {
-        let open = g.army_check_requisition(v.h, a).is_ok();
-        // A fleet's: the coastal cities only (docs/NAVAL.md, 7.1).
-        let fleet = army.domain == ArmyDomain::Sea;
-        let list = g.players[v.h].cities.iter().copied().filter(|&c| g.cities.contains(c) && !g.cities[c].outpost && (!fleet || g.city_is_port(c))).map(|c| {
-            let preview = if open { g.army_requisition_preview(c, a) } else { None };
-            crate::jobj! {
-                "city" => c,
-                "name" => city_name(g, c),
-                "picked" => army.requisition.contains(&c),
-                "governed" => g.city_is_governed(c),
-                "unit" => preview.map(|p| Json::idx(p.0)),
-                "production_turns" => preview.map(|p| p.2),
-                "march_turns" => preview.and_then(|p| p.3),
-                "order" => orders.iter().find(|(oc, _)| *oc == c).map(|(_, o)| o.clone()),
-            }
-        });
-        j.set("candidates", Json::Arr(list.collect()));
-        j.set("open", open);
-    }
-    j
-}
 
 /// The name of a supply line's source: the city's, or "a Trireme" for a ship.
 fn source_name(g: &Game, s: SupplySource) -> String {
@@ -166,7 +73,7 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
             (None, Some(why)) => format!("No supply line: {why} Hunger from your next turn."),
             (None, None) => "No supply line: Hunger from your next turn.".to_string(),
         },
-        SupplyState::Hunger { turn, of } => format!("Hunger: turn {turn} of {of}. No healing, no recruits."),
+        SupplyState::Hunger { turn, of } => format!("Hunger: turn {turn} of {of}. No healing."),
         SupplyState::Starvation => format!(
             "Starvation: -{}% HP a turn (to {}%), {:+}% damage dealt.",
             d.defines.starvation_damage_percent, d.defines.starvation_floor_percent, d.defines.starvation_damage_dealt_percent
@@ -268,21 +175,18 @@ fn fleet_wear(v: &Viewer, units: &[UnitId]) -> i32 {
     units.iter().map(|&u| v.g.unit_sea_wear_percent(u)).max().unwrap_or(0)
 }
 
-/// One army or fleet of the human's: name, units, where, in supply, target size, the recruits
-/// marching to it (`marching`: unit ids; each unit's `march` says where and how long), its
-/// requisition, whether it marches to a garrison (disbanded), Upgrade all; `domain` (`land`,
-/// `sea`). A fleet has no supply (`supply` null); it has its standing order
-/// (`station`, [`station_view`]) and its `wear`. The Armies screen's (`screen`) adds the recruits
-/// in full (`recruits`) and the requisition's candidates.
+/// One army or fleet of the human's: name, units, where, in supply, whether it marches to a
+/// garrison (disbanded), Upgrade all; `domain` (`land`, `sea`). A fleet has no supply (`supply`
+/// null); it has its standing order (`station`, [`station_view`]) and its `wear`. The Armies
+/// screen's (`screen`) adds the army's squads.
 fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
     let g = v.g;
     let army = &g.armies[a];
     if army.domain == ArmyDomain::Sea {
-        return fleet_json(v, a, screen);
+        return fleet_json(v, a);
     }
     let plot = g.army_plot(a);
     let units = g.army_units(a);
-    let marching = g.army_marching(a);
     // Upgrade all: the units with an upgrade (given the gold) and its total price.
     let upgrades: Vec<(UnitId, ffh_data::UnitType)> = units.iter().filter_map(|&u| g.unit_best_upgrade(u, true).map(|t| (u, t))).collect();
     let mut j = crate::jobj! {
@@ -296,24 +200,18 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "y" => plot.map(|p| g.map.xy(p).1),
         "in_supply" => g.army_in_supply(a),
         "supply" => supply_json(v, a),
-        "target_size" => army.target_size,
-        "marching" => marching.clone(),
-        "requisition" => requisition_json(v, a, screen),
         "disband_to" => army.disband_to.filter(|&c| g.cities.contains(c)).map(|c| city_name(g, c)),
         "upgrades" => upgrades.len(),
         "upgrade_price" => upgrades.iter().map(|&(u, t)| g.unit_upgrade_price(u, t)).sum::<i32>(),
     };
     j.set("domain", "land");
+    army_waypoint_fields(v, a, &mut j);
     // Its Raid order (docs/RAIDS.md, section 8): `kind` none or raid, its `text`.
     // Or its Escort of a caravan (docs/TRADE.md 4.4): `kind` escort, `route`, `slot`, `text`, `wait`.
     let escort = crate::view::trade::escort_station(v, a);
     j.set("station", if escort.is_null() { crate::view::raids::station(v, a) } else { escort });
     j.set("escort_caravans", crate::view::trade::escort_choices(v, a));
     if screen {
-        j.set("recruits", Json::Arr(marching.into_iter().map(|u| recruit_json(v, u)).collect()));
-        // This game's governors (docs/GOVERNORS.md): the empire orders for the army in the human's
-        // governed cities (`city`, `name`, `unit`, `index`, `turns`).
-        j.set("on_order", crate::view::governors::army_empire_orders(v, a));
         // Squads (docs/ENGAGEMENTS.md, "Squads"): the army's squads, for the squad board.
         j.set("squads", plot.map_or(Json::Arr(Vec::new()), |p| crate::view::squads::plot_squads(v, p, Some(ffh_core::army::SquadBody::Army(a)))));
     }
@@ -322,12 +220,11 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
 
 /// One fleet of the human's (docs/NAVAL.md, section 7): as [`army_json`], with its standing order
 /// and wear in place of supply.
-fn fleet_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
+fn fleet_json(v: &Viewer, a: ArmyId) -> Json {
     let g = v.g;
     let army = &g.armies[a];
     let plot = g.army_plot(a);
     let units = g.army_units(a);
-    let marching = g.army_marching(a);
     let upgrades: Vec<(UnitId, ffh_data::UnitType)> = units.iter().filter_map(|&u| g.unit_best_upgrade(u, true).map(|t| (u, t))).collect();
     let wear = fleet_wear(v, &units);
     let mut j = crate::jobj! {
@@ -345,17 +242,54 @@ fn fleet_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "wear" => wear,
         "wear_text" => if wear > 0 { format!("Wear: -{wear}% strength. Enter a port to clear.") } else { "Wear: none.".to_string() },
         "sea" => plot.and_then(|q| g.map.plots[q].sea).map(|s| g.map.seas[s.idx()].name.clone()),
-        "target_size" => army.target_size,
-        "marching" => marching.clone(),
-        "requisition" => requisition_json(v, a, screen),
         "disband_to" => army.disband_to.filter(|&c| g.cities.contains(c)).map(|c| city_name(g, c)),
         "upgrades" => upgrades.len(),
         "upgrade_price" => upgrades.iter().map(|&(u, t)| g.unit_upgrade_price(u, t)).sum::<i32>(),
     };
-    if screen {
-        j.set("recruits", Json::Arr(marching.into_iter().map(|u| recruit_json(v, u)).collect()));
-        j.set("on_order", Json::Arr(Vec::new()));
+    army_waypoint_fields(v, a, &mut j);
+    j
+}
+
+/// Waypoints (docs/ARMIES.md): army `a`'s `waypoint_cities` (the cities whose waypoint it is:
+/// `{city, name}`) and `waypoint_units` (the units on their way to it: ids).
+fn army_waypoint_fields(v: &Viewer, a: ArmyId, j: &mut Json) {
+    let g = v.g;
+    let cities: Vec<Json> = g.army_waypoint_cities(a).into_iter().map(|c| crate::jobj! { "city" => c, "name" => city_name(g, c) }).collect();
+    j.set("waypoint_cities", Json::Arr(cities));
+    j.set("waypoint_units", Json::from(g.army_waypoint_units(a)));
+}
+
+/// A waypoint for the views: `kind` (`none`, `army`, `plot`), `army` (its id) or `x`, `y`, and
+/// `name` ("the 2nd Army", "plot 14, 9"; null for none).
+pub fn waypoint_json(g: &Game, wp: Option<Waypoint>) -> Json {
+    match wp {
+        None => crate::jobj! { "kind" => "none", "name" => Json::Null },
+        Some(Waypoint::Army(a)) => crate::jobj! { "kind" => "army", "army" => a, "name" => g.waypoint_name(Waypoint::Army(a)) },
+        Some(Waypoint::Plot(q)) => {
+            let (x, y) = g.map.xy(q);
+            crate::jobj! { "kind" => "plot", "x" => x, "y" => y, "name" => g.waypoint_name(Waypoint::Plot(q)) }
+        }
     }
+}
+
+/// The city screen's waypoint of city `c` (null for another's city): the waypoint
+/// ([`waypoint_json`]), `governed` (only the units of empire orders follow it) and `choices`, the
+/// armies and fleets it may name now (`{army, name, fleet}`; a fleet for a coastal city only).
+pub fn city_waypoint(v: &Viewer, c: CityId) -> Json {
+    let g = v.g;
+    if g.cities[c].owner != v.h {
+        return Json::Null;
+    }
+    let choices: Vec<Json> = g.players[v.h]
+        .armies
+        .iter()
+        .copied()
+        .filter(|&a| g.armies.contains(a) && g.city_check_waypoint(v.h, c, Some(Waypoint::Army(a))).is_ok())
+        .map(|a| crate::jobj! { "army" => a, "name" => g.armies[a].name.as_str(), "fleet" => g.army_is_fleet(a) })
+        .collect();
+    let mut j = waypoint_json(g, g.cities[c].waypoint);
+    j.set("governed", g.city_is_governed(c));
+    j.set("choices", Json::Arr(choices));
     j
 }
 
@@ -365,16 +299,8 @@ pub fn armies(v: &Viewer) -> Json {
     Json::Arr(g.players[v.h].armies.iter().filter(|&&a| g.armies.contains(a)).map(|&a| army_json(v, a, false)).collect())
 }
 
-/// The recruits marching to garrisons (unit ids).
-pub fn garrison_marching(v: &Viewer) -> Json {
-    let g = v.g;
-    Json::from(g.players[v.h].units.iter().copied().filter(|&u| g.unit_march(u).is_some_and(|m| matches!(m.dest, RecruitDest::Garrison(_)))).collect::<Vec<_>>())
-}
-
-/// `armies`: the Armies screen. The armies (as the view's, with their recruits in full and the
-/// cities each may requisition from), each city's garrison with the recruits marching to it, the
-/// supply range and how many turns a recruit waits without progress before it goes to the
-/// nearest garrison instead. Its Fleets section (docs/NAVAL.md, section 7): `fleets` (as the
+/// `armies`: the Armies screen. The armies (as the view's, with their squads), each city's
+/// garrison and the supply budget. Its Fleets section (docs/NAVAL.md, section 7): `fleets` (as the
 /// armies, with their standing orders and wear), `seas` (the seas a fleet may be sent to patrol:
 /// `{id, name}`, those in the human's range) and `escort_targets` (the armies and fleets a fleet
 /// may escort: `{army, name, fleet}`).
@@ -387,7 +313,9 @@ pub fn screen(v: &Viewer) -> Json {
             "name" => city_name(g, c),
             "governed" => g.city_is_governed(c),
             "units" => g.city_garrison_units(c),
-            "recruits" => Json::Arr(g.garrison_marching(c).into_iter().map(|u| recruit_json(v, u)).collect()),
+            // Waypoints: the city's waypoint, and whether a fleet may be it (a coastal city).
+            "waypoint" => waypoint_json(g, g.cities[c].waypoint),
+            "port" => g.city_is_port(c),
         }
     });
     let live: Vec<ArmyId> = g.players[h].armies.iter().copied().filter(|&a| g.armies.contains(a)).collect();
@@ -402,7 +330,6 @@ pub fn screen(v: &Viewer) -> Json {
         "recovering" => recovering_json(v),
         "fallen" => fallen_json(v),
         "supply_budget" => g.d.defines.supply_line_budget,
-        "stall_turns" => g.d.defines.army_transit_stall_turns,
     }
 }
 
@@ -455,40 +382,7 @@ pub fn fallen_json(v: &Viewer) -> Json {
     )
 }
 
-/// The city screen's recruitment: the city's default destination and the destinations it may
-/// choose (its own and the other cities' garrisons, the armies), its garrison and the armies that
-/// requisition from it; `null` without armies.
-pub fn recruit(v: &Viewer, c: CityId) -> Json {
-    let g = v.g;
-    let h = v.h;
-    let mut options = vec![crate::jobj! { "dest" => recruit_dest_json(Some(RecruitDest::Garrison(c))), "name" => "this city's garrison" }];
-    for &o in &g.players[h].cities {
-        if o != c {
-            options.push(crate::jobj! { "dest" => recruit_dest_json(Some(RecruitDest::Garrison(o))), "name" => format!("garrison of {}", city_name(g, o)) });
-        }
-    }
-    let mut requisitioned_by = Vec::new();
-    for &a in &g.players[h].armies {
-        if !g.armies.contains(a) {
-            continue;
-        }
-        if g.armies[a].requisition.contains(&c) {
-            requisitioned_by.push(crate::jobj! { "army" => a, "name" => g.armies[a].name.as_str(), "target_size" => g.armies[a].target_size, "shortfall" => g.army_shortfall(a) });
-        }
-        // (A fleet takes ships, by its requisition: no land unit's destination.)
-        if g.recruit_dest_valid(h, RecruitDest::Army(a)) && !g.army_is_fleet(a) {
-            let size = g.army_units(a).len();
-            options.push(crate::jobj! {
-                "dest" => recruit_dest_json(Some(RecruitDest::Army(a))),
-                "name" => format!("{} ({} units{})", g.armies[a].name, size, if g.army_in_supply(a) { "" } else { ", out of supply" }),
-            });
-        }
-    }
-    let garrison: Vec<UnitId> = g.city_garrison_units(c);
-    crate::jobj! {
-        "default" => recruit_dest_json(g.cities[c].recruit_default),
-        "options" => Json::Arr(options),
-        "garrison" => garrison,
-        "requisitioned_by" => Json::Arr(requisitioned_by),
-    }
+/// The city screen's garrison: the units of city `c`'s garrison (unit ids).
+pub fn garrison(v: &Viewer, c: CityId) -> Json {
+    Json::from(v.g.city_garrison_units(c))
 }

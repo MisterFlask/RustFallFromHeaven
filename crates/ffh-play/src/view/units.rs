@@ -512,8 +512,7 @@ pub fn world_actions(v: &Viewer) -> Json {
             continue;
         }
         let loses = |u: UnitId| d.promotions.keys().filter(|&p| g.units[u].has_promotion[p] && d.promotions[p].removed_by_casting).count();
-        // Not a marching recruit (this game's armies): it takes no orders until it arrives.
-        let caster = visible.iter().copied().filter(|&u| g.unit_march_refusal(u).is_none() && can(u, false)).min_by_key(|&u| (loses(u), u.0));
+        let caster = visible.iter().copied().filter(|&u| can(u, false)).min_by_key(|&u| (loses(u), u.0));
         j.set("cast", false);
         j.set("caster", caster);
         // Where the caster stands, by the human's nearest city (`in Prespur`, `near Prespur`;
@@ -622,7 +621,7 @@ fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json,
                     Some(c) => format!("Disband: march to {}", crate::view::city_name(g, c)),
                     None => "Disband (no city to go to)".into(),
                 },
-                "The army's units march to the nearest of your cities and join its garrison there; its reinforcements go to that garrison.",
+                "The army's units march to the nearest of your cities and join its garrison there.",
             );
         }
         // Upgrade all: the units with an upgrade (with the gold), the most experienced first.
@@ -689,19 +688,33 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     j.set("sea", crate::view::sea::unit_panel(v, u));
     // Trade (docs/TRADE.md, section 9): a Caravan's route, its state, its plunder (null otherwise).
     j.set("trade", crate::view::trade::unit_panel(v, u));
+    // Waypoints (docs/ARMIES.md): a unit of the human's on its way, `{name, eta, text}`
+    // (`Waypoint: the 2nd Army (3 turns)`; `eta` null: no way now); null otherwise.
+    j.set("waypoint_line", waypoint_line(v, u));
     j
 }
 
-/// `group {units}`: the selected units in detail and the selection's actions. A selection with a
-/// marching recruit (this game's armies) has none: the recruit takes no orders until it arrives
-/// (`marching`: why, naming where it goes; each unit's `march` has the rest).
+/// [`unit_details`]'s `waypoint_line`.
+fn waypoint_line(v: &Viewer, u: UnitId) -> Json {
+    let g = v.g;
+    let Some(wp) = g.units[u].waypoint.filter(|_| g.units[u].owner == v.h) else { return Json::Null };
+    let name = g.waypoint_name(wp);
+    let eta = g.unit_waypoint_eta(u);
+    let when = match eta {
+        Some(1) => "1 turn".to_string(),
+        Some(n) => format!("{n} turns"),
+        None => "no way".to_string(),
+    };
+    crate::jobj! { "name" => name.as_str(), "eta" => eta, "text" => format!("Waypoint: {name} ({when})") }
+}
+
+/// `group {units}`: the selected units in detail and the selection's actions.
 pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
     check_selection(v, units)?;
     let g = v.g;
     let plot = selection::plot(g, units);
     let (x, y) = g.map.xy(plot);
     let mirrored = selection::mirrors_group(g, units);
-    let marching = units.iter().find_map(|&u| g.unit_march_refusal(u));
     Ok(crate::jobj! {
         "units" => Json::Arr(units.iter().map(|&u| unit_details(v, u)).collect()),
         "plot" => crate::jarr![x, y],
@@ -709,8 +722,7 @@ pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
         // The group waits for orders (`pending.ready_groups`).
         "ready" => mirrored.is_some_and(|grp| crate::decision::is_ready_group(g, grp)),
         "busy" => selection::is_busy(g, units),
-        "actions" => Json::Arr(if marching.is_some() || units.iter().any(|&u| g.unit_in_route(u)) { Vec::new() } else { actions(v, units) }),
-        "marching" => marching,
+        "actions" => Json::Arr(if units.iter().any(|&u| g.unit_in_route(u)) { Vec::new() } else { actions(v, units) }),
         // Trade (docs/TRADE.md, 4.1): a caravan in a route takes no orders.
         "in_route" => units.iter().any(|&u| g.unit_in_route(u)).then_some("A caravan in a route takes no orders."),
         // Squads (docs/ENGAGEMENTS.md, "Squads"): the human's squads on the selection's plot, for

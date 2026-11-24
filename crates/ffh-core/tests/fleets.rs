@@ -1,11 +1,10 @@
 //! The sea, phase 3 (docs/NAVAL.md, section 7): fleets. The sync (a lone warship at sea is a
 //! fleet, in port it is not; a transport and the army it carries are two containers; the army
-//! lands as one), names numbered apart from the armies, split and merge, requisition from a
-//! coastal city (an inland city refused; the ship sails to the fleet and joins), disband to port,
+//! lands as one), names numbered apart from the armies, split and merge, disband to port,
 //! no supply rule, the Patrol standing order across turns, Escort, a move order ending a standing
 //! order, and a save; on situations built by hand.
 
-use ffh_core::army::{ArmyDomain, EscortTarget, RecruitDest, Station};
+use ffh_core::army::{ArmyDomain, EscortTarget, Station};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::map::{Map, MapInitData};
@@ -22,7 +21,6 @@ struct World {
     p0: PlayerId,
     port: CityId,
     port2: CityId,
-    inland: CityId,
     west: SeaId,
     east: SeaId,
 }
@@ -77,8 +75,8 @@ fn world() -> World {
     g.players[p0].turn_active = true;
     let port = g.player_init_city(p0, 5, 2, true, true);
     let port2 = g.player_init_city(p0, 20, 2, true, true);
-    let inland = g.player_init_city(p0, 12, 6, true, true);
-    World { g, p0, port, port2, inland, west, east }
+    g.player_init_city(p0, 12, 6, true, true);
+    World { g, p0, port, port2, west, east }
 }
 
 impl World {
@@ -112,7 +110,7 @@ impl World {
     }
 
     /// The start of player 0's turn (its units' moves back), its groups' missions carried on, then
-    /// the end of its turn (the recruits march, the sync, the fleets' standing orders).
+    /// the end of its turn (the sync, the fleets' standing orders).
     fn turn(&mut self) {
         let p0 = self.p0;
         self.g.player_do_turn_units(p0);
@@ -121,8 +119,6 @@ impl World {
                 self.g.group_auto_mission(grp);
             }
         }
-        self.g.player_do_march(p0);
-        self.g.player_march_join(p0);
         self.g.player_army_sync(p0);
         self.g.player_fleet_stations(p0);
     }
@@ -197,7 +193,7 @@ fn a_transport_and_its_cargo_are_two_containers_and_the_army_lands_as_one() {
 }
 
 #[test]
-fn split_merge_rename_upgrade_and_target_size() {
+fn split_merge_rename_and_upgrade() {
     let mut w = world();
     let ships: Vec<UnitId> = (0..3).map(|_| w.unit("UNIT_TRIREME", 8, 1)).collect();
     let f = w.g.army_form(w.p0, &ships).unwrap();
@@ -210,44 +206,7 @@ fn split_merge_rename_upgrade_and_target_size() {
     assert_eq!(w.g.army_units(f).len(), 3);
     w.g.army_rename(w.p0, f, "Home Squadron").unwrap();
     assert_eq!(w.g.armies[f].name, "Home Squadron");
-    w.g.army_set_target_size(w.p0, f, 5).unwrap();
-    assert_eq!(w.g.army_shortfall(f), 2);
     assert!(w.g.army_upgrade_all(w.p0, f).is_ok());
-}
-
-#[test]
-fn requisition_from_a_coastal_city_sails_to_the_fleet() {
-    let mut w = world();
-    let ship = w.unit("UNIT_TRIREME", 9, 1);
-    w.sync();
-    let f = w.army(ship).unwrap();
-    assert!(w.g.army_add_requisition(w.p0, f, w.inland).is_err(), "an inland city is refused");
-    w.g.army_add_requisition(w.p0, f, w.port).unwrap();
-    w.g.army_set_target_size(w.p0, f, 2).unwrap();
-    w.g.player_do_requisition(w.p0);
-    let o = w.g.cities[w.port].order_queue[0].clone();
-    assert!(o.requisition, "a requisition order at the front");
-    assert_eq!(o.dest, Some(RecruitDest::Army(f)));
-    let ty = UnitType::from_usize(o.data1 as usize);
-    assert!(w.g.unit_type_is_fleet_unit(ty), "a ship for the fleet");
-    assert_eq!(w.g.army_shortfall(f), 0);
-    // The ship is trained: it sails to the fleet as a recruit marches, and joins it.
-    let new = w.g.player_init_unit(w.p0, ty, 5, 2, Some(UnitAIType::UNITAI_ATTACK_SEA), None);
-    assert_eq!(w.g.city_recruit_dest(w.port, o.dest, ty), Some(RecruitDest::Army(f)));
-    w.g.unit_recruit_to(new, w.port, RecruitDest::Army(f));
-    assert!(w.g.unit_march(new).is_some(), "it sails on its own");
-    assert!(w.g.log.entries.iter().any(|m| m.text.contains("sails to the 1st Fleet")));
-    for _ in 0..6 {
-        if w.army(new) == Some(f) {
-            break;
-        }
-        w.turn();
-    }
-    assert_eq!(w.army(new), Some(f), "joined the fleet");
-    assert_eq!(w.g.units[new].group, w.g.units[ship].group);
-    // A land unit ordered for the fleet stays in its city.
-    let warrior = w.g.d.t::<UnitType>("UNIT_WARRIOR");
-    assert_eq!(w.g.city_recruit_dest(w.port, Some(RecruitDest::Army(f)), warrior), None);
 }
 
 #[test]
