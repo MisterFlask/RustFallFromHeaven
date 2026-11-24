@@ -1,0 +1,16 @@
+spell_crush: a large brown boulder slamming down onto the ground with crack lines
+spell_cure_disease: a small glass vial with a green cross and a sparkle
+spell_dance_of_blades: three curved steel blades whirling in a circle, red accents
+spell_daze: a circle of three small gold stars spinning in a ring
+spell_death_grip: a skeletal violet bone hand clenched in a grasping claw
+spell_declare_nationality: a gold banner flag on a pole unfurled with a mask cast aside below it
+spell_deluge: a huge blue wave crashing downward
+spell_destroy_undead: a gold sunburst shattering an ivory skull into pieces
+spell_disjunction: a violet rune circle broken in two halves with a crack through it
+spell_dispel_magic: a violet sparkle star crossed out by a gold diagonal slash
+spell_disrupt: an ivory city tower with a cracked crimson lightning crack and a broken banner
+spell_divine_retribution: a gold sword of light pointing down from a white cloud
+spell_domination: a violet hand with puppet strings from its fingertips down to a small figure
+spell_drop_crown_of_akharien: a gold crown with violet gems falling onto a small stone pedestal
+spell_drop_dragons_horde: a heaped pile of gold coins and a gold goblet
+spell_drop_sylivens_perfect_lyre: a gold lyre with ivory strings resting on a pedestal

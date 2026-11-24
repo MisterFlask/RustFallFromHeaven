@@ -1,0 +1,16 @@
+spell_take_athame_promotion: a gold open hand reaching for a curved ritual dagger with red gem
+spell_take_athame_unit: a curved ritual dagger with red gem above a gold upward arrow
+spell_take_black_mirror_promotion: a gold open hand reaching for a round slate mirror in silver frame
+spell_take_black_mirror_unit: a round slate mirror in silver frame above a gold upward arrow
+spell_take_crown_of_akharien_building: a gold crown with a teal gem resting on an ivory pedestal
+spell_take_crown_of_akharien_promotion: a gold open hand reaching for a gold crown with a teal gem
+spell_take_crown_of_akharien_unit: a gold crown with a teal gem above a gold upward arrow
+spell_take_crown_of_command_promotion: a gold open hand reaching for a red jewelled ivory crown
+spell_take_crown_of_command_unit: a red jewelled ivory crown above a gold upward arrow
+spell_take_dragons_horde_building: a heap of gold coins resting on an ivory pedestal
+spell_take_dragons_horde_promotion: a gold open hand reaching for a heap of gold coins with a red gem
+spell_take_dragons_horde_unit: a heap of gold coins with a red gem above a gold upward arrow
+spell_take_empty_bier_promotion: a gold open hand reaching for an empty slate grey funeral bier
+spell_take_empty_bier_unit: an empty slate grey funeral bier above a gold upward arrow
+spell_take_gela_promotion: a gold open hand reaching for a pale blue crystal orb
+spell_take_gela_unit: a pale blue crystal orb above a gold upward arrow

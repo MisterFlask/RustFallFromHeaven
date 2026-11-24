@@ -1,0 +1,16 @@
+spell_take_potion_of_invisibility_unit: a pale sky blue potion flask above a gold upward arrow
+spell_take_potion_of_restoration_promotion: a gold open hand reaching for a red potion flask with a cross
+spell_take_potion_of_restoration_unit: a red potion flask with a cross above a gold upward arrow
+spell_take_rod_of_winds_promotion: a gold open hand reaching for a short rod with a sky blue swirl top
+spell_take_rod_of_winds_unit: a short rod with a sky blue swirl top above a gold upward arrow
+spell_take_scorched_staff_promotion: a gold open hand reaching for a charred staff with an orange flame top
+spell_take_scorched_staff_unit: a charred staff with an orange flame top above a gold upward arrow
+spell_take_staff_of_souls_promotion: a gold open hand reaching for a staff topped with a violet skull
+spell_take_staff_of_souls_unit: a staff topped with a violet skull above a gold upward arrow
+spell_take_sylivens_perfect_lyre_building: a gold lyre resting on an ivory pedestal
+spell_take_sylivens_perfect_lyre_promotion: a gold open hand reaching for a gold lyre with teal strings
+spell_take_sylivens_perfect_lyre_unit: a gold lyre with teal strings above a gold upward arrow
+spell_take_timor_mask_promotion: a gold open hand reaching for a pale ivory theatre mask
+spell_take_timor_mask_unit: a pale ivory theatre mask above a gold upward arrow
+spell_take_godslayer_promotion: a gold open hand reaching for a long ivory sword with a red hilt
+spell_take_godslayer_unit: a long ivory sword with a red hilt above a gold upward arrow

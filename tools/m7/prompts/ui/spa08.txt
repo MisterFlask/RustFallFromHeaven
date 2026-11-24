@@ -1,0 +1,16 @@
+spell_hellfire: tall crimson flames rising from a crack in the ground
+spell_heralds_call: a long gold herald's trumpet with a red banner hanging from it
+spell_hide: a slate-grey hooded cloak with an empty dark face opening
+spell_hire_archer: a gold coin beside a wooden longbow with an arrow
+spell_hire_chariot: a gold coin beside a small wooden chariot wheel
+spell_hire_goblin: a gold coin beside a sage-green goblin head with big pointed ears
+spell_hire_units: a leather coin purse spilling gold coins in front of a steel helmet
+spell_hire_wolf_rider: a gold coin beside a grey wolf head wearing a saddle strap
+spell_hold_the_line: three steel shields overlapping side by side in a row
+spell_hope: a white dove carrying a green olive sprig over a gold star
+spell_hyborems_whisper: a crimson horned demon head whispering into an ivory ear
+spell_impersonate_leader: a gold crown resting on a smiling ivory theatre mask
+spell_inquisition: a burning torch crossed with a gold holy symbol and an iron chain
+spell_inspiration: a glowing gold light bulb shaped as a flame above an open ivory book
+spell_into_the_mist: a drifting pale grey mist cloud with a faded figure half visible inside
+spell_ira_unleashed: a screaming red face of rage with flames for hair

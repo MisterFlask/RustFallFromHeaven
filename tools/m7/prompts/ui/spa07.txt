@@ -1,0 +1,16 @@
+spell_found_temple_of_kilmorph: a squat stone temple carved into a terracotta rock with a gold rune
+spell_found_temple_of_leaves: a temple made of a living green tree arching over a doorway
+spell_found_temple_of_the_empyrean: a white temple with columns and a gold sun disc on top
+spell_found_temple_of_the_order: a stone temple with a gold cross-shaped sun emblem on its front
+spell_found_temple_of_the_overlords: a teal temple with coiled octopus tentacles rising over its roof
+spell_found_temple_of_the_veil: a dark plum temple with a red flame inside its doorway
+spell_frost_lance: a long pale blue ice spear with a sharp crystal tip
+spell_gift_vampirism: two ivory fangs above a small red blood drop
+spell_give_hammer_to_craftsman: a gold hammer passing from one open ivory hand to another
+spell_graft_flesh: a stitched sage-green golem head with heavy suture marks
+spell_grave_touch: a pale violet ghostly hand reaching out with a cold glow
+spell_haste: a winged gold boot with motion lines behind it
+spell_hasturs_razor: a curved steel straight razor with violet sparks scattering off the blade
+spell_heal: a red cross inside two cupped ivory hands
+spell_healing_light: a gold sun rising over a red cross
+spell_healing_salve: a small round ivory jar of salve with a green leaf on its lid

@@ -1,0 +1,16 @@
+spell_take_golden_hammer_promotion: a gold open hand reaching for a golden war hammer
+spell_take_golden_hammer_unit: a golden war hammer above a teal upward arrow
+spell_take_healing_salve_promotion: a gold open hand reaching for a small green salve jar
+spell_take_healing_salve_unit: a small green salve jar above a gold upward arrow
+spell_take_infernal_grimoire_building: a red demonic book with horns resting on an ivory pedestal
+spell_take_infernal_grimoire_promotion: a gold open hand reaching for a red demonic book with horns
+spell_take_infernal_grimoire_unit: a red demonic book with horns above a gold upward arrow
+spell_take_jade_torc_promotion: a gold open hand reaching for a green jade neck ring
+spell_take_jade_torc_unit: a green jade neck ring above a gold upward arrow
+spell_take_nether_blade_promotion: a gold open hand reaching for a violet glowing sword
+spell_take_nether_blade_unit: a violet glowing sword above a gold upward arrow
+spell_take_orthuss_axe_promotion: a gold open hand reaching for a large double bladed steel axe
+spell_take_orthuss_axe_unit: a large double bladed steel axe above a gold upward arrow
+spell_take_pieces_of_barnaxus_promotion: a gold open hand reaching for broken bronze golem armour pieces
+spell_take_pieces_of_barnaxus_unit: broken bronze golem armour pieces above a gold upward arrow
+spell_take_potion_of_invisibility_promotion: a gold open hand reaching for a pale sky blue potion flask

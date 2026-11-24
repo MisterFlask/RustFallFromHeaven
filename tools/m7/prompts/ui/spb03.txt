@@ -1,0 +1,16 @@
+spell_snowfall_greator: a large ivory snowflake with a gold crown on top
+spell_solar_wrath: a gold sun firing a thick downward beam of light
+spell_spellstaff: a wooden staff topped with a violet glowing orb
+spell_spores: a sage green mushroom puffing a cloud of small spore dots
+spell_spread_the_council_of_esus: a slate grey hooded mask with a gold coin behind it
+spell_spring: a blue water fountain spurting up from cracked sand
+spell_sprint: a brown horse leg hoof with yellow speed lines behind it
+spell_frozen_passage: a pale blue ice floe bridge spanning dark blue water
+spell_icebreak: a ship prow cracking a pale blue ice sheet into shards
+spell_steal: a slate grey gloved hand grabbing a gold coin purse
+spell_steer_the_storm: a ship's steering wheel inside a swirling sky blue storm cloud
+spell_stoneskin: a terracotta arm covered in grey stone plates
+spell_stoneskin_ward: a grey stone shield with terracotta cracks forming a ward circle
+spell_summon_air_elemental: a sky blue swirling whirlwind figure with two glowing eyes
+spell_summon_aurealis: a gold winged angelic head with a radiant sun halo
+spell_summon_balor: a red horned demon head with flaming eyes

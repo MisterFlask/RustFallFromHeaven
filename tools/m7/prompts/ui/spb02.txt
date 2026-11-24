@@ -1,0 +1,16 @@
+spell_sacrifice_altar: a stone altar block with a red flame rising from its top
+spell_sacrifice_pyre: a pile of logs with white feathered wings burning in gold flames
+spell_sanctify: a gold hand over a cracked red ground healing to green
+spell_sanctuary: a gold dome shield over a small ivory temple
+spell_scorch: a red sun over a cracked sand coloured desert ground
+spell_sever: a ghostly ivory soul silhouette split in two by a red line
+spell_shadowwalk: a slate grey footprint fading into violet shadow
+spell_shadow_veil: a plum hooded cloak with its face hidden in shadow
+spell_shield_of_faith: a terracotta stone shield with a gold dwarven rune hammer on it
+spell_shock: a sky blue lightning bolt striking downward in a zigzag
+spell_sing: a gold musical note with a small open mouth singing
+spell_sironas_touch: a gold glowing open palm with a small ivory heart in it
+spell_slave_trade_buy: a gold coin above a pair of open iron shackles
+spell_slave_trade_sell: a pair of iron shackles above a gold coin stack and an arrow outward
+spell_slow: a pale blue snail shell with ice crystals on it
+spell_snowfall: three ivory snowflakes falling over a pale blue ground

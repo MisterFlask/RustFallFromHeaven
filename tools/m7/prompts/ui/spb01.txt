@@ -1,0 +1,16 @@
+spell_regeneration: a sage green heart with a small curling sprout growing from its top
+spell_release_from_cage: an open iron cage door with a gold broken chain link falling free
+spell_religious_fervor: a gold sunburst over three small ivory robed priest silhouettes in a row
+spell_repair: a gold hammer crossed over a teal cog wheel
+spell_ressurection: an ivory rising figure lifting up out of a gold open coffin
+spell_ressurection_graveyard: an ivory tombstone with a gold glowing figure rising above it
+spell_restoration: an ivory cross-shaped bandage with a soft gold glow ring around it
+spell_reveal: an ivory open eye with a gold beam of light shining from it
+spell_revelation: a gold radiant eye breaking a slate grey veil into pieces
+spell_revelry: a gold goblet tilted and spilling red wine with small confetti dots
+spell_ring_of_flames: a ring of orange red flames forming a circle
+spell_name_the_tithe: a gold pointing finger above a single red drop of blood
+spell_roar: a red dragon head in profile with jaws wide open and sound arcs
+spell_rob_grave: a gold shovel stuck in a small grey grave mound
+spell_runeblades: a steel sword blade with three glowing teal rune marks on it
+spell_rust: a grey sword blade eaten by orange rust patches and holes
