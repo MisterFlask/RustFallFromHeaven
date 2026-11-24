@@ -139,6 +139,32 @@ pub(super) fn kit_lines(b: &mut String, k: &BattleKit) {
 /// The battle stats a promotion changes, a line each: "+20% Attack", "+10 Defense", "-1 Speed".
 /// The battle levers of a unit type or promotion (docs/UNIT_ROLES.md): damage against and
 /// resistance to unit combats, armor, armor piercing, pursuit; one line each.
+/// The unit combats of `per` with a value other than 0, grouped by value: each value with the names
+/// of its unit combats in the data's order, the groups in the order of their first unit combat.
+pub(super) fn by_percent(d: &GameData, per: &IdxVec<UnitCombatType, i32>) -> Vec<(i32, Vec<String>)> {
+    let mut out: Vec<(i32, Vec<String>)> = Vec::new();
+    for (c, &v) in per.iter_enumerated() {
+        if v == 0 {
+            continue;
+        }
+        let name = display(d, c).into_owned();
+        match out.iter_mut().find(|(x, _)| *x == v) {
+            Some((_, names)) => names.push(name),
+            None => out.push((v, vec![name])),
+        }
+    }
+    out
+}
+
+/// "A", "A and B", "A, B and C".
+pub(super) fn and_list(items: &[String]) -> String {
+    match items {
+        [] => String::new(),
+        [one] => one.clone(),
+        [rest @ .., last] => format!("{} and {last}", rest.join(", ")),
+    }
+}
+
 pub(super) fn lever_lines(
     b: &mut String,
     d: &GameData,
@@ -148,17 +174,14 @@ pub(super) fn lever_lines(
     piercing: bool,
     pursuit: bool,
 ) {
-    for (c, &v) in damage_vs.iter_enumerated() {
-        if v != 0 {
-            b.push_str(NEWLINE);
-            b.push_str(&format!("[ICON_BULLET]In battle: {v:+}% damage to {} units", display(d, c)));
-        }
+    // One line per percentage, naming its unit combats (their names say "Units" themselves).
+    for (v, names) in by_percent(d, damage_vs) {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: {v:+}% damage to {}", and_list(&names)));
     }
-    for (c, &v) in resist_vs.iter_enumerated() {
-        if v != 0 {
-            b.push_str(NEWLINE);
-            b.push_str(&format!("[ICON_BULLET]In battle: {:+}% damage from {} units", -v, display(d, c)));
-        }
+    for (v, names) in by_percent(d, resist_vs) {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: {:+}% damage from {}", -v, and_list(&names)));
     }
     if armor != 0 {
         b.push_str(NEWLINE);

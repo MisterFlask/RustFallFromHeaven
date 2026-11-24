@@ -73,6 +73,18 @@ pub fn effects_of(d: &GameData, kind: &str, i: usize) -> Option<String> {
 /// the page appends to the entry's `effects` when engagements are on (the data's
 /// `effects_engagement`); None when the entry has none of them.
 pub fn engagement_notes(d: &GameData, kind: &str, i: usize) -> Option<String> {
+    let lines = engagement_note_lines(d, kind, i);
+    if lines.is_empty() {
+        return None;
+    }
+    let mut out = vec![txt(d, "TXT_KEY_ENGAGE_HELP_HEAD", &[])];
+    out.extend(lines.into_iter().map(|(_, l)| l));
+    Some(out.join(NEWLINE))
+}
+
+/// The lines of [`engagement_notes`] without its head, each with its text key (the unit card keeps
+/// the Blitz line only: its keywords say the rest).
+pub(crate) fn engagement_note_lines(d: &GameData, kind: &str, i: usize) -> Vec<(&'static str, String)> {
     let (first_strikes, withdrawal, collateral, blitz, limit) = match kind {
         "UnitType" => {
             let u = &d.units[UnitType::from_usize(i)];
@@ -84,7 +96,7 @@ pub fn engagement_notes(d: &GameData, kind: &str, i: usize) -> Option<String> {
             let p = &d.promotions[PromotionType::from_usize(i)];
             (p.first_strikes_change + p.chance_first_strikes_change > 0, p.withdrawal_change > 0, p.collateral_damage_change > 0, p.blitz, p.combat_limit != 0)
         }
-        _ => return None,
+        _ => return Vec::new(),
     };
     let mut lines = Vec::new();
     for (has, key, args) in [
@@ -95,14 +107,10 @@ pub fn engagement_notes(d: &GameData, kind: &str, i: usize) -> Option<String> {
         (limit, "TXT_KEY_ENGAGE_HELP_COMBAT_LIMIT", Vec::new()),
     ] {
         if has {
-            lines.push(txt(d, key, &args));
+            lines.push((key, txt(d, key, &args)));
         }
     }
-    if lines.is_empty() {
-        return None;
-    }
-    lines.insert(0, txt(d, "TXT_KEY_ENGAGE_HELP_HEAD", &[]));
-    Some(lines.join(NEWLINE))
+    lines
 }
 
 /// Civ4 `getText` placeholders: `%d1` (a number), `%D1` (a number with its sign), `%s1` and

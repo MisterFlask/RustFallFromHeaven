@@ -73,6 +73,8 @@ const PLAN: &[&str] = &[
     "starving", "shore", "shore_unseen", "forecast", "declare_war", "plunder", "errors",
 ];
 const FORECAST: &[&str] = &["runs", "line_wiped_permille", "plot_falls_permille", "attackers_wiped_permille", "attackers_win_permille", "lost_x100", "escaped_x100", "per"];
+/// The members of a row of the unit card's `engage_rows`.
+const ROW: &[&str] = &["kind", "n", "pattern", "splash", "spell", "bolt", "hit", "crit", "dmg", "heal"];
 const HIT: &[&str] = &["target", "dmg", "expected", "r", "crit", "miss", "killed", "withdrew", "splash"];
 /// The action kinds as the screens name them.
 const KINDS: &[&str] = &["Strike", "Charge", "Stab", "Shoot", "Spell", "Bombard", "Heal", "None"];
@@ -116,6 +118,22 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
         assert_eq!(arr(u, "engage_row_order").len(), 3, "{u:?}");
         assert!(int(u, "engage_speed") > 0 && arr(u, "engage_actions").len() == 3, "{u:?}");
         assert!(u.get("engage_large").and_then(Json::as_bool).is_some());
+        // The unit card's members (`view/unit_card.rs`): each row's kind and count as
+        // `engage_actions`, with its hits against the reference defences; the keywords.
+        let actions = arr(u, "engage_actions");
+        let rows = arr(u, "engage_rows");
+        assert_eq!(rows.len(), 3, "{u:?}");
+        for (r, a) in rows.iter().zip(&actions) {
+            assert_eq!((r.get("kind"), r.get("n")), (a.get("kind"), a.get("n")), "{u:?}");
+            for k in keys(r) {
+                assert!(ROW.contains(&k.as_str()), "{k} in {r:?}");
+            }
+            if int(r, "n") > 0 && matches!(r.get("kind").and_then(Json::as_str), Some("Strike" | "Charge" | "Stab" | "Shoot" | "Bombard")) {
+                assert!((5..=100).contains(&int(r, "hit")) && arr(r, "dmg").len() == 3, "{r:?}");
+            }
+        }
+        let kws = arr(u, "engage_keywords");
+        assert!(!kws.is_empty() && kws.iter().all(|k| k.as_str().is_some_and(|k| k.starts_with("KEYWORD_"))), "{u:?}");
     }
 
     // The `combat` query: an engagement, its pool and defenders.
@@ -449,4 +467,64 @@ fn an_engage_under_false_colours_asks_nothing_and_the_war_comes_with_the_battle(
     let r = cmd(&mut s, &format!(r#"{{"c":"engage","army":{},"to":{{"x":{},"y":{}}}}}"#, st.army.0, st.x, st.y));
     assert!(matches!(r, Ok(CmdOk::Applied { battle: Some(_), .. })), "{r:?}");
     assert!(s.g.teams[my].at_war[their], "the war is declared at the battle");
+}
+
+/// The unit card (`view/unit_card.rs`): a unit type's `battle` in the data is what a fresh unit of
+/// the type holding exactly its free promotions sends as the view's unit: its rows (spells, patterns,
+/// splash, hits, crits, damage), keywords, HP, speed, accuracy, evasion, crit, magic and magic
+/// defence; its attack and defence too wherever no term of its place counts.
+#[test]
+fn a_unit_types_battle_sheet_is_a_fresh_units() {
+    let ng = common::steady_duel(7);
+    let mut s = Session::new_game(&ng, Arc::new(ffh_play::human::AdvisorAnswerer), SessionOptions::default()).unwrap();
+    s.advance(&mut |_| {});
+    let d = s.g.d;
+    let h = s.human;
+    let (x, y) = s.g.players[h].units.iter().map(|&u| (s.g.units[u].x, s.g.units[u].y)).next().unwrap();
+    let data = ffh_play::view::data::data(d);
+    let table = data.get("tables").and_then(|t| t.get("UnitType")).and_then(Json::as_arr).unwrap();
+    let names = [
+        "UNIT_WARRIOR", "UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_ASSASSIN", "UNIT_ADEPT", "UNIT_MAGE", "UNIT_ARCHMAGE", "UNIT_HORSEMAN", "UNIT_KNIGHT", "UNIT_CATAPULT", "UNIT_DONAL",
+        "UNIT_WAR_ELEPHANT", "UNIT_PALADIN", "UNIT_PHALANX", "UNIT_PRIEST_OF_LEAVES", "UNIT_DISCIPLE_FELLOWSHIP_OF_LEAVES", "UNIT_DRUID", "UNIT_IRON_GOLEM", "UNIT_BERSERKER",
+    ];
+    let mut compared_attack = 0;
+    for name in names {
+        let Some(t) = d.ty::<ffh_data::UnitType>(name) else { panic!("{name}") };
+        let entry = &table[ffh_data::Idx::idx(t)];
+        let battle = entry.get("battle").unwrap_or_else(|| panic!("{name}: no battle"));
+        let u = s.g.player_init_unit(h, t, x, y, None, None);
+        // Exactly the type's free promotions: no civilization's, trait's or city's.
+        for p in d.promotions.keys() {
+            if s.g.units[u].has_promotion[p] != d.units[t].free_promotions[p] {
+                s.g.unit_set_has_promotion(u, p, d.units[t].free_promotions[p]);
+            }
+        }
+        let mut j = Json::obj();
+        ffh_play::view::battles::unit_fields(&s.g, u, &mut j);
+        let ctx = ffh_core::engagement::HitCtx::at(s.g.unit_plot(u));
+        let own_only = |attack: bool| {
+            s.g.engage_stat(u, None, ffh_core::engagement::Side::Defender, attack, &ctx).terms.iter().all(|t| t.pct == 0 || matches!(t.src, ffh_core::engagement::report::TermSource::Own | ffh_core::engagement::report::TermSource::Promotion(_)))
+        };
+        let mut same = vec![
+            "engage_row_order", "engage_max_hp", "engage_speed", "engage_actions", "engage_magic", "engage_magic_defense", "engage_accuracy", "engage_evasion", "engage_crit",
+            "engage_large", "engage_keywords", "engage_charms", "engage_heal_spell",
+        ];
+        if own_only(true) {
+            same.extend(["engage_attack", "engage_rows"]);
+            compared_attack += 1;
+        } else {
+            // The rows without their damage.
+            let strip = |r: &Json| Json::Arr(arr(r, "engage_rows").iter().map(|x| Json::Arr(keys(x).into_iter().filter(|k| k != "dmg").map(|k| x.get(&k).cloned().unwrap()).collect())).collect());
+            assert_eq!(strip(&j), strip(battle), "{name}: engage_rows");
+        }
+        if own_only(false) {
+            same.push("engage_defense");
+        }
+        for k in same {
+            assert_eq!(j.get(k), battle.get(k), "{name}: {k}");
+        }
+        assert_eq!(keys(&j), keys(battle), "{name}");
+        s.g.unit_kill(u, false, None);
+    }
+    assert!(compared_attack >= names.len() / 2, "{compared_attack}");
 }

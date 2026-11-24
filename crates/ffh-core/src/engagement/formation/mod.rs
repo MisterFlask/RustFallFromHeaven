@@ -810,7 +810,7 @@ impl Formation {
         let p = self.pair(h, t);
         // A spell is the caster's magic against the target's magic defence (docs/UNIT_STATS.md).
         let (a, dv) = if kind == ActionKind::Spell { (p.ma as i64, p.md as i64) } else { (p.a as i64, p.dv as i64) };
-        let mean = self.params.base_damage.max(0) as i64 * 100 * a / (a + dv);
+        let mean = mean_damage(self.params.base_damage, a, dv);
         let mut x = Pcts { num: mean as i128, den: 1 };
         if kind == ActionKind::Spell {
             x.mul(power);
@@ -847,7 +847,7 @@ impl Formation {
     pub fn missile_expected(&self, h: usize, t: usize) -> i32 {
         let p = self.pair(h, t);
         let (a, dv) = (p.a as i64, p.dv as i64);
-        let mean = self.params.base_damage.max(0) as i64 * 100 * a / (a + dv);
+        let mean = mean_damage(self.params.base_damage, a, dv);
         let mut x = Pcts { num: mean as i128, den: 1 };
         x.mul(self.params.missile_pct);
         x.mul(p.pct);
@@ -859,7 +859,7 @@ impl Formation {
     /// or protection).
     pub fn collateral_splash(&self, h: usize, kind: ActionKind) -> bool {
         let fh = &self.fighters[h];
-        fh.collateral_limit.is_some() && !(kind == ActionKind::Spell && fh.spell.splash)
+        collateral_splashes(fh.collateral_limit.is_some(), kind, &fh.spell)
     }
 
     /// The HP (centi-HP) `h`'s hits never take `t` below: `(100 - limit)%` of its max HP for a
@@ -884,19 +884,77 @@ impl Formation {
     /// chance to hit, `h`'s accuracy less `t`'s evasion and what the kind takes off (SHOOT,
     /// BOMBARD), within `100 - MAX_CHANCE..=100` (docs/UNIT_STATS.md).
     pub fn miss_chance(&self, kind: ActionKind, h: usize, t: usize) -> i32 {
-        let p = &self.params;
-        let extra = match kind {
-            ActionKind::Shoot => p.shoot_miss_pct,
-            ActionKind::Bombard => p.bombard_miss_pct,
-            _ => 0,
-        };
-        100 - (self.fighters[h].accuracy - self.fighters[t].evasion - extra).clamp(100 - MAX_CHANCE, 100)
+        100 - hit_chance(&self.params, kind, self.fighters[h].accuracy - self.fighters[t].evasion)
     }
 
     /// `h`'s crit chance on a strike, charge, stab or shoot, in percent (at most `MAX_CHANCE`).
     pub fn crit_chance(&self, h: usize) -> i32 {
-        self.fighters[h].crit.clamp(0, MAX_CHANCE)
+        crit_chance_of(self.fighters[h].crit)
     }
+}
+
+/// The mean of a hit of `a` against `dv` (both x100), in centi-HP: `base_damage x 100 x A / (A +
+/// Dv)`, before its percentages ([`Formation::expected_power`]). `a + dv` must not be 0.
+pub fn mean_damage(base_damage: i32, a: i64, dv: i64) -> i64 {
+    base_damage.max(0) as i64 * 100 * a / (a + dv)
+}
+
+/// The chance to hit of a physical action of `kind` whose hitter's accuracy less the target's
+/// evasion is `accuracy`, in percent: less what the kind takes off (SHOOT, BOMBARD), within
+/// `100 - MAX_CHANCE..=100` (docs/UNIT_STATS.md).
+pub fn hit_chance(p: &Params, kind: ActionKind, accuracy: i32) -> i32 {
+    let extra = match kind {
+        ActionKind::Shoot => p.shoot_miss_pct,
+        ActionKind::Bombard => p.bombard_miss_pct,
+        _ => 0,
+    };
+    (accuracy - extra).clamp(100 - MAX_CHANCE, 100)
+}
+
+/// A crit chance of `crit` points, in percent: within `0..=MAX_CHANCE`.
+pub fn crit_chance_of(crit: i32) -> i32 {
+    crit.clamp(0, MAX_CHANCE)
+}
+
+/// Whether the hits of `kind` of a hitter that casts `spell` with its SPELL actions splash as
+/// collateral damage: it has collateral damage (`collateral`), and the hit is not a known spell's
+/// (which splashes as the spell: no collateral limit, Barrage or protection).
+pub fn collateral_splashes(collateral: bool, kind: ActionKind, spell: &Spell) -> bool {
+    collateral && !(kind == ActionKind::Spell && spell.splash)
+}
+
+/// Whom else an action hits besides its target ([`spread`]).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Spread {
+    /// The pattern of its extra hits (SINGLE: none).
+    pub pattern: AttackPattern,
+    /// The extra hits' percentage: `Some` for a pattern other than SINGLE (none with a known
+    /// spell's splash).
+    pub pattern_pct: Option<i32>,
+    /// A known spell's splash on the target's neighbours.
+    pub spell_splash: bool,
+    /// A collateral splash on the target's neighbours (no pattern takes its place).
+    pub collateral: bool,
+}
+
+impl Spread {
+    /// Its hits splash the target's neighbours (a spell's splash or a collateral one).
+    pub fn splash(&self) -> bool {
+        self.spell_splash || self.collateral
+    }
+}
+
+/// What an action of `kind` hits besides its target: a SPELL casting `spell` takes the spell's
+/// own pattern (none: its splash), else the row's (`row_pattern`, asked only then); a pattern's
+/// extra hits take the place of a collateral splash (`collateral_splash`: the hitter's
+/// [`collateral_splashes`]), a known spell's splash stays the spell's.
+pub fn spread(p: &Params, kind: ActionKind, spell: &Spell, row_pattern: impl FnOnce() -> AttackPattern, collateral_splash: bool) -> Spread {
+    let spell_splash = kind == ActionKind::Spell && spell.splash;
+    let spell_pattern = if kind == ActionKind::Spell { spell.pattern } else { None };
+    let pattern = spell_pattern.unwrap_or_else(row_pattern);
+    let pattern_pct = if spell_splash { None } else { p.pattern_pct(pattern) };
+    let collateral = pattern_pct.is_none() && collateral_splash;
+    Spread { pattern, pattern_pct, spell_splash, collateral }
 }
 
 /// A battle's state as the resolver plays it.
@@ -1623,15 +1681,12 @@ impl<'a> Run<'a> {
             self.push(ev);
             return;
         }
-        let crit = kind.can_crit() && rng.rand(100, "Engagement crit") < (f.fighters[h].crit + self.s.crit_mod[h]).clamp(0, MAX_CHANCE);
+        let crit = kind.can_crit() && rng.rand(100, "Engagement crit") < crit_chance_of(f.fighters[h].crit + self.s.crit_mod[h]);
         let spell = self.spell_now.unwrap_or(f.fighters[h].spell);
-        let spell_splash = kind == ActionKind::Spell && spell.splash;
         // An attack pattern's extra hits take the place of a collateral splash; a known spell's
         // splash stays the spell's.
-        let spell_pattern = if kind == ActionKind::Spell { spell.pattern } else { None };
-        let pattern = spell_pattern.unwrap_or_else(|| f.arms_pattern(h, self.s.row[h], kind, round, self.pass));
-        let pattern_pct = if spell_splash { None } else { f.params.pattern_pct(pattern) };
-        let collateral = pattern_pct.is_none() && f.collateral_splash(h, kind);
+        let sp = spread(&f.params, kind, &spell, || f.arms_pattern(h, self.s.row[h], kind, round, self.pass), f.collateral_splash(h, kind));
+        let (spell_splash, pattern, pattern_pct, collateral) = (sp.spell_splash, sp.pattern, sp.pattern_pct, sp.collateral);
         let around = match pattern_pct {
             Some(_) => f.pattern_targets(&self.s, c, kind, pattern),
             None if spell_splash || collateral => f.neighbours(&self.s, c),
@@ -1661,14 +1716,7 @@ impl<'a> Run<'a> {
     /// with the charms and hexes on both (accuracy, evasion).
     fn miss_chance(&self, kind: ActionKind, h: usize, t: usize) -> i32 {
         let f = self.f;
-        let p = &f.params;
-        let extra = match kind {
-            ActionKind::Shoot => p.shoot_miss_pct,
-            ActionKind::Bombard => p.bombard_miss_pct,
-            _ => 0,
-        };
-        let hit = f.fighters[h].accuracy + self.s.acc_mod[h] - f.fighters[t].evasion - self.s.eva_mod[t] - extra;
-        100 - hit.clamp(100 - MAX_CHANCE, 100)
+        100 - hit_chance(&f.params, kind, f.fighters[h].accuracy + self.s.acc_mod[h] - f.fighters[t].evasion - self.s.eva_mod[t])
     }
 
     /// A charm or hex `c` (spell `id`) cast by `h`: on the units of its side on the field (the

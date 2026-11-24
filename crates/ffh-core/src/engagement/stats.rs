@@ -59,7 +59,7 @@
 
 use ffh_data::*;
 
-use super::formation::{Ground, Pair, Side};
+use super::formation::{Ground, Pair, Params, Side, Spell};
 use crate::unit::apply_combat_modifier;
 use super::report::{Stat, TermSource};
 use crate::game::Game;
@@ -110,6 +110,78 @@ impl HitCtx {
     }
 }
 
+// The per-unit values over a unit type and what a unit holds (its promotions, its own points and
+// percentages), so that a unit ([`Game::unit_stat`], [`Game::unit_engage_rows`], ...) and a fresh
+// unit of a type (the view's unit card) are computed by the same code.
+
+/// Stat `s` of a unit of type `t` with its own points `flat` under its own percentage `pct`
+/// ([`Game::unit_stat`]): the type's sheet plus the points, under the percentage; at least 0 (HP
+/// at least 1). A type without a sheet answers 0, and the duel's `MAX_HIT_POINTS` for HP.
+pub fn stat_value(d: &GameData, t: UnitType, s: StatType, flat: i32, pct: i32) -> i32 {
+    let Some(sheet) = d.units[t].stats else {
+        return if s == StatType::Hp { d.defines.max_hit_points } else { 0 };
+    };
+    let v = apply_combat_modifier(sheet[s.idx()] + flat, pct);
+    if s == StatType::Hp {
+        v.max(1)
+    } else {
+        v.max(0)
+    }
+}
+
+/// What a unit of type `t` holding the promotions `has` accepts, of religion `religion`, does
+/// from each row before its extra actions ([`Game::unit_engage_rows`]): its type's `engage_rows`;
+/// with magic (`magic`: its Magic stat, asked only when it knows a battle spell) and a battle
+/// spell it casts it in place of each attack (`rows_with_battle_spell`; docs/ENGAGEMENTS.md,
+/// "Battle spells"), and a Battlemage (`front_caster`) casts from the front row as from its best.
+pub fn engage_rows_of(d: &GameData, t: UnitType, has: impl Fn(PromotionType) -> bool, religion: Option<ReligionType>, magic: impl FnOnce() -> i32) -> [RowActions; ROWS] {
+    let rows = d.engage_rows(t);
+    if d.engage_battle_spells(t, &has, religion).any() && magic() > 0 {
+        let mut rows = rows_with_battle_spell(rows);
+        // Card: a Battlemage casts from the front row as from its best row (docs/CARDS.md).
+        if d.magic_promotions.iter().any(|&p| has(p) && d.promotions[p].magic.front_caster) {
+            let best = rows[rows_best_row(&rows)];
+            if best.kind == ActionKind::Spell {
+                rows[0] = best;
+            }
+        }
+        rows
+    } else {
+        rows
+    }
+}
+
+/// What a caster's SPELL actions cast when its damage spell is `attack` (`Game::engage_fighter`):
+/// a Wonder (each cast rolls its outcome), a damage spell at its battle power with its pattern,
+/// else the magic bolt.
+pub fn engage_spell_of(d: &GameData, attack: Option<SpellType>, params: &Params) -> Spell {
+    match attack {
+        // A Wonder: each cast rolls its outcome (`f.wonder`); never a collateral splash.
+        Some(s) if !d.spells[s].battle_wonder.is_empty() => Spell::known(s.idx() as u32),
+        Some(s) => {
+            let si = &d.spells[s];
+            Spell::battle(s.idx() as u32, si.battle_power_or_default(), si.battle_pattern)
+        }
+        None => Spell::bolt(params),
+    }
+}
+
+/// The magic (`magic`) or magic defence of a unit of type `t` holding the promotions `has`
+/// accepts, with its own points `flat` and percentages `pct` (module comment, "Magic per hit"):
+/// its sheet's plus its points, x10, under its own percentage; and the stat read (a Spellsword
+/// casts with half its attack: docs/CARDS.md).
+pub fn magic_terms_of(d: &GameData, t: UnitType, has: impl Fn(PromotionType) -> bool, flat: &StatSheet, pct: &StatSheet, magic: bool) -> (CombatTerms, StatType) {
+    let mut s = if magic { StatType::Magic } else { StatType::MagicDefense };
+    // Card: a Spellsword casts with half its attack as its magic (docs/CARDS.md).
+    let half = magic && d.unit_battle_magic(t, has).strike_spell.is_some();
+    if half {
+        s = StatType::Attack;
+    }
+    let base = d.units[t].stats.map_or(0, |sheet| sheet[s.idx()]) + flat[s.idx()];
+    let base = if half { base / 2 } else { base };
+    (CombatTerms { base: base * 10, modifier: pct[s.idx()] }, s)
+}
+
 impl Game {
     /// Whether unit `u` can take part in a land engagement (`GameData::type_engages_on_land`): a
     /// land or immobile type. Sea and air units never do. Whether it fights is its strength.
@@ -141,15 +213,7 @@ impl Game {
     /// fights a land battle) answers 0, and the duel's `MAX_HIT_POINTS` for HP.
     pub fn unit_stat(&self, u: UnitId, s: StatType) -> i32 {
         let unit = &self.units[u];
-        let Some(sheet) = self.d.units[unit.unit_type].stats else {
-            return if s == StatType::Hp { self.d.defines.max_hit_points } else { 0 };
-        };
-        let v = apply_combat_modifier(sheet[s.idx()] + unit.stat_flat[s.idx()], unit.stat_pct[s.idx()]);
-        if s == StatType::Hp {
-            v.max(1)
-        } else {
-            v.max(0)
-        }
+        stat_value(self.d, unit.unit_type, s, unit.stat_flat[s.idx()], unit.stat_pct[s.idx()])
     }
 
     /// The unit's maximum HP in an engagement (plan 4.1): its HP stat, +10% for each stack of
@@ -191,20 +255,8 @@ impl Game {
     /// with magic that knows a battle spell casts it in place of each
     /// attack (`rows_with_battle_spell`; docs/ENGAGEMENTS.md, "Battle spells").
     pub fn unit_engage_rows(&self, u: UnitId) -> [RowActions; ROWS] {
-        let rows = self.d.engage_rows(self.units[u].unit_type);
-        if self.unit_battle_spells(u).any() && self.unit_stat(u, StatType::Magic) > 0 {
-            let mut rows = rows_with_battle_spell(rows);
-            // Card: a Battlemage casts from the front row as from its best row (docs/CARDS.md).
-            if self.d.magic_promotions.iter().any(|&p| self.units[u].has_promotion[p] && self.d.promotions[p].magic.front_caster) {
-                let best = rows[rows_best_row(&rows)];
-                if best.kind == ActionKind::Spell {
-                    rows[0] = best;
-                }
-            }
-            rows
-        } else {
-            rows
-        }
+        let unit = &self.units[u];
+        engage_rows_of(self.d, unit.unit_type, |p| unit.has_promotion[p], unit.religion, || self.unit_stat(u, StatType::Magic))
     }
 
     /// Unit `u`'s best row (of [`Self::unit_engage_rows`]: the most actions, the first such).
@@ -371,20 +423,12 @@ impl Game {
 
     fn engage_magic_terms(&self, u: UnitId, magic: bool, log: &mut TermLog) -> CombatTerms {
         log.reset(self, u);
-        let mut s = if magic { StatType::Magic } else { StatType::MagicDefense };
-        // Card: a Spellsword casts with half its attack as its magic (docs/CARDS.md).
-        let half = magic && self.unit_battle_magic(u).strike_spell.is_some();
-        if half {
-            s = StatType::Attack;
-        }
         let unit = &self.units[u];
-        let base = self.d.units[unit.unit_type].stats.map_or(0, |sheet| sheet[s.idx()]) + unit.stat_flat[s.idx()];
-        let base = if half { base / 2 } else { base };
-        let own = unit.stat_pct[s.idx()];
+        let (terms, s) = magic_terms_of(self.d, unit.unit_type, |p| unit.has_promotion[p], &unit.stat_flat, &unit.stat_pct, magic);
         if log.listing() {
-            self.engage_own_percent_terms(u, s, own, log);
+            self.engage_own_percent_terms(u, s, terms.modifier, log);
         }
-        CombatTerms { base: base * 10, modifier: own }
+        terms
     }
 
     /// Unit `u`'s A on side `side` of the attack `ctx` against nobody in particular (its own

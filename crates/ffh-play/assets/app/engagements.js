@@ -10,7 +10,7 @@
 // `move` replies' `battle`): battle_log.js's header lists it.
 
 import * as api from "./api.js";
-import { S, dname, tname, emit } from "./state.js";
+import { S, info, dname, tname, tidx, emit } from "./state.js";
 import { h, toast, toastNode } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { plotIndex } from "./tiles.js";
@@ -303,9 +303,16 @@ const ACT = { Strike: "strike", Charge: "charge", Stab: "stab", Shoot: "shot", S
 const ACTS = { Strike: "strikes", Charge: "charges", Stab: "stabs", Shoot: "shots", Spell: "spells", Bombard: "bombards", Heal: "heals" };
 const ROW_NAMES = ["Front", "Middle", "Rear"];
 
+/** An action kind as the view sends it, in any case, as its word ("Strike"); "None" for no
+ *  action or an unknown kind. */
+function kindWord(kind) {
+  const k = typeof kind === "string" && kind ? kind[0].toUpperCase() + kind.slice(1).toLowerCase() : "";
+  return ACT[k] ? k : "None";
+}
+
 /** One row's actions ("2 strikes"; "—" without any). */
 function rowActions(a) {
-  const k = typeof a?.kind === "string" ? a.kind[0].toUpperCase() + a.kind.slice(1).toLowerCase() : "";
+  const k = kindWord(a?.kind);
   return a?.n && ACT[k] ? `${a.n} ${a.n > 1 ? ACTS[k] : ACT[k]}` : "—";
 }
 
@@ -338,17 +345,18 @@ export function battleHp(u) {
   return { hp: Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp), max: u.engage_max_hp };
 }
 
-/** A unit's battle numbers as the unit card's tiles (docs/UNIT_STATS.md), always these eight in
- *  this order: ATK, DEF, MAG, MDEF, ACC, EVA, CRIT, SPD (`{key, label, value, off}`). ATK, DEF,
- *  MAG and MDEF are the view's x100 values over 10, rounded; the rest as sent. A number the unit
- *  does not use (MAG for a non-caster: under 10) or the view does not send is `off`, its value
- *  "—", so the tiles never shift. Null without engagements (a sea or air unit). */
+/** A unit's battle numbers as the unit card's tiles (docs/UNIT_STATS.md), always these nine in
+ *  this order: HP, ATK, DEF, MAG, MDEF, ACC, EVA, CRIT, SPD (`{key, label, value, off}`). HP is the
+ *  battle's maximum (`engage_max_hp`); ATK, DEF, MAG and MDEF are the view's x100 values over 10,
+ *  rounded; the rest as sent. A number the unit does not use (MAG for a non-caster: under 10) or
+ *  the view does not send is `off`, its value "—", so the tiles never shift. Null without
+ *  engagements (a sea or air unit). A unit type's `battle` reads the same (`{type, ...battle}`). */
 export function engageStats(u) {
   if (u?.engage_attack === undefined || u?.engage_attack === null) return null;
-  const has = (v) => v !== undefined && v !== null;
   const st = (v) => (has(v) ? Math.round(v / 10) : null);
   const tile = (key, label, v, use = has(v)) => ({ key, label, value: use ? String(v) : "—", off: !use });
   return [
+    tile("hp", "HP", u.engage_max_hp),
     tile("attack", "ATK", st(u.engage_attack)),
     tile("defense", "DEF", st(u.engage_defense)),
     tile("magic", "MAG", st(u.engage_magic), (u.engage_magic ?? 0) >= 10),
@@ -360,19 +368,29 @@ export function engageStats(u) {
   ];
 }
 
+const has = (v) => v !== undefined && v !== null;
+
 /** The word of row `r` (0 front, 1 middle, 2 rear). */
 export const rowName = (r) => ROW_NAMES[r] ?? "-";
 
-/** A unit's rows in a battle for the unit card, from the view's `engage_actions`: `rows`
- *  (`[{name, actions, n}]`, front to rear), `best` (the row with the most actions, the first on a
- *  tie; null when it has none), and, when the view places it in a squad (`u.squad`, `cell = row *
- *  3 + lane`, row 0 the front), `here` (its row, else null) and `warn` (`Front: 1 strike. Best:
- *  Rear, 2 spells.` when that row has fewer actions than the best one, else null). Null without
- *  engagements (a sea or air unit). */
+/** A unit's three rows (front to rear, `{kind, n, ..}`): the view's `engage_rows`, else its older
+ *  `engage_actions`; null without either. */
+function rowsOf(u) {
+  if (Array.isArray(u?.engage_rows) && u.engage_rows.length === 3) return u.engage_rows;
+  if (Array.isArray(u?.engage_actions) && u.engage_actions.length === 3) return u.engage_actions;
+  return null;
+}
+
+/** A unit's rows in a battle for the unit card, from the view's `engage_rows` (else its
+ *  `engage_actions`): `rows` (`[{name, actions, n}]`, front to rear), `best` (the row with the most
+ *  actions, the first on a tie; null when it has none), and, when the view places it in a squad
+ *  (`u.squad`, `cell = row * 3 + lane`, row 0 the front), `here` (its row, else null) and `warn`
+ *  (`Front: 1 strike. Best: Rear, 2 spells.` when that row has fewer actions than the best one,
+ *  else null). Null without engagements (a sea or air unit). */
 export function rowPlan(u) {
-  const acts = u?.engage_actions;
-  if (!Array.isArray(acts) || acts.length !== 3) return null;
-  const rows = acts.map((a, r) => ({ name: rowName(r), actions: rowActions(a), n: a?.n ?? 0 }));
+  const acts = rowsOf(u);
+  if (!acts) return null;
+  const rows = acts.map((a, r) => ({ name: rowName(r), actions: rowActions(a), n: kindWord(a?.kind) === "None" ? 0 : (a?.n ?? 0) }));
   let best = null;
   rows.forEach((r, i) => {
     if (r.n > 0 && (best === null || r.n > rows[best].n)) best = i;
@@ -382,6 +400,104 @@ export function rowPlan(u) {
   const said = (r) => (rows[r].n ? rows[r].actions : "no actions");
   const warn = here !== null && best !== null && rows[here].n < rows[best].n ? `${rows[here].name}: ${said(here)}. Best: ${rows[best].name}, ${said(best)}.` : null;
   return { rows, best, here, warn };
+}
+
+/** "Volley" from "VOLLEY" or "volley". */
+const titleCase = (s) => (s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : "");
+
+/** The unit card's attack table (unit_card.js draws it) from the view's `engage_rows`, with the
+ *  served defines `d` (`engagement_rounds`, `engagement_crit_damage_percent`,
+ *  `card_ref_defenses`). Returns null without `engage_rows` (an older server: the card falls back
+ *  to `rowPlan`'s boxes), else:
+ *  - `label`: "Attacks by row · 2 rounds a battle · a crit deals 150%" (each part only when its
+ *    define is served and, the crit's, when a row can crit);
+ *  - `magic`: whether a row casts a spell (the damage is then against DEF or MDEF);
+ *    `dmgHead`: "vs DEF" or "vs DEF / MDEF"; `refs`: the reference defences as strings ([] when
+ *    not served); `dmgLabel`: the whole head, "vs DEF 20 · 40 · 80";
+ *  - `rows`: front to rear, each `{name, kind, none, attack, tags: [{key, word}], per, hit, crit,
+ *    dmg: [string] | null, damage, best, here}`: `attack` the kind's word, a spell's name or
+ *    "Magic bolt"; `tags` its pattern and "Splash" (keywords); `per` "×2"; `hit` "90%", "always"
+ *    (no miss) or "—"; `crit` "10%" or "—"; `dmg` the HP of one hit against each reference, else
+ *    `damage` says it: "heals 12", "varies" or "—". A row without an action is `none`, "—" across;
+ *  - `best`, `here`, `warn`: as `rowPlan`;
+ *  - `notes`: the lines under the table ("Casts first: Haste, Bless.", "Heals with: Heal.").
+ *  A unit type's `battle` reads the same (`{type, ...battle}`). */
+export function cardRows(u, d = {}) {
+  const src = u?.engage_rows;
+  if (!Array.isArray(src) || src.length !== 3) return null;
+  const plan = rowPlan(u);
+  const refs = Array.isArray(d?.card_ref_defenses) ? d.card_ref_defenses.map(String) : [];
+  const rows = src.map((r, i) => {
+    const kind = kindWord(r?.kind);
+    const name = rowName(i);
+    const flags = { best: plan.best === i, here: plan.here === i };
+    if (kind === "None" || !r?.n) return { name, kind: "None", none: true, attack: "—", tags: [], per: "—", hit: "—", crit: "—", dmg: null, damage: "—", ...flags };
+    const heal = kind === "Heal";
+    const attack = kind === "Spell" ? (r.bolt ? "Magic bolt" : has(r.spell) ? dname("SpellType", r.spell) : "Spell") : kind;
+    const tags = [];
+    if (r.pattern) tags.push({ key: `KEYWORD_${String(r.pattern).toUpperCase()}`, word: titleCase(String(r.pattern)) });
+    if (r.splash) tags.push({ key: "KEYWORD_SPLASH", word: "Splash" });
+    const dmg = !heal && Array.isArray(r.dmg) && r.dmg.length ? r.dmg.map(String) : null;
+    return {
+      name,
+      kind,
+      none: false,
+      attack,
+      tags,
+      per: `×${r.n}`,
+      hit: heal ? "—" : has(r.hit) ? `${r.hit}%` : "always",
+      crit: has(r.crit) ? `${r.crit}%` : "—",
+      dmg,
+      damage: heal ? (has(r.heal) ? `heals ${r.heal}` : "varies") : dmg ? dmg.join(" · ") : "varies",
+      ...flags,
+    };
+  });
+  const magic = rows.some((r) => r.kind === "Spell");
+  const dmgHead = magic ? "vs DEF / MDEF" : "vs DEF";
+  const rounds = d?.engagement_rounds;
+  const label = ["Attacks by row"];
+  if (has(rounds)) label.push(`${rounds} rounds a battle`);
+  if (rows.some((r) => r.crit !== "—") && has(d?.engagement_crit_damage_percent)) label.push(`a crit deals ${d.engagement_crit_damage_percent}%`);
+  const notes = [];
+  const charms = (u.engage_charms ?? []).filter(has);
+  if (charms.length) notes.push(`Casts first: ${charms.map((s) => dname("SpellType", s)).join(", ")}.`);
+  if (has(u.engage_heal_spell) && u.engage_heal_spell >= 0) notes.push(`Heals with: ${dname("SpellType", u.engage_heal_spell)}.`);
+  return {
+    label: label.join(" · "),
+    magic,
+    dmgHead,
+    refs,
+    dmgLabel: refs.length ? `${dmgHead} ${refs.join(" · ")}` : dmgHead,
+    rows,
+    best: plan.best,
+    here: plan.here,
+    warn: plan.warn,
+    notes,
+  };
+}
+
+/** The reminder boxes' entries (`[{key, name, text, with}]`, keywords.js `remindersNode`) of the
+ *  keyword type names `keys` (a unit's `engage_keywords`), looked up in the `KeywordType` table, in
+ *  order, without repeats; then those of `more` (a unit's own `reminders`) not already there. An
+ *  unknown name is skipped. */
+export function keywordReminders(keys, more = []) {
+  const out = [];
+  const seen = new Set();
+  for (const k of keys ?? []) {
+    if (seen.has(k)) continue;
+    const i = tidx("KeywordType", k);
+    const e = info("KeywordType", i);
+    if (!e) continue;
+    seen.add(k);
+    out.push({ key: e.type, name: dname("KeywordType", i), text: e.reminder ?? "", with: e.with ?? [k] });
+  }
+  for (const r of more ?? []) {
+    if (r?.key && !seen.has(r.key)) {
+      seen.add(r.key);
+      out.push(r);
+    }
+  }
+  return out;
 }
 
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];

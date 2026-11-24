@@ -574,15 +574,7 @@ impl Game {
         f.collateral_limit = (self.unit_collateral_damage(u) > 0).then(|| self.unit_collateral_damage_limit(u));
         f.collateral_extra = self.units[u].extra_collateral_damage;
         f.collateral_protection = self.units[u].collateral_damage_protection;
-        f.spell = match self.unit_engage_spell(u) {
-            // A Wonder: each cast rolls its outcome (`f.wonder`); never a collateral splash.
-            Some(s) if !self.d.spells[s].battle_wonder.is_empty() => Spell::known(s.idx() as u32),
-            Some(s) => {
-                let si = &self.d.spells[s];
-                Spell::battle(s.idx() as u32, si.battle_power_or_default(), si.battle_pattern)
-            }
-            None => Spell::bolt(params),
-        };
+        f.spell = super::stats::engage_spell_of(self.d, self.unit_engage_spell(u), params);
         if let Some(s) = self.unit_engage_spell(u) {
             f.wonder = self.d.spells[s].battle_wonder.iter().map(|&(o, w)| (w, self.engage_wonder_outcome(o))).collect();
         }

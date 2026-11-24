@@ -286,13 +286,16 @@ button.calc .target-line { text-decoration: underline dotted color-mix(in srgb, 
 .tip-combat .odds { font-size: 15px; color: var(--c-vellum); display: flex; align-items: center; gap: 6px; }
 .tip-combat .odds.bad { color: var(--c-scarlet); }
 .tip-combat .mods { font-size: 12px; color: var(--dim); }
-/* The unit card (unit_card.js): a unit's tooltip as a small character screen. The header (portrait,
-   name, level, HP and XP bars) over a gilt rule, the eight battle numbers as tiles (a number the
-   unit does not use greyed in place), the three rows of a battle (the best one gilt, the one it
-   stands in outlined), its promotions, its state as chips, the click's hint. */
+/* The Unit Card (unit_card.js): every unit's and unit type's tooltip, one layout. The header
+   (portrait, name, its line; a unit's HP and XP bars) over a gilt rule, the nine battle numbers as
+   tiles (a number the unit does not use greyed in place), the attack table (a line a row: the best
+   row gilt, the one it stands in outlined), the type's sections (two columns on a wide window),
+   abilities, upgrades and promotions, its state as chips, the strategy and the click's hint. A
+   tooltip holding the card is as wide as the card (never wider than the window). */
+.richtip:has(> .unit-card) { max-width: calc(100vw - 8px); }
 .unit-card {
   --uc-gold: var(--c-gold); --uc-rule: var(--c-ochre); --uc-tile: var(--c-coal); --uc-edge: var(--c-iron);
-  width: 20rem; max-width: 100%; display: flex; flex-direction: column; gap: 6px;
+  width: 30rem; max-width: calc(100vw - 28px); display: flex; flex-direction: column; gap: 6px;
   font-family: var(--font); font-size: 13px; line-height: 1.3; color: var(--c-bone);
 }
 .uc-head { display: flex; gap: 8px; align-items: stretch; padding-bottom: 6px; border-bottom: 1px solid var(--uc-rule); }
@@ -313,13 +316,33 @@ button.calc .target-line { text-decoration: underline dotted color-mix(in srgb, 
 .uc-bar.low .uc-bar-fill { background: var(--c-crimson); }
 .uc-bar.xp .uc-bar-fill { background: var(--c-tide); }
 .uc-bar-v { min-width: 3.4em; text-align: right; color: var(--c-vellum); font-variant-numeric: tabular-nums; }
-.uc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+/* Nine tiles in one row on a wide card; they wrap on a narrow one. */
+.uc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(42px, 1fr)); gap: 3px; }
 .uc-stat { display: flex; flex-direction: column; align-items: center; padding: 1px 0 2px; background: var(--uc-tile); border: 1px solid var(--uc-edge); }
 .uc-stat-k { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--c-sand); }
 .uc-stat-v { font-size: 15px; line-height: 1.2; color: var(--c-vellum); font-variant-numeric: tabular-nums; }
 .uc-stat.off { opacity: 0.45; }
 .uc-stat.off .uc-stat-k, .uc-stat.off .uc-stat-v { color: var(--c-ash); }
 .uc-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-stone); margin-bottom: -3px; }
+/* The attack table: Row | Attack | Per round | Hit | Crit | the damage against each reference. */
+.uc-table { display: grid; column-gap: 0; align-items: stretch; font-variant-numeric: tabular-nums; }
+.uc-th { padding: 0 5px 1px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-stone); white-space: nowrap; align-self: end; }
+.uc-th.uc-n { text-align: right; }
+.uc-th.uc-ref { color: var(--c-sand); }
+.uc-th-dmg { text-align: center; border-bottom: 1px solid var(--uc-edge); margin: 0 5px; padding: 0 0 1px; }
+.uc-td { padding: 2px 5px; background: var(--uc-tile); border-top: 1px solid var(--uc-edge); color: var(--c-vellum); white-space: nowrap; }
+.uc-td.uc-n { text-align: right; }
+.uc-td.uc-rn { color: var(--c-stone); }
+.uc-td.uc-atk { white-space: normal; }
+.uc-td.uc-dmg.uc-say { text-align: center; color: var(--c-sand); }
+.uc-td.none { color: var(--c-ash); background: transparent; }
+.uc-td.best { background: color-mix(in srgb, var(--uc-gold) 14%, var(--uc-tile)); border-top-color: var(--uc-gold); }
+.uc-td.best.uc-rn { color: var(--uc-gold); }
+.uc-td.here { border-top: 1px dashed var(--c-frost); border-bottom: 1px dashed var(--c-frost); }
+.uc-mark { margin-left: 5px; font-size: 10px; letter-spacing: 0.04em; }
+.uc-sep { color: var(--c-ash); }
+.uc-notes { font-size: 11px; color: var(--c-ash); }
+/* The older row boxes (a server without `engage_rows`). */
 .uc-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
 .uc-row { padding: 1px 4px 2px; text-align: center; background: var(--uc-tile); border: 1px solid var(--uc-edge); }
 .uc-row-k { font-size: 11px; color: var(--c-stone); }
@@ -330,13 +353,30 @@ button.calc .target-line { text-decoration: underline dotted color-mix(in srgb, 
 .uc-row.here { outline: 1px dashed var(--c-frost); outline-offset: 1px; }
 .uc-row-here { font-size: 10px; color: var(--c-frost); }
 .uc-warn { font-size: 12px; color: var(--c-scarlet); }
-.uc-promos { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
-.uc-promo-name { font-size: 11px; color: var(--c-sand); }
-.uc-promo-name + .uc-promo-name::before { content: "· "; color: var(--c-ash); }
+/* The sections: a label and its lines, hanging indent; two columns when there are several. */
+.uc-sections { font-size: 12px; line-height: 1.35; }
+.uc-sections.multi { columns: 2; column-gap: 14px; }
+.uc-sec { break-inside: avoid; padding-top: 4px; border-top: 1px solid var(--uc-edge); margin-bottom: 6px; }
+.uc-sec .uc-label { margin-bottom: 2px; }
+.uc-line { padding-left: 8px; text-indent: -8px; }
+.uc-chips-line { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 4px; padding-top: 1px; }
+.uc-chip { padding: 0 5px; font-size: 12px; color: var(--c-vellum); background: var(--uc-tile); border: 1px solid var(--uc-edge); }
+.uc-promo-tag { display: inline-flex; align-items: center; gap: 3px; color: var(--c-sand); }
 .uc-chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .uc-chips .badge { margin-left: 0; }
 .badge.squad { color: var(--c-vellum); border-color: var(--c-tide); }
+/* The strategy text is prose: at most three lines of it, so the card stays a card (a hover
+   tooltip cannot scroll: tools/unit-card-shots.mjs checks every type at 1366 x 768). */
+.uc-strategy { padding-top: 4px; border-top: 1px solid var(--uc-edge); font-size: 12px; color: var(--c-stone); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .uc-hint { padding-top: 4px; border-top: 1px solid var(--uc-edge); font-size: 11px; color: var(--c-ash); }
+@media (max-width: 599px) {
+  .uc-sections.multi { columns: 1; }
+  /* Nine tiles as five and four. */
+  .uc-stats { grid-template-columns: repeat(5, 1fr); }
+  .uc-th, .uc-mark { font-size: 9px; letter-spacing: 0.02em; white-space: normal; }
+  .uc-th, .uc-td { padding-left: 3px; padding-right: 3px; }
+  .uc-table { font-size: 12px; }
+}
 
 #side { background: var(--panel); border-left: 1px solid var(--c-ash); box-shadow: inset 2px 0 0 var(--c-soot), inset 3px 0 0 var(--c-iron); overflow: auto; padding: 10px 12px; }
 .panel-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--c-ash); }

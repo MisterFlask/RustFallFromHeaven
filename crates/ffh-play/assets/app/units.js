@@ -1316,7 +1316,7 @@ function actionButton(a) {
       "data-type": actionType(a),
       // The help as a rich tooltip (its bullets and colours kept), else the key as the title.
       title: help ? null : key ? `[${key}]` : null,
-      tip: help ? [h("div.tip-title", actionLabel(a), key ? h("kbd", key) : null), h("div.tip-effects", markup(help)), calcTip(a.calc)] : null,
+      tip: a.kind === "upgrade" ? upgradeTip(a, actionLabel(a) + extra, key) : help ? [h("div.tip-title", actionLabel(a), key ? h("kbd", key) : null), h("div.tip-effects", markup(help)), calcTip(a.calc)] : null,
       onclick: () => doAction(a),
     },
     a.kind === "promotion" ? promotionIcon(a.promotion, { u: 1 }) : null,
@@ -1324,6 +1324,14 @@ function actionButton(a) {
     key ? h("kbd", key) : null,
   );
   return btn;
+}
+
+/** An upgrade order's tooltip: the Unit Card of the type it upgrades to, with the reason it cannot
+ *  be done now (`why`) and its calculation under it, and the order (`label`, `key`) as its hint. */
+function upgradeTip(a, label, key) {
+  const why = !a.enabled && a.why ? h("div.tip-requires", markup(a.why)) : null;
+  const extra = [why, calcTip(a.calc)].filter(Boolean);
+  return infoTip("UnitType", a.unit, { hint: key ? `${label} [${key}]` : label, extra: extra.length ? extra : null });
 }
 
 /** The isometric card's action: an icon tile (or, for spells, promotions and upgrades, a
@@ -1348,7 +1356,7 @@ function isoAction(a, key, extra) {
       "data-type": actionType(a),
       title: listed && help ? null : `${label}${key ? ` [${key}]` : ""}`,
       // (A calculation, `calc`: the Raid order's take, under the help.)
-      tip: listed && help ? [h("div.tip-title", label, key ? h("kbd", key) : null), h("div.tip-effects", markup(help)), calcTip(a.calc)] : null,
+      tip: listed && a.kind === "upgrade" ? upgradeTip(a, label, key) : listed && help ? [h("div.tip-title", label, key ? h("kbd", key) : null), h("div.tip-effects", markup(help)), calcTip(a.calc)] : null,
       "aria-label": label,
       onclick: () => doAction(a),
       onmouseenter: show,

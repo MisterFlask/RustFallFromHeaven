@@ -1285,13 +1285,14 @@ fn warships_had(g: &Game, p: PlayerId) -> i32 {
     alive + pl.ai_num_train_ai_units[UnitAIType::UNITAI_ATTACK_SEA] + pl.ai_num_train_ai_units[UnitAIType::UNITAI_ESCORT_SEA]
 }
 
-/// (Hammers in our armed sea units, hammers in all our units with strength.)
+/// (Hammers in our armed sea units, hammers in all our fighters: units with an attack rating
+/// (`UnitInfo::attack_rating`: a land unit's stat sheet, a ship's strength) and a production cost.)
 fn military_hammers(g: &Game, p: PlayerId) -> (i64, i64) {
     let mut ships = 0i64;
     let mut all = 0i64;
     for &u in &g.players[p].units {
         let info = &g.d.units[g.units[u].unit_type];
-        if info.strength <= 0 || info.production_cost <= 0 {
+        if info.attack_rating() <= 0 || info.production_cost <= 0 {
             continue;
         }
         all += info.production_cost as i64;
@@ -1450,5 +1451,30 @@ mod tests {
         assert!(g.unit_is_hidden_nationality(theirs));
         assert!(enemy_ship(&g, team, theirs), "a pirate is everyone's enemy");
         assert!(!enemy_ship(&g, team, ours), "our own hidden ship is not");
+    }
+
+    /// The military's hammers count land fighters (rated by their stat sheet) as well as ships:
+    /// one Galley beside eight Warriors is a small share, not all of it.
+    #[test]
+    fn military_hammers_count_land_fighters() {
+        let mut g = two_landmass_game(5);
+        let us = PlayerId(0);
+        let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+        let galley = g.d.t::<UnitType>("UNIT_GALLEY");
+        assert!(g.d.units[galley].strength > 0, "the Galley has strength");
+        let land = g.map.plot_ids().find(|&q| !g.plot_is_water(q)).unwrap();
+        let water = g.map.plot_ids().find(|&q| g.plot_is_water(q)).unwrap();
+        let (x, y) = g.map.xy(land);
+        for _ in 0..8 {
+            g.player_init_unit(us, warrior, x, y, None, None);
+        }
+        let (x, y) = g.map.xy(water);
+        g.player_init_unit(us, galley, x, y, None, None);
+        let (wc, gc) = (g.d.units[warrior].production_cost as i64, g.d.units[galley].production_cost as i64);
+        assert!(wc > 0 && gc > 0);
+        let (ships, all) = military_hammers(&g, us);
+        assert_eq!(ships, gc);
+        assert_eq!(all, 8 * wc + gc);
+        assert!(ships * 100 / all < 100);
     }
 }

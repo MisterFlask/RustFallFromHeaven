@@ -15016,3 +15016,37 @@ TXT_KEY_KEYWORD_OUTSIDER	Outsider
 TXT_KEY_KEYWORD_OUTSIDER_REMINDER	A leader of your own civilization offered for a foreign House. Its opinion counts alignment and religion only, and it has no sympathy. Its cities have -3 happiness while it leads.
 TXT_KEY_KEYWORD_ROUTE	Route
 TXT_KEY_KEYWORD_ROUTE_REMINDER	A standing link from one of your cities to another city, established by a Caravan. Two caravans travel it by themselves; each pays while it lives. Pay grows with the path's length and the two cities' population; a foreign route pays more. A city is the origin of 1 route and the destination of any number. A killed caravan gives plunder to its killer and re-forms in the origin.
+TXT_KEY_KEYWORD_STRIKE	Strike
+TXT_KEY_KEYWORD_STRIKE_REMINDER	Hits the front unit of an enemy lane; lanes within one of its own first. A crit pushes the target back one row when the cell behind it is free.
+TXT_KEY_KEYWORD_CHARGE	Charge
+TXT_KEY_KEYWORD_CHARGE_REMINDER	Where flanking works (no city, forest, jungle or marsh on the defended plot): hits any enemy, the one with the highest threat for its HP left, and deals +100% damage in round 1 (not an attacker charging uphill). Elsewhere it is a Strike. A crit pushes the target back as a Strike's does.
+TXT_KEY_KEYWORD_STAB	Stab
+TXT_KEY_KEYWORD_STAB_REMINDER	Hits any enemy; lanes within one of its own first.
+TXT_KEY_KEYWORD_SHOOT	Shoot
+TXT_KEY_KEYWORD_SHOOT_REMINDER	Hits the back unit of an enemy lane; lanes within one of its own first. 10 less accuracy.
+TXT_KEY_KEYWORD_SPELL	Spell
+TXT_KEY_KEYWORD_SPELL_REMINDER	Hits the back unit of an enemy lane; lanes within one of its own first. Never misses or crits. Uses Magic against the target's Magic Defense, less the target's resistance to the spell's damage type.
+TXT_KEY_KEYWORD_BOMBARD	Bombard
+TXT_KEY_KEYWORD_BOMBARD_REMINDER	Hits the back unit of an enemy lane, a city's Sentinels first. 15 less accuracy. Never crits.
+TXT_KEY_KEYWORD_HEAL	Heal
+TXT_KEY_KEYWORD_HEAL_REMINDER	Heals the most hurt ally on the field, itself included. With no one hurt the action is spent.
+TXT_KEY_KEYWORD_VOLLEY	Volley
+TXT_KEY_KEYWORD_VOLLEY_REMINDER	Also hits the unit it would target in each lane beside the target's, for 50% damage.
+TXT_KEY_KEYWORD_PIERCE	Pierce
+TXT_KEY_KEYWORD_PIERCE_REMINDER	Also hits every other unit in the target's lane, for 50% damage.
+TXT_KEY_KEYWORD_SWEEP	Sweep
+TXT_KEY_KEYWORD_SWEEP_REMINDER	Also hits every other unit in the target's row, for 50% damage. A heal with Sweep heals them for 50%.
+TXT_KEY_KEYWORD_CLEAVE	Cleave
+TXT_KEY_KEYWORD_CLEAVE_REMINDER	Also hits the front unit of each lane beside the target's, for 60% damage.
+TXT_KEY_KEYWORD_TRAMPLE	Trample
+TXT_KEY_KEYWORD_TRAMPLE_REMINDER	Also hits the nearest unit behind the target, for 60% damage.
+TXT_KEY_KEYWORD_SPLASH	Splash
+TXT_KEY_KEYWORD_SPLASH_REMINDER	Also hits the units beside, in front of and behind the target, for 50% damage.
+TXT_KEY_KEYWORD_LARGE	Large
+TXT_KEY_KEYWORD_LARGE_REMINDER	Fills two cells side by side in a row and counts 2 places in a squad. It is the front or back unit of both its lanes.
+TXT_KEY_KEYWORD_FIRST_STRIKE	First strike
+TXT_KEY_KEYWORD_FIRST_STRIKE_REMINDER	Each first strike adds 2 speed in a battle. A chance first strike is rolled at the battle's start.
+TXT_KEY_KEYWORD_WITHDRAWAL	Withdrawal
+TXT_KEY_KEYWORD_WITHDRAWAL_REMINDER	When a hit would kill it, it rolls its withdrawal chance: on a success the hit does nothing and it leaves the battle alive. Attackers, and defenders outside a city.
+TXT_KEY_KEYWORD_COMBAT_LIMIT	Combat limit
+TXT_KEY_KEYWORD_COMBAT_LIMIT_REMINDER	Attacking, its hits never take a target below the rest of its HP (a 75% limit leaves 25%), and it does not aim at a target already there.

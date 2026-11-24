@@ -78,10 +78,12 @@ pub fn reminders(d: &GameData, keys: impl IntoIterator<Item = KeywordType>) -> J
 }
 
 /// The keywords of entry `i` of data table `kind` with rules text `texts` (its effects, help and
-/// strategy): its properties' keywords, then the marks of the texts.
+/// strategy): its properties' keywords (a project's Ritual; a unit type's battle sheet's actions,
+/// patterns, Splash and Large: `view::unit_card::type_keywords`), then the marks of the texts.
 pub fn of_entry(d: &GameData, kind: &str, i: usize, texts: &[&str]) -> Vec<KeywordType> {
     let mut keys = match kind {
         "ProjectType" => of_project(d, ProjectType::from_usize(i)),
+        "UnitType" => crate::view::unit_card::type_keywords(d, UnitType::from_usize(i)),
         _ => Vec::new(),
     };
     for t in texts {

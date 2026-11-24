@@ -467,7 +467,29 @@ pub fn ffh_value(g: &Game, u: UnitId, spell: SpellType) -> i32 {
     if info.resistable {
         value /= 2;
     }
+    value += repair_value(g, u, spell);
     value + info.ai_weight
+}
+
+/// Damage Repair removes from each target (the data's `spellRepair(pCaster,20)`).
+const REPAIR_AMOUNT: i32 = 20;
+
+/// Repair's worth when `spell` is Repair (else 0), as `magic.rs` values Heal: the hit points it
+/// restores to our team's repair targets on the caster's plot (`Game::unit_is_repair_target`),
+/// halved.
+fn repair_value(g: &Game, u: UnitId, spell: SpellType) -> i32 {
+    static REPAIR: OnceLock<Option<SpellType>> = OnceLock::new();
+    if *REPAIR.get_or_init(|| g.d.ty::<SpellType>("SPELL_REPAIR")) != Some(spell) {
+        return 0;
+    }
+    let team = g.unit_get_team(u);
+    let restored: i32 = g.map.plots[g.unit_plot(u)]
+        .units
+        .iter()
+        .filter(|&&t| g.unit_get_team(t) == team && g.unit_is_repair_target(t))
+        .map(|&t| g.units[t].damage.min(REPAIR_AMOUNT))
+        .sum();
+    restored / 2
 }
 
 /// `chooseSpell`'s terms for what a spell costs or gives besides its effect on units (for
@@ -604,4 +626,30 @@ fn resurrect(g: &mut Game, u: UnitId) -> bool {
     g.tel_cast_reason(u, "resurrection", worth as i64);
     g.unit_cast_at(u, spell, target);
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testkit::one_landmass_game_with;
+
+    /// Repair is worth half the damage it removes from our golem, and needs a damaged target.
+    #[test]
+    fn repair_is_worth_the_damage_it_removes() {
+        let mut g = one_landmass_game_with(23, &["CIVILIZATION_LUCHUIRP"]);
+        let d = g.d;
+        let us = PlayerId(0);
+        let caster = g.player_init_unit(us, d.t::<UnitType>("UNIT_ADEPT"), 5, 5, Some(UnitAIType::UNITAI_MAGE), None);
+        for name in ["PROMOTION_ENCHANTMENT1", "PROMOTION_DWARF"] {
+            g.unit_set_has_promotion(caster, d.t::<PromotionType>(name), true);
+        }
+        let golem = g.player_init_unit(us, d.t::<UnitType>("UNIT_WARRIOR"), 5, 5, None, None);
+        g.unit_set_has_promotion(golem, d.t::<PromotionType>("PROMOTION_GOLEM"), true);
+        assert!(g.unit_is_repair_target(golem));
+        let repair = d.t::<SpellType>("SPELL_REPAIR");
+        assert!(!g.unit_can_cast(caster, repair, false), "nothing to repair");
+        g.units[golem].damage = 30;
+        assert!(g.unit_can_cast(caster, repair, false), "the golem is damaged");
+        assert_eq!(ffh_value(&g, caster, repair), 10);
+    }
 }

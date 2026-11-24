@@ -146,7 +146,7 @@ fn params_json(d: &GameData) -> Json {
 }
 
 /// An action kind as the screens name it ("Strike").
-fn kind_name(k: ActionKind) -> &'static str {
+pub(crate) fn kind_name(k: ActionKind) -> &'static str {
     match k {
         ActionKind::None => "None",
         ActionKind::Strike => "Strike",
@@ -160,7 +160,7 @@ fn kind_name(k: ActionKind) -> &'static str {
 }
 
 /// What a unit does from its front, middle and rear rows: `[{kind, n}]` (`n` actions of `kind`).
-fn actions_json(rows: &[RowActions; ROWS]) -> Json {
+pub(crate) fn actions_json(rows: &[RowActions; ROWS]) -> Json {
     Json::Arr(rows.iter().map(|r| crate::jobj! { "kind" => kind_name(r.kind), "n" => r.count }).collect())
 }
 
@@ -1097,29 +1097,18 @@ fn could_engage(g: &Game, u: UnitId, plot: PlotIdx) -> bool {
     g.engage_applies(u, plot) && !g.unit_is_suicide(u) && g.unit_can_attack(u)
 }
 
-/// A unit's engagement fields (the view's units, under engagements): what it does from each row
-/// and its rank preference (the rows front 0, middle 1, rear 2 in the order the auto formation
-/// tries them), its A before the bonuses of a plot it attacks (its own percentages: as it hits
-/// back), its Dv where it stands, both x100, its max HP, its speed before first strikes, its dodge
-/// and crit bonus, and whether it is large. Nothing for a sea or air unit.
+/// A unit's engagement fields (the view's units, under engagements): its battle sheet as the unit
+/// card reads it (`view::unit_card`): what it does from each row and its rank preference (the rows
+/// front 0, middle 1, rear 2 in the order the auto formation tries them), its A before the bonuses
+/// of a plot it attacks (its own percentages: as it hits back), its Dv where it stands, both x100,
+/// its max HP, its speed before first strikes, its dodge and crit bonus, whether it is large, and
+/// each row's hits against the reference defences. Nothing for a sea or air unit.
 pub fn unit_fields(g: &Game, u: UnitId, j: &mut Json) {
     if !g.unit_engages_on_land(u) {
         return;
     }
     let Some(at) = g.unit_plot_opt(u) else { return };
-    let ctx = HitCtx::at(at);
-    j.set("engage_row_order", Json::Arr(g.unit_engage_row_order(u).iter().map(|&r| Json::from(r)).collect()));
-    j.set("engage_attack", g.engage_stat(u, None, Side::Defender, true, &ctx).total_x100);
-    j.set("engage_defense", g.engage_job_defense(u, &ctx));
-    j.set("engage_max_hp", g.unit_engage_max_hp(u));
-    j.set("engage_speed", g.unit_engage_speed(u));
-    j.set("engage_actions", actions_json(&g.unit_engage_actions(u)));
-    j.set("engage_magic", g.engage_magic_x100(u, true));
-    j.set("engage_magic_defense", g.engage_magic_x100(u, false));
-    j.set("engage_accuracy", g.unit_engage_accuracy(u));
-    j.set("engage_evasion", g.unit_engage_evasion(u));
-    j.set("engage_crit", g.unit_engage_crit(u));
-    j.set("engage_large", g.unit_engage_large(u));
+    crate::view::unit_card::write(g.d, &crate::view::unit_card::Sheet::of_unit(g, u, at), j);
 }
 
 #[cfg(test)]

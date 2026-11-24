@@ -10,16 +10,12 @@ import { S, info, dname } from "./state.js";
 import { remindersNode } from "./keywords.js";
 import { calcTip } from "./calc.js";
 
-/** A unit type's numbers as markup: ATK and DEF (a ship: its strength, and defence when it
- *  differs), moves, its class of combat (`UnitType` entry `e` of the data). */
-export function unitStats(e) {
-  if (!e) return "";
-  const parts = [];
-  if (e.strength || e.strength_defense) parts.push(e.strength_defense && e.strength_defense !== e.strength ? `${e.strength}/${e.strength_defense}[ICON_STRENGTH]` : `${e.strength}[ICON_STRENGTH]`);
-  else if (e.attack || e.defense) parts.push(`ATK ${e.attack} · DEF ${e.defense}`);
-  parts.push(`${e.moves}[ICON_MOVES]`);
-  if (e.unit_combat !== null && e.unit_combat !== undefined) parts.push(dname("UnitCombatType", e.unit_combat));
-  return parts.join("  ");
+/** The Unit Card of a unit type (unit_card.js `unitTypeCard`, which registers itself here when it
+ *  loads: importing it would pull the art modules into every module that shows a tooltip, the
+ *  node tests' too). */
+let unitTypeCard = null;
+export function setUnitTypeCard(f) {
+  unitTypeCard = f;
 }
 
 /** What entry `i` of `kind` does, as markup: its generated `effects`, else its XML help; "". */
@@ -40,11 +36,12 @@ export function infoTip(kind, i, { hint = null, extra = null, title = null } = {
   return () => {
     const e = info(kind, i);
     if (!e) return hint ? h("div.tip-hint", hint) : null;
+    // A unit type: the Unit Card (unit_card.js), the same card a unit on the map shows. Its
+    // `effects` only when the data has no `sections` (an older server).
+    if (kind === "UnitType" && unitTypeCard) return unitTypeCard(i, { hint, extra, title, effects: e.sections ? "" : effectsOf(kind, i) });
     const does = effectsOf(kind, i);
     return [
       h("div.tip-title", title ?? dname(kind, i)),
-      // A unit's help starts with its combat line (C++ setBasicUnitHelp); without it, the numbers.
-      kind === "UnitType" && !e.effects ? h("div.tip-stats", markup(unitStats(e))) : null,
       does ? h("div.tip-effects", markup(does)) : null,
       extra,
       e.strategy ? h("div.tip-strategy", markup(e.strategy)) : null,

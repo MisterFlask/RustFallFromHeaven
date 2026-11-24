@@ -1623,7 +1623,7 @@ pub fn army_choice(g: &Game, c: CityId, attackers: i32, siege: i32, afford: bool
 }
 
 /// At war with a civ (or preparing one).
-fn candidates_war(g: &Game, p: PlayerId) -> bool {
+pub(crate) fn candidates_war(g: &Game, p: PlayerId) -> bool {
     let team = g.players[p].team;
     let barb = g.barbarian_team();
     g.teams.keys().any(|t| t != team && t != barb && g.teams[t].alive_count > 0 && g.at_war(team, t)) || crate::diplomacy::preparing_target(g, team).is_some()
@@ -1631,7 +1631,7 @@ fn candidates_war(g: &Game, p: PlayerId) -> bool {
 
 /// The building that lets city `c` train our best siege engine (FfH Siege Workshop), when no
 /// city of ours can train one yet, none is building it, and `c` is our most productive city.
-fn siege_building(g: &Game, c: CityId) -> Option<BuildingType> {
+pub(crate) fn siege_building(g: &Game, c: CityId) -> Option<BuildingType> {
     let p = g.cities[c].owner;
     let d = g.d;
     let civ = g.player_get_civilization_type(p)?;

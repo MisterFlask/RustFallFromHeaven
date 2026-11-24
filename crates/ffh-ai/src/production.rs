@@ -537,12 +537,26 @@ struct Ctx {
     afford: bool,
 }
 
-/// The AI's own production choice for city `c` (the ladder of a directly ruled city), and why. It
-/// does not ask whether the city is governed: in a governed city it is what the AI would want
-/// there, and `governor::turn` places what of it is an empire order.
+/// The AI's own production choice for city `c` (the ladder of a directly ruled city), and why. In
+/// a governed city it is what the AI would want there, and `governor::turn` places what of it is
+/// an empire order; there the ladder stops at a step the governor owns only where the governor
+/// will do it: its garrison quota is the governor's (`governor::garrison_need`), and a step that
+/// asks for one particular ordinary building or for a process passes (the governor builds what
+/// opens units, `governor::unit_building`).
 pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     let d = g.d;
     let city = &g.cities[c];
+    let governed = g.city_is_governed(c);
+    // In a governed city, a hook's request for an ordinary building or a process is the governor's
+    // to make (neither can be an empire order).
+    let governor_builds = |choice: &Choice| {
+        governed
+            && match *choice {
+                Choice::Construct(b) => !g.order_may_be_empire(OrderType::ORDER_CONSTRUCT, b.i()),
+                Choice::Maintain(_) => true,
+                _ => false,
+            }
+    };
     let p = city.owner;
     let pl = &g.players[p];
     let plot = g.city_plot(c);
@@ -610,6 +624,10 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     }
     // A probe's garrison (probes.rs): one defender for the Rush and the Expand, a multiple for the Turtle.
     needed = crate::probes::garrison_need(g, p, needed, true);
+    // A governed city's garrison is its governor's: the ladder asks for the defenders it trains.
+    if governed {
+        needed = crate::governor::garrison_need(g, c, ctx.threat, held);
+    }
 
     // 1. Missing or overwhelmed garrison.
     // Fortified defenders in a city fight at about 1.5x their strength.
@@ -634,7 +652,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
 
     // A victory a few turns away comes before expansion (victory.rs).
     if safe {
-        if let Some(choice) = crate::victory::production(g, c, true) { return Some((choice, "victory_soon")); } // victory-pursuit
+        if let Some(choice) = crate::victory::production(g, c, true).filter(|ch| !governor_builds(ch)) { return Some((choice, "victory_soon")); } // victory-pursuit
     }
 
     // An explorer while much of our landmass is unknown (sites, goody huts, contact with
@@ -664,9 +682,9 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
             return Some((choice, "colonist"));
         }
     }
-    if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some((choice, "civ_mechanics")); } // civ-mechanics
-    if let Some(choice) = crate::traits::production(g, c, ctx.threat) { return Some((choice, "trait_play")); } // trait-play
-    if let Some(choice) = crate::cards_economy::production(g, c, ctx.threat, ctx.at_war) { return Some((choice, "card_economy")); } // the cards (docs/CARDS.md)
+    if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat).filter(|ch| !governor_builds(ch)) { return Some((choice, "civ_mechanics")); } // civ-mechanics
+    if let Some(choice) = crate::traits::production(g, c, ctx.threat).filter(|ch| !governor_builds(ch)) { return Some((choice, "trait_play")); } // trait-play
+    if let Some(choice) = crate::cards_economy::production(g, c, ctx.threat, ctx.at_war).filter(|ch| !governor_builds(ch)) { return Some((choice, "card_economy")); } // the cards (docs/CARDS.md)
     // An assault fleet (transport + attackers) for an overseas enemy city we can take.
     if safe && crate::naval::is_coastal_city(g, c) {
         if let Some(choice) = crate::naval::assault_production(g, c) {
@@ -711,22 +729,26 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     let max_turns = if settler == SettlerPlan::Soon { 12 } else { 50 };
 
     // FfH tier-2 units need a building in the training city (Archery Range for archers,
-    // Training Yard for axemen, ...): build it when it opens a clearly better unit.
-    if safe && ctx.pop >= 2 {
+    // Training Yard for axemen, ...): build it when it opens a clearly better unit. A governed
+    // city's governor builds it (`governor::unit_building`).
+    if safe && ctx.pop >= 2 && !governed {
         if let Some(b) = enabler_building(g, c, ctx.threat) {
             return Some((Choice::Construct(b), "unit_enabler"));
         }
     }
 
     // 4. Extra defenders up to the quota (a broke empire keeps one per city unless threatened).
-    let keeps_garrison = crate::probes::keeps_garrison(g, p);
-    if ctx.broke && ctx.threat == 0 && !keeps_garrison {
-        needed = needed.min(1 + i32::from(ctx.capital));
+    // A governed city's quota is its governor's as it stands.
+    if !governed {
+        let keeps_garrison = crate::probes::keeps_garrison(g, p);
+        if ctx.broke && ctx.threat == 0 && !keeps_garrison {
+            needed = needed.min(1 + i32::from(ctx.capital));
+        }
+        if !ctx.afford && ctx.threat == 0 && !keeps_garrison {
+            needed = needed.min(1 + i32::from(ctx.capital));
+        }
+        needed += crate::victory::guard(g, c); // victory-pursuit
     }
-    if !ctx.afford && ctx.threat == 0 && !keeps_garrison {
-        needed = needed.min(1 + i32::from(ctx.capital));
-    }
-    needed += crate::victory::guard(g, c); // victory-pursuit
     if ctx.defenders < needed {
         if let Some(u) = best_unit(g, c, Role::Defense) {
             let why = if ctx.defenders >= needed - rival { "rival_defender" } else { "defender_quota" };
@@ -734,7 +756,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
         }
     }
     // A probe's army and buildings (probes.rs).
-    if let Some(choice) = crate::probes::production(g, c, ctx.threat) {
+    if let Some(choice) = crate::probes::production(g, c, ctx.threat).filter(|(ch, _)| !governor_builds(ch)) {
         return Some(choice);
     }
 
@@ -750,16 +772,16 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     // Victory pursuit (victory.rs): the towers in our best cities, culture in the cities
     // nearest legendary -- after the garrison and the first army.
     if safe {
-        if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
+        if let Some(choice) = crate::victory::production(g, c, false).filter(|ch| !governor_builds(ch)) { return Some((choice, "victory")); } // victory-pursuit
     }
 
     // Mana nodes and the caster corps (casters.rs): a caster to convert our raw mana
     // when none of ours can, and the corps' casters (mana.rs, casters.rs).
     if safe && ctx.afford && !ctx.broke {
-        if let Some(choice) = crate::mana::production(g, c) {
+        if let Some(choice) = crate::mana::production(g, c).filter(|ch| !governor_builds(ch)) {
             return Some((choice, "mana_builder"));
         }
-        if let Some(choice) = crate::casters::production(g, c, ctx.at_war, attackers) {
+        if let Some(choice) = crate::casters::production(g, c, ctx.at_war, attackers).filter(|ch| !governor_builds(ch)) {
             return Some((choice, "caster_corps"));
         }
     }
@@ -804,10 +826,10 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     // At war (or preparing): a third of the army in siege engines. A stack camped next to a
     // city it cannot take (a barbarian town, say) asks for a couple as well.
     let siege = count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL);
-    if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford && !small_army) { return Some((choice, "campaign_army")); } // siege-campaigns
+    if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford && !small_army).filter(|ch| !governor_builds(ch)) { return Some((choice, "campaign_army")); } // siege-campaigns
     // The great-person cards' units (docs/CARDS.md).
     if ctx.afford {
-        if let Some(choice) = crate::cards_map_rules::production(g, c, ctx.threat) {
+        if let Some(choice) = crate::cards_map_rules::production(g, c, ctx.threat).filter(|ch| !governor_builds(ch)) {
             return Some((choice, "card_unit"));
         }
     }
@@ -1117,7 +1139,12 @@ fn best_project(g: &Game, c: CityId) -> Option<ProjectType> {
             continue;
         }
         let name = info.base.type_.as_str();
-        // Rituals with large side effects: left to dedicated logic.
+        // Skipped because a flat weight cannot judge them: The Draw (war with every team, every
+        // city halved), Samhain (barbarian Frostlings loosed on the world), Purge the Unfaithful
+        // (religions stripped from our cities); Bane Divine and Glory Everlasting cost 10000. The
+        // Illians' module builds The White Hand and Stir From Slumber (`civs::illians`); nothing
+        // builds Samhain, The Draw or Purge the Unfaithful, so Ascension (which needs The Draw) is
+        // out of the AI's reach.
         if matches!(name, "PROJECT_SAMHAIN" | "PROJECT_THE_DRAW" | "PROJECT_STIR_FROM_SLUMBER" | "PROJECT_BANE_DIVINE" | "PROJECT_GLORY_EVERLASTING" | "PROJECT_PURGE_THE_UNFAITHFUL") {
             continue;
         }
@@ -1221,7 +1248,7 @@ pub(crate) fn unit_building(d: &GameData, civ: CivilizationType, info: &UnitInfo
 /// strike, +25% in cities: 14% stronger, but at two thirds of the price), and golems held their
 /// cities. (By strength squared per hammer, as [`best_unit`] weighs a choice, a Warrior beat an
 /// Axeman and the Training Yards were no longer built.)
-fn enabler_building(g: &Game, c: CityId, threat: i32) -> Option<BuildingType> {
+pub(crate) fn enabler_building(g: &Game, c: CityId, threat: i32) -> Option<BuildingType> {
     let d = g.d;
     let p = g.cities[c].owner;
     let civ = g.player_get_civilization_type(p)?;

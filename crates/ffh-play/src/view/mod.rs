@@ -51,6 +51,7 @@ pub mod speech;
 pub mod squads;
 pub mod trade;
 pub mod text;
+pub mod unit_card;
 pub mod units;
 
 use ffh_core::game::Game;
