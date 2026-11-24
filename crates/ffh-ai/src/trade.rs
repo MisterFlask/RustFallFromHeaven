@@ -134,8 +134,10 @@ pub fn is_gold_deal(list: &[TradeData]) -> bool {
 /// C++ `AI_dealVal`: the total value, to player `p` trading with `other`, of everything in `list`
 /// (what `p` would receive). `change` is +1 for a gain (passed through to the per-resource value).
 /// Scoped to the item kinds the AI actually trades -- technologies (via the research-cost proxy,
-/// as `AI_techTradeVal` is unported), resources, gold, gold-per-turn; other kinds are valued 0
-/// here and handled by `consider_offer`'s own peace/open-borders branches. The at-war `AI_endWarVal`
+/// as `AI_techTradeVal` is unported), resources, gold, gold-per-turn, and a war on a third party
+/// (our price to declare it); every other kind is valued 0. `diplomacy::judge_offer` prices peace
+/// treaties and pacts by its own branches, refuses to give any other unpriced item, and takes one
+/// it receives at this 0. The at-war `AI_endWarVal`
 /// term is unreachable on the resource/gold paths (they are gated to peacetime), so it is omitted.
 pub fn deal_val(g: &Game, p: PlayerId, other: PlayerId, list: &[TradeData], ignore_annual: bool, change: i32) -> i32 {
     let team = g.players[p].team;
@@ -163,8 +165,8 @@ pub fn deal_val(g: &Game, p: PlayerId, other: PlayerId, list: &[TradeData], igno
             TradeableItem::TRADE_WAR => {
                 value += crate::diplomacy::declare_war_trade_val(g, team, TeamId(item.data as u8), g.players[other].team);
             }
-            // AI: other item kinds (maps, cities, ...) are not valued here; the resource/gold offer
-            // paths never build them, and consider_offer handles peace/open-borders itself.
+            // Other kinds (maps, cities, civics, ...) are not valued: `judge_offer` never gives
+            // them and counts them 0 when it receives them.
             _ => {}
         }
     }
@@ -174,7 +176,8 @@ pub fn deal_val(g: &Game, p: PlayerId, other: PlayerId, list: &[TradeData], igno
 /// What trade item `item` is worth in a deal between `p` and `other` as `p` weighs it
 /// (`diplomacy::judge_offer`): its value to the side that receives it (`p` when `p_gets`), the
 /// [`deal_val`] of the item alone, a peace treaty at the end-war value; gold and gold per turn for
-/// the amount in `item.data`. `None` for an item `p` puts no price on (it adds nothing to a deal).
+/// the amount in `item.data`. `None` for an item `p` puts no price on: received, it adds nothing to
+/// a deal; asked of `p`, `judge_offer` refuses the deal (pacts excepted, judged by their own rule).
 pub fn item_value(g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
     let (to, from) = if p_gets { (p, other) } else { (other, p) };
     match item.item_type {

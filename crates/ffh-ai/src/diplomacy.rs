@@ -1539,6 +1539,13 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
 /// at [`crate::trade::item_value`]), the reason when a rule did. The diplomacy screen shows it to
 /// the human while it puts a deal together. `tel`: record the decisions in telemetry (not for
 /// that preview). The reasons are plain statements of the rule, speaking of `from` as "you".
+///
+/// The AI gives nothing it puts no price on: outside the vassal branches, a deal in which we
+/// would give a city, a civic, a religion, an embargo, peace with a third party or any other kind
+/// this function does not judge is refused. Items of any kind on `from`'s side are taken at what
+/// [`crate::trade::deal_val`] gives them (0 for the unpriced: a gift of a city is still a gift).
+/// Open borders and a defensive pact keep their own rule inside a larger deal: mutual, the rule
+/// of the pure deal, then the rest of the deal judged on its own.
 pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData], tel: bool) -> OfferVerdict {
     let rule = |accept: bool, why_not: &str| OfferVerdict { accept, margin: None, why: (!accept).then(|| why_not.to_string()) };
     let no = |why: &str| rule(false, why);
@@ -1561,6 +1568,31 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     if let Some(yes) = crate::vassals::accept_master(g, p, from, they_give, we_give, tel) {
         return rule(yes, if has(they_give, TradeableItem::TRADE_SURRENDER) { "your last cities can be taken instead" } else { "your wars would involve them" });
     }
+    // Nothing we put no price on leaves our side (`deal_val` values these kinds 0; no branch
+    // below judges them).
+    let priced = |t: &TradeData| {
+        matches!(
+            t.item_type,
+            TradeableItem::TRADE_TECHNOLOGIES
+                | TradeableItem::TRADE_RESOURCES
+                | TradeableItem::TRADE_GOLD
+                | TradeableItem::TRADE_GOLD_PER_TURN
+                | TradeableItem::TRADE_PEACE_TREATY
+                | TradeableItem::TRADE_WAR
+                | TradeableItem::TRADE_OPEN_BORDERS
+                | TradeableItem::TRADE_DEFENSIVE_PACT
+        )
+    };
+    if let Some(item) = we_give.iter().find(|t| !priced(t)) {
+        return no(match item.item_type {
+            TradeableItem::TRADE_CITIES => "cities are not traded",
+            TradeableItem::TRADE_CIVIC => "civics are not traded",
+            TradeableItem::TRADE_RELIGION => "religions are not traded",
+            TradeableItem::TRADE_EMBARGO => "embargoes are not traded",
+            TradeableItem::TRADE_PEACE => "peace with others is not traded",
+            _ => "these items are not traded",
+        });
+    }
     if we_give.is_empty() {
         return OfferVerdict { accept: true, margin: Some(crate::trade::deal_val(g, p, from, they_give, false, 1)), why: Some("gift".into()) };
     }
@@ -1582,6 +1614,47 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let team = g.players[p].team;
     let their_team = g.players[from].team;
     let all = |items: &[TradeData], kind: TradeableItem| items.iter().all(|t| t.item_type == kind);
+    // The mutual pacts' rules, shared by the pure deals below and a pact inside a larger deal.
+    const DP_WHY: &str = "defensive pact requires attitude Friendly or a common threat";
+    const OB_WHY: &str = "open borders requires attitude Pleased, or one step less with a better trade route to your cities";
+    let dp_holds = || crate::pacts::accept(g, p, from);
+    let ob_holds = || {
+        // A better route to one of their cities than ours is one attitude step (caravans.rs).
+        let rel = relation(g, p, from);
+        let why = if rel < 1 { crate::caravans::open_borders_why(g, p, from) } else { None };
+        let step = if why.is_some() { crate::caravans::OPEN_BORDERS_STEP } else { 0 };
+        if tel && rel < 1 && rel + step >= 1 && !g.at_war(team, their_team) {
+            g.tel_decision(p, "caravan", "open_borders", if why == Some("own") { "route_reason_accept_own" } else { "route_reason_accept_inbound" }, 1, String::new);
+        }
+        !g.at_war(team, their_team) && rel + step >= 1
+    };
+    // A pact inside a larger deal: it is on both sides and its rule holds, then the rest of the
+    // deal is judged on its own (only they give more: a gift; only we do: a demand).
+    let pacts = [
+        (TradeableItem::TRADE_OPEN_BORDERS, "open borders are mutual"),
+        (TradeableItem::TRADE_DEFENSIVE_PACT, "a defensive pact is mutual"),
+    ];
+    let in_deal = |kind: TradeableItem| has(they_give, kind) || has(we_give, kind);
+    let pure = |kind: TradeableItem| all(they_give, kind) && all(we_give, kind);
+    if pacts.iter().any(|&(k, _)| in_deal(k)) && !pacts.iter().any(|&(k, _)| pure(k)) {
+        for (kind, mutual) in pacts {
+            if in_deal(kind) && !(has(they_give, kind) && has(we_give, kind)) {
+                return no(mutual);
+            }
+        }
+        if in_deal(TradeableItem::TRADE_OPEN_BORDERS) && !ob_holds() {
+            return no(OB_WHY);
+        }
+        if in_deal(TradeableItem::TRADE_DEFENSIVE_PACT) && !dp_holds() {
+            return no(DP_WHY);
+        }
+        let rest = |items: &[TradeData]| items.iter().filter(|t| !pacts.iter().any(|&(k, _)| t.item_type == k)).cloned().collect::<Vec<_>>();
+        let (theirs, ours) = (rest(they_give), rest(we_give));
+        if theirs.is_empty() && ours.is_empty() {
+            return rule(true, "");
+        }
+        return judge_offer(g, p, from, &theirs, &ours, tel);
+    }
     // Never hand over a resource our own judgement blocks (ported `AI_bonusTrade`).
     let refused_bonus = || {
         we_give.iter().find_map(|item| {
@@ -1741,17 +1814,10 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         }
     }
     if all(they_give, TradeableItem::TRADE_DEFENSIVE_PACT) && all(we_give, TradeableItem::TRADE_DEFENSIVE_PACT) {
-        return rule(crate::pacts::accept(g, p, from), "defensive pact requires attitude Friendly or a common threat");
+        return rule(dp_holds(), DP_WHY);
     }
     if all(they_give, TradeableItem::TRADE_OPEN_BORDERS) && all(we_give, TradeableItem::TRADE_OPEN_BORDERS) {
-        // A better route to one of their cities than ours is one attitude step (caravans.rs).
-        let rel = relation(g, p, from);
-        let why = if rel < 1 { crate::caravans::open_borders_why(g, p, from) } else { None };
-        let step = if why.is_some() { crate::caravans::OPEN_BORDERS_STEP } else { 0 };
-        if tel && rel < 1 && rel + step >= 1 && !g.at_war(team, their_team) {
-            g.tel_decision(p, "caravan", "open_borders", if why == Some("own") { "route_reason_accept_own" } else { "route_reason_accept_inbound" }, 1, String::new);
-        }
-        return rule(!g.at_war(team, their_team) && rel + step >= 1, "open borders requires attitude Pleased, or one step less with a better trade route to your cities");
+        return rule(ob_holds(), OB_WHY);
     }
     // Technology for technology: worth at least four fifths of what we give, with a civ we do
     // not dislike, and never to the one we are preparing a war against.
@@ -2118,5 +2184,100 @@ mod tests {
         assert!(keep_deal(&g, ai, human, &ob, &ob).is_err());
         reconsider_deals(&mut g, ai);
         assert!(!g.team_is_open_borders(t0, t1), "cancelled once disliked");
+    }
+
+    fn td(kind: TradeableItem, data: i32) -> TradeData {
+        TradeData { item_type: kind, data, offering: false, hidden: false }
+    }
+
+    /// The AI gives nothing it puts no price on (cities, civics, religions, embargoes, peace with
+    /// others), on demand or for any payment; it takes such items when given.
+    #[test]
+    fn the_ai_gives_nothing_it_puts_no_price_on() {
+        let (mut g, us, them) = neighbours(37);
+        g.players[them].alignment = g.players[us].alignment;
+        let city = g.players[us].cities[0].0 as i32;
+        let their_city = g.players[them].cities[0].0 as i32;
+        let civic = td(TradeableItem::TRADE_CIVIC, 0);
+        let religion = td(TradeableItem::TRADE_RELIGION, 0);
+        let why = |v: &OfferVerdict| v.why.clone().unwrap_or_default();
+        // A demand for a city from a much stronger neighbour, which a demand for gold would get.
+        g.players[us].power = 100;
+        g.players[them].power = 300;
+        assert!(max_extorted(&g, us, them).is_ok_and(|m| m > 0));
+        let v = judge_offer(&g, us, them, &[], &[td(TradeableItem::TRADE_CITIES, city)], false);
+        assert!(!v.accept && why(&v) == "cities are not traded", "{v:?}");
+        let v = judge_offer(&g, us, them, &[], &gold(10), false);
+        assert!(v.accept, "gold within the limit is paid: {v:?}");
+        g.players[them].power = 100;
+        // Gold for each unpriced kind.
+        for (item, reason) in [
+            (td(TradeableItem::TRADE_CITIES, city), "cities are not traded"),
+            (civic.clone(), "civics are not traded"),
+            (religion.clone(), "religions are not traded"),
+            (td(TradeableItem::TRADE_EMBARGO, 0), "embargoes are not traded"),
+            (td(TradeableItem::TRADE_PEACE, 0), "peace with others is not traded"),
+            (td(TradeableItem::TRADE_MAPS, 0), "these items are not traded"),
+        ] {
+            let v = judge_offer(&g, us, them, &gold(1), std::slice::from_ref(&item), false);
+            assert!(!v.accept && why(&v) == reason, "{item:?}: {v:?}");
+            assert!(!consider_offer(&g, us, them, &gold(1), &[item]));
+        }
+        // Given to us, they are taken.
+        for item in [td(TradeableItem::TRADE_CITIES, their_city), civic, religion] {
+            let v = judge_offer(&g, us, them, std::slice::from_ref(&item), &[], false);
+            assert!(v.accept, "{item:?}: {v:?}");
+        }
+    }
+
+    /// Open borders inside a larger deal keep their rule: mutual, attitude Pleased (or the
+    /// trade-route step), then the rest of the deal on its own.
+    #[test]
+    fn open_borders_keep_their_rule_inside_a_larger_deal() {
+        let (mut g, us, them) = neighbours(41);
+        let ob = td(TradeableItem::TRADE_OPEN_BORDERS, 0);
+        let with_gold = |n: i32| {
+            let mut v = vec![ob.clone()];
+            v.extend(gold(n));
+            v
+        };
+        // Different alignments: the rule fails.
+        g.players[us].alignment = Some(AlignmentType::from_usize(0));
+        g.players[them].alignment = Some(AlignmentType::from_usize(2));
+        assert!(relation(&g, us, them) < 0);
+        let v = judge_offer(&g, us, them, &with_gold(50), &[ob.clone()], false);
+        assert!(!v.accept && v.why.as_deref() == Some("open borders requires attitude Pleased, or one step less with a better trade route to your cities"), "{v:?}");
+        // The same alignment: it holds, and the gold is a sweetener.
+        g.players[them].alignment = g.players[us].alignment;
+        assert!(relation(&g, us, them) >= 1);
+        let v = judge_offer(&g, us, them, &with_gold(50), &[ob.clone()], false);
+        assert!(v.accept, "{v:?}");
+        assert!(judge_offer(&g, us, them, &[ob.clone()], &[ob.clone()], false).accept, "the pure deal");
+        // On one side only.
+        let v = judge_offer(&g, us, them, &with_gold(50), &gold(10), false);
+        assert!(!v.accept && v.why.as_deref() == Some("open borders are mutual"), "{v:?}");
+        let v = judge_offer(&g, us, them, &gold(50), &with_gold(10), false);
+        assert!(!v.accept && v.why.as_deref() == Some("open borders are mutual"), "{v:?}");
+        let dp = td(TradeableItem::TRADE_DEFENSIVE_PACT, 0);
+        let v = judge_offer(&g, us, them, &[dp, ob.clone()], &[ob.clone()], false);
+        assert!(!v.accept && v.why.as_deref() == Some("a defensive pact is mutual"), "{v:?}");
+        // The rest still judged: no city for open borders.
+        let v = judge_offer(&g, us, them, &[ob.clone()], &[ob.clone(), td(TradeableItem::TRADE_CITIES, g.players[us].cities[0].0 as i32)], false);
+        assert!(!v.accept && v.why.as_deref() == Some("cities are not traded"), "{v:?}");
+        // A pure gift is still taken.
+        assert!(judge_offer(&g, us, them, &gold(20), &[], false).accept);
+    }
+
+    /// The priced trades still go through: technology for technology, gold for a resource.
+    #[test]
+    fn priced_trades_still_pass() {
+        let (mut g, us, them) = neighbours(43);
+        g.players[them].alignment = g.players[us].alignment;
+        let tech = |name: &str| td(TradeableItem::TRADE_TECHNOLOGIES, g.d.t::<TechType>(name).i());
+        let v = judge_offer(&g, us, them, &[tech("TECH_MYSTICISM")], &[tech("TECH_AGRICULTURE")], false);
+        assert!(v.accept, "{v:?}");
+        let bonus = g.d.t::<BonusType>("BONUS_WINE").i();
+        let v = judge_offer(&g, us, them, &gold(400), &[td(TradeableItem::TRADE_RESOURCES, bonus)], false);
+        assert!(v.accept, "{v:?}");
     }
 }
