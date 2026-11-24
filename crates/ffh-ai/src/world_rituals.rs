@@ -1,7 +1,8 @@
 //! The AI's world ritual (docs/CARDS.md, "World rituals"): the project whose completion brings the
 //! civilization's world spell (an untargeted one takes effect at completion, so the ritual is
-//! started when its moment holds: `world_spells::ready_for_ritual`; a targeted one is cast as soon
-//! as it has a target). Once a turn, after the empire decisions, a player with no cast pending and
+//! started when its moment holds: `world_spells::ready_for_ritual`; a targeted one as soon as the
+//! rest holds, unless the civilization's own condition, [`civ_gate`], waits for a use). Once a
+//! turn, after the empire decisions, a player with no cast pending and
 //! no ritual under way starts it in its city with the most production, when it has at least two cities (one if it may hold no more),
 //! no city in peril, and that city completes it within [`MAX_TURNS`] turns. The AI never sets a
 //! ritual under way aside (any project: every project is a ritual, ffh-core's `ffh::rituals`):
@@ -79,14 +80,21 @@ pub fn turn(g: &mut Game, v: &View) {
 }
 
 /// A civilization's own condition to start its ritual `pr`: Upgrade (the Luchuirp's: a stack of
-/// Reinforced on each golem) only with 4 or more golems.
-fn civ_gate(g: &Game, p: PlayerId, pr: ProjectType) -> bool {
+/// Reinforced on each golem) only with 4 or more golems; Frozen Passage (the Illians') only when
+/// it has a target worth casting at now (`civs::illians::frozen_passage_has_use`), looked for
+/// every [`FROZEN_PASSAGE_EVERY`] turns (staggered by player; on the other turns, no).
+pub(crate) fn civ_gate(g: &Game, p: PlayerId, pr: ProjectType) -> bool {
     let d = g.d;
     match d.projects[pr].base.type_.as_str() {
         "PROJECT_RITUAL_UPGRADE" => {
             let golem = d.t::<PromotionType>("PROMOTION_GOLEM");
             g.players[p].units.iter().filter(|&&u| g.units.contains(u) && g.units[u].has_promotion[golem]).count() >= 4
         }
+        "PROJECT_RITUAL_FROZEN_PASSAGE" => (g.game_turn() + p.0 as i32) % FROZEN_PASSAGE_EVERY == 0 && crate::civs::illians::frozen_passage_has_use(g, p),
         _ => true,
     }
 }
+
+/// How often (turns) the AI looks for a use of Frozen Passage before starting its ritual
+/// ([`civ_gate`]): the search scores every water plot in range of our borders. Ad hoc.
+pub const FROZEN_PASSAGE_EVERY: i32 = 5;

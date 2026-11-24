@@ -89,19 +89,22 @@ fn anchors(g: &Game, p: PlayerId, q: PlotIdx) -> bool {
     plot.sea_ice || plot.owner == Some(p)
 }
 
-/// May `caster` cast Frozen Passage at `t`: water its team has revealed, within
-/// [`FROZEN_PASSAGE_RANGE`] plots of a plot its owner owns or of Sea Ice? (The charge and the
-/// civilization are the spell's own checks.)
+/// May `caster` cast Frozen Passage at `t` ([`frozen_passage_plot_ok`] for its owner)? (The
+/// charge and the civilization are the spell's own checks.)
 pub fn frozen_passage_ok(g: &Game, caster: UnitId, t: PlotIdx) -> bool {
-    let p = g.units[caster].owner;
-    g.plot_is_water(t) && g.map.plots[t].revealed[g.unit_get_team(caster)] && plots_within(g, t, FROZEN_PASSAGE_RANGE).into_iter().any(|q| anchors(g, p, q))
+    frozen_passage_plot_ok(g, g.units[caster].owner, t)
 }
 
-/// `targetsFrozenPassage(pCaster)`: every valid target, in plot order (each anchor marks the
-/// plots in range of it once).
-fn targets_frozen_passage(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarget> {
-    let p = g.units[caster].owner;
-    let team = g.unit_get_team(caster);
+/// Is `t` a Frozen Passage target for player `p`'s casters: water its team has revealed, within
+/// [`FROZEN_PASSAGE_RANGE`] plots of a plot `p` owns or of Sea Ice?
+pub fn frozen_passage_plot_ok(g: &Game, p: PlayerId, t: PlotIdx) -> bool {
+    g.plot_is_water(t) && g.map.plots[t].revealed[g.players[p].team] && plots_within(g, t, FROZEN_PASSAGE_RANGE).into_iter().any(|q| anchors(g, p, q))
+}
+
+/// Every Frozen Passage target for player `p`'s casters ([`frozen_passage_plot_ok`]), in plot
+/// order: one pass over the plots, and each anchor marks the plots in range of it once.
+pub fn frozen_passage_plots_ok(g: &Game, p: PlayerId) -> Vec<PlotIdx> {
+    let team = g.players[p].team;
     let mut near = vec![false; g.map.num_plots()];
     for q in g.map.plot_ids() {
         if anchors(g, p, q) {
@@ -110,7 +113,13 @@ fn targets_frozen_passage(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<Spell
             }
         }
     }
-    g.map.plot_ids().filter(|&t| near[t.idx()] && g.plot_is_water(t) && g.map.plots[t].revealed[team]).map(SpellTarget::Plot).collect()
+    g.map.plot_ids().filter(|&t| near[t.idx()] && g.plot_is_water(t) && g.map.plots[t].revealed[team]).collect()
+}
+
+/// `targetsFrozenPassage(pCaster)`: every valid target, in plot order
+/// ([`frozen_passage_plots_ok`] for the caster's owner).
+fn targets_frozen_passage(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarget> {
+    frozen_passage_plots_ok(g, g.units[caster].owner).into_iter().map(SpellTarget::Plot).collect()
 }
 
 /// The water plots Frozen Passage at `t` freezes: within [`FROZEN_PASSAGE_RADIUS`] plots.

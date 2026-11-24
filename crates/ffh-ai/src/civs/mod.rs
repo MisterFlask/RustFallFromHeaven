@@ -42,7 +42,7 @@ mod doviello;
 mod elohim;
 mod grigori;
 mod hippus;
-mod illians;
+pub(crate) mod illians;
 mod infernal;
 mod khazad;
 mod kuriotates;

@@ -1,7 +1,9 @@
 //! The AI's Icebreak (the rules: `ffh_core::ffh::world_ritual_spells::illians`): once its units
 //! have moved, a ship of ours that ends its turn idle (moves left, no orders) next to Sea Ice (or
 //! on it) within [`ICEBREAK_RANGE`] plots of one of our cities breaks it, so the ice does not shut
-//! our coast. Ad hoc (a rules change, CLAUDE.md "AI changes").
+//! our coast. A player whose own world ritual is Frozen Passage (the Illians) breaks none: the
+//! ice is theirs, cast where it is a passage or an enemy's loss (`civs::illians`). Ad hoc (a rules
+//! change, CLAUDE.md "AI changes").
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -14,6 +16,9 @@ pub const ICEBREAK_RANGE: i32 = 4;
 /// The turn's Icebreaks of player `p`.
 pub fn end_turn(g: &mut Game, p: PlayerId) {
     let Some(spell) = g.d.ty::<SpellType>("SPELL_ICEBREAK") else { return };
+    if g.player_world_ritual(p).is_some_and(|pr| g.d.projects[pr].base.type_ == "PROJECT_RITUAL_FROZEN_PASSAGE") {
+        return;
+    }
     // Nothing to break while the map has no Sea Ice (the usual case: one pass over the plots).
     if !g.map.plot_ids().any(|q| g.map.plots[q].sea_ice) {
         return;
