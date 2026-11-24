@@ -109,7 +109,7 @@ barbarians -26% (-1.4), military +5% (1.4); legacy -2.8% (-1.4), research -5.3% 
 | `CvCityAI::AI_chooseProduction` (from `CvCity::doProduction`) | `choose_production` | `production.rs` |
 | `CvPlayerAI::AI_chooseResearch` / `AI_chooseFreeTech` | `choose_research` | `research.rs`, `tech_plan.rs` |
 | `CvPlayerAI::AI_conquerCity` | `raze_conquered_city` | `diplomacy.rs` |
-| `CvPlayerAI::AI_considerOffer` | `consider_offer` (`judge_offer`: the same answer with its margin or rule, for the trade screen; `trade::item_value` per item; a demand is paid up to `max_extorted`; nothing it puts no price on is given) | `diplomacy.rs` |
+| `CvPlayerAI::AI_considerOffer` | `consider_offer` (`judge_offer`: the same answer with its margin or rule, for the trade screen; `trade::item_value` per item; a demand is paid up to `max_extorted`, a demand that costs nothing granted; what it gives of a city, a civic, a religion, an embargo or peace with a third party costs its price, `prices::give_price`, or is refused) | `diplomacy.rs`, `prices.rs` |
 | `CvPlayerAI::AI_doDiplo` (review of deals) | `reconsider_deals`, `keep_deal`: from 20 turns, a deal with a human it would no longer make is cancelled (with an AI, on a trade denial) | `diplomacy.rs` |
 | `CvPlayerAI::AI_chooseEvent` | `choose_event` | `events.rs` |
 | `CvTeamAI::AI_chooseElection` / `CvPlayerAI::AI_diploVote` | `choose_election` / `diplo_vote` | `council.rs` |
@@ -1499,14 +1499,52 @@ broke) and the gold caps (a research buffer plus an already-traded-to limit), an
 (`bonus_trade`: never to our worst enemy, nor a resource they already have, nor a strategic /
 happiness / health resource to a civ we do not like enough -- one step more generous toward a civ
 of our alignment or favourite religion). `consider_offer` (`judge_offer`) values a deal of
-technologies, resources, gold, gold per turn and a war on a third party, the kinds `deal_val`
+technologies, resources, gold, gold per turn, a war on a third party and maps, the kinds `deal_val`
 prices (accept when what we receive is worth at least what we give, no gold-for-gold, never a
-resource the refusal blocks). The AI gives nothing it puts no price on: outside the vassal
-branches, a deal in which it would give a city, a civic, a religion, an embargo, peace with a third
-party or any other kind is refused ("cities are not traded", "civics are not traded", "religions
-are not traded", "embargoes are not traded", "peace with others is not traded", "these items are
-not traded"), on demand or for any payment; items of any kind the other side gives are taken (a
-gift of a city is a gift). A peace treaty, open borders or a defensive pact on one side only is
+resource the refusal blocks). What it gives of the kinds below costs their price, added to its side
+of the deal (`prices.rs`: `give_price`; `trade::item_value` shows it, `give_note` is its make-up
+and the refusal its reason, the trade screen's `value_note` and `refusal`), or is refused:
+
+- **City**: its civilization's settler + 100 turns x (production + commerce + food surplus) of the
+  city + the production cost of its world wonders. At peace refused: to its victory rival, to the
+  world's clear leader, with 3 cities or fewer, a second city to the same team within 30 turns (a
+  city that team took from it counts), a city outside the lesser half of its cities by price. At
+  war none of these: in a peace treaty a city is set against what peace itself is worth to it
+  (its end-war value less the other side's), not against the other side's tribute ("a city is
+  ceded only for what peace itself is worth to them"), and no rule of the peace branch (a war of
+  conquest lost or 80 turns old, a probe's peace) grants a treaty that holds one unweighed. Never
+  on demand; one city a deal.
+- **Civic**: the anarchy turns x output a turn (production + commerce), twice when the change is a
+  loss (it goes back); the loss, the drop in `civic_value` over the spread of that option's values
+  (the civics it can run there), times 25% of `peace_treaty_length` turns of output; the
+  production cost of the units the change disbands. Refused in financial trouble for a civic that
+  costs more (upkeep and city maintenance).
+- **Religion**: the anarchy as for a civic; 3 points per point lost of `religion_value` (10 a
+  city, 25 the favourite, 20 the holy city); the units it disbands.
+- **Embargo**: over the cancelable deals with the target it ends, max(0, what it loses (a resource
+  it imports as the copy lost) - what it gets back); when open borders are among them, what the
+  trade routes between the two pay it a turn, for 30 turns. Refused with a defensive pact with the
+  target or at attitude Friendly towards it.
+- **Peace with a third party**: 0 when it would take a bare peace with that civilization now; what
+  it lacks on value when value refused that peace; refused when a rule refused it or that
+  civilization refuses.
+- **Maps** (either side, in `deal_val`): 5 a land plot and 1 a water plot the receiver has not
+  seen, over 10.
+- **Permanent alliance**: refused.
+
+None of these kinds is paid with a lease (a resource, gold per turn: either side may cancel it
+after `peace_treaty_length` turns): a deal with one on the other side is refused ("no lease in
+payment for a city, civic, religion, embargo or peace"). A demand that costs it nothing is granted
+("no cost to them") and records no tribute. While
+either side remembers an embargo the other made (`MEMORY_STOPPED_TRADING_RECENT`: set by an
+embargo in a deal and by a council's no-trade resolution, fading at 1 in 30 a turn; a holder
+whose leader never forgets it, the cards' civilizations' leaders, is not counted) no deal is made
+at peace but gifts and demands, between AIs too. A civic or a religion adopted in a deal
+is kept for `peace_treaty_length` turns: the rules set `ai_civic_timer` / `ai_religion_timer`, and
+`empire::civics` / `religion` count them down and change nothing while they run (nothing else
+starts them: the rules' `ai_init` leaves them 0). Any other kind it would give is
+refused ("these items are not traded"); items of any kind the other side gives are taken (a gift
+of a city is a gift). A peace treaty, open borders or a defensive pact on one side only is
 refused ("a peace treaty is mutual", "open borders are mutual", "a defensive pact is mutual");
 open borders or a defensive pact inside a larger deal keeps its own rule (the pure deal's test),
 then the rest of the deal is judged on its own. Before (until 2026-11-23) a demand for a city was

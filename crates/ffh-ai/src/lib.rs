@@ -58,6 +58,7 @@ pub mod offers;
 pub mod outposts;
 pub mod pacts;
 pub mod predict;
+pub mod prices;
 pub mod probes;
 pub mod production;
 pub mod raids;
@@ -288,6 +289,24 @@ impl Controller for Ai {
 
     fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
         trade::item_value(g, p, other, item, p_gets)
+    }
+
+    fn trade_refusal(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData) -> Option<String> {
+        match prices::give_price(g, p, other, item)? {
+            Err(why) => Some(why.to_string()),
+            Ok(_) => None,
+        }
+    }
+
+    fn trade_note(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<String> {
+        if item.item_type == TradeableItem::TRADE_MAPS {
+            let (from, to) = if p_gets { (other, p) } else { (p, other) };
+            return Some(prices::map_note(g, g.players[from].team, g.players[to].team));
+        }
+        if p_gets {
+            return None;
+        }
+        prices::give_note(g, p, other, item)
     }
 
     fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {

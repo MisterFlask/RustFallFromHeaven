@@ -117,6 +117,18 @@ fn item_json(g: &Game, judge: PlayerId, from: PlayerId, to: PlayerId, t: &TradeD
         "denial" => Json::opt_idx(g.player_get_trade_denial(from, to, t)),
         "value" => value_json(g, judge, from, to, t),
     };
+    // The judge's own words on the item: the rule by which it gives the item at no price
+    // (`refusal`: the screen greys the item and shows the reason), and how its value is made up
+    // (`value_note`: the value's tooltip).
+    let c = g.controller(judge);
+    if judge == from {
+        if let Some(why) = c.trade_refusal(g, judge, to, t) {
+            j.set("refusal", why);
+        }
+    }
+    if let Some(note) = c.trade_note(g, judge, if judge == from { to } else { from }, t, judge == to) {
+        j.set("value_note", note);
+    }
     // A lease (an item that pays every turn while the deal lasts): the turns its value counts.
     if matches!(t.item_type, TradeableItem::TRADE_RESOURCES | TradeableItem::TRADE_GOLD_PER_TURN) {
         j.set("value_turns", g.d.defines.peace_treaty_length);

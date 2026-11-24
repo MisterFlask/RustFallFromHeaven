@@ -1541,12 +1541,19 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
 /// the human while it puts a deal together. `tel`: record the decisions in telemetry (not for
 /// that preview). The reasons are plain statements of the rule, speaking of `from` as "you".
 ///
-/// The AI gives nothing it puts no price on: outside the vassal branches, a deal in which we
-/// would give a city, a civic, a religion, an embargo, peace with a third party or any other kind
-/// this function does not judge is refused. Items of any kind on `from`'s side are taken at what
-/// [`crate::trade::deal_val`] gives them (0 for the unpriced: a gift of a city is still a gift).
-/// Open borders and a defensive pact keep their own rule inside a larger deal: mutual, the rule
-/// of the pure deal, then the rest of the deal judged on its own.
+/// What we give of the kinds of [`crate::prices::give_price`] (a city, a civic, a religion, an
+/// embargo, peace with a third party) costs its price, added to our side of the deal; one it
+/// refuses at any price (a permanent alliance, a city it keeps, ...) refuses the deal with that
+/// reason. Outside the vassal branches, any other kind this function does not judge is refused.
+/// Items of any kind on `from`'s side are taken at what [`crate::trade::deal_val`] gives them (0
+/// for a city, a civic and the like: a gift of a city is still a gift; maps at their value). A
+/// city is not given on demand, one city a deal, none of these kinds for a lease; in a peace treaty
+/// a city is set against what peace itself is worth to us, not against their tribute, and no rule
+/// of the peace branch grants a deal that holds one unweighed; a demand that costs us nothing is
+/// granted. While either side
+/// remembers an embargo the other made (`MEMORY_STOPPED_TRADING_RECENT`), no deal is made at
+/// peace but gifts and demands. Open borders and a defensive pact keep their own rule inside a
+/// larger deal: mutual, the rule of the pure deal, then the rest of the deal judged on its own.
 pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData], tel: bool) -> OfferVerdict {
     let rule = |accept: bool, why_not: &str| OfferVerdict { accept, margin: None, why: (!accept).then(|| why_not.to_string()) };
     let no = |why: &str| rule(false, why);
@@ -1569,8 +1576,9 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     if let Some(yes) = crate::vassals::accept_master(g, p, from, they_give, we_give, tel) {
         return rule(yes, if has(they_give, TradeableItem::TRADE_SURRENDER) { "your last cities can be taken instead" } else { "your wars would involve them" });
     }
-    // Nothing we put no price on leaves our side (`deal_val` values these kinds 0; no branch
-    // below judges them).
+    // What we give of the kinds `prices` prices costs its price (`extra`, added to our side
+    // below), or refuses the deal; nothing else we put no price on leaves our side (`deal_val`
+    // values the kinds below; no branch judges any other).
     let priced = |t: &TradeData| {
         matches!(
             t.item_type,
@@ -1582,17 +1590,36 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
                 | TradeableItem::TRADE_WAR
                 | TradeableItem::TRADE_OPEN_BORDERS
                 | TradeableItem::TRADE_DEFENSIVE_PACT
+                | TradeableItem::TRADE_MAPS
         )
     };
-    if let Some(item) = we_give.iter().find(|t| !priced(t)) {
-        return no(match item.item_type {
-            TradeableItem::TRADE_CITIES => "cities are not traded",
-            TradeableItem::TRADE_CIVIC => "civics are not traded",
-            TradeableItem::TRADE_RELIGION => "religions are not traded",
-            TradeableItem::TRADE_EMBARGO => "embargoes are not traded",
-            TradeableItem::TRADE_PEACE => "peace with others is not traded",
-            _ => "these items are not traded",
-        });
+    let (mut extra, mut cities): (i64, i64) = (0, 0);
+    for item in we_give {
+        match crate::prices::give_price(g, p, from, item) {
+            Some(Err(why)) => return no(why),
+            Some(Ok(v)) => {
+                extra += v as i64;
+                if item.item_type == TradeableItem::TRADE_CITIES {
+                    cities += v as i64;
+                }
+            }
+            None if !priced(item) => return no("these items are not traded"),
+            None => {}
+        }
+    }
+    // One city a deal, at peace (one is sold to the same team in `prices::CITY_SALE_TURNS` turns)
+    // and in a peace treaty.
+    if we_give.iter().filter(|t| t.item_type == TradeableItem::TRADE_CITIES).count() > 1 {
+        return no("one city a deal");
+    }
+    // We give something of the kinds `prices` prices: no rule below grants the deal without its
+    // value being weighed.
+    let gives_priced = we_give.iter().any(|t| crate::prices::is_give_kind(t.item_type));
+    // What is given for good is not paid with a lease (a resource, gold per turn: either side may
+    // cancel it after `peace_treaty_length` turns, and the city does not come back).
+    let lease = |t: &TradeData| matches!(t.item_type, TradeableItem::TRADE_RESOURCES | TradeableItem::TRADE_GOLD_PER_TURN);
+    if gives_priced && they_give.iter().any(lease) {
+        return no("no lease in payment for a city, civic, religion, embargo or peace");
     }
     // A treaty or a pact binds both sides: one on a single side is no gift and no demand (a
     // demand for peace alone would count 0 and be paid as a demand is).
@@ -1612,7 +1639,14 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     // much stronger neighbour ([`max_extorted`]; the margin is that most less what it asks), and
     // not again soon after the last one we paid it (ffh-core `tribute`).
     if they_give.is_empty() {
-        let asked = crate::trade::deal_val(g, from, p, we_give, false, 1) as i64;
+        if has(we_give, TradeableItem::TRADE_CITIES) {
+            return no("cities are not given on demand");
+        }
+        let asked = crate::trade::deal_val(g, from, p, we_give, false, 1) as i64 + extra;
+        // A request that costs us nothing (a civic change without anarchy, ...) is no demand.
+        if asked == 0 && we_give.iter().all(|t| crate::prices::is_give_kind(t.item_type)) {
+            return OfferVerdict { accept: true, margin: Some(0), why: Some("no cost to them".into()) };
+        }
         let pause = g.demand_pause(p, from);
         if pause > 0 {
             let ago = ffh_core::tribute::DEMAND_PAUSE_TURNS - pause;
@@ -1626,6 +1660,20 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     let team = g.players[p].team;
     let their_team = g.players[from].team;
     let all = |items: &[TradeData], kind: TradeableItem| items.iter().all(|t| t.item_type == kind);
+    // No new deal at peace while an embargo is remembered (it fades: a holder whose leader never
+    // forgets it is skipped, so nothing lasts for ever).
+    if !g.at_war(team, their_team) {
+        let holds = |holder: PlayerId, of: PlayerId| {
+            let m = MemoryType::MEMORY_STOPPED_TRADING_RECENT;
+            g.players[holder].personality_type.is_some_and(|l| g.d.leader_heads[l].memory_decay_rand[m] > 0) && g.players[holder].ai_memory_count[of][m] > 0
+        };
+        if holds(p, from) {
+            return no("you stopped trading with them");
+        }
+        if holds(from, p) {
+            return no("they stopped trading with you");
+        }
+    }
     // The mutual pacts' rules, shared by the pure deals below and a pact inside a larger deal.
     const DP_WHY: &str = "defensive pact requires attitude Friendly or a common threat";
     const OB_WHY: &str = "open borders requires attitude Pleased, or one step less with a better trade route to your cities";
@@ -1692,9 +1740,12 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     // worth at least what we give.
     let has_peace = |items: &[TradeData]| items.iter().any(|t| t.item_type == TradeableItem::TRADE_PEACE_TREATY);
     if has_peace(they_give) && has_peace(we_give) {
-        // A probe's peace (probes.rs).
+        // A probe's peace (probes.rs): whether it makes peace; what it would give of the priced
+        // kinds is still weighed below.
         if let Some(yes) = crate::probes::accept_peace(g, p, their_team) {
-            return because(yes, if yes { "peace accepted" } else { "war continues while a city of yours can be taken" });
+            if !yes || !gives_priced {
+                return because(yes, if yes { "peace accepted" } else { "war continues while a city of yours can be taken" });
+            }
         }
         let counter = g.teams[team].ai_at_war_counter[their_team];
         if counter < 10 {
@@ -1714,18 +1765,33 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         let plan = crate::victory::plan(g, p);
         if crate::victory::wants_conquest(&plan) || crate::victory::rival_team(g, &plan) == Some(their_team) || press_conquest(g, team, their_team) {
             let losing = their_success > success + 10 && ours * 10 < theirs * 12;
-            return match (losing, counter >= 80) {
-                (true, _) => because(true, "losing the war"),
-                (false, true) => because(true, "war longer than 80 turns"),
-                _ => no("war of conquest: peace only when losing or after 80 turns"),
+            let why = match (losing, counter >= 80) {
+                (true, _) => "losing the war",
+                (false, true) => "war longer than 80 turns",
+                _ => return no("war of conquest: peace only when losing or after 80 turns"),
             };
+            // The rule decides that peace is on the table; a city or another priced kind on our
+            // side is still weighed below.
+            if !gives_priced {
+                return because(true, why);
+            }
         }
         // Reparations: value each side as the at-war `AI_endWarVal` baseline plus its tribute (C++
         // `AI_dealVal`/`AI_considerOffer`, CvPlayerAI.cpp:6815, 7057). A deal that pays us at least
         // what we give away -- a winner's reparations, or a loser sweetening the peace -- is taken.
         let their_v = end_war_val_seen(g, team, their_team) + crate::trade::deal_val(g, p, from, they_give, false, 1);
-        let our_v = end_war_val_seen(g, their_team, team) + crate::trade::deal_val(g, from, p, we_give, false, 1);
-        let margin = their_v as i64 - our_v as i64;
+        let our_v = end_war_val_seen(g, their_team, team) as i64 + crate::trade::deal_val(g, from, p, we_give, false, 1) as i64 + extra;
+        let margin = their_v as i64 - our_v;
+        // A city is ceded for peace itself: its price is set against what peace is worth to us
+        // beyond what it is worth to them, never against their tribute (a treaty would then be a
+        // sale past the rules of a sale, `prices::city_refusal`).
+        if cities > 0 {
+            let peace = end_war_val_seen(g, team, their_team) as i64 - end_war_val_seen(g, their_team, team) as i64;
+            if cities > peace {
+                let short = (peace - cities).clamp(i32::MIN as i64, 0) as i32;
+                return OfferVerdict { accept: false, margin: Some(short), why: Some("a city is ceded only for what peace itself is worth to them".into()) };
+            }
+        }
         // The deal leaves us behind on value. Give away tribute of our own only when it pays
         // (the test above) -- never fall through to accept a peace in which we also hand something
         // over.
@@ -1792,8 +1858,8 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         }
         // (Target nukes: FfH 0.41 has none, and the briber is at war with the target anyway.)
         let theirs = crate::trade::deal_val(g, p, from, they_give, false, 1);
-        let ours = crate::trade::deal_val(g, from, p, we_give, false, 1);
-        return on_value(theirs as i64 - ours as i64);
+        let ours = crate::trade::deal_val(g, from, p, we_give, false, 1) as i64 + extra;
+        return on_value(theirs as i64 - ours);
     }
     // Tech-trade discipline: no technology to our victory rival, no military
     // technology while we prepare or fight a war, no monopoly worth keeping to a non-friend.
@@ -1839,18 +1905,21 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
             why: Some(format!("technology swap: needs {pct}% return, at their research costs")),
         };
     }
-    // Resources and gold (and any mixed deal): value both sides in gold-equivalent (C++
-    // `AI_dealVal`) and accept when what we receive is worth at least what we give away. A friendly
-    // act, so only at peace with a civ we do not dislike and are not about to attack; we refuse
-    // gold-for-gold, and never hand over a resource our own judgement blocks (`trade::bonus_trade_denial`,
-    // the ported `AI_bonusTrade`: our worst enemy, a resource they already have, or a strategic /
-    // happiness / health resource to a civ we do not like enough).
+    // Every other deal (resources, gold, maps, a city, a civic, ... and any mix): value both sides
+    // in gold-equivalent (C++ `AI_dealVal`, our side plus the prices of what we give) and accept
+    // when what we receive is worth at least what we give away. A friendly act, so only at peace
+    // with a civ we do not dislike and are not about to attack; we refuse gold-for-gold, and never
+    // hand over a resource our own judgement blocks (`trade::bonus_trade_denial`, the ported
+    // `AI_bonusTrade`: our worst enemy, a resource they already have, or a strategic / happiness /
+    // health resource to a civ we do not like enough).
     let tradeable = |items: &[TradeData]| {
         items
             .iter()
             .any(|t| matches!(t.item_type, TradeableItem::TRADE_RESOURCES | TradeableItem::TRADE_GOLD | TradeableItem::TRADE_GOLD_PER_TURN))
     };
-    if tradeable(they_give) || tradeable(we_give) {
+    let theirs = crate::trade::deal_val(g, p, from, they_give, false, 1) as i64;
+    let ours = crate::trade::deal_val(g, from, p, we_give, false, 1) as i64 + extra;
+    if theirs > 0 || ours > 0 || tradeable(they_give) || tradeable(we_give) {
         if crate::trade::is_gold_deal(they_give) && crate::trade::is_gold_deal(we_give) {
             return no("gold for gold");
         }
@@ -1860,9 +1929,7 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         if let Some(why) = refused_bonus() {
             return no(why);
         }
-        let theirs = crate::trade::deal_val(g, p, from, they_give, false, 1);
-        let ours = crate::trade::deal_val(g, from, p, we_give, false, 1);
-        return on_value(theirs as i64 - ours as i64);
+        return on_value(theirs - ours);
     }
     no("these items are not traded")
 }
@@ -2194,10 +2261,12 @@ mod tests {
         TradeData { item_type: kind, data, offering: false, hidden: false }
     }
 
-    /// The AI gives nothing it puts no price on (cities, civics, religions, embargoes, peace with
-    /// others), on demand or for any payment; it takes such items when given.
+    /// What the AI gives of the priced kinds goes through its price or its refusal (the prices
+    /// themselves: `prices::tests`): with one city it sells none, on demand or for gold; a
+    /// permanent alliance is never signed; a demand for gold within the limit is still paid; such
+    /// items given to it are taken.
     #[test]
-    fn the_ai_gives_nothing_it_puts_no_price_on() {
+    fn the_ai_gives_the_priced_kinds_at_their_price_or_refuses() {
         let (mut g, us, them) = neighbours(37);
         g.players[them].alignment = g.players[us].alignment;
         let city = g.players[us].cities[0].0 as i32;
@@ -2205,27 +2274,22 @@ mod tests {
         let civic = td(TradeableItem::TRADE_CIVIC, 0);
         let religion = td(TradeableItem::TRADE_RELIGION, 0);
         let why = |v: &OfferVerdict| v.why.clone().unwrap_or_default();
-        // A demand for a city from a much stronger neighbour, which a demand for gold would get.
+        // A much stronger neighbour, which a demand for gold would get.
         g.players[us].power = 100;
         g.players[them].power = 300;
         assert!(max_extorted(&g, us, them).is_ok_and(|m| m > 0));
         let v = judge_offer(&g, us, them, &[], &[td(TradeableItem::TRADE_CITIES, city)], false);
-        assert!(!v.accept && why(&v) == "cities are not traded", "{v:?}");
+        assert!(!v.accept && why(&v) == "no city sold with 3 cities or fewer", "{v:?}");
         let v = judge_offer(&g, us, them, &[], &gold(10), false);
         assert!(v.accept, "gold within the limit is paid: {v:?}");
         g.players[them].power = 100;
-        // Gold for each unpriced kind.
         for (item, reason) in [
-            (td(TradeableItem::TRADE_CITIES, city), "cities are not traded"),
-            (civic.clone(), "civics are not traded"),
-            (religion.clone(), "religions are not traded"),
-            (td(TradeableItem::TRADE_EMBARGO, 0), "embargoes are not traded"),
-            (td(TradeableItem::TRADE_PEACE, 0), "peace with others is not traded"),
-            (td(TradeableItem::TRADE_MAPS, 0), "these items are not traded"),
+            (td(TradeableItem::TRADE_CITIES, city), "no city sold with 3 cities or fewer"),
+            (td(TradeableItem::TRADE_PERMANENT_ALLIANCE, 0), "permanent alliances are not signed"),
         ] {
-            let v = judge_offer(&g, us, them, &gold(1), std::slice::from_ref(&item), false);
+            let v = judge_offer(&g, us, them, &gold(1000), std::slice::from_ref(&item), false);
             assert!(!v.accept && why(&v) == reason, "{item:?}: {v:?}");
-            assert!(!consider_offer(&g, us, them, &gold(1), &[item]));
+            assert!(!consider_offer(&g, us, them, &gold(1000), &[item]));
         }
         // Given to us, they are taken.
         for item in [td(TradeableItem::TRADE_CITIES, their_city), civic, religion] {
@@ -2265,9 +2329,9 @@ mod tests {
         let dp = td(TradeableItem::TRADE_DEFENSIVE_PACT, 0);
         let v = judge_offer(&g, us, them, &[dp, ob.clone()], &[ob.clone()], false);
         assert!(!v.accept && v.why.as_deref() == Some("a defensive pact is mutual"), "{v:?}");
-        // The rest still judged: no city for open borders.
+        // The rest still judged: no city for open borders (one city: none sold).
         let v = judge_offer(&g, us, them, &[ob.clone()], &[ob.clone(), td(TradeableItem::TRADE_CITIES, g.players[us].cities[0].0 as i32)], false);
-        assert!(!v.accept && v.why.as_deref() == Some("cities are not traded"), "{v:?}");
+        assert!(!v.accept && v.why.as_deref() == Some("no city sold with 3 cities or fewer"), "{v:?}");
         // A pure gift is still taken.
         assert!(judge_offer(&g, us, them, &gold(20), &[], false).accept);
     }

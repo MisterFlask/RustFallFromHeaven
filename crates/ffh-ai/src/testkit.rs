@@ -8,7 +8,7 @@ use ffh_core::mapscript::FractalMapScript;
 use ffh_core::setup::GameSetup;
 use ffh_data::*;
 
-/// One block of grassland (x 2..=17, y 3..=8) in an ocean, revealed to both players: a fresh
+/// One block of grassland (x 2..=17, y 3..=8) in an ocean, revealed to every player: a fresh
 /// two-player AI game whose starting units are gone (as `tests/magic.rs`).
 pub(crate) fn one_landmass_game(seed: u32) -> Game {
     one_landmass_game_with(seed, &[])
@@ -17,8 +17,17 @@ pub(crate) fn one_landmass_game(seed: u32) -> Game {
 /// [`one_landmass_game`] with the first players' civilizations given (each with its first
 /// leader).
 pub(crate) fn one_landmass_game_with(seed: u32, civs: &[&str]) -> Game {
+    landmass_game(seed, 2, civs)
+}
+
+/// [`one_landmass_game`] with `players` players.
+pub(crate) fn one_landmass_game_of(seed: u32, players: usize) -> Game {
+    landmass_game(seed, players, &[])
+}
+
+fn landmass_game(seed: u32, players: usize, civs: &[&str]) -> Game {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", seed);
+    let mut setup = GameSetup::standard(d, players, "WORLDSIZE_DUEL", seed);
     for (slot, name) in civs.iter().enumerate() {
         let civ = d.t::<CivilizationType>(name);
         setup.players[slot].civ = Some(civ);

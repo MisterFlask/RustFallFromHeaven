@@ -329,9 +329,11 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
   const hasValue = (it) => it.value !== null && it.value !== undefined;
   const points = (it, amount) => (!hasValue(it) ? 0 : isGold(it) ? it.value * amount : it.value);
   const signed = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
-  const valueText = (it, sel) => (!hasValue(it) ? (isDual(it) ? "swap" : "no value") : isGold(it) && !sel ? `${signed(it.value)} each` : signed(points(it, sel?.data ?? 1)));
+  const valueText = (it, sel) => (!hasValue(it) ? (it.refusal ? "refused" : isDual(it) ? "swap" : "no value") : isGold(it) && !sel ? `${signed(it.value)} each` : signed(points(it, sel?.data ?? 1)));
   const valueTip = (it) => {
-    if (!hasValue(it)) return isDual(it) ? "No value. Traded only for the same item." : "No value. Adds 0 to the deal.";
+    if (!hasValue(it)) return it.refusal ? `Refused: ${it.refusal}.` : isDual(it) ? "No value. Traded only for the same item." : "No value. Adds 0 to the deal.";
+    // The leader's own breakdown of the value (the trade query's `value_note`).
+    if (it.value_note) return it.value_note;
     const v = Math.abs(it.value);
     const turns = it.value_turns;
     switch (tname("TradeableItem", it.item)) {
@@ -408,7 +410,10 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     const answer = h("div", { "data-answer": r.accept ? "accepted" : "refused" }, "This proposal will be ", h(r.accept ? "b.good" : "b.warn", r.accept ? "accepted" : "refused"), ".");
     const reason = r.why ? h("div.dim", `Reason: ${r.why}.`) : null;
     if (mode === "gift") summary.replaceChildren(...[...lines, answer, r.accept ? null : reason].filter(Boolean));
-    else if (mode === "demand") {
+    else if (mode === "demand" && requested === 0 && r.accept) {
+      // A request that costs them nothing is no demand: nothing is recorded, nothing changes.
+      summary.replaceChildren(...[...lines, answer, reason].filter(Boolean));
+    } else if (mode === "demand") {
       // The most they would hand over is what is asked plus the answer's margin.
       const most = Math.max(0, requested + (r.margin ?? -requested));
       const effect = `Effect: −1 relations for ${tr.turns} turns. No further demands for ${tr.demands.pause_turns} turns.`;

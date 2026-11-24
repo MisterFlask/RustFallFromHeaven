@@ -32,6 +32,67 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Prices for what the AI gives in a deal (2026-11-24; the owner's decision, not from games)
+
+Item 1 of "Five wrong uses of this game's own rules" (below) made the AI refuse outright to give a
+city, a civic, a religion, an
+embargo, peace with a third party or maps. The owner's answer: an AI that never gives an item is
+itself a gap; it should be roughly as willing to give these up as a player. Each kind now has a
+price, what giving it costs the AI in a deal's points, and a refusal only where a player would
+refuse (`prices.rs`; the rules are in docs/AI.md, "Diplomacy"). A permanent alliance is still
+refused: it merges the AI into the other's team, which no game has exercised.
+
+**The prices were looked at in games before they were wired in** (three games, seeds 1-3, 6
+civs, standard map; every item one civ could ask of another at turns 60, 150 and 250). For
+scale: a civ's output a turn (production + commerce) was 17-34, 42-215 and 19-512; the
+technologies it could research cost 104-598, 182-3120 and 364-10140. What the look changed:
+
+- **Civics.** The first price took the drop in `empire::civic_value` as points. That score is
+  not points: the loss was 1067 against an anarchy term of 34 at turn 60 and reached 380,986 at
+  turn 250 (the bankruptcy guard multiplies the score's upkeep terms). The loss is now the drop's
+  share of the spread of the option's values, times a quarter of ten turns of output; a civ in
+  financial trouble refuses a costlier civic.
+- **Embargoes.** With the leaders' `stop_trading_them_refuse_attitude_threshold` 46 of the 53
+  listed were refused, some at attitude Annoyed: dropped for a refusal at Friendly and with a
+  defensive pact. The deals an embargo ends were almost always one open-borders deal, first priced
+  at a flat 300: now what the trade routes between the two pay, for 30 turns. Nothing held the two
+  to it: they could sign again the next turn. Now neither makes a new deal with the other while the
+  embargoed side remembers it (`MEMORY_STOPPED_TRADING_RECENT`, 1 in 30 a turn).
+- **Cities.** At 100 turns of yields plus a settler the quartiles were 820 / 1420 / 2270 at turn
+  150 (dearest 5120) and 1570 / 2320 / 4320 at turn 250 (dearest 11820): out of reach in gold (the
+  richest civ held 1065), but one late technology, which costs its giver nothing, bought a civ's
+  best city. So at peace only the lesser half of a civ's cities by price is sold, none with 3
+  cities or fewer, one in 30 turns to the same team, none to its victory rival or the world's
+  clear leader. At war a civ losing the war cedes one city for peace (what item 1 below had
+  removed), set against what peace itself is worth to it: the other side's gold or technology
+  in the treaty does not pay for it (a ten-turn war and a treaty would otherwise have bought the
+  cities the rules of a sale keep), and the peace branch's own rules (a war of conquest lost or
+  80 turns old) no longer grant a treaty with a city in it unweighed.
+- **Leases.** On the trade screen (a small game at turn 189) the player's spare resources were
+  worth 270 to 5730 points to an AI as ten-turn leases (`bonus_trade_val`, the C++ scale), against
+  620 to 1420 for its lesser cities: one mana lease, which either side may cancel after ten turns,
+  bought any of them. None of these kinds is paid with a lease now.
+- **Civics and religions were not kept.** The rules set `ai_civic_timer` / `ai_religion_timer`
+  when one is adopted in a deal; ffh-ai never read them and would have switched back at its next
+  review. It now keeps both while the timer runs.
+
+**What the AI's own games show.** The AI proposes none of these items, so its games do not
+exercise the prices: with the embargo memory switched off, all 64 games (seeds 1-64, 6 civs,
+standard map, 300 turns) are identical to master 508cf6b4 by checksum. With it, 62 are identical
+and two differ (seeds 8 and 62): a council's no-trade resolution sets the same memory, and the
+AIs used to sign the cancelled deals again at once. Totals over the 64: cities taken between
+civilizations 878 against 888, from barbarians 318 against 317, by barbarians 200 against 200,
+eliminations 122 against 122, no game crashed; 34.0 and 33.2 ms a turn against 35.0 and 34.6 (16
+games, 4 at a time, twice).
+
+**Left open.** The AI neither offers nor asks for these items itself (a losing AI offering a city
+for peace changes its own games and goes through the loop). What it pays for a city offered to it
+is still 0. A conversion's price does not count the change of alignment. The refusals to a
+victory rival and to the clear leader have no test. Found beside it and left as it was, since it
+changes the AI's own games: in a war of conquest it is losing, or one 80 turns old, the AI takes
+peace by rule whatever gold or technology the treaty asks of it (the same branch that let a city
+through).
+
 ## FFH2 rules the AI used wrongly (2026-11-24; from a code audit, then counted in games)
 
 An audit of the AI against the rules that came from FFH2 0.41 (does it use each one as an expert
@@ -166,7 +227,8 @@ against 30.6 (16 games, 4 at a time).
    peace with a third party or any other unpriced kind is refused, and a peace treaty, open borders
    or a defensive pact on one side only is refused; a pact inside a larger deal keeps its own rule,
    and the rest of the deal is judged on its own. Items the other side gives are still taken. No
-   AI-against-AI game exercises it, so there is nothing to measure there.
+   AI-against-AI game exercises it, so there is nothing to measure there. (The refusals of these
+   kinds were replaced by prices on 2026-11-24: "Prices for what the AI gives in a deal", above.)
 2. **Frozen Passage** (`civs/illians.rs`, `world_rituals.rs` `civ_gate`, `sea_ice.rs`). The
    ritual started from two cities on, the target was the plot nearest the closest rival city
    overseas (at war or not) or, with none, nearest their own capital, and their idle ships broke

@@ -191,7 +191,7 @@ pub fn civic_maintenance_x100(g: &Game, p: PlayerId, civic: CivicType) -> i32 {
 
 /// Gold per turn (x100, inflated) that running `civic` costs: its upkeep and its effect on city
 /// maintenance.
-fn civic_cost_x100(g: &Game, p: PlayerId, civic: CivicType) -> i32 {
+pub(crate) fn civic_cost_x100(g: &Game, p: PlayerId, civic: CivicType) -> i32 {
     let upkeep = g.player_get_single_civic_upkeep(p, Some(civic), true) * (100 + g.player_calculate_inflation_rate(p).max(0));
     upkeep + civic_maintenance_x100(g, p, civic)
 }

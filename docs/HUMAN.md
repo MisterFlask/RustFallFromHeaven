@@ -1410,12 +1410,20 @@ at war must carry the peace treaty (both sides) or a capitulation; a gift alone 
 The AI answers at once: `accepted: false` changes nothing; `accepted: true` signs it. Today's
 AI (ffh-ai's `consider_offer`) accepts gifts (of any item), demands from a much stronger
 neighbour up to a limit, peace after 10 turns of war unless it is clearly winning, open borders
-when it likes you, and a fair trade of techs, resources, gold and gold per turn, and refuses
-anything else. It gives nothing it puts no price on: a deal in which it would give a city, a
-civic, a religion, an embargo, peace with a third party or another such item is refused, on
-demand or for any payment (`why`: "cities are not traded", "civics are not traded", "religions are
-not traded", "embargoes are not traded", "peace with others is not traded", "these items are not
-traded"). Open borders or a defensive pact inside a larger deal must pass its own rule, then the
+when it likes you, and a deal in which what it gets is worth at least what it gives. It gives
+a city, a civic or religion change, an embargo on a third party or peace with a third party at a
+price added to its side (docs/AI.md, "Diplomacy"), or refuses it with a reason (`why`, e.g. "no
+city sold with 3 cities or fewer", "only their lesser cities are sold", "one city in 30 turns",
+"in financial trouble: no costlier civic", "defensive pact with the target", "the other side
+refuses peace", "permanent alliances are not signed"); a city never on demand ("cities are not
+given on demand"), one city a deal ("one city a deal"), in a peace treaty only for what peace
+itself is worth to it, whatever else you offer ("a city is ceded only for what peace itself is
+worth to them"), and none of these for a resource or gold per turn ("no lease
+in payment for a city, civic, religion, embargo or peace"); a demand that costs it nothing it
+grants ("no cost to them"). Maps count on
+either side at 5 a land plot and 1 a water plot the receiver has not seen, over 10. After an
+embargo, neither side makes a new deal with the other at peace while the embargo is remembered
+("you stopped trading with them", "they stopped trading with you"). Open borders or a defensive pact inside a larger deal must pass its own rule, then the
 rest of the deal is judged on its own. A gift or a demand it accepts is recorded
 (ffh-core `tribute`; see the screen above); the `trade` query's `tribute` gives what it recorded
 of yours: `gifts {value, relations, steps}` (`steps`: `[threshold, relations]` pairs, increasing: the relations a total value at or above the threshold gives), `demands {value, relations, pause,
@@ -1424,7 +1432,10 @@ pause_turns}` and `turns`. `cancel_deal {"deal": 3}` cancels a standing deal of 
 Each item of the `trade` tables carries `value`, the points the AI puts on it (positive for what
 it gets, negative for what it gives, per piece for gold and gold per turn, null for no price;
 `Controller::trade_value`) and, for a lease (resources, gold per turn), `value_turns`, the turns
-the value counts. `trade_answer {with, give, get}` answers what `propose_deal` with those items
+the value counts; `refusal`, on an item the AI gives, the rule by which it refuses it at any
+price (the screen greys it); `value_note`, how the value is made up (`Settler 220 + 100 turns x
+41 a turn (production 14, commerce 25, food surplus 2).`; for maps, the plots not seen).
+`trade_answer {with, give, get}` answers what `propose_deal` with those items
 would get now: `accept`, `margin` (what the AI gets minus what it gives, when value decides)
 and `why` (the rule, when one decides; a deal `propose_deal` refuses outright is refused with
 its error); `accept` is null for a human.

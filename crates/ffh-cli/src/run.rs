@@ -123,6 +123,12 @@ impl Controller for Timed {
     fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
         self.time(|| self.inner.trade_value(g, p, other, item, p_gets))
     }
+    fn trade_refusal(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData) -> Option<String> {
+        self.time(|| self.inner.trade_refusal(g, p, other, item))
+    }
+    fn trade_note(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<String> {
+        self.time(|| self.inner.trade_note(g, p, other, item, p_gets))
+    }
     fn take_control(&self, g: &Game, p: PlayerId, new: PlayerId) -> bool {
         self.time(|| self.inner.take_control(g, p, new))
     }
@@ -303,6 +309,12 @@ impl Controller for CppCitizens {
     }
     fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
         self.inner.trade_value(g, p, other, item, p_gets)
+    }
+    fn trade_refusal(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData) -> Option<String> {
+        self.inner.trade_refusal(g, p, other, item)
+    }
+    fn trade_note(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<String> {
+        self.inner.trade_note(g, p, other, item, p_gets)
     }
     fn take_control(&self, g: &Game, p: PlayerId, new: PlayerId) -> bool {
         self.inner.take_control(g, p, new)
@@ -1171,6 +1183,12 @@ impl Controller for FreeRider {
     }
     fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
         self.inner.trade_value(g, p, other, item, p_gets)
+    }
+    fn trade_refusal(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData) -> Option<String> {
+        self.inner.trade_refusal(g, p, other, item)
+    }
+    fn trade_note(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<String> {
+        self.inner.trade_note(g, p, other, item, p_gets)
     }
     fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
         self.inner.choose_free_promotion(g, p, u, options)

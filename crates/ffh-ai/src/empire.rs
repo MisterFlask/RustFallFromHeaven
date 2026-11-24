@@ -173,7 +173,13 @@ pub(crate) fn civic_value(g: &Game, p: PlayerId, civic: CivicType) -> i32 {
     crate::civs::civic_value(g, p, civic, v) // civ-mechanics
 }
 
+/// Once per player turn (`manage`). A civic adopted in a deal (the rules set `ai_civic_timer` to
+/// `peace_treaty_length`) is kept while the timer runs; the timer counts down here.
 fn civics(g: &mut Game, p: PlayerId) {
+    if g.players[p].ai_civic_timer > 0 {
+        g.players[p].ai_civic_timer -= 1;
+        return;
+    }
     if g.players[p].revolution_timer > 0 || g.player_is_anarchy(p) {
         return;
     }
@@ -214,26 +220,41 @@ fn civics(g: &mut Game, p: PlayerId) {
     }
 }
 
+/// What religion `r` is worth to `p` as its state religion (AI heuristic): 10 a city it has
+/// spread to, 25 for the leader's favourite, 20 when we hold its holy city. Without the stickiness
+/// of the current religion, which [`religion`] adds.
+pub(crate) fn religion_value(g: &Game, p: PlayerId, r: ReligionType) -> i32 {
+    let fav = g.players[p].personality_type.and_then(|l| g.d.leader_heads[l].favorite_religion);
+    let mut v = g.players[p].has_religion_count[r] * 10;
+    if fav == Some(r) {
+        v += 25;
+    }
+    if g.player_has_holy_city(p, r) {
+        v += 20;
+    }
+    v
+}
+
+/// Once per player turn (`manage`). A religion adopted in a deal (the rules set
+/// `ai_religion_timer` to `peace_treaty_length`) is kept while the timer runs; the timer counts
+/// down here.
 fn religion(g: &mut Game, p: PlayerId) {
+    if g.players[p].ai_religion_timer > 0 {
+        g.players[p].ai_religion_timer -= 1;
+        return;
+    }
     if !g.player_can_change_religion(p) {
         return;
     }
     let d = g.d;
     let current = g.player_get_state_religion(p);
-    let fav = g.players[p].personality_type.and_then(|l| d.leader_heads[l].favorite_religion);
     let mut best: Option<(ReligionType, i32)> = None;
     for r in d.religions.keys() {
         let count = g.players[p].has_religion_count[r];
         if count == 0 || !g.player_can_convert(p, Some(r)) && current != Some(r) {
             continue;
         }
-        let mut v = count * 10;
-        if fav == Some(r) {
-            v += 25;
-        }
-        if g.player_has_holy_city(p, r) {
-            v += 20;
-        }
+        let mut v = religion_value(g, p, r);
         if current == Some(r) {
             v += crate::traits::religion_stickiness(g, p); // conversion costs anarchy (trait-play)
         }

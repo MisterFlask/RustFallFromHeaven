@@ -935,8 +935,10 @@ fn ai_init(g: &mut Game, p: PlayerId) {
         // (not kept); the draw stays so the game RNG matches C++.
         let _peace_weight = info.base_peace_weight + g.soren_rand_num(info.peace_weight_rand, "AI Peace Weight");
         // AI: AI_setEspionageWeight(getEspionageWeight()) (AI-only state).
-        g.players[p].ai_religion_timer = 1;
-        g.players[p].ai_civic_timer = if g.players[p].max_anarchy_turns == 0 { 1 } else { 2 };
+        // AI: AI_setReligionTimer(1), AI_setCivicTimer(1 or 2): the C++ AI's start delay is its
+        // own (ffh-cppai sets it in its init). The timers are 0 here, so that the only thing that
+        // starts them is a civic or a religion adopted in a deal (`deal_start_trade`), which the
+        // AI then keeps while they run.
     }
 }
 

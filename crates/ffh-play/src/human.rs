@@ -69,6 +69,8 @@ pub const POLICIES: &[(&str, Policy)] = &[
     // (an AI's judgement, shown on the diplomacy screen; a human answers for itself)
     ("judge_offer", Policy::Fixed),
     ("trade_value", Policy::Fixed),
+    ("trade_refusal", Policy::Fixed),
+    ("trade_note", Policy::Fixed),
     ("attitude", Policy::Advisor),
     ("take_control", Policy::Blocking),
     ("update_automated_group", Policy::Advisor),
@@ -477,6 +479,22 @@ impl Controller for HumanController {
     fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
         if !g.players[p].human {
             return self.advisor.trade_value(g, p, other, item, p_gets);
+        }
+        None
+    }
+
+    /// The AI's refusal of an item; a human has none.
+    fn trade_refusal(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData) -> Option<String> {
+        if !g.players[p].human {
+            return self.advisor.trade_refusal(g, p, other, item);
+        }
+        None
+    }
+
+    /// The AI's make-up of a trade value; a human has none.
+    fn trade_note(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<String> {
+        if !g.players[p].human {
+            return self.advisor.trade_note(g, p, other, item, p_gets);
         }
         None
     }

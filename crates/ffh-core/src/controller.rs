@@ -152,6 +152,21 @@ pub trait Controller: Send + Sync {
         None
     }
 
+    /// Not in C++: the rule by which player `p` gives `item` to `other` at no price, as bare
+    /// rules text (`"defensive pact with the target"`), or `None` when it has a price or `p` has
+    /// no such rule. The diplomacy screen greys the item and shows the reason beside it; a deal
+    /// that holds the item gets the same reason from [`Controller::judge_offer`]. Default: `None`.
+    fn trade_refusal(&self, _g: &Game, _p: PlayerId, _other: PlayerId, _item: &TradeData) -> Option<String> {
+        None
+    }
+
+    /// Not in C++: how [`Controller::trade_value`] of `item` is made up, as bare rules text with
+    /// its numbers (`"Settler 220 + 100 turns x 41 + wonders 0."`), for the value's tooltip on the
+    /// diplomacy screen; `None` when the item's kind says it all. Default: `None`.
+    fn trade_note(&self, _g: &Game, _p: PlayerId, _other: PlayerId, _item: &TradeData, _p_gets: bool) -> Option<String> {
+        None
+    }
+
     /// C++ `CvPlayerAI::AI_getAttitude(ePlayer)`: player `p`'s attitude towards `towards`.
     /// Rules code reads it in a few places (FfH event trigger `PrereqCivilizationPleased`;
     /// AI memory bookkeeping); team attitude (`CvTeamAI::AI_getAttitude`) averages members.
