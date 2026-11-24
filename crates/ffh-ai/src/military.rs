@@ -121,7 +121,9 @@ pub(crate) fn field_sim(g: &Game, grp: GroupId, q: PlotIdx) -> Option<crate::com
     let (x, y) = g.map.xy(q);
     let near_city = ours || g.players[p].cities.iter().any(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 3);
     let kill_pct = if !animals && near_city { 400 } else { 100 };
-    Some(crate::combat_sim::simulate(g, q, &defs, &atts, 0, crate::combat_sim::Order::Group, kill_pct, 200))
+    // (A city's defence stands for its Sentinels: `combat_sim::wall_cut`.)
+    let cut = g.map.plots[q].plot_city.filter(|&c| g.cities.contains(c)).map_or(0, |c| crate::combat_sim::wall_cut(g, c, &atts, false));
+    Some(crate::combat_sim::simulate(g, q, &defs, &atts, cut, crate::combat_sim::Order::Group, kill_pct, 200))
 }
 
 /// Is the group attack [`field_sim`] played worth starting (or, `fought`, going on with)? As an

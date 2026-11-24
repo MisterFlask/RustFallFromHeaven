@@ -574,7 +574,9 @@ fn objective(g: &Game, idx: usize, from: PlotIdx) -> Option<PlotIdx> {
             return false;
         }
         let defs = crate::combat_sim::visible_defenders(g, host_team, q);
-        crate::combat_sim::simulate(g, q, &defs, &host_units, 0, crate::combat_sim::Order::Strike, 100, 100).used.is_some()
+        // (A city's defence stands for its Sentinels: `combat_sim::wall_cut`.)
+        let cut = g.map.plots[q].plot_city.filter(|&c| g.cities.contains(c)).map_or(0, |c| crate::combat_sim::wall_cut(g, c, &host_units, false));
+        crate::combat_sim::simulate(g, q, &defs, &host_units, cut, crate::combat_sim::Order::Strike, 100, 100).used.is_some()
     };
     let defense = |q: PlotIdx| -> i64 {
         crate::combat_sim::visible_defenders(g, host_team, q).iter().map(|&u| crate::view::defense_power(g, u) as i64).sum::<i64>()
