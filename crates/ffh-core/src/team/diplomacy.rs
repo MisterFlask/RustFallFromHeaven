@@ -1177,11 +1177,8 @@ impl Game {
                 self.teams[t].capitulated = false;
             }
 
-            for p in self.player_ids() {
-                if self.players[p].team == master {
-                    self.player_update_maintenance(p);
-                }
-            }
+            // (C++ refreshed the master's maintenance here: its vassals' cities counted in it. They
+            // cost nothing in this game, so vassalage leaves maintenance unchanged.)
 
             if self.final_initialized {
                 self.ev_vassal_state(master, t, value);

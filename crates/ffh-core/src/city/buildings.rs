@@ -609,7 +609,6 @@ impl Game {
     pub fn city_calculate_num_cities_maintenance_times100(&self, c: CityId) -> i32 {
         let d = self.d;
         let owner = self.cities[c].owner;
-        let team = self.city_team(c);
         let handicap = &d.handicaps[self.city_handicap_type(c)];
 
         let mut num_cities_percent = 100;
@@ -623,18 +622,11 @@ impl Game {
         num_cities_percent *= handicap.num_cities_maintenance_percent;
         num_cities_percent /= 100;
 
-        let mut num_vassal_cities = 0;
-        for p in self.civ_player_ids() {
-            let loop_team = self.players[p].team;
-            if loop_team != team && self.teams[loop_team].vassal[team] {
-                num_vassal_cities += self.players[p].num_cities();
-            }
-        }
-        num_vassal_cities /= std::cmp::max(1, self.teams[team].num_members);
-
         // FfH: Modified by Kael 03/29/2009 (settlements did not count; they count now, outposts do not)
+        // This game: a master's vassal cities are not counted (BTS added them, split among the
+        // master team's members); vassals cost their master nothing.
         let mut num_cities_maintenance =
-            ((self.players[owner].num_cities() - self.player_get_num_outposts(owner)) + num_vassal_cities) * num_cities_percent;
+            (self.players[owner].num_cities() - self.player_get_num_outposts(owner)) * num_cities_percent;
         // FfH: End Modify
 
         num_cities_maintenance = std::cmp::min(num_cities_maintenance, handicap.max_num_cities_maintenance * 100);

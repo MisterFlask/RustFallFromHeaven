@@ -1639,7 +1639,11 @@ that no player chooses):
 - **Crusade Hosts are not counted as civilizations** in the domination land threshold, the
   domination population runner-up and the barbarians' free-tech rate (docs/CRUSADE.md said so).
 - **A player added to an existing team counts once** in its member count (Mercurians,
-  `formEmpire` with a team): C++ counted it twice, which shrank the vassal city maintenance share.
+  `formEmpire` with a team): C++ counted it twice. The count feeds the trade rules'
+  one-member test (it also divided the vassal cities in maintenance, removed below).
+- **Vassals cost their master nothing** (the owner's decision, 2026-11-24): a vassal's cities no
+  longer count in the master's number-of-cities maintenance (BTS added them, divided among the
+  master team's members, capped by the handicap's maximum). The vassal-states pedia says so.
 - **Governors' military need** counts a war with a rival whose city is near, not any war (every
   civ is at war with the barbarians, so every nearby rival read as a war).
 - **An army disbanding into a city that is lost** becomes an army again (it stayed "disbanding"
