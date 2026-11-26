@@ -39,6 +39,7 @@ pub mod human;
 pub mod journal;
 pub mod json;
 pub mod names;
+pub mod platform;
 pub mod query;
 pub mod report;
 pub mod save;

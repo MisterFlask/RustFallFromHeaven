@@ -10,7 +10,9 @@
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use crate::platform::Monotonic;
 
 use ffh_ai::Ai;
 use ffh_core::controller::ControllerRef;
@@ -360,7 +362,7 @@ impl Session {
         self.shared.stop_autoplay.store(false, std::sync::atomic::Ordering::SeqCst);
         loop {
             // The phase predicate is the session's own work too (`AdvanceProfile`).
-            let tp = self.profile.is_some().then(Instant::now);
+            let tp = self.profile.is_some().then(Monotonic::now);
             match self.phase() {
                 Phase::Over => {
                     self.drain_log();
@@ -399,10 +401,10 @@ impl Session {
                         self.g.set_ai_auto_play(0);
                         continue;
                     }
-                    let t0 = tp.map(|_| Instant::now());
+                    let t0 = tp.map(|_| Monotonic::now());
                     let log_mark = self.g.log.entries.len();
                     self.g.update();
-                    let t1 = t0.map(|_| Instant::now());
+                    let t1 = t0.map(|_| Monotonic::now());
                     let saved = self.profile.map_or(Duration::ZERO, |p| p.autosave);
                     self.follow_human(MovedIn::Update { log_mark });
                     if self.g.at_turn_boundary() {
@@ -651,7 +653,7 @@ impl Session {
         let turn = self.g.game_turn();
         self.journal(&Line::Checkpoint { turn, checksum: self.g.calculate_sync_checksum() });
         if let (Some(dir), true) = (&self.opts.saves_dir, self.opts.autosave_keep > 0) {
-            let t0 = Instant::now();
+            let t0 = Monotonic::now();
             let sidecar = self.sidecar();
             let r = match start {
                 None => save::autosave(dir, turn, &self.g.save(), &sidecar, self.opts.autosave_keep),
@@ -659,7 +661,7 @@ impl Session {
             };
             match r {
                 Ok(p) => self.last_autosave = Some(p),
-                Err(e) => eprintln!("ffh-play: autosave failed: {e}"),
+                Err(e) => crate::platform::warn(&format!("ffh-play: autosave failed: {e}")),
             }
             if let Some(p) = self.profile.as_mut() {
                 p.autosave += t0.elapsed();

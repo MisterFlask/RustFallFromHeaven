@@ -3,7 +3,6 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use ffh_core::ids::*;
 use ffh_data::*;
@@ -161,8 +160,8 @@ fn new_epoch() -> String {
     static NEXT: AtomicU64 = AtomicU64::new(0);
     static START: OnceLock<u64> = OnceLock::new();
     let start = *START.get_or_init(|| {
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos() as u64);
-        // No process ids on wasm32-wasip1 (`std::process::id` panics; the static site's engine,
+        let nanos = crate::platform::unix_time_nanos();
+        // No process ids on wasm32 (`std::process::id` panics; the static site's engine,
         // docs/WEB.md): the start time alone tells its restarts apart.
         let pid = if cfg!(target_arch = "wasm32") { 0 } else { std::process::id() };
         nanos ^ ((pid as u64) << 40)

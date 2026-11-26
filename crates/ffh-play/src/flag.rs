@@ -5,8 +5,6 @@
 //! keeps only the last few turns. Each flag is a line of `<game dir>/flags.jsonl`.
 
 use std::fmt::Write as _;
-use std::fs;
-use std::io::Write as _;
 use std::path::{Path, PathBuf};
 
 use ffh_core::game::Game;
@@ -58,13 +56,13 @@ pub fn moved_turn(g: &Game, observed: bool) -> Option<i32> {
 /// before it (`auto/T{moved-1}`), or `auto/start` for the game's first turn.
 fn start_save(dir: &Path, g: &Game, moved: i32) -> Option<PathBuf> {
     let p = if moved <= g.start_turn { dir.join("auto").join("start.ffhsave") } else { dir.join("auto").join(format!("T{:04}.ffhsave", moved - 1)) };
-    p.is_file().then_some(p)
+    crate::platform::fs::is_file(&p).then_some(p)
 }
 
 /// The flags of a game directory, oldest first (lines that do not read are skipped).
 pub fn list(dir: Option<&Path>) -> Vec<Json> {
     let Some(dir) = dir else { return Vec::new() };
-    let Ok(text) = fs::read_to_string(dir.join(FLAGS_FILE)) else { return Vec::new() };
+    let Ok(text) = crate::platform::fs::read_to_string(&dir.join(FLAGS_FILE)) else { return Vec::new() };
     text.lines().filter(|l| !l.trim().is_empty()).filter_map(|l| Json::parse(l).ok()).collect()
 }
 
@@ -199,12 +197,12 @@ pub fn record(input: &FlagInput) -> Result<Json, String> {
     if let (Some(dir), Some(m)) = (input.dir, moved) {
         if let Some(src) = start_save(dir, g, m).filter(|src| ours(src)) {
             let to = dir.join(FLAGS_DIR);
-            fs::create_dir_all(&to).map_err(|e| format!("{}: {e}", to.display()))?;
+            crate::platform::fs::create_dir_all(&to).map_err(|e| format!("{}: {e}", to.display()))?;
             let save = to.join(format!("flag-{n}.ffhsave"));
-            fs::copy(&src, &save).map_err(|e| format!("{}: {e}", save.display()))?;
+            crate::platform::fs::copy(&src, &save).map_err(|e| format!("{}: {e}", save.display()))?;
             let side = src.with_extension("ffhsess");
-            if side.is_file() {
-                let _ = fs::copy(&side, save.with_extension("ffhsess"));
+            if crate::platform::fs::is_file(&side) {
+                let _ = crate::platform::fs::copy(&side, &save.with_extension("ffhsess"));
             }
             pinned = Some(save);
         }
@@ -228,7 +226,7 @@ pub fn record(input: &FlagInput) -> Result<Json, String> {
         } else if let Some(j) = &input.journal {
             // Without a pinned save, the journal replays from its header: only a new game's does
             // (a loaded session's starts from the save it was loaded from).
-            let new_game = fs::read_to_string(j).ok().and_then(|t| t.lines().next().map(|l| l.contains("\"k\":\"new\""))).unwrap_or(false);
+            let new_game = crate::platform::fs::read_to_string(j).ok().and_then(|t| t.lines().next().map(|l| l.contains("\"k\":\"new\""))).unwrap_or(false);
             match &pinned {
                 Some(p) => repro.push(format!("FFH_AI_TRACE={trace} ./target/release/ffh-play replay {} --from {} --to-turn {m}", j.display(), p.display())),
                 None if new_game => repro.push(format!("FFH_AI_TRACE={trace} ./target/release/ffh-play replay {} --to-turn {m}", j.display())),
@@ -331,8 +329,8 @@ pub fn record(input: &FlagInput) -> Result<Json, String> {
     };
     if let Some(dir) = input.dir {
         let path = dir.join(FLAGS_FILE);
-        let mut f = fs::OpenOptions::new().create(true).append(true).open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-        writeln!(f, "{rec}").map_err(|e| format!("{}: {e}", path.display()))?;
+        let line = format!("{rec}\n");
+        crate::platform::fs::append(&path, line.as_bytes()).map_err(|e| format!("{}: {e}", path.display()))?;
     }
     Ok(rec)
 }

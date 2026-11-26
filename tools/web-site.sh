@@ -12,17 +12,17 @@
 #   --saves NAME  the IndexedDB database the site keeps its saves in (default ffh-play); a second
 #                 site on the same origin needs its own (the classic site: ffh-play-classic)
 #
-# Steps: builds ffh-play (native) and the engine (`cargo build --release --target wasm32-wasip1
+# Steps: builds ffh-play (native) and the engine (`cargo build --release --target wasm32-unknown-unknown
 # -p ffh-web`, without debug info, with LTO; both honour CARGO_TARGET_DIR), runs `ffh-play
 # export-site OUT --data data` (index.html, app/, art/, web/data.pak), adds the page's scripts
-# (crates/ffh-web/site: web/boot.js, web/engine.js, web/wasi.js, web/site.js -- rewritten for
+# (crates/ffh-web/site: web/boot.js, web/engine.js, web/memfs.js, web/site.js -- rewritten for
 # --saves -- and coi-sw.js at the root),
 # gzips the engine and the data pack (web/ffh.wasm.gz, web/data.pak.gz; the plain pack is
 # removed), and writes web/version.txt (the commit and its date) and .nojekyll.
 #
 # Serve OUT with any static server (`node tools/web-site-smoke.mjs --site OUT` tests it in
-# headless Chromium). Works from any directory. Needs cargo, the Rust target wasm32-wasip1
-# (`rustup target add wasm32-wasip1`), gzip; git for version.txt.
+# headless Chromium). Works from any directory. Needs cargo, the Rust target wasm32-unknown-unknown
+# (`rustup target add wasm32-unknown-unknown`), gzip; git for version.txt.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -83,7 +83,7 @@ out="$(abs "$out")"
 [ -z "$wasm" ] || { wasm="$(abs "$wasm")"; [ -f "$wasm" ] || die "--wasm $wasm: no such file"; }
 
 command -v gzip > /dev/null || die "gzip not found"
-for f in boot.js engine.js wasi.js site.js coi-sw.js; do
+for f in boot.js engine.js memfs.js site.js coi-sw.js; do
   [ -f "$site_js/$f" ] || die "missing $site_js/$f (the page's scripts)"
 done
 
@@ -99,8 +99,8 @@ if [ -z "$bin" ] || [ -z "$wasm" ]; then
 fi
 if [ -z "$wasm" ]; then
   sysroot="$(cd "$root" && rustc --print sysroot 2> /dev/null || true)"
-  if [ -z "$sysroot" ] || [ ! -d "$sysroot/lib/rustlib/wasm32-wasip1" ]; then
-    die "the Rust target wasm32-wasip1 is not installed${sysroot:+ in $sysroot}: run \`rustup target add wasm32-wasip1\` (or give --wasm FILE)"
+  if [ -z "$sysroot" ] || [ ! -d "$sysroot/lib/rustlib/wasm32-unknown-unknown" ]; then
+    die "the Rust target wasm32-unknown-unknown is not installed${sysroot:+ in $sysroot}: run \`rustup target add wasm32-unknown-unknown\` (or give --wasm FILE)"
   fi
 fi
 
@@ -122,10 +122,10 @@ if [ -z "$bin" ]; then
 fi
 
 if [ -z "$wasm" ]; then
-  say "building the engine (wasm32-wasip1, release, LTO, no debug info)"
+  say "building the engine (wasm32-unknown-unknown, release, LTO, no debug info)"
   (cd "$root" && CARGO_PROFILE_RELEASE_DEBUG=0 CARGO_PROFILE_RELEASE_LTO=true \
-    "$cargo" build --release --target wasm32-wasip1 -p ffh-web)
-  wasm="$target/wasm32-wasip1/release/ffh_web.wasm"
+    "$cargo" build --release --target wasm32-unknown-unknown -p ffh-web)
+  wasm="$target/wasm32-unknown-unknown/release/ffh_web.wasm"
   [ -f "$wasm" ] && is_wasm "$wasm" || die "the build did not produce a WebAssembly module at $wasm"
 fi
 
@@ -144,7 +144,7 @@ done
 grep -q 'src="web/boot.js"' "$out/index.html" || die "$out/index.html does not load web/boot.js"
 
 mkdir -p "$out/web"
-cp "$site_js/boot.js" "$site_js/engine.js" "$site_js/wasi.js" "$site_js/site.js" "$out/web/"
+cp "$site_js/boot.js" "$site_js/engine.js" "$site_js/memfs.js" "$site_js/site.js" "$out/web/"
 cp "$site_js/coi-sw.js" "$out/coi-sw.js"
 if [ -n "$saves" ]; then
   printf '%s

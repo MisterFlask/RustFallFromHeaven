@@ -3,9 +3,10 @@
 //! decision). The game thread publishes; GET requests never wait for it.
 
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::json::Json;
+use crate::platform::Monotonic;
 use crate::view::map::{MapRows, MapTracker};
 
 /// The longest long-poll (`/api/wait?timeout_ms=`).
@@ -17,7 +18,7 @@ struct State {
     /// The status without the members added here (version, ms_in_phase, map_rev, game, crash).
     base: Json,
     phase: String,
-    phase_since: Instant,
+    phase_since: Monotonic,
     /// The serialized view and full map (served as they are).
     view: Option<Arc<String>>,
     map: Option<Arc<String>>,
@@ -50,7 +51,7 @@ impl Shared {
                 version: 0,
                 base: crate::jobj! { "phase" => "no_game" },
                 phase: "no_game".into(),
-                phase_since: Instant::now(),
+                phase_since: Monotonic::now(),
                 view: None,
                 map: None,
                 map_rev: None,
@@ -75,7 +76,7 @@ impl Shared {
         let phase = base.get("phase").and_then(Json::as_str).unwrap_or("running").to_string();
         if phase != st.phase {
             st.phase = phase;
-            st.phase_since = Instant::now();
+            st.phase_since = Monotonic::now();
         }
         st.base = base;
         st.version += 1;
@@ -172,10 +173,10 @@ impl Shared {
     /// The long-poll: the status once its version is above `since`, or after `timeout` (at most
     /// [`MAX_WAIT`]), or when the server quits.
     pub fn wait(&self, since: u64, timeout: Duration) -> Json {
-        let deadline = Instant::now() + timeout.min(MAX_WAIT);
+        let deadline = Monotonic::now() + timeout.min(MAX_WAIT);
         let mut st = self.lock();
         while st.version <= since && !st.quit {
-            let now = Instant::now();
+            let now = Monotonic::now();
             if now >= deadline {
                 break;
             }
@@ -197,6 +198,7 @@ impl Shared {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Instant;
     use super::*;
 
     #[test]

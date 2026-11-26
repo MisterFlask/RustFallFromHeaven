@@ -1,7 +1,7 @@
-// A stand-in for the engine (crates/ffh-web) with the same ABI, for engine.test.mjs: it answers
-// a few test routes so the page side (boot.js EngineClient, engine.js workerMain, wasi.js) can be
-// driven end to end without the game. Not part of the cargo workspace:
-//   rustc --edition 2021 -O --target wasm32-wasip1 --crate-type cdylib mock_engine.rs -o mock.wasm
+// A stand-in for the engine (crates/ffh-web) with the same bare-metal ABI, for engine.test.mjs:
+// it answers a few test routes so the page side (boot.js EngineClient, engine.js workerMain,
+// memfs.js) can be driven end to end without the game. Not part of the cargo workspace:
+//   rustc --edition 2021 -O --target wasm32-unknown-unknown --crate-type cdylib mock_engine.rs -o mock.wasm
 //
 // Routes: GET /api/echo (the request back), GET /api/etag (ETag "v1", 304 on If-None-Match),
 // GET /api/view (409 without a game); POST /api (needs x-ffh: 1) with `{"id", "op", ...}`:
@@ -17,6 +17,40 @@ extern "C" {
     fn pull(block: u32) -> i32;
     fn pull_copy(ptr: *mut u8);
     fn crash(ptr: *const u8, len: u32);
+    fn now_ms() -> f64;
+    fn unix_ms() -> f64;
+    fn log(level: u32, ptr: *const u8, len: u32);
+    fn sleep_ms(ms: u32);
+    fn fs_read(p: *const u8, pl: u32) -> i32;
+    fn fs_take(dst: *mut u8);
+    fn fs_write(p: *const u8, pl: u32, d: *const u8, dl: u32, append: u32) -> i32;
+    fn fs_mkdir(p: *const u8, pl: u32, recursive: u32) -> i32;
+}
+
+fn host_log(level: u32, msg: &str) {
+    unsafe { log(level, msg.as_ptr(), msg.len() as u32) }
+}
+
+fn host_mkdir_all(path: &str) -> Result<(), i32> {
+    let rc = unsafe { fs_mkdir(path.as_ptr(), path.len() as u32, 1) };
+    if rc < 0 { Err(rc) } else { Ok(()) }
+}
+
+fn host_write(path: &str, data: &[u8]) -> Result<(), i32> {
+    let rc = unsafe { fs_write(path.as_ptr(), path.len() as u32, data.as_ptr(), data.len() as u32, 0) };
+    if rc < 0 { Err(rc) } else { Ok(()) }
+}
+
+fn host_read_to_string(path: &str) -> Result<String, i32> {
+    let n = unsafe { fs_read(path.as_ptr(), path.len() as u32) };
+    if n < 0 {
+        return Err(n);
+    }
+    let mut buf = vec![0u8; n as usize];
+    if n > 0 {
+        unsafe { fs_take(buf.as_mut_ptr()) };
+    }
+    Ok(String::from_utf8_lossy(&buf).into_owned())
 }
 
 struct State {
@@ -162,20 +196,20 @@ fn post(req: Req) {
         "ping" => ok(t, &id, "\"pong\""),
         "new" => {
             let name = field(&req.body, "name").unwrap_or("game").to_string();
-            std::fs::create_dir_all(format!("/saves/{name}/auto")).unwrap();
+            host_mkdir_all(&format!("/saves/{name}/auto")).unwrap();
             ST.with(|s| s.borrow_mut().game = Some(name));
             set_phase("human");
             ok(t, &id, "true");
         }
         "write" => {
             let name = field(&req.body, "name").unwrap_or("x");
-            std::fs::create_dir_all("/saves/g").unwrap();
-            std::fs::write(format!("/saves/g/{name}"), field(&req.body, "text").unwrap_or("")).unwrap();
+            host_mkdir_all("/saves/g").unwrap();
+            host_write(&format!("/saves/g/{name}"), field(&req.body, "text").unwrap_or("").as_bytes()).unwrap();
             ok(t, &id, "true");
         }
         "read" => {
             let name = field(&req.body, "name").unwrap_or("x");
-            let r = std::fs::read_to_string(format!("/saves/g/{name}")).map(|s| q(&s)).unwrap_or_else(|_| "null".into());
+            let r = host_read_to_string(&format!("/saves/g/{name}")).map(|s| q(&s)).unwrap_or_else(|_| "null".into());
             ok(t, &id, &r);
         }
         "slow" => {
@@ -187,7 +221,7 @@ fn post(req: Req) {
                     pulled += 1;
                     serve(r);
                 }
-                std::thread::sleep(std::time::Duration::from_millis(5));
+                unsafe { sleep_ms(5) };
             }
             set_phase("human");
             ok(t, &id, &format!("{{\"pulled\":{pulled}}}"));
@@ -244,14 +278,15 @@ pub extern "C" fn ffh_init(ptr: u32, len: u32) -> u32 {
     }));
     let opts = String::from_utf8_lossy(unsafe { std::slice::from_raw_parts(ptr as usize as *const u8, len as usize) }).into_owned();
     if !opts.contains("\"saves\":\"/saves\"") {
-        eprintln!("ffh_init: bad options {opts}");
+        host_log(1, &format!("ffh_init: bad options {opts}"));
         return 1;
     }
-    let dir = std::env::var("FFH_DATA_DIR").unwrap_or_default();
-    let data = std::fs::read_to_string(format!("{dir}/xml/test.xml")).unwrap_or_else(|e| format!("error: {e}"));
+    assert!(unsafe { now_ms() } >= 0.0);
+    assert!(unsafe { unix_ms() } > 1_000_000_000_000.0);
+    let data = host_read_to_string("/data/xml/test.xml").unwrap_or_else(|e| format!("error: {e}"));
     let blocking = opts.contains("\"blocking\":true");
     ST.with(|s| s.borrow_mut().data = format!("{data}|blocking={blocking}"));
-    println!("mock engine up");
+    host_log(0, "mock engine up");
     announce();
     0
 }

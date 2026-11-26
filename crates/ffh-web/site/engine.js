@@ -1,10 +1,10 @@
 // The engine worker (docs/WEB.md; the contract's sections 4-6): loads the engine
 // (`web/ffh.wasm.gz`) and the game data (`web/data.pak.gz`), mounts the data at /data and the
-// saves (from IndexedDB) at /saves in wasi.js's in-memory file system, starts the engine
-// (`_initialize`, `ffh_init`) and serves the page's HTTP requests one at a time with
-// `ffh_request`. After each batch of requests (the worker idle) the files under /saves that
-// changed are written to IndexedDB (the database the page names, site.js `SAVES_DB`, `ffh-play`
-// by default; store `saves`, key = the path under /saves).
+// saves (from IndexedDB) at /saves in memfs.js's in-memory file system, starts the bare-metal
+// wasm32-unknown-unknown engine (`ffh_init`, zero WASI) and serves the page's HTTP requests one
+// at a time with `ffh_request`. After each batch of requests (the worker idle) the files under
+// /saves that changed are written to IndexedDB (the database the page names, site.js `SAVES_DB`,
+// `ffh-play` by default; store `saves`, key = the path under /saves).
 //
 // Requests arrive through a SharedArrayBuffer queue when the page is cross-origin isolated
 // (`RequestQueue`: the page produces, this worker consumes; a postMessage "kick" wakes the worker
@@ -14,7 +14,7 @@
 // This module also runs on the page (boot.js imports `RequestQueue`) and in node (the tests):
 // it starts the worker only inside a dedicated worker; `workerMain(env)` is the entry point.
 //
-// Page -> worker: {t: "init", wasm, data, queue: SharedArrayBuffer | null, autosaveKeep, env}
+// Page -> worker: {t: "init", wasm, data, queue: SharedArrayBuffer | null, autosaveKeep}
 //                 {t: "req", bytes}   {t: "kick"}   {t: "flush", id}
 // Worker -> page: {t: "progress", file: "engine" | "data", loaded, total} | {t: "progress", stage}
 //                 {t: "ready", isolated, store}   {t: "fail", message}
@@ -22,7 +22,7 @@
 //                 {t: "crash", message}   {t: "dead", crash, error}
 //                 {t: "flushed", id, ok}   {t: "note", message}
 
-import { MemFS, WASI, WasiExit } from "./wasi.js";
+import { MemFS, FsError, ERR, sleepMs } from "./memfs.js";
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -365,7 +365,6 @@ export async function gunzip(bytes) {
 // The worker
 
 function describe(e) {
-  if (e instanceof WasiExit) return `the engine exited (code ${e.code})`;
   return String(e?.message ?? e);
 }
 
@@ -386,11 +385,22 @@ export function workerMain(env) {
   let fs = null;
   let persister = null;
   let pulled = null;
+  let fsBuf = null;
   let crashMessage = null;
   let lastProgress = 0;
   let persistFailed = false;
 
   const mem = () => new Uint8Array(memory.buffer);
+  const readStr = (ptr, len) => (len ? dec.decode(mem().slice(ptr, ptr + len)) : "");
+  const fsCall = (fn) => {
+    try {
+      return fn();
+    } catch (e) {
+      if (e instanceof FsError) return e.code;
+      log.warn("memfs:", e);
+      return ERR.IO;
+    }
+  };
 
   function progress(file, loaded, total) {
     const now = Date.now();
@@ -405,7 +415,7 @@ export function workerMain(env) {
       post({ t: "reply", token, bytes: bytes.buffer }, [bytes.buffer]);
     },
     publish(ptr, len) {
-      post({ t: "publish", status: dec.decode(mem().slice(ptr, ptr + len)) });
+      post({ t: "publish", status: readStr(ptr, len) });
     },
     pull(block) {
       if (!queue) return -1;
@@ -423,8 +433,83 @@ export function workerMain(env) {
       pulled = null;
     },
     crash(ptr, len) {
-      crashMessage = dec.decode(mem().slice(ptr, ptr + len));
+      crashMessage = readStr(ptr, len);
       post({ t: "crash", message: crashMessage });
+    },
+    now_ms() {
+      return performance.now();
+    },
+    unix_ms() {
+      return Date.now();
+    },
+    log(level, ptr, len) {
+      const line = readStr(ptr, len);
+      if (level === 0) log.log(`[engine] ${line}`);
+      else log.warn(`[engine] ${line}`);
+    },
+    sleep_ms(ms) {
+      sleepMs(ms);
+    },
+    fs_stat(p, pl) {
+      return fs.stat(readStr(p, pl));
+    },
+    fs_mtime_secs(p, pl) {
+      return fs.mtimeSecs(readStr(p, pl));
+    },
+    fs_read(p, pl) {
+      return fsCall(() => {
+        const bytes = fs.readHost(readStr(p, pl));
+        fsBuf = bytes.length ? bytes.slice() : null;
+        return bytes.length;
+      });
+    },
+    fs_list(p, pl) {
+      return fsCall(() => {
+        const names = fs.listDir(readStr(p, pl));
+        if (names.length === 0) {
+          fsBuf = null;
+          return 0;
+        }
+        fsBuf = enc.encode(names.join("\0"));
+        return fsBuf.length;
+      });
+    },
+    fs_take(dst) {
+      if (fsBuf) mem().set(fsBuf, dst);
+      fsBuf = null;
+    },
+    fs_write(p, pl, d, dl, append) {
+      return fsCall(() => {
+        const path = readStr(p, pl);
+        const bytes = dl ? mem().slice(d, d + dl) : new Uint8Array(0);
+        fs.writeHost(path, bytes, !!append);
+        return 0;
+      });
+    },
+    fs_mkdir(p, pl, recursive) {
+      return fsCall(() => {
+        const path = readStr(p, pl);
+        if (recursive) fs.mkdirp(path);
+        else fs.mkdir(fs.root, path);
+        return 0;
+      });
+    },
+    fs_rename(p1, pl1, p2, pl2) {
+      return fsCall(() => {
+        fs.rename(fs.root, readStr(p1, pl1), fs.root, readStr(p2, pl2));
+        return 0;
+      });
+    },
+    fs_remove(p, pl, recursive) {
+      return fsCall(() => {
+        const path = readStr(p, pl);
+        if (recursive) {
+          if (!fs.remove(path)) return ERR.NOENT;
+        } else {
+          fs.unlinkFile(fs.root, path);
+        }
+        return 0;
+      });
     },
   };
 
@@ -467,17 +552,9 @@ export function workerMain(env) {
     mountPack(fs, "/data", pack);
     persister = await storeP;
     fs.takeDirty();
-    const wasi = new WASI({
-      args: ["ffh-web"],
-      env: { FFH_DATA_DIR: "/data", ...(msg.env ?? {}) },
-      fs,
-      stdout: (line) => log.log(`[engine] ${line}`),
-      stderr: (line) => log.warn(`[engine] ${line}`),
-    });
-    const instance = await WebAssembly.instantiate(module, { wasi_snapshot_preview1: wasi.imports, ffh });
+    const instance = await WebAssembly.instantiate(module, { ffh });
     exp = instance.exports;
     memory = exp.memory;
-    wasi.initialize(instance);
     const opts = JSON.stringify({ saves: "/saves", autosave_keep: msg.autosaveKeep ?? 20, blocking: !!queue });
     const rc = withBytes(exp.ffh_init, enc.encode(opts));
     if (rc !== 0) throw new Error(`the engine refused its options ${opts} (ffh_init returned ${rc}; see the console)`);

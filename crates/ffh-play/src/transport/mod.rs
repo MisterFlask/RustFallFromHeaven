@@ -822,11 +822,11 @@ impl Host {
         // game's turn).
         let status = self.status();
         let publisher = self.publisher.clone();
-        let mut last: Option<std::time::Instant> = None;
+        let mut last: Option<crate::platform::Monotonic> = None;
         let mut progress = |turn: i32| {
             if let Some(p) = &publisher {
                 if last.is_none_or(|t| t.elapsed() >= PROGRESS_EVERY) {
-                    last = Some(std::time::Instant::now());
+                    last = Some(crate::platform::Monotonic::now());
                     p(status.clone().with("war_search", crate::jobj! { "turn" => turn }));
                 }
             }
@@ -895,8 +895,8 @@ impl Host {
     fn saves_json(&self) -> Result<Json, ProtoErr> {
         let root = self.root()?;
         let mut games = Vec::new();
-        if let Ok(entries) = std::fs::read_dir(root) {
-            let mut dirs: Vec<PathBuf> = entries.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.is_dir()).collect();
+        if let Ok(entries) = crate::platform::fs::read_dir_paths(root) {
+            let mut dirs: Vec<PathBuf> = entries.into_iter().filter(|p| crate::platform::fs::is_dir(p)).collect();
             dirs.sort();
             for dir in dirs {
                 let name = dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
@@ -926,7 +926,7 @@ fn play_err(e: PlayError) -> ProtoErr {
 }
 
 fn read_save(path: &Path) -> Result<(Vec<u8>, Option<save::Sidecar>), ProtoErr> {
-    if !path.is_file() {
+    if !crate::platform::fs::is_file(path) {
         return Err(ProtoErr::new("gone", format!("no save {}", path.display())));
     }
     save::read_bundle(path).map_err(|e| ProtoErr::new("cannot", e))
@@ -952,11 +952,11 @@ pub fn game_dir_of(save: &Path) -> PathBuf {
 
 /// `<root>/<base>`, or `<root>/<base>-2`, `-3`, ... when it exists; created.
 fn unused_dir(root: &Path, base: &str) -> std::io::Result<PathBuf> {
-    std::fs::create_dir_all(root)?;
+    crate::platform::fs::create_dir_all(root)?;
     let mut n = 1;
     loop {
         let dir = if n == 1 { root.join(base) } else { root.join(format!("{base}-{n}")) };
-        match std::fs::create_dir(&dir) {
+        match crate::platform::fs::create_dir(&dir) {
             Ok(()) => return Ok(dir),
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => n += 1,
             Err(e) => return Err(e),
