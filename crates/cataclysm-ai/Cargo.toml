@@ -1,0 +1,9 @@
+[package]
+name = "cataclysm-ai"
+description = "AI player for Cataclysm operating purely through cataclysm-core Commands"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+cataclysm-core = { path = "../cataclysm-core" }

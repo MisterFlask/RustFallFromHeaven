@@ -21,7 +21,7 @@
 //! None of these draws a random number: the RNG order of docs/ENGAGEMENTS.md is unchanged (a held
 //! action draws nothing, as an action with no target).
 
-use ffh_data::{ActionKind, AttackPattern};
+use crate::types::{ActionKind, AttackPattern};
 
 use super::{Event, FighterIdx, Formation, Heal, Pcts, Run, State};
 
@@ -170,7 +170,7 @@ impl Run<'_> {
 #[cfg(test)]
 mod tests {
     use super::super::*;
-    use ffh_data::ActionKind as K;
+    use crate::types::ActionKind as K;
 
     const EQ: Pair = Pair { a: 400, dv: 400, ma: 400, md: 400, spell_pct: 100, pct: 100 };
     const OPEN: Ground = Ground { city: false, forest: false, hills: false, open: false, marsh: false, crossing: false, trench_pct: 0 };

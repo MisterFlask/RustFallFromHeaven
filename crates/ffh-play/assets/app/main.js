@@ -46,6 +46,8 @@ import { dname, turns, me, tname, info } from "./state.js";
 import { look, loadLook, setLookData, rendererChoice, decorate, undecorate } from "./look.js";
 import { setIsoSkin, isoSkin, renderCityPanel } from "./isoui.js";
 import { music } from "./music.js";
+import * as cataclysm from "./cataclysm.js";
+import { openCataclysmNewGame, openMacroCity } from "./cataclysm_screens.js";
 
 let mapView = null;
 let syncing = false;
@@ -123,7 +125,10 @@ async function syncOnce() {
   // The New game dialog opened from the title screen with no game goes once there is a game,
   // also one started by another client or a restarted server (P5 review); so does the game-over
   // screen once the game is no longer over.
-  if (phase !== "no_game") closeTag(screens.NEWGAME_REQUIRED);
+  if (phase !== "no_game") {
+    closeTag(screens.NEWGAME_REQUIRED);
+    closeTag("cataclysm-new");
+  }
   if (phase !== "over") closeTag("over");
   // No game: the title screen (Continue, New game, Load game ...); a game: the title screen goes,
   // unless the player opened it over the game (Main menu).
@@ -184,6 +189,7 @@ function clearGame() {
   lastTurn = null;
   clearDismissed();
   units.clearWaypoints();
+  cataclysm.clearSelection();
   mapView.map = null;
   mapView.chunks.clear();
   mapView.request();
@@ -195,7 +201,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas", "houses"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas", "houses", "cat-city", "cat-techs", "cat-court", "cat-apoc"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -217,6 +223,7 @@ async function refreshView(st) {
     // were the last game's.
     clearDismissed();
     units.clearWaypoints();
+    cataclysm.clearSelection();
     // The last game's dialogs are about its cities, units and questions, which this game does
     // not have: close them. A deferred popup still open (the city just founded asking what to
     // build, when a game is loaded over it) asked the server about a city that is gone ("no
@@ -254,6 +261,14 @@ async function refreshView(st) {
   viewKey = vk;
   if (newGame) tools.loadFlags();
   await refreshLog();
+  if (cataclysm.isCataclysm()) {
+    updateMarkers();
+    renderTop();
+    renderBottom();
+    cataclysm.renderCataclysmPanel();
+    mapView.request();
+    return;
+  }
   // A leader who contacted you (first contact, a war declared on you) speaks: not while
   // watching the AI play your side.
   if (!tools.spectating() && !observing()) checkMoments();
@@ -344,10 +359,15 @@ async function onControl(st) {
       // A folded panel (phones fold it): its tab says there is news.
       if (document.body.classList.contains("bottom-closed")) document.querySelector('#bottom-tabs button[data-tab="report"]')?.classList.add("unread");
     } else renderBottom();
+    if (cataclysm.isCataclysm()) {
+      cataclysm.renderCataclysmPanel();
+      return;
+    }
     // Civ4 starts a turn on the first unit waiting for orders (not while spectating).
     const g = S.sel ? S.units.get(S.sel.units[0])?.group : null;
     if (!tools.spectating() && (!S.sel || !S.view.pending.ready_groups.includes(g))) units.selectNext();
   }
+  if (cataclysm.isCataclysm()) return;
   runPopups();
 }
 
@@ -425,6 +445,7 @@ function citiesList() {
  *  governors). */
 function openScreen(name) {
   if (!S.view) return;
+  if (cataclysm.isCataclysm()) return cataclysm.openCataclysmScreen(name);
   switch (name) {
     case "cities":
       return citiesList();
@@ -612,6 +633,10 @@ function onKey(ev) {
   switch (k) {
     case "Enter":
       if (!ctrl && !ev.altKey) {
+        if (cataclysm.isCataclysm()) {
+          if (human) cataclysm.endCataclysmTurn();
+          return handled();
+        }
         // Shift+Enter: CONTROL_FORCEENDTURN. Enter: CONTROL_ENDTURN while the end-turn message
         // is up, else CONTROL_CYCLEUNIT.
         if (human && ev.shiftKey) endTurn(true);
@@ -622,7 +647,8 @@ function onKey(ev) {
       break;
     case "Tab":
       if (!ctrl && !ev.altKey) {
-        units.selectNext({ forward: !ev.shiftKey });
+        if (cataclysm.isCataclysm()) cataclysm.selectNextSquad();
+        else units.selectNext({ forward: !ev.shiftKey });
         return handled();
       }
       break;
@@ -635,6 +661,14 @@ function onKey(ev) {
       break;
     case "F10":
       if (plain) {
+        if (cataclysm.isCataclysm()) {
+          const cap = S.view?.cataclysm?.cities?.find((c) => c.owner === me()?.player && c.capital);
+          if (cap) {
+            mapView.centerOn(cap.x, cap.y);
+            openMacroCity(cap.id);
+          }
+          return handled();
+        }
         // CONTROL_SELECTCAPITAL: the capital's city screen.
         const cap = ownCities().find((c) => c.capital);
         if (cap) {
@@ -680,6 +714,7 @@ function onKey(ev) {
       }
       break;
   }
+  if (cataclysm.isCataclysm()) return;
   // The selection's action hotkeys (Civ4's, from the XML). With Ctrl only a key the selection's
   // actions use (the browser keeps Ctrl+C, Ctrl+R, ...). Space with no action taking it (the
   // selected group cannot skip) ends the turn when the end-turn message is up (ENDTURN_ALT).
@@ -711,7 +746,7 @@ function setBottomOpen(open) {
 
 function wire() {
   const click = (id, f) => document.getElementById(id)?.addEventListener("click", f);
-  click("end-turn", (ev) => endTurn(ev.shiftKey));
+  click("end-turn", (ev) => (cataclysm.isCataclysm() ? cataclysm.endCataclysmTurn() : endTurn(ev.shiftKey)));
   click("btn-research", () => openScreen("research"));
   click("btn-techs", () => openScreen("techs"));
   click("btn-cities", () => openScreen("cities"));
@@ -771,7 +806,7 @@ function wire() {
     b.setAttribute("aria-label", folded ? "Unfold the panel" : "Fold the panel");
   });
   if (compactScreen()) setBottomOpen(false);
-  document.addEventListener("ffh-research", () => S.view && empire.openTechTree());
+  document.addEventListener("ffh-research", () => S.view && (cataclysm.isCataclysm() ? cataclysm.openCataclysmScreen("techs") : empire.openTechTree()));
   document.addEventListener("keydown", onKey);
   // Shift-right-click waypoints are sent when Shift is released (or the page loses the keys).
   document.addEventListener("keyup", (ev) => {
@@ -789,6 +824,7 @@ function wire() {
   on("refused", () => refreshStatus());
   on("kick", () => refreshStatus());
   on("open-screen", (name) => openScreen(name));
+  on("open-cataclysm-new", () => openCataclysmNewGame({ noGame: !gameRunning() }));
   on("spectate", () => renderTop());
   on("game-started", (opts) => {
     title.titleSavesChanged();
@@ -802,6 +838,7 @@ function wire() {
     else if (tools.spectating()) tools.dropSpectating();
     closeAll();
     units.clearWaypoints();
+    cataclysm.clearSelection();
     S.sel = null;
     viewKey = null;
     clearDismissed();
@@ -809,9 +846,9 @@ function wire() {
   });
   on("reopen-popups", () => {
     S.dismissed = new Set();
-    runPopups();
+    if (!cataclysm.isCataclysm()) runPopups();
   });
-  on("select-ready", () => units.selectNext());
+  on("select-ready", () => (cataclysm.isCataclysm() ? cataclysm.selectNextSquad() : units.selectNext()));
   // The end-turn gate's "Choose production": the first city with nothing to build, its build
   // list open (the popup "Later" set aside).
   on("open-idle-city", (id) => {
@@ -820,24 +857,29 @@ function wire() {
     mapView.reveal(c.x, c.y);
     openCity(id, { popup: true });
   });
-  on("modals-closed", () => S.status?.phase === "human" && runPopups());
+  on("modals-closed", () => S.status?.phase === "human" && !cataclysm.isCataclysm() && runPopups());
   // A battle closed: the next waiting battle (one held back by the plan's), then the popups.
   on("battle-closed", () => {
     pumpBattles();
-    if (S.status?.phase === "human") runPopups();
+    if (S.status?.phase === "human" && !cataclysm.isCataclysm()) runPopups();
   });
-  on("open-city", (id) => openCity(id));
+  on("open-city", (id) => (cataclysm.isCataclysm() ? openMacroCity(id) : openCity(id)));
   on("city-overlay", (o) => mapView.cityOverlay(o));
   on("city-hover", (p) => mapView.cityHover(p));
   on("center", (x, y) => mapView.centerOn(x, y));
   on("selection", () => {
+    if (cataclysm.isCataclysm()) {
+      cataclysm.renderCataclysmPanel();
+      renderTop();
+      return;
+    }
     if (S.sel) citySel = null;
     syncTradeLayer();
     syncSeaLayer();
     units.renderPanel();
     renderTop();
   });
-  on("mode", () => units.renderPanel());
+  on("mode", () => (cataclysm.isCataclysm() ? cataclysm.renderCataclysmPanel() : units.renderPanel()));
   on("flag-plot", (x, y) => tools.openFlag(x, y));
   on("flash", (x, y) => mapView.flashTile(x, y, "hit"));
   on("flags", () => {
@@ -870,6 +912,7 @@ async function boot() {
   // The title screen first: it shows while the client connects and stays when there is no game.
   title.initTitle({
     newGame: () => screens.newGame({ noGame: !gameRunning() }),
+    newCataclysm: () => openCataclysmNewGame({ noGame: !gameRunning() }),
     load: () => screens.loadScreen(),
     keys: () => screens.keysHelp(),
     options: () => tools.openOptions(),
@@ -883,19 +926,21 @@ async function boot() {
     },
   });
   mapView = new MapView($("#mapwrap"), {
-    click: (x, y, ev) => tools.flagClick(x, y) || units.click(x, y, ev),
-    rightClick: (x, y, ev) => units.rightClick(x, y, ev),
+    click: (x, y, ev) => tools.flagClick(x, y) || (cataclysm.isCataclysm() ? cataclysm.handleClick(x, y) : units.click(x, y, ev)),
+    rightClick: (x, y, ev) => (cataclysm.isCataclysm() ? cataclysm.handleRightClick(x, y) : units.rightClick(x, y, ev)),
     // A battle's marker (engagement combat): its watch screen.
     battleClick: (b) => openReport(b.id, { report: !b.has_log }),
     // A sea's name or badge on the Sea layer (docs/NAVAL.md 10): its panel.
     seaClick: (id) => seas.openSeaPanel(id),
     hover: (x, y) => units.hoverAt(x, y),
     dblclick: (x, y) => {
+      if (cataclysm.isCataclysm()) return cataclysm.handleDblClick(x, y);
       const c = [...S.cities.values()].find((q) => q.x === x && q.y === y && q.owner === me()?.player);
       if (c) openCity(c.id);
     },
   });
   units.initUnits(mapView, $("#unit-panel"));
+  cataclysm.initCataclysm(mapView);
   // A game controller on a phone (gamepad.js; idle on a computer and without a controller).
   initGamepad(mapView);
   renderTop();
@@ -960,7 +1005,8 @@ function lookLoaded() {
   title.titleArt();
   renderTop();
   renderBottom();
-  units.renderPanel();
+  if (cataclysm.isCataclysm()) cataclysm.renderCataclysmPanel();
+  else units.renderPanel();
 }
 
 /** Switches the map's renderer ("hd2d", "iso" or "flat"; Options). The isometric
@@ -1009,8 +1055,12 @@ function syncSkin() {
   mapView.resize();
   renderTop();
   renderBottom();
-  units.renderPanel();
-  renderCityPanel();
+  if (cataclysm.isCataclysm()) {
+    cataclysm.renderCataclysmPanel();
+  } else {
+    units.renderPanel();
+    renderCityPanel();
+  }
 }
 
 /** Turns the HD-2D map on; when it cannot run, says so and draws with its fallback, the isometric
@@ -1067,5 +1117,5 @@ window.addEventListener("ffh:r3d-slow", (ev) => {
   toast(`The HD-2D map draws slowly on this GPU${gpu}, so it is drawn at half resolution. If this computer has a faster graphics card, set your browser to use it (Windows: Settings → System → Display → Graphics → your browser → High performance), or pick the isometric map in Options.`, "info", 20000);
 });
 
-window.ffh = { S, get mapView() { return mapView; }, orient: orientState, units, screens, empire, tools, api, houses, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer, battlesPending };
+window.ffh = { S, get mapView() { return mapView; }, orient: orientState, units, screens, empire, tools, api, houses, cataclysm, openCataclysmNewGame, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer, battlesPending };
 boot();

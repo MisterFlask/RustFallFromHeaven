@@ -255,7 +255,7 @@ fn a_trench_slows_the_attacker() {
     w.g.map.plots[from].improvement_type = Some(trench);
     let dug = w.g.engage_ground(&ctx);
     assert_eq!(dug.trench_pct, 60);
-    let params = crate::engagement::formation::Params::from_defines(&w.g.d.defines);
+    let params = crate::engagement::formation::params_from_defines(&w.g.d.defines);
     assert!(dug.rules(&params).contains(&crate::engagement::GroundRule::Trench { pct: 60 }));
     assert_eq!(w.g.engage_slots(&ctx), w.g.engage_slots(&HitCtx::new(to, from)));
     let d = w.g.d;

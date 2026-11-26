@@ -1,7 +1,7 @@
 //! The battle cards' rules in the resolver (`magic.rs`), each on a small battle built by hand.
 
 use super::*;
-use ffh_data::{ActionKind as K, BattleCharm, Presence};
+use crate::types::{ActionKind as K, BattleCharm, Presence};
 
 /// A = Dv: an even hit.
 const EQ: Pair = Pair { a: 400, dv: 400, ma: 400, md: 400, spell_pct: 100, pct: 100 };

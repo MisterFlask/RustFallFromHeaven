@@ -164,7 +164,7 @@ fn assert_squad_slots(w: &World, s: &Slots, what: &str) {
 fn every_ground_gives_a_squad_its_places_and_lanes() {
     let mut w = world();
     let d = w.g.d;
-    let params = Params::from_defines(&d.defines);
+    let params = ffh_core::engagement::formation::params_from_defines(&d.defines);
     let (grass, marsh) = (d.t::<TerrainType>("TERRAIN_GRASS"), d.t::<TerrainType>("TERRAIN_MARSH"));
     let forest = d.t::<FeatureType>("FEATURE_FOREST");
     let to = w.to;
@@ -244,7 +244,7 @@ fn a_walled_citys_sentinels_cost_no_place() {
 fn a_river_crossing_costs_no_place_and_wades() {
     let mut w = world();
     let (p0, from) = (w.p0, w.from);
-    let params = Params::from_defines(&w.g.d.defines);
+    let params = ffh_core::engagement::formation::params_from_defines(&w.g.d.defines);
     w.g.map.plots[from].river_crossing[DirectionType::DIRECTION_EAST.idx()] = true;
     assert_squad_slots(&w, &w.slots(), "across a river");
     let ground = w.g.engage_ground(&w.ctx());

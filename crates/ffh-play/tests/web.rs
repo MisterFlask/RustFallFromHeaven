@@ -497,9 +497,13 @@ fn the_client_sends_only_names_the_host_knows() {
     assert!(distinct(&queries) >= 20, "only {} query names found in the client: has the call pattern changed?", distinct(&queries));
     assert!(distinct(&commands) >= 35, "only {} command names found in the client: has the call pattern changed?", distinct(&commands));
     for (name, file) in &queries {
-        assert!(ffh_play::query::QUERY_NAMES.contains(&name.as_str()), "app/{file} sends query {name:?}, which the host does not know");
+        let known = ffh_play::query::QUERY_NAMES.contains(&name.as_str())
+            || ffh_play::cataclysm::CATACLYSM_QUERY_NAMES.contains(&name.as_str());
+        assert!(known, "app/{file} sends query {name:?}, which the host does not know");
     }
     for (name, file) in &commands {
-        assert!(ffh_play::command::COMMAND_NAMES.contains(&name.as_str()), "app/{file} sends command {name:?}, which the host does not know");
+        let known = ffh_play::command::COMMAND_NAMES.contains(&name.as_str())
+            || ffh_play::cataclysm::CATACLYSM_COMMAND_NAMES.contains(&name.as_str());
+        assert!(known, "app/{file} sends command {name:?}, which the host does not know");
     }
 }

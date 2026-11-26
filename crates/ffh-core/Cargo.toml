@@ -6,4 +6,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+ffh-battle = { path = "../ffh-battle" }
 ffh-data = { path = "../ffh-data" }

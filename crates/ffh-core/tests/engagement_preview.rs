@@ -129,7 +129,7 @@ fn the_preview_is_a_function_of_its_inputs_and_changes_nothing() {
     // formations.
     assert_eq!((a.slots.att(), a.slots.def(), a.lanes), (5, 5, [3, 3]));
     assert!(a.ground.forest && !a.ground.flanking());
-    assert_eq!(a.rules, a.ground.rules(&ffh_core::engagement::formation::Params::from_defines(&w.g.d.defines)));
+    assert_eq!(a.rules, a.ground.rules(&ffh_core::engagement::formation::params_from_defines(&w.g.d.defines)));
     assert_eq!(a.squads.len(), 2, "the attacker's two squads");
     assert_eq!(a.formation, a.auto, "no squad given: the strongest");
     assert_eq!(a.formation, a.squads[a.squad].places);

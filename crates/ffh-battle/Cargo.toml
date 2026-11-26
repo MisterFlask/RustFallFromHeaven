@@ -1,0 +1,8 @@
+[package]
+name = "ffh-battle"
+description = "Pure 3x3 Ogre Battle-style formation battle resolver shared by classic FFH2 and Cataclysm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]

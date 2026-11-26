@@ -371,7 +371,7 @@ mod tests {
         let mage = att[0];
         give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_ENCHANTMENT1"]);
         let ctx = HitCtx::new(from, to);
-        let params = Params::from_defines(&g.d.defines);
+        let params = crate::engagement::formation::params_from_defines(&g.d.defines);
         let plain = g.engage_fighter(mage, Side::Attacker, (0, 2), false, &ctx, &params);
         assert_eq!(plain.spell.power, 120, "Firebolt");
         assert_eq!(plain.charms.len(), 1, "Keen Edge");

@@ -1,0 +1,9 @@
+[package]
+name = "cataclysm-core"
+description = "Cataclysm: squad-and-apocalypse-native 4X rules engine sharing ffh-battle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+ffh-battle = { path = "../ffh-battle" }

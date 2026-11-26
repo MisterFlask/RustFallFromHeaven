@@ -30,7 +30,7 @@
 //! action). Illusions are fighters of the formation that start off the field ([`State::on_field`]
 //! is false while they are pending); they do not act and a side of illusions alone is down.
 
-use ffh_data::{ActionKind, BattleCharm, Presence, RowActions, ROWS};
+use crate::types::{ActionKind, BattleCharm, Presence, RowActions, ROWS};
 
 use super::*;
 

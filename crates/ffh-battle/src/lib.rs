@@ -48,9 +48,10 @@
 //! Integers throughout: HP in centi-HP, A and Dv x100, percentages multiplied in `i128` and
 //! divided once. No map iteration, every sort a total order (ties by fighter index last).
 
-use ffh_data::{ActionKind, AttackPattern, BattleCharm, Defines, RowActions, ROWS};
-
-use crate::rng::Rng;
+pub mod types;
+pub use types::{
+    rows_best_row, rows_kind, rows_with_battle_spell, rows_with_extra_actions, ActionKind, AttackPattern, BattleCharm, Presence, RowActions, ROWS, ROW_TOKENS,
+};
 
 pub mod arms_cards;
 mod magic;
@@ -60,6 +61,30 @@ pub mod spawn;
 mod magic_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod rng {
+    use super::BattleRng;
+
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub struct Rng(u32);
+    impl Rng {
+        pub fn new(seed: u32) -> Rng {
+            Rng(seed)
+        }
+        pub fn get_i(&mut self, num: i32, _log: &str) -> i32 {
+            self.0 = 1103515245u32.wrapping_mul(self.0).wrapping_add(12345);
+            ((((self.0 >> 16) & 0xFFFF) * (num as u16) as u32) / 65536) as i32
+        }
+    }
+    impl BattleRng for Rng {
+        fn rand(&mut self, n: i32, label: &'static str) -> i32 {
+            self.get_i(n, label)
+        }
+    }
+}
+#[cfg(test)]
+use rng::Rng;
 
 pub use magic::{add_illusions, Applied, Bare, FighterMagic, IllusionSpell, MagicState};
 
@@ -85,17 +110,10 @@ impl Side {
 }
 
 /// The synchronized RNG, as the resolvers draw from it. The rules back it with the game's
-/// `soren_rand` (the same draws as `soren_rand_num`, so `n` must fit CvRandom's `u16`); tests
-/// and the preview use a seeded [`Rng`].
+/// RNG; tests and previews use a seeded RNG.
 pub trait BattleRng {
-    /// A draw in `0..n` (`1 <= n <= 65535`); `label` names it, as `getSorenRandNum`'s log string.
+    /// A draw in `0..n` (`1 <= n <= 65535`); `label` names it.
     fn rand(&mut self, n: i32, label: &'static str) -> i32;
-}
-
-impl BattleRng for Rng {
-    fn rand(&mut self, n: i32, label: &'static str) -> i32 {
-        self.get_i(n, label)
-    }
 }
 
 /// A fighter's index in [`Formation::fighters`].
@@ -400,38 +418,6 @@ impl Params {
             AttackPattern::Sweep => Some(self.sweep_pct),
             AttackPattern::Cleave => Some(self.cleave_pct),
             AttackPattern::Trample => Some(self.trample_pct),
-        }
-    }
-
-    /// The `ENGAGEMENT_*` defines.
-    pub fn from_defines(d: &Defines) -> Params {
-        Params {
-            base_damage: d.engagement_base_damage,
-            rand_min: d.engagement_damage_rand_min,
-            rand_max: d.engagement_damage_rand_max.max(d.engagement_damage_rand_min),
-            rounds: d.engagement_rounds,
-            first_strike_speed: d.engagement_first_strike_speed,
-            shoot_miss_pct: d.engagement_shoot_miss_percent,
-            bombard_miss_pct: d.engagement_bombard_miss_percent,
-            crit_damage_pct: d.engagement_crit_damage_percent,
-            charge_bonus: d.engagement_charge_bonus,
-            splash_pct: d.engagement_splash_percent,
-            bolt_pct: d.engagement_bolt_percent,
-            heal_pct: d.engagement_heal_percent,
-            volley_pct: d.engagement_volley_percent,
-            pierce_pct: d.engagement_pierce_percent,
-            sweep_pct: d.engagement_sweep_percent,
-            cleave_pct: d.engagement_cleave_percent,
-            trample_pct: d.engagement_trample_percent,
-            missile_pct: d.engagement_missile_percent,
-            city_attacker_shot_pct: d.engagement_city_attacker_shot_percent,
-            forest_ranged_pct: d.engagement_forest_ranged_percent,
-            hills_attacker_pct: d.engagement_hills_attacker_percent,
-            hills_defender_ranged_pct: d.engagement_hills_defender_ranged_percent,
-            forest_stab_pct: d.engagement_forest_stab_percent,
-            open_large_pct: d.engagement_open_large_percent,
-            rough_large_pct: d.engagement_rough_large_percent,
-            wading_pct: d.engagement_wading_percent,
         }
     }
 }

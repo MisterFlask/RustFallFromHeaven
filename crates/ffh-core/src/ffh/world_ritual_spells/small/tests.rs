@@ -284,7 +284,7 @@ fn upgrade_reinforces_the_golems_and_stacks() {
     let from = g.unit_plot(golem);
     let to = g.map.plot_xy(5, 5).unwrap();
     let ctx = crate::engagement::stats::HitCtx::new(from, to);
-    let params = crate::engagement::formation::Params::from_defines(&g.d.defines);
+    let params = crate::engagement::formation::params_from_defines(&g.d.defines);
     let f = g.engage_fighter(golem, crate::engagement::formation::Side::Attacker, (0, 0), false, &ctx, &params);
     assert_eq!(f.max_hp, base * 120 / 100);
     assert_eq!(f.hp, 50 * f.max_hp);

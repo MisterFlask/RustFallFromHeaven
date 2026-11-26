@@ -3,12 +3,30 @@
 version = 4
 
 [[package]]
+name = "cataclysm-ai"
+version = "0.1.0"
+dependencies = [
+ "cataclysm-core",
+]
+
+[[package]]
+name = "cataclysm-core"
+version = "0.1.0"
+dependencies = [
+ "ffh-battle",
+]
+
+[[package]]
 name = "ffh-ai"
 version = "0.1.0"
 dependencies = [
  "ffh-core",
  "ffh-data",
 ]
+
+[[package]]
+name = "ffh-battle"
+version = "0.1.0"
 
 [[package]]
 name = "ffh-cli"
@@ -25,6 +43,7 @@ dependencies = [
 name = "ffh-core"
 version = "0.1.0"
 dependencies = [
+ "ffh-battle",
  "ffh-data",
 ]
 
@@ -40,6 +59,9 @@ dependencies = [
 [[package]]
 name = "ffh-data"
 version = "0.1.0"
+dependencies = [
+ "ffh-battle",
+]
 
 [[package]]
 name = "ffh-harness"
@@ -52,7 +74,10 @@ dependencies = [
 name = "ffh-play"
 version = "0.1.0"
 dependencies = [
+ "cataclysm-ai",
+ "cataclysm-core",
  "ffh-ai",
+ "ffh-battle",
  "ffh-core",
  "ffh-data",
  "ffh-harness",

@@ -197,7 +197,7 @@ struct Row {
 }
 
 fn rows(d: &GameData, s: &Sheet) -> Vec<Row> {
-    let p = Params::from_defines(&d.defines);
+    let p = formation::params_from_defines(&d.defines);
     // What its SPELL actions cast (`Game::engage_fighter`'s spell).
     let spell = stats::engage_spell_of(d, s.spells.attack, &p);
     let wonder = s.spells.attack.is_some_and(|x| !d.spells[x].battle_wonder.is_empty());

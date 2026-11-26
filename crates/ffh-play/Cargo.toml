@@ -14,7 +14,10 @@ name = "ffh-play"
 path = "src/main.rs"
 
 [dependencies]
+ffh-battle = { path = "../ffh-battle" }
 ffh-data = { path = "../ffh-data" }
 ffh-core = { path = "../ffh-core" }
 ffh-ai = { path = "../ffh-ai" }
 ffh-harness = { path = "../ffh-harness" }
+cataclysm-core = { path = "../cataclysm-core" }
+cataclysm-ai = { path = "../cataclysm-ai" }

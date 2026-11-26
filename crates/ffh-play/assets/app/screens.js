@@ -536,11 +536,18 @@ export function gameOver(st) {
   if (mine) rows.push({ name: `${mine.name} (you)`, score: mine.score, alive: mine.alive });
   for (const p of S.players.values()) if (!p.barbarian) rows.push({ name: p.name, score: p.score, alive: p.alive });
   rows.sort((a, b) => b.score - a.score);
-  const result = [
-    over.winner_team !== null && over.winner_team !== undefined ? `Winner: ${teamName(over.winner_team)}` : "No winner",
-    over.victory !== null && over.victory !== undefined ? `${dname("VictoryType", over.victory)} victory` : null,
-    `turn ${st.turn}`,
-  ].filter(Boolean).join(" · ");
+  const isCat = st.mode === "cataclysm" || S.view?.mode === "cataclysm" || !!over.cataclysm_kind;
+  const result = isCat
+    ? [
+        over.cataclysm_kind ? `${over.cataclysm_kind}` : null,
+        over.winners?.length ? `Winners: ${over.winners.join(", ")}` : null,
+        `turn ${st.turn}`,
+      ].filter(Boolean).join(" · ")
+    : [
+        over.winner_team !== null && over.winner_team !== undefined ? `Winner: ${teamName(over.winner_team)}` : "No winner",
+        over.victory !== null && over.victory !== undefined ? `${dname("VictoryType", over.victory)} victory` : null,
+        `turn ${st.turn}`,
+      ].filter(Boolean).join(" · ");
   return openModal({
     title,
     tag: "over",
@@ -550,12 +557,12 @@ export function gameOver(st) {
       h(
         "div.over-head",
         mine ? bannerEl(tname("CivilizationType", mine.civ), { u: 6, title: dname("CivilizationType", mine.civ) }) : null,
-        h("div", h("div.over-title", title), h("div.over-result", result)),
+        h("div", h("div.over-title", title), h("div.over-result", result), over.summary ? h("p.dim", over.summary) : null),
       ),
       h("table.scores", h("tr", h("th", "Player"), h("th.num", "Score")), rows.map((r) => h("tr", { class: r.alive ? "" : "dead" }, h("td", r.name), h("td.num", scoreText(r.score))))),
     ],
     buttons: [
-      { label: "New game", primary: true, onClick: () => newGame() },
+      { label: isCat ? "New Cataclysm" : "New game", primary: true, onClick: () => (isCat ? emit("open-cataclysm-new") : newGame()) },
       { label: "Load…", onClick: () => loadScreen() },
       { label: "View the map", value: null },
     ],

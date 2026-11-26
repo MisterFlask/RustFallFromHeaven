@@ -31,6 +31,7 @@
 
 pub mod bench;
 pub mod bot;
+pub mod cataclysm;
 pub mod command;
 pub mod decision;
 pub mod flag;
