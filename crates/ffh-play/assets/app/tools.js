@@ -629,7 +629,7 @@ export function openOptions() {
             "option-orientation",
             "orientation",
             [
-              ["auto", "Turns with the phone", "Upright or on its side, as the phone is held"],
+              ["auto", "Turns with the phone", "Upright or on its side, as the phone is held; on its side while a controller is connected"],
               ["landscape", "Landscape", "Always on its side: in fullscreen where the browser locks the screen, else the page turns itself while the phone is upright"],
               ["portrait", "Portrait", "Always upright: in fullscreen where the browser locks the screen, else the page turns itself while the phone is on its side"],
             ],

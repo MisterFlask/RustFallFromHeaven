@@ -14,6 +14,10 @@
 // turned axes. Taps reach the right element in any case: the browser hit-tests through the turn.
 // Only a device whose main pointer is a finger (`pointer: coarse`) is turned; elsewhere the choice
 // is not offered and nothing here changes anything.
+//
+// A controller (gamepad.js) makes "auto" landscape: from the pad's first press until no pad is
+// connected (a finger ending the controller's mode does not turn the page back under it). An
+// explicit "portrait" stays portrait.
 
 import { coarse } from "./dom.js";
 
@@ -35,6 +39,10 @@ const O = {
   locked: false,
   fullscreen: false,
   installed: false,
+  /** A controller is in use (`setControllerLandscape`): "auto" is landscape. */
+  pad: false,
+  /** The browser's lock was taken for the controller (released when it goes). */
+  padLocked: false,
 };
 
 /** The browser's own answers, before the turn's shims. */
@@ -63,7 +71,44 @@ export async function setOrientChoice(v) {
     /* kept for this page only: applied below all the same */
   }
   O.tried = true;
+  O.padLocked = false;
   await browserLock(v);
+  apply();
+}
+
+/** The orientation in force: the choice, with "auto" landscape while a controller is in use. */
+function effectiveChoice() {
+  const c = orientChoice();
+  return c === "auto" && O.pad ? "landscape" : c;
+}
+
+/** A controller started (true) or every pad went (false) (gamepad.js): "auto" becomes landscape
+ *  while one is in use. The browser's lock is taken only where the page is already in fullscreen
+ *  (entering it needs a tap, which a pad's button is not); elsewhere the page turns itself. */
+export async function setControllerLandscape(on) {
+  if (O.pad === !!on) return;
+  O.pad = !!on;
+  if (!coarse() || !O.installed) return;
+  const so = globalThis.screen?.orientation;
+  if (orientChoice() === "auto") {
+    if (on && document.fullscreenElement && so?.lock) {
+      try {
+        await so.lock("landscape");
+        O.locked = true;
+        O.padLocked = true;
+      } catch {
+        /* no lock: the page turns itself */
+      }
+    } else if (!on && O.padLocked) {
+      try {
+        so?.unlock?.();
+      } catch {
+        /* nothing locked */
+      }
+      O.locked = false;
+    }
+  }
+  if (!on) O.padLocked = false;
   apply();
 }
 
@@ -75,7 +120,7 @@ export function orientOffered() {
 /** The state, for the tests: the content's turn and the conversion of a point of the turned
  *  viewport to the screen's. */
 export function orientState() {
-  return { choice: orientChoice(), rot: O.rot, locked: O.locked, portrait: physicalPortrait(), toScreen: (x, y) => toPhysical(x, y) };
+  return { choice: orientChoice(), effective: effectiveChoice(), pad: O.pad, rot: O.rot, locked: O.locked, portrait: physicalPortrait(), toScreen: (x, y) => toPhysical(x, y) };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -132,7 +177,7 @@ function screenAngle() {
 
 /** Turns the content when the phone's orientation is not the one locked; else leaves it. */
 function apply() {
-  const choice = orientChoice();
+  const choice = effectiveChoice();
   const portrait = physicalPortrait();
   if (!portrait) {
     const a = screenAngle();

@@ -54,7 +54,8 @@ async function loadPlaywright() {
 }
 
 /** The emulated pad, installed before the page's scripts: `window.__pad` is the pad (standard
- *  mapping), `__padConnect()` plugs it in (the browser's `gamepadconnected`). */
+ *  mapping), `__padConnect()` plugs it in (the browser's `gamepadconnected`),
+ *  `__padDisconnect()` unplugs it. */
 function installPad() {
   const pad = {
     id: "Test controller (STANDARD GAMEPAD)",
@@ -73,6 +74,9 @@ function installPad() {
   window.__padConnect = () => {
     plugged = true;
     window.dispatchEvent(new Event("gamepadconnected"));
+  };
+  window.__padDisconnect = () => {
+    plugged = false;
   };
 }
 
@@ -121,6 +125,27 @@ async function run(pw, bin) {
       check(sel0 === (await t.ev(() => JSON.stringify(window.ffh.S.sel))), "a pad on a computer changed the selection");
       check(!(await t.ev(() => !!document.querySelector(".pad-cursor:not([hidden]), .pad-focus"))), "a pad on a computer shows a cursor or a focus");
       t.step("the pad does nothing");
+      await t.ctx.close();
+    }
+
+    // A phone held upright: the controller turns the page to landscape, and a tap ending the
+    // controller's mode leaves it turned (orient.js, `setControllerLandscape`).
+    {
+      const t = await open("upright", { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      check(await t.ev(() => window.ffh.orient().rot === 0 && innerHeight > innerWidth), "the upright phone is turned before a pad");
+      await t.ev(() => window.__padConnect());
+      await t.press(B.a);
+      await t.wait(() => document.body.classList.contains("pad-mode"), null, "the controller's mode on the upright phone");
+      await t.wait(() => window.ffh.orient().rot !== 0 && innerWidth > innerHeight, null, "the controller turns the upright phone to landscape");
+      await t.page.waitForTimeout(800);
+      await t.shot("00-upright-turned");
+      await t.page.touchscreen.tap(195, 420);
+      await t.wait(() => !document.body.classList.contains("pad-mode"), null, "a tap ends the controller's mode (upright)");
+      check(await t.ev(() => window.ffh.orient().rot !== 0), "a tap turned the page back while the pad is connected");
+      // The pad goes: the page follows the phone again.
+      await t.ev(() => window.__padDisconnect());
+      await t.wait(() => window.ffh.orient().rot === 0 && innerHeight > innerWidth, null, "the page upright again once the pad is gone");
+      t.step("the controller turns the page to landscape");
       await t.ctx.close();
     }
 

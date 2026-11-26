@@ -5,6 +5,10 @@
 // on the screen or a key on a keyboard ends the mode (the last input wins); the pad's next input
 // starts it again.
 //
+// A controller turns the page to landscape (orient.js, `setControllerLandscape`, unless the player
+// locked portrait in Options) from the mode's start until no pad is connected: a finger ending the
+// mode leaves it on its side, so a tap is not turned under the finger.
+//
 // In the mode the map has a cursor (a plot, moved by the left stick or the D-pad by screen
 // direction, with the mouse's hover there: outline, tooltip, path and odds), and every other
 // layer -- the battle screens, the dialogs, the title screen, the folded menu, the interface
@@ -17,6 +21,7 @@ import { S, on, ownUnitsAt } from "./state.js";
 import * as units from "./units.js";
 import { coarse, toast } from "./dom.js";
 import { titleShown } from "./title.js";
+import { setControllerLandscape } from "./orient.js";
 
 const P = {
   view: null,
@@ -95,6 +100,7 @@ function frame(now) {
   const list = pads();
   if (!list.length) {
     if (P.active) stop();
+    setControllerLandscape(false);
     return;
   }
   const dt = Math.min(0.1, Math.max(0, (now - P.lastFrame) / 1000));
@@ -123,6 +129,7 @@ function start() {
   P.view.pad = true;
   P.scope = null;
   document.body.classList.add("pad-mode");
+  setControllerLandscape(true);
   if (!P.told) {
     P.told = true;
     toast("Controller on. Its buttons: Menu (Back), Controls.", "info", 4000);
