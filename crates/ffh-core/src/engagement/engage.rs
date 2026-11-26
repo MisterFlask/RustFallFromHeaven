@@ -662,7 +662,7 @@ impl Game {
                 Side::Defender => def.push(c.place),
             }
         }
-        let params = Params::from_defines(&self.d.defines);
+        let params = formation::params_from_defines(&self.d.defines);
         let in_city = self.plot_is_city(ctx.to, false, None);
         let ground = self.engage_ground(&ctx);
         let lanes = self.engage_lanes(&slots);
@@ -1602,7 +1602,7 @@ mod tests {
         let d = g.d;
         let (catapult, axeman) = (g.map.plots[from].units[0], g.map.plots[to].units[0]);
         let ctx = HitCtx::new(from, to);
-        let params = Params::from_defines(&d.defines);
+        let params = formation::params_from_defines(&d.defines);
         let plain = (g.engage_fighter(catapult, Side::Attacker, (0, 2), false, &ctx, &params), g.engage_fighter(axeman, Side::Defender, (0, 0), false, &ctx, &params));
         assert_eq!((plain.0.collateral_extra, plain.1.collateral_protection), (0, 0));
         assert!(plain.0.collateral_limit.is_some(), "a catapult splashes");

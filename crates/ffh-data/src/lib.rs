@@ -266,13 +266,49 @@ impl std::error::Error for LoadError {}
 /// This game's building tiers (docs/SUITABILITY.md; not FFH2's): the tier variants of buildings.
 pub const BUILDING_VARIANTS_FILE: &str = "building_variants.jsonc";
 
+/// Abstract read-only source of game data files (`json/*.jsonc`, `json/cards/*.jsonc`,
+/// `text/en.tsv`, `text/barks.md`). Paths use `/` separators relative to the data root.
+pub trait DataSource {
+    fn read(&self, rel: &str) -> Result<Vec<u8>, String>;
+    fn list_dir(&self, rel: &str) -> Vec<String>;
+}
+
+struct DirSource<'a>(&'a Path);
+
+impl DirSource<'_> {
+    fn path(&self, rel: &str) -> PathBuf {
+        let mut p = self.0.to_path_buf();
+        for c in rel.split('/') {
+            if !c.is_empty() {
+                p.push(c);
+            }
+        }
+        p
+    }
+}
+
+impl DataSource for DirSource<'_> {
+    fn read(&self, rel: &str) -> Result<Vec<u8>, String> {
+        let p = self.path(rel);
+        std::fs::read(&p).map_err(|e| format!("{}: {e}", p.display()))
+    }
+
+    fn list_dir(&self, rel: &str) -> Vec<String> {
+        let p = self.path(rel);
+        match std::fs::read_dir(&p) {
+            Ok(rd) => rd.filter_map(|e| e.ok()).filter_map(|e| e.file_name().to_str().map(str::to_string)).collect(),
+            Err(_) => Vec::new(),
+        }
+    }
+}
+
 /// Appends the tier variants of `building_variants.jsonc` to the buildings table: each variant is
 /// the entry of the building its `variant_of` names, with the variant's keys in place of that
 /// entry's own (a key the variant leaves out keeps the Standard building's value). Appended
 /// after FFH2's buildings, which keep their ids.
-fn add_building_variants(docs: &mut [(String, Value)], json_dir: &Path) -> Result<(), LoadError> {
+fn add_building_variants(docs: &mut [(String, Value)], src: &dyn DataSource) -> Result<(), LoadError> {
     let file = BUILDING_VARIANTS_FILE;
-    let variants = read_doc(json_dir, file)?;
+    let variants = read_doc(src, file)?;
     let Some(list) = variants.as_arr() else {
         return Err(LoadError(format!("{file}: expected a list of entries")));
     };
@@ -310,21 +346,13 @@ fn add_building_variants(docs: &mut [(String, Value)], json_dir: &Path) -> Resul
 pub const CARDS_DIR: &str = "cards";
 
 /// Appends every card file's entries to their tables (see [`CARDS_DIR`]); returns the cards' text.
-fn add_card_files(docs: &mut [(String, Value)], json_dir: &Path) -> Result<Vec<(String, String)>, LoadError> {
-    let dir = json_dir.join(CARDS_DIR);
-    let mut names: Vec<String> = match std::fs::read_dir(&dir) {
-        Ok(rd) => rd
-            .filter_map(|e| e.ok())
-            .filter_map(|e| e.file_name().to_str().map(str::to_string))
-            .filter(|n| n.ends_with(".jsonc"))
-            .collect(),
-        Err(_) => return Ok(Vec::new()),
-    };
+fn add_card_files(docs: &mut [(String, Value)], src: &dyn DataSource) -> Result<Vec<(String, String)>, LoadError> {
+    let mut names: Vec<String> = src.list_dir(&format!("json/{CARDS_DIR}")).into_iter().filter(|n| n.ends_with(".jsonc")).collect();
     names.sort();
     let mut text = Vec::new();
     for name in names {
         let rel = format!("{CARDS_DIR}/{name}");
-        let doc = read_doc(json_dir, &rel)?;
+        let doc = read_doc(src, &rel)?;
         let Value::Obj(members) = doc else {
             return Err(LoadError(format!("{rel}: expected an object of tables")));
         };
@@ -368,27 +396,32 @@ pub fn card_entry_count(table: &str) -> usize {
         .sum()
 }
 
-fn read_doc(dir: &Path, rel: &str) -> Result<Value, LoadError> {
-    let p = dir.join(rel);
-    let text = std::fs::read_to_string(&p).map_err(|e| LoadError(format!("{}: {}", p.display(), e)))?;
-    jsonc::parse(&text).map_err(|e| LoadError(format!("{}: {}", p.display(), e)))
+fn read_doc(src: &dyn DataSource, rel: &str) -> Result<Value, LoadError> {
+    let full = format!("json/{rel}");
+    let bytes = src.read(&full).map_err(LoadError)?;
+    let text = String::from_utf8(bytes).map_err(|e| LoadError(format!("{full}: {e}")))?;
+    jsonc::parse(&text).map_err(|e| LoadError(format!("{full}: {e}")))
 }
 
 impl GameData {
     /// Loads everything from a data directory containing `json/` and `text/`.
     pub fn load(data_dir: &Path) -> Result<GameData, LoadError> {
-        let json_dir = data_dir.join("json");
+        GameData::load_from_source(&DirSource(data_dir))
+    }
+
+    /// Loads everything from an arbitrary [`DataSource`] providing `json/` and `text/`.
+    pub fn load_from_source(src: &dyn DataSource) -> Result<GameData, LoadError> {
         let mut docs = Vec::new();
         for (file, _) in INFO_FILES {
-            let doc = read_doc(&json_dir, file)?;
+            let doc = read_doc(src, file)?;
             if doc.as_arr().is_none() {
                 return Err(LoadError(format!("{file}: expected a list of entries")));
             }
             docs.push((file.to_string(), doc));
         }
-        add_building_variants(&mut docs, &json_dir)?;
+        add_building_variants(&mut docs, src)?;
         let own_improvements = docs.iter().find(|(f, _)| f == "improvements.jsonc").and_then(|(_, v)| v.as_arr().map(|a| a.len())).unwrap_or(0);
-        let card_text = add_card_files(&mut docs, &json_dir)?;
+        let card_text = add_card_files(&mut docs, src)?;
         let docs = Docs { docs };
 
         // Pass 1: register every type name.
@@ -397,7 +430,7 @@ impl GameData {
             let names = entries(docs.get(file)).iter().map(|e| e.get("type").and_then(Value::as_str).unwrap_or("").to_string()).collect();
             reg.register_class(class, names);
         }
-        let gt = read_doc(&json_dir, "global_types.jsonc")?;
+        let gt = read_doc(src, "global_types.jsonc")?;
         for (list, class) in GLOBAL_TYPE_LISTS {
             if let Some(l) = gt.get(list).and_then(Value::as_arr) {
                 let names = l.iter().map(|c| c.as_str().unwrap_or("").to_string()).collect();
@@ -408,10 +441,10 @@ impl GameData {
         // Defines (text defines resolve through the registry).
         let mut define_map = DefineMap::default();
         for f in DEFINES_FILES {
-            define_map.read_file(&read_doc(&json_dir, f)?, &reg);
+            define_map.read_file(&read_doc(src, f)?, &reg);
         }
 
-        let mut text = match std::fs::read(data_dir.join("text").join("en.tsv")) {
+        let mut text = match src.read("text/en.tsv") {
             Ok(b) => Text::parse_tsv(&String::from_utf8_lossy(&b)),
             Err(_) => Text::default(),
         };
@@ -422,7 +455,7 @@ impl GameData {
         // Pass 2: typed tables.
         let mut gd = GameData::load_tables(&docs, reg, define_map, text);
         gd.own_improvements = own_improvements;
-        gd.barks = std::fs::read_to_string(data_dir.join("text").join("barks.md")).unwrap_or_default();
+        gd.barks = src.read("text/barks.md").ok().and_then(|b| String::from_utf8(b).ok()).unwrap_or_default();
         for (name, a, b) in &gd.reg.duplicates {
             gd.warnings.push(format!("type {name} registered as both {a} and {b}"));
         }
@@ -965,6 +998,14 @@ pub fn default_data_dir() -> PathBuf {
 }
 
 static GLOBAL: OnceLock<GameData> = OnceLock::new();
+
+/// Installs pre-loaded game data for [`global`] (used by `ffh-web` on `wasm32-unknown-unknown`,
+/// where `std::fs` is unavailable). Returns the installed reference, or the existing one if
+/// already initialized.
+pub fn init_global(data: GameData) -> &'static GameData {
+    let _ = GLOBAL.set(data);
+    GLOBAL.get().expect("GLOBAL initialized")
+}
 
 /// Loads the default data once per process and returns a `'static` reference.
 pub fn global() -> &'static GameData {

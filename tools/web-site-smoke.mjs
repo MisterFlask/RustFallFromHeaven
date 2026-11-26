@@ -432,7 +432,7 @@ async function main() {
     console.error(`web-site-smoke: no site at ${SITE} (no index.html): build it with tools/web-site.sh ${args.site}`);
     return 1;
   }
-  for (const f of ["web/boot.js", "web/engine.js", "web/wasi.js", "web/site.js", "web/ffh.wasm.gz", "web/data.pak.gz", "coi-sw.js"]) {
+  for (const f of ["web/boot.js", "web/engine.js", "web/memfs.js", "web/site.js", "web/ffh.wasm.gz", "web/data.pak.gz", "coi-sw.js"]) {
     if (!fs.existsSync(path.join(SITE, f))) problems.push(`the site has no ${f}`);
   }
   if (fs.existsSync(path.join(SITE, "web", "site.js")) && !SAVES_DB) problems.push("web/site.js does not name the saves database (export const SAVES_DB)");

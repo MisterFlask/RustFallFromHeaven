@@ -20,6 +20,7 @@ import { modalOpen } from "./modals.js";
 import * as api from "./api.js";
 import { openResearchPaths } from "./empire.js";
 import { renderRituals } from "./rituals.js";
+import { isCataclysm, renderCataclysmTop } from "./cataclysm.js";
 
 /** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
  *  autoplay bar (each its own slot; `display: contents`, so #phase lays out their children). */
@@ -242,6 +243,24 @@ export function renderTop() {
     end.classList.toggle("blocked", !!due || !!specialty);
     if (specialty) end.title = why;
     if (due) end.title = due.reason;
+  }
+  if (isCataclysm()) {
+    const crusades = document.getElementById("btn-crusades");
+    if (crusades) {
+      crusades.hidden = false;
+      crusades.classList.remove("attention");
+    }
+    const seasBtn = document.getElementById("btn-seas");
+    if (seasBtn) seasBtn.hidden = true;
+    const worldAct = document.getElementById("world-actions");
+    if (worldAct) fill(worldAct);
+    const rituals = document.getElementById("rituals");
+    if (rituals) {
+      rituals.hidden = true;
+      rituals.classList.remove("has-rows");
+    }
+    renderCataclysmTop();
+    return;
   }
   // Crusades (docs/CRUSADE.md): the advisor, marked while a call to arms waits.
   const crusades = document.getElementById("btn-crusades");

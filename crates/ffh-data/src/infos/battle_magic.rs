@@ -8,32 +8,7 @@ use crate::enums::*;
 use crate::infos::AttackPattern;
 use crate::registry::Rd;
 
-/// A pre-battle hex of a unit's presence (`battle_presence`): it takes when the unit is in the
-/// battle's line at the start, unless the enemy side has a hex ward.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Presence {
-    /// `GROUNDING`: for the battle, the enemy's charges are strikes (front reach, no first-round
-    /// bonus).
-    Grounding,
-    /// `MADNESS`: in round 1 the enemy's unit with the highest attack (not a Sentinel) hits its
-    /// own side.
-    Madness,
-}
-
-impl Presence {
-    pub const ALL: [Presence; 2] = [Presence::Grounding, Presence::Madness];
-
-    pub fn token(self) -> &'static str {
-        match self {
-            Presence::Grounding => "GROUNDING",
-            Presence::Madness => "MADNESS",
-        }
-    }
-
-    pub fn parse(s: &str) -> Option<Presence> {
-        Presence::ALL.into_iter().find(|p| p.token() == s.trim())
-    }
-}
+pub use ffh_battle::Presence;
 
 /// A unit type's or promotion's battle magic (module comment). Every field is 0, false or `None`
 /// without its key.

@@ -4,6 +4,7 @@
 //! human's deferred event popups included (`Player::event_popups`), is all in `Game`.
 //! Autosaves are a ring of the last N turn boundaries in `<dir>/auto/`.
 
+#[cfg(test)]
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -133,14 +134,14 @@ pub fn sanitize_name(name: &str) -> Result<&str, String> {
 /// Writes `path` atomically (temporary file + rename).
 fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
     let tmp = path.with_extension(format!("{}.tmp", path.extension().and_then(|e| e.to_str()).unwrap_or("")));
-    fs::write(&tmp, bytes)?;
-    fs::rename(&tmp, path)
+    crate::platform::fs::write(&tmp, bytes)?;
+    crate::platform::fs::rename(&tmp, path)
 }
 
 /// Writes `<dir>/<name>.ffhsave` and `<dir>/<name>.ffhsess`.
 pub fn write_bundle(dir: &Path, name: &str, save: &[u8], sidecar: &Sidecar) -> io::Result<SavePaths> {
     let name = sanitize_name(name).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
-    fs::create_dir_all(dir)?;
+    crate::platform::fs::create_dir_all(dir)?;
     let paths = SavePaths { save: dir.join(format!("{name}.ffhsave")), sidecar: dir.join(format!("{name}.ffhsess")) };
     write_atomic(&paths.save, save)?;
     write_atomic(&paths.sidecar, sidecar.to_json().to_pretty().as_bytes())?;
@@ -149,9 +150,9 @@ pub fn write_bundle(dir: &Path, name: &str, save: &[u8], sidecar: &Sidecar) -> i
 
 /// Reads a save and its sidecar (if there is one next to it).
 pub fn read_bundle(save: &Path) -> Result<(Vec<u8>, Option<Sidecar>), String> {
-    let bytes = fs::read(save).map_err(|e| format!("{}: {e}", save.display()))?;
+    let bytes = crate::platform::fs::read(save).map_err(|e| format!("{}: {e}", save.display()))?;
     let sidecar_path = save.with_extension("ffhsess");
-    let sidecar = match fs::read(&sidecar_path) {
+    let sidecar = match crate::platform::fs::read(&sidecar_path) {
         Ok(b) => {
             let j = Json::parse_bytes(&b).map_err(|e| format!("{}: {e}", sidecar_path.display()))?;
             Some(Sidecar::from_json(&j).map_err(|e| format!("{}: {e}", sidecar_path.display()))?)
@@ -166,8 +167,8 @@ pub fn read_bundle(save: &Path) -> Result<(Vec<u8>, Option<Sidecar>), String> {
 pub fn autosave(dir: &Path, turn: i32, save: &[u8], sidecar: &Sidecar, keep: usize) -> io::Result<SavePaths> {
     let auto = dir.join("auto");
     let paths = write_bundle(&auto, &format!("T{turn:04}"), save, sidecar)?;
-    let mut saves: Vec<PathBuf> = fs::read_dir(&auto)?
-        .filter_map(|e| e.ok().map(|e| e.path()))
+    let mut saves: Vec<PathBuf> = crate::platform::fs::read_dir_paths(&auto)?
+        .into_iter()
         .filter(|p| p.extension().is_some_and(|e| e == "ffhsave") && p.file_name().is_some_and(|n| n.to_string_lossy().starts_with('T')))
         .collect();
     // T0001 < T0002 < ... < T9999 < T10000 by (length, name).
@@ -177,8 +178,8 @@ pub fn autosave(dir: &Path, turn: i32, save: &[u8], sidecar: &Sidecar, keep: usi
     });
     while saves.len() > keep.max(1) {
         let old = saves.remove(0);
-        let _ = fs::remove_file(old.with_extension("ffhsess"));
-        let _ = fs::remove_file(&old);
+        let _ = crate::platform::fs::remove_file(&old.with_extension("ffhsess"));
+        let _ = crate::platform::fs::remove_file(&old);
     }
     Ok(paths)
 }
@@ -189,20 +190,20 @@ pub fn list_json(dir: Option<&Path>) -> Json {
     let Some(dir) = dir else { return crate::jobj! { "dir" => Json::Null, "saves" => Json::arr() } };
     let mut saves = Vec::new();
     for (sub, prefix) in [(dir.to_path_buf(), ""), (dir.join("auto"), "auto/"), (dir.join(crate::flag::FLAGS_DIR), "flags/")] {
-        let Ok(entries) = fs::read_dir(&sub) else { continue };
-        let mut found: Vec<PathBuf> = entries.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.extension().is_some_and(|e| e == "ffhsave")).collect();
+        let Ok(entries) = crate::platform::fs::read_dir_paths(&sub) else { continue };
+        let mut found: Vec<PathBuf> = entries.into_iter().filter(|p| p.extension().is_some_and(|e| e == "ffhsave")).collect();
         found.sort();
         for p in found {
             let name = p.file_stem().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             // When the file was written (seconds since 1970; null when the file system does not
             // say): the load screen sorts and dates the saves by it. Presentation only.
-            let modified = fs::metadata(&p).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs() as i64);
+            let modified = crate::platform::fs::modified_secs(&p);
             saves.push(crate::jobj! {
                 "name" => format!("{prefix}{name}"),
                 "path" => p.display().to_string(),
                 "auto" => prefix == "auto/",
                 "flag" => prefix == "flags/",
-                "sidecar" => p.with_extension("ffhsess").exists(),
+                "sidecar" => crate::platform::fs::exists(&p.with_extension("ffhsess")),
                 "modified" => modified,
             });
         }

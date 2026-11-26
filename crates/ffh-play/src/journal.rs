@@ -13,8 +13,10 @@
 //! {"k":"checkpoint","turn":57,"checksum":-12345}        at each turn boundary and a new game's first control point (the autosaves)
 //! ```
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Write};
+#[cfg(not(target_arch = "wasm32"))]
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -199,7 +201,10 @@ fn describe(l: Option<&Line>) -> String {
 enum Sink {
     Off,
     Memory(Vec<String>),
+    #[cfg(not(target_arch = "wasm32"))]
     File { w: BufWriter<File>, path: PathBuf },
+    #[cfg(target_arch = "wasm32")]
+    File { path: PathBuf },
     /// Replaying: inputs are not written; checkpoints are checked against the cursor.
     Replay(Arc<Mutex<Cursor>>),
 }
@@ -223,15 +228,21 @@ impl Journal {
 
     /// A new journal file in `dir`: `journal.jsonl`, or `journal-N.jsonl` if taken.
     pub fn create_in(dir: &Path) -> std::io::Result<Journal> {
-        std::fs::create_dir_all(dir)?;
+        crate::platform::fs::create_dir_all(dir)?;
         let mut path = dir.join("journal.jsonl");
         let mut n = 1;
-        while path.exists() {
+        while crate::platform::fs::exists(&path) {
             path = dir.join(format!("journal-{n}.jsonl"));
             n += 1;
         }
-        let w = BufWriter::new(File::create(&path)?);
-        Ok(Journal { sink: Sink::File { w, path }, count: 0 })
+        #[cfg(not(target_arch = "wasm32"))]
+        let sink = Sink::File { w: BufWriter::new(File::create(&path)?), path };
+        #[cfg(target_arch = "wasm32")]
+        let sink = {
+            crate::platform::fs::write(&path, b"")?;
+            Sink::File { path }
+        };
+        Ok(Journal { sink, count: 0 })
     }
 
     pub fn replay(cursor: Arc<Mutex<Cursor>>) -> Journal {
@@ -243,11 +254,20 @@ impl Journal {
         match &mut self.sink {
             Sink::Off => {}
             Sink::Memory(v) => v.push(line.to_json().to_string()),
+            #[cfg(not(target_arch = "wasm32"))]
             Sink::File { w, path } => {
                 let r = writeln!(w, "{}", line.to_json()).and_then(|_| w.flush());
                 if let Err(e) = r {
                     // The journal is a debugging aid: losing it must not stop the game.
-                    eprintln!("ffh-play: cannot write journal {}: {e}", path.display());
+                    crate::platform::warn(&format!("ffh-play: cannot write journal {}: {e}", path.display()));
+                }
+            }
+            #[cfg(target_arch = "wasm32")]
+            Sink::File { path } => {
+                let mut text = line.to_json().to_string();
+                text.push('\n');
+                if let Err(e) = crate::platform::fs::append(path, text.as_bytes()) {
+                    crate::platform::warn(&format!("ffh-play: cannot write journal {}: {e}", path.display()));
                 }
             }
             Sink::Replay(cursor) => {
@@ -307,14 +327,13 @@ pub fn is_running_cmd(cmd: &Json) -> bool {
 
 /// Reads a journal file.
 pub fn read_file(path: &Path) -> Result<Vec<Line>, String> {
-    let f = File::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let text = crate::platform::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mut out = Vec::new();
-    for (i, l) in BufReader::new(f).lines().enumerate() {
-        let l = l.map_err(|e| format!("{}: {e}", path.display()))?;
+    for (i, l) in text.lines().enumerate() {
         if l.trim().is_empty() {
             continue;
         }
-        out.push(Line::parse(&l).map_err(|e| format!("{}:{}: {e}", path.display(), i + 1))?);
+        out.push(Line::parse(l).map_err(|e| format!("{}:{}: {e}", path.display(), i + 1))?);
     }
     Ok(out)
 }

@@ -5,7 +5,7 @@
 // the saves database the page names (two sites on one origin keep their saves apart).
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MemFS } from "../wasi.js";
+import { MemFS } from "../memfs.js";
 import { SavesPersister, memoryStore, mountPack, parsePack, workerMain } from "../engine.js";
 
 const enc = new TextEncoder();

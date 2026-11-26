@@ -95,6 +95,13 @@ fn recv(rx: &Mutex<Receiver<Envelope>>, shared: &Shared) -> Option<Envelope> {
 /// control point); without a session, clears the caches and publishes `no_game` or `crashed`.
 /// The game thread's refresh, shared with the web host (`transport::web`).
 pub fn refresh_shared(host: &Host, shared: &Shared, after: After) {
+    if let Some(cs) = host.cataclysm() {
+        shared.set_caches(Some(cs.view()), Some(cs.map()));
+        shared.set_game(host.game_info());
+        shared.set_crash(None);
+        shared.publish(host.status_after(after));
+        return;
+    }
     match host.session() {
         Some(s) => {
             let view = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| s.query(&Query::View))).ok().and_then(Result::ok);

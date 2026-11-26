@@ -23,7 +23,7 @@ use std::sync::Arc;
 use ffh_core::controller::{AiHook, Controller};
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
 use ffh_core::engagement::report::{BattleLog, BattleReport, DecidedBy, LogEvent, LogFate, SatOutWhy};
-use ffh_core::engagement::formation::{GroundRule, Params};
+use ffh_core::engagement::formation::GroundRule;
 use ffh_core::engagement::{EngageResult, FighterIdx, Side};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -1105,7 +1105,7 @@ fn target_hits(log: &BattleLog) -> Vec<(UnitId, UnitId, u8, ActionKind, i32, (i3
 /// same round. Every battle.
 #[test]
 fn the_battle_log_lists_the_grounds_rules_and_a_large_unit_deals_them() {
-    let params = Params::from_defines(&ffh_data::global().defines);
+    let params = ffh_core::engagement::formation::params_from_defines(&ffh_data::global().defines);
     let w0 = world();
     let d = w0.g.d;
     let forest = d.t::<FeatureType>("FEATURE_FOREST");
@@ -1190,7 +1190,7 @@ fn the_battle_log_lists_the_grounds_rules_and_a_large_unit_deals_them() {
 fn wading_cuts_the_first_round_of_units_that_do_not_cross_rivers() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    let params = Params::from_defines(&w.g.d.defines);
+    let params = ffh_core::engagement::formation::params_from_defines(&w.g.d.defines);
     w.g.players[p1].human = true;
     let defs = w.units(p1, "UNIT_AXEMAN", to, 3);
     for &u in &defs {

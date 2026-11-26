@@ -209,6 +209,7 @@ function renderMenu() {
     );
   }
   items.push(menuButton("New game", { id: "title-new", primary: mode === "menu" && !latest, title: "Choose a civilization and a world" }, () => actions?.newGame()));
+  items.push(menuButton("New Cataclysm", { id: "title-cataclysm", sub: "Alternate ruleset: 3x3 Squads, Macro Cities & Armageddon Lifeboats", title: "Play the rebuilt Cataclysm ruleset" }, () => actions?.newCataclysm()));
   items.push(menuButton("Load game", { id: "title-load", title: "Your saved games and autosaves" }, () => actions?.load()));
   items.push(menuButton("Options", { id: "title-options", title: "The map renderer, the player options and the music" }, () => actions?.options()));
   items.push(menuButton("How to play", { id: "title-keys", title: "How to play, the keys, the rules" }, () => actions?.keys()));

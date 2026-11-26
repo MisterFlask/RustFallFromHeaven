@@ -30,7 +30,9 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use crate::platform::Monotonic;
 
 use super::http::{self, HttpRequest, Response};
 use super::server::{decision_closed, publish_decision, publish_running, refresh_shared};
@@ -309,7 +311,7 @@ impl WebGame {
             Ok((token, req)) => self.request(token, &req),
             Err(e) => match e.token {
                 Some(token) => self.out.io.reply(token, &e.response()),
-                None => eprintln!("ffh-web: a request without a token: {}", e.msg),
+                None => crate::platform::warn(&format!("ffh-web: a request without a token: {}", e.msg)),
             },
         }
     }
@@ -356,11 +358,11 @@ impl WebGame {
     fn advance(&mut self) {
         let out = self.out.clone();
         let dir = self.host.game_dir().map(Path::to_path_buf);
-        let mut last: Option<Instant> = None;
+        let mut last: Option<Monotonic> = None;
         let mut pulling = true;
         self.host.advance(&mut |s| {
             if last.is_none_or(|t| t.elapsed() >= WEB_PUBLISH_EVERY) {
-                last = Some(Instant::now());
+                last = Some(Monotonic::now());
                 if publish_running(s, dir.as_deref(), &out.shared) {
                     out.published();
                 }

@@ -2,9 +2,12 @@
 
 use std::alloc::Layout;
 use std::cell::RefCell;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use ffh_data::{DataSource, GameData};
 use ffh_play::json::Json;
+use ffh_play::platform;
 use ffh_play::transport::http::Response;
 use ffh_play::transport::web::{decode_request, encode_reply, Pulled, WebGame, WebIo, WebOptions};
 
@@ -62,15 +65,42 @@ impl WebIo for PageIo {
                 // A malformed request is answered (or reported) and the next one pulled.
                 Err(e) => match e.token {
                     Some(token) => self.reply(token, &e.response()),
-                    None => eprintln!("ffh-web: a request without a token: {}", e.msg),
+                    None => platform::warn(&format!("ffh-web: a request without a token: {}", e.msg)),
                 },
             }
         }
     }
 }
 
+/// Loads `ffh-data` from the worker's in-memory filesystem (`/data`).
+struct MemFsSource<'a>(&'a Path);
+
+impl MemFsSource<'_> {
+    fn path(&self, rel: &str) -> PathBuf {
+        let mut p = self.0.to_path_buf();
+        for c in rel.split('/') {
+            if !c.is_empty() {
+                p.push(c);
+            }
+        }
+        p
+    }
+}
+
+impl DataSource for MemFsSource<'_> {
+    fn read(&self, rel: &str) -> Result<Vec<u8>, String> {
+        let p = self.path(rel);
+        platform::fs::read(&p).map_err(|e| format!("{}: {e}", p.display()))
+    }
+
+    fn list_dir(&self, rel: &str) -> Vec<String> {
+        let p = self.path(rel);
+        platform::fs::read_dir_names(&p).unwrap_or_default()
+    }
+}
+
 thread_local! {
-    /// The host, once `ffh_init` made it (wasm32-wasip1 has one thread).
+    /// The host, once `ffh_init` made it (wasm32-unknown-unknown has one thread).
     static GAME: RefCell<Option<WebGame>> = const { RefCell::new(None) };
 }
 
@@ -114,9 +144,9 @@ pub unsafe extern "C" fn ffh_free(ptr: u32, len: u32) {
 }
 
 /// The options (`transport::web::WebOptions::from_json`; an empty buffer is `{}`): makes the host
-/// (no game: the client starts one), loads the game data (`FFH_DATA_DIR`, the page mounts the
-/// pack at `/data`) and publishes the first status. 0, or 1 when an option is bad or the data
-/// directory is missing (the reason on stderr).
+/// (no game: the client starts one), loads the game data from `/data` (mounted by `engine.js` in
+/// `memfs.js`) and publishes the first status. 0, or 1 when an option is bad or the data
+/// directory is missing (the reason logged via `ffh::log`).
 #[no_mangle]
 pub extern "C" fn ffh_init(ptr: u32, len: u32) -> u32 {
     install_panic_hook();
@@ -125,17 +155,18 @@ pub extern "C" fn ffh_init(ptr: u32, len: u32) -> u32 {
     let opts = match opts.and_then(|j| WebOptions::from_json(&j)) {
         Ok(o) => o,
         Err(e) => {
-            eprintln!("ffh_init: {e}");
+            platform::warn(&format!("ffh_init: {e}"));
             return 1;
         }
     };
-    let data = ffh_data::default_data_dir();
-    if !data.join("json").is_dir() {
-        eprintln!("ffh_init: no game data in {} (FFH_DATA_DIR)", data.display());
+    let data = Path::new("/data");
+    if !platform::fs::is_dir(&data.join("json")) {
+        platform::warn(&format!("ffh_init: no game data in {}", data.display()));
         return 1;
     }
     // Loaded now rather than by the first request (a broken pack panics: `crash`).
-    let _ = ffh_data::global();
+    let gd = GameData::load_from_source(&MemFsSource(data)).expect("failed to load game data");
+    let _ = ffh_data::init_global(gd);
     let game = WebGame::start(opts, Arc::new(PageIo));
     GAME.with(|g| *g.borrow_mut() = Some(game));
     0
@@ -152,20 +183,18 @@ pub extern "C" fn ffh_request(ptr: u32, len: u32) {
             Ok((token, _)) => PageIo.reply(token, &Response::error(503, "starting", "ffh_init has not run")),
             Err(e) => match e.token {
                 Some(token) => PageIo.reply(token, &e.response()),
-                None => eprintln!("ffh-web: a request without a token: {}", e.msg),
+                None => platform::warn(&format!("ffh-web: a request without a token: {}", e.msg)),
             },
         },
     });
 }
 
-/// A panic aborts on wasm: the message (and where) goes to the page through `crash`, after the
-/// default hook printed it on stderr; then the module traps.
+/// A panic aborts on wasm: the message (and where) goes to the page through `crash` (and the
+/// worker console via `log`), then the module traps.
 fn install_panic_hook() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
-        let prev = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |info| {
-            prev(info);
             let message = if let Some(s) = info.payload().downcast_ref::<&str>() {
                 s.to_string()
             } else if let Some(s) = info.payload().downcast_ref::<String>() {
@@ -182,6 +211,7 @@ fn install_panic_hook() {
                 }
                 None => message,
             };
+            platform::warn(&format!("panic: {text}"));
             // SAFETY: the page copies the bytes during the call.
             unsafe { host_crash(text.as_ptr(), text.len() as u32) }
         }));

@@ -14,9 +14,9 @@ CI rebuilds and redeploys the site on every push to `master` (except pushes that
 | Piece | Where | What it does |
 |---|---|---|
 | The client | `crates/ffh-play/assets`, the art from `crates/ffh-play/web/art` | unchanged; its own files are loaded by relative URLs (`app/main.js`, `../art/art.bundle.txt`), so it works below a path such as `/RustFallFromHeaven/`; it still talks HTTP (`fetch("/api/...")`) |
-| The engine | `crates/ffh-web` (wasm glue) around `crates/ffh-play/src/transport/web.rs` (the web host) | what `ffh-play serve`'s game thread does, synchronously: `ffh_request` takes one HTTP request and answers it exactly as `http::route` answers `/api` (status, view, map deltas, data, setup, the `POST /api` envelope), running the AI turns inside it. Built for `wasm32-wasip1` (a WASI reactor) with a 16 MiB stack, like the server's game thread |
+| The engine | `crates/ffh-web` (wasm glue) around `crates/ffh-play/src/transport/web.rs` (the web host) | what `ffh-play serve`'s game thread does, synchronously: `ffh_request` takes one HTTP request and answers it exactly as `http::route` answers `/api` (status, view, map deltas, data, setup, the `POST /api` envelope), running the AI turns inside it. Built for bare-metal `wasm32-unknown-unknown` (zero WASI, zero external crates) with a 16 MiB stack, like the server's game thread |
 | The page side | `crates/ffh-web/site/boot.js` (loaded before `app/main.js`) | replaces `fetch`: requests whose path is `/api` or `/api/...` go to the engine and come back as real `Response`s; it answers `GET /api/status` and the long-poll `GET /api/wait` itself from the last status the engine published; shows the loading progress; restarts a crashed engine |
-| The worker | `crates/ffh-web/site/engine.js`, `wasi.js` | downloads `web/ffh.wasm.gz` and `web/data.pak.gz` (decompressed in the browser), runs the engine on a WASI shim with an in-memory file system: the game data at `/data`, the saves at `/saves` |
+| The worker | `crates/ffh-web/site/engine.js`, `memfs.js` | downloads `web/ffh.wasm.gz` and `web/data.pak.gz` (decompressed in the browser), runs the engine over a tiny `"ffh"` host ABI with an in-memory file system: the game data at `/data`, the saves at `/saves` |
 | Isolation | `coi-sw.js` (a service worker at the site's root) | see below |
 | The data | `web/data.pak.gz` | `data/json/**` and `data/text/**` in one file: `FFHPAK1\n`, then per file `<path>\n<length>\n<bytes>` (`ffh_play::site::data_pack`) |
 
@@ -62,7 +62,7 @@ engagement are `tools/web-smoke.mjs`'s (against `ffh-play serve`, the same clien
 OUT/index.html        the client's page, relative URLs, web/boot.js loaded before app/main.js
 OUT/app/**            the client (every file `ffh-play serve` embeds)
 OUT/art/**            the art toolkit's modules and art/art.bundle.txt
-OUT/web/boot.js engine.js wasi.js
+OUT/web/boot.js engine.js memfs.js
 OUT/web/site.js       the site's settings: the saves database (`--saves NAME`, default ffh-play)
 OUT/web/ffh.wasm.gz   the engine (gzip -9)
 OUT/web/data.pak.gz   the game data (gzip -9)
@@ -76,7 +76,7 @@ plus the client and the art.
 
 ## Build and test locally
 
-Needs cargo, the Rust target `wasm32-wasip1` (`rustup target add wasm32-wasip1`) and gzip; the
+Needs cargo, the Rust target `wasm32-unknown-unknown` (`rustup target add wasm32-unknown-unknown`) and gzip; the
 smoke test needs node and the `playwright` package with its Chromium.
 
 ```
@@ -115,7 +115,7 @@ node tools/web-site-smoke.mjs --site /tmp/ffh-site --serve --port 8000
 `.github/workflows/ffh-pages.yml` (repository root), on a push to `master` that touches
 anything outside `anim-sprint/`, or the workflow, and by hand (Actions -> "ffh2-rs web" -> Run workflow):
 
-1. **build**: checkout, Rust stable with `wasm32-wasip1`, `tools/web-site.sh _site`, node 22 and
+1. **build**: checkout, Rust stable with `wasm32-unknown-unknown`, `tools/web-site.sh _site`, node 22 and
    Playwright's Chromium, the smoke test twice (service-worker isolation; `--no-sw`, the
    fallback), then the artifact `site`. Screenshots of a failed smoke test are kept as the run's
    artifact `web-site-smoke`. A failure stops the deployment: the site keeps the last good build.

@@ -1,11 +1,11 @@
 // The page side end to end in node: boot.js's EngineClient (with installFetch, driven by the
-// client's own api.js) and engine.js's worker (in a worker thread, with wasi.js) around a stand-in
+// client's own api.js) and engine.js's worker (in a worker thread, with memfs.js) around a stand-in
 // engine with the real ABI (mock_engine.rs), downloaded from a local HTTP server: status and
 // long-polls answered by the page, Responses with headers and 304, requests pulled while the
 // engine runs and inside a blocking decision (isolated) or the advisor's pick (not isolated),
 // abort, oversized bodies, saves persisted, a crash (the status `crashed` with the report, the
 // pending POST answered, a fresh worker that sees the saves, the crash cleared by a new game),
-// and an engine that cannot load. Skipped when rustc or its wasm32-wasip1 target is missing.
+// and an engine that cannot load. Skipped when rustc or its wasm32-unknown-unknown target is missing.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -25,7 +25,7 @@ const ORIGIN = "http://page.test";
 function rustMissing() {
   const v = spawnSync("rustc", ["--print", "sysroot"], { encoding: "utf8" });
   if (v.error || v.status !== 0) return "rustc not found";
-  if (!existsSync(join(v.stdout.trim(), "lib", "rustlib", "wasm32-wasip1"))) return "the wasm32-wasip1 target is not installed";
+  if (!existsSync(join(v.stdout.trim(), "lib", "rustlib", "wasm32-unknown-unknown"))) return "the wasm32-unknown-unknown target is not installed";
   return null;
 }
 
@@ -92,12 +92,16 @@ test.before(async () => {
   skip = rustMissing();
   if (skip) return;
   dir = mkdtempSync(join(tmpdir(), "ffh-web-e2e-"));
-  const r = spawnSync("rustc", ["--edition", "2021", "-O", "--target", "wasm32-wasip1", "--crate-type", "cdylib", join(here, "mock_engine.rs"), "-o", join(dir, "mock.wasm")], { encoding: "utf8" });
+  const r = spawnSync("rustc", ["--edition", "2021", "-O", "--target", "wasm32-unknown-unknown", "--crate-type", "cdylib", join(here, "mock_engine.rs"), "-o", join(dir, "mock.wasm")], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stderr);
+  const wasmBytes = readFileSync(join(dir, "mock.wasm"));
+  const mod = await WebAssembly.compile(wasmBytes);
+  const badImports = WebAssembly.Module.imports(mod).filter((i) => i.module !== "ffh");
+  assert.deepEqual(badImports, [], "wasm module must have only ffh host imports (no WASI)");
   const enc = new TextEncoder();
   const pack = Buffer.concat([enc.encode("FFHPAK1\n"), enc.encode("xml/test.xml\n10\nhello data")]);
   const files = {
-    "/web/ffh.wasm.gz": gzipSync(readFileSync(join(dir, "mock.wasm")), { level: 9 }),
+    "/web/ffh.wasm.gz": gzipSync(wasmBytes, { level: 9 }),
     // Uncompressed: the worker only gunzips what starts with the gzip magic.
     "/web/data.pak.gz": pack,
   };

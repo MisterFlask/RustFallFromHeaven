@@ -4,7 +4,7 @@
 //! termination, and the auto formation.
 
 use super::*;
-use ffh_data::ActionKind as K;
+use crate::types::ActionKind as K;
 
 /// A = Dv: an even hit's expected damage is `40 x 100 / 2` = 2000 centi-HP (20 HP).
 const EQ: Pair = Pair { a: 400, dv: 400, ma: 400, md: 400, spell_pct: 100, pct: 100 };
@@ -406,7 +406,7 @@ fn ground_rules_reach_what_the_resolver_applies() {
             }
             let bt = battle(g, fs);
             for (h, t, side) in [(0, 1, Attacker), (1, 0, Defender)] {
-                for kind in ffh_data::ActionKind::ALL {
+                for kind in ActionKind::ALL {
                     for round in 1..=3 {
                         let mut num: i64 = EVEN as i64;
                         let mut den: i64 = 1;

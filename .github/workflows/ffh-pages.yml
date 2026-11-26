@@ -48,6 +48,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Build and test the workspace
         run: cargo build --release && cargo test --release
@@ -79,7 +81,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-wasip1
+          targets: wasm32-unknown-unknown
 
       # No cargo cache: the project has no external crates (docs: "No external crates"), and
       # cargo decides whether a workspace crate is fresh by file times, which a fresh checkout

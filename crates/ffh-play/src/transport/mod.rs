@@ -432,6 +432,7 @@ pub enum After {
 /// The game-thread state of a transport: the session and its game directory.
 pub struct Host {
     session: Option<Session>,
+    cataclysm: Option<crate::cataclysm::CataclysmSession>,
     opts: HostOptions,
     answerer: Arc<dyn Answerer>,
     /// The current game's directory (autosaves, journal, saves).
@@ -458,7 +459,7 @@ const PROGRESS_EVERY: std::time::Duration = std::time::Duration::from_millis(250
 impl Host {
     /// A host whose sessions answer blocking decisions with `answerer` (the transport's).
     pub fn new(opts: HostOptions, answerer: Arc<dyn Answerer>) -> Host {
-        Host { session: None, opts, answerer, game_dir: None, stuck: None, origin: None, crash: None, publisher: None }
+        Host { session: None, cataclysm: None, opts, answerer, game_dir: None, stuck: None, origin: None, crash: None, publisher: None }
     }
 
     /// Long session operations (the war start's search) publish their progress through `p`.
@@ -470,6 +471,10 @@ impl Host {
         self.session.as_ref()
     }
 
+    pub fn cataclysm(&self) -> Option<&crate::cataclysm::CataclysmSession> {
+        self.cataclysm.as_ref()
+    }
+
     pub fn game_dir(&self) -> Option<&Path> {
         self.game_dir.as_deref()
     }
@@ -479,6 +484,7 @@ impl Host {
         self.game_dir = None;
         self.stuck = None;
         self.origin = None;
+        self.cataclysm = None;
         self.session.take()
     }
 
@@ -502,6 +508,7 @@ impl Host {
     }
 
     fn install(&mut self, s: Session, dir: Option<PathBuf>, origin: Option<PathBuf>) {
+        self.cataclysm = None;
         self.session = Some(s);
         self.game_dir = dir;
         self.stuck = None;
@@ -546,6 +553,12 @@ impl Host {
     }
 
     fn query(&self, j: &Json) -> Result<Json, ProtoErr> {
+        if j.get("q").and_then(Json::as_str) == Some("cataclysm_setup") {
+            return Ok(crate::cataclysm::setup_json(ffh_data::global()));
+        }
+        if let Some(cs) = &self.cataclysm {
+            return cs.query(j);
+        }
         let q = Query::from_json(j)?;
         match (&self.session, &q) {
             // The transport's status: `stuck`, `crashed`, `no_game` and the game directory.
@@ -559,6 +572,15 @@ impl Host {
     }
 
     fn command(&mut self, id: Json, j: &Json) -> (Json, After) {
+        if let Some(cs) = &mut self.cataclysm {
+            return match cs.execute_json(j) {
+                Ok(r) => {
+                    let reply = ok_reply(id, r).with("log", Json::arr()).with("status", self.status());
+                    (reply, After::Nothing)
+                }
+                Err(e) => (err_reply(id, &e), After::Nothing),
+            };
+        }
         let Some(s) = &mut self.session else { return (err_reply(id, &ProtoErr::no_game()), After::Nothing) };
         let cmd = match Command::from_json(s.g.d, j) {
             Ok(c) => c,
@@ -588,6 +610,13 @@ impl Host {
     /// Runs the game to the human's next control point or the end (`Session::advance`) and
     /// returns the event to report: `control`, `over` or `stuck`.
     pub fn advance(&mut self, on_slice: &mut dyn FnMut(&Session)) -> Json {
+        if let Some(cs) = &self.cataclysm {
+            return crate::jobj! {
+                "ev" => if cs.g.is_over() { "over" } else { "control" },
+                "turn" => cs.g.turn,
+                "human" => cs.human.0 as i32,
+            };
+        }
         let Some(s) = &mut self.session else { return crate::jobj! { "ev" => "no_game" } };
         // Fires once: taken here, put back unless it fired (the panic unwinds past the put-back).
         // At the start of `advance` when the game is already at turn T (a save of turn T loaded:
@@ -642,6 +671,9 @@ impl Host {
     /// after a panic dropped the session, and `stuck` (with the diagnosis) when the watchdog
     /// stopped the last turn.
     pub fn status(&self) -> Json {
+        if let Some(cs) = &self.cataclysm {
+            return cs.status();
+        }
         let Some(s) = &self.session else {
             return match &self.crash {
                 Some(report) => crate::jobj! { "phase" => "crashed", "crash" => report.clone() },
@@ -671,6 +703,13 @@ impl Host {
 
     /// `{dir, journal, autosave}` of the current game.
     pub fn game_info(&self) -> Json {
+        if let Some(cs) = &self.cataclysm {
+            return crate::jobj! {
+                "dir" => cs.game_tag.as_str(),
+                "journal" => cs.game_tag.as_str(),
+                "autosave" => Json::Null,
+            };
+        }
         match &self.session {
             Some(s) => game_info(self.game_dir.as_deref(), s),
             None => Json::Null,
@@ -684,6 +723,17 @@ impl Host {
     fn session_op(&mut self, op: SessionOp) -> Result<(Json, After), ProtoErr> {
         match op {
             SessionOp::New { setup, name } => {
+                if setup.get("mode").and_then(Json::as_str) == Some("cataclysm") {
+                    let cs = crate::cataclysm::CataclysmSession::new(&setup)?;
+                    let tag = cs.game_tag.clone();
+                    self.session = None;
+                    self.game_dir = None;
+                    self.stuck = None;
+                    self.origin = None;
+                    self.crash = None;
+                    self.cataclysm = Some(cs);
+                    return Ok((crate::jobj! { "game" => tag, "mode" => "cataclysm" }, After::Nothing));
+                }
                 let dir = self.new_game(&setup, name.as_deref())?;
                 Ok((crate::jobj! { "game" => dir.map(|d| d.display().to_string()) }, After::Advance))
             }
@@ -712,6 +762,10 @@ impl Host {
                 Ok((crate::jobj! { "save" => paths.save.display().to_string(), "sidecar" => paths.sidecar.display().to_string() }, After::Nothing))
             }
             SessionOp::Debug { reveal } => {
+                if let Some(cs) = &self.cataclysm {
+                    cs.set_reveal(reveal);
+                    return Ok((crate::jobj! { "reveal" => reveal }, After::Nothing));
+                }
                 let s = self.session.as_ref().ok_or_else(ProtoErr::no_game)?;
                 s.set_reveal(reveal);
                 Ok((crate::jobj! { "reveal" => reveal }, After::Nothing))
@@ -768,11 +822,11 @@ impl Host {
         // game's turn).
         let status = self.status();
         let publisher = self.publisher.clone();
-        let mut last: Option<std::time::Instant> = None;
+        let mut last: Option<crate::platform::Monotonic> = None;
         let mut progress = |turn: i32| {
             if let Some(p) = &publisher {
                 if last.is_none_or(|t| t.elapsed() >= PROGRESS_EVERY) {
-                    last = Some(std::time::Instant::now());
+                    last = Some(crate::platform::Monotonic::now());
                     p(status.clone().with("war_search", crate::jobj! { "turn" => turn }));
                 }
             }
@@ -841,8 +895,8 @@ impl Host {
     fn saves_json(&self) -> Result<Json, ProtoErr> {
         let root = self.root()?;
         let mut games = Vec::new();
-        if let Ok(entries) = std::fs::read_dir(root) {
-            let mut dirs: Vec<PathBuf> = entries.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.is_dir()).collect();
+        if let Ok(entries) = crate::platform::fs::read_dir_paths(root) {
+            let mut dirs: Vec<PathBuf> = entries.into_iter().filter(|p| crate::platform::fs::is_dir(p)).collect();
             dirs.sort();
             for dir in dirs {
                 let name = dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
@@ -872,7 +926,7 @@ fn play_err(e: PlayError) -> ProtoErr {
 }
 
 fn read_save(path: &Path) -> Result<(Vec<u8>, Option<save::Sidecar>), ProtoErr> {
-    if !path.is_file() {
+    if !crate::platform::fs::is_file(path) {
         return Err(ProtoErr::new("gone", format!("no save {}", path.display())));
     }
     save::read_bundle(path).map_err(|e| ProtoErr::new("cannot", e))
@@ -898,11 +952,11 @@ pub fn game_dir_of(save: &Path) -> PathBuf {
 
 /// `<root>/<base>`, or `<root>/<base>-2`, `-3`, ... when it exists; created.
 fn unused_dir(root: &Path, base: &str) -> std::io::Result<PathBuf> {
-    std::fs::create_dir_all(root)?;
+    crate::platform::fs::create_dir_all(root)?;
     let mut n = 1;
     loop {
         let dir = if n == 1 { root.join(base) } else { root.join(format!("{base}-{n}")) };
-        match std::fs::create_dir(&dir) {
+        match crate::platform::fs::create_dir(&dir) {
             Ok(()) => return Ok(dir),
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => n += 1,
             Err(e) => return Err(e),
