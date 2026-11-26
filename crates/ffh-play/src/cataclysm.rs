@@ -68,6 +68,7 @@ pub fn setup_json(d: &GameData) -> Json {
                 "preferred_doctrine" => f.preferred_doctrine.name(),
                 "can_mortal_win" => f.can_mortal_win,
                 "can_demonic_win" => f.can_demonic_win,
+                "lore_blurb" => f.lore_blurb,
                 "rule_summary" => f.rule_summary,
             }
         })
@@ -878,6 +879,7 @@ impl CataclysmSession {
             "human_faction" => me_pl.faction.info().name,
             "human_leader" => me_pl.name(),
             "human_leader_art" => me_pl.faction.info().leader_art,
+            "human_lore_blurb" => me_pl.faction.info().lore_blurb,
             "human_rule_summary" => me_pl.faction.info().rule_summary,
             "human_alignment" => me_pl.alignment.name(),
             "human_religion" => me_pl.religion.map(Religion::name),
@@ -1367,13 +1369,13 @@ impl CataclysmSession {
                             self.last_report_battles.push(battle.0);
                         }
                         Event::CrisisTriggered { threshold, name, summary } => {
-                            self.last_report_lines.push(format!("ARMAGEDDON {threshold}: {name} — {summary}"));
+                            self.last_report_lines.push(format!("WORLDSEAL STRAIN {threshold}: {name} — {summary}"));
                         }
                         Event::CarcosaRisen { .. } => {
-                            self.last_report_lines.push("CARCOSA HAS RISEN! Race for the Lifeboats!".into());
+                            self.last_report_lines.push("CALDERA KEEP HAS RISEN! Race for the Lifeboats!".into());
                         }
                         Event::HyboremArrived { .. } => {
-                            self.last_report_lines.push("HYBOREM HAS RISEN with the Infernal Legions!".into());
+                            self.last_report_lines.push("THE DEEP BREACH! King Cinder's Host marches out from Great Furnace!".into());
                         }
                         Event::GreatPersonBorn { player, name, .. } if *player == self.human => {
                             self.last_report_lines.push(format!("Great Person {name} arrived in your Court!"));
@@ -1392,7 +1394,7 @@ impl CataclysmSession {
             }
             if self.last_report_lines.is_empty() {
                 self.last_report_lines.push(format!(
-                    "Turn {} ({}) · Armageddon {}/100.",
+                    "Turn {} ({}) · Worldseal Strain {}/100.",
                     self.g.turn,
                     self.g.apocalypse.act_label(self.g.turn),
                     self.g.apocalypse.counter

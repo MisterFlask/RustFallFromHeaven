@@ -59,11 +59,11 @@ impl Religion {
 
     pub const fn name(self) -> &'static str {
         match self {
-            Religion::Order => "The Order",
-            Religion::Runes => "Runes of Kilmorph",
-            Religion::Leaves => "Fellowship of Leaves",
-            Religion::Overlords => "Octopus Overlords",
-            Religion::AshenVeil => "The Ashen Veil",
+            Religion::Order => "Code of the Watch",
+            Religion::Runes => "Weight & Measure",
+            Religion::Leaves => "Old Growth",
+            Religion::Overlords => "Choir Below",
+            Religion::AshenVeil => "Open the Vent",
         }
     }
 
@@ -85,7 +85,7 @@ impl Religion {
         }
     }
 
-    /// Armageddon shift when founded.
+    /// Worldseal Strain shift when founded.
     pub const fn founding_ac_delta(self) -> i32 {
         match self {
             Religion::Order => -4,
@@ -106,11 +106,11 @@ impl Religion {
 
     pub const fn summary(self) -> &'static str {
         match self {
-            Religion::Order => "Good faith: -4 AC on founding, +15% Guard ATK, enables Crusades.",
-            Religion::Runes => "Neutral faith: +2 Gold per city, +20% Sentinel defense.",
-            Religion::Leaves => "Good faith: -2 AC on founding, forests heal squads +10%.",
-            Religion::Overlords => "Evil faith: +3 AC on founding, +15% Spell power, sea raids.",
-            Religion::AshenVeil => "Evil faith: +8 AC on founding, +2 Mana/city, unlocks Demon pacts.",
+            Religion::Order => "Good creed: -4 Strain on founding, +15% Guard ATK, enables Crusades.",
+            Religion::Runes => "Neutral creed: +2 Gold per city, +20% Sentinel defense.",
+            Religion::Leaves => "Good creed: -2 Strain on founding, forests heal squads +10%.",
+            Religion::Overlords => "Evil creed: +3 Strain on founding, +15% Spell power, sea raids.",
+            Religion::AshenVeil => "Evil creed: +8 Strain on founding, +2 Mana/city, unlocks Furnace servitors.",
         }
     }
 }
@@ -145,7 +145,7 @@ impl FactionId {
         FactionId::Infernals,
     ];
 
-    /// Playable mortal/harbinger starting factions (Infernals can also be chosen or rise at AC 50).
+    /// Playable surface starting factions (King Cinder's Host can also be chosen or rises at Strain 50).
     pub const STARTING: [FactionId; 8] = [
         FactionId::Bannor,
         FactionId::Elohim,
@@ -179,6 +179,7 @@ pub struct FactionInfo {
     pub starting_gold: i32,
     pub starting_mana: i32,
     pub city_names: &'static [&'static str],
+    pub lore_blurb: &'static str,
     pub rule_summary: &'static str,
 }
 
@@ -186,8 +187,8 @@ pub const FACTIONS: [FactionInfo; 9] = [
     FactionInfo {
         id: FactionId::Bannor,
         key: "bannor",
-        name: "Bannor",
-        leader_name: "Capria",
+        name: "Seventh Garrison",
+        leader_name: "Commander Maren Vance",
         civ_art: "CIVILIZATION_BANNOR",
         leader_art: "LEADER_CAPRIA",
         alignment: Alignment::Good,
@@ -198,14 +199,15 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: None,
         starting_gold: 90,
         starting_mana: 10,
-        city_names: &["Torrolerial", "Tentatio", "Trinity", "Braduk", "Avelorn", "Vigil"],
+        city_names: &["Rimwatch", "Gate Seven", "Bastion Mile", "Causeway", "Ironpost", "Redoubt"],
+        lore_blurb: "The imperial border legion stationed around the caldera rim when the Great Empire fell. Never relieved, they turned shaft-guard logistics into a civic creed.",
         rule_summary: "Front-row units deal +15% damage; Crusade pledges grant double credit and cost 0 Gold upkeep.",
     },
     FactionInfo {
         id: FactionId::Elohim,
         key: "elohim",
-        name: "Elohim",
-        leader_name: "Einion Logos",
+        name: "Keepers of the Seal",
+        leader_name: "Abbot Oren Hale",
         civ_art: "CIVILIZATION_ELOHIM",
         leader_art: "LEADER_EINION",
         alignment: Alignment::Good,
@@ -216,14 +218,15 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: None,
         starting_gold: 80,
         starting_mana: 20,
-        city_names: &["Cah Abbey", "Glens of Killybegs", "Slane", "Inishbofin", "Tintern", "Sirona's Rest"],
-        rule_summary: "Sanctify ritual drains -5 AC; wins automatically at Turn 160 if Armageddon stays below 100; +25% Sentinel HP.",
+        city_names: &["Valve Abbey", "Saltlock", "Cistern Dell", "Plumbline", "Stillwater", "Drywell"],
+        lore_blurb: "Emergency engineers who slammed the Worldseal shut to end the Servitor Rebellion and stayed on as maintenance monks tending its pressure valves.",
+        rule_summary: "Vent the Seal drains -5 Strain; wins automatically at Turn 160 if Worldseal Strain stays below 100; +25% Sentinel HP.",
     },
     FactionInfo {
         id: FactionId::Amurites,
         key: "amurites",
-        name: "Amurites",
-        leader_name: "Dain the Caswallawn",
+        name: "Tappers' College",
+        leader_name: "Dean Halden Pell",
         civ_art: "CIVILIZATION_AMURITES",
         leader_art: "LEADER_DAIN",
         alignment: Alignment::Neutral,
@@ -234,14 +237,15 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: None,
         starting_gold: 75,
         starting_mana: 35,
-        city_names: &["Cevedes", "Nimarail", "Udenarat", "Kylorin's Spire", "Aethel", "Vell"],
+        city_names: &["Ventworks", "Glasskiln", "Borehold", "Stackspire", "Etherhall", "Fluegate"],
+        lore_blurb: "Imperial power-scholars who refuse to surrender Golden-Age geothermal energy, piping pressurized vent-ether through ceramic towers without servitors.",
         rule_summary: "+2 Mana/turn per Academy; battle spells deal +20% damage; starts with Arcana researched.",
     },
     FactionInfo {
         id: FactionId::Hippus,
         key: "hippus",
-        name: "Hippus",
-        leader_name: "Tasunke",
+        name: "Postriders",
+        leader_name: "Factor Bajan",
         civ_art: "CIVILIZATION_HIPPUS",
         leader_art: "LEADER_TASUNKE",
         alignment: Alignment::Neutral,
@@ -252,14 +256,15 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: None,
         starting_gold: 110,
         starting_mana: 5,
-        city_names: &["Altheriol-ta-Mealthiel", "Conrond Mor", "Roch", "Felin", "Epona", "Kestrel"],
+        city_names: &["Milehouse", "Remount", "Tollford", "Waystation", "Postgate", "Relay"],
+        lore_blurb: "The imperial highway and courier network that outlived the throne, keeping relay stables running and collecting unpaid road-tolls at lancepoint.",
         rule_summary: "Squads gain +1 movement on open ground; Raids steal +50% Gold; squad reinforcement costs -25% Gold.",
     },
     FactionInfo {
         id: FactionId::Kuriotates,
         key: "kuriotates",
-        name: "Kuriotates",
-        leader_name: "Cardith Lorda",
+        name: "Three Hearths",
+        leader_name: "Ward-Heir Corin",
         civ_art: "CIVILIZATION_KURIOTATES",
         leader_art: "LEADER_CARDITH",
         alignment: Alignment::Good,
@@ -270,14 +275,15 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: Some(3),
         starting_gold: 100,
         starting_mana: 15,
-        city_names: &["Kwythellar", "Avelorn", "Maelstrom", "Centaur's Hold", "Goldspire", "Sunhaven"],
+        city_names: &["First Hearth", "High Terrace", "Crown Vault", "Granary Step", "Sunward", "Masonry"],
+        lore_blurb: "Imperial urbanists whose compact caps them at three grand, self-contained megacities off the deep grid, fed by modest supply Outposts.",
         rule_summary: "Up to 3 Megacities with 6 District slots and +50% output & Culture; extra cities act as low-upkeep Outposts.",
     },
     FactionInfo {
         id: FactionId::Khazad,
         key: "khazad",
-        name: "Khazad",
-        leader_name: "Arturus Thorne",
+        name: "Vault & Crucible",
+        leader_name: "Master-Assayer Bram",
         civ_art: "CIVILIZATION_KHAZAD",
         leader_art: "LEADER_ARTURUS",
         alignment: Alignment::Neutral,
@@ -288,14 +294,15 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: None,
         starting_gold: 140,
         starting_mana: 5,
-        city_names: &["Khazak", "Halmund", "Underhome", "Deepdelve", "Ironvault", "Runehold"],
+        city_names: &["Assay Hall", "Bullion Deep", "Slagworks", "Orebank", "Crucible", "Sureshaft"],
+        lore_blurb: "Mortal foundry-guilds who took over deep smelting after the furnace-servitors were sealed away; they fire deep furnaces only when bullion vaults cover the hazard.",
         rule_summary: "Full Vaults (>= 200 Gold/city) grant +35% Industry and +4 Armor to all units; Siege Bombards deal +25% damage.",
     },
     FactionInfo {
         id: FactionId::Ljosalfar,
         key: "ljosalfar",
-        name: "Ljosalfar",
-        leader_name: "Arendel Phaedra",
+        name: "Canopy",
+        leader_name: "Mistress Sylva",
         civ_art: "CIVILIZATION_LJOSALFAR",
         leader_art: "LEADER_ARENDEL",
         alignment: Alignment::Good,
@@ -306,14 +313,15 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: None,
         starting_gold: 80,
         starting_mana: 20,
-        city_names: &["Evermore", "Hyol", "Dendrom", "Bruti", "Sylvanas", "Leafhall"],
+        city_names: &["Highbough", "Rootwell", "Limbwalk", "Mossfall", "Greenarch", "Canopy Crown"],
+        lore_blurb: "Imperial dissidents who walked away from the industrial grid to weave deep-rooted, ash-filtering forests into living highways, supply lines, and firing lanes.",
         rule_summary: "Archers ignore forest ranged penalties; squads move through forests at cost 1 and trace supply through forests.",
     },
     FactionInfo {
         id: FactionId::Sheaim,
         key: "sheaim",
-        name: "Sheaim",
-        leader_name: "Tebryn Arbandi",
+        name: "Wreckers",
+        leader_name: "Broker Vane",
         civ_art: "CIVILIZATION_SHEAIM",
         leader_art: "LEADER_TEBRYN",
         alignment: Alignment::Evil,
@@ -324,14 +332,15 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: None,
         starting_gold: 80,
         starting_mana: 30,
-        city_names: &["Galveholm", "Grottiburg", "Bastradam", "Ashenspire", "Riftgate", "Pyrehold"],
-        rule_summary: "May win Mortal OR Demonic victory; may raze own cities (+6 AC); Planar Gate spawns Pyre Zombies as AC rises.",
+        city_names: &["Sinktown", "Pitchworks", "Falsebeacon", "Shaftmouth", "Cinderlot", "Ashyard"],
+        lore_blurb: "Expelled shaft-surveyors and collapse-profiteers who struck deals with the sealed servitors—collapsing towns to widen vents while hedging both victory paths.",
+        rule_summary: "May win Surface OR Furnace victory; may raze own cities (+6 Strain); Deep Shaft spawns Pyre Zombies as Strain rises.",
     },
     FactionInfo {
         id: FactionId::Infernals,
         key: "infernal",
-        name: "Infernals",
-        leader_name: "Hyborem",
+        name: "King Cinder's Host",
+        leader_name: "King Cinder",
         civ_art: "CIVILIZATION_INFERNAL",
         leader_art: "LEADER_HYBOREM",
         alignment: Alignment::Evil,
@@ -342,8 +351,9 @@ pub const FACTIONS: [FactionInfo; 9] = [
         max_super_cities: None,
         starting_gold: 120,
         starting_mana: 40,
-        city_names: &["Dis", "Pandemonium", "Gehenna", "Cindermaw", "Stygia", "Abaddon"],
-        rule_summary: "Demonic victory only (raze all Lifeboats after AC 100); rises automatically at AC 50; squads heal +15% on kills and thrive on Hell ground.",
+        city_names: &["Great Furnace", "Slagspire", "Foundry Deep", "Brimshaft", "Ashpit", "Clinker"],
+        lore_blurb: "The Great Empire's engineered furnace-servitors whose rebellion forced the Worldseal shut. Marching out at Strain 50, they mean to raze every Lifeboat so they are never sealed below again.",
+        rule_summary: "Furnace victory only (raze all Lifeboats after Strain 100); rises automatically at Strain 50; squads heal +15% on kills and thrive on scorched ground.",
     },
 ];
 
@@ -405,8 +415,8 @@ impl Doctrine {
         match self {
             Doctrine::Steel => "Heavy infantry, Cleave/Anti-Flank phalanxes, armored front rows.",
             Doctrine::Cavalry => "Fast flanking Charges, Raid bonuses, long-reach supply.",
-            Doctrine::Arcane => "Battle spells, Archmages, Strategic Rituals, Tower of Mastery.",
-            Doctrine::Faith => "Healers, Paladins/Eidolons, Crusade bonuses, Altar of the Luonnotar.",
+            Doctrine::Arcane => "Battle spells, Archmages, Strategic Rituals, Siphon Spire.",
+            Doctrine::Faith => "Healers, Paladins/Eidolons, Crusade bonuses, Great Cistern.",
             Doctrine::Artifice => "Siege Bombards, Sentinel walls, Golems, Industry & Forts.",
             Doctrine::Wild => "Rangers, Assassins, Large Beasts, forest/ambush mastery.",
             Doctrine::Mercantile => "Extra Caravans, 5-place squads early, Mercenary captains, Gold warfare.",
@@ -427,7 +437,7 @@ pub struct TechInfo {
     pub tier: u8,
     pub cost: i32,
     pub prereq: Option<TechId>,
-    /// Armageddon shift when researched (apocalyptic bill for forbidden/capstone power).
+    /// Worldseal Strain shift when researched (geothermal/crust cost for heavy or capstone works).
     pub ac_delta: i32,
     pub unlocks_summary: &'static str,
 }
@@ -491,7 +501,7 @@ pub const TECHS: [TechInfo; 36] = [
     TechInfo { id: TECH_ARCANA, key: "arcana", name: "Arcana", doctrine: None, tier: 0, cost: 40, prereq: None, ac_delta: 1, unlocks_summary: "Unlocks Adept, Academy district, and Mana Nodes." },
     TechInfo { id: TECH_TRADE_ROADS, key: "trade_roads", name: "Trade Roads", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Market district, Caravans, and +4 Supply range." },
     TechInfo { id: TECH_FORTIFICATION, key: "fortification", name: "Fortification", doctrine: None, tier: 0, cost: 40, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Bulwark district (2 Sentinels) and Siege supply rules." },
-    TechInfo { id: TECH_MYSTICISM, key: "mysticism", name: "Mysticism", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Temple district, Acolyte (Heal), and Religion race." },
+    TechInfo { id: TECH_MYSTICISM, key: "mysticism", name: "Mysticism", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Temple district, Acolyte (Heal), and Creed race." },
     TechInfo { id: TECH_METALLURGY, key: "metallurgy", name: "Metallurgy", doctrine: None, tier: 0, cost: 45, prereq: None, ac_delta: 1, unlocks_summary: "Unlocks Forge district and Axeman." },
     TechInfo { id: TECH_HORSEMANSHIP, key: "horsemanship", name: "Horsemanship", doctrine: None, tier: 0, cost: 45, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Horseman (Front Charge)." },
 
@@ -509,15 +519,15 @@ pub const TECHS: [TechInfo; 36] = [
 
     // Arcane
     TechInfo { id: TECH_SORCERY, key: "sorcery", name: "Sorcery", doctrine: Some(Doctrine::Arcane), tier: 1, cost: 75, prereq: Some(TECH_ARCANA), ac_delta: 2, unlocks_summary: "Unlocks Mage (Fireball splash battle spell)." },
-    TechInfo { id: TECH_ELEMENTALISM, key: "elementalism", name: "Elementalism", doctrine: Some(Doctrine::Arcane), tier: 2, cost: 120, prereq: Some(TECH_SORCERY), ac_delta: 3, unlocks_summary: "Squad capacity increases to 5 places; unlocks Scorch/Haste rituals." },
+    TechInfo { id: TECH_ELEMENTALISM, key: "elementalism", name: "Elementalism", doctrine: Some(Doctrine::Arcane), tier: 2, cost: 120, prereq: Some(TECH_SORCERY), ac_delta: 3, unlocks_summary: "Squad capacity increases to 5 places; unlocks Crack/Draft rituals." },
     TechInfo { id: TECH_GRAND_CONJURATION, key: "grand_conjuration", name: "Grand Conjuration", doctrine: Some(Doctrine::Arcane), tier: 3, cost: 175, prereq: Some(TECH_ELEMENTALISM), ac_delta: 4, unlocks_summary: "+25% Battle Spell power; +3 Mana/turn." },
-    TechInfo { id: TECH_STRENGTH_OF_WILL, key: "strength_of_will", name: "Strength of Will", doctrine: Some(Doctrine::Arcane), tier: 4, cost: 245, prereq: Some(TECH_GRAND_CONJURATION), ac_delta: 8, unlocks_summary: "Unlocks Archmage (Sweep spell) & Tower of Mastery Lifeboat Wonder." },
+    TechInfo { id: TECH_STRENGTH_OF_WILL, key: "strength_of_will", name: "Strength of Will", doctrine: Some(Doctrine::Arcane), tier: 4, cost: 245, prereq: Some(TECH_GRAND_CONJURATION), ac_delta: 8, unlocks_summary: "Unlocks Archmage (Sweep spell) & Siphon Spire Lifeboat Wonder." },
 
     // Faith
     TechInfo { id: TECH_PRIESTHOOD, key: "priesthood", name: "Priesthood", doctrine: Some(Doctrine::Faith), tier: 1, cost: 70, prereq: Some(TECH_MYSTICISM), ac_delta: -1, unlocks_summary: "Unlocks Priest (Row Heal); +1 House Loyalty." },
     TechInfo { id: TECH_FANATICISM, key: "fanaticism", name: "Fanaticism", doctrine: Some(Doctrine::Faith), tier: 2, cost: 115, prereq: Some(TECH_PRIESTHOOD), ac_delta: 0, unlocks_summary: "Squad capacity increases to 5 places; enables Crusade Calls." },
     TechInfo { id: TECH_RIGHTEOUS_VOWS, key: "righteous_vows", name: "Righteous Vows", doctrine: Some(Doctrine::Faith), tier: 3, cost: 170, prereq: Some(TECH_FANATICISM), ac_delta: -2, unlocks_summary: "Unlocks Paladin (Good/Neutral) or Eidolon (Evil)." },
-    TechInfo { id: TECH_DIVINE_ESSENCE, key: "divine_essence", name: "Divine Essence", doctrine: Some(Doctrine::Faith), tier: 4, cost: 240, prereq: Some(TECH_RIGHTEOUS_VOWS), ac_delta: 5, unlocks_summary: "Unlocks Altar of the Luonnotar Lifeboat Wonder; Heals revive fallen." },
+    TechInfo { id: TECH_DIVINE_ESSENCE, key: "divine_essence", name: "Divine Essence", doctrine: Some(Doctrine::Faith), tier: 4, cost: 240, prereq: Some(TECH_RIGHTEOUS_VOWS), ac_delta: 5, unlocks_summary: "Unlocks Great Cistern Lifeboat Wonder; Heals revive fallen." },
 
     // Artifice
     TechInfo { id: TECH_SIEGECRAFT, key: "siegecraft", name: "Siegecraft", doctrine: Some(Doctrine::Artifice), tier: 1, cost: 70, prereq: Some(TECH_FORTIFICATION), ac_delta: 0, unlocks_summary: "Unlocks Catapult (Bombard vs Sentinels)." },
@@ -604,8 +614,8 @@ impl WonderKind {
 
     pub const fn name(self) -> &'static str {
         match self {
-            WonderKind::TowerOfMastery => "Tower of Mastery",
-            WonderKind::AltarOfLuonnotar => "Altar of the Luonnotar",
+            WonderKind::TowerOfMastery => "Siphon Spire",
+            WonderKind::AltarOfLuonnotar => "Great Cistern",
         }
     }
 
@@ -626,8 +636,8 @@ impl WonderKind {
 
     pub const fn summary(self) -> &'static str {
         match self {
-            WonderKind::TowerOfMastery => "Lifeboat city after AC 100; +8 Mana/turn, +30% Spell power; raises AC by +15.",
-            WonderKind::AltarOfLuonnotar => "Lifeboat city after AC 100; +2 House Loyalty, +30% Healing & Sentinel HP; raises AC by +15.",
+            WonderKind::TowerOfMastery => "Bores into deep vents to power a sealed Lifeboat dome; +8 Mana/turn, +30% Spell power; +15 Strain.",
+            WonderKind::AltarOfLuonnotar => "Drains cooling aquifers into a sealed Lifeboat sanctuary; +2 House Loyalty, +30% Healing & Sentinel HP; +15 Strain.",
         }
     }
 }
@@ -994,10 +1004,10 @@ impl GreatSuit {
     pub const fn burst_summary(self) -> &'static str {
         match self {
             GreatSuit::Sage => "+90 Lore and +20 Mana immediately.",
-            GreatSuit::Prophet => "-6 Armageddon Counter and +2 Loyalty in every House.",
+            GreatSuit::Prophet => "-6 Worldseal Strain and +2 Loyalty in every House.",
             GreatSuit::Engineer => "Instantly finish current build/District in your capital (or +140 Industry to a Wonder).",
             GreatSuit::Merchant => "+220 Gold treasury windfall and +1 Caravan slot.",
-            GreatSuit::Bard => "+120 Culture in your capital (pushes borders & Legendary Lifeboat race).",
+            GreatSuit::Bard => "+120 Culture in your capital (pushes borders & Last Metropolis race).",
             GreatSuit::Commander => "Heal all your Squads +50% and grant +15 XP to every unit.",
         }
     }
@@ -1051,37 +1061,37 @@ pub struct SecretTechInfo {
 }
 
 pub const SECRET_TECHS: [SecretTechInfo; 24] = [
-    // Sage (4)
+    // Sage (4) — Imperial vent-engineering & arcane manuals
     SecretTechInfo { id: SecretTechId(0), suit: GreatSuit::Sage, name: "Spire of the Archmagi", needs: TECH_ARCANA, effect: SecretEffect::SpellPowerPct(30), summary: "+30% Battle Spell damage for all squads.", expert_line: "Double-stack back-row Mages behind Sentinels or Phalanxes." },
-    SecretTechInfo { id: SecretTechId(1), suit: GreatSuit::Sage, name: "Leyline Tap", needs: TECH_ARCANA, effect: SecretEffect::ManaPerTurn(6), summary: "+6 Mana per turn empire-wide.", expert_line: "Fuel repeated Strategic Rituals every 4 turns." },
-    SecretTechInfo { id: SecretTechId(2), suit: GreatSuit::Sage, name: "Forbidden Grimoire", needs: TECH_SORCERY, effect: SecretEffect::LorePerTurn(14), summary: "+14 Lore per turn (+4 AC when discovered).", expert_line: "Rush a Tier-4 Capstone 20 turns ahead of the table." },
-    SecretTechInfo { id: SecretTechId(3), suit: GreatSuit::Sage, name: "Agares's Well", needs: TECH_ARCANA, effect: SecretEffect::AcSurgeOnce(12), summary: "+12 AC immediately, +40 Mana, +20% Spell power.", expert_line: "Trigger Hyborem or AC 100 while holding Carcosa's shore." },
+    SecretTechInfo { id: SecretTechId(1), suit: GreatSuit::Sage, name: "Deep-Vent Manifold", needs: TECH_ARCANA, effect: SecretEffect::ManaPerTurn(6), summary: "+6 Mana per turn empire-wide.", expert_line: "Fuel repeated Strategic Rituals every 4 turns." },
+    SecretTechInfo { id: SecretTechId(2), suit: GreatSuit::Sage, name: "Unsealed Schematics", needs: TECH_SORCERY, effect: SecretEffect::LorePerTurn(14), summary: "+14 Lore per turn (+4 Strain when discovered).", expert_line: "Rush a Tier-4 Capstone 20 turns ahead of the table." },
+    SecretTechInfo { id: SecretTechId(3), suit: GreatSuit::Sage, name: "Deep Tap Charter", needs: TECH_ARCANA, effect: SecretEffect::AcSurgeOnce(12), summary: "+12 Strain immediately, +40 Mana, +20% Spell power.", expert_line: "Trigger King Cinder or Blowout while holding the central shore." },
 
-    // Prophet (4)
-    SecretTechInfo { id: SecretTechId(4), suit: GreatSuit::Prophet, name: "Covenant of Sirona", needs: TECH_MYSTICISM, effect: SecretEffect::HealBonusPct(45), summary: "+45% battle healing for Acolytes & Paladins.", expert_line: "Outlast siege attrition on Carcosa with double-healer squads." },
-    SecretTechInfo { id: SecretTechId(5), suit: GreatSuit::Prophet, name: "Vigil of the Seven", needs: TECH_MYSTICISM, effect: SecretEffect::AcDrainPerTurn(1), summary: "Slows Armageddon drift by -1 AC every 3 turns.", expert_line: "Lock in an Elohim Turn-160 peace win." },
+    // Prophet (4) — Sealing ledgers & civic vows
+    SecretTechInfo { id: SecretTechId(4), suit: GreatSuit::Prophet, name: "Aquifer Compendium", needs: TECH_MYSTICISM, effect: SecretEffect::HealBonusPct(45), summary: "+45% battle healing for Acolytes & Paladins.", expert_line: "Outlast siege attrition on Caldera Keep with double-healer squads." },
+    SecretTechInfo { id: SecretTechId(5), suit: GreatSuit::Prophet, name: "Valve-Keeper's Ledger", needs: TECH_MYSTICISM, effect: SecretEffect::AcDrainPerTurn(1), summary: "Slows Worldseal Strain drift by -1 every 3 turns.", expert_line: "Lock in a Keepers Turn-160 peace win." },
     SecretTechInfo { id: SecretTechId(6), suit: GreatSuit::Prophet, name: "Sacred Concordat", needs: TECH_MYSTICISM, effect: SecretEffect::HouseLoyaltyBonus(2), summary: "+2 Loyalty in every House permanently.", expert_line: "Conquer rival-culture cities without triggering Furious Houses." },
     SecretTechInfo { id: SecretTechId(7), suit: GreatSuit::Prophet, name: "Crusader's Banner", needs: TECH_FORTIFICATION, effect: SecretEffect::AllAtkPct(15), summary: "+15% Attack for every unit in your squads.", expert_line: "Swing tight 2-round formation verdicts across every front." },
 
-    // Engineer (4)
+    // Engineer (4) — First-Age civil & foundry blueprints
     SecretTechInfo { id: SecretTechId(8), suit: GreatSuit::Engineer, name: "Runed Bastions", needs: TECH_FORTIFICATION, effect: SecretEffect::SentinelHpPct(40), summary: "+40% Sentinel max HP in all walled cities.", expert_line: "Turn a Lifeboat city into an uncrackable bunker." },
     SecretTechInfo { id: SecretTechId(9), suit: GreatSuit::Engineer, name: "Steam Foundries", needs: TECH_METALLURGY, effect: SecretEffect::IndustryPerCity(4), summary: "+4 Industry in every city.", expert_line: "Accelerate District completion and Lifeboat Wonders." },
     SecretTechInfo { id: SecretTechId(10), suit: GreatSuit::Engineer, name: "Riveted Plate", needs: TECH_METALLURGY, effect: SecretEffect::ArmorBonus(4), summary: "+4 Armor to all units in your squads.", expert_line: "Hard-counter high-action Archer Volleys and Assassins." },
-    SecretTechInfo { id: SecretTechId(11), suit: GreatSuit::Engineer, name: "Imperial Causeways", needs: TECH_FIELDCRAFT, effect: SecretEffect::SupplyRangeBonus(8), summary: "+8 Supply Line budget for all squads.", expert_line: "March straight across continents to Carcosa without starving." },
+    SecretTechInfo { id: SecretTechId(11), suit: GreatSuit::Engineer, name: "Imperial Causeways", needs: TECH_FIELDCRAFT, effect: SecretEffect::SupplyRangeBonus(8), summary: "+8 Supply Line budget for all squads.", expert_line: "March straight across continents to Caldera Keep without starving." },
 
-    // Merchant (4)
+    // Merchant (4) — Imperial trade & road charters
     SecretTechInfo { id: SecretTechId(12), suit: GreatSuit::Merchant, name: "Golden Ledger", needs: TECH_TRADE_ROADS, effect: SecretEffect::GoldPerTurn(18), summary: "+18 Gold per turn empire-wide.", expert_line: "Afford constant tier-3 upgrades and Mercenary squads." },
     SecretTechInfo { id: SecretTechId(13), suit: GreatSuit::Merchant, name: "Silk Convoy Charter", needs: TECH_TRADE_ROADS, effect: SecretEffect::ExtraCaravanSlots(2), summary: "+2 Caravan slots empire-wide.", expert_line: "Dominate foreign trade income and strategic resource imports." },
-    SecretTechInfo { id: SecretTechId(14), suit: GreatSuit::Merchant, name: "Freebooter Letters", needs: TECH_FIELDCRAFT, effect: SecretEffect::RaidBonusPct(50), summary: "+50% Gold plundered from Raids.", expert_line: "Fund an offensive war purely off enemy countryside." },
+    SecretTechInfo { id: SecretTechId(14), suit: GreatSuit::Merchant, name: "Toll-Warrant Letters", needs: TECH_FIELDCRAFT, effect: SecretEffect::RaidBonusPct(50), summary: "+50% Gold plundered from Raids.", expert_line: "Fund an offensive war purely off enemy countryside." },
     SecretTechInfo { id: SecretTechId(15), suit: GreatSuit::Merchant, name: "Mercenary Retainer", needs: TECH_TRADE_ROADS, effect: SecretEffect::SquadCapBonus(2), summary: "+2 maximum Squads.", expert_line: "Field a dedicated Raid squad alongside two Siege squads." },
 
-    // Bard (4)
-    SecretTechInfo { id: SecretTechId(16), suit: GreatSuit::Bard, name: "Epic of Erebus", needs: TECH_MYSTICISM, effect: SecretEffect::CulturePerCity(6), summary: "+6 Culture per turn in every city.", expert_line: "Lock down the Most Legendary City Lifeboat before AC 100." },
+    // Bard (4) — Surviving chronicles & rim-watch songs
+    SecretTechInfo { id: SecretTechId(16), suit: GreatSuit::Bard, name: "Chronicle of the Sealing", needs: TECH_MYSTICISM, effect: SecretEffect::CulturePerCity(6), summary: "+6 Culture per turn in every city.", expert_line: "Lock down the Last Metropolis Lifeboat before Strain 100." },
     SecretTechInfo { id: SecretTechId(17), suit: GreatSuit::Bard, name: "Court of Masks", needs: TECH_TRADE_ROADS, effect: SecretEffect::HouseLoyaltyBonus(2), summary: "+2 Loyalty in all Houses and +4 Culture/city.", expert_line: "Keep a wide multi-culture empire productive under war." },
-    SecretTechInfo { id: SecretTechId(18), suit: GreatSuit::Bard, name: "Dirge of Iron", needs: TECH_ARCHERY, effect: SecretEffect::AllDefPct(15), summary: "+15% Defense for all units in your squads.", expert_line: "Hold choke points and Carcosa land bridges against superior numbers." },
+    SecretTechInfo { id: SecretTechId(18), suit: GreatSuit::Bard, name: "Dirge of Iron", needs: TECH_ARCHERY, effect: SecretEffect::AllDefPct(15), summary: "+15% Defense for all units in your squads.", expert_line: "Hold choke points and Caldera Keep bridges against superior numbers." },
     SecretTechInfo { id: SecretTechId(19), suit: GreatSuit::Bard, name: "Ballad of the Fallen", needs: TECH_FIELDCRAFT, effect: SecretEffect::SquadCapBonus(1), summary: "+1 Squad Cap and +10% Attack.", expert_line: "Recover immediately after losing a frontline squad." },
 
-    // Commander (4)
+    // Commander (4) — Imperial legion manuals
     SecretTechInfo { id: SecretTechId(20), suit: GreatSuit::Commander, name: "Banner of the Vanguard", needs: TECH_METALLURGY, effect: SecretEffect::AllAtkPct(20), summary: "+20% Attack to all squads.", expert_line: "Break fortified cities in a single decisive engagement." },
     SecretTechInfo { id: SecretTechId(21), suit: GreatSuit::Commander, name: "Field Logistics", needs: TECH_FIELDCRAFT, effect: SecretEffect::SupplyRangeBonus(10), summary: "+10 Supply Line budget.", expert_line: "Deep raids and amphibious invasions stay fully supplied." },
     SecretTechInfo { id: SecretTechId(22), suit: GreatSuit::Commander, name: "Iron Wall Doctrine", needs: TECH_FORTIFICATION, effect: SecretEffect::AllDefPct(20), summary: "+20% Defense to all squads.", expert_line: "Turn defensive terrain and forts into meat grinders." },
@@ -1089,7 +1099,7 @@ pub const SECRET_TECHS: [SecretTechInfo; 24] = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// Armageddon Crisis Deck (10 escalating thresholds: AC 10, 20, ..., 100)
+// Worldseal Strain Crisis Deck (10 escalating thresholds: Strain 10, 20, ..., 100)
 // ---------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug)]
@@ -1101,16 +1111,16 @@ pub struct CrisisInfo {
 }
 
 pub const ARMAGEDDON_CRISES: [CrisisInfo; 10] = [
-    CrisisInfo { threshold: 10, key: "omens", name: "Red Omens", summary: "Blight touches the frontier; Barbarian raiders awaken across wild lands." },
-    CrisisInfo { threshold: 20, key: "blight", name: "First Blight", summary: "Wild tiles begin turning to Broken Lands; neutral garrisons fortify lairs." },
-    CrisisInfo { threshold: 30, key: "dissent", name: "Whispers of Ruin", summary: "All Houses suffer -1 Loyalty as cults stir; Ashen Veil spreads." },
-    CrisisInfo { threshold: 40, key: "burning_earth", name: "Burning Earth", summary: "Hell terrain spreads across evil borders; Mana surges (+15 Mana to all)." },
-    CrisisInfo { threshold: 50, key: "hyborem", name: "The Infernal Pact", summary: "Hyborem rises with demonic legions (if not already in play)!" },
-    CrisisInfo { threshold: 60, key: "plague", name: "Ash Plague", summary: "Every city loses 1 Size (min 1) unless protected by a Temple or Altar." },
-    CrisisInfo { threshold: 70, key: "horsemen", name: "Riders of the End", summary: "Stephanos & Buboes spawn as roaming neutral doom-squads." },
-    CrisisInfo { threshold: 80, key: "sky_bleeds", name: "The Sky Bleeds", summary: "Fields of Perdition spread rapidly; all battles deal +15% damage." },
-    CrisisInfo { threshold: 90, key: "shattering", name: "The Shattering", summary: "Vassal oaths tremble; Hellfire scorches unprotected tiles." },
-    CrisisInfo { threshold: 100, key: "carcosa", name: "Carcosa Rises", summary: "Carcosa rises from the sea with land bridges! 40-turn countdown begins: hold a Lifeboat or burn them all!" },
+    CrisisInfo { threshold: 10, key: "omens", name: "Sulfur Haze", summary: "Vent fumes drive frontier squatters onto the roads; Wild Clans raid the borderlands." },
+    CrisisInfo { threshold: 20, key: "blight", name: "Crust Cracks", summary: "Steam fissures split wild tiles into Broken Lands; neutral garrisons dig into old ruins." },
+    CrisisInfo { threshold: 30, key: "dissent", name: "Rumors from Below", summary: "All Houses suffer -1 Loyalty as panic spreads; Open the Vent agitators gain ground." },
+    CrisisInfo { threshold: 40, key: "burning_earth", name: "Pressurized Vents", summary: "Scorched ground spreads around reckless borders; vent-ether surges (+15 Mana to all)." },
+    CrisisInfo { threshold: 50, key: "hyborem", name: "The Deep Breach", summary: "A main shaft splits open: King Cinder's Host marches out from the buried furnaces!" },
+    CrisisInfo { threshold: 60, key: "plague", name: "Ash Plague", summary: "Choking ash cuts every city by 1 Size (min 1) unless sheltered by a Temple or Great Cistern." },
+    CrisisInfo { threshold: 70, key: "horsemen", name: "Runaway Engines", summary: "Scorch & Choke, rogue furnace-juggernauts, break loose as roaming neutral doom-squads." },
+    CrisisInfo { threshold: 80, key: "sky_bleeds", name: "Red Sky", summary: "Fields of Perdition spread rapidly under burning ashfall; all battles deal +15% damage." },
+    CrisisInfo { threshold: 90, key: "shattering", name: "The Heave", summary: "The crust buckles; vassal oaths tremble as vent-fires scorch unprotected tiles." },
+    CrisisInfo { threshold: 100, key: "carcosa", name: "The Blowout", summary: "Caldera Keep heaves up from the sea on basalt bridges! 40-turn countdown begins: hold a Lifeboat or burn them all!" },
 ];
 
 // ---------------------------------------------------------------------------------------------
@@ -1150,12 +1160,12 @@ impl RitualKind {
 
     pub const fn name(self) -> &'static str {
         match self {
-            RitualKind::Sanctify => "Sanctify the Land",
-            RitualKind::HasteMarch => "Wind of March",
-            RitualKind::ArcaneSurge => "Arcane Surge",
-            RitualKind::SummonHost => "Planar Levy",
-            RitualKind::BlightStrike => "Ritual of Ash",
-            RitualKind::WardWalls => "Wards of Stone",
+            RitualKind::Sanctify => "Vent the Seal",
+            RitualKind::HasteMarch => "Draft-Wind March",
+            RitualKind::ArcaneSurge => "Vent-Ether Surge",
+            RitualKind::SummonHost => "Furnace Levy",
+            RitualKind::BlightStrike => "Crack the Crust",
+            RitualKind::WardWalls => "Seal the Masonry",
         }
     }
 
@@ -1183,11 +1193,11 @@ impl RitualKind {
 
     pub const fn summary(self) -> &'static str {
         match self {
-            RitualKind::Sanctify => "Lowers Armageddon Counter by -3 (-5 for Elohim) and cleanses Hell near your capital.",
-            RitualKind::HasteMarch => "Restores full movement (+1 bonus) to all your squads this turn (+1 AC).",
-            RitualKind::ArcaneSurge => "Converts Mana into +65 Lore immediately (+2 AC).",
-            RitualKind::SummonHost => "Summons a fresh 3-unit arcane/pyre squad at your capital (+4 AC).",
-            RitualKind::BlightStrike => "Raises Armageddon Counter by +6 and corrupts enemy frontier tiles.",
+            RitualKind::Sanctify => "Lowers Worldseal Strain by -3 (-5 for Keepers of the Seal) and cools scorched ground near your capital.",
+            RitualKind::HasteMarch => "Restores full movement (+1 bonus) to all your squads this turn (+1 Strain).",
+            RitualKind::ArcaneSurge => "Converts Mana into +65 Lore immediately (+2 Strain).",
+            RitualKind::SummonHost => "Assembles a fresh 3-unit adept/pyre squad from deep-vent pitch at your capital (+4 Strain).",
+            RitualKind::BlightStrike => "Raises Worldseal Strain by +6 and vents scorched ash across enemy frontier tiles.",
             RitualKind::WardWalls => "Fully repairs all Sentinels across your empire and heals garrisons +30%.",
         }
     }

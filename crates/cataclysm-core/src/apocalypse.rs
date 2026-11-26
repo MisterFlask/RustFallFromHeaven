@@ -24,10 +24,10 @@ pub enum LifeboatKind {
 impl LifeboatKind {
     pub const fn name(self) -> &'static str {
         match self {
-            LifeboatKind::Carcosa => "Carcosa",
-            LifeboatKind::TowerOfMastery => "Tower of Mastery",
-            LifeboatKind::AltarOfLuonnotar => "Altar of the Luonnotar",
-            LifeboatKind::MostLegendary => "Most Legendary City",
+            LifeboatKind::Carcosa => "Caldera Keep",
+            LifeboatKind::TowerOfMastery => "Siphon Spire",
+            LifeboatKind::AltarOfLuonnotar => "Great Cistern",
+            LifeboatKind::MostLegendary => "Last Metropolis",
         }
     }
 }
@@ -39,7 +39,7 @@ pub struct Lifeboat {
     pub razed: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum VictoryKind {
     MortalLifeboat,
     DemonicRuin,
@@ -50,14 +50,14 @@ pub enum VictoryKind {
 }
 
 impl VictoryKind {
-    pub const fn name(&self) -> &'static str {
+    pub const fn name(self) -> &'static str {
         match self {
-            VictoryKind::MortalLifeboat => "Mortal Lifeboat Survival",
-            VictoryKind::DemonicRuin => "Demonic Ruin (All Lifeboats Razed)",
-            VictoryKind::ElohimVigil => "Elohim Vigil (Apocalypse Averted)",
+            VictoryKind::MortalLifeboat => "Surface Lifeboat Survival",
+            VictoryKind::DemonicRuin => "Furnace Triumph (All Lifeboats Razed)",
+            VictoryKind::ElohimVigil => "Worldseal Held (Blowout Averted)",
             VictoryKind::Conquest => "Total Conquest",
             VictoryKind::ScoreAtTurnLimit => "Age Survived (Highest Score)",
-            VictoryKind::MutualExtinction => "The World Ended (No Survivors)",
+            VictoryKind::MutualExtinction => "The Surface Burned (No Survivors)",
         }
     }
 }
@@ -72,12 +72,12 @@ pub struct GameOutcome {
 #[derive(Clone, Debug)]
 pub struct ApocalypseState {
     pub counter: i32,
-    /// Highest AC threshold crossed (so each crisis in `ARMAGEDDON_CRISES` fires once).
+    /// Highest Strain threshold crossed (so each crisis in `ARMAGEDDON_CRISES` fires once).
     pub triggered_crises: Vec<i32>,
     pub hyborem_spawned: bool,
     pub carcosa_risen: bool,
     pub carcosa_city: Option<CityId>,
-    /// Remaining turns once AC reaches 100 (`None` before AC 100).
+    /// Remaining turns once Worldseal Strain reaches 100 (`None` before 100).
     pub countdown: Option<i32>,
     pub carcosa_protected_turns: i32,
     pub lifeboats: Vec<Lifeboat>,
@@ -111,7 +111,7 @@ impl ApocalypseState {
         let prev = self.counter;
         self.counter = (self.counter + delta).clamp(0, 100);
         if self.counter != prev {
-            self.recent_changes.push(format!("{:+} AC ({})", self.counter - prev, reason));
+            self.recent_changes.push(format!("{:+} Strain ({})", self.counter - prev, reason));
             if self.recent_changes.len() > 8 {
                 self.recent_changes.remove(0);
             }
@@ -138,9 +138,9 @@ impl ApocalypseState {
 
     pub fn act_label(&self, turn: i32) -> &'static str {
         match self.act_number(turn) {
-            1 => "Act I · Dawn",
-            2 => "Act II · Escalation",
-            _ => "Act III · Armageddon",
+            1 => "Act I · The Creaking Seal",
+            2 => "Act II · Rising Strain",
+            _ => "Act III · The Blowout",
         }
     }
 

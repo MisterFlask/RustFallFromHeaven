@@ -296,7 +296,7 @@ impl Game {
         }
 
         g.recompute_scores();
-        g.push_log(None, None, None, "A new age dawns over Erebus. Build your Houses, forge your Squads, and prepare for the Cataclysm.");
+        g.push_log(None, None, None, "The Great Empire sealed its rebel furnace-servitors beneath the central sea an age ago. Now the Worldseal groans. Build your Houses, muster your Squads, and prepare for the Blowout.");
         g
     }
 
@@ -569,7 +569,7 @@ impl Game {
 
         if self.is_megacity(c) {
             let bonus = ind_calc.total / 2;
-            ind_calc.add(bonus, "Kuriotates Megacity (+50%)");
+            ind_calc.add(bonus, "Three Hearths Megacity (+50%)");
             gold = gold * 150 / 100;
             lore = lore * 150 / 100;
             culture = culture * 150 / 100;
@@ -582,7 +582,7 @@ impl Game {
 
         if self.khazad_full_vault(c.owner) {
             let bonus = ind_calc.total * 35 / 100;
-            ind_calc.add(bonus, "Khazad Full Vault (+35%)");
+            ind_calc.add(bonus, "Vault & Crucible Full Vault (+35%)");
         }
         if pl.has_tech(crate::data::TECH_COLOSSUS_FORGE) {
             let bonus = ind_calc.total * 25 / 100;
@@ -859,7 +859,7 @@ impl Game {
             && !matches!(pl.faction, FactionId::Sheaim | FactionId::Infernals)
             && pl.religion != Some(Religion::AshenVeil)
         {
-            return Err("requires Sheaim, Infernals, or The Ashen Veil".into());
+            return Err("requires Wreckers, King Cinder's Host, or Open the Vent".into());
         }
         Ok(())
     }
@@ -976,7 +976,7 @@ impl Game {
             }
             Command::BreakVassalage => {
                 if !self.apocalypse.carcosa_risen {
-                    return Err(CmdErr::cannot("vassals may break free only once Armageddon reaches 100"));
+                    return Err(CmdErr::cannot("vassals may break free only once Worldseal Strain reaches 100"));
                 }
                 let Some(master) = self.players[player.idx()].vassal_of.take() else {
                     return Err(CmdErr::cannot("not a vassal"));
@@ -1637,10 +1637,10 @@ impl Game {
             return Err(CmdErr::cannot("you must hold the city to raze it"));
         }
         if c.original_owner == player && !self.players[player.idx()].faction.info().can_raze_own {
-            return Err(CmdErr::cannot("only the Sheaim and Infernals may raze their own cities"));
+            return Err(CmdErr::cannot("only Wreckers and King Cinder's Host may raze their own cities"));
         }
         if !self.apocalypse.can_raze_city(city_id) {
-            return Err(CmdErr::cannot(format!("Carcosa is protected for {} more turns", self.apocalypse.carcosa_protected_turns)));
+            return Err(CmdErr::cannot(format!("Caldera Keep is protected for {} more turns", self.apocalypse.carcosa_protected_turns)));
         }
         self.cities.remove(&city_id);
         self.world.plot_mut(c.plot).city = None;
@@ -1660,7 +1660,7 @@ impl Game {
         self.caravans.retain(|_, cv| cv.origin != city_id && cv.destination != city_id);
         self.shift_ac(6, &format!("{} razed", c.name), events);
         events.push(Event::CityRazed { plot: c.plot, name: c.name.clone(), by: player });
-        self.push_log(Some(player), Some(c.plot), None, format!("Razed {} (+6 AC)!", c.name));
+        self.push_log(Some(player), Some(c.plot), None, format!("Razed {} (+6 Strain)!", c.name));
         Ok(())
     }
 
@@ -1741,7 +1741,7 @@ impl Game {
         match ritual {
             RitualKind::Sanctify => {
                 let delta = if self.players[player.idx()].faction == FactionId::Elohim { -5 } else { -3 };
-                self.shift_ac(delta, "Sanctify the Land", events);
+                self.shift_ac(delta, ritual.name(), events);
                 if let Some(cp) = cap_plot {
                     self.world.cleanse_hell(cp, 4);
                 }
@@ -1758,7 +1758,7 @@ impl Game {
             }
             RitualKind::SummonHost => {
                 let Some(cp) = cap_plot else {
-                    return Err(CmdErr::cannot("need a city to summon a Planar Levy"));
+                    return Err(CmdErr::cannot("need a city to assemble a Furnace Levy"));
                 };
                 self.spawn_squad_internal(player, cp, &[UnitClassId::PyreZombie, UnitClassId::PyreZombie, UnitClassId::Adept]);
                 self.shift_ac(ritual.ac_delta(), ritual.name(), events);
@@ -1926,7 +1926,7 @@ impl Game {
 
     fn cmd_call_crusade(&mut self, player: PlayerId, target: PlayerId, events: &mut Vec<Event>) -> Result<(), CmdErr> {
         if !self.players[player.idx()].has_tech(crate::data::TECH_FANATICISM) && self.players[player.idx()].religion != Some(Religion::Order) {
-            return Err(CmdErr::cannot("requires Fanaticism or The Order religion"));
+            return Err(CmdErr::cannot("requires Fanaticism or Code of the Watch"));
         }
         if player == target || target == self.neutral_player || !self.players[target.idx()].alive {
             return Err(CmdErr::invalid("invalid Crusade target"));
@@ -2219,12 +2219,12 @@ impl Game {
             }
         }
 
-        // Sheaim Planar Gate bonus as AC rises!
+        // Wreckers Deep Shaft bonus as Strain rises!
         if self.players[player.idx()].faction == FactionId::Sheaim && self.apocalypse.counter >= 30 && self.turn % 10 == 0 {
             if let Some(cp) = cap_plot {
                 if self.player_squads(player).len() < self.squad_cap(player) {
                     self.spawn_squad_internal(player, cp, &[UnitClassId::PyreZombie, UnitClassId::PyreZombie]);
-                    self.push_log(Some(player), Some(cp), None, "Planar Gate opened: Pyre Zombies emerged!");
+                    self.push_log(Some(player), Some(cp), None, "Deep Shaft opened: Pyre Zombies emerged!");
                 }
             }
         }
@@ -2234,7 +2234,7 @@ impl Game {
     }
 
     fn process_world_turn(&mut self, events: &mut Vec<Event>) {
-        // 1. Coupled Armageddon gentle drift (+1 every 3 turns, counteracted by Vigil of the Seven).
+        // 1. Coupled Worldseal Strain drift (+1 every 3 turns, counteracted by Valve-Keeper's Ledger).
         if !self.apocalypse.carcosa_risen && self.turn % 3 == 0 {
             let drain: i32 = self
                 .players
@@ -2249,7 +2249,7 @@ impl Game {
                 .sum();
             let net = (1 - drain).max(0);
             if net > 0 {
-                self.shift_ac(net, "world entropy", events);
+                self.shift_ac(net, "caldera pressure", events);
             }
         }
 
@@ -2310,7 +2310,7 @@ impl Game {
                 name: crisis.name.into(),
                 summary: crisis.summary.into(),
             });
-            self.push_log(None, None, None, format!("ARMAGEDDON {}: {} — {}", crisis.threshold, crisis.name, crisis.summary));
+            self.push_log(None, None, None, format!("WORLDSEAL STRAIN {}: {} — {}", crisis.threshold, crisis.name, crisis.summary));
             self.apply_crisis(crisis.threshold, events);
         }
     }
@@ -2343,7 +2343,7 @@ impl Game {
                 }
             }
             50 => {
-                // Hyborem rises automatically if Infernals are not already in the game!
+                // King Cinder's Host rises automatically if not already in the game!
                 if !self.apocalypse.hyborem_spawned && !self.players.iter().any(|p| p.faction == FactionId::Infernals && p.alive) {
                     self.spawn_hyborem(events);
                 }
@@ -2392,14 +2392,14 @@ impl Game {
         for pt in &mut self.world.plots {
             pt.culture.push(0);
         }
-        // Infernals enter at war with Good empires & Neutral.
+        // King Cinder's Host enters at war with Good empires & Neutral.
         for i in 0..self.players.len() - 1 {
             let oid = PlayerId(i as u16);
             if self.players[i].alignment == Alignment::Good || self.players[i].is_neutral {
                 self.set_war(new_id, oid, true);
             }
         }
-        let cid = self.create_city_internal(new_id, plot, Some("Dis".into()), true);
+        let cid = self.create_city_internal(new_id, plot, Some("Great Furnace".into()), true);
         if let Some(c) = self.cities.get_mut(&cid) {
             c.size = 4;
             c.districts.push(DistrictKind::Barracks);
@@ -2411,7 +2411,7 @@ impl Game {
         self.world.spread_hell(10, &[new_id], &mut self.rng);
         self.recompute_vision(new_id);
         events.push(Event::HyboremArrived { player: new_id, city: cid });
-        self.push_log(None, Some(plot), None, "HYBOREM RISES! The Infernal Legions have established Dis!");
+        self.push_log(None, Some(plot), None, "THE DEEP BREACH! King Cinder's Host has marched out and established Great Furnace!");
     }
 
     fn trigger_carcosa(&mut self, events: &mut Vec<Event>) {
@@ -2423,14 +2423,14 @@ impl Game {
         self.apocalypse.carcosa_protected_turns = CARCOSA_PROTECTED_TURNS;
 
         let cp = self.world.raise_carcosa();
-        let cid = self.create_city_internal(self.neutral_player, cp, Some("Carcosa".into()), false);
+        let cid = self.create_city_internal(self.neutral_player, cp, Some("Caldera Keep".into()), false);
         if let Some(c) = self.cities.get_mut(&cid) {
             c.is_carcosa = true;
             c.size = 6;
             c.districts.push(DistrictKind::Bulwark);
             c.sync_sentinels(true);
         }
-        // Strong neutral guardian squad defends Carcosa until someone conquers it!
+        // Strong neutral guardian squad defends Caldera Keep until someone conquers it!
         self.spawn_squad_internal(
             self.neutral_player,
             cp,
@@ -2438,7 +2438,7 @@ impl Game {
         );
         self.apocalypse.carcosa_city = Some(cid);
 
-        // Reveal Carcosa and its bridges to every living player!
+        // Reveal Caldera Keep and its bridges to every living player!
         for p in 0..self.players.len() {
             if self.players[p].alive {
                 self.world.reveal_radius(PlayerId(p as u16), cp, 3);
@@ -2473,7 +2473,7 @@ impl Game {
             None,
             Some(cp),
             None,
-            format!("CARCOSA HAS RISEN! {} Lifeboats stand. Hold one when the {}-turn countdown ends — or burn them all!", self.apocalypse.lifeboats.len(), CARCOSA_TIMER_TURNS),
+            format!("CALDERA KEEP HAS RISEN! {} Lifeboats stand. Hold one when the {}-turn countdown ends — or burn them all!", self.apocalypse.lifeboats.len(), CARCOSA_TIMER_TURNS),
         );
     }
 
@@ -2481,7 +2481,7 @@ impl Game {
         if self.apocalypse.outcome.is_some() {
             return;
         }
-        // 1. After AC 100: Demonic victory if every Lifeboat is razed!
+        // 1. After Strain 100: Furnace victory if every Lifeboat is razed!
         if self.apocalypse.carcosa_risen && self.apocalypse.standing_lifeboats() == 0 {
             let demonic_winners: Vec<PlayerId> = self
                 .players
@@ -2499,7 +2499,7 @@ impl Game {
                 GameOutcome {
                     kind: VictoryKind::DemonicRuin,
                     winners: demonic_winners,
-                    summary: "All Lifeboats have been razed! Demonic Victory!".into(),
+                    summary: "All Lifeboats have been razed! Furnace Triumph!".into(),
                 }
             };
             events.push(Event::GameEnded { summary: outcome.summary.clone() });
@@ -2507,7 +2507,7 @@ impl Game {
             return;
         }
 
-        // 2. After AC 100: Countdown expires -> holders of standing Lifeboats win!
+        // 2. After Strain 100: Countdown expires -> holders of standing Lifeboats win!
         if self.apocalypse.carcosa_risen && self.apocalypse.countdown.is_some_and(|t| t <= 0) {
             let mut winners = Vec::new();
             for lb in &self.apocalypse.lifeboats {
@@ -2525,10 +2525,10 @@ impl Game {
                 }
             }
             let summary = if winners.is_empty() {
-                "The timer expired with no mortal holding a Lifeboat. The world perishes.".into()
+                "The timer expired with no surface empire holding a Lifeboat. The surface burns.".into()
             } else {
                 let names: Vec<&str> = winners.iter().map(|p| self.players[p.idx()].name()).collect();
-                format!("Mortal Lifeboat Survival! Winners: {}.", names.join(", "))
+                format!("Surface Lifeboat Survival! Winners: {}.", names.join(", "))
             };
             let kind = if winners.is_empty() { VictoryKind::MutualExtinction } else { VictoryKind::MortalLifeboat };
             events.push(Event::GameEnded { summary: summary.clone() });
@@ -2536,7 +2536,7 @@ impl Game {
             return;
         }
 
-        // 3. Before AC 100: Conquest (only 1 non-neutral civ alive).
+        // 3. Before Strain 100: Conquest (only 1 non-neutral civ alive).
         let alive_civs: Vec<PlayerId> = self.players.iter().filter(|p| p.alive && !p.is_neutral).map(|p| p.id).collect();
         if alive_civs.len() == 1 && !self.apocalypse.carcosa_risen {
             let w = alive_civs[0];
@@ -2546,10 +2546,10 @@ impl Game {
             return;
         }
 
-        // 4. Turn 160 without Armageddon -> Elohim win if alive, else highest Score!
+        // 4. Turn 160 without Blowout -> Keepers of the Seal win if alive, else highest Score!
         if self.turn >= MAX_GAME_TURNS && !self.apocalypse.carcosa_risen {
             if let Some(elohim) = self.players.iter().find(|p| p.alive && p.faction == FactionId::Elohim) {
-                let summary = String::from("Turn 160 reached with Armageddon averted! The Elohim Vigil triumphs!");
+                let summary = String::from("Turn 160 reached with the Worldseal intact! Keepers of the Seal triumph!");
                 events.push(Event::GameEnded { summary: summary.clone() });
                 self.apocalypse.outcome = Some(GameOutcome { kind: VictoryKind::ElohimVigil, winners: vec![elohim.id], summary });
             } else if let Some(best) = self.players.iter().filter(|p| p.alive && !p.is_neutral).max_by_key(|p| p.score) {
@@ -2779,7 +2779,7 @@ impl Game {
                         };
                         self.apocalypse.lifeboats.push(Lifeboat { kind, city_id, razed: false });
                     }
-                    self.push_log(Some(c.owner), Some(c.plot), None, format!("{} completed the {} (+{} AC)!", c.name, w.name(), w.ac_delta()));
+                    self.push_log(Some(c.owner), Some(c.plot), None, format!("{} completed the {} (+{} Strain)!", c.name, w.name(), w.ac_delta()));
                 }
             }
         }

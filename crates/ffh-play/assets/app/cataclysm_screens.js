@@ -82,7 +82,8 @@ export async function openCataclysmNewGame({ noGame = false } = {}) {
           h(
             "div",
             h("h4", `${f.name} — ${f.leader_name}`),
-            h("p.dim", `Alignment: ${f.alignment} · Preferred Doctrine: ${f.preferred_doctrine} · Victory: ${f.can_mortal_win && f.can_demonic_win ? "Mortal or Demonic" : f.can_demonic_win ? "Demonic (Raze All Lifeboats)" : "Mortal (Hold a Lifeboat)"}`),
+            h("p.dim", `Alignment: ${f.alignment} · Preferred Doctrine: ${f.preferred_doctrine} · Victory: ${f.can_mortal_win && f.can_demonic_win ? "Surface or Furnace" : f.can_demonic_win ? "Furnace (Raze All Lifeboats)" : "Surface (Hold a Lifeboat)"}`),
+            f.lore_blurb ? h("p.dim", f.lore_blurb) : null,
             h("p", f.rule_summary),
           ),
         ),
@@ -118,12 +119,12 @@ export async function openCataclysmNewGame({ noGame = false } = {}) {
   };
 
   openModal({
-    title: "Cataclysm · Alternate Ruleset",
+    title: "Cataclysm · The Failing Worldseal",
     tag: "cataclysm-new",
     wide: true,
     dismissible: !noGame,
     body: [
-      h("p.dim", "Squad-first Ogre Battle 4X · 160-turn three-act arc · 4 decoupled currencies (Gold, Industry, Lore, Mana) · Macro Districts · Great People Court · Armageddon Lifeboat Endgame."),
+      h("p.dim", "The Great Empire sealed its rebel furnace-servitors beneath the central sea. Now the Worldseal groans · 3×3 Squads · Macro Cities · Great People Court · Worldseal Strain & Lifeboat Endgame."),
       gridEl,
       detailEl,
       h(
@@ -294,7 +295,7 @@ export function openMacroCity(cityId) {
               if (await catCmd({ c: "cat_raze", city: c.id })) closeTag("cat-city");
             },
           },
-          "Raze City (+6 AC)",
+          "Raze City (+6 Strain)",
         ),
       ),
     );
@@ -331,7 +332,7 @@ export function openMacroCity(cityId) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// 3. Doctrine, Tech Tree, Religions & Strategic Rituals Screen
+// 3. Doctrine, Tech Tree, Creeds & Strategic Rituals Screen
 
 export function openDoctrineTree() {
   const data = cat();
@@ -355,13 +356,13 @@ export function openDoctrineTree() {
           }
         },
       },
-      h("div.cat-tech-head", h("strong", t.name), h("small", t.known ? "Known" : `${t.cost} Lore${t.ac_delta ? ` · ${t.ac_delta > 0 ? "+" : ""}${t.ac_delta} AC` : ""}`)),
+      h("div.cat-tech-head", h("strong", t.name), h("small", t.known ? "Known" : `${t.cost} Lore${t.ac_delta ? ` · ${t.ac_delta > 0 ? "+" : ""}${t.ac_delta} Strain` : ""}`)),
       h("small.dim", t.unlocks),
     );
   };
 
   openModal({
-    title: "Foundation, Doctrines, Faith & Rituals",
+    title: "Foundation, Doctrines, Creeds & Rituals",
     tag: "cat-techs",
     wide: true,
     body: [
@@ -410,7 +411,7 @@ export function openDoctrineTree() {
           h("div.cat-grid-4", ...(byDoc.get(doc.key) ?? []).map(techBtn)),
         ),
       ),
-      h("h4", "Religions (Separate World Race)"),
+      h("h4", "Creeds (Separate World Race)"),
       h(
         "div.cat-grid-2",
         ...data.religions.map((r) =>
@@ -444,7 +445,7 @@ export function openDoctrineTree() {
                 }
               },
             },
-            h("strong", `${rk.name} (${rk.mana_cost} Mana · ${rk.ac_delta >= 0 ? "+" : ""}${rk.ac_delta} AC)`),
+            h("strong", `${rk.name} (${rk.mana_cost} Mana · ${rk.ac_delta >= 0 ? "+" : ""}${rk.ac_delta} Strain)`),
             h("small.dim", rk.summary),
           ),
         ),
@@ -575,7 +576,7 @@ export function openHousesAndApocalypse() {
   const ownSquads = data.squads.filter((s) => s.owner === meId && s.lent_by === null);
 
   openModal({
-    title: `Houses, Apocalypse (${ap.counter}/100) & Diplomacy`,
+    title: `Houses, Worldseal (${ap.counter}/100) & Diplomacy`,
     tag: "cat-apoc",
     wide: true,
     body: [
@@ -600,7 +601,7 @@ export function openHousesAndApocalypse() {
           )
         : h("p.dim", "No Houses formed yet."),
 
-      h("h4", `Apocalypse Clock · ${ap.act_label} · AC ${ap.counter}/100${ap.countdown !== null ? ` · COUNTDOWN: ${ap.countdown} TURNS` : ""}`),
+      h("h4", `Worldseal Strain · ${ap.act_label} · ${ap.counter}/100${ap.countdown !== null ? ` · BLOWOUT COUNTDOWN: ${ap.countdown} TURNS` : ""}`),
       ap.recent_changes?.length ? h("p.dim", `Recent shifts: ${ap.recent_changes.join(" · ")}`) : null,
       ap.lifeboats?.length
         ? h(
@@ -616,7 +617,7 @@ export function openHousesAndApocalypse() {
               ),
             ),
           )
-        : h("p.dim", "Lifeboats unlock when AC hits 100 (Carcosa rises from the sea + Tower of Mastery + Altar + Most Legendary City)."),
+        : h("p.dim", "Lifeboats unlock when Worldseal Strain hits 100 (Caldera Keep rises from the sea + Siphon Spire + Great Cistern + Last Metropolis)."),
       h(
         "div.cat-crisis-strip",
         ...ap.crises.map((cr) =>

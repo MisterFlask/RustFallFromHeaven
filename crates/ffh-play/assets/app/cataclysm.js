@@ -192,7 +192,7 @@ export function renderCataclysmTop() {
 
   fill(
     info,
-    h("span.cat-top-chip.act", { tip: [h("div.tip-title", `${data.human_faction} · ${ap.act_label}`), h("div", data.human_rule_summary)] }, `${data.human_faction} · ${ap.act_label}`),
+    h("span.cat-top-chip.act", { tip: [h("div.tip-title", `${data.human_faction} · ${ap.act_label}`), data.human_lore_blurb ? h("div.dim", data.human_lore_blurb) : null, h("div", data.human_rule_summary)].filter(Boolean) }, `${data.human_faction} · ${ap.act_label}`),
     h(
       "button.cat-top-chip",
       { tip: calcTip(`Gold ${cur.gold} (${fmtRate(cur.gold_rate)})`, cur.gold_calc), onclick: () => openHousesAndApocalypse() },
@@ -209,7 +209,7 @@ export function renderCataclysmTop() {
     h(
       "button.cat-top-chip",
       {
-        tip: calcTip(`Arcane Mana ${cur.mana} (${fmtRate(cur.mana_rate)})`, cur.mana_calc),
+        tip: calcTip(`Vent-Ether Mana ${cur.mana} (${fmtRate(cur.mana_rate)})`, cur.mana_calc),
         onclick: () => openDoctrineTree(),
       },
       `Mana ${cur.mana} (${fmtRate(cur.mana_rate)})`,
@@ -218,12 +218,12 @@ export function renderCataclysmTop() {
       `button.cat-top-chip${ap.counter >= 50 ? ".warn" : ""}`,
       {
         tip: calcTip(
-          `Armageddon Counter ${ap.counter}/100`,
-          ap.recent_changes?.length ? ap.recent_changes : ["Rises from dark magic, capstones, wonders, razing, and war.", "AC 50: Hyborem rises. AC 100: Carcosa rises + 40-turn Lifeboat countdown."],
+          `Worldseal Strain ${ap.counter}/100`,
+          ap.recent_changes?.length ? ap.recent_changes : ["Rises from vent-tapping, deep smelting, Lifeboat wonders, razing, and creeping pressure.", "Strain 50: King Cinder's Host marches out. Strain 100: Caldera Keep rises + 40-turn Blowout countdown."],
         ),
         onclick: () => openHousesAndApocalypse(),
       },
-      ap.carcosa_risen ? `CARCOSA: ${ap.countdown}t LEFT` : `AC ${ap.counter}/100`,
+      ap.carcosa_risen ? `CALDERA KEEP: ${ap.countdown}t LEFT` : `Strain ${ap.counter}/100`,
     ),
     h(
       `button.cat-top-chip${courtN > 0 ? ".accent" : ""}`,
