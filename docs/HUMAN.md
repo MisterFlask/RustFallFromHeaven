@@ -373,7 +373,11 @@ A is Cross and B is Circle on a PlayStation pad). Only a device whose main point
 without one runs nothing of it. A browser shows a pad to the page only after one of its buttons is
 pressed, so the pad's first press starts the mode and does nothing else (a note points at the
 menu's Controls, which lists the buttons on a touch screen). A finger on the screen or a key on a keyboard ends the mode (the last input wins: the
-touch controls above work as before), and the pad's next press starts it again.
+touch controls above work as before), and the pad's next press starts it again. A controller in
+use makes the screen landscape, whatever Options' Screen says (a phone upright gets the page
+turned on its side, as a Landscape lock does): from the mode's start until no pad is connected, so
+a finger ending the mode does not turn the page back under it; when the pad goes, the Screen
+choice applies again.
 
 On the map the mode has a cursor, a ring on a plot. The cursor hovers its plot as the mouse does:
 the outline, the tooltip above the plot, and with units selected the way there with its turns

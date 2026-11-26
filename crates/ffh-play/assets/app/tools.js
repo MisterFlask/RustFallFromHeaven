@@ -619,17 +619,19 @@ export function openOptions() {
     ),
   );
   // Screen: the screen's orientation on a phone (orient.js; remembered by this browser): follow the
-  // phone, or keep one, the browser's lock where it has one, else the page turned.
+  // phone, or keep one, the browser's lock where it has one, else the page turned. A controller in
+  // use overrides it: landscape.
   const screen = orientOffered()
     ? section(
         "Screen",
+        h("p.dim", "With a controller connected, always landscape."),
         h(
           "div.checks.single",
           radios(
             "option-orientation",
             "orientation",
             [
-              ["auto", "Turns with the phone", "Upright or on its side, as the phone is held; on its side while a controller is connected"],
+              ["auto", "Turns with the phone", "Upright or on its side, as the phone is held"],
               ["landscape", "Landscape", "Always on its side: in fullscreen where the browser locks the screen, else the page turns itself while the phone is upright"],
               ["portrait", "Portrait", "Always upright: in fullscreen where the browser locks the screen, else the page turns itself while the phone is on its side"],
             ],

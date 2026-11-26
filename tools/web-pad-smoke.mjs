@@ -146,6 +146,13 @@ async function run(pw, bin) {
       await t.ev(() => window.__padDisconnect());
       await t.wait(() => window.ffh.orient().rot === 0 && innerHeight > innerWidth, null, "the page upright again once the pad is gone");
       t.step("the controller turns the page to landscape");
+      // A Portrait lock chosen in Options gives way to the controller as well.
+      await t.ev(() => { localStorage.setItem("ffh-orientation", "portrait"); window.__padConnect(); });
+      await t.press(B.a);
+      await t.wait(() => window.ffh.orient().rot !== 0 && innerWidth > innerHeight, null, "the controller turns a Portrait-locked phone to landscape");
+      await t.ev(() => window.__padDisconnect());
+      await t.wait(() => window.ffh.orient().rot === 0 && innerHeight > innerWidth, null, "the Portrait lock back once the pad is gone");
+      await t.ev(() => localStorage.removeItem("ffh-orientation"));
       await t.ctx.close();
     }
 

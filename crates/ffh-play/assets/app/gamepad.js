@@ -5,8 +5,8 @@
 // on the screen or a key on a keyboard ends the mode (the last input wins); the pad's next input
 // starts it again.
 //
-// A controller turns the page to landscape (orient.js, `setControllerLandscape`, unless the player
-// locked portrait in Options) from the mode's start until no pad is connected: a finger ending the
+// A controller turns the page to landscape (orient.js, `setControllerLandscape`, whatever the
+// Options' Screen choice) from the mode's start until no pad is connected: a finger ending the
 // mode leaves it on its side, so a tap is not turned under the finger.
 //
 // In the mode the map has a cursor (a plot, moved by the left stick or the D-pad by screen
