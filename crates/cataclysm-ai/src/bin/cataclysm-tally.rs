@@ -32,10 +32,12 @@ struct Args {
     seed: u64,
     rows: bool,
     calibrate: bool,
+    /// Seat 0 plays this faction in every game (else it takes each starting faction in turn).
+    seat0: Option<FactionId>,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { games: 120, opponents: GameSetup::default().ai_count, mode: Mode::Standard, seed: 1000, rows: false, calibrate: false };
+    let mut a = Args { games: 120, opponents: GameSetup::default().ai_count, mode: Mode::Standard, seed: 1000, rows: false, calibrate: false, seat0: None };
     let mut it = std::env::args().skip(1);
     while let Some(k) = it.next() {
         let mut val = |name: &str| it.next().unwrap_or_else(|| panic!("{name} needs a value"));
@@ -53,6 +55,10 @@ fn parse_args() -> Args {
             }
             "--rows" => a.rows = true,
             "--calibrate" => a.calibrate = true,
+            "--seat0" => {
+                let key = val("--seat0");
+                a.seat0 = Some(FactionId::STARTING.into_iter().find(|f| f.info().key == key).unwrap_or_else(|| panic!("not a starting faction: {key}")));
+            }
             other => panic!("unknown argument {other}"),
         }
     }
@@ -106,6 +112,35 @@ struct Totals {
     calibration: [(usize, i64, usize); 10],
     /// Per band of `LORE_BAND_TURNS` turns: (sum of Lore per turn, civilization-turns).
     lore_income: [(i64, i64); 8],
+    host: HostStats,
+}
+
+/// King Cinder's Host, in the games it is in.
+#[derive(Default)]
+struct HostStats {
+    games: usize,
+    /// The turn it entered (0 when it started the game).
+    entered: Vec<i32>,
+    /// Its squad power at entry over the mean living civilization's, x100.
+    power_at_entry: Vec<i32>,
+    /// Its squad power at the Blowout over the mean living civilization's, x100 (alive then).
+    power_at_blowout: Vec<i32>,
+    alive_at_blowout: usize,
+    games_with_blowout: usize,
+    alive_at_end: usize,
+    /// Turns it lived, when it was eliminated.
+    lifetime: Vec<i32>,
+    max_cities: Vec<i32>,
+    captured: i64,
+    lost: i64,
+    razed: i64,
+    lifeboats_razed: i64,
+    /// Lifeboats standing at the end, in games where it lived to the end after a Blowout.
+    lifeboats_left: Vec<i32>,
+    furnace_wins: usize,
+    /// Furnace wins shared with the Wreckers.
+    furnace_shared: usize,
+    wins: usize,
 }
 
 /// Width of the turn bands the Lore income is reported in.
@@ -163,7 +198,9 @@ fn sample_attack(g: &Game, p: PlayerId) -> Option<(i32, bool)> {
 
 fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut Totals) -> GameRow {
     let mut g = Game::new(GameSetup { seed, human_faction: faction, ai_count: args.opponents, ..GameSetup::default() });
-    let present: Vec<&'static str> = g.players.iter().filter(|p| !p.is_neutral).map(|p| p.faction.info().name).collect();
+    let mut host: Option<PlayerId> = None;
+    let (mut host_entry, mut host_out, mut host_max_cities) = (None::<i32>, None::<i32>, 0i32);
+    let mut host_at_blowout: Option<bool> = None;
     let (mut strain_50, mut blowout, mut seat0_out) = (None, None, None);
     let mut capstone: Vec<Option<i32>> = Vec::new();
     let mut exhausted: Vec<Option<i32>> = Vec::new();
@@ -193,15 +230,29 @@ fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut
             Mode::Pusher if p.idx() == 0 => Policy::Pusher,
             Mode::Pusher => Policy::Standard,
         };
+        let lifeboats_before: Vec<PlotIdx> =
+            g.apocalypse.lifeboats.iter().filter(|l| !l.razed).filter_map(|l| g.cities.get(&l.city_id).map(|c| c.plot)).collect();
         for e in play_turn_as(&mut g, p, policy) {
             match e {
-                Event::CityCaptured { city, .. } => {
+                Event::CityCaptured { city, new_owner, old_owner, .. } => {
                     t.captured += 1;
                     if g.apocalypse.carcosa_risen && g.apocalypse.is_lifeboat(city).is_some() {
                         lifeboat_captures += 1;
                     }
+                    if Some(new_owner) == host {
+                        t.host.captured += 1;
+                    }
+                    if Some(old_owner) == host {
+                        t.host.lost += 1;
+                    }
                 }
-                Event::CityRazed { .. } => t.razed += 1,
+                Event::CityRazed { plot, by, .. } => {
+                    t.razed += 1;
+                    if Some(by) == host {
+                        t.host.razed += 1;
+                        t.host.lifeboats_razed += lifeboats_before.contains(&plot) as i64;
+                    }
+                }
                 Event::BattleFought { .. } => t.battles += 1,
                 Event::CityFounded { .. } => t.founded += 1,
                 _ => {}
@@ -235,6 +286,26 @@ fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut
 
         if seat0_out.is_none() && !g.players[0].alive {
             seat0_out = Some(g.turn);
+        }
+        if host.is_none() {
+            if let Some(h) = g.players.iter().find(|pl| pl.faction == FactionId::Infernals) {
+                host = Some(h.id);
+                host_entry = Some(if g.apocalypse.hyborem_spawned { g.turn } else { 0 });
+                t.host.power_at_entry.push(power_share(&g, h.id));
+            }
+        }
+        if let Some(h) = host {
+            host_max_cities = host_max_cities.max(g.player_cities(h).len() as i32);
+            if host_out.is_none() && !g.players[h.idx()].alive {
+                host_out = Some(g.turn);
+            }
+            if host_at_blowout.is_none() && g.apocalypse.carcosa_risen {
+                let alive = g.players[h.idx()].alive;
+                host_at_blowout = Some(alive);
+                if alive {
+                    t.host.power_at_blowout.push(power_share(&g, h));
+                }
+            }
         }
         if strain_50.is_none() && g.apocalypse.counter >= 50 {
             strain_50 = Some(g.turn);
@@ -313,17 +384,51 @@ fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut
             }
         }
     }
-    for f in &present {
-        t.factions.entry(f).or_default().0 += 1;
+    // Present: every civilization that played, King Cinder's Host included when it entered.
+    for pl in g.players.iter().filter(|pl| !pl.is_neutral) {
+        t.factions.entry(pl.faction.info().name).or_default().0 += 1;
+    }
+    if let Some(h) = host {
+        let hs = &mut t.host;
+        hs.games += 1;
+        hs.entered.extend(host_entry);
+        hs.max_cities.push(host_max_cities);
+        if blowout.is_some() {
+            hs.games_with_blowout += 1;
+            hs.alive_at_blowout += (host_at_blowout == Some(true)) as usize;
+        }
+        if g.players[h.idx()].alive {
+            hs.alive_at_end += 1;
+            if blowout.is_some() {
+                hs.lifeboats_left.push(g.apocalypse.standing_lifeboats() as i32);
+            }
+        } else if let (Some(out), Some(entry)) = (host_out, host_entry) {
+            hs.lifetime.push(out - entry);
+        }
+        if winner_ids.contains(&h) {
+            hs.wins += 1;
+            if kind == "DemonicRuin" {
+                hs.furnace_wins += 1;
+                hs.furnace_shared += (winner_ids.len() > 1) as usize;
+            }
+        }
     }
     for f in &winners {
         t.factions.entry(f).or_default().1 += 1;
     }
-    if present.contains(&FactionId::Elohim.info().name) {
+    if g.players.iter().any(|pl| pl.faction == FactionId::Elohim) {
         t.keepers_games += 1;
         t.vigils += (kind == "ElohimVigil") as usize;
     }
     GameRow { seed, seat0: faction.info().name, end_turn: g.turn, outcome: kind, winners, blowout, strain: g.apocalypse.counter }
+}
+
+/// `p`'s squad power over the mean living civilization's (itself included), x100.
+fn power_share(g: &Game, p: PlayerId) -> i32 {
+    let civs: Vec<PlayerId> = g.players.iter().filter(|pl| pl.alive && !pl.is_neutral).map(|pl| pl.id).collect();
+    let of = |x: PlayerId| g.squads.values().filter(|s| s.owner == x).map(|s| s.power_rating()).sum::<i32>();
+    let mean = civs.iter().map(|&x| of(x)).sum::<i32>() / civs.len().max(1) as i32;
+    of(p) * 100 / mean.max(1)
 }
 
 /// (10th percentile, median, 90th percentile) of `v`, or dashes when it is empty.
@@ -346,7 +451,7 @@ fn main() {
     let mut t = Totals::default();
     let mut rows = Vec::new();
     for n in 0..args.games {
-        let faction = FactionId::STARTING[n % FactionId::STARTING.len()];
+        let faction = args.seat0.unwrap_or(FactionId::STARTING[n % FactionId::STARTING.len()]);
         // The forecast check copies the game for every sample: a quarter of the games is plenty.
         let calibrate = args.calibrate && n % 4 == 0;
         rows.push(run_game(args.seed + n as u64, faction, &args, calibrate, &mut t));
@@ -444,6 +549,29 @@ fn main() {
     }
     let keep_wins = t.lifeboats.get("Caldera Keep").map_or(0, |x| x.2);
     println!("Keepers' turn-limit win: {} of {} games with the Keepers", t.vigils, t.keepers_games);
+    let h = &t.host;
+    println!(
+        "King Cinder's Host: in {} games, entered turn {} (power at entry {}% of the mean civilization's); alive at the Blowout in {} of {} games with one (power then {}%), alive at the end in {}",
+        h.games,
+        spread(&h.entered),
+        spread(&h.power_at_entry),
+        h.alive_at_blowout,
+        h.games_with_blowout,
+        spread(&h.power_at_blowout),
+        h.alive_at_end
+    );
+    println!(
+        "  eliminated after {} turns ({} times); most cities held {}; cities captured {}, lost {}, razed {} ({} of them Lifeboats); Lifeboats left when it lived through a Blowout {}",
+        spread(&h.lifetime),
+        h.lifetime.len(),
+        spread(&h.max_cities),
+        h.captured,
+        h.lost,
+        h.razed,
+        h.lifeboats_razed,
+        spread(&h.lifeboats_left)
+    );
+    println!("  won {} of {} games ({}%): Furnace {} ({} shared with the Wreckers)", h.wins, h.games, pct(h.wins, h.games), h.furnace_wins, h.furnace_shared);
     println!("faction: games present, games among the winners");
     for (name, (present, won)) in &t.factions {
         println!("  {:<22} {:>4} {:>4}  {}%", name, present, won, pct(*won, *present));
@@ -457,7 +585,7 @@ fn main() {
         }
     }
     println!(
-        "TALLY policy={} civs={} games={} | Blowout p10/med/p90 {} (none in {}) | end {} | capstone {} | out of research before T100 {}% | vigil {}/{} | Lifeboat captured in {}% of Blowout games, Keep {}% of winning Lifeboats | peace/game {:.1} | eliminated/game {:.1} | Great People/civ {:.2}",
+        "TALLY policy={} civs={} games={} | Blowout p10/med/p90 {} (none in {}) | end {} | capstone {} | out of research before T100 {}% | vigil {}/{} | Lifeboat captured in {}% of Blowout games, Keep {}% of winning Lifeboats | peace/game {:.1} | eliminated/game {:.1} | Great People/civ {:.2} | Host won {}/{}",
         policy,
         args.opponents + 1,
         t.games,
@@ -472,6 +600,8 @@ fn main() {
         pct(keep_wins, winning),
         t.peaces as f64 / g,
         t.eliminated as f64 / g,
-        t.great_people as f64 / t.civ_slots.max(1) as f64
+        t.great_people as f64 / t.civ_slots.max(1) as f64,
+        t.host.wins,
+        t.host.games
     );
 }
