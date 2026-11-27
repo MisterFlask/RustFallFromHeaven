@@ -2060,7 +2060,7 @@ fn apocalypse_rules() -> Vec<String> {
     use cataclysm_core::game::{BLOODY_BATTLES_PER_STRAIN, BLOODY_BATTLE_DEATHS, BLOODY_BATTLE_STRAIN, RAZE_STRAIN, STRAIN_DRIFT_EVERY};
     vec![
         format!(
-            "Strain rises by 1 every {} turns until the Blowout; Valve-Keeper's Ledger, held by any civilization that knows its tech, stops this.",
+            "Strain rises by 1 every {} turns until the Blowout; while a living civilization holds Valve-Keeper's Ledger every second such +1 is skipped.",
             STRAIN_DRIFT_EVERY
         ),
         format!(

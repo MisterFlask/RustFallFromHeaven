@@ -220,7 +220,7 @@ pub const FACTIONS: [FactionInfo; 9] = [
         starting_mana: 20,
         city_names: &["Valve Abbey", "Saltlock", "Cistern Dell", "Plumbline", "Stillwater", "Drywell"],
         lore_blurb: "Emergency engineers who slammed the Worldseal shut to end the Servitor Rebellion and stayed on as maintenance monks tending its pressure valves.",
-        rule_summary: "Vent the Seal drains -5 Strain; wins automatically at Turn 160 if Worldseal Strain stays below 100; +25% Sentinel HP.",
+        rule_summary: "Vent the Seal moves -3 Strain (others: -1); wins at Turn 160 if the Blowout has not come; +25% Sentinel HP.",
     },
     FactionInfo {
         id: FactionId::Amurites,
@@ -1085,7 +1085,7 @@ pub const SECRET_TECHS: [SecretTechInfo; 24] = [
 
     // Prophet (4) — Sealing ledgers & civic vows
     SecretTechInfo { id: SecretTechId(4), suit: GreatSuit::Prophet, name: "Aquifer Compendium", needs: TECH_MYSTICISM, effect: SecretEffect::HealBonusPct(45), summary: "+45% battle healing.", expert_line: "Outlast siege attrition on Caldera Keep with double-healer squads." },
-    SecretTechInfo { id: SecretTechId(5), suit: GreatSuit::Prophet, name: "Valve-Keeper's Ledger", needs: TECH_MYSTICISM, effect: SecretEffect::AcDrainPerTurn(1), summary: "Stops the world's +1 Strain drift every 3 turns.", expert_line: "Lock in a Keepers Turn-160 peace win." },
+    SecretTechInfo { id: SecretTechId(5), suit: GreatSuit::Prophet, name: "Valve-Keeper's Ledger", needs: TECH_MYSTICISM, effect: SecretEffect::AcDrainPerTurn(1), summary: "Halves the world's Strain drift: every second +1 is skipped.", expert_line: "Slow the clock toward a Keepers Turn-160 win." },
     SecretTechInfo { id: SecretTechId(6), suit: GreatSuit::Prophet, name: "Sacred Concordat", needs: TECH_MYSTICISM, effect: SecretEffect::HouseLoyaltyBonus(2), summary: "+2 Loyalty in every House permanently.", expert_line: "Conquer rival-culture cities without triggering Furious Houses." },
     SecretTechInfo { id: SecretTechId(7), suit: GreatSuit::Prophet, name: "Crusader's Banner", needs: TECH_FORTIFICATION, effect: SecretEffect::AllAtkPct(15), summary: "+15% Attack for every unit in your squads.", expert_line: "Swing tight 2-round formation verdicts across every front." },
 
@@ -1145,6 +1145,10 @@ pub const ARMAGEDDON_CRISES: [CrisisInfo; 10] = [
 
 /// Turns before a civilization may cast a ritual that moves Strain (Vent the Seal, Crack the Crust) again.
 pub const STRAIN_RITUAL_RECAST_TURNS: i32 = 12;
+/// Strain moved by a cast of Vent the Seal (the Keepers of the Seal: `game::SANCTIFY_KEEPERS_STRAIN`).
+pub const VENT_THE_SEAL_STRAIN: i32 = -1;
+/// Strain moved by a cast of Crack the Crust.
+pub const CRACK_THE_CRUST_STRAIN: i32 = 3;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RitualKind {
@@ -1215,8 +1219,8 @@ impl RitualKind {
     /// the Seal and Crack the Crust move Strain.
     pub const fn ac_delta(self) -> i32 {
         match self {
-            RitualKind::Sanctify => -3,
-            RitualKind::BlightStrike => 6,
+            RitualKind::Sanctify => VENT_THE_SEAL_STRAIN,
+            RitualKind::BlightStrike => CRACK_THE_CRUST_STRAIN,
             RitualKind::HasteMarch | RitualKind::ArcaneSurge | RitualKind::SummonHost | RitualKind::WardWalls => 0,
         }
     }

@@ -97,7 +97,7 @@ pub const TRUCE_TURNS: i32 = 10;
 pub const LORE_PER_SAGE_RENOWN: i32 = 10;
 
 /// Strain change of Vent the Seal cast by the Keepers of the Seal (others: the ritual's own).
-pub const SANCTIFY_KEEPERS_STRAIN: i32 = -5;
+pub const SANCTIFY_KEEPERS_STRAIN: i32 = -3;
 /// Squad cap: base, Grand Companies bonus, floor.
 pub const SQUAD_CAP_BASE: i32 = 3;
 pub const SQUAD_CAP_GRAND_COMPANIES: i32 = 2;
@@ -2694,22 +2694,20 @@ impl Game {
     }
 
     fn process_world_turn(&mut self, events: &mut Vec<Event>) {
-        // 1. Coupled Worldseal Strain drift (+1 every 3 turns, counteracted by Valve-Keeper's Ledger).
+        // 1. Worldseal Strain drift: +1 every `STRAIN_DRIFT_EVERY` turns. While a living civilization
+        // holds Valve-Keeper's Ledger the drift is halved (every second drift is skipped): it slows
+        // the clock, it does not stop it.
         if !self.apocalypse.carcosa_risen && self.turn % STRAIN_DRIFT_EVERY == 0 {
-            let drain: i32 = self
-                .players
-                .iter()
-                .filter(|p| p.alive && !p.is_neutral)
-                .map(|p| {
-                    p.secret_sum(|e| match e {
+            let ledger = self.players.iter().any(|p| {
+                p.alive
+                    && !p.is_neutral
+                    && p.secret_sum(|e| match e {
                         SecretEffect::AcDrainPerTurn(n) => n,
                         _ => 0,
-                    })
-                })
-                .sum();
-            let net = (1 - drain).max(0);
-            if net > 0 {
-                self.shift_ac(net, "caldera pressure", events);
+                    }) > 0
+            });
+            if !ledger || (self.turn / STRAIN_DRIFT_EVERY) % 2 == 0 {
+                self.shift_ac(1, "caldera pressure", events);
             }
         }
 
