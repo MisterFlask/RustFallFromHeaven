@@ -117,8 +117,9 @@ pub const RAID_RANGE: i32 = 2;
 pub const BORDER_CULTURE_RADIUS_2: i32 = 100;
 /// Mana at which a side's battle spells gain power.
 pub const MANA_BOOST_MIN: i32 = 15;
-/// Strain added by a bloody battle.
+/// Strain added by every `BLOODY_BATTLES_PER_STRAIN`th bloody battle in the world.
 pub const BLOODY_BATTLE_STRAIN: i32 = 1;
+pub const BLOODY_BATTLES_PER_STRAIN: i32 = 3;
 /// Score points (each player's score is its share of all points, out of 10000).
 pub const SCORE_PER_SIZE: i32 = 15;
 pub const SCORE_PER_DISTRICT: i32 = 10;
@@ -186,6 +187,8 @@ pub struct Player {
     pub next_city_name_idx: usize,
     pub next_squad_num: u32,
     pub extra_caravan_slots: i32,
+    /// Per ritual (`RitualKind::id`): the world turn from which it may be cast again.
+    pub ritual_ready: [i32; 6],
 }
 
 impl Player {
@@ -218,6 +221,7 @@ impl Player {
             next_city_name_idx: 0,
             next_squad_num: 1,
             extra_caravan_slots: 0,
+            ritual_ready: [0; 6],
         }
     }
 
@@ -282,6 +286,9 @@ pub struct Game {
     pub truces: BTreeMap<(PlayerId, PlayerId), i32>,
     pub founded_religions: BTreeMap<Religion, PlayerId>,
     pub built_wonders: BTreeMap<WonderKind, CityId>,
+    /// Techs some civilization knows; a tech moves Strain only when it first joins this set.
+    /// Starting techs are in it from the start.
+    pub discovered_techs: BTreeSet<TechId>,
     pub cities: BTreeMap<CityId, City>,
     pub squads: BTreeMap<SquadId, Squad>,
     pub houses: BTreeMap<HouseId, House>,
@@ -343,6 +350,7 @@ impl Game {
             truces: BTreeMap::new(),
             founded_religions: BTreeMap::new(),
             built_wonders: BTreeMap::new(),
+            discovered_techs: BTreeSet::new(),
             cities: BTreeMap::new(),
             squads: BTreeMap::new(),
             houses: BTreeMap::new(),
@@ -363,6 +371,10 @@ impl Game {
             next_gp_id: 1,
             next_crusade_id: 1,
         };
+
+        // Starting techs are discovered: they move no Strain.
+        let starting: Vec<TechId> = g.players.iter().flat_map(|p| p.techs.iter().copied()).collect();
+        g.discovered_techs.extend(starting);
 
         // Every civilization is perpetually at war with Neutral raiders/guardians.
         for i in 0..num_civs {
@@ -1265,12 +1277,21 @@ impl Game {
 
     /// Checks a Cast Ritual order.
     pub fn check_ritual(&self, p: PlayerId, ritual: RitualKind) -> Result<(), CmdErr> {
+        let left = self.ritual_turns_left(p, ritual);
+        if left > 0 {
+            return Err(CmdErr::cannot(format!("Ready in {left} turns.")));
+        }
         let cost = ritual.mana_cost();
         let mana = self.players[p.idx()].mana;
         if mana < cost {
             return Err(CmdErr::cannot(format!("Need {cost} Mana (have {mana}).")));
         }
         Ok(())
+    }
+
+    /// World turns before `p` may cast `ritual` again (0: it may now).
+    pub fn ritual_turns_left(&self, p: PlayerId, ritual: RitualKind) -> i32 {
+        (self.players[p.idx()].ritual_ready[ritual.id()] - self.turn).max(0)
     }
 
     /// The plot a ritual that acts at "your capital" acts at (the capital, else any city).
@@ -1826,13 +1847,21 @@ impl Game {
         if def_owner != self.neutral_player {
             self.push_log(Some(def_owner), Some(to), Some(battle_id), summary);
         }
-        // A bloody battle strains the Worldseal. Through `shift_ac`, once the battle is settled, so
-        // that a crisis whose threshold this crosses takes effect (the Blowout included): a bare
-        // `apocalypse.shift` marked the crisis as triggered and skipped what it does.
         if bloody {
-            self.shift_ac(BLOODY_BATTLE_STRAIN, "bloody battle", events);
+            self.note_bloody_battle(events);
         }
         battle_id
+    }
+
+    /// Counts a bloody battle; every `BLOODY_BATTLES_PER_STRAIN`th in the world strains the
+    /// Worldseal. Through `shift_ac`, once the battle is settled, so that a crisis whose threshold
+    /// this crosses takes effect (the Blowout included): a bare `apocalypse.shift` marked the crisis
+    /// as triggered and skipped what it does.
+    pub(crate) fn note_bloody_battle(&mut self, events: &mut Vec<Event>) {
+        self.apocalypse.bloody_battles += 1;
+        if self.apocalypse.bloody_battles % BLOODY_BATTLES_PER_STRAIN == 0 {
+            self.shift_ac(BLOODY_BATTLE_STRAIN, "bloody battle", events);
+        }
     }
 
     fn cmd_reinforce_squad(&mut self, player: PlayerId, squad_id: SquadId, class: UnitClassId, _events: &mut Vec<Event>) -> Result<(), CmdErr> {
@@ -2161,6 +2190,9 @@ impl Game {
                 }
             }
         }
+        if ritual.recast_turns() > 0 {
+            self.players[player.idx()].ritual_ready[ritual.id()] = self.turn + ritual.recast_turns();
+        }
         self.push_log(Some(player), cap_plot, None, format!("Cast Strategic Ritual: {}.", ritual.name()));
         Ok(())
     }
@@ -2426,7 +2458,10 @@ impl Game {
                 self.players[player.idx()].techs.insert(tech);
                 self.players[player.idx()].current_research = None;
                 let info = &TECHS[tech.0 as usize];
-                self.shift_ac(info.ac_delta, &format!("{} researched", info.name), events);
+                // Only the first civilization to research a tech moves Strain.
+                if self.discovered_techs.insert(tech) {
+                    self.shift_ac(info.ac_delta, &format!("{} researched", info.name), events);
+                }
                 events.push(Event::TechCompleted { player, tech });
                 self.push_log(Some(player), None, None, format!("Completed research: {}.", info.name));
             }
@@ -2696,7 +2731,7 @@ impl Game {
         self.recompute_scores();
     }
 
-    fn shift_ac(&mut self, delta: i32, reason: &str, events: &mut Vec<Event>) {
+    pub(crate) fn shift_ac(&mut self, delta: i32, reason: &str, events: &mut Vec<Event>) {
         let fired = self.apocalypse.shift(delta, reason);
         for idx in fired {
             let crisis = &ARMAGEDDON_CRISES[idx];
@@ -2780,6 +2815,8 @@ impl Game {
         pl.techs.insert(TECH_METALLURGY);
         pl.techs.insert(TECH_FORTIFICATION);
         pl.primary_doctrine = Some(Doctrine::Steel);
+        // The Host's techs are given, not researched: they move no Strain.
+        self.discovered_techs.extend(pl.techs.iter().copied());
         pl.gold = 220;
         pl.mana = 60;
         self.players.push(pl);
@@ -3080,7 +3117,7 @@ impl Game {
         }
     }
 
-    fn try_complete_city_build(&mut self, city_id: CityId, events: &mut Vec<Event>) {
+    pub(crate) fn try_complete_city_build(&mut self, city_id: CityId, events: &mut Vec<Event>) {
         let Some(c) = self.cities.get(&city_id).cloned() else { return };
         let Some(order) = c.building.clone() else { return };
         if c.build_progress < order.cost() {
@@ -3186,6 +3223,28 @@ impl Game {
                         format!("{} completed the {}.", c.name, w.name())
                     };
                     self.push_log(Some(c.owner), Some(c.plot), None, text);
+                    // Every other city building this Wonder loses the order; its Industry is
+                    // refunded to its owner as Gold, 1 for 1.
+                    let rivals: Vec<CityId> = self
+                        .cities
+                        .values()
+                        .filter(|o| o.id != city_id && o.building == Some(BuildOrder::Wonder(w)))
+                        .map(|o| o.id)
+                        .collect();
+                    for rid in rivals {
+                        let Some(rc) = self.cities.get_mut(&rid) else { continue };
+                        let refund = rc.build_progress.max(0);
+                        rc.building = None;
+                        rc.build_progress = 0;
+                        let (owner, plot, name) = (rc.owner, rc.plot, rc.name.clone());
+                        self.players[owner.idx()].gold += refund;
+                        self.push_log(
+                            Some(owner),
+                            Some(plot),
+                            None,
+                            format!("{}: the {} was completed in {}. Order cancelled; {} Industry refunded as {} Gold.", name, w.name(), c.name, refund, refund),
+                        );
+                    }
                 }
             }
         }

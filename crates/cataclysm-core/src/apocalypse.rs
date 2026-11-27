@@ -86,6 +86,8 @@ pub struct ApocalypseState {
     /// Transparent reasons the counter moved recently.
     pub recent_changes: Vec<String>,
     pub outcome: Option<GameOutcome>,
+    /// Bloody battles fought in the world (every `game::BLOODY_BATTLES_PER_STRAIN`th adds Strain).
+    pub bloody_battles: i32,
 }
 
 impl Default for ApocalypseState {
@@ -101,6 +103,7 @@ impl Default for ApocalypseState {
             lifeboats: Vec::new(),
             recent_changes: Vec::new(),
             outcome: None,
+            bloody_battles: 0,
         }
     }
 }

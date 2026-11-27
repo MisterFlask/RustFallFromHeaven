@@ -603,6 +603,16 @@ impl CataclysmSession {
                 let known = me_pl.has_tech(t.id);
                 let check = g.can_research(h, t.id);
                 let cost = g.tech_effective_cost(h, t.id);
+                // Only the first civilization to research a tech moves Strain (none after the Blowout).
+                let discovered = g.discovered_techs.contains(&t.id);
+                let strain = if discovered || g.apocalypse.carcosa_risen { 0 } else { t.ac_delta };
+                let strain_text = if t.ac_delta == 0 {
+                    None
+                } else if discovered {
+                    Some("Already researched in the world: 0 Strain.".to_string())
+                } else {
+                    Some(format!("{:+} Strain for the first civilization to research it.", t.ac_delta))
+                };
                 crate::jobj! {
                     "id" => t.id.0 as i32,
                     "key" => t.key,
@@ -614,7 +624,8 @@ impl CataclysmSession {
                     "cost_base" => t.cost,
                     "cost_note" => g.tech_cost_note(h, t.id),
                     "prereq" => t.prereq.map(|p| TECHS[p.0 as usize].name),
-                    "ac_delta" => t.ac_delta,
+                    "ac_delta" => strain,
+                    "strain_text" => strain_text,
                     "known" => known,
                     "can_research" => check.is_ok(),
                     "why" => check.err(),
@@ -714,6 +725,11 @@ impl CataclysmSession {
                 } else {
                     rk.ac_delta()
                 };
+                let summary = if rk.recast_turns() > 0 {
+                    format!("{} Can be cast again {} turns after each cast.", rk.summary(), rk.recast_turns())
+                } else {
+                    rk.summary().to_string()
+                };
                 crate::jobj! {
                     "key" => rk.key(),
                     "name" => rk.name(),
@@ -721,7 +737,9 @@ impl CataclysmSession {
                     "ac_delta" => delta,
                     "can_cast" => why.is_none(),
                     "why" => why,
-                    "summary" => rk.summary(),
+                    "summary" => summary,
+                    "recast_turns" => rk.recast_turns(),
+                    "ready_in" => g.ritual_turns_left(h, rk),
                 }
             })
             .collect();
@@ -997,6 +1015,7 @@ impl CataclysmSession {
                 let truce = g.truce_turns_left(h, pl.id);
                 let peace = g.check_peace(h, pl.id);
                 let war_why = g.check_war(h, pl.id).err().map(|e| e.detail);
+                let crusade_why = g.check_call_crusade(h, pl.id).err().map(|e| e.detail);
                 let mut peace_lines = Vec::new();
                 if let Some(t) = offer_to_us {
                     peace_lines.push(format!("Offers peace to you: {t} turns left."));
@@ -1017,6 +1036,8 @@ impl CataclysmSession {
                     "peace_label" => if peace == Ok(true) { "Accept peace" } else { "Offer peace" },
                     "can_peace" => peace.is_ok(),
                     "peace_why" => peace.err().map(|e| e.detail),
+                    "can_call_crusade" => crusade_why.is_none(),
+                    "call_crusade_why" => crusade_why,
                     "can_declare_war" => war_why.is_none(),
                     "war_why" => war_why,
                     "faction_name" => if pl.is_neutral { "Wild Clans" } else { pl.faction.info().name },
@@ -2036,15 +2057,19 @@ fn rules_help_json() -> Json {
 }
 
 fn apocalypse_rules() -> Vec<String> {
-    use cataclysm_core::game::{BLOODY_BATTLE_DEATHS, BLOODY_BATTLE_STRAIN, RAZE_STRAIN, STRAIN_DRIFT_EVERY};
+    use cataclysm_core::game::{BLOODY_BATTLES_PER_STRAIN, BLOODY_BATTLE_DEATHS, BLOODY_BATTLE_STRAIN, RAZE_STRAIN, STRAIN_DRIFT_EVERY};
     vec![
         format!(
             "Strain rises by 1 every {} turns until the Blowout; Valve-Keeper's Ledger, held by any civilization that knows its tech, stops this.",
             STRAIN_DRIFT_EVERY
         ),
         format!(
-            "Techs, founding a Creed, Rituals, Wonders, some Secret Techs, razing a city ({:+}) and a battle in which {} or more units fall ({:+}) change Strain by the amount each shows.",
-            RAZE_STRAIN, BLOODY_BATTLE_DEATHS, BLOODY_BATTLE_STRAIN
+            "A tech changes Strain by the amount it shows only for the first civilization to research it. Founding a Creed, Vent the Seal, Crack the Crust, Wonders, some Secret Techs and razing a city ({:+}) change Strain by the amount each shows.",
+            RAZE_STRAIN
+        ),
+        format!(
+            "Every {} battles in the world in which {} or more units fall add {:+} Strain.",
+            BLOODY_BATTLES_PER_STRAIN, BLOODY_BATTLE_DEATHS, BLOODY_BATTLE_STRAIN
         ),
         format!(
             "Strain falls through Vent the Seal, a Prophet's Tempo Burst ({:+}), and the techs and Creeds with a negative Strain change.",
@@ -2147,13 +2172,14 @@ fn court_rules_json() -> Json {
 fn renown_sources() -> String {
     use cataclysm_core::game::renown as r;
     format!(
-        "Renown: Commander +{} per battle fought (attacker and defender) and +{} per enemy unit killed, +{} per city captured; Sage +{} per Ritual, +{} from some Imperial Ruins, +{} per Academy per turn; Prophet +{} for founding a Creed, +{} for lending a squad to a Crusade, +{} per Temple per turn; Bard +{} per Temple per turn; Engineer +{} per Forge per turn, +{} per Wonder; Merchant +{} per Market per turn, +{} per moving Caravan per turn, +{} per raiding squad per turn, +{} per Caravan ambushed.",
+        "Renown: Commander +{} per battle fought (attacker and defender) and +{} per enemy unit killed, +{} per city captured; Sage +{} per Ritual, +{} from some Imperial Ruins, +{} per Academy per turn, +1 per {} Lore when no tech can be researched; Prophet +{} for founding a Creed, +{} for lending a squad to a Crusade, +{} per Temple per turn; Bard +{} per Temple per turn; Engineer +{} per Forge per turn, +{} per Wonder; Merchant +{} per Market per turn, +{} per moving Caravan per turn, +{} per raiding squad per turn, +{} per Caravan ambushed.",
         r::BATTLE_COMMANDER,
         r::BATTLE_COMMANDER_PER_KILL,
         r::CAPTURE_COMMANDER,
         r::RITUAL_SAGE,
         r::LAIR_RELICS_SAGE,
         r::DISTRICT_PER_TURN,
+        cataclysm_core::game::LORE_PER_SAGE_RENOWN,
         r::FOUND_CREED_PROPHET,
         r::LEND_PROPHET,
         r::DISTRICT_PER_TURN,

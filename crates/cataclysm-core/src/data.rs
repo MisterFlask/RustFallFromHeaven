@@ -437,7 +437,7 @@ pub struct TechInfo {
     pub tier: u8,
     pub cost: i32,
     pub prereq: Option<TechId>,
-    /// Worldseal Strain shift when researched (geothermal/crust cost for heavy or capstone works).
+    /// Worldseal Strain shift when the first civilization researches it (later researchers move none).
     pub ac_delta: i32,
     pub unlocks_summary: &'static str,
 }
@@ -1079,7 +1079,7 @@ pub struct SecretTechInfo {
 pub const SECRET_TECHS: [SecretTechInfo; 24] = [
     // Sage (4) — Imperial vent-engineering & arcane manuals
     SecretTechInfo { id: SecretTechId(0), suit: GreatSuit::Sage, name: "Spire of the Archmagi", needs: TECH_ARCANA, effect: SecretEffect::SpellPowerPct(30), summary: "+30% Battle Spell damage for all squads.", expert_line: "Double-stack back-row Mages behind Sentinels or Phalanxes." },
-    SecretTechInfo { id: SecretTechId(1), suit: GreatSuit::Sage, name: "Deep-Vent Manifold", needs: TECH_ARCANA, effect: SecretEffect::ManaPerTurn(6), summary: "+6 Mana per turn empire-wide.", expert_line: "Fuel repeated Strategic Rituals every 4 turns." },
+    SecretTechInfo { id: SecretTechId(1), suit: GreatSuit::Sage, name: "Deep-Vent Manifold", needs: TECH_ARCANA, effect: SecretEffect::ManaPerTurn(6), summary: "+6 Mana per turn empire-wide.", expert_line: "Keep Mana for a Strategic Ritual every few turns." },
     SecretTechInfo { id: SecretTechId(2), suit: GreatSuit::Sage, name: "Unsealed Schematics", needs: TECH_SORCERY, effect: SecretEffect::LorePerTurn(14), summary: "+14 Lore per turn (+4 Strain when discovered).", expert_line: "Rush a Tier-4 Capstone 20 turns ahead of the table." },
     SecretTechInfo { id: SecretTechId(3), suit: GreatSuit::Sage, name: "Deep Tap Charter", needs: TECH_ARCANA, effect: SecretEffect::AcSurgeOnce(12), summary: "+12 Strain and +40 Mana when discovered.", expert_line: "Trigger King Cinder or Blowout while holding the central shore." },
 
@@ -1143,6 +1143,9 @@ pub const ARMAGEDDON_CRISES: [CrisisInfo; 10] = [
 // Strategic Rituals (empire-level Mana spells — zero per-unit clicking!)
 // ---------------------------------------------------------------------------------------------
 
+/// Turns before a civilization may cast a ritual that moves Strain (Vent the Seal, Crack the Crust) again.
+pub const STRAIN_RITUAL_RECAST_TURNS: i32 = 12;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RitualKind {
     Sanctify,
@@ -1196,14 +1199,33 @@ impl RitualKind {
         }
     }
 
+    /// Index into per-ritual arrays (`Player::ritual_ready`).
+    pub const fn id(self) -> usize {
+        match self {
+            RitualKind::Sanctify => 0,
+            RitualKind::HasteMarch => 1,
+            RitualKind::ArcaneSurge => 2,
+            RitualKind::SummonHost => 3,
+            RitualKind::BlightStrike => 4,
+            RitualKind::WardWalls => 5,
+        }
+    }
+
+    /// Strain change when cast (Keepers' Vent the Seal: `game::SANCTIFY_KEEPERS_STRAIN`). Only Vent
+    /// the Seal and Crack the Crust move Strain.
     pub const fn ac_delta(self) -> i32 {
         match self {
             RitualKind::Sanctify => -3,
-            RitualKind::HasteMarch => 1,
-            RitualKind::ArcaneSurge => 2,
-            RitualKind::SummonHost => 4,
             RitualKind::BlightStrike => 6,
-            RitualKind::WardWalls => 0,
+            RitualKind::HasteMarch | RitualKind::ArcaneSurge | RitualKind::SummonHost | RitualKind::WardWalls => 0,
+        }
+    }
+
+    /// World turns after a cast before the same civilization may cast this ritual again (0: no wait).
+    pub const fn recast_turns(self) -> i32 {
+        match self {
+            RitualKind::Sanctify | RitualKind::BlightStrike => STRAIN_RITUAL_RECAST_TURNS,
+            RitualKind::HasteMarch | RitualKind::ArcaneSurge | RitualKind::SummonHost | RitualKind::WardWalls => 0,
         }
     }
 

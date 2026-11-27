@@ -466,6 +466,7 @@ export function renderCataclysmTop() {
   const accent = over ? "" : ".accent";
   const cur = data.currencies ?? {};
   const res = data.research?.current ?? null;
+  const idleLore = data.research?.idle_lore_text ?? null;
   const ap = data.apocalypse ?? {};
   const court = data.court ?? [];
   const renown = data.renown ?? {};
@@ -488,7 +489,7 @@ export function renderCataclysmTop() {
   const researchTip = calcTip(
     res ? `Research: ${res.name}` : "Research: none",
     cur.lore_calc,
-    [res ? h("div.tip-hint", `${res.progress}/${res.cost} Lore`) : h("div.tip-hint", `Lore ${cur.lore ?? 0} (${fmtRate(cur.lore_rate)})`)],
+    [res ? h("div.tip-hint", `${res.progress}/${res.cost} Lore`) : h("div.tip-hint", `Lore ${cur.lore ?? 0} (${fmtRate(cur.lore_rate)})`), !res && idleLore ? h("div", idleLore) : null].filter(Boolean),
   );
 
   const counting = ap.countdown !== null && ap.countdown !== undefined;
@@ -519,7 +520,7 @@ export function renderCataclysmTop() {
     info,
     chip(".act", actTip, null, h("span.cat-chip-faction", `${faction} · `), act),
     chip((cur.gold_rate ?? 0) < 0 ? ".warn" : "", calcTip(`Gold ${cur.gold ?? 0} (${fmtRate(cur.gold_rate)})`, cur.gold_calc), () => open.cities(), `Gold ${cur.gold ?? 0} (${fmtRate(cur.gold_rate)})`),
-    chip(`.research${res ? "" : accent}`, researchTip, () => open.research("research"), res ? `Research: ${res.name}, ${res.turns} t` : "Research: none"),
+    chip(`.research${res || idleLore ? "" : accent}`, researchTip, () => open.research("research"), res ? `Research: ${res.name}, ${res.turns} t` : idleLore ? "Research: none open" : "Research: none"),
     chip("", calcTip(`Mana ${cur.mana ?? 0} (${fmtRate(cur.mana_rate)})`, cur.mana_calc), () => open.research("rituals"), `Mana ${cur.mana ?? 0} (${fmtRate(cur.mana_rate)})`),
     chip(`.strain${strainCls}`, strainTip, () => open.worldseal(), counting ? `Blowout in ${ap.countdown} turns` : `Strain ${ap.counter ?? 0}/100`),
     chip(court.length ? accent : "", courtTip, () => open.court(), court.length ? `Court: ${court.length} waiting` : `Court ${renown.total ?? 0}/${renown.next_threshold ?? 0}`),

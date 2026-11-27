@@ -259,3 +259,16 @@ fn cataclysm_diplomacy_states_offers_and_truces() {
     assert!(rival.get("war_why").and_then(Json::as_str).is_some_and(|w| w.starts_with("Truce")), "{rival}");
     assert!(rival.get("truce_turns").and_then(Json::as_i64).unwrap() > 0);
 }
+
+#[test]
+fn cataclysm_strain_ritual_states_its_recast_time() {
+    use cataclysm_core::{Command, PlayerId, RitualKind};
+    let mut sess = session("bannor", 6);
+    sess.g.players[0].mana = 1000;
+    sess.g.apply(PlayerId(0), Command::CastRitual { ritual: RitualKind::BlightStrike }).unwrap();
+    let view = q(&sess, r#"{"q":"view"}"#);
+    let r = arr(view.get("cataclysm").unwrap(), "rituals").iter().find(|r| r.get("key").and_then(Json::as_str) == Some("blight_strike")).unwrap().clone();
+    assert_eq!(r.get("can_cast").and_then(Json::as_bool), Some(false));
+    assert!(r.get("why").and_then(Json::as_str).is_some_and(|w| w.starts_with("Ready in")), "{r}");
+    assert!(r.get("summary").and_then(Json::as_str).is_some_and(|t| t.contains("turns after each cast")), "{r}");
+}

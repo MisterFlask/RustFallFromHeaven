@@ -59,7 +59,7 @@ addHelp({
       "ul",
       h("li", "Click a squad to select it. Tab selects the next squad with moves left."),
       h("li", "Right-click a tile to move the selected squad there, or to attack what stands on it. On a touch screen, tap the tile twice."),
-      h("li", "Attacking an empire you are at peace with declares war: the game asks first."),
+      h("li", "Attacking an empire you are at peace with declares war: the game asks first. During a truce the attack is refused."),
       h("li", "Point at a tile for what is on it. With a squad selected, an enemy on a tile next to it also shows a forecast of the attack."),
       h("li", "The selected squad's panel shows its formation. Click a unit, then another cell, to move it there."),
       h("li", "Click one of your cities to open it and choose what it builds."),
@@ -142,7 +142,7 @@ addHelp({
   body: () => [
     h("p", "Lore goes to the technology being researched. The eight Foundation technologies open the districts and the first units; each doctrine is a ladder of four more."),
     cat()?.doctrine_rule ? h("p", cat().doctrine_rule) : null,
-    h("p", "A technology's card shows its cost, the Strain it adds to the Worldseal and, when it is locked, what it needs."),
+    h("p", "A technology's card shows its cost, the Strain it adds to the Worldseal if no civilization has researched it yet and, when it is locked, what it needs."),
     h("p", "Each creed's card gives what founding or adopting it costs and changes. Each ritual's card gives its Mana cost and its change to Strain."),
   ],
 });

@@ -72,14 +72,11 @@ mod tests {
     fn carcosa_rises_at_ac_100_and_lifeboat_victory_resolves() {
         let mut g = Game::new(GameSetup { seed: 7, width: 22, height: 16, human_faction: FactionId::Sheaim, ai_count: 3 });
         let p0 = PlayerId(0);
-        // Push AC to 100 via BlightStrike rituals
+        // Strain 94, then one Crack the Crust: the Strain path fires every crisis up to the
+        // Blowout (King Cinder's Host at 50 included).
+        g.apocalypse.counter = 100 - RitualKind::BlightStrike.ac_delta();
         g.players[0].mana = 1000;
-        for _ in 0..20 {
-            if g.apocalypse.carcosa_risen {
-                break;
-            }
-            let _ = g.apply(p0, Command::CastRitual { ritual: RitualKind::BlightStrike });
-        }
+        g.apply(p0, Command::CastRitual { ritual: RitualKind::BlightStrike }).unwrap();
         assert!(g.apocalypse.carcosa_risen, "Carcosa must rise at AC 100");
         assert!(g.apocalypse.hyborem_spawned, "Hyborem must have risen at AC 50");
         assert!(g.apocalypse.carcosa_city.is_some());
@@ -243,6 +240,111 @@ mod tests {
         g.apply(b, Command::MakePeace { target: a }).unwrap();
         assert!(g.at_war(a, b));
         assert_eq!(g.peace_offer_from(b, a), Some(game::PEACE_OFFER_TURNS));
+        g.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn only_the_first_researcher_of_a_tech_moves_strain() {
+        let mut g = Game::new(GameSetup::default());
+        let tech = data::TECH_METALLURGY;
+        assert!(TECHS[tech.0 as usize].ac_delta != 0);
+        assert!(!g.discovered_techs.contains(&tech));
+        for i in [1, 2] {
+            g.players[i].techs.remove(&tech);
+            g.players[i].current_research = Some(tech);
+            g.players[i].lore_progress = 1000;
+        }
+        let before = g.apocalypse.counter;
+        // Player 1's turn starts: it completes the tech first.
+        g.apply(PlayerId(0), Command::EndTurn).unwrap();
+        assert!(g.players[1].has_tech(tech));
+        assert_eq!(g.apocalypse.counter, before + TECHS[tech.0 as usize].ac_delta);
+        // Player 2's turn starts: the same tech moves nothing.
+        g.apply(PlayerId(1), Command::EndTurn).unwrap();
+        assert!(g.players[2].has_tech(tech));
+        assert_eq!(g.apocalypse.counter, before + TECHS[tech.0 as usize].ac_delta);
+    }
+
+    #[test]
+    fn starting_techs_count_as_discovered() {
+        let g = Game::new(GameSetup { human_faction: FactionId::Amurites, ..GameSetup::default() });
+        assert!(g.players[0].has_tech(data::TECH_ARCANA));
+        assert!(g.discovered_techs.contains(&data::TECH_ARCANA));
+    }
+
+    #[test]
+    fn a_strain_ritual_waits_for_its_recast_time() {
+        let mut g = Game::new(GameSetup::default());
+        let p0 = PlayerId(0);
+        g.players[0].mana = 1000;
+        let r = RitualKind::BlightStrike;
+        assert!(r.recast_turns() > 0);
+        g.apply(p0, Command::CastRitual { ritual: r }).unwrap();
+        let err = g.apply(p0, Command::CastRitual { ritual: r }).unwrap_err();
+        assert_eq!(err.detail, format!("Ready in {} turns.", r.recast_turns()));
+        g.turn += r.recast_turns() - 1;
+        assert_eq!(g.ritual_turns_left(p0, r), 1);
+        assert!(g.check_ritual(p0, r).is_err());
+        g.turn += 1;
+        assert!(g.check_ritual(p0, r).is_ok());
+        g.apply(p0, Command::CastRitual { ritual: r }).unwrap();
+    }
+
+    #[test]
+    fn only_vent_the_seal_and_crack_the_crust_move_strain() {
+        let mut g = Game::new(GameSetup::default());
+        let p0 = PlayerId(0);
+        g.apocalypse.counter = 5;
+        for r in [RitualKind::HasteMarch, RitualKind::ArcaneSurge, RitualKind::SummonHost, RitualKind::WardWalls] {
+            assert_eq!(r.ac_delta(), 0);
+            assert_eq!(r.recast_turns(), 0);
+            g.players[0].mana = 1000;
+            g.apply(p0, Command::CastRitual { ritual: r }).unwrap();
+            g.apply(p0, Command::CastRitual { ritual: r }).unwrap();
+            assert_eq!(g.apocalypse.counter, 5, "{}", r.name());
+        }
+        g.apply(p0, Command::CastRitual { ritual: RitualKind::Sanctify }).unwrap();
+        assert_eq!(g.apocalypse.counter, 5 + RitualKind::Sanctify.ac_delta());
+    }
+
+    #[test]
+    fn every_third_bloody_battle_moves_strain_through_its_crisis() {
+        let mut g = Game::new(GameSetup::default());
+        let threshold = ARMAGEDDON_CRISES[0].threshold;
+        g.apocalypse.counter = threshold - game::BLOODY_BATTLE_STRAIN;
+        let mut events = Vec::new();
+        for _ in 0..game::BLOODY_BATTLES_PER_STRAIN - 1 {
+            g.note_bloody_battle(&mut events);
+        }
+        assert_eq!(g.apocalypse.counter, threshold - game::BLOODY_BATTLE_STRAIN);
+        assert!(events.is_empty());
+        g.note_bloody_battle(&mut events);
+        assert_eq!(g.apocalypse.counter, threshold);
+        assert!(events.iter().any(|e| matches!(e, Event::CrisisTriggered { threshold: t, .. } if *t == threshold)));
+        assert!(g.apocalypse.triggered_crises.contains(&threshold));
+        g.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn a_wonder_completed_elsewhere_refunds_the_rivals_industry() {
+        let mut g = Game::new(GameSetup::default());
+        let w = WonderKind::TowerOfMastery;
+        let a = g.player_cities(PlayerId(0))[0];
+        let b = g.player_cities(PlayerId(1))[0];
+        let cost = BuildOrder::Wonder(w).cost();
+        for (cid, progress) in [(a, cost), (b, 37)] {
+            let c = g.cities.get_mut(&cid).unwrap();
+            c.building = Some(BuildOrder::Wonder(w));
+            c.build_progress = progress;
+        }
+        let gold = g.players[1].gold;
+        let mut events = Vec::new();
+        g.try_complete_city_build(a, &mut events);
+        assert_eq!(g.built_wonders.get(&w), Some(&a));
+        assert_eq!(g.cities[&b].building, None);
+        assert_eq!(g.cities[&b].build_progress, 0);
+        assert_eq!(g.players[1].gold, gold + 37);
+        assert!(g.log.iter().any(|l| l.player == Some(PlayerId(1)) && l.text.contains("37 Industry refunded as 37 Gold")));
         g.check_invariants().unwrap();
     }
 }

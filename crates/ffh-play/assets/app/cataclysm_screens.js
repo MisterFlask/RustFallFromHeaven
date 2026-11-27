@@ -630,7 +630,7 @@ function techNode(ctx, t, res) {
   const isCur = res.current?.id === t.id;
   const strain = t.ac_delta ? `${signed(t.ac_delta)} Strain` : null;
   const costText = [`${t.cost} Lore`, strain].filter(Boolean).join(" · ");
-  const tp = tipOf(t.name, t.unlocks, t.cost_note, t.known ? null : t.why);
+  const tp = tipOf(t.name, t.unlocks, t.cost_note, t.known ? null : t.strain_text, t.known ? null : t.why);
   if (t.known) {
     return h("div.cat-tech-node.known", { tip: tp }, h("div.cat-tech-head", h("strong", t.name), h("span.cat-check", "✓ known")), has(t.unlocks) ? h("small.cat-note", t.unlocks) : null);
   }
