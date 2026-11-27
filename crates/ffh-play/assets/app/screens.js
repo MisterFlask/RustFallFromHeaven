@@ -530,6 +530,68 @@ export function saveDialog() {
 export function gameOver(st) {
   const over = st.over ?? {};
   const mine = me();
+  // The Cataclysm ruleset's end: its own result line, the Lifeboats and its factions' scores.
+  if (st.mode === "cataclysm" || S.view?.mode === "cataclysm" || !!over.cataclysm_kind) {
+    const known = over.you_won === true || over.you_won === false;
+    const catTitle = over.you_won === true ? "Victory" : over.you_won === false ? "Defeat" : "The game is over";
+    const winners = Array.isArray(over.winner_factions) ? over.winner_factions : over.winners;
+    // Eliminated: the result line is why (the human's own result), said once.
+    const eliminated = over.cataclysm_kind === "Eliminated";
+    const resultLine = eliminated && over.your_result
+      ? over.your_result
+      : [over.cataclysm_kind || null, winners?.length ? `Winners: ${winners.join(", ")}` : null, `turn ${st.turn}`].filter(Boolean).join(" · ");
+    const why = eliminated && over.your_result ? null : over.your_result || (!known ? over.summary : null) || null;
+    const boats = over.lifeboats ?? [];
+    let scoreRows;
+    if (over.scores?.length) {
+      scoreRows = [...over.scores]
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+        .map((r) =>
+          h(
+            "tr",
+            { class: r.alive === false ? "dead" : r.you ? "you" : "" },
+            h("td", r.name ?? "", r.leader ? h("small.dim", ` ${r.leader}`) : null, r.you ? h("strong", " (you)") : null),
+            h("td.num", scoreText(r.score)),
+          ),
+        );
+    } else {
+      const rows = [];
+      if (mine) rows.push({ name: `${mine.name} (you)`, score: mine.score, alive: mine.alive });
+      for (const p of S.players.values()) if (!p.barbarian) rows.push({ name: p.name, score: p.score, alive: p.alive });
+      rows.sort((a, b) => b.score - a.score);
+      scoreRows = rows.map((r) => h("tr", { class: r.alive ? "" : "dead" }, h("td", r.name), h("td.num", scoreText(r.score))));
+    }
+    return openModal({
+      title: catTitle,
+      tag: "over",
+      wide: true,
+      className: `game-over cat-modal${over.you_won ? " won" : ""}`,
+      body: [
+        h(
+          "div.over-head",
+          mine ? bannerEl(tname("CivilizationType", mine.civ), { u: 6, title: dname("CivilizationType", mine.civ) }) : null,
+          h("div", h("div.over-title", catTitle), h("div.over-result", resultLine), why ? h("p", why) : null),
+        ),
+        ...(boats.length
+          ? [
+              h("h4", "Lifeboats"),
+              h(
+                "table.scores.cat-table",
+                h("tr", h("th", "Lifeboat"), h("th", "City"), h("th", "Holder")),
+                boats.map((b) => h("tr", h("td", b.kind ?? ""), h("td", b.city_name ?? ""), h("td", b.razed ? h("span.warn", "razed") : b.owner_name ?? "none"))),
+              ),
+            ]
+          : []),
+        h("h4", "Scores"),
+        h("table.scores", h("tr", h("th", "Player"), h("th.num", "Score")), scoreRows),
+      ],
+      buttons: [
+        { label: "New Cataclysm", primary: true, onClick: () => emit("open-cataclysm-new") },
+        { label: "Load…", onClick: () => loadScreen() },
+        { label: "View the map", value: null },
+      ],
+    });
+  }
   const won = over.winner_team !== null && over.winner_team !== undefined && mine && over.winner_team === mine.team;
   const title = won ? "Victory!" : mine?.alive === false ? "Your civilization has fallen" : "The game is over";
   const rows = [];

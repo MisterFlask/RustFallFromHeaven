@@ -14,6 +14,10 @@ pub const BASE_SUPPLY_BUDGET: i32 = 18;
 pub const SUPPLY_COST_ROAD: i32 = 1;
 pub const SUPPLY_COST_OWN: i32 = 1;
 pub const SUPPLY_COST_WILD: i32 = 3;
+/// Budget added by Trade Roads, Outriders and a Quartermaster captain.
+pub const SUPPLY_BONUS_TRADE_ROADS: i32 = 4;
+pub const SUPPLY_BONUS_OUTRIDERS: i32 = 6;
+pub const SUPPLY_BONUS_QUARTERMASTER: i32 = 4;
 
 #[derive(Clone, Debug)]
 pub struct SupplyLine {

@@ -12,6 +12,8 @@ use crate::ids::{CityId, PlayerId};
 pub const CARCOSA_TIMER_TURNS: i32 = 40;
 pub const CARCOSA_PROTECTED_TURNS: i32 = 12;
 pub const MAX_GAME_TURNS: i32 = 160;
+/// Worldseal Strain runs from 0 to this; reaching it is the Blowout.
+pub const MAX_STRAIN: i32 = 100;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LifeboatKind {
@@ -109,7 +111,7 @@ impl ApocalypseState {
             return Vec::new();
         }
         let prev = self.counter;
-        self.counter = (self.counter + delta).clamp(0, 100);
+        self.counter = (self.counter + delta).clamp(0, MAX_STRAIN);
         if self.counter != prev {
             self.recent_changes.push(format!("{:+} Strain ({})", self.counter - prev, reason));
             if self.recent_changes.len() > 8 {

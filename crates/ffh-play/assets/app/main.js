@@ -48,6 +48,7 @@ import { setIsoSkin, isoSkin, renderCityPanel } from "./isoui.js";
 import { music } from "./music.js";
 import * as cataclysm from "./cataclysm.js";
 import { openCataclysmNewGame, openMacroCity } from "./cataclysm_screens.js";
+import "./cataclysm_help.js";
 
 let mapView = null;
 let syncing = false;
@@ -201,7 +202,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas", "houses", "cat-city", "cat-techs", "cat-court", "cat-apoc"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas", "houses", "cat-city", "cat-research", "cat-court", "cat-houses", "cat-worldseal", "cat-diplo"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -773,7 +774,7 @@ function wire() {
   click("btn-tools", () => tools.openOptions());
   click("btn-save", () => S.view && screens.saveDialog());
   click("btn-load", () => screens.loadScreen());
-  click("btn-new", () => screens.newGame());
+  click("btn-new", () => (cataclysm.isCataclysm() ? openCataclysmNewGame({ noGame: !gameRunning() }) : screens.newGame()));
   click("btn-keys", () => screens.keysHelp());
   click("btn-title", () => title.showTitle({ game: gameRunning() }));
   click("zoom-in", () => mapView.zoom(1));
@@ -926,13 +927,13 @@ async function boot() {
     },
   });
   mapView = new MapView($("#mapwrap"), {
-    click: (x, y, ev) => tools.flagClick(x, y) || (cataclysm.isCataclysm() ? cataclysm.handleClick(x, y) : units.click(x, y, ev)),
+    click: (x, y, ev) => tools.flagClick(x, y) || (cataclysm.isCataclysm() ? cataclysm.handleClick(x, y, ev) : units.click(x, y, ev)),
     rightClick: (x, y, ev) => (cataclysm.isCataclysm() ? cataclysm.handleRightClick(x, y) : units.rightClick(x, y, ev)),
     // A battle's marker (engagement combat): its watch screen.
     battleClick: (b) => openReport(b.id, { report: !b.has_log }),
     // A sea's name or badge on the Sea layer (docs/NAVAL.md 10): its panel.
     seaClick: (id) => seas.openSeaPanel(id),
-    hover: (x, y) => units.hoverAt(x, y),
+    hover: (x, y) => (cataclysm.isCataclysm() ? cataclysm.hoverAt(x, y) : units.hoverAt(x, y)),
     dblclick: (x, y) => {
       if (cataclysm.isCataclysm()) return cataclysm.handleDblClick(x, y);
       const c = [...S.cities.values()].find((q) => q.x === x && q.y === y && q.owner === me()?.player);

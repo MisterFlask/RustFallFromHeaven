@@ -71,3 +71,49 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
   Crisis Deck (Strain 10..100), King Cinder's Host emerging at Strain 50, **Caldera Keep** heaving
   up from the central sea on basalt bridges at Strain 100 + 40-turn Blowout countdown, Surface
   Lifeboat vs. Furnace Raze-All victory, and Turn-160 Keepers of the Seal / Score resolution.
+
+## Screens
+
+The client's Cataclysm screens (`cataclysm.js`: the top bar, the squad panel, the map's clicks and
+tooltip; `cataclysm_screens.js`: the modal screens; `cataclysm_help.js`: the Help) follow these rules,
+set by the UX pass of 2026-11-26:
+
+- **The view states the rules.** A cost, a percentage, a threshold or a duration is never typed into
+  the JavaScript. The adapter (`crates/ffh-play/src/cataclysm.rs`) sends it, or the whole sentence,
+  from the rules' own constants and checks: `supply` on a squad, `notes` and `raze` on a city,
+  `why` beside every `can_*`, `order_help`, `sally_help`, `court_rules`, `rules_help`,
+  `apocalypse.rules`, `victory`. The Help is assembled from the same sentences, so it cannot drift
+  from the rules. A data string that promised more than the rules do was corrected to the rules.
+- **A disabled control shows its reason** as text on it, and details go in the rich tooltip (`tip`),
+  not in the native `title` (which a touch screen never shows).
+- **The player makes the rules' choices.** Where the rules take a target (a caravan's destination,
+  the squad a hero joins, the House a Lord takes, the squad lent to a crusade, a new squad's
+  members), the screen offers the list.
+- **Hostile and irreversible actions ask first**, stating their effect: a declaration of war
+  (including the one an attack on a peaceful empire implies), a crusade, a doctrine, a creed, razing,
+  disbanding, and a build order that would discard progress.
+- **A rival's city shows what a rival may know**: size, defense, Sentinels, districts; not its
+  yields or its build queue.
+- **The top bar's chips carry state**: `warn` (Strain from 50, the Blowout countdown, a negative
+  Gold rate, a House whose perk is off) and `accent` (no research chosen, a Great Person waiting)
+  are drawn on every skin. The turn is shown against the turn limit.
+- **One screen, one subject**: Cities (with the caravans), Research / Creeds / Rituals (tabs of one
+  screen), the Court, the Houses, Diplomacy (with the crusades), the Worldseal (Strain, Lifeboats,
+  how the game ends). The menu and the F keys name those screens; the classic game's advisors that
+  have no counterpart are hidden while a Cataclysm game is open.
+- **Touch**: a tap selects, a second tap on the same tile moves or attacks (the map sends no
+  right-click from a finger).
+- **Text is bare** (CLAUDE.md, "Rules text and tooltips"): labels, numbers, the rule.
+- **An eliminated player's game ends**: with no city and no squad left the status is `over`
+  (`cataclysm_kind: "Eliminated"`) and the game-over screen says Defeat with the rule; before, End
+  turn answered an error forever.
+- **The Help is this mode's** (help.js lists a topic of the open game's mode only): how to play, the
+  keys, squads and supply, battles, cities, research, Great People, Houses, the Worldseal.
+
+`node tools/web-cataclysm-smoke.mjs --bin <built>/ffh-play` starts a Cataclysm game from the title
+screen and checks every screen, the Help, the map tooltip and a few turns for errors and for an
+"undefined" in any text.
+
+Open: the alignments keep the words Good, Neutral and Evil (a working rule: creeds, Houses and some
+units read them); their names in this setting are the owner's to choose. Movement is one straight
+step at a time toward the clicked tile (no path-finding around impassable ground).

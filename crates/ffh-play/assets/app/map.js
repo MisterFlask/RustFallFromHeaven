@@ -1534,10 +1534,13 @@ export class MapView {
         g.stroke();
         if (s >= 9) {
           g.fillStyle = "#101010";
-          g.font = `bold ${Math.round(s * 0.42)}px ${FONT}`;
+          // Cataclysm: the squads' summed power (cataclysm.js `stackLabel`, set on the MapView) in
+          // place of the type; a label longer than two letters is set smaller.
+          const label = this.stackLabel?.(u0.x, u0.y) ?? T.abbrev(dname("UnitType", top.type));
+          g.font = `bold ${Math.round(s * 0.42 * Math.min(1, 2.2 / Math.max(1, label.length)))}px ${FONT}`;
           g.textAlign = "center";
           g.textBaseline = "middle";
-          g.fillText(T.abbrev(dname("UnitType", top.type)), bx + s / 2, by + s / 2 + 0.5);
+          g.fillText(label, bx + s / 2, by + s / 2 + 0.5);
         }
         // Health bar.
         if (top.hp < top.max_hp && s >= 10) {

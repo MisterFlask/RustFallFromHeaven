@@ -109,3 +109,130 @@ fn cataclysm_battle_log_v2_matches_watch_schema() {
     assert!(log.get("outcome").and_then(|o| o.get("rounds")).and_then(Json::as_i64).unwrap_or(0) >= 1);
     assert!(log.get("summary").and_then(|s| s.get("has_log")).and_then(Json::as_bool) == Some(true));
 }
+
+fn session(faction: &str, seed: u32) -> CataclysmSession {
+    let setup = Json::parse(&format!(r#"{{"mode":"cataclysm","faction":"{faction}","size":"small","opponents":3,"seed":{seed}}}"#)).unwrap();
+    CataclysmSession::new(&setup).expect("session")
+}
+
+fn q(sess: &CataclysmSession, req: &str) -> Json {
+    sess.query(&Json::parse(req).unwrap()).expect("query succeeds")
+}
+
+fn arr<'a>(j: &'a Json, key: &str) -> &'a [Json] {
+    j.get(key).and_then(Json::as_arr).unwrap_or_else(|| panic!("{key} array missing in {j}"))
+}
+
+#[test]
+fn cataclysm_report_carries_from_turn() {
+    let sess = session("bannor", 5);
+    let rep = q(&sess, r#"{"q":"report"}"#);
+    assert_eq!(rep.get("from_turn").and_then(Json::as_i64), rep.get("turn").and_then(Json::as_i64));
+    assert!(rep.get("from_turn").and_then(Json::as_i64).is_some());
+}
+
+#[test]
+fn cataclysm_view_hides_foreign_city_details_and_describes_own_state() {
+    let sess = session("bannor", 11);
+    sess.set_reveal(true);
+    let view = q(&sess, r#"{"q":"view"}"#);
+    let cat = view.get("cataclysm").expect("cataclysm payload");
+
+    // A rival's city: public fields only.
+    let cities = arr(cat, "cities");
+    let foreign = cities.iter().find(|c| c.get("owner").and_then(Json::as_i64) != Some(0)).expect("a rival city under reveal");
+    assert_eq!(foreign.get("foreign").and_then(Json::as_bool), Some(true));
+    assert!(foreign.get("building").is_none() && foreign.get("gold_rate").is_none() && foreign.get("crew").is_none());
+
+    // Own squads carry their supply state.
+    for s in arr(cat, "squads").iter().filter(|s| s.get("owner").and_then(Json::as_i64) == Some(0)) {
+        let key = s.get("supply").and_then(|x| x.get("key")).and_then(Json::as_str).expect("supply.key");
+        assert!(["supplied", "cut", "hungry", "starving", "recovering"].contains(&key));
+        assert!(s.get("max_moves").and_then(Json::as_i64).unwrap() >= s.get("moves_left").and_then(Json::as_i64).unwrap());
+    }
+
+    // A Seventh Garrison capital cannot be razed by its founder, and says why.
+    let capital = cities
+        .iter()
+        .find(|c| c.get("owner").and_then(Json::as_i64) == Some(0) && c.get("capital").and_then(Json::as_bool) == Some(true))
+        .expect("own capital");
+    let raze = capital.get("raze").expect("raze");
+    assert_eq!(raze.get("allowed").and_then(Json::as_bool), Some(false));
+    assert!(raze.get("why").and_then(Json::as_str).is_some_and(|w| !w.is_empty()));
+    assert!(capital.get("crew").and_then(|c| c.get("text")).and_then(Json::as_str).is_some());
+
+    // Standard city list: Sentinels as numbers.
+    let std_cities = arr(&view, "cities");
+    let own_std = std_cities.iter().find(|c| c.get("owner").and_then(Json::as_i64) == Some(0)).expect("own city");
+    let sentinels = arr(own_std, "sentinels");
+    assert!(!sentinels.is_empty(), "a capital has a Sentinel");
+    assert!(sentinels.iter().all(|s| s.as_i64().is_some()));
+
+    // Rules help for the in-game Help.
+    let help = cat.get("rules_help").expect("rules_help");
+    for k in ["supply", "squads", "battle", "cities", "houses"] {
+        let lines = arr(help, k);
+        assert!(!lines.is_empty() && lines.len() <= 8, "{k}: {} lines", lines.len());
+    }
+}
+
+#[test]
+fn cataclysm_rituals_say_why_when_mana_is_short() {
+    let mut sess = session("amurites", 3);
+    sess.g.players[0].mana = 0;
+    let view = q(&sess, r#"{"q":"view"}"#);
+    for r in arr(view.get("cataclysm").unwrap(), "rituals") {
+        assert_eq!(r.get("can_cast").and_then(Json::as_bool), Some(false));
+        assert!(r.get("why").and_then(Json::as_str).is_some_and(|w| w.contains("Mana")), "{r}");
+    }
+}
+
+#[test]
+fn cataclysm_setup_factions_carry_victory_lines() {
+    let d = ffh_data::global();
+    let setup = ffh_play::cataclysm::setup_json(d);
+    for f in arr(&setup, "factions") {
+        assert!(!arr(f, "victory_lines").is_empty(), "{f}");
+        assert!(f.get("preferred_doctrine").is_none());
+    }
+}
+
+#[test]
+fn cataclysm_status_over_names_the_human_result() {
+    let mut sess = session("bannor", 9);
+    sess.g.apocalypse.outcome = Some(cataclysm_core::GameOutcome {
+        kind: cataclysm_core::VictoryKind::MortalLifeboat,
+        winners: vec![cataclysm_core::PlayerId(1), cataclysm_core::PlayerId(0)],
+        summary: "test".into(),
+    });
+    let st = sess.status();
+    let over = st.get("over").expect("over");
+    assert_eq!(over.get("you_won").and_then(Json::as_bool), Some(true), "the human is a winner though not the first");
+    assert_eq!(arr(over, "winner_factions").len(), 2);
+    assert!(over.get("your_result").and_then(Json::as_str).is_some());
+    assert!(!arr(over, "scores").is_empty());
+}
+
+#[test]
+fn cataclysm_eliminated_human_sees_the_game_over() {
+    let mut sess = session("bannor", 21);
+    let me = cataclysm_core::PlayerId(0);
+    // What the rules do at the world turn for a civilization with no city and no squad.
+    for cid in sess.g.player_cities(me) {
+        let plot = sess.g.cities[&cid].plot;
+        sess.g.cities.remove(&cid);
+        sess.g.world.plot_mut(plot).city = None;
+    }
+    for sid in sess.g.player_squads(me) {
+        sess.g.squads.remove(&sid);
+    }
+    sess.g.players[0].alive = false;
+    assert!(!sess.g.is_over(), "the rules' own outcome is untouched");
+    let st = sess.status();
+    assert_eq!(st.get("phase").and_then(Json::as_str), Some("over"));
+    let over = st.get("over").expect("over");
+    assert_eq!(over.get("you_won").and_then(Json::as_bool), Some(false));
+    assert_eq!(over.get("cataclysm_kind").and_then(Json::as_str), Some("Eliminated"));
+    assert!(arr(over, "winner_factions").is_empty());
+    assert!(!arr(over, "scores").is_empty());
+}

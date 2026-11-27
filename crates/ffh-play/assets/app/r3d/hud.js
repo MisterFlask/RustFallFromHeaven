@@ -107,8 +107,10 @@ function drawHudParts(r3d, cam) {
       g.strokeStyle = s.picked ? "#fff2a8" : "rgba(15,10,8,0.9)";
       g.lineWidth = s.picked ? 2 : 1.2;
       g.stroke();
-      const ab = T.abbrev(dname("UnitType", s.top.type));
-      g.font = `700 ${Math.round(r * 1.15)}px ${FONT}`;
+      // Cataclysm: the squads' summed power (cataclysm.js `stackLabel`, set on the MapView) in place of the type.
+      // The shield is sized for two letters: a longer label is set smaller.
+      const ab = v.stackLabel?.(s.x, s.y) ?? T.abbrev(dname("UnitType", s.top.type));
+      g.font = `700 ${Math.round(r * 1.15 * Math.min(1, 2.2 / Math.max(1, ab.length)))}px ${FONT}`;
       g.lineWidth = 2;
       g.strokeStyle = "rgba(12,8,6,0.9)";
       g.fillStyle = "#f8f2e4";
@@ -344,8 +346,14 @@ function drawHudParts(r3d, cam) {
     const cnt = multi ? String(s.units.length) : null;
     const abbrAlpha = ts >= 60 ? Math.max(0, Math.min(1, (152 - ts) / 14)) : 0;
     const parts = [];
-    if (abbrAlpha > 0) parts.push([T.abbrev(dname("UnitType", top.type)), abbrAlpha]);
-    if (cnt) parts.push([cnt, 1]);
+    // Cataclysm: one solid part, the squads' summed power (cataclysm.js `stackLabel`, set on the MapView), in place of
+    // the type and the unit count.
+    const catLabel = v.stackLabel?.(s.x, s.y) ?? null;
+    if (catLabel !== null) parts.push([catLabel, 1]);
+    else {
+      if (abbrAlpha > 0) parts.push([T.abbrev(dname("UnitType", top.type)), abbrAlpha]);
+      if (cnt) parts.push([cnt, 1]);
+    }
     if (parts.length) {
       const fs = Math.max(10, Math.min(14, Math.round(ts * 0.14)));
       g.font = `700 ${fs}px ${FONT}`;

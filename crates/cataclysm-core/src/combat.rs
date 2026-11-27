@@ -118,9 +118,15 @@ pub fn ground_for(world: &World, from: PlotIdx, to: PlotIdx, is_city: bool) -> G
     Ground { city: is_city, forest, hills, open, marsh, crossing, trench_pct: 0 }
 }
 
+/// Attack and defense bonus of King Cinder's Host fighting on scorched ground.
+pub const HELL_GROUND_PCT: i32 = 15;
+
+/// From this Strain every battle deals more damage (the Red Sky crisis).
+pub const RED_SKY_STRAIN: i32 = 80;
+
 pub fn default_params(ac: i32) -> Params {
     let mut p = Params::default();
-    if ac >= 80 {
+    if ac >= RED_SKY_STRAIN {
         // Crisis "The Sky Bleeds": all battles deal +15% damage.
         p.base_damage = 46;
     }
@@ -137,8 +143,8 @@ fn member_stats(
 ) -> (i32, i32, i32, i32, Fighter) {
     let info = m.class.info();
     let lvl_pct = (m.level - 1).max(0) * 8;
-    let hero_pct = if m.is_hero() { 20 } else { 0 };
-    let wound_pen = m.wounds * 15;
+    let hero_pct = if m.is_hero() { crate::squad::HERO_STAT_PCT } else { 0 };
+    let wound_pen = m.wounds * crate::squad::WOUND_PENALTY_PCT;
 
     let mut atk_pct = 100 + mods.atk_pct + lvl_pct + hero_pct - wound_pen;
     let mut def_pct = 100 + mods.def_pct + lvl_pct + hero_pct - wound_pen;
@@ -159,8 +165,8 @@ fn member_stats(
         def_pct += mods.front_row_def_pct;
     }
     if on_hell && mods.hell_ground_bonus {
-        atk_pct += 15;
-        def_pct += 15;
+        atk_pct += HELL_GROUND_PCT;
+        def_pct += HELL_GROUND_PCT;
     }
     if is_defender_in_city {
         def_pct += city_def_pct / 2;

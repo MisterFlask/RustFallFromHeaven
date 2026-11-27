@@ -2,6 +2,9 @@
 
 use crate::ids::{CrusadeId, PlayerId, SquadId};
 
+/// Turns a Crusade lasts.
+pub const CRUSADE_TURNS: i32 = 18;
+
 #[derive(Clone, Debug)]
 pub struct Crusade {
     pub id: CrusadeId,
@@ -21,7 +24,7 @@ impl Crusade {
             id,
             caller,
             target,
-            turns_left: 18,
+            turns_left: CRUSADE_TURNS,
             active: true,
             lent_squads: Vec::new(),
             credit: Vec::new(),

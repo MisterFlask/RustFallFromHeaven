@@ -8,6 +8,12 @@ use crate::data::{CaptainAura, GreatSuit, UnitClassId};
 use crate::ids::{MemberId, PlayerId, PlotIdx, SquadId};
 
 pub const GRID_ROWS: u8 = 3;
+/// A commissioned hero's level, extra max HP, and extra battle stats (percent).
+pub const HERO_LEVEL: i32 = 3;
+pub const HERO_HP_BONUS: i32 = 30;
+pub const HERO_STAT_PCT: i32 = 20;
+/// Battle stats lost per Wound (percent).
+pub const WOUND_PENALTY_PCT: i32 = 15;
 pub const GRID_LANES: u8 = 3;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -60,7 +66,7 @@ impl SquadMember {
         m.hero_name = Some(name);
         m.hero_portrait = Some(portrait);
         m.hero_suit = Some(suit);
-        m.level = 3;
+        m.level = HERO_LEVEL;
         m.hp_centi = m.max_hp() * 100;
         m
     }
@@ -76,7 +82,7 @@ impl SquadMember {
     pub fn max_hp(&self) -> i32 {
         let base = self.class.info().hp;
         let lvl_bonus = (self.level - 1).max(0) * 10;
-        let hero_bonus = if self.is_hero() { 30 } else { 0 };
+        let hero_bonus = if self.is_hero() { HERO_HP_BONUS } else { 0 };
         base + lvl_bonus + hero_bonus
     }
 
@@ -260,11 +266,11 @@ impl Squad {
     /// Moves a member to `(row, lane)`, swapping with a same-size occupant if needed.
     pub fn move_member(&mut self, member_id: MemberId, row: u8, lane: u8) -> Result<(), &'static str> {
         let Some(pos) = self.members.iter().position(|m| m.id == member_id) else {
-            return Err("member not found in squad");
+            return Err("This unit is not in the squad.");
         };
         let large = self.members[pos].class.info().large;
         if row >= GRID_ROWS || lane >= GRID_LANES || (large && lane + 1 >= GRID_LANES) {
-            return Err("target cell is out of bounds for this unit size");
+            return Err("That cell is outside the grid for this unit.");
         }
         if self.cell_free(row, lane, large, Some(member_id)) {
             self.members[pos].row = row;
@@ -284,6 +290,6 @@ impl Squad {
             self.members[other_pos].lane = old_l;
             return Ok(());
         }
-        Err("target cell is occupied by a unit of different size")
+        Err("That cell holds a unit of a different size.")
     }
 }

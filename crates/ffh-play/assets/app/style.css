@@ -1585,6 +1585,87 @@ html.iso.hd2d .cat-top-chip.act {
   border-color: rgba(220, 203, 158, 0.55);
   color: var(--iso-gold-lt);
 }
+/* The chips' states after every skin's base rule (html.iso and html.iso.hd2d set the border and
+   background with more weight than .warn / .accent alone): warn is the alarm (red edge and ink),
+   accent waits for the player (gilt edge), strong is the countdown (filled, bold). */
+:root .cat-top-chip.warn,
+:root button.cat-top-chip.warn:hover:not([disabled]) {
+  border-color: var(--warn);
+  color: #ffb8a8;
+  background: rgba(110, 26, 22, 0.72);
+  box-shadow: inset 3px 0 0 var(--warn);
+}
+:root .cat-top-chip.accent,
+:root button.cat-top-chip.accent:hover:not([disabled]) {
+  border-color: var(--accent);
+  color: var(--c-glow);
+  background: rgba(120, 88, 22, 0.55);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+:root .cat-top-chip.strong { font-weight: 700; }
+:root .cat-top-chip.warn.strong,
+:root button.cat-top-chip.warn.strong:hover:not([disabled]) {
+  background: rgba(150, 30, 24, 0.9);
+  color: #fff1ec;
+  box-shadow: inset 3px 0 0 #fff1ec;
+}
+html.iso.hd2d .cat-top-chip.warn,
+html.iso.hd2d button.cat-top-chip.warn:hover:not([disabled]) {
+  border-color: var(--iso-bad);
+  color: var(--iso-bad);
+  background: linear-gradient(90deg, rgba(255, 141, 110, 0.22), rgba(255, 141, 110, 0.06)), rgba(14, 14, 18, 0.86);
+  box-shadow: inset 3px 0 0 var(--iso-bad);
+}
+html.iso.hd2d .cat-top-chip.accent,
+html.iso.hd2d button.cat-top-chip.accent:hover:not([disabled]) {
+  border-color: var(--iso-gold);
+  color: var(--iso-gold-lt);
+  background: linear-gradient(90deg, rgba(220, 203, 158, 0.26), rgba(220, 203, 158, 0.06)), rgba(14, 14, 18, 0.86);
+  box-shadow: inset 3px 0 0 var(--iso-gold);
+}
+html.iso.hd2d .cat-top-chip.warn.strong,
+html.iso.hd2d button.cat-top-chip.warn.strong:hover:not([disabled]) {
+  color: var(--hd-ink);
+  background: linear-gradient(90deg, rgba(255, 141, 110, 0.55), rgba(255, 141, 110, 0.2)), rgba(40, 12, 10, 0.92);
+  box-shadow: inset 3px 0 0 var(--hd-ink);
+}
+/* The chips' label shrinks with an ellipsis (the whole text is in the tooltip). */
+.cat-top-chip { flex: 0 0 auto; min-width: 3.5em; }
+/* The long, slow-changing labels (the act, the research) give way; the numbers keep their width. */
+.cat-top-chip.act { flex-shrink: 3; }
+.cat-top-chip.research { flex-shrink: 1; }
+.cat-chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The chip strip takes only the room the bar has left: its basis is 0, so it never wraps the bar
+   or pushes the menu's icons, and it grows up to its own width. */
+:root #empire:has(> .cat-top-chip) {
+  flex: 1000 1 0;
+  min-width: 0;
+  max-width: max-content;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  gap: 6px;
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* A phone: the strip is a row of its own under the bar, scrolled sideways by touch; the alarm
+     (Strain or the countdown) first, the act chip without the faction. */
+  :root #empire:has(> .cat-top-chip) {
+    order: 10;
+    flex: 1 1 100%;
+    max-width: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    scrollbar-width: none;
+  }
+  .cat-top-chip, .cat-top-chip.act, .cat-top-chip.research { flex: none; min-width: 0; }
+  .cat-top-chip.strain { order: -1; }
+  .cat-chip-faction { display: none; }
+}
+/* The map tooltip's lines (cataclysm.js `hoverAt`): short, wrapped inside the window. */
+#mapwrap .tooltip:has(> .cat-tip) { max-width: min(380px, calc(100vw - 24px)); }
+.cat-tip { overflow-wrap: anywhere; }
+.cat-tip-forecast { margin-top: 3px; color: var(--c-sand); }
 
 /* Squad switcher & compact HUD panel */
 .cat-switcher {
@@ -1755,6 +1836,25 @@ html.iso button.cat-cell.selected {
   background: var(--good);
 }
 
+/* The formation's cells: the class name cut by an ellipsis, a Large unit across two lanes. */
+.cat-cell { min-width: 0; overflow: hidden; }
+.cat-cell-name, .cat-cell-act { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-cell.large { background-image: linear-gradient(90deg, transparent 49.5%, rgba(220, 203, 158, 0.18) 50%, transparent 50.5%); }
+/* The squad switcher: a squad with no moves left is dim. */
+.cat-mini-btn.spent { opacity: 0.55; }
+/* The squad's order (Fortified, Raiding) beside its name. */
+.cat-order-badge { font-size: 12px; color: var(--c-sand); }
+.cat-supply { cursor: default; }
+/* A pressed order (Fortify while fortified, Raid while raiding). */
+.cat-actions-row button.on,
+html.iso .cat-actions-row button.on {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--c-glow);
+}
+/* A disabled order's wrapper, which carries its tooltip. */
+.cat-tipwrap { display: inline-flex; }
+
 .cat-iso-city-box {
   display: flex;
   flex-direction: column;
@@ -1762,7 +1862,61 @@ html.iso button.cat-cell.selected {
   padding: 4px 2px;
 }
 
-/* Modal screens: New Game, Macro City, Doctrines, Great People Court, Houses & Apocalypse */
+/* Modal screens: cataclysm_screens.js (new game, city, research, Court, Houses, Worldseal,
+   diplomacy, cities) and the Cataclysm game over. Every such dialog carries `.cat-modal`: one type
+   scale inside it (card titles and data at the dialog's text size, secondary lines one step
+   smaller, notes no larger than data). */
+.cat-modal { --cat-small: 12px; --cat-small-lh: 1.35; }
+html.iso .cat-modal { --cat-small: 16px; --cat-small-lh: 20px; }
+.cat-modal :is(.cat-note, small, p.dim, .cat-why) { font-size: var(--cat-small); line-height: var(--cat-small-lh); }
+.cat-modal p { margin: 4px 0 6px; }
+.cat-modal small.cat-note, .cat-modal small.cat-why { display: block; }
+.cat-modal .cat-note { color: var(--dim); }
+html.iso .cat-modal .cat-note { color: var(--iso-dim); }
+.cat-modal .cat-why { color: var(--caution, var(--warn)); }
+html.iso .cat-modal .cat-why { color: var(--iso-bad); }
+.cat-card-title { font-weight: 700; }
+html.iso .cat-card-title { color: #fff8e4; }
+.cat-sub { margin: 8px 0 2px; color: var(--dim); }
+html.iso .cat-sub { color: var(--iso-gold); }
+.cat-label { color: var(--dim); margin-right: 2px; }
+.cat-list { margin: 2px 0 8px; padding-left: 20px; }
+.cat-list li { margin: 1px 0; }
+.cat-calc { font-size: var(--cat-small); line-height: var(--cat-small-lh); color: var(--dim); }
+html.iso .cat-calc { color: var(--iso-dim); }
+.cat-btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0; }
+.cat-badge { display: inline-block; padding: 0 6px; border: 1px solid var(--c-ochre); font-size: var(--cat-small); line-height: var(--cat-small-lh); }
+.cat-badge.warn { border-color: var(--warn); color: var(--warn); }
+.cat-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 10px; border-bottom: 1px solid var(--c-iron); }
+.cat-tabs button.cat-tab { border-bottom-width: 0; }
+.cat-tabs button.cat-tab.on { border-color: var(--accent); color: var(--c-glow); box-shadow: inset 0 -2px 0 var(--accent); }
+html.iso .cat-tabs button.cat-tab.on { color: #fff; }
+.cat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 9px;
+  border: 1px solid var(--c-iron);
+  background: rgba(14, 22, 42, 0.65);
+  border-radius: 3px;
+}
+.cat-card.selected { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.cat-composer { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 8px; }
+.cat-composer-sels { display: flex; flex-wrap: wrap; gap: 6px; }
+.cat-composer-sels select { min-width: 0; max-width: 100%; }
+.cat-choice { padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.cat-choice select { max-width: 100%; }
+.cat-progress { width: 100%; height: 4px; background: rgba(0, 0, 0, 0.55); }
+.cat-progress-fill { height: 100%; background: var(--accent); }
+.cat-check { color: var(--good); }
+html.iso .cat-check { color: var(--iso-good); }
+.cat-crisis-list { list-style: none; margin: 4px 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cat-crisis-list li { display: flex; gap: 10px; align-items: baseline; padding: 4px 8px; border-left: 3px solid var(--c-iron); }
+.cat-crisis-list li.fired { border-left-color: var(--warn); }
+.cat-crisis-list li .cat-badge { margin-left: 6px; }
+.cat-crisis-at { flex: none; min-width: 2.5em; text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+.cat-table td small { white-space: nowrap; }
+.cat-modal table.scores tr.you td { color: var(--c-glow); }
 .cat-ng-factions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1785,7 +1939,7 @@ html.iso button.cat-fac-card {
   border: 1px solid var(--c-iron);
   border-image: none;
   padding: 6px 8px;
-  font-size: 14px;
+  font-size: inherit;
   line-height: 1.2;
 }
 .cat-fac-card.selected,
@@ -1801,7 +1955,7 @@ html.iso button.cat-fac-card.selected {
 }
 .cat-fac-hero {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 10px;
   margin: 6px 0 10px;
@@ -1809,12 +1963,14 @@ html.iso button.cat-fac-card.selected {
   background: rgba(10, 16, 30, 0.65);
   border-radius: 3px;
 }
-.cat-fac-hero h4 {
-  margin: 0 0 4px;
+.cat-fac-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .cat-fac-hero p {
   margin: 3px 0;
-  font-size: 13px;
 }
 .cat-ng-controls {
   display: flex;
@@ -1827,7 +1983,6 @@ html.iso button.cat-fac-card.selected {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
 }
 .cat-portrait-fallback {
   display: inline-flex;
@@ -1911,14 +2066,27 @@ html.iso button.cat-tech-node.active {
   border-color: var(--accent);
   box-shadow: inset 3px 0 0 var(--accent);
 }
-.cat-tech-node.known,
-html.iso button.cat-tech-node.known {
+/* Four states, told apart at a glance: known (a check, a calm green rule), researching (the
+   accent, a progress bar), available (a button), locked (dim, its reason in a line). */
+.cat-tech-node.known {
   border-color: var(--good);
-  opacity: 0.92;
+  box-shadow: inset 3px 0 0 var(--good);
 }
 .cat-tech-node.avail,
 html.iso button.cat-tech-node.avail {
   border-color: var(--c-ochre);
+  cursor: pointer;
+}
+.cat-tech-node.avail:hover {
+  border-color: var(--accent);
+}
+.cat-tech-node.locked {
+  border-style: dashed;
+  background: rgba(8, 12, 22, 0.4);
+}
+.cat-tech-node.locked > .cat-tech-head,
+.cat-tech-node.locked > .cat-note {
+  opacity: 0.6;
 }
 .cat-tech-head {
   display: flex;
@@ -1998,9 +2166,56 @@ html.iso button.cat-tech-node.avail {
   background: rgba(110, 26, 22, 0.65);
 }
 
+/* Inside the dialogs: the cards at the dialog's text size (the HUD keeps its own small sizes). */
+.cat-modal :is(.cat-stats-strip, .cat-slot, .cat-house-card, .cat-card, .cat-tech-node, .cat-card-btn, .cat-gp-card) {
+  font-size: inherit;
+  line-height: inherit;
+}
+html.iso .cat-modal :is(button.cat-card-btn, button.cat-tech-node, button.cat-fac-card) {
+  font-size: 20px;
+  line-height: 24px;
+}
+.cat-modal .cat-pill { font-size: var(--cat-small); line-height: var(--cat-small-lh); }
+.cat-modal .cat-tech-node > .cat-tech-head > span,
+.cat-modal .cat-card > .cat-tech-head > span,
+.cat-modal .cat-card-btn > .cat-tech-head > span { font-size: var(--cat-small); line-height: var(--cat-small-lh); white-space: nowrap; }
+.cat-modal .cat-tech-head strong { min-width: 0; }
+.cat-gp-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.cat-modal .cat-stats-strip { margin-bottom: 6px; }
+
+/* HD-2D: the neutral panel colours of the dialog chrome (hd2d.css), not navy. */
+html.iso.hd2d .cat-modal :is(.cat-card, .cat-card-btn, .cat-tech-node, .cat-house-card, .cat-gp-card, .cat-fac-card, .cat-fac-hero, .cat-stats-strip, .cat-slot) {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: var(--hd-faint);
+}
+html.iso.hd2d .cat-modal .cat-slot.filled,
+html.iso.hd2d .cat-modal .cat-tech-node.avail,
+html.iso.hd2d .cat-modal .cat-gp-card { border-color: var(--hd-line); }
+html.iso.hd2d .cat-modal :is(button.cat-card-btn, button.cat-tech-node, button.cat-fac-card):hover:not([disabled]) {
+  background: var(--hd-band), rgba(20, 20, 24, 0.9);
+  border-color: var(--hd-line);
+}
+html.iso.hd2d .cat-modal :is(.cat-tech-node.active, .cat-card.selected, .cat-fac-card.selected) {
+  border-color: rgba(220, 203, 158, 0.7);
+  box-shadow: inset 3px 0 0 var(--iso-gold);
+  background: var(--hd-band), rgba(20, 20, 24, 0.9);
+}
+html.iso.hd2d .cat-modal .cat-tech-node.known { border-color: rgba(140, 200, 140, 0.45); box-shadow: inset 3px 0 0 var(--iso-good); }
+html.iso.hd2d .cat-modal .cat-tech-node.locked { background: rgba(0, 0, 0, 0.18); }
+html.iso.hd2d .cat-modal .cat-secret-box { border-left-color: var(--iso-gold); background: rgba(236, 230, 214, 0.06); }
+html.iso.hd2d .cat-modal .cat-pill { border-color: var(--hd-faint); background: rgba(0, 0, 0, 0.45); }
+html.iso.hd2d .cat-modal .cat-tabs { border-bottom-color: var(--hd-faint); }
+html.iso.hd2d .cat-modal .cat-tabs button.cat-tab.on { background: var(--hd-band), var(--hd-fill); box-shadow: inset 0 -2px 0 var(--hd-ink); }
+html.iso.hd2d .cat-modal .cat-choice, html.iso.hd2d .cat-modal .cat-doc-row { border-top-color: var(--hd-faint); }
+html.iso.hd2d .cat-modal .cat-progress-fill { background: var(--iso-gold); }
+html.iso.hd2d .cat-modal .cat-crisis-list li { border-left-color: var(--hd-faint); }
+html.iso.hd2d .cat-modal .cat-crisis-list li.fired { border-left-color: var(--iso-bad); }
+
 @media (max-width: 820px) {
   .cat-ng-factions,
   .cat-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cat-grid-2 { grid-template-columns: 1fr; }
+  .cat-fac-hero { flex-wrap: wrap; }
+  .cat-modal .cat-stats-strip { gap: 4px 10px; }
 }
 

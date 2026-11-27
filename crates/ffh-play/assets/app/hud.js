@@ -6,7 +6,7 @@ import { S, on, info, dname, tname, turns, playerName, me, emit, endTurnMessage,
 import { playerColor } from "./tiles.js";
 import { h, fill } from "./dom.js";
 import { render as markup } from "./markup.js";
-import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
+import { look, pix, pixable, iconEl, uiIcon, barEl, decorate } from "./look.js";
 import { openCount, run } from "./commands.js";
 import { renderSpectatorBar, renderAutoplayBar, flagsView } from "./tools.js";
 import { isoSkin, isoIcon, spellIconName } from "./isoui.js";
@@ -198,7 +198,15 @@ export function renderTop() {
       phaseSlots(phase).main,
       h("span.phase-dot", { "data-phase": st.phase ?? "" }),
       look.art && !isoSkin() ? h("span.turn-crescent", ic(yours ? "icon16/turn" : "icon16/turn_wait", "", yours && !observing(st) ? "Your turn" : line)) : null,
-      st.turn !== undefined ? h("b.turn", small("Turn", ".dim"), " ", big(st.turn)) : null,
+      st.turn !== undefined
+        ? h(
+            "b.turn",
+            small("Turn", ".dim"),
+            " ",
+            // Cataclysm: the turn against the turn limit, as one item (the flex gap stays out of "26/160").
+            isCataclysm() && v?.cataclysm?.max_turns !== undefined ? h("span.turn-of", big(st.turn), small(`/${v.cataclysm.max_turns}`, ".dim")) : big(st.turn),
+          )
+        : null,
       h("span#phase-text", pixable(line) ? pix(line) : line),
       st.reveal && !observing(st) ? h("span.badge.reveal", "DEBUG REVEAL") : null,
     );
@@ -244,14 +252,10 @@ export function renderTop() {
     if (specialty) end.title = why;
     if (due) end.title = due.reason;
   }
+  // The menu's buttons in this game's mode (relabelled or hidden in Cataclysm, back otherwise).
+  applyMenuMode(isCataclysm());
   if (isCataclysm()) {
-    const crusades = document.getElementById("btn-crusades");
-    if (crusades) {
-      crusades.hidden = false;
-      crusades.classList.remove("attention");
-    }
-    const seasBtn = document.getElementById("btn-seas");
-    if (seasBtn) seasBtn.hidden = true;
+    document.getElementById("btn-crusades")?.classList.remove("attention");
     const worldAct = document.getElementById("world-actions");
     if (worldAct) fill(worldAct);
     const rituals = document.getElementById("rituals");
@@ -354,6 +358,66 @@ export function renderTop() {
   const scoreTip = [h("div.tip-title", `Score ${scoreText(m.score)}`), h("div", "Your share of the world: the average of your shares of all people, all land and all knowledge."), m.civs_alive ? h("div.tip-hint", `With ${m.civs_alive} civilizations alive, a fair share is ${fairShareText(m.civs_alive)}.`) : null];
   items.push(sep(), h("span.stat.dim.score", { tip: scoreTip, role: "group", "aria-label": `Score: ${scoreText(m.score)} of the world` }, iso ? iconEl("icon16/score") ?? small("Score") : small("Score"), tweenNum("score", m.score, "", scoreText)));
   fill(info, items);
+}
+
+/** The menu in a Cataclysm game (docs/CATACLYSM.md): each button's label and title there, or null
+ *  for a button hidden there. */
+const CATACLYSM_MENU = {
+  "btn-research": null,
+  "btn-techs": ["Research", "Research and doctrines [F6]"],
+  "btn-cities": ["Cities", "Cities [F1]"],
+  "btn-civics": ["Rituals", "Rituals [F3]"],
+  "btn-religion": ["Creeds", "Creeds [F7]"],
+  "btn-armies": null,
+  "btn-governors": ["Court", "Court [F9]"],
+  "btn-houses": ["Houses", "Houses [Shift+F9]"],
+  "btn-diplo": ["Diplomacy", "Diplomacy [F4]"],
+  "btn-crusades": null,
+  "btn-seas": null,
+  "btn-trade": null,
+};
+
+/** A static button's label: its text without the isometric skin's icon. */
+function buttonLabel(b) {
+  return [...b.childNodes].filter((n) => !(n.nodeType === 1 && n.classList.contains("iso-only"))).map((n) => n.textContent).join("");
+}
+
+function setButtonLabel(b, label, title) {
+  b.title = title;
+  if (buttonLabel(b) === label) return;
+  for (const n of [...b.childNodes]) if (!(n.nodeType === 1 && n.classList.contains("iso-only"))) n.remove();
+  b.append(document.createTextNode(label));
+  // The 2D art letters a static button's text (look.js); the isometric skin keeps it plain.
+  if (look.art && !isoSkin() && b.parentElement) decorate(b.parentElement);
+}
+
+/** Relabels or hides the menu's buttons for a Cataclysm game (`cataclysm`), keeping each one's own
+ *  label and title in its dataset, and puts them back for a classic game. Runs on every render. */
+function applyMenuMode(cataclysm) {
+  for (const [id, spec] of Object.entries(CATACLYSM_MENU)) {
+    const b = document.getElementById(id);
+    if (!b) continue;
+    if (cataclysm) {
+      if (b.dataset.catSaved !== "1") {
+        b.dataset.catSaved = "1";
+        b.dataset.catLabel = buttonLabel(b);
+        b.dataset.catTitle = b.title;
+      }
+      if (spec === null) {
+        if (!b.hidden) {
+          b.hidden = true;
+          b.dataset.catHid = "1";
+        }
+      } else setButtonLabel(b, spec[0], spec[1]);
+    } else if (b.dataset.catSaved === "1") {
+      setButtonLabel(b, b.dataset.catLabel ?? "", b.dataset.catTitle ?? "");
+      if (b.dataset.catHid === "1") b.hidden = false;
+      delete b.dataset.catSaved;
+      delete b.dataset.catLabel;
+      delete b.dataset.catTitle;
+      delete b.dataset.catHid;
+    }
+  }
 }
 
 /** Whether a doctrine can be adopted (some research path's `can_commit`, the `techs` query), asked

@@ -87,10 +87,10 @@ impl House {
         if let (Some(hr), Some(rr)) = (self.religion, ruler_religion) {
             if hr == rr {
                 score += 1;
-                parts.push(format!("Shared faith ({}): +1", hr.name()));
+                parts.push(format!("Shared Creed ({}): +1", hr.name()));
             } else {
                 score -= 1;
-                parts.push(format!("Clashing faith ({}): -1", hr.name()));
+                parts.push(format!("Different Creed ({}): -1", hr.name()));
             }
         }
         if at_war_with_sympathy {

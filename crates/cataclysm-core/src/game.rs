@@ -25,8 +25,121 @@ use crate::house::{House, HouseMood, HOUSE_MAX_CITIES};
 use crate::ids::{BattleId, CaravanId, CityId, CrusadeId, GreatPersonId, HouseId, MemberId, PlayerId, PlotIdx, SquadId};
 use crate::rng::Rng;
 use crate::squad::{RecoveringHero, Squad, SquadMember, SquadOrder};
-use crate::supply::{enemy_supply_blocks, trace_supply_line, SupplyLine, BASE_SUPPLY_BUDGET};
+use crate::supply::{
+    enemy_supply_blocks, trace_supply_line, SupplyLine, BASE_SUPPLY_BUDGET, SUPPLY_BONUS_OUTRIDERS, SUPPLY_BONUS_QUARTERMASTER, SUPPLY_BONUS_TRADE_ROADS,
+};
 use crate::world::{Improvement, PlotKind, Resource, Terrain, World};
+
+// Rule numbers shared by the rules below and by the text that describes them to the player.
+
+/// Founding a city costs `FOUND_CITY_BASE_GOLD + FOUND_CITY_GOLD_PER_CITY * cities owned`.
+pub const FOUND_CITY_BASE_GOLD: i32 = 70;
+pub const FOUND_CITY_GOLD_PER_CITY: i32 = 25;
+/// A new city must stand at least this many plots from every city.
+pub const MIN_CITY_DISTANCE: i32 = 4;
+/// Gold to launch a Caravan by command (a city-built Caravan pays its Industry instead).
+pub const CARAVAN_GOLD: i32 = 35;
+/// Strain added when a city is razed.
+pub const RAZE_STRAIN: i32 = 6;
+/// Gold paid to a raider to end its raids on your land.
+pub const RAID_TRIBUTE_GOLD: i32 = 60;
+/// Share of a raided city's Gold + Industry the raiders take (as Gold for themselves).
+pub const RAID_TAKE_PCT: i32 = 50;
+pub const RAID_TAKE_SALLIED_PCT: i32 = 10;
+/// Consecutive raided turns that strip a city's countryside, and for how long.
+pub const RAID_STREAK_TO_STRIP: i32 = 5;
+pub const STRIP_TURNS: i32 = 10;
+/// A "Favoured" sally goes out when the garrison's power is at least this % of the raider's.
+pub const SALLY_FAVOURED_PCT: i32 = 95;
+/// Lowest culture for the "Last Metropolis" Lifeboat.
+pub const LIFEBOAT_CULTURE_MIN: i32 = 120;
+/// Turns without a supply line from which a squad loses HP each turn, and how much.
+pub const STARVE_ATTRITION_TURNS: i32 = 3;
+pub const STARVE_HP_LOSS_PCT: i32 = 10;
+/// Per-turn healing (percent of max HP) of a supplied squad by where it stands.
+pub const HEAL_OWN_CITY_PCT: i32 = 20;
+pub const HEAL_OWN_LAND_PCT: i32 = 12;
+pub const HEAL_FORTIFIED_PCT: i32 = 8;
+pub const HEAL_FIELD_PCT: i32 = 4;
+/// Sentinel damage repaired per turn in a city that is not besieged.
+pub const SENTINEL_REPAIR_PER_TURN: i32 = 15;
+/// Gold upkeep per squad member per turn.
+pub const UPKEEP_PER_MEMBER: i32 = 2;
+/// Strain added every this many world turns before the Blowout.
+pub const STRAIN_DRIFT_EVERY: i32 = 3;
+/// Turns a fallen hero recovers before returning at the capital.
+pub const HERO_RECOVERY_TURNS: i32 = 8;
+/// Gold taken by ambushing an enemy Caravan.
+pub const AMBUSH_GOLD: i32 = 40;
+/// Mana a side spends per battle when its squad has a caster.
+pub const BATTLE_MANA: i32 = 2;
+/// Strain added by a battle in which at least this many units fell.
+pub const BLOODY_BATTLE_DEATHS: i32 = 3;
+/// Wreckers' Deep Shaft: from this Strain, every this many turns.
+pub const DEEP_SHAFT_STRAIN: i32 = 30;
+pub const DEEP_SHAFT_EVERY: i32 = 10;
+/// Crusade credit for lending a squad (Seventh Garrison, others).
+pub const LEND_CREDIT_BANNOR: i32 = 20;
+pub const LEND_CREDIT: i32 = 10;
+/// Gold-cost discounts (percent paid).
+pub const HIPPUS_REINFORCE_PCT: i32 = 75;
+pub const WAR_CHESTS_PCT: i32 = 70;
+/// A primary doctrine's techs cost this percent; no tech costs less than `MIN_TECH_COST`.
+pub const PRIMARY_DOCTRINE_COST_PCT: i32 = 75;
+pub const MIN_TECH_COST: i32 = 15;
+/// A secondary doctrine opens its techs up to this tier.
+pub const SECONDARY_DOCTRINE_MAX_TIER: u8 = 2;
+
+/// Strain change of Vent the Seal cast by the Keepers of the Seal (others: the ritual's own).
+pub const SANCTIFY_KEEPERS_STRAIN: i32 = -5;
+/// Squad cap: base, Grand Companies bonus, floor.
+pub const SQUAD_CAP_BASE: i32 = 3;
+pub const SQUAD_CAP_GRAND_COMPANIES: i32 = 2;
+pub const SQUAD_CAP_MIN: i32 = 2;
+/// Places per squad: base, and with any tier-2 tech or Guilds.
+pub const SQUAD_PLACES_BASE: u8 = 4;
+pub const SQUAD_PLACES_EXPANDED: u8 = 5;
+
+/// Lair outcomes (one at random).
+pub const LAIR_GOLD: i32 = 75;
+pub const LAIR_MANA: i32 = 25;
+pub const LAIR_LORE: i32 = 35;
+pub const LAIR_XP: i32 = 15;
+/// Raiders affect cities within this many plots.
+pub const RAID_RANGE: i32 = 2;
+/// Culture at which a city's border radius grows from 1 to 2.
+pub const BORDER_CULTURE_RADIUS_2: i32 = 100;
+/// Mana at which a side's battle spells gain power.
+pub const MANA_BOOST_MIN: i32 = 15;
+/// Strain added by a bloody battle.
+pub const BLOODY_BATTLE_STRAIN: i32 = 1;
+/// Score points (each player's score is its share of all points, out of 10000).
+pub const SCORE_PER_SIZE: i32 = 15;
+pub const SCORE_PER_DISTRICT: i32 = 10;
+pub const SCORE_PER_TECH: i32 = 20;
+pub const SCORE_PER_SECRET: i32 = 30;
+pub const SCORE_PER_UNIT: i32 = 8;
+
+/// Renown each source adds to a Great People meter.
+pub mod renown {
+    pub const AMBUSH_MERCHANT: i32 = 8;
+    pub const BATTLE_COMMANDER: i32 = 4;
+    pub const BATTLE_COMMANDER_PER_KILL: i32 = 6;
+    pub const LAIR_RELICS_SAGE: i32 = 15;
+    pub const FOUND_CREED_PROPHET: i32 = 20;
+    pub const RITUAL_SAGE: i32 = 10;
+    pub const LEND_PROPHET: i32 = 12;
+    pub const CARAVAN_MERCHANT: i32 = 2;
+    pub const DISTRICT_PER_TURN: i32 = 2;
+    pub const WONDER_ENGINEER: i32 = 25;
+    pub const CAPTURE_COMMANDER: i32 = 15;
+    pub const RAID_MERCHANT: i32 = 4;
+}
+
+/// Founding cost for a player that owns `cities` cities.
+pub const fn found_city_cost(cities: usize) -> i32 {
+    FOUND_CITY_BASE_GOLD + cities as i32 * FOUND_CITY_GOLD_PER_CITY
+}
 
 #[derive(Clone, Debug)]
 pub struct GameSetup {
@@ -121,9 +234,9 @@ impl Player {
     /// Maximum places per 3x3 squad: starts at 4, expands to 5 upon reaching tier-2 Doctrine (or Guilds).
     pub fn squad_place_cap(&self) -> u8 {
         if self.has_tech(TECH_GUILDS) || self.techs.iter().any(|t| TECHS[t.0 as usize].tier >= 2) {
-            5
+            SQUAD_PLACES_EXPANDED
         } else {
-            4
+            SQUAD_PLACES_BASE
         }
     }
 
@@ -391,7 +504,7 @@ impl Game {
 
     pub fn squad_cap(&self, p: PlayerId) -> usize {
         let pl = &self.players[p.idx()];
-        let mut cap: i32 = 3;
+        let mut cap: i32 = SQUAD_CAP_BASE;
         for c in self.cities.values().filter(|c| c.owner == p) {
             if !c.is_outpost {
                 cap += 1;
@@ -401,7 +514,7 @@ impl Game {
             }
         }
         if pl.has_tech(crate::data::TECH_GRAND_COMPANIES) {
-            cap += 2;
+            cap += SQUAD_CAP_GRAND_COMPANIES;
         }
         cap += pl.secret_sum(|e| match e {
             SecretEffect::SquadCapBonus(n) => n,
@@ -412,7 +525,7 @@ impl Game {
                 cap += 1;
             }
         }
-        cap.max(2) as usize
+        cap.max(SQUAD_CAP_MIN) as usize
     }
 
     pub fn caravan_cap(&self, p: PlayerId) -> usize {
@@ -442,13 +555,13 @@ impl Game {
         let pl = &self.players[p.idx()];
         let mut b = BASE_SUPPLY_BUDGET;
         if pl.has_tech(TECH_TRADE_ROADS) {
-            b += 4;
+            b += SUPPLY_BONUS_TRADE_ROADS;
         }
         if pl.has_tech(TECH_OUTRIDERS) {
-            b += 6;
+            b += SUPPLY_BONUS_OUTRIDERS;
         }
         if aura == CaptainAura::Quartermaster {
-            b += 4;
+            b += SUPPLY_BONUS_QUARTERMASTER;
         }
         b += pl.secret_sum(|e| match e {
             SecretEffect::SupplyRangeBonus(n) => n,
@@ -637,7 +750,7 @@ impl Game {
             if pl.faction == FactionId::Bannor && s.lent_by.is_some() {
                 continue;
             }
-            upkeep += s.members.len() as i32 * 2;
+            upkeep += s.members.len() as i32 * UPKEEP_PER_MEMBER;
         }
         r.add(-upkeep, "Squad Upkeep");
         r
@@ -668,7 +781,7 @@ impl Game {
         for c in self.cities.values().filter(|c| c.owner == p) {
             city_mana += self.city_yields(c.id).5;
         }
-        r.add(city_mana, "Mana Vents, Academies & Creeds");
+        r.add(city_mana, "Cities (Mana Vents, Academies, Creed, Wonders)");
         if pl.has_tech(crate::data::TECH_GRAND_CONJURATION) {
             r.add(3, "Grand Conjuration");
         }
@@ -691,38 +804,77 @@ impl Game {
         let mut cost = info.cost;
         if let Some(doc) = info.doctrine {
             if pl.primary_doctrine == Some(doc) {
-                cost = cost * 75 / 100;
+                cost = cost * PRIMARY_DOCTRINE_COST_PCT / 100;
             }
         }
-        cost.max(15)
+        cost.max(MIN_TECH_COST)
     }
 
     pub fn can_research(&self, p: PlayerId, tech: TechId) -> Result<(), String> {
         let pl = &self.players[p.idx()];
         if pl.has_tech(tech) {
-            return Err("already researched".into());
+            return Err("Already researched.".into());
         }
         let info = &TECHS[tech.0 as usize];
         if let Some(req) = info.prereq {
             if !pl.has_tech(req) {
-                return Err(format!("requires {}", TECHS[req.0 as usize].name));
+                return Err(format!("Requires {}.", TECHS[req.0 as usize].name));
             }
         }
         if let Some(doc) = info.doctrine {
             if pl.primary_doctrine == Some(doc) {
                 return Ok(());
             }
-            if pl.secondary_doctrine == Some(doc) && info.tier <= 2 {
+            if pl.secondary_doctrine == Some(doc) && info.tier <= SECONDARY_DOCTRINE_MAX_TIER {
                 return Ok(());
             }
-            return Err(format!("requires adopting {} as Primary Doctrine (or Secondary for tier 1-2)", doc.name()));
+            if info.tier <= SECONDARY_DOCTRINE_MAX_TIER {
+                return Err(format!("Requires {} as Primary or Secondary Doctrine.", doc.name()));
+            }
+            return Err(format!("Requires {} as Primary Doctrine.", doc.name()));
+        }
+        Ok(())
+    }
+
+    /// Why a tech's effective cost differs from its listed cost (`None` when it does not).
+    pub fn tech_cost_note(&self, p: PlayerId, tech: TechId) -> Option<String> {
+        let info = &TECHS[tech.0 as usize];
+        let cost = self.tech_effective_cost(p, tech);
+        if cost == info.cost {
+            return None;
+        }
+        let pl = &self.players[p.idx()];
+        if info.doctrine.is_some() && info.doctrine == pl.primary_doctrine {
+            Some(format!("{}% of {} as a Primary Doctrine tech.", PRIMARY_DOCTRINE_COST_PCT, info.cost))
+        } else {
+            Some(format!("Minimum cost {}.", MIN_TECH_COST))
+        }
+    }
+
+    /// Checks an AdoptDoctrine command.
+    pub fn check_doctrine(&self, p: PlayerId, doctrine: Doctrine, secondary: bool) -> Result<(), String> {
+        let pl = &self.players[p.idx()];
+        if !secondary {
+            if pl.primary_doctrine.is_some() {
+                return Err("A Primary Doctrine is already adopted for this game.".into());
+            }
+        } else {
+            if pl.primary_doctrine.is_none() {
+                return Err("Adopt a Primary Doctrine first.".into());
+            }
+            if pl.primary_doctrine == Some(doctrine) {
+                return Err("Already your Primary Doctrine.".into());
+            }
+            if pl.secondary_doctrine.is_some() {
+                return Err("A Secondary Doctrine is already adopted for this game.".into());
+            }
         }
         Ok(())
     }
 
     pub fn side_mods(&self, p: PlayerId) -> SideMods {
         let pl = &self.players[p.idx()];
-        let mut m = SideMods { supply_pct: 100, has_mana_boost: pl.mana >= 15, ..SideMods::default() };
+        let mut m = SideMods { supply_pct: 100, has_mana_boost: pl.mana >= MANA_BOOST_MIN, ..SideMods::default() };
         match pl.faction {
             FactionId::Bannor => m.front_row_atk_pct += 15,
             FactionId::Elohim => m.sentinel_hp_pct += 25,
@@ -840,26 +992,272 @@ impl Game {
 
     pub fn can_recruit_class(&self, p: PlayerId, class: UnitClassId) -> Result<(), String> {
         if class == UnitClassId::Sentinel {
-            return Err("Sentinels are city walls, not trained units".into());
+            return Err("Sentinels are city walls, not trained units.".into());
         }
         let pl = &self.players[p.idx()];
         let info = class.info();
         if let Some(req) = info.tech {
             if !pl.has_tech(req) {
-                return Err(format!("requires {}", TECHS[req.0 as usize].name));
+                return Err(format!("Requires {}.", TECHS[req.0 as usize].name));
             }
         }
         if class == UnitClassId::Paladin && pl.alignment == Alignment::Evil {
-            return Err("Paladins serve Good or Neutral empires".into());
+            return Err("Requires Good or Neutral alignment.".into());
         }
         if class == UnitClassId::Eidolon && pl.alignment != Alignment::Evil {
-            return Err("Ashbound serve Evil empires".into());
+            return Err("Requires Evil alignment.".into());
         }
         if matches!(class, UnitClassId::PyreZombie | UnitClassId::Balor)
             && !matches!(pl.faction, FactionId::Sheaim | FactionId::Infernals)
             && pl.religion != Some(Religion::AshenVeil)
         {
-            return Err("requires Wreckers, King Cinder's Host, or Open the Vent".into());
+            return Err(format!(
+                "Requires the {} or {} faction, or the {} creed.",
+                FactionId::Sheaim.info().name,
+                FactionId::Infernals.info().name,
+                Religion::AshenVeil.name()
+            ));
+        }
+        Ok(())
+    }
+
+    /// The movement a squad gets at the start of its owner's turn, standing where it stands now.
+    pub fn squad_turn_start_moves(&self, sid: SquadId) -> i32 {
+        let Some(s) = self.squads.get(&sid) else { return 0 };
+        let pl = &self.players[s.owner.idx()];
+        let plot = self.world.plot(s.plot);
+        let on_open = !plot.feature.is_woods() && plot.kind == PlotKind::Land;
+        let mut move_bonus = 0;
+        if pl.faction == FactionId::Hippus && on_open {
+            move_bonus += 1;
+        }
+        if pl.has_tech(TECH_WARHORSE_LORDS) && s.members.iter().any(|m| matches!(m.class, UnitClassId::Horseman | UnitClassId::Knight)) {
+            move_bonus += 1;
+        }
+        s.max_moves(move_bonus)
+    }
+
+    fn own_squad(&self, p: PlayerId, sid: SquadId) -> Result<&Squad, CmdErr> {
+        let s = self.squads.get(&sid).ok_or_else(|| CmdErr::invalid("Unknown squad."))?;
+        if s.owner != p {
+            return Err(CmdErr::cannot("Not your squad."));
+        }
+        Ok(s)
+    }
+
+    /// Checks a Raid order (activating it).
+    pub fn check_raid(&self, p: PlayerId, sid: SquadId) -> Result<(), CmdErr> {
+        let s = self.own_squad(p, sid)?;
+        if !self.players[p.idx()].has_tech(TECH_FIELDCRAFT) {
+            return Err(CmdErr::cannot(format!("Requires {}.", TECHS[TECH_FIELDCRAFT.0 as usize].name)));
+        }
+        let plot_owner = self.world.plot(s.plot).owner;
+        let hostile_land = plot_owner.is_some_and(|o| o != p && self.at_war(p, o));
+        if !hostile_land || self.world.plot(s.plot).city.is_some() {
+            return Err(CmdErr::cannot("Stand on the land of a civilization you are at war with, outside its cities."));
+        }
+        Ok(())
+    }
+
+    /// Checks a squad Road (`is_road`) or Fort order.
+    pub fn check_field_work(&self, p: PlayerId, sid: SquadId, is_road: bool) -> Result<(), CmdErr> {
+        if !self.players[p.idx()].has_tech(TECH_FIELDCRAFT) {
+            return Err(CmdErr::cannot(format!("Requires {}.", TECHS[TECH_FIELDCRAFT.0 as usize].name)));
+        }
+        let s = self.own_squad(p, sid)?;
+        if s.moves_left <= 0 {
+            return Err(CmdErr::cannot("No movement left this turn."));
+        }
+        let pl = self.world.plot(s.plot);
+        if is_road {
+            if pl.road {
+                return Err(CmdErr::cannot("This plot already has a road."));
+            }
+        } else if pl.city.is_some() {
+            return Err(CmdErr::cannot("A Fort cannot be built in a city."));
+        } else if pl.improvement == Improvement::Fort {
+            return Err(CmdErr::cannot("This plot already has a Fort."));
+        }
+        Ok(())
+    }
+
+    /// Checks whether a city may be founded on `plot` (the site only).
+    pub fn check_city_site(&self, plot: PlotIdx) -> Result<(), String> {
+        let pl = self.world.plot(plot);
+        if !pl.kind.is_passable_land() || pl.city.is_some() {
+            return Err("A city cannot be founded on this plot.".into());
+        }
+        if self.cities.values().any(|c| self.world.distance(c.plot, plot) < MIN_CITY_DISTANCE) {
+            return Err(format!("Too close to a city (minimum distance {}).", MIN_CITY_DISTANCE));
+        }
+        Ok(())
+    }
+
+    /// Checks a Found City order.
+    pub fn check_found_city(&self, p: PlayerId, sid: SquadId) -> Result<(), CmdErr> {
+        let s = self.own_squad(p, sid)?;
+        if s.moves_left <= 0 {
+            return Err(CmdErr::cannot("No movement left this turn."));
+        }
+        self.check_city_site(s.plot).map_err(CmdErr::cannot)?;
+        let cost = found_city_cost(self.player_cities(p).len());
+        let gold = self.players[p.idx()].gold;
+        if gold < cost {
+            return Err(CmdErr::cannot(format!("Need {cost} Gold (have {gold}).")));
+        }
+        Ok(())
+    }
+
+    /// Checks a Raze City order.
+    pub fn check_raze(&self, p: PlayerId, city: CityId) -> Result<(), CmdErr> {
+        let c = self.cities.get(&city).ok_or_else(|| CmdErr::invalid("Unknown city."))?;
+        if c.owner != p {
+            return Err(CmdErr::cannot("You must hold the city to raze it."));
+        }
+        if c.original_owner == p && !self.players[p.idx()].faction.info().can_raze_own {
+            return Err(CmdErr::cannot(format!(
+                "Only the {} and {} may raze a city they founded.",
+                FactionId::Sheaim.info().name,
+                FactionId::Infernals.info().name
+            )));
+        }
+        if !self.apocalypse.can_raze_city(city) {
+            return Err(CmdErr::cannot(format!("Caldera Keep cannot be razed for {} more turns.", self.apocalypse.carcosa_protected_turns)));
+        }
+        Ok(())
+    }
+
+    /// Checks the empire-wide part of a Launch Caravan order (tech, free slot, Gold).
+    pub fn check_caravan_launch(&self, p: PlayerId) -> Result<(), CmdErr> {
+        if !self.players[p.idx()].has_tech(TECH_TRADE_ROADS) {
+            return Err(CmdErr::cannot(format!("Requires {}.", TECHS[TECH_TRADE_ROADS.0 as usize].name)));
+        }
+        let active = self.caravans.values().filter(|c| c.owner == p).count();
+        let cap = self.caravan_cap(p);
+        if active >= cap {
+            return Err(CmdErr::cannot(format!("All Caravan slots are in use ({active}/{cap}).")));
+        }
+        Ok(())
+    }
+
+    /// Checks a Launch Caravan order between two cities; returns the route.
+    pub fn check_caravan(&self, p: PlayerId, origin: CityId, dest: CityId) -> Result<Vec<PlotIdx>, CmdErr> {
+        self.check_caravan_launch(p)?;
+        let o = self.cities.get(&origin).ok_or_else(|| CmdErr::invalid("Unknown origin city."))?;
+        let d = self.cities.get(&dest).ok_or_else(|| CmdErr::invalid("Unknown destination city."))?;
+        if o.owner != p {
+            return Err(CmdErr::cannot("A Caravan must start from one of your cities."));
+        }
+        if origin == dest {
+            return Err(CmdErr::cannot("A Caravan needs a different destination city."));
+        }
+        if self.at_war(p, d.owner) {
+            return Err(CmdErr::cannot("No trade with a civilization you are at war with."));
+        }
+        let gold = self.players[p.idx()].gold;
+        if gold < CARAVAN_GOLD {
+            return Err(CmdErr::cannot(format!("Need {CARAVAN_GOLD} Gold (have {gold}).")));
+        }
+        find_caravan_path(&self.world, o.plot, d.plot).ok_or_else(|| CmdErr::cannot("No land or coast route between these cities."))
+    }
+
+    /// Checks a Found or Adopt Creed order.
+    pub fn check_religion(&self, p: PlayerId, religion: Religion) -> Result<(), CmdErr> {
+        let pl = &self.players[p.idx()];
+        if !pl.has_tech(TECH_MYSTICISM) {
+            return Err(CmdErr::cannot(format!("Requires {}.", TECHS[TECH_MYSTICISM.0 as usize].name)));
+        }
+        if self.founded_religions.contains_key(&religion) {
+            return Ok(());
+        }
+        let cost = religion.lore_cost();
+        if pl.lore_progress < cost && pl.gold < cost {
+            return Err(CmdErr::cannot(format!("Need {cost} Lore or {cost} Gold (have {} Lore, {} Gold).", pl.lore_progress, pl.gold)));
+        }
+        Ok(())
+    }
+
+    /// Checks a Cast Ritual order.
+    pub fn check_ritual(&self, p: PlayerId, ritual: RitualKind) -> Result<(), CmdErr> {
+        let cost = ritual.mana_cost();
+        let mana = self.players[p.idx()].mana;
+        if mana < cost {
+            return Err(CmdErr::cannot(format!("Need {cost} Mana (have {mana}).")));
+        }
+        Ok(())
+    }
+
+    /// The plot a ritual that acts at "your capital" acts at (the capital, else any city).
+    pub fn ritual_plot(&self, p: PlayerId) -> Option<PlotIdx> {
+        self.cities.values().find(|c| c.owner == p && c.capital).or_else(|| self.cities.values().find(|c| c.owner == p)).map(|c| c.plot)
+    }
+
+    /// The city an Engineer or Bard Tempo Burst applies to.
+    pub fn burst_city(&self, p: PlayerId) -> Option<CityId> {
+        crate::great_people::burst_city(&self.player_cities(p))
+    }
+
+    /// Checks a Call Crusade order.
+    pub fn check_call_crusade(&self, p: PlayerId, target: PlayerId) -> Result<(), CmdErr> {
+        let pl = &self.players[p.idx()];
+        if !pl.has_tech(crate::data::TECH_FANATICISM) && pl.religion != Some(Religion::Order) {
+            return Err(CmdErr::cannot(format!(
+                "Requires {} or the {} creed.",
+                TECHS[crate::data::TECH_FANATICISM.0 as usize].name,
+                Religion::Order.name()
+            )));
+        }
+        if p == target || target == self.neutral_player || !self.players.get(target.idx()).is_some_and(|t| t.alive) {
+            return Err(CmdErr::invalid("Invalid Crusade target."));
+        }
+        if self.crusades.values().any(|c| c.active && c.target == target) {
+            return Err(CmdErr::cannot("A Crusade against this civilization is already active."));
+        }
+        Ok(())
+    }
+
+    /// Checks a Lend Squad order.
+    pub fn check_lend(&self, p: PlayerId, crusade: CrusadeId, sid: SquadId) -> Result<(), CmdErr> {
+        let cr = self.crusades.get(&crusade).ok_or_else(|| CmdErr::invalid("Unknown Crusade."))?;
+        if !cr.active {
+            return Err(CmdErr::cannot("This Crusade has ended."));
+        }
+        if p == cr.target {
+            return Err(CmdErr::cannot("This Crusade is against you."));
+        }
+        let s = self.own_squad(p, sid)?;
+        if s.lent_by.is_some() {
+            return Err(CmdErr::cannot("This squad is already lent to a Crusade."));
+        }
+        Ok(())
+    }
+
+    /// Checks a Commission Hero order (the Great Person and the squad).
+    pub fn check_hero(&self, p: PlayerId, gp: GreatPersonId, sid: SquadId) -> Result<(), CmdErr> {
+        let g = self.court.get(&gp).ok_or_else(|| CmdErr::invalid("This Great Person is not in your Court."))?;
+        if g.owner != p {
+            return Err(CmdErr::cannot("Not your Great Person."));
+        }
+        let cap = self.players[p.idx()].squad_place_cap();
+        let s = self.own_squad(p, sid)?;
+        if s.places_used() + 1 > cap {
+            return Err(CmdErr::cannot(format!("The squad has no free place ({}/{}).", s.places_used(), cap)));
+        }
+        if s.find_open_cell(g.suit.hero_class()).is_none() {
+            return Err(CmdErr::cannot("The squad's 3x3 grid has no free cell."));
+        }
+        Ok(())
+    }
+
+    /// Checks a Commission Lord order (the Great Person and the House).
+    pub fn check_lord(&self, p: PlayerId, gp: GreatPersonId, house: HouseId) -> Result<(), CmdErr> {
+        let g = self.court.get(&gp).ok_or_else(|| CmdErr::invalid("This Great Person is not in your Court."))?;
+        if g.owner != p {
+            return Err(CmdErr::cannot("Not your Great Person."));
+        }
+        let h = self.houses.get(&house).ok_or_else(|| CmdErr::invalid("Unknown House."))?;
+        if h.owner != p {
+            return Err(CmdErr::cannot("Not your House."));
         }
         Ok(())
     }
@@ -870,37 +1268,29 @@ impl Game {
 
     pub fn apply(&mut self, player: PlayerId, cmd: Command) -> Result<Vec<Event>, CmdErr> {
         if self.is_over() {
-            return Err(CmdErr::cannot("the game is over"));
+            return Err(CmdErr::cannot("The game is over."));
         }
         if !self.players.get(player.idx()).is_some_and(|p| p.alive) {
-            return Err(CmdErr::cannot("player is eliminated"));
+            return Err(CmdErr::cannot("This player is eliminated."));
         }
         let mut events = Vec::new();
         match cmd {
             Command::MoveSquad { squad, to } => self.cmd_move_squad(player, squad, to, &mut events)?,
             Command::AttackPlot { squad, to } => self.cmd_attack_plot(player, squad, to, &mut events)?,
             Command::SetSquadCell { squad, member, row, lane } => {
-                let s = self.squads.get_mut(&squad).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-                if s.owner != player {
-                    return Err(CmdErr::cannot("not your squad"));
-                }
-                s.move_member(member, row, lane).map_err(CmdErr::cannot)?;
+                self.own_squad(player, squad)?;
+                self.squads.get_mut(&squad).unwrap().move_member(member, row, lane).map_err(CmdErr::cannot)?;
             }
             Command::AutoArrangeSquad { squad } => {
-                let s = self.squads.get_mut(&squad).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-                if s.owner != player {
-                    return Err(CmdErr::cannot("not your squad"));
-                }
-                s.auto_arrange();
+                self.own_squad(player, squad)?;
+                self.squads.get_mut(&squad).unwrap().auto_arrange();
             }
             Command::ReinforceSquad { squad, class } => self.cmd_reinforce_squad(player, squad, class, &mut events)?,
             Command::UpgradeMember { squad, member } => self.cmd_upgrade_member(player, squad, member, &mut events)?,
             Command::SetSquadRaid { squad, active } => self.cmd_set_raid(player, squad, active)?,
             Command::SetSquadFortify { squad } => {
-                let s = self.squads.get_mut(&squad).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-                if s.owner != player {
-                    return Err(CmdErr::cannot("not your squad"));
-                }
+                self.own_squad(player, squad)?;
+                let s = self.squads.get_mut(&squad).unwrap();
                 s.order = SquadOrder::Fortify;
                 s.moves_left = 0;
             }
@@ -909,25 +1299,22 @@ impl Game {
             Command::SquadExploreLair { squad } => self.cmd_explore_lair(player, squad, &mut events)?,
             Command::SquadFoundCity { squad, name } => self.cmd_found_city(player, squad, name, &mut events)?,
             Command::DisbandSquad { squad } => {
-                let s = self.squads.get(&squad).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-                if s.owner != player {
-                    return Err(CmdErr::cannot("not your squad"));
-                }
+                self.own_squad(player, squad)?;
                 self.squads.remove(&squad);
                 self.recompute_vision(player);
             }
             Command::CityBuild { city, order } => self.cmd_city_build(player, city, order)?,
             Command::CitySallyPosture { city, posture } => {
-                let c = self.cities.get_mut(&city).ok_or_else(|| CmdErr::invalid("unknown city"))?;
+                let c = self.cities.get_mut(&city).ok_or_else(|| CmdErr::invalid("Unknown city."))?;
                 if c.owner != player {
-                    return Err(CmdErr::cannot("not your city"));
+                    return Err(CmdErr::cannot("Not your city."));
                 }
                 c.sally = posture;
             }
             Command::CityWaypoint { city, plot } => {
-                let c = self.cities.get_mut(&city).ok_or_else(|| CmdErr::invalid("unknown city"))?;
+                let c = self.cities.get_mut(&city).ok_or_else(|| CmdErr::invalid("Unknown city."))?;
                 if c.owner != player {
-                    return Err(CmdErr::cannot("not your city"));
+                    return Err(CmdErr::cannot("Not your city."));
                 }
                 c.waypoint = plot;
             }
@@ -938,25 +1325,19 @@ impl Game {
                 self.players[player.idx()].current_research = Some(tech);
             }
             Command::AdoptDoctrine { doctrine, secondary } => {
+                self.check_doctrine(player, doctrine, secondary).map_err(CmdErr::cannot)?;
                 let pl = &mut self.players[player.idx()];
                 if !secondary {
-                    if pl.primary_doctrine.is_some() {
-                        return Err(CmdErr::cannot("primary doctrine is already adopted for this game"));
-                    }
                     pl.primary_doctrine = Some(doctrine);
                     self.push_log(Some(player), None, None, format!("Adopted Primary Doctrine: {}.", doctrine.name()));
                 } else {
-                    if pl.primary_doctrine.is_none() {
-                        return Err(CmdErr::cannot("adopt a Primary Doctrine first"));
-                    }
-                    if pl.primary_doctrine == Some(doctrine) {
-                        return Err(CmdErr::cannot("already your Primary Doctrine"));
-                    }
-                    if pl.secondary_doctrine.is_some() {
-                        return Err(CmdErr::cannot("secondary doctrine is already adopted"));
-                    }
                     pl.secondary_doctrine = Some(doctrine);
-                    self.push_log(Some(player), None, None, format!("Adopted Secondary Doctrine: {} (Tiers 1-2).", doctrine.name()));
+                    self.push_log(
+                        Some(player),
+                        None,
+                        None,
+                        format!("Adopted Secondary Doctrine: {} (tiers 1-{}).", doctrine.name(), SECONDARY_DOCTRINE_MAX_TIER),
+                    );
                 }
             }
             Command::FoundOrAdoptReligion { religion } => self.cmd_religion(player, religion, &mut events)?,
@@ -965,10 +1346,10 @@ impl Game {
             Command::DeclareWar { target } => self.cmd_declare_war(player, target)?,
             Command::MakePeace { target } => {
                 if target == self.neutral_player {
-                    return Err(CmdErr::cannot("cannot make peace with wild forces"));
+                    return Err(CmdErr::cannot("No peace can be made with the Wild Clans."));
                 }
                 if !self.at_war(player, target) {
-                    return Err(CmdErr::cannot("not at war"));
+                    return Err(CmdErr::cannot("Not at war with this civilization."));
                 }
                 self.set_war(player, target, false);
                 let tn = self.players[target.idx()].name();
@@ -976,14 +1357,14 @@ impl Game {
             }
             Command::BreakVassalage => {
                 if !self.apocalypse.carcosa_risen {
-                    return Err(CmdErr::cannot("vassals may break free only once Worldseal Strain reaches 100"));
+                    return Err(CmdErr::cannot("A vassal may break free only once Worldseal Strain reaches 100."));
                 }
                 let Some(master) = self.players[player.idx()].vassal_of.take() else {
-                    return Err(CmdErr::cannot("not a vassal"));
+                    return Err(CmdErr::cannot("Not a vassal."));
                 };
                 self.set_war(player, master, true);
                 let mn = self.players[master.idx()].name();
-                self.push_log(Some(player), None, None, format!("Broke vassal oath and declared war on {}!", mn));
+                self.push_log(Some(player), None, None, format!("Broke the vassal oath and declared war on {}.", mn));
             }
             Command::CallCrusade { target } => self.cmd_call_crusade(player, target, &mut events)?,
             Command::LendSquadToCrusade { crusade, squad } => self.cmd_lend_squad(player, crusade, squad)?,
@@ -997,19 +1378,16 @@ impl Game {
     }
 
     fn cmd_move_squad(&mut self, player: PlayerId, squad_id: SquadId, to: PlotIdx, events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        let s = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?.clone();
-        if s.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
+        let s = self.own_squad(player, squad_id)?.clone();
         if s.moves_left <= 0 {
-            return Err(CmdErr::cannot("no movement left this turn"));
+            return Err(CmdErr::cannot("No movement left this turn."));
         }
         if self.world.distance(s.plot, to) != 1 {
-            return Err(CmdErr::invalid("destination must be adjacent"));
+            return Err(CmdErr::invalid("The destination must be adjacent."));
         }
         let pl = self.world.plot(to);
         if !pl.kind.is_passable_land() {
-            return Err(CmdErr::cannot("impassable terrain"));
+            return Err(CmdErr::cannot("Impassable terrain."));
         }
         // Check if an enemy squad or enemy city occupies `to` -> redirect to AttackPlot!
         let enemy_squad = self.squads.values().any(|o| o.plot == to && self.at_war(player, o.owner));
@@ -1021,7 +1399,7 @@ impl Game {
         if let Some(cid) = pl.city {
             if let Some(c) = self.cities.get(&cid) {
                 if c.owner != player {
-                    return Err(CmdErr::cannot("declare war first to attack this city"));
+                    return Err(CmdErr::cannot("Declare war first to enter this city."));
                 }
             }
         }
@@ -1036,9 +1414,9 @@ impl Game {
             if let Some(cv) = self.caravans.get_mut(&cid) {
                 cv.reform_turns = 8;
                 cv.growth_pct /= 2;
-                self.players[player.idx()].gold += 40;
-                self.players[player.idx()].renown_meters[GreatSuit::Merchant.id()] += 8;
-                self.push_log(Some(player), Some(to), None, "Ambushed an enemy Caravan for +40 Gold!");
+                self.players[player.idx()].gold += AMBUSH_GOLD;
+                self.players[player.idx()].renown_meters[GreatSuit::Merchant.id()] += renown::AMBUSH_MERCHANT;
+                self.push_log(Some(player), Some(to), None, format!("Ambushed an enemy Caravan: +{AMBUSH_GOLD} Gold."));
             }
         }
 
@@ -1057,22 +1435,19 @@ impl Game {
     }
 
     pub fn preview_attack(&self, player: PlayerId, squad_id: SquadId, to: PlotIdx) -> Result<(crate::combat::BuiltFormation, Forecast), CmdErr> {
-        let att = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-        if att.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
+        let att = self.own_squad(player, squad_id)?;
         if self.world.distance(att.plot, to) != 1 {
-            return Err(CmdErr::invalid("target plot must be adjacent"));
+            return Err(CmdErr::invalid("The target plot must be adjacent."));
         }
         let city = self.world.plot(to).city.and_then(|cid| self.cities.get(&cid));
         let def_squad_id = self.pick_defending_squad(player, to);
         if def_squad_id.is_none() && !city.is_some_and(|c| c.owner != player && c.standing_sentinels() > 0) {
-            return Err(CmdErr::cannot("no enemy defenders on that plot"));
+            return Err(CmdErr::cannot("No enemy defenders on that plot."));
         }
         let def_owner = def_squad_id
             .and_then(|id| self.squads.get(&id).map(|s| s.owner))
             .or_else(|| city.map(|c| c.owner))
-            .ok_or_else(|| CmdErr::cannot("no defender"))?;
+            .ok_or_else(|| CmdErr::cannot("No defender on that plot."))?;
         let def_squad = def_squad_id.and_then(|id| self.squads.get(&id));
         let built = build_formation(
             &self.world,
@@ -1109,29 +1484,26 @@ impl Game {
     }
 
     fn cmd_attack_plot(&mut self, player: PlayerId, squad_id: SquadId, to: PlotIdx, events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        let att = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?.clone();
-        if att.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
+        let att = self.own_squad(player, squad_id)?.clone();
         if att.moves_left <= 0 {
-            return Err(CmdErr::cannot("no movement left to attack"));
+            return Err(CmdErr::cannot("No movement left this turn."));
         }
         if self.world.distance(att.plot, to) != 1 {
-            return Err(CmdErr::invalid("target must be adjacent"));
+            return Err(CmdErr::invalid("The target must be adjacent."));
         }
         let city_id = self.world.plot(to).city;
         let def_squad_id = self.pick_defending_squad(player, to);
         let def_owner = def_squad_id
             .and_then(|id| self.squads.get(&id).map(|s| s.owner))
             .or_else(|| city_id.and_then(|cid| self.cities.get(&cid).map(|c| c.owner)))
-            .ok_or_else(|| CmdErr::cannot("no enemy on target plot"))?;
+            .ok_or_else(|| CmdErr::cannot("No enemy on the target plot."))?;
         if def_owner == player {
-            return Err(CmdErr::cannot("cannot attack your own forces"));
+            return Err(CmdErr::cannot("You cannot attack your own forces."));
         }
         if !self.at_war(player, def_owner) {
             self.set_war(player, def_owner, true);
             let dn = self.players[def_owner.idx()].name();
-            self.push_log(Some(player), Some(to), None, format!("Declared war on {}!", dn));
+            self.push_log(Some(player), Some(to), None, format!("Declared war on {}.", dn));
         }
 
         // Empty undefended city with 0 standing sentinels -> walk right in and capture!
@@ -1146,18 +1518,18 @@ impl Game {
                 self.recompute_vision(player);
                 return Ok(());
             }
-            return Err(CmdErr::cannot("nothing to attack"));
+            return Err(CmdErr::cannot("Nothing to attack on that plot."));
         }
 
         // Spend 2 Mana automatically if side has casters for empowered battle spells!
-        if att.members.iter().any(|m| m.class.info().magic > 0) && self.players[player.idx()].mana >= 2 {
-            self.players[player.idx()].mana -= 2;
+        if att.members.iter().any(|m| m.class.info().magic > 0) && self.players[player.idx()].mana >= BATTLE_MANA {
+            self.players[player.idx()].mana -= BATTLE_MANA;
         }
         if let Some(dsid) = def_squad_id {
             if self.squads.get(&dsid).is_some_and(|ds| ds.members.iter().any(|m| m.class.info().magic > 0))
-                && self.players[def_owner.idx()].mana >= 2
+                && self.players[def_owner.idx()].mana >= BATTLE_MANA
             {
-                self.players[def_owner.idx()].mana -= 2;
+                self.players[def_owner.idx()].mana -= BATTLE_MANA;
             }
         }
 
@@ -1272,8 +1644,8 @@ impl Game {
             }
             for h in fallen_heroes {
                 let hname = h.display_name().to_string();
-                game.recovering_heroes.push(RecoveringHero { owner, member: h, turns_left: 8 });
-                game.push_log(Some(owner), None, None, format!("Hero {} fell in battle and is recovering at the capital (+1 Wound, 8 turns).", hname));
+                game.recovering_heroes.push(RecoveringHero { owner, member: h, turns_left: HERO_RECOVERY_TURNS });
+                game.push_log(Some(owner), None, None, format!("Hero {} fell in battle: +1 Wound, returns at the capital in {} turns.", hname, HERO_RECOVERY_TURNS));
             }
             if game.squads.get(&sid).is_some_and(|s| s.members.is_empty()) {
                 game.squads.remove(&sid);
@@ -1286,10 +1658,10 @@ impl Game {
         }
 
         // Commander Renown & Crusade credit from kills!
-        self.players[att.owner.idx()].renown_meters[GreatSuit::Commander.id()] += 4 + att_kills * 6;
-        self.players[def_owner.idx()].renown_meters[GreatSuit::Commander.id()] += 4 + def_kills * 6;
-        if att_kills + def_kills >= 3 {
-            self.apocalypse.shift(1, "bloody battle");
+        self.players[att.owner.idx()].renown_meters[GreatSuit::Commander.id()] += renown::BATTLE_COMMANDER + att_kills * renown::BATTLE_COMMANDER_PER_KILL;
+        self.players[def_owner.idx()].renown_meters[GreatSuit::Commander.id()] += renown::BATTLE_COMMANDER + def_kills * renown::BATTLE_COMMANDER_PER_KILL;
+        if att_kills + def_kills >= BLOODY_BATTLE_DEATHS {
+            self.apocalypse.shift(BLOODY_BATTLE_STRAIN, "bloody battle");
         }
         if let Some(lender) = att.lent_by {
             for cr in self.crusades.values_mut().filter(|c| c.active && c.target == def_owner) {
@@ -1384,31 +1756,28 @@ impl Game {
     fn cmd_reinforce_squad(&mut self, player: PlayerId, squad_id: SquadId, class: UnitClassId, _events: &mut Vec<Event>) -> Result<(), CmdErr> {
         self.can_recruit_class(player, class).map_err(CmdErr::cannot)?;
         let cap = self.players[player.idx()].squad_place_cap();
-        let s = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-        if s.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
+        let s = self.own_squad(player, squad_id)?;
         // Must be inside own borders (supplied home territory) to reinforce.
         if self.world.plot(s.plot).owner != Some(player) {
-            return Err(CmdErr::cannot("squad must stand inside your own borders to reinforce"));
+            return Err(CmdErr::cannot("The squad must stand inside your borders to reinforce."));
         }
         let info = class.info();
         let need_places = if info.large { 2 } else { 1 };
         if s.places_used() + need_places > cap {
-            return Err(CmdErr::cannot(format!("squad place limit ({cap}) reached")));
+            return Err(CmdErr::cannot(format!("The squad has no free place ({}/{cap}).", s.places_used())));
         }
         let Some((row, lane)) = s.find_open_cell(class) else {
-            return Err(CmdErr::cannot("no free cell in squad 3x3 grid"));
+            return Err(CmdErr::cannot("The squad's 3x3 grid has no free cell for this unit."));
         };
         let mut gold_cost = info.cost_gold;
         if self.players[player.idx()].faction == FactionId::Hippus {
-            gold_cost = gold_cost * 75 / 100;
+            gold_cost = gold_cost * HIPPUS_REINFORCE_PCT / 100;
         }
         if self.players[player.idx()].has_tech(crate::data::TECH_WAR_CHESTS) {
-            gold_cost = gold_cost * 70 / 100;
+            gold_cost = gold_cost * WAR_CHESTS_PCT / 100;
         }
         if self.players[player.idx()].gold < gold_cost {
-            return Err(CmdErr::cannot(format!("need {gold_cost} Gold")));
+            return Err(CmdErr::cannot(format!("Need {gold_cost} Gold (have {}).", self.players[player.idx()].gold)));
         }
         self.players[player.idx()].gold -= gold_cost;
         let mid = MemberId(self.next_member_id);
@@ -1418,22 +1787,19 @@ impl Game {
     }
 
     fn cmd_upgrade_member(&mut self, player: PlayerId, squad_id: SquadId, member_id: MemberId, _events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        let s = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-        if s.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
+        let s = self.own_squad(player, squad_id)?;
         if self.world.plot(s.plot).owner != Some(player) {
-            return Err(CmdErr::cannot("squad must stand inside your own borders to upgrade"));
+            return Err(CmdErr::cannot("The squad must stand inside your borders to upgrade."));
         }
-        let m = s.members.iter().find(|m| m.id == member_id).ok_or_else(|| CmdErr::invalid("member not in squad"))?;
-        let next = m.class.info().upgrades_to.ok_or_else(|| CmdErr::cannot("this unit has no further upgrade"))?;
+        let m = s.members.iter().find(|m| m.id == member_id).ok_or_else(|| CmdErr::invalid("This unit is not in the squad."))?;
+        let next = m.class.info().upgrades_to.ok_or_else(|| CmdErr::cannot("This unit has no further upgrade."))?;
         self.can_recruit_class(player, next).map_err(CmdErr::cannot)?;
         let mut cost = (next.info().cost_gold - m.class.info().cost_gold / 2).max(25);
         if self.players[player.idx()].has_tech(crate::data::TECH_WAR_CHESTS) {
-            cost = cost * 70 / 100;
+            cost = cost * WAR_CHESTS_PCT / 100;
         }
         if self.players[player.idx()].gold < cost {
-            return Err(CmdErr::cannot(format!("need {cost} Gold to upgrade")));
+            return Err(CmdErr::cannot(format!("Upgrading costs {cost} Gold.")));
         }
         self.players[player.idx()].gold -= cost;
         if let Some(sq) = self.squads.get_mut(&squad_id) {
@@ -1447,22 +1813,12 @@ impl Game {
     }
 
     fn cmd_set_raid(&mut self, player: PlayerId, squad_id: SquadId, active: bool) -> Result<(), CmdErr> {
-        let s = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-        if s.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
+        self.own_squad(player, squad_id)?;
         if !active {
             self.squads.get_mut(&squad_id).unwrap().order = SquadOrder::None;
             return Ok(());
         }
-        if !self.players[player.idx()].has_tech(TECH_FIELDCRAFT) {
-            return Err(CmdErr::cannot("requires Fieldcraft tech to Raid"));
-        }
-        let plot_owner = self.world.plot(s.plot).owner;
-        let hostile_land = plot_owner.is_some_and(|o| o != player && self.at_war(player, o));
-        if !hostile_land || self.world.plot(s.plot).city.is_some() {
-            return Err(CmdErr::cannot("stand on enemy countryside (outside a city) to Raid"));
-        }
+        self.check_raid(player, squad_id)?;
         let sq = self.squads.get_mut(&squad_id).unwrap();
         sq.order = SquadOrder::Raid;
         sq.moves_left = 0;
@@ -1470,27 +1826,13 @@ impl Game {
     }
 
     fn cmd_field_work(&mut self, player: PlayerId, squad_id: SquadId, is_road: bool) -> Result<(), CmdErr> {
-        if !self.players[player.idx()].has_tech(TECH_FIELDCRAFT) {
-            return Err(CmdErr::cannot("requires Fieldcraft tech"));
-        }
-        let s = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?.clone();
-        if s.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
-        if s.moves_left <= 0 {
-            return Err(CmdErr::cannot("no movement left this turn"));
-        }
-        let pl = self.world.plot_mut(s.plot);
+        self.check_field_work(player, squad_id, is_road)?;
+        let plot = self.squads[&squad_id].plot;
+        let pl = self.world.plot_mut(plot);
         if is_road {
-            if pl.road {
-                return Err(CmdErr::cannot("road already built here"));
-            }
             pl.road = true;
             self.world.rev += 1;
         } else {
-            if pl.city.is_some() || pl.improvement == Improvement::Fort {
-                return Err(CmdErr::cannot("cannot build a Fort here"));
-            }
             pl.improvement = Improvement::Fort;
             self.world.rev += 1;
         }
@@ -1499,12 +1841,9 @@ impl Game {
     }
 
     fn cmd_explore_lair(&mut self, player: PlayerId, squad_id: SquadId, events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        let s = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?.clone();
-        if s.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
+        let s = self.own_squad(player, squad_id)?.clone();
         if !self.world.plot(s.plot).lair_unexplored {
-            return Err(CmdErr::cannot("no unexplored Imperial Ruin on this plot"));
+            return Err(CmdErr::cannot("No unexplored Imperial Ruin on this plot."));
         }
         self.world.plot_mut(s.plot).lair_unexplored = false;
         self.world.plot_mut(s.plot).improvement = Improvement::None;
@@ -1512,25 +1851,25 @@ impl Game {
         let roll = self.rng.range(4);
         let summary = match roll {
             0 => {
-                self.players[player.idx()].gold += 75;
-                "Imperial cache uncovered: +75 Gold!".to_string()
+                self.players[player.idx()].gold += LAIR_GOLD;
+                format!("Imperial Ruin explored: +{LAIR_GOLD} Gold.")
             }
             1 => {
-                self.players[player.idx()].mana += 25;
-                self.players[player.idx()].renown_meters[GreatSuit::Sage.id()] += 15;
-                "Pressurized canisters recovered: +25 Mana & +15 Sage Renown!".to_string()
+                self.players[player.idx()].mana += LAIR_MANA;
+                self.players[player.idx()].renown_meters[GreatSuit::Sage.id()] += renown::LAIR_RELICS_SAGE;
+                format!("Imperial Ruin explored: +{LAIR_MANA} Mana, +{} Sage Renown.", renown::LAIR_RELICS_SAGE)
             }
             2 => {
-                self.players[player.idx()].lore_progress += 35;
-                "Imperial schematics deciphered: +35 Lore!".to_string()
+                self.players[player.idx()].lore_progress += LAIR_LORE;
+                format!("Imperial Ruin explored: +{LAIR_LORE} Lore.")
             }
             _ => {
                 if let Some(sq) = self.squads.get_mut(&squad_id) {
                     for m in &mut sq.members {
-                        m.grant_xp(15);
+                        m.grant_xp(LAIR_XP);
                     }
                 }
-                "Ruin wardens defeated: +15 XP to the whole Squad!".to_string()
+                format!("Imperial Ruin explored: +{LAIR_XP} XP to every unit in the squad.")
             }
         };
         if let Some(sq) = self.squads.get_mut(&squad_id) {
@@ -1542,24 +1881,9 @@ impl Game {
     }
 
     fn cmd_found_city(&mut self, player: PlayerId, squad_id: SquadId, name: Option<String>, events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        let s = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?.clone();
-        if s.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
-        if s.moves_left <= 0 {
-            return Err(CmdErr::cannot("no movement left this turn"));
-        }
-        let pl = self.world.plot(s.plot);
-        if !pl.kind.is_passable_land() || pl.city.is_some() {
-            return Err(CmdErr::cannot("cannot found a city here"));
-        }
-        if self.cities.values().any(|c| self.world.distance(c.plot, s.plot) < 4) {
-            return Err(CmdErr::cannot("too close to an existing city (minimum distance 4)"));
-        }
-        let cost = 70 + self.player_cities(player).len() as i32 * 25;
-        if self.players[player.idx()].gold < cost {
-            return Err(CmdErr::cannot(format!("founding a city costs {cost} Gold")));
-        }
+        self.check_found_city(player, squad_id)?;
+        let s = self.squads[&squad_id].clone();
+        let cost = found_city_cost(self.player_cities(player).len());
         self.players[player.idx()].gold -= cost;
         let cid = self.create_city_internal(player, s.plot, name, false);
         let cname = self.cities[&cid].name.clone();
@@ -1574,34 +1898,36 @@ impl Game {
     }
 
     fn cmd_city_build(&mut self, player: PlayerId, city_id: CityId, order: BuildOrder) -> Result<(), CmdErr> {
-        let c = self.cities.get(&city_id).ok_or_else(|| CmdErr::invalid("unknown city"))?;
+        let c = self.cities.get(&city_id).ok_or_else(|| CmdErr::invalid("Unknown city."))?;
         if c.owner != player {
-            return Err(CmdErr::cannot("not your city"));
+            return Err(CmdErr::cannot("Not your city."));
         }
         match &order {
             BuildOrder::District(d) => {
                 if c.has_district(*d) {
-                    return Err(CmdErr::cannot("district already built here"));
+                    return Err(CmdErr::cannot("This District is already built here."));
                 }
                 if c.districts.len() >= c.max_district_slots(self.is_megacity(c)) {
-                    return Err(CmdErr::cannot("all district slots in this city are full (grow city Size for more)"));
+                    return Err(CmdErr::cannot("All District slots in this city are full."));
                 }
                 if let Some(req) = d.info().tech {
                     if !self.players[player.idx()].has_tech(req) {
-                        return Err(CmdErr::cannot(format!("requires {}", TECHS[req.0 as usize].name)));
+                        return Err(CmdErr::cannot(format!("Requires {}.", TECHS[req.0 as usize].name)));
                     }
                 }
             }
             BuildOrder::Squad(classes) => {
                 if classes.is_empty() {
-                    return Err(CmdErr::invalid("squad must have at least 1 unit"));
+                    return Err(CmdErr::invalid("A squad needs at least 1 unit."));
                 }
                 let places: u8 = classes.iter().map(|cl| if cl.info().large { 2 } else { 1 }).sum();
-                if places > self.players[player.idx()].squad_place_cap() {
-                    return Err(CmdErr::cannot("exceeds squad place limit"));
+                let cap = self.players[player.idx()].squad_place_cap();
+                if places > cap {
+                    return Err(CmdErr::cannot(format!("The squad uses {places} places; the limit is {cap}.")));
                 }
-                if self.player_squads(player).len() >= self.squad_cap(player) {
-                    return Err(CmdErr::cannot("squad cap reached (build Barracks or expand)"));
+                let (n, scap) = (self.player_squads(player).len(), self.squad_cap(player));
+                if n >= scap {
+                    return Err(CmdErr::cannot(format!("Squad cap reached ({n}/{scap}).")));
                 }
                 for &cl in classes {
                     self.can_recruit_class(player, cl).map_err(CmdErr::cannot)?;
@@ -1612,15 +1938,15 @@ impl Game {
             }
             BuildOrder::Caravan => {
                 if !self.players[player.idx()].has_tech(TECH_TRADE_ROADS) {
-                    return Err(CmdErr::cannot("requires Trade Roads"));
+                    return Err(CmdErr::cannot(format!("Requires {}.", TECHS[TECH_TRADE_ROADS.0 as usize].name)));
                 }
             }
             BuildOrder::Wonder(w) => {
                 if self.built_wonders.contains_key(w) {
-                    return Err(CmdErr::cannot("already built in the world"));
+                    return Err(CmdErr::cannot("This Wonder is already built in the world."));
                 }
                 if !self.players[player.idx()].has_tech(w.tech()) {
-                    return Err(CmdErr::cannot(format!("requires {}", TECHS[w.tech().0 as usize].name)));
+                    return Err(CmdErr::cannot(format!("Requires {}.", TECHS[w.tech().0 as usize].name)));
                 }
             }
         }
@@ -1632,16 +1958,8 @@ impl Game {
     }
 
     fn cmd_raze_city(&mut self, player: PlayerId, city_id: CityId, events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        let c = self.cities.get(&city_id).ok_or_else(|| CmdErr::invalid("unknown city"))?.clone();
-        if c.owner != player {
-            return Err(CmdErr::cannot("you must hold the city to raze it"));
-        }
-        if c.original_owner == player && !self.players[player.idx()].faction.info().can_raze_own {
-            return Err(CmdErr::cannot("only Wreckers and King Cinder's Host may raze their own cities"));
-        }
-        if !self.apocalypse.can_raze_city(city_id) {
-            return Err(CmdErr::cannot(format!("Caldera Keep is protected for {} more turns", self.apocalypse.carcosa_protected_turns)));
-        }
+        self.check_raze(player, city_id)?;
+        let c = self.cities[&city_id].clone();
         self.cities.remove(&city_id);
         self.world.plot_mut(c.plot).city = None;
         self.world.plot_mut(c.plot).terrain = Terrain::BurningSands;
@@ -1658,49 +1976,32 @@ impl Game {
             self.houses.retain(|_, h| !h.cities.is_empty());
         }
         self.caravans.retain(|_, cv| cv.origin != city_id && cv.destination != city_id);
-        self.shift_ac(6, &format!("{} razed", c.name), events);
+        let strain_before = self.apocalypse.counter;
+        self.shift_ac(RAZE_STRAIN, &format!("{} razed", c.name), events);
         events.push(Event::CityRazed { plot: c.plot, name: c.name.clone(), by: player });
-        self.push_log(Some(player), Some(c.plot), None, format!("Razed {} (+6 Strain)!", c.name));
+        let moved = self.apocalypse.counter - strain_before;
+        let text = if moved != 0 { format!("Razed {} ({:+} Strain).", c.name, moved) } else { format!("Razed {}.", c.name) };
+        self.push_log(Some(player), Some(c.plot), None, text);
         Ok(())
     }
 
     fn cmd_launch_caravan(&mut self, player: PlayerId, origin: CityId, dest: CityId, resource: Resource, _events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        if !self.players[player.idx()].has_tech(TECH_TRADE_ROADS) {
-            return Err(CmdErr::cannot("requires Trade Roads"));
-        }
-        let active = self.caravans.values().filter(|c| c.owner == player).count();
-        if active >= self.caravan_cap(player) {
-            return Err(CmdErr::cannot("Caravan slot limit reached (build Markets or Guilds)"));
-        }
-        let o = self.cities.get(&origin).ok_or_else(|| CmdErr::invalid("unknown origin city"))?;
-        let d = self.cities.get(&dest).ok_or_else(|| CmdErr::invalid("unknown destination city"))?;
-        if o.owner != player || origin == dest {
-            return Err(CmdErr::cannot("invalid Caravan endpoints"));
-        }
-        if self.at_war(player, d.owner) {
-            return Err(CmdErr::cannot("cannot trade with a civilization at war"));
-        }
-        let cost = 35;
-        if self.players[player.idx()].gold < cost {
-            return Err(CmdErr::cannot(format!("launching a Caravan costs {cost} Gold")));
-        }
-        let path = find_caravan_path(&self.world, o.plot, d.plot).ok_or_else(|| CmdErr::cannot("no route between these cities"))?;
-        self.players[player.idx()].gold -= cost;
+        let path = self.check_caravan(player, origin, dest)?;
+        let o_plot = self.cities[&origin].plot;
+        let dname = self.cities[&dest].name.clone();
+        self.players[player.idx()].gold -= CARAVAN_GOLD;
         let id = CaravanId(self.next_caravan_id);
         self.next_caravan_id += 1;
-        let dname = d.name.clone();
         self.caravans.insert(
             id,
             CaravanRoute { id, owner: player, origin, destination: dest, resource, path, pos_idx: 0, outbound: true, reform_turns: 0, growth_pct: 0 },
         );
-        self.push_log(Some(player), Some(o.plot), None, format!("Established Caravan route to {}.", dname));
+        self.push_log(Some(player), Some(o_plot), None, format!("Established Caravan route to {}.", dname));
         Ok(())
     }
 
     fn cmd_religion(&mut self, player: PlayerId, religion: Religion, events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        if !self.players[player.idx()].has_tech(TECH_MYSTICISM) {
-            return Err(CmdErr::cannot("requires Mysticism"));
-        }
+        self.check_religion(player, religion)?;
         if let Some(&_founder) = self.founded_religions.get(&religion) {
             // Adopt an already-founded faith!
             self.players[player.idx()].religion = Some(religion);
@@ -1710,9 +2011,6 @@ impl Game {
         }
         // Found it for Lore!
         let cost = religion.lore_cost();
-        if self.players[player.idx()].lore_progress < cost && self.players[player.idx()].gold < cost {
-            return Err(CmdErr::cannot(format!("founding {} costs {} Lore (or {} Gold)", religion.name(), cost, cost)));
-        }
         if self.players[player.idx()].lore_progress >= cost {
             self.players[player.idx()].lore_progress -= cost;
         } else {
@@ -1721,26 +2019,24 @@ impl Game {
         self.founded_religions.insert(religion, player);
         self.players[player.idx()].religion = Some(religion);
         self.players[player.idx()].alignment = religion.alignment();
-        self.players[player.idx()].renown_meters[GreatSuit::Prophet.id()] += 20;
+        self.players[player.idx()].renown_meters[GreatSuit::Prophet.id()] += renown::FOUND_CREED_PROPHET;
         self.shift_ac(religion.founding_ac_delta(), &format!("{} founded", religion.name()), events);
         events.push(Event::ReligionFounded { player, religion });
-        self.push_log(Some(player), None, None, format!("Founded {}!", religion.name()));
+        self.push_log(Some(player), None, None, format!("Founded {}.", religion.name()));
         Ok(())
     }
 
     fn cmd_cast_ritual(&mut self, player: PlayerId, ritual: RitualKind, events: &mut Vec<Event>) -> Result<(), CmdErr> {
+        self.check_ritual(player, ritual)?;
         let cost = ritual.mana_cost();
-        if self.players[player.idx()].mana < cost {
-            return Err(CmdErr::cannot(format!("need {cost} Mana")));
-        }
         self.players[player.idx()].mana -= cost;
-        self.players[player.idx()].renown_meters[GreatSuit::Sage.id()] += 10;
+        self.players[player.idx()].renown_meters[GreatSuit::Sage.id()] += renown::RITUAL_SAGE;
 
-        let cap_plot = self.cities.values().find(|c| c.owner == player && c.capital).or_else(|| self.cities.values().find(|c| c.owner == player)).map(|c| c.plot);
+        let cap_plot = self.ritual_plot(player);
 
         match ritual {
             RitualKind::Sanctify => {
-                let delta = if self.players[player.idx()].faction == FactionId::Elohim { -5 } else { -3 };
+                let delta = if self.players[player.idx()].faction == FactionId::Elohim { SANCTIFY_KEEPERS_STRAIN } else { ritual.ac_delta() };
                 self.shift_ac(delta, ritual.name(), events);
                 if let Some(cp) = cap_plot {
                     self.world.cleanse_hell(cp, 4);
@@ -1758,7 +2054,7 @@ impl Game {
             }
             RitualKind::SummonHost => {
                 let Some(cp) = cap_plot else {
-                    return Err(CmdErr::cannot("need a city to assemble a Furnace Levy"));
+                    return Err(CmdErr::cannot("Furnace Levy needs a city."));
                 };
                 self.spawn_squad_internal(player, cp, &[UnitClassId::PyreZombie, UnitClassId::PyreZombie, UnitClassId::Adept]);
                 self.shift_ac(ritual.ac_delta(), ritual.name(), events);
@@ -1788,56 +2084,57 @@ impl Game {
     }
 
     fn cmd_use_great_person(&mut self, player: PlayerId, gp_id: GreatPersonId, action: GreatPersonAction, events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        let gp = self.court.get(&gp_id).ok_or_else(|| CmdErr::invalid("great person not in court"))?.clone();
+        let gp = self.court.get(&gp_id).ok_or_else(|| CmdErr::invalid("This Great Person is not in your Court."))?.clone();
         if gp.owner != player {
-            return Err(CmdErr::cannot("not your Great Person"));
+            return Err(CmdErr::cannot("Not your Great Person."));
         }
         match action {
             GreatPersonAction::DiscoverSecret => {
-                let sid = gp.secret_tech.ok_or_else(|| CmdErr::cannot("no secret tech card remaining in this suit"))?;
+                let sid = gp.secret_tech.ok_or_else(|| CmdErr::cannot("This Great Person holds no Secret Tech card."))?;
                 self.court.remove(&gp_id);
                 self.players[player.idx()].secrets.push(sid);
                 let info = &SECRET_TECHS[sid.0 as usize];
                 if let SecretEffect::AcSurgeOnce(delta) = info.effect {
-                    self.players[player.idx()].mana += 40;
+                    self.players[player.idx()].mana += crate::great_people::SECRET_SURGE_MANA;
                     self.shift_ac(delta, info.name, events);
                 } else if info.id == SecretTechId(2) {
                     self.shift_ac(4, info.name, events);
                 }
-                self.push_log(Some(player), None, None, format!("{} discovered Secret Tech: {}!", gp.name, info.name));
+                self.push_log(Some(player), None, None, format!("{} discovered the Secret Tech {}.", gp.name, info.name));
             }
             GreatPersonAction::TempoBurst => {
                 self.court.remove(&gp_id);
                 if let Some(sid) = gp.secret_tech {
                     self.secret_deck.return_card(sid);
                 }
+                use crate::great_people as gpc;
                 match gp.suit {
                     GreatSuit::Sage => {
-                        self.players[player.idx()].lore_progress += 90;
-                        self.players[player.idx()].mana += 20;
+                        self.players[player.idx()].lore_progress += gpc::BURST_SAGE_LORE;
+                        self.players[player.idx()].mana += gpc::BURST_SAGE_MANA;
                     }
                     GreatSuit::Prophet => {
-                        self.shift_ac(-6, &format!("{}'s Benediction", gp.name), events);
+                        self.shift_ac(gpc::BURST_PROPHET_STRAIN, &format!("{}'s Benediction", gp.name), events);
                         for h in self.houses.values_mut().filter(|h| h.owner == player) {
-                            h.bonus_loyalty += 2;
+                            h.bonus_loyalty += gpc::BURST_PROPHET_LOYALTY;
                         }
                     }
                     GreatSuit::Engineer => {
-                        if let Some(cid) = self.player_cities(player).first().copied() {
+                        if let Some(cid) = self.burst_city(player) {
                             if let Some(c) = self.cities.get_mut(&cid) {
-                                c.build_progress += 140;
+                                c.build_progress += gpc::BURST_ENGINEER_INDUSTRY;
                             }
                             self.try_complete_city_build(cid, events);
                         }
                     }
                     GreatSuit::Merchant => {
-                        self.players[player.idx()].gold += 220;
-                        self.players[player.idx()].extra_caravan_slots += 1;
+                        self.players[player.idx()].gold += gpc::BURST_MERCHANT_GOLD;
+                        self.players[player.idx()].extra_caravan_slots += gpc::BURST_MERCHANT_CARAVAN_SLOTS;
                     }
                     GreatSuit::Bard => {
-                        if let Some(cid) = self.player_cities(player).first().copied() {
+                        if let Some(cid) = self.burst_city(player) {
                             if let Some(c) = self.cities.get_mut(&cid) {
-                                c.culture += 120;
+                                c.culture += gpc::BURST_BARD_CULTURE;
                             }
                             self.expand_city_borders(cid);
                         }
@@ -1845,27 +2142,18 @@ impl Game {
                     GreatSuit::Commander => {
                         for s in self.squads.values_mut().filter(|s| s.owner == player) {
                             for m in &mut s.members {
-                                m.heal_pct(50);
-                                m.grant_xp(15);
+                                m.heal_pct(gpc::BURST_COMMANDER_HEAL_PCT);
+                                m.grant_xp(gpc::BURST_COMMANDER_XP);
                             }
                         }
                     }
                 }
-                self.push_log(Some(player), None, None, format!("{} performed a {} Tempo Burst (Secret Tech returned to world deck).", gp.name, gp.suit.name()));
+                self.push_log(Some(player), None, None, format!("{} performed a {} Tempo Burst; the Secret Tech card returned to the world deck.", gp.name, gp.suit.name()));
             }
             GreatPersonAction::CommissionHero(squad_id) => {
-                let cap = self.players[player.idx()].squad_place_cap();
+                self.check_hero(player, gp_id, squad_id)?;
                 let hero_class = gp.suit.hero_class();
-                let s = self.squads.get(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-                if s.owner != player {
-                    return Err(CmdErr::cannot("not your squad"));
-                }
-                if s.places_used() + 1 > cap {
-                    return Err(CmdErr::cannot("squad has no open place for a Hero"));
-                }
-                let Some((row, lane)) = s.find_open_cell(hero_class) else {
-                    return Err(CmdErr::cannot("no free cell in squad"));
-                };
+                let (row, lane) = self.squads[&squad_id].find_open_cell(hero_class).unwrap();
                 self.court.remove(&gp_id);
                 if let Some(sid) = gp.secret_tech {
                     self.secret_deck.return_card(sid);
@@ -1882,13 +2170,11 @@ impl Game {
                     sq.members.push(hero);
                     (sq.plot, sq.name.clone())
                 };
-                self.push_log(Some(player), Some(sq_plot), None, format!("Commissioned {} as Hero Captain of {}!", gp.name, sq_name));
+                self.push_log(Some(player), Some(sq_plot), None, format!("Commissioned {} as Hero Captain of {}.", gp.name, sq_name));
             }
             GreatPersonAction::CommissionLord(house_id) => {
-                let h = self.houses.get_mut(&house_id).ok_or_else(|| CmdErr::invalid("unknown house"))?;
-                if h.owner != player {
-                    return Err(CmdErr::cannot("not your House"));
-                }
+                self.check_lord(player, gp_id, house_id)?;
+                let h = self.houses.get_mut(&house_id).unwrap();
                 self.court.remove(&gp_id);
                 if let Some(sid) = gp.secret_tech {
                     self.secret_deck.return_card(sid);
@@ -1898,9 +2184,14 @@ impl Game {
                 h.alignment = self.players[player.idx()].alignment;
                 h.religion = self.players[player.idx()].religion;
                 h.sympathy = None;
-                h.bonus_loyalty += 2;
+                h.bonus_loyalty += crate::great_people::LORD_LOYALTY;
                 let hname = h.name.clone();
-                self.push_log(Some(player), None, None, format!("Appointed {} as Lord of {} (+2 Loyalty, aligned to crown)!", gp.name, hname));
+                self.push_log(
+                    Some(player),
+                    None,
+                    None,
+                    format!("Appointed {} as Lord of {} (+{} Loyalty).", gp.name, hname, crate::great_people::LORD_LOYALTY),
+                );
             }
         }
         Ok(())
@@ -1908,10 +2199,10 @@ impl Game {
 
     fn cmd_declare_war(&mut self, player: PlayerId, target: PlayerId) -> Result<(), CmdErr> {
         if player == target || target.idx() >= self.players.len() || !self.players[target.idx()].alive {
-            return Err(CmdErr::invalid("invalid war target"));
+            return Err(CmdErr::invalid("Invalid war target."));
         }
         if self.at_war(player, target) {
-            return Err(CmdErr::cannot("already at war"));
+            return Err(CmdErr::cannot("Already at war."));
         }
         self.set_war(player, target, true);
         // Cancel caravans between warring nations.
@@ -1920,61 +2211,43 @@ impl Game {
             !((cv.owner == player && d.owner == target) || (cv.owner == target && d.owner == player))
         });
         let tn = self.players[target.idx()].name();
-        self.push_log(Some(player), None, None, format!("Declared war on {}!", tn));
+        self.push_log(Some(player), None, None, format!("Declared war on {}.", tn));
         Ok(())
     }
 
     fn cmd_call_crusade(&mut self, player: PlayerId, target: PlayerId, events: &mut Vec<Event>) -> Result<(), CmdErr> {
-        if !self.players[player.idx()].has_tech(crate::data::TECH_FANATICISM) && self.players[player.idx()].religion != Some(Religion::Order) {
-            return Err(CmdErr::cannot("requires Fanaticism or Code of the Watch"));
-        }
-        if player == target || target == self.neutral_player || !self.players[target.idx()].alive {
-            return Err(CmdErr::invalid("invalid Crusade target"));
-        }
-        if self.crusades.values().any(|c| c.active && c.target == target) {
-            return Err(CmdErr::cannot("a Crusade against this empire is already active"));
-        }
+        self.check_call_crusade(player, target)?;
         let cid = CrusadeId(self.next_crusade_id);
         self.next_crusade_id += 1;
         self.crusades.insert(cid, Crusade::new(cid, player, target));
         self.set_war(player, target, true);
         let tn = self.players[target.idx()].name();
-        self.push_log(Some(player), None, None, format!("Called a Crusade against {}! Allies may now lend Squads.", tn));
+        self.push_log(Some(player), None, None, format!("Called a Crusade against {}.", tn));
         events.push(Event::CrusadeCalled { crusade: cid, caller: player, target });
         Ok(())
     }
 
     fn cmd_lend_squad(&mut self, player: PlayerId, crusade_id: CrusadeId, squad_id: SquadId) -> Result<(), CmdErr> {
-        let cr = self.crusades.get(&crusade_id).ok_or_else(|| CmdErr::invalid("unknown crusade"))?;
-        if !cr.active {
-            return Err(CmdErr::cannot("crusade has ended"));
-        }
-        let target = cr.target;
-        if player == target {
-            return Err(CmdErr::cannot("cannot lend to a crusade against yourself"));
-        }
-        let s = self.squads.get_mut(&squad_id).ok_or_else(|| CmdErr::invalid("unknown squad"))?;
-        if s.owner != player {
-            return Err(CmdErr::cannot("not your squad"));
-        }
-        if s.lent_by.is_some() {
-            return Err(CmdErr::cannot("squad is already committed to a crusade"));
-        }
-        s.lent_by = Some(player);
+        self.check_lend(player, crusade_id, squad_id)?;
+        let target = self.crusades[&crusade_id].target;
+        self.squads.get_mut(&squad_id).unwrap().lent_by = Some(player);
         self.set_war(player, target, true);
-        let credit = if self.players[player.idx()].faction == FactionId::Bannor { 20 } else { 10 };
+        let credit = if self.players[player.idx()].faction == FactionId::Bannor { LEND_CREDIT_BANNOR } else { LEND_CREDIT };
         if let Some(cr) = self.crusades.get_mut(&crusade_id) {
             cr.lent_squads.push((player, squad_id));
             cr.add_credit(player, credit);
         }
-        self.players[player.idx()].renown_meters[GreatSuit::Prophet.id()] += 12;
+        self.players[player.idx()].renown_meters[GreatSuit::Prophet.id()] += renown::LEND_PROPHET;
         Ok(())
     }
 
     fn cmd_pay_off_raiders(&mut self, player: PlayerId, raider: PlayerId) -> Result<(), CmdErr> {
-        let tribute = 60;
+        if raider == player || raider.idx() >= self.players.len() {
+            return Err(CmdErr::invalid("Unknown raider."));
+        }
+        let tribute = RAID_TRIBUTE_GOLD;
         if self.players[player.idx()].gold < tribute {
-            return Err(CmdErr::cannot(format!("need {tribute} Gold to pay off raiders")));
+            return Err(CmdErr::cannot(format!("Need {tribute} Gold (have {}).", self.players[player.idx()].gold)));
         }
         self.players[player.idx()].gold -= tribute;
         self.players[raider.idx()].gold += tribute;
@@ -2001,7 +2274,7 @@ impl Game {
             if let Some(cv) = self.caravans.get_mut(&cid) {
                 cv.step();
                 if cv.reform_turns == 0 {
-                    self.players[player.idx()].renown_meters[GreatSuit::Merchant.id()] += 2;
+                    self.players[player.idx()].renown_meters[GreatSuit::Merchant.id()] += renown::CARAVAN_MERCHANT;
                 }
             }
         }
@@ -2047,7 +2320,7 @@ impl Game {
                 let info = &TECHS[tech.0 as usize];
                 self.shift_ac(info.ac_delta, &format!("{} researched", info.name), events);
                 events.push(Event::TechCompleted { player, tech });
-                self.push_log(Some(player), None, None, format!("Completed research: {}!", info.name));
+                self.push_log(Some(player), None, None, format!("Completed research: {}.", info.name));
             }
         }
 
@@ -2059,17 +2332,17 @@ impl Game {
             // District Renown generation
             if let Some(c) = self.cities.get(&cid) {
                 if c.has_district(DistrictKind::Academy) {
-                    self.players[player.idx()].renown_meters[GreatSuit::Sage.id()] += 2;
+                    self.players[player.idx()].renown_meters[GreatSuit::Sage.id()] += renown::DISTRICT_PER_TURN;
                 }
                 if c.has_district(DistrictKind::Temple) {
-                    self.players[player.idx()].renown_meters[GreatSuit::Prophet.id()] += 2;
-                    self.players[player.idx()].renown_meters[GreatSuit::Bard.id()] += 2;
+                    self.players[player.idx()].renown_meters[GreatSuit::Prophet.id()] += renown::DISTRICT_PER_TURN;
+                    self.players[player.idx()].renown_meters[GreatSuit::Bard.id()] += renown::DISTRICT_PER_TURN;
                 }
                 if c.has_district(DistrictKind::Forge) {
-                    self.players[player.idx()].renown_meters[GreatSuit::Engineer.id()] += 2;
+                    self.players[player.idx()].renown_meters[GreatSuit::Engineer.id()] += renown::DISTRICT_PER_TURN;
                 }
                 if c.has_district(DistrictKind::Market) {
-                    self.players[player.idx()].renown_meters[GreatSuit::Merchant.id()] += 2;
+                    self.players[player.idx()].renown_meters[GreatSuit::Merchant.id()] += renown::DISTRICT_PER_TURN;
                 }
             }
             if let Some(c) = self.cities.get_mut(&cid) {
@@ -2081,7 +2354,7 @@ impl Game {
                 if !c.besieged {
                     for d in &mut c.sentinel_damage {
                         if *d > 0 {
-                            *d = (*d - 15).max(0);
+                            *d = (*d - SENTINEL_REPAIR_PER_TURN).max(0);
                         }
                     }
                 }
@@ -2104,8 +2377,6 @@ impl Game {
 
         // Squads: Supply Lines, Starvation, Healing, Movement reset!
         let squad_ids = self.player_squads(player);
-        let hippus_open = self.players[player.idx()].faction == FactionId::Hippus;
-        let warhorse = self.players[player.idx()].has_tech(TECH_WARHORSE_LORDS);
         let leaves = self.players[player.idx()].religion == Some(Religion::Leaves);
         for sid in squad_ids {
             let supplied = self.squad_supply_line(sid).is_some();
@@ -2113,36 +2384,29 @@ impl Game {
             let in_own_city = self.world.plot(plot).city.and_then(|cid| self.cities.get(&cid)).is_some_and(|c| c.owner == player && !c.besieged);
             let in_own_land = self.world.plot(plot).owner == Some(player);
             let in_forest = self.world.plot(plot).feature.is_woods();
-            let on_open = !self.world.plot(plot).feature.is_woods() && self.world.plot(plot).kind == PlotKind::Land;
+            let turn_moves = self.squad_turn_start_moves(sid);
             if let Some(s) = self.squads.get_mut(&sid) {
                 s.fought_this_turn = 0;
-                let mut move_bonus = 0;
-                if hippus_open && on_open {
-                    move_bonus += 1;
-                }
-                if warhorse && s.members.iter().any(|m| matches!(m.class, UnitClassId::Horseman | UnitClassId::Knight)) {
-                    move_bonus += 1;
-                }
-                s.moves_left = s.max_moves(move_bonus);
+                s.moves_left = turn_moves;
                 if supplied {
                     s.unsupplied_turns = 0;
                     let heal = if in_own_city {
-                        20
+                        HEAL_OWN_CITY_PCT
                     } else if in_own_land || (leaves && in_forest) {
-                        12
+                        HEAL_OWN_LAND_PCT
                     } else if s.order == SquadOrder::Fortify {
-                        8
+                        HEAL_FORTIFIED_PCT
                     } else {
-                        4
+                        HEAL_FIELD_PCT
                     };
                     for m in &mut s.members {
                         m.heal_pct(heal);
                     }
                 } else {
                     s.unsupplied_turns += 1;
-                    if s.unsupplied_turns >= 3 {
+                    if s.unsupplied_turns >= STARVE_ATTRITION_TURNS {
                         for m in &mut s.members {
-                            let loss = m.max_hp() * 10;
+                            let loss = m.max_hp() * STARVE_HP_LOSS_PCT;
                             m.hp_centi = (m.hp_centi - loss).max(100);
                         }
                     }
@@ -2188,7 +2452,7 @@ impl Game {
                 };
                 sq.auto_arrange();
                 self.squads.insert(sid, sq);
-                self.push_log(Some(player), Some(cp), None, format!("Hero {} recovered and returned to your capital!", hname));
+                self.push_log(Some(player), Some(cp), None, format!("Hero {} recovered and returned to the capital.", hname));
             }
         }
 
@@ -2215,16 +2479,16 @@ impl Game {
                 };
                 self.court.insert(gpid, gp);
                 events.push(Event::GreatPersonBorn { player, gp: gpid, name: ch.name.to_string() });
-                self.push_log(Some(player), None, None, format!("Great {} {} arrived in your Court!", suit.name(), ch.name));
+                self.push_log(Some(player), None, None, format!("Great {} {} arrived in your Court.", suit.name(), ch.name));
             }
         }
 
         // Wreckers Deep Shaft bonus as Strain rises!
-        if self.players[player.idx()].faction == FactionId::Sheaim && self.apocalypse.counter >= 30 && self.turn % 10 == 0 {
+        if self.players[player.idx()].faction == FactionId::Sheaim && self.apocalypse.counter >= DEEP_SHAFT_STRAIN && self.turn % DEEP_SHAFT_EVERY == 0 {
             if let Some(cp) = cap_plot {
                 if self.player_squads(player).len() < self.squad_cap(player) {
                     self.spawn_squad_internal(player, cp, &[UnitClassId::PyreZombie, UnitClassId::PyreZombie]);
-                    self.push_log(Some(player), Some(cp), None, "Deep Shaft opened: Stokers emerged!");
+                    self.push_log(Some(player), Some(cp), None, "Deep Shaft: a squad of 2 Stokers joined at the capital.");
                 }
             }
         }
@@ -2235,7 +2499,7 @@ impl Game {
 
     fn process_world_turn(&mut self, events: &mut Vec<Event>) {
         // 1. Coupled Worldseal Strain drift (+1 every 3 turns, counteracted by Valve-Keeper's Ledger).
-        if !self.apocalypse.carcosa_risen && self.turn % 3 == 0 {
+        if !self.apocalypse.carcosa_risen && self.turn % STRAIN_DRIFT_EVERY == 0 {
             let drain: i32 = self
                 .players
                 .iter()
@@ -2294,7 +2558,7 @@ impl Game {
             if self.player_cities(pid).is_empty() && self.player_squads(pid).is_empty() {
                 self.players[p].alive = false;
                 let name = self.players[p].name();
-                self.push_log(None, None, None, format!("{} has been eliminated!", name));
+                self.push_log(None, None, None, format!("{} has been eliminated.", name));
             }
         }
 
@@ -2310,7 +2574,7 @@ impl Game {
                 name: crisis.name.into(),
                 summary: crisis.summary.into(),
             });
-            self.push_log(None, None, None, format!("WORLDSEAL STRAIN {}: {} — {}", crisis.threshold, crisis.name, crisis.summary));
+            self.push_log(None, None, None, format!("Worldseal Strain {}: {}. {}", crisis.threshold, crisis.name, crisis.summary));
             self.apply_crisis(crisis.threshold, events);
         }
     }
@@ -2411,7 +2675,7 @@ impl Game {
         self.world.spread_hell(10, &[new_id], &mut self.rng);
         self.recompute_vision(new_id);
         events.push(Event::HyboremArrived { player: new_id, city: cid });
-        self.push_log(None, Some(plot), None, "THE DEEP BREACH! King Cinder's Host has marched out and established Great Furnace!");
+        self.push_log(None, Some(plot), None, "King Cinder's Host entered the game with the city Great Furnace, at war with every Good civilization and the Wild Clans.");
     }
 
     fn trigger_carcosa(&mut self, events: &mut Vec<Event>) {
@@ -2460,7 +2724,7 @@ impl Game {
         if let Some(leg) = self
             .cities
             .values()
-            .filter(|c| !c.is_carcosa && c.owner != self.neutral_player && c.culture >= 120)
+            .filter(|c| !c.is_carcosa && c.owner != self.neutral_player && c.culture >= LIFEBOAT_CULTURE_MIN)
             .max_by_key(|c| (c.culture, std::cmp::Reverse(c.id)))
         {
             if !lifeboats.iter().any(|l| l.city_id == leg.id) {
@@ -2473,7 +2737,11 @@ impl Game {
             None,
             Some(cp),
             None,
-            format!("CALDERA KEEP HAS RISEN! {} Lifeboats stand. Hold one when the {}-turn countdown ends — or burn them all!", self.apocalypse.lifeboats.len(), CARCOSA_TIMER_TURNS),
+            format!(
+                "Caldera Keep has risen. {} Lifeboats stand; the civilizations holding one when the {}-turn countdown ends win.",
+                self.apocalypse.lifeboats.len(),
+                CARCOSA_TIMER_TURNS
+            ),
         );
     }
 
@@ -2499,7 +2767,7 @@ impl Game {
                 GameOutcome {
                     kind: VictoryKind::DemonicRuin,
                     winners: demonic_winners,
-                    summary: "All Lifeboats have been razed! Furnace Triumph!".into(),
+                    summary: "Every Lifeboat was razed. Furnace victory.".into(),
                 }
             };
             events.push(Event::GameEnded { summary: outcome.summary.clone() });
@@ -2528,7 +2796,7 @@ impl Game {
                 "The timer expired with no surface empire holding a Lifeboat. The surface burns.".into()
             } else {
                 let names: Vec<&str> = winners.iter().map(|p| self.players[p.idx()].name()).collect();
-                format!("Surface Lifeboat Survival! Winners: {}.", names.join(", "))
+                format!("Lifeboat survival. Winners: {}.", names.join(", "))
             };
             let kind = if winners.is_empty() { VictoryKind::MutualExtinction } else { VictoryKind::MortalLifeboat };
             events.push(Event::GameEnded { summary: summary.clone() });
@@ -2540,7 +2808,7 @@ impl Game {
         let alive_civs: Vec<PlayerId> = self.players.iter().filter(|p| p.alive && !p.is_neutral).map(|p| p.id).collect();
         if alive_civs.len() == 1 && !self.apocalypse.carcosa_risen {
             let w = alive_civs[0];
-            let summary = format!("Total Conquest by {}!", self.players[w.idx()].name());
+            let summary = format!("Conquest victory: {}.", self.players[w.idx()].name());
             events.push(Event::GameEnded { summary: summary.clone() });
             self.apocalypse.outcome = Some(GameOutcome { kind: VictoryKind::Conquest, winners: vec![w], summary });
             return;
@@ -2549,11 +2817,11 @@ impl Game {
         // 4. Turn 160 without Blowout -> Keepers of the Seal win if alive, else highest Score!
         if self.turn >= MAX_GAME_TURNS && !self.apocalypse.carcosa_risen {
             if let Some(elohim) = self.players.iter().find(|p| p.alive && p.faction == FactionId::Elohim) {
-                let summary = String::from("Turn 160 reached with the Worldseal intact! Keepers of the Seal triumph!");
+                let summary = format!("Turn {} reached before the Blowout. {} win.", MAX_GAME_TURNS, FactionId::Elohim.info().name);
                 events.push(Event::GameEnded { summary: summary.clone() });
                 self.apocalypse.outcome = Some(GameOutcome { kind: VictoryKind::ElohimVigil, winners: vec![elohim.id], summary });
             } else if let Some(best) = self.players.iter().filter(|p| p.alive && !p.is_neutral).max_by_key(|p| p.score) {
-                let summary = format!("Turn 160 reached! {} wins by highest world share.", best.name());
+                let summary = format!("Turn {} reached before the Blowout. {} wins with the highest score.", MAX_GAME_TURNS, best.name());
                 events.push(Event::GameEnded { summary: summary.clone() });
                 self.apocalypse.outcome = Some(GameOutcome { kind: VictoryKind::ScoreAtTurnLimit, winners: vec![best.id], summary });
             }
@@ -2629,7 +2897,7 @@ impl Game {
 
     fn expand_city_borders(&mut self, city_id: CityId) {
         let Some(c) = self.cities.get(&city_id).cloned() else { return };
-        let radius: i32 = if c.culture >= 100 { 2 } else { 1 };
+        let radius: i32 = if c.culture >= BORDER_CULTURE_RADIUS_2 { 2 } else { 1 };
         let (cx, cy) = (self.world.plot(c.plot).x, self.world.plot(c.plot).y);
         for dy in -radius..=radius {
             for dx in -radius..=radius {
@@ -2713,7 +2981,7 @@ impl Game {
                         }
                     }
                 }
-                self.push_log(Some(c.owner), Some(c.plot), None, format!("{}: raised new Squad!", c.name));
+                self.push_log(Some(c.owner), Some(c.plot), None, format!("{}: raised a new squad.", c.name));
             }
             BuildOrder::Reinforce(cl) => {
                 // Reinforce the first squad on the city plot with room, else start a new 1-unit squad.
@@ -2770,8 +3038,10 @@ impl Game {
                     if let Some(cm) = self.cities.get_mut(&city_id) {
                         cm.wonders.push(w);
                     }
-                    self.players[c.owner.idx()].renown_meters[GreatSuit::Engineer.id()] += 25;
+                    self.players[c.owner.idx()].renown_meters[GreatSuit::Engineer.id()] += renown::WONDER_ENGINEER;
+                    let strain_before = self.apocalypse.counter;
                     self.shift_ac(w.ac_delta(), w.name(), events);
+                    let moved = self.apocalypse.counter - strain_before;
                     if self.apocalypse.carcosa_risen {
                         let kind = match w {
                             WonderKind::TowerOfMastery => LifeboatKind::TowerOfMastery,
@@ -2779,7 +3049,12 @@ impl Game {
                         };
                         self.apocalypse.lifeboats.push(Lifeboat { kind, city_id, razed: false });
                     }
-                    self.push_log(Some(c.owner), Some(c.plot), None, format!("{} completed the {} (+{} Strain)!", c.name, w.name(), w.ac_delta()));
+                    let text = if moved != 0 {
+                        format!("{} completed the {} ({:+} Strain).", c.name, w.name(), moved)
+                    } else {
+                        format!("{} completed the {}.", c.name, w.name())
+                    };
+                    self.push_log(Some(c.owner), Some(c.plot), None, text);
                 }
             }
         }
@@ -2819,11 +3094,11 @@ impl Game {
             }
         }
         self.ensure_houses_for(new_owner);
-        self.players[new_owner.idx()].renown_meters[GreatSuit::Commander.id()] += 15;
+        self.players[new_owner.idx()].renown_meters[GreatSuit::Commander.id()] += renown::CAPTURE_COMMANDER;
         events.push(Event::CityCaptured { city: city_id, new_owner, old_owner, name: c.name.clone() });
-        self.push_log(Some(new_owner), Some(c.plot), None, format!("Captured {}!", c.name));
+        self.push_log(Some(new_owner), Some(c.plot), None, format!("Captured {}.", c.name));
         if old_owner != self.neutral_player {
-            self.push_log(Some(old_owner), Some(c.plot), None, format!("Lost {} to {}!", c.name, self.players[new_owner.idx()].name()));
+            self.push_log(Some(old_owner), Some(c.plot), None, format!("Lost {} to {}.", c.name, self.players[new_owner.idx()].name()));
         }
     }
 
@@ -2838,7 +3113,7 @@ impl Game {
                     s.order == SquadOrder::Raid
                         && self.at_war(defender, s.owner)
                         && self.world.plot(s.plot).owner == Some(defender)
-                        && self.world.distance(s.plot, c.plot) <= 2
+                        && self.world.distance(s.plot, c.plot) <= RAID_RANGE
                 })
                 .map(|s| s.id)
                 .collect();
@@ -2856,7 +3131,7 @@ impl Game {
                     let should_sally = if c.sally == SallyPosture::Always {
                         true
                     } else {
-                        self.squads[&guard_id].power_rating() * 100 >= self.squads[&r_id].power_rating() * 95
+                        self.squads[&guard_id].power_rating() * 100 >= self.squads[&r_id].power_rating() * SALLY_FAVOURED_PCT
                     };
                     if should_sally {
                         sallied = true;
@@ -2869,7 +3144,7 @@ impl Game {
             let surviving: Vec<SquadId> = raiders.into_iter().filter(|id| self.squads.contains_key(id)).collect();
             if !surviving.is_empty() {
                 let (_, ind_calc, gold, _, _, _) = self.city_yields(cid);
-                let pct = if sallied { 10 } else { 50 };
+                let pct = if sallied { RAID_TAKE_SALLIED_PCT } else { RAID_TAKE_PCT };
                 let base_take = ((gold + ind_calc.total) * pct / 100).max(3);
                 let per_raider = (base_take / surviving.len() as i32).max(2);
                 for rid in &surviving {
@@ -2884,14 +3159,14 @@ impl Game {
                     });
                     let plunder = per_raider * bonus / 100;
                     self.players[ro.idx()].gold += plunder;
-                    self.players[ro.idx()].renown_meters[GreatSuit::Merchant.id()] += 4;
+                    self.players[ro.idx()].renown_meters[GreatSuit::Merchant.id()] += renown::RAID_MERCHANT;
                 }
                 if let Some(cm) = self.cities.get_mut(&cid) {
                     cm.raid_streak += 1;
-                    if cm.raid_streak >= 5 {
-                        cm.stripped_turns = 10;
+                    if cm.raid_streak >= RAID_STREAK_TO_STRIP {
+                        cm.stripped_turns = STRIP_TURNS;
                         cm.raid_streak = 0;
-                        self.push_log(Some(defender), Some(c.plot), None, format!("Raiders stripped {}'s countryside for 10 turns!", c.name));
+                        self.push_log(Some(defender), Some(c.plot), None, format!("Raiders stripped the countryside of {} for {} turns.", c.name, STRIP_TURNS));
                     }
                 }
             }
@@ -2980,9 +3255,9 @@ impl Game {
                 continue;
             }
             let pid = PlayerId(p as u16);
-            let pop: i32 = self.cities.values().filter(|c| c.owner == pid).map(|c| c.size * 15 + c.districts.len() as i32 * 10).sum();
-            let tech = self.players[p].techs.len() as i32 * 20 + self.players[p].secrets.len() as i32 * 30;
-            let army: i32 = self.squads.values().filter(|s| s.owner == pid).map(|s| s.members.len() as i32 * 8).sum();
+            let pop: i32 = self.cities.values().filter(|c| c.owner == pid).map(|c| c.size * SCORE_PER_SIZE + c.districts.len() as i32 * SCORE_PER_DISTRICT).sum();
+            let tech = self.players[p].techs.len() as i32 * SCORE_PER_TECH + self.players[p].secrets.len() as i32 * SCORE_PER_SECRET;
+            let army: i32 = self.squads.values().filter(|s| s.owner == pid).map(|s| s.members.len() as i32 * SCORE_PER_UNIT).sum();
             let s = (pop + tech + army).max(1);
             raw[p] = s;
             total += s;

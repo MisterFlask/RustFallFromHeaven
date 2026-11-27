@@ -67,6 +67,23 @@ impl Terrain {
         }
     }
 
+    /// The name a player reads. The three hell terrains are the game's scorched ground.
+    pub const fn name(self) -> &'static str {
+        match self {
+            Terrain::Grass => "Grassland",
+            Terrain::Plains => "Plains",
+            Terrain::Desert => "Desert",
+            Terrain::Tundra => "Tundra",
+            Terrain::Snow => "Snow",
+            Terrain::Marsh => "Marsh",
+            Terrain::Coast => "Coast",
+            Terrain::Ocean => "Ocean",
+            Terrain::BurningSands => "Scorched Sands",
+            Terrain::BrokenLands => "Scorched Rubble",
+            Terrain::FieldsOfPerdition => "Scorched Fields",
+        }
+    }
+
     pub const fn is_hell(self) -> bool {
         matches!(self, Terrain::BurningSands | Terrain::BrokenLands | Terrain::FieldsOfPerdition)
     }
@@ -104,6 +121,19 @@ impl Feature {
             Feature::FloodPlains => Some("FEATURE_FLOOD_PLAINS"),
             Feature::BurntForest => Some("FEATURE_FOREST_BURNT"),
             Feature::Flames => Some("FEATURE_FLAMES"),
+        }
+    }
+
+    pub const fn name(self) -> &'static str {
+        match self {
+            Feature::None => "None",
+            Feature::Forest => "Forest",
+            Feature::AncientForest => "Ancient Forest",
+            Feature::Jungle => "Jungle",
+            Feature::Oasis => "Oasis",
+            Feature::FloodPlains => "Flood Plains",
+            Feature::BurntForest => "Burnt Forest",
+            Feature::Flames => "Flames",
         }
     }
 

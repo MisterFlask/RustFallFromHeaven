@@ -5,6 +5,16 @@ use crate::data::{DistrictKind, UnitClassId, WonderKind};
 use crate::ids::{CityId, HouseId, PlayerId, PlotIdx};
 use crate::world::{Improvement, PlotKind, Resource, Terrain, World};
 
+/// Food to grow: `GROWTH_FOOD_BASE + GROWTH_FOOD_PER_SIZE * Size`, up to `MAX_CITY_SIZE`.
+pub const GROWTH_FOOD_BASE: i32 = 18;
+pub const GROWTH_FOOD_PER_SIZE: i32 = 12;
+pub const MAX_CITY_SIZE: i32 = 10;
+/// Work Crew turns for a road and for an improvement.
+pub const CREW_ROAD_TURNS: i32 = 3;
+pub const CREW_IMPROVE_TURNS: i32 = 4;
+/// Work Crews improve plots within this many plots of the city.
+pub const CREW_RADIUS: i32 = 2;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum SallyPosture {
     Never,
@@ -35,11 +45,20 @@ impl BuildOrder {
     pub fn label(&self) -> String {
         match self {
             BuildOrder::District(d) => format!("District: {}", d.info().name),
+            // Each class once, in the order chosen, with its count: "Squad (Axeman x2, Archer)".
             BuildOrder::Squad(classes) => {
-                if let Some(first) = classes.first() {
-                    format!("Squad ({} x{})", first.info().name, classes.len())
-                } else {
+                let mut kinds: Vec<(UnitClassId, usize)> = Vec::new();
+                for &c in classes {
+                    match kinds.iter_mut().find(|(k, _)| *k == c) {
+                        Some((_, n)) => *n += 1,
+                        None => kinds.push((c, 1)),
+                    }
+                }
+                if kinds.is_empty() {
                     "Squad".into()
+                } else {
+                    let parts: Vec<String> = kinds.iter().map(|(c, n)| if *n > 1 { format!("{} x{n}", c.info().name) } else { c.info().name.to_string() }).collect();
+                    format!("Squad ({})", parts.join(", "))
                 }
             }
             BuildOrder::Reinforce(c) => format!("Recruit: {}", c.info().name),
@@ -136,7 +155,7 @@ impl City {
     }
 
     pub fn food_needed(&self) -> i32 {
-        18 + self.size * 12
+        GROWTH_FOOD_BASE + self.size * GROWTH_FOOD_PER_SIZE
     }
 
     pub fn max_sentinels(&self, has_masonry_wards: bool) -> usize {
@@ -178,8 +197,8 @@ impl City {
         let mut best: Option<(i32, WorkCrewTask)> = None;
         let center = self.plot;
         let (cx, cy) = (world.plot(center).x, world.plot(center).y);
-        for dy in -2..=2 {
-            for dx in -2..=2 {
+        for dy in -CREW_RADIUS..=CREW_RADIUS {
+            for dx in -CREW_RADIUS..=CREW_RADIUS {
                 if dx == 0 && dy == 0 {
                     continue;
                 }
@@ -192,7 +211,7 @@ impl City {
                 if pl.kind.is_passable_land() && !pl.road && dx.abs().max(dy.abs()) == 1 {
                     let score = 40;
                     if best.as_ref().is_none_or(|(s, _)| score > *s) {
-                        best = Some((score, WorkCrewTask { plot: p, build_road: true, improvement: Improvement::None, progress: 0, needed: 3 }));
+                        best = Some((score, WorkCrewTask { plot: p, build_road: true, improvement: Improvement::None, progress: 0, needed: CREW_ROAD_TURNS }));
                     }
                 }
                 // Priority 2: improve unimproved tiles.
@@ -218,7 +237,7 @@ impl City {
                     };
                     if let Some((imp, score)) = imp {
                         if best.as_ref().is_none_or(|(s, _)| score > *s) {
-                            best = Some((score, WorkCrewTask { plot: p, build_road: false, improvement: imp, progress: 0, needed: 4 }));
+                            best = Some((score, WorkCrewTask { plot: p, build_road: false, improvement: imp, progress: 0, needed: CREW_IMPROVE_TURNS }));
                         }
                     }
                 }

@@ -2,14 +2,23 @@
 // decision at hand. Its topics are listed at its left, the chosen one's article at its right. The
 // top bar's ? (and the ? key) opens it at the keys; a dialog's (i) (modals.js `help`) opens it at
 // that dialog's topic, over the dialog, which is there again when the help closes. Modules add
-// their topics with `addHelp` (crusade.js, screens.js).
+// their topics with `addHelp` (crusade.js, screens.js). A topic belongs to one game mode: the
+// classic game's (no `mode`) or the Cataclysm mode's (`mode: "cataclysm"`, cataclysm_help.js), and
+// the display lists those of the game that is open (the classic ones when no game is).
 
 import { h } from "./dom.js";
 import { openModal } from "./modals.js";
+import { S } from "./state.js";
 
-/** The topics in the order they are listed: `{id, group, title, body, order}`, `body()` making
- *  the article's nodes; `order` (default 50) sorts them, ties in the order they were added. */
+/** The topics in the order they are listed: `{id, group, title, body, order, mode}`, `body()`
+ *  making the article's nodes; `order` (default 50) sorts them, ties in the order they were added. */
 const topics = [];
+
+/** The topics of the open game's mode. */
+function shown() {
+  const cataclysm = S.view?.mode === "cataclysm";
+  return topics.filter((t) => (t.mode === "cataclysm") === cataclysm);
+}
 
 /** Adds topic `{id, group, title, body, order?}` (a second one with the same id replaces the
  *  first). */
@@ -27,12 +36,13 @@ export function helpTitle(id) {
 
 /** Opens the help at topic `id` (the first topic when there is no such topic). */
 export function openHelp(id = null) {
-  let current = topics.find((t) => t.id === id) ?? topics[0] ?? null;
+  const list = shown();
+  let current = list.find((t) => t.id === id) ?? list[0] ?? null;
   const nav = h("nav.help-topics", { "aria-label": "Topics" });
   const article = h("article.help-article");
   const draw = () => {
     const groups = [];
-    for (const t of topics) {
+    for (const t of list) {
       let g = groups.find((x) => x.name === t.group);
       if (!g) groups.push((g = { name: t.group, items: [] }));
       g.items.push(t);
