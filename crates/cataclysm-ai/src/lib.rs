@@ -6,7 +6,7 @@ mod rituals;
 
 use cataclysm_core::{
     Alignment, BuildOrder, Command, DistrictKind, Doctrine, Event, FactionId, Game, GreatPersonAction, HouseMood, PlayerId, Religion,
-    RitualKind, TechId, UnitClassId, WonderKind, TECHS,
+    RitualKind, SquadOrder, TechId, UnitClassId, WonderKind, TECHS,
 };
 
 /// How a player uses the rituals that move Worldseal Strain. `Standard` is the game's AI; the
@@ -229,7 +229,10 @@ fn manage_cities_and_caravans(g: &mut Game, p: PlayerId, events: &mut Vec<Event>
             continue;
         }
         let Some(c) = g.cities.get(&cid).cloned() else { continue };
-        if c.building.is_some() {
+        // A finished Reinforce whose squad has left waits for a squad with room that may never
+        // come: choose again (its progress is lost either way).
+        let stuck_reinforce = c.building.as_ref().is_some_and(|o| matches!(o, BuildOrder::Reinforce(_)) && c.build_progress >= o.cost() && g.build_waits_for_squad_cap(&c, o));
+        if c.building.is_some() && !stuck_reinforce {
             continue;
         }
         // Priority 1: Lifeboat Wonder if unlocked (in the Wonder city only).
@@ -243,8 +246,12 @@ fn manage_cities_and_caravans(g: &mut Game, p: PlayerId, events: &mut Vec<Event>
                 }
             }
         }
-        // Priority 2: Raise Squads when below cap!
-        if chosen.is_none() && sq_count < sq_cap.min(4) {
+        // Priority 2: Raise Squads when below cap (to the full cap while at war with a civilization).
+        let at_war = g.players.iter().any(|o| o.alive && !o.is_neutral && o.id != p && g.at_war(p, o.id));
+        let want_squads = if at_war { sq_cap } else { sq_cap.min(4) };
+        // Squads already ordered count: an order finished at the cap waits in its city.
+        let ordered = city_ids.iter().filter(|o| g.cities.get(o).is_some_and(|oc| matches!(oc.building, Some(BuildOrder::Squad(_))))).count();
+        if chosen.is_none() && sq_count + ordered < want_squads {
             chosen = Some(BuildOrder::Squad(best_squad_recipe(g, p)));
         }
         // Priority 3: Build Macro Districts while slots remain!
@@ -264,12 +271,29 @@ fn manage_cities_and_caravans(g: &mut Game, p: PlayerId, events: &mut Vec<Event>
                 }
             }
         }
-        // Priority 4: Train squads up to cap or reinforce.
+        // Priority 4: Train squads up to the cap; at the cap, reinforce a guard fortified in the
+        // city with room (an order that would raise a new squad waits while we are at the cap),
+        // else a Caravan, else nothing.
         if chosen.is_none() {
-            if g.player_squads(p).len() < sq_cap {
+            if sq_count + ordered < sq_cap {
                 chosen = Some(BuildOrder::Squad(best_squad_recipe(g, p)));
             } else {
-                chosen = Some(BuildOrder::Reinforce(UnitClassId::Guard));
+                // A fortified squad (a guard) is the one likely to be there when the order ends.
+                let guard_with_room = g.squads.values().any(|s| s.owner == p && s.plot == c.plot && s.order == SquadOrder::Fortify);
+                let recipe = best_squad_recipe(g, p);
+                let reinforce = recipe.into_iter().map(BuildOrder::Reinforce).find(|o| guard_with_room && !g.build_waits_for_squad_cap(&c, o));
+                match reinforce {
+                    Some(o) => chosen = Some(o),
+                    // A finished Caravan starts even with every Caravan slot in use: order one only
+                    // for a free slot, and one at a time.
+                    None => {
+                        let caravans = g.caravans.values().filter(|cv| cv.owner == p).count();
+                        let ordered = city_ids.iter().any(|o| g.cities.get(o).is_some_and(|oc| oc.building == Some(BuildOrder::Caravan)));
+                        if caravans < g.caravan_cap(p) && !ordered {
+                            try_cmd(g, p, Command::CityBuild { city: cid, order: BuildOrder::Caravan }, events);
+                        }
+                    }
+                }
             }
         }
         if let Some(ord) = chosen {

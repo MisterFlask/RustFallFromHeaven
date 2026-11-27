@@ -405,8 +405,10 @@ pub(crate) fn manage_squads(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) 
     let cap = g.players[p.idx()].squad_place_cap();
     for sid in g.player_squads(p) {
         // Upgrade or reinforce inside own borders when Gold allows.
+        // Gold is kept for a raiders' tribute while a city of ours is being raided.
+        let reserve = if g.player_cities(p).iter().any(|c| g.cities[c].raid_streak > 0) { cataclysm_core::game::RAID_TRIBUTE_GOLD } else { 0 };
         let in_home = g.world.plot(g.squads[&sid].plot).owner == Some(p);
-        if in_home && g.players[p.idx()].gold >= 80 {
+        if in_home && g.players[p.idx()].gold >= 80 + reserve {
             let upgrade_target = g.squads[&sid]
                 .members
                 .iter()
