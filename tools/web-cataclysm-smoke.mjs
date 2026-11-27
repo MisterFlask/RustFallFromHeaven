@@ -243,7 +243,7 @@ async function main() {
     }
     log(`${TURNS} turns ended`);
 
-    // A phone: the Strain chip leads the chips, and two taps on a tile move the selected squad.
+    // A phone: the Worldstrain chip leads the chips, and two taps on a tile move the selected squad.
     const phone = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     phone.on("pageerror", (e) => problems.push(`phone: page error: ${e.message}`));
     phone.on("console", (m) => {
@@ -257,7 +257,7 @@ async function main() {
       chips.sort((a, b) => a.left - b.left);
       return chips[0]?.text ?? "";
     });
-    check(/Strain|Blowout/.test(first), `the phone's first chip is "${first}"`);
+    check(/Worldstrain|Blowout/.test(first), `the phone's first chip is "${first}"`);
     const sq = await phone.evaluate(() => {
       const d = window.ffh.S.view.cataclysm;
       const s = d.squads.find((s) => s.owner === window.ffh.S.view.me.player && s.moves_left > 0);
@@ -298,7 +298,7 @@ async function main() {
     }
     check(moved, "two taps on a tile next to the selected squad did not move it");
     await phone.close();
-    log("the phone: Strain first, a squad moved with two taps");
+    log("the phone: Worldstrain first, a squad moved with two taps");
   } finally {
     await browser.close();
     await server.stop();

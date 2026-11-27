@@ -628,7 +628,7 @@ export function openResearch({ tab = "research" } = {}) {
 
 function techNode(ctx, t, res) {
   const isCur = res.current?.id === t.id;
-  const strain = t.ac_delta ? `${signed(t.ac_delta)} Strain` : null;
+  const strain = t.ac_delta ? `${signed(t.ac_delta)} Worldstrain` : null;
   const costText = [`${t.cost} Lore`, strain].filter(Boolean).join(" · ");
   const tp = tipOf(t.name, t.unlocks, t.cost_note, t.known ? null : t.strain_text, t.known ? null : t.why);
   if (t.known) {
@@ -765,7 +765,7 @@ function ritualsTab(ctx, data) {
         const can = rk.why !== undefined ? !has(rk.why) : !!rk.can_cast;
         return h(
           "div.cat-card",
-          h("div.cat-tech-head", h("strong", rk.name), h("span", [`${rk.mana_cost} Mana`, rk.ac_delta ? `${signed(rk.ac_delta)} Strain` : null].filter(Boolean).join(" · "))),
+          h("div.cat-tech-head", h("strong", rk.name), h("span", [`${rk.mana_cost} Mana`, rk.ac_delta ? `${signed(rk.ac_delta)} Worldstrain` : null].filter(Boolean).join(" · "))),
           has(rk.summary) ? h("small.cat-note", rk.summary) : null,
           h("div.cat-btn-row", h("button", { disabled: !can, onclick: () => ctx.run({ c: "cat_ritual", ritual: rk.key }) }, "Cast")),
           can ? null : why(reason),
@@ -950,7 +950,7 @@ export function openWorldseal() {
       const strainMax = ap.max ?? ap.counter_max ?? null;
       const out = [
         h("div", [`Turn ${data.turn}${has(data.max_turns) ? ` of ${data.max_turns}` : ""}`, ap.act_label ?? data.act_label].filter(has).join(" · ")),
-        h("div", `Strain ${ap.counter ?? 0}${has(strainMax) ? `/${strainMax}` : ""}`),
+        h("div", `Worldstrain ${ap.counter ?? 0}${has(strainMax) ? `/${strainMax}` : ""}`),
         has(ap.countdown) ? h("div.warn", `Blowout in ${plural(ap.countdown, "turn")}.`) : null,
       ];
       const vic = data.victory ?? {};
@@ -977,7 +977,7 @@ export function openWorldseal() {
         );
       } else out.push(lines(ap.lifeboat_rules) ?? h("div.dim", "None."));
 
-      out.push(h("h4", "Strain"), lines(ap.rules));
+      out.push(h("h4", "Worldstrain"), lines(ap.rules));
       const recent = (ap.recent_changes ?? []).slice(0, 6);
       if (recent.length) out.push(h("div.cat-sub", "Recent changes"), lines(recent, "ul.cat-list.cat-calc"));
 

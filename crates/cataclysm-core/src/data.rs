@@ -220,7 +220,7 @@ pub const FACTIONS: [FactionInfo; 9] = [
         starting_mana: 20,
         city_names: &["Valve Abbey", "Saltlock", "Cistern Dell", "Plumbline", "Stillwater", "Drywell"],
         lore_blurb: "Emergency engineers who slammed the Worldseal shut to end the Servitor Rebellion and stayed on as maintenance monks tending its pressure valves.",
-        rule_summary: "Vent the Seal moves -3 Strain (others: -1); wins at Turn 160 if the Blowout has not come; +25% Sentinel HP.",
+        rule_summary: "Vent the Seal moves -3 Worldstrain (others: -1); wins at Turn 160 if the Blowout has not come; +25% Sentinel HP.",
     },
     FactionInfo {
         id: FactionId::Amurites,
@@ -334,7 +334,7 @@ pub const FACTIONS: [FactionInfo; 9] = [
         starting_mana: 30,
         city_names: &["Sinktown", "Pitchworks", "Falsebeacon", "Shaftmouth", "Cinderlot", "Ashyard"],
         lore_blurb: "Expelled shaft-surveyors and collapse-profiteers who struck deals with the sealed servitors—collapsing towns to widen vents while hedging both victory paths.",
-        rule_summary: "May win by Lifeboat survival or by the Furnace victory; may raze its own cities (+6 Strain); from Strain 30, every 10 turns a squad of 2 Stokers joins at the capital while under the squad cap.",
+        rule_summary: "May win by Lifeboat survival or by the Furnace victory; may raze its own cities (+6 Worldstrain); from Worldstrain 30, every 10 turns a squad of 2 Stokers joins at the capital while under the squad cap.",
     },
     FactionInfo {
         id: FactionId::Infernals,
@@ -353,7 +353,7 @@ pub const FACTIONS: [FactionInfo; 9] = [
         starting_mana: 40,
         city_names: &["Great Furnace", "Slagspire", "Foundry Deep", "Brimshaft", "Ashpit", "Clinker"],
         lore_blurb: "The Great Empire's engineered furnace-servitors whose rebellion forced the Worldseal shut. They mean to raze every Lifeboat so they are never sealed below again.",
-        rule_summary: "Furnace victory only (every Lifeboat razed after Strain 100). When no player has chosen it, it enters the game at Strain 50. Each kill in a battle heals the squad's units 15% (up to 3 kills); +15% attack and defense when fighting on scorched ground.",
+        rule_summary: "Furnace victory only (every Lifeboat razed after Worldstrain 100). When no player has chosen it, it enters the game at Worldstrain 50. Each kill in a battle heals the squad's units 15% (up to 3 kills); +15% attack and defense when fighting on scorched ground.",
     },
 ];
 
@@ -643,8 +643,8 @@ impl WonderKind {
 
     pub const fn summary(self) -> &'static str {
         match self {
-            WonderKind::TowerOfMastery => "+8 Mana and +8 Lore per turn in its city, +30% battle spell power; a Lifeboat once Strain reaches 100.",
-            WonderKind::AltarOfLuonnotar => "+2 Loyalty in every House, +30% healing and Sentinel HP, +8 Culture per turn in its city, which keeps its Size in the Ash Plague; a Lifeboat once Strain reaches 100.",
+            WonderKind::TowerOfMastery => "+8 Mana and +8 Lore per turn in its city, +30% battle spell power; a Lifeboat once Worldstrain reaches 100.",
+            WonderKind::AltarOfLuonnotar => "+2 Loyalty in every House, +30% healing and Sentinel HP, +8 Culture per turn in its city, which keeps its Size in the Ash Plague; a Lifeboat once Worldstrain reaches 100.",
         }
     }
 }
@@ -1013,7 +1013,7 @@ impl GreatSuit {
         use crate::great_people as g;
         match self {
             GreatSuit::Sage => format!("+{} Lore toward research and +{} Mana.", g::BURST_SAGE_LORE, g::BURST_SAGE_MANA),
-            GreatSuit::Prophet => format!("{:+} Strain and +{} lasting Loyalty in every House.", g::BURST_PROPHET_STRAIN, g::BURST_PROPHET_LOYALTY),
+            GreatSuit::Prophet => format!("{:+} Worldstrain and +{} lasting Loyalty in every House.", g::BURST_PROPHET_STRAIN, g::BURST_PROPHET_LOYALTY),
             GreatSuit::Engineer => format!(
                 "+{} Industry to the build in the earliest-founded city you hold; the build completes if that covers its cost.",
                 g::BURST_ENGINEER_INDUSTRY
@@ -1080,12 +1080,12 @@ pub const SECRET_TECHS: [SecretTechInfo; 24] = [
     // Sage (4) — Imperial vent-engineering & arcane manuals
     SecretTechInfo { id: SecretTechId(0), suit: GreatSuit::Sage, name: "Spire of the Archmagi", needs: TECH_ARCANA, effect: SecretEffect::SpellPowerPct(30), summary: "+30% Battle Spell damage for all squads.", expert_line: "Double-stack back-row Mages behind Sentinels or Phalanxes." },
     SecretTechInfo { id: SecretTechId(1), suit: GreatSuit::Sage, name: "Deep-Vent Manifold", needs: TECH_ARCANA, effect: SecretEffect::ManaPerTurn(6), summary: "+6 Mana per turn empire-wide.", expert_line: "Keep Mana for a Strategic Ritual every few turns." },
-    SecretTechInfo { id: SecretTechId(2), suit: GreatSuit::Sage, name: "Unsealed Schematics", needs: TECH_SORCERY, effect: SecretEffect::LorePerTurn(14), summary: "+14 Lore per turn (+4 Strain when discovered).", expert_line: "Rush a Tier-4 Capstone 20 turns ahead of the table." },
-    SecretTechInfo { id: SecretTechId(3), suit: GreatSuit::Sage, name: "Deep Tap Charter", needs: TECH_ARCANA, effect: SecretEffect::AcSurgeOnce(12), summary: "+12 Strain and +40 Mana when discovered.", expert_line: "Trigger King Cinder or Blowout while holding the central shore." },
+    SecretTechInfo { id: SecretTechId(2), suit: GreatSuit::Sage, name: "Unsealed Schematics", needs: TECH_SORCERY, effect: SecretEffect::LorePerTurn(14), summary: "+14 Lore per turn (+4 Worldstrain when discovered).", expert_line: "Rush a Tier-4 Capstone 20 turns ahead of the table." },
+    SecretTechInfo { id: SecretTechId(3), suit: GreatSuit::Sage, name: "Deep Tap Charter", needs: TECH_ARCANA, effect: SecretEffect::AcSurgeOnce(12), summary: "+12 Worldstrain and +40 Mana when discovered.", expert_line: "Trigger King Cinder or Blowout while holding the central shore." },
 
     // Prophet (4) — Sealing ledgers & civic vows
     SecretTechInfo { id: SecretTechId(4), suit: GreatSuit::Prophet, name: "Aquifer Compendium", needs: TECH_MYSTICISM, effect: SecretEffect::HealBonusPct(45), summary: "+45% battle healing.", expert_line: "Outlast siege attrition on Caldera Keep with double-healer squads." },
-    SecretTechInfo { id: SecretTechId(5), suit: GreatSuit::Prophet, name: "Valve-Keeper's Ledger", needs: TECH_MYSTICISM, effect: SecretEffect::AcDrainPerTurn(1), summary: "Halves the world's Strain drift: every second +1 is skipped.", expert_line: "Slow the clock toward a Keepers Turn-160 win." },
+    SecretTechInfo { id: SecretTechId(5), suit: GreatSuit::Prophet, name: "Valve-Keeper's Ledger", needs: TECH_MYSTICISM, effect: SecretEffect::AcDrainPerTurn(1), summary: "Halves Worldstrain drift: every second +1 is skipped.", expert_line: "Slow the clock toward a Keepers Turn-160 win." },
     SecretTechInfo { id: SecretTechId(6), suit: GreatSuit::Prophet, name: "Sacred Concordat", needs: TECH_MYSTICISM, effect: SecretEffect::HouseLoyaltyBonus(2), summary: "+2 Loyalty in every House permanently.", expert_line: "Conquer rival-culture cities without triggering Furious Houses." },
     SecretTechInfo { id: SecretTechId(7), suit: GreatSuit::Prophet, name: "Crusader's Banner", needs: TECH_FORTIFICATION, effect: SecretEffect::AllAtkPct(15), summary: "+15% Attack for every unit in your squads.", expert_line: "Swing tight 2-round formation verdicts across every front." },
 
@@ -1102,7 +1102,7 @@ pub const SECRET_TECHS: [SecretTechInfo; 24] = [
     SecretTechInfo { id: SecretTechId(15), suit: GreatSuit::Merchant, name: "Mercenary Retainer", needs: TECH_TRADE_ROADS, effect: SecretEffect::SquadCapBonus(2), summary: "+2 maximum Squads.", expert_line: "Field a dedicated Raid squad alongside two Siege squads." },
 
     // Bard (4) — Surviving chronicles & rim-watch songs
-    SecretTechInfo { id: SecretTechId(16), suit: GreatSuit::Bard, name: "Chronicle of the Sealing", needs: TECH_MYSTICISM, effect: SecretEffect::CulturePerCity(6), summary: "+6 Culture per turn in every city.", expert_line: "Lock down the Last Metropolis Lifeboat before Strain 100." },
+    SecretTechInfo { id: SecretTechId(16), suit: GreatSuit::Bard, name: "Chronicle of the Sealing", needs: TECH_MYSTICISM, effect: SecretEffect::CulturePerCity(6), summary: "+6 Culture per turn in every city.", expert_line: "Lock down the Last Metropolis Lifeboat before Worldstrain 100." },
     SecretTechInfo { id: SecretTechId(17), suit: GreatSuit::Bard, name: "Court of Masks", needs: TECH_TRADE_ROADS, effect: SecretEffect::HouseLoyaltyBonus(2), summary: "+2 Loyalty in every House.", expert_line: "Keep a wide multi-culture empire productive under war." },
     SecretTechInfo { id: SecretTechId(18), suit: GreatSuit::Bard, name: "Dirge of Iron", needs: TECH_ARCHERY, effect: SecretEffect::AllDefPct(15), summary: "+15% Defense for all units in your squads.", expert_line: "Hold choke points and Caldera Keep bridges against superior numbers." },
     SecretTechInfo { id: SecretTechId(19), suit: GreatSuit::Bard, name: "Ballad of the Fallen", needs: TECH_FIELDCRAFT, effect: SecretEffect::SquadCapBonus(1), summary: "+1 Squad cap.", expert_line: "Recover immediately after losing a frontline squad." },
@@ -1115,7 +1115,7 @@ pub const SECRET_TECHS: [SecretTechInfo; 24] = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// Worldseal Strain Crisis Deck (10 escalating thresholds: Strain 10, 20, ..., 100)
+// Worldstrain Crisis Deck (10 escalating thresholds: Worldstrain 10, 20, ..., 100)
 // ---------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug)]
@@ -1134,7 +1134,7 @@ pub const ARMAGEDDON_CRISES: [CrisisInfo; 10] = [
     CrisisInfo { threshold: 50, key: "hyborem", name: "The Deep Breach", summary: "If King Cinder's Host is not in the game, it enters with a city on unclaimed land, at war with every Good civilization." },
     CrisisInfo { threshold: 60, key: "plague", name: "Ash Plague", summary: "Every city above Size 1 loses 1 Size unless it has a Temple or the Great Cistern." },
     CrisisInfo { threshold: 70, key: "horsemen", name: "Runaway Engines", summary: "2 Wild Clans squads (Knight and Slagbreaker) appear on unclaimed land." },
-    CrisisInfo { threshold: 80, key: "sky_bleeds", name: "Red Sky", summary: "20 plots of unclaimed or Evil-held land become scorched ground; from Strain 80 all battles deal +15% damage." },
+    CrisisInfo { threshold: 80, key: "sky_bleeds", name: "Red Sky", summary: "20 plots of unclaimed or Evil-held land become scorched ground; from Worldstrain 80 all battles deal +15% damage." },
     CrisisInfo { threshold: 90, key: "shattering", name: "The Heave", summary: "24 plots of unclaimed or Evil-held land become scorched ground." },
     CrisisInfo { threshold: 100, key: "carcosa", name: "The Blowout", summary: "Caldera Keep rises from the central sea on land bridges and the Lifeboat countdown begins." },
 ];

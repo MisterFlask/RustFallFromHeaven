@@ -36,7 +36,7 @@ const KEYS = [
   ["Arrow keys", "Move the map"],
   ["+ / -", "Zoom"],
   ["F1", "Cities and caravans"],
-  ["F2", "Worldseal: Strain, Lifeboats, how the game ends"],
+  ["F2", "Worldseal: Worldstrain, Lifeboats, how the game ends"],
   ["F3", "Rituals"],
   ["F4", "Diplomacy and crusades"],
   ["F6", "Research and doctrines"],
@@ -64,7 +64,7 @@ addHelp({
       h("li", "The selected squad's panel shows its formation. Click a unit, then another cell, to move it there."),
       h("li", "Click one of your cities to open it and choose what it builds."),
       h("li", "End turn (Enter) ends the turn. The battles fought against you during the other empires' turns open when your turn comes."),
-      h("li", "The top bar shows the turn and the turn limit, Gold, the research, Mana, Worldseal Strain, the Court and the Houses. Each opens its screen."),
+      h("li", "The top bar shows the turn and the turn limit, Gold, the research, Mana, Worldstrain, the Court and the Houses. Each opens its screen."),
     ),
     ...section("How the game ends", cat()?.victory?.lines),
     cat()?.victory?.status ? h("p", cat().victory.status) : null,
@@ -142,8 +142,8 @@ addHelp({
   body: () => [
     h("p", "Lore goes to the technology being researched. The eight Foundation technologies open the districts and the first units; each doctrine is a ladder of four more."),
     cat()?.doctrine_rule ? h("p", cat().doctrine_rule) : null,
-    h("p", "A technology's card shows its cost, the Strain it adds to the Worldseal if no civilization has researched it yet and, when it is locked, what it needs."),
-    h("p", "Each creed's card gives what founding or adopting it costs and changes. Each ritual's card gives its Mana cost and its change to Strain."),
+    h("p", "A technology's card shows its cost, the Worldstrain it adds if no civilization has researched it yet and, when it is locked, what it needs."),
+    h("p", "Each creed's card gives what founding or adopting it costs and changes. Each ritual's card gives its Mana cost and its change to Worldstrain."),
   ],
 });
 
@@ -188,7 +188,7 @@ addHelp({
     const d = cat();
     return [
       d ? h("p", `Turn ${d.turn} of ${d.max_turns}.`) : null,
-      ...section("Strain", d?.apocalypse?.rules),
+      ...section("Worldstrain", d?.apocalypse?.rules),
       ...section("Lifeboats", d?.apocalypse?.lifeboat_rules),
       ...section("How the game ends", d?.victory?.lines),
       h("h4", "War and peace"),

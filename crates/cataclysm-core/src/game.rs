@@ -1458,7 +1458,7 @@ impl Game {
             Command::MakePeace { target } => self.cmd_make_peace(player, target)?,
             Command::BreakVassalage => {
                 if !self.apocalypse.carcosa_risen {
-                    return Err(CmdErr::cannot("A vassal may break free only once Worldseal Strain reaches 100."));
+                    return Err(CmdErr::cannot("A vassal may break free only once Worldstrain reaches 100."));
                 }
                 let Some(master) = self.players[player.idx()].vassal_of.take() else {
                     return Err(CmdErr::cannot("Not a vassal."));
@@ -2095,7 +2095,7 @@ impl Game {
         self.shift_ac(RAZE_STRAIN, &format!("{} razed", c.name), events);
         events.push(Event::CityRazed { plot: c.plot, name: c.name.clone(), by: player });
         let moved = self.apocalypse.counter - strain_before;
-        let text = if moved != 0 { format!("Razed {} ({:+} Strain).", c.name, moved) } else { format!("Razed {}.", c.name) };
+        let text = if moved != 0 { format!("Razed {} ({:+} Worldstrain).", c.name, moved) } else { format!("Razed {}.", c.name) };
         self.push_log(Some(player), Some(c.plot), None, text);
         Ok(())
     }
@@ -2777,7 +2777,7 @@ impl Game {
                 name: crisis.name.into(),
                 summary: crisis.summary.into(),
             });
-            self.push_log(None, None, None, format!("Worldseal Strain {}: {}. {}", crisis.threshold, crisis.name, crisis.summary));
+            self.push_log(None, None, None, format!("Worldstrain {}: {}. {}", crisis.threshold, crisis.name, crisis.summary));
             self.apply_crisis(crisis.threshold, events);
         }
     }
@@ -3295,7 +3295,7 @@ impl Game {
                         self.apocalypse.lifeboats.push(Lifeboat { kind, city_id, razed: false });
                     }
                     let text = if moved != 0 {
-                        format!("{} completed the {} ({:+} Strain).", c.name, w.name(), moved)
+                        format!("{} completed the {} ({:+} Worldstrain).", c.name, w.name(), moved)
                     } else {
                         format!("{} completed the {}.", c.name, w.name())
                     };

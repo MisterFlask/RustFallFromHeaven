@@ -29,24 +29,24 @@ crates/ffh-play/assets/app/cataclysm_screens.js
 
 An age ago, the Great Empire built a heat-adapted subterranean caste of furnace-servitors to run the geothermal works powering its golden age. When the servitors rebelled, the Empire's emergency engineers dropped a sealed stone-and-brass plug-citadel (**Caldera Keep**) into the central volcanic basin and flooded it, trapping the rebels beneath the sea.
 
-Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks through the crust; deep smelting, vent-tapping, razing, and Lifeboat construction all drive **Worldseal Strain** toward `100`. Every playable faction is a surviving department or dissident offshoot of that dead Empire:
+Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks through the crust; deep smelting, vent-tapping, razing, and Lifeboat construction all drive **Worldstrain** toward `100`. Every playable faction is a surviving department or dissident offshoot of that dead Empire:
 
 - **Seventh Garrison** (*Commander Maren Vance*): The unrelieved rim-watch legion (`+15%` front-row damage; free-upkeep, double-credit Crusade pledges).
-- **Keepers of the Seal** (*Abbot Oren Hale*): Emergency engineers turned maintenance monks (`Vent the Seal` moves `-3 Strain`, others `-1`; `+25%` Sentinel HP; automatic Turn-160 win if Strain stays below 100).
+- **Keepers of the Seal** (*Abbot Oren Hale*): Emergency engineers turned maintenance monks (`Vent the Seal` moves `-3 Worldstrain`, others `-1`; `+25%` Sentinel HP; automatic Turn-160 win if Worldstrain stays below 100).
 - **Tappers' College** (*Dean Halden Pell*): Imperial power-scholars piping vent-ether through ceramic towers (`+2 Mana/Academy`; `+20%` battle spell damage; starts with `Arcana`).
 - **Postriders** (*Factor Bajan*): The imperial highway and relay-stable network (`+1` open-ground movement; `+50%` Raid Gold; `-25%` reinforcement Gold).
 - **Three Hearths** (*Ward-Heir Corin*): Imperial urbanists capped at 3 six-district megacities (`+50%` output & Culture), fed by low-upkeep Outposts.
 - **Vault & Crucible** (*Master-Assayer Bram*): Mortal foundry-guilds requiring full bullion vaults (`>= 200` Gold/city) to fire deep furnaces (`+35%` Industry & `+4` Armor; `+25%` Siege Bombard damage).
 - **Canopy** (*Mistress Sylva*): Dissidents who abandoned the geothermal grid for ash-filtering forest highways (cost-1 forest movement, forest supply lines, no forest ranged penalties).
-- **Wreckers** (*Broker Vane*): Collapse-profiteers trading sabotage with the deep servitors (may win Surface *or* Furnace victory; may raze own cities for `+6 Strain`; Deep Shaft spawns Stokers).
-- **King Cinder's Host** (*King Cinder*): The rebel furnace-servitors breaking out at Strain 50 (Furnace victory only—raze every Lifeboat after Strain 100; heal `+15%` on kills; thrive on scorched ground).
+- **Wreckers** (*Broker Vane*): Collapse-profiteers trading sabotage with the deep servitors (may win Surface *or* Furnace victory; may raze own cities for `+6 Worldstrain`; Deep Shaft spawns Stokers).
+- **King Cinder's Host** (*King Cinder*): The rebel furnace-servitors breaking out at Worldstrain 50 (Furnace victory only—raze every Lifeboat after Worldstrain 100; heal `+15%` on kills; thrive on scorched ground).
 
 ## Core Rules Summary
 
 - **Squad as the atomic map unit**: 3×3 Ogre Battle grid (4 places opening, 5 at Tier 2), Large
   2-cell units, named Captain with embedded portrait and passive aura, Wounded Hero recovery.
 - **9 asymmetric factions**: Seventh Garrison, Keepers of the Seal, Tappers' College, Postriders,
-  Three Hearths, Vault & Crucible, Canopy, Wreckers, and King Cinder's Host (rising at Strain 50).
+  Three Hearths, Vault & Crucible, Canopy, Wreckers, and King Cinder's Host (rising at Worldstrain 50).
 - **25 unit classes**: 24 recruitable classes across 3 tiers (standard core troops plus signature
   Worldseal units `Mender`, `Ashbound`, `Stoker`, and `Slagbreaker`) plus persistent
   city `Wall Sentinels`, each mapped to real `UNIT_*` sprite keys.
@@ -56,21 +56,21 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
   (automatic city Work Crews + squad field roads/forts).
 - **Macro Cities & Regional Houses**: Size 1..10, 4–6 structural District slots (`Barracks`,
   `Market`, `Academy`, `Temple`, `Forge`, `Bulwark`), 2 Lifeboat Wonders (`Siphon Spire` bores
-  into deep vents; `Great Cistern` drains cooling aquifers—each adding `+15 Strain`), and
+  into deep vents; `Great Cistern` drains cooling aquifers—each adding `+15 Worldstrain`), and
   Regional Houses (up to 4 cities per House under a minor-leader portrait Lord whose loyalty
   scales output and disables the House perk if Furious).
 - **Compact 36-tech tree + Creeds + Rituals**: 8 Foundation techs + 7 Doctrine Ladders × 4 tiers
   (`Steel`, `Cavalry`, `Arcane`, `Faith`, `Artifice`, `Wild`, `Mercantile`; commit to 1 Primary
   Doctrine + optional Tier 1–2 Secondary dip), separate world race for 5 Creeds (`Code of the Watch`,
   `Weight & Measure`, `Old Growth`, `Choir Below`, `Open the Vent`), and 6 empire-level Strategic
-  Rituals cast with Mana (two of them move Strain, on a 12-turn recast).
+  Rituals cast with Mana (two of them move Worldstrain, on a 12-turn recast).
 - **Great People Court**: 6 empire-wide suit Renown meters (Sage, Prophet, Engineer, Merchant,
   Bard, Commander), arriving with a visible Secret Tech drawn from a shared 24-card world deck of
   surviving Imperial manuals and a 3-way choice: (1) Discover Secret Tech, (2) Instant Tempo Burst
   (returns card), or (3) Commission permanently as a Squad Hero Captain or House Lord (returns card).
-- **160-turn Worldseal Clock & Lifeboat Endgame**: Coupled **Worldseal Strain** (`0–100`), 10-card
-  Crisis Deck (Strain 10..100), King Cinder's Host emerging at Strain 50, **Caldera Keep** heaving
-  up from the central sea on basalt bridges at Strain 100 + 40-turn Blowout countdown, Surface
+- **160-turn Worldseal Clock & Lifeboat Endgame**: Coupled **Worldstrain** (`0–100`), 10-card
+  Crisis Deck (Worldstrain 10..100), King Cinder's Host emerging at Worldstrain 50, **Caldera Keep** heaving
+  up from the central sea on basalt bridges at Worldstrain 100 + 40-turn Blowout countdown, Surface
   Lifeboat vs. Furnace Raze-All victory, and Turn-160 Keepers of the Seal / Score resolution.
 
 ## Screens
@@ -95,11 +95,11 @@ set by the UX pass of 2026-11-26:
   disbanding, and a build order that would discard progress.
 - **A rival's city shows what a rival may know**: size, defense, Sentinels, districts; not its
   yields or its build queue.
-- **The top bar's chips carry state**: `warn` (Strain from 50, the Blowout countdown, a negative
+- **The top bar's chips carry state**: `warn` (Worldstrain from 50, the Blowout countdown, a negative
   Gold rate, a House whose perk is off) and `accent` (no research chosen, a Great Person waiting)
   are drawn on every skin. The turn is shown against the turn limit.
 - **One screen, one subject**: Cities (with the caravans), Research / Creeds / Rituals (tabs of one
-  screen), the Court, the Houses, Diplomacy (with the crusades), the Worldseal (Strain, Lifeboats,
+  screen), the Court, the Houses, Diplomacy (with the crusades), the Worldseal (Worldstrain, Lifeboats,
   how the game ends). The menu and the F keys name those screens; the classic game's advisors that
   have no counterpart are hidden while a Cataclysm game is open.
 - **Touch**: a tap selects, a second tap on the same tile moves or attacks (the map sends no

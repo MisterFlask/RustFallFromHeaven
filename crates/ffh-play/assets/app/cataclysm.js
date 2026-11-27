@@ -496,7 +496,7 @@ export function renderCataclysmTop() {
   const strainCls = counting ? ".warn.strong" : (ap.counter ?? 0) >= 50 ? ".warn" : "";
   const recent = (ap.recent_changes ?? []).slice(0, 5);
   const strainTip = [
-    h("div.tip-title", counting ? `Blowout in ${ap.countdown} turns` : `Strain ${ap.counter ?? 0}/100`),
+    h("div.tip-title", counting ? `Blowout in ${ap.countdown} turns` : `Worldstrain ${ap.counter ?? 0}/100`),
     ...(ap.rules ?? []).map((l) => h("div", l)),
     data.victory?.status ? h("div.caution", data.victory.status) : null,
     recent.length ? h("div.tip-hint", "Recent changes") : null,
@@ -522,7 +522,7 @@ export function renderCataclysmTop() {
     chip((cur.gold_rate ?? 0) < 0 ? ".warn" : "", calcTip(`Gold ${cur.gold ?? 0} (${fmtRate(cur.gold_rate)})`, cur.gold_calc), () => open.cities(), `Gold ${cur.gold ?? 0} (${fmtRate(cur.gold_rate)})`),
     chip(`.research${res || idleLore ? "" : accent}`, researchTip, () => open.research("research"), res ? `Research: ${res.name}, ${res.turns} t` : idleLore ? "Research: none open" : "Research: none"),
     chip("", calcTip(`Mana ${cur.mana ?? 0} (${fmtRate(cur.mana_rate)})`, cur.mana_calc), () => open.research("rituals"), `Mana ${cur.mana ?? 0} (${fmtRate(cur.mana_rate)})`),
-    chip(`.strain${strainCls}`, strainTip, () => open.worldseal(), counting ? `Blowout in ${ap.countdown} turns` : `Strain ${ap.counter ?? 0}/100`),
+    chip(`.strain${strainCls}`, strainTip, () => open.worldseal(), counting ? `Blowout in ${ap.countdown} turns` : `Worldstrain ${ap.counter ?? 0}/100`),
     chip(court.length ? accent : "", courtTip, () => open.court(), court.length ? `Court: ${court.length} waiting` : `Court ${renown.total ?? 0}/${renown.next_threshold ?? 0}`),
     chip(inactive.length ? ".warn" : "", housesTip, () => open.houses(), `Houses ${houses.length}`),
   );

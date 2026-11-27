@@ -116,7 +116,7 @@ impl ApocalypseState {
         let prev = self.counter;
         self.counter = (self.counter + delta).clamp(0, MAX_STRAIN);
         if self.counter != prev {
-            self.recent_changes.push(format!("{:+} Strain ({})", self.counter - prev, reason));
+            self.recent_changes.push(format!("{:+} Worldstrain ({})", self.counter - prev, reason));
             if self.recent_changes.len() > 8 {
                 self.recent_changes.remove(0);
             }
@@ -144,7 +144,7 @@ impl ApocalypseState {
     pub fn act_label(&self, turn: i32) -> &'static str {
         match self.act_number(turn) {
             1 => "Act I · The Creaking Seal",
-            2 => "Act II · Rising Strain",
+            2 => "Act II · Rising Worldstrain",
             _ => "Act III · The Blowout",
         }
     }

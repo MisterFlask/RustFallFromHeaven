@@ -609,9 +609,9 @@ impl CataclysmSession {
                 let strain_text = if t.ac_delta == 0 {
                     None
                 } else if discovered {
-                    Some("Already researched in the world: 0 Strain.".to_string())
+                    Some("Already researched in the world: 0 Worldstrain.".to_string())
                 } else {
-                    Some(format!("{:+} Strain for the first civilization to research it.", t.ac_delta))
+                    Some(format!("{:+} Worldstrain for the first civilization to research it.", t.ac_delta))
                 };
                 crate::jobj! {
                     "id" => t.id.0 as i32,
@@ -689,7 +689,7 @@ impl CataclysmSession {
                         (g.apocalypse.counter + rel.founding_ac_delta()).clamp(0, 100) - g.apocalypse.counter
                     };
                     if moved != 0 {
-                        effect.push_str(&format!(" {:+} Strain.", moved));
+                        effect.push_str(&format!(" {:+} Worldstrain.", moved));
                     }
                 }
                 crate::jobj! {
@@ -801,7 +801,7 @@ impl CataclysmSession {
                         }
                     }),
                     GreatSuit::Bard => g.burst_city(h).map(|cid| format!("Applies to {}.", g.cities[&cid].name)),
-                    GreatSuit::Prophet if g.apocalypse.carcosa_risen => Some("Strain no longer changes after the Blowout.".to_string()),
+                    GreatSuit::Prophet if g.apocalypse.carcosa_risen => Some("Worldstrain no longer changes after the Blowout.".to_string()),
                     _ => None,
                 };
                 let hero_squads: Vec<Json> = g
@@ -1618,7 +1618,7 @@ impl CataclysmSession {
                             self.last_report_battles.push(battle.0);
                         }
                         Event::CrisisTriggered { threshold, name, summary } => {
-                            self.last_report_lines.push(format!("Worldseal Strain {threshold}: {name}. {summary}"));
+                            self.last_report_lines.push(format!("Worldstrain {threshold}: {name}. {summary}"));
                         }
                         Event::CarcosaRisen { .. } => {
                             self.last_report_lines.push(format!(
@@ -1813,19 +1813,19 @@ pub fn victory_lines(f: FactionId) -> Vec<String> {
     let mut out = Vec::new();
     if info.can_mortal_win {
         out.push(format!(
-            "Lifeboat survival: hold a standing Lifeboat when the {}-turn countdown that starts at Strain 100 ends. Every civilization holding one wins.",
+            "Lifeboat survival: hold a standing Lifeboat when the {}-turn countdown that starts at Worldstrain 100 ends. Every civilization holding one wins.",
             CARCOSA_TIMER_TURNS
         ));
     }
     if info.can_demonic_win {
-        out.push("Furnace victory: after Strain 100, every Lifeboat is razed while you are alive. Every living civilization that can win this way wins.".into());
+        out.push("Furnace victory: after Worldstrain 100, every Lifeboat is razed while you are alive. Every living civilization that can win this way wins.".into());
     }
-    out.push("Conquest: before Strain 100, be the last civilization alive. A civilization with no city and no squad is eliminated.".into());
+    out.push("Conquest: before Worldstrain 100, be the last civilization alive. A civilization with no city and no squad is eliminated.".into());
     if f == FactionId::Elohim {
-        out.push(format!("Turn limit: if turn {} comes before Strain 100, you win.", MAX_GAME_TURNS));
+        out.push(format!("Turn limit: if turn {} comes before Worldstrain 100, you win.", MAX_GAME_TURNS));
     } else {
         out.push(format!(
-            "Turn limit: if turn {} comes before Strain 100, the {} win if any is alive; otherwise the civilization with the highest score wins.",
+            "Turn limit: if turn {} comes before Worldstrain 100, the {} win if any is alive; otherwise the civilization with the highest score wins.",
             MAX_GAME_TURNS,
             faction_name(FactionId::Elohim)
         ));
@@ -1934,7 +1934,7 @@ fn rules_help_json() -> Json {
         ),
         "Flanking happens only outside cities, forests and marsh.".into(),
         format!(
-            "From Strain {} every battle deals {:+}% damage. A squad with a caster spends {} Mana per battle when it has it; with {} or more Mana its spells are stronger.",
+            "From Worldstrain {} every battle deals {:+}% damage. A squad with a caster spends {} Mana per battle when it has it; with {} or more Mana its spells are stronger.",
             cataclysm_core::combat::RED_SKY_STRAIN,
             red.base_damage * 100 / p.base_damage.max(1) - 100,
             cataclysm_core::game::BATTLE_MANA,
@@ -2062,25 +2062,25 @@ fn apocalypse_rules() -> Vec<String> {
     use cataclysm_core::game::{BLOODY_BATTLES_PER_STRAIN, BLOODY_BATTLE_DEATHS, BLOODY_BATTLE_STRAIN, RAZE_STRAIN, STRAIN_DRIFT_EVERY};
     vec![
         format!(
-            "Strain rises by 1 every {} turns until the Blowout; while a living civilization holds Valve-Keeper's Ledger every second such +1 is skipped.",
+            "Worldstrain rises by 1 every {} turns until the Blowout; while a living civilization holds Valve-Keeper's Ledger every second such +1 is skipped.",
             STRAIN_DRIFT_EVERY
         ),
         format!(
-            "A tech changes Strain by the amount it shows only for the first civilization to research it. Founding a Creed, Vent the Seal, Crack the Crust, Wonders, some Secret Techs and razing a city ({:+}) change Strain by the amount each shows.",
+            "A tech changes Worldstrain by the amount it shows only for the first civilization to research it. Founding a Creed, Vent the Seal, Crack the Crust, Wonders, some Secret Techs and razing a city ({:+}) change Worldstrain by the amount each shows.",
             RAZE_STRAIN
         ),
         format!(
-            "Every {} battles in the world in which {} or more units fall add {:+} Strain.",
+            "Every {} battles in the world in which {} or more units fall add {:+} Worldstrain.",
             BLOODY_BATTLES_PER_STRAIN, BLOODY_BATTLE_DEATHS, BLOODY_BATTLE_STRAIN
         ),
         format!(
-            "Strain falls through Vent the Seal, a Prophet's Tempo Burst ({:+}), and the techs and Creeds with a negative Strain change.",
+            "Worldstrain falls through Vent the Seal, a Prophet's Tempo Burst ({:+}), and the techs and Creeds with a negative Worldstrain change.",
             cataclysm_core::great_people::BURST_PROPHET_STRAIN
         ),
         "Each multiple of 10 triggers its crisis once.".into(),
-        "At Strain 50 King Cinder's Host enters the game, if it is not already in it.".into(),
+        "At Worldstrain 50 King Cinder's Host enters the game, if it is not already in it.".into(),
         format!(
-            "At Strain 100 (the Blowout) Caldera Keep rises, the Lifeboats are fixed, a {}-turn countdown starts, and Strain no longer changes.",
+            "At Worldstrain 100 (the Blowout) Caldera Keep rises, the Lifeboats are fixed, a {}-turn countdown starts, and Worldstrain no longer changes.",
             CARCOSA_TIMER_TURNS
         ),
         format!("Caldera Keep cannot be razed during its first {} turns.", CARCOSA_PROTECTED_TURNS),
@@ -2099,7 +2099,7 @@ fn lifeboat_rules() -> Vec<String> {
             LifeboatKind::MostLegendary.name(),
             LIFEBOAT_CULTURE_MIN
         ),
-        "The Lifeboats are fixed at Strain 100; a Wonder completed later becomes a Lifeboat when it is completed.".into(),
+        "The Lifeboats are fixed at Worldstrain 100; a Wonder completed later becomes a Lifeboat when it is completed.".into(),
         "Caldera Keep starts held by the Wild Clans with a guard squad.".into(),
         "Razing a Lifeboat city destroys that Lifeboat. If every Lifeboat is razed, the Furnace civilizations alive win; if none is alive, no one wins.".into(),
         "If the countdown ends and no Lifeboat is held by a civilization that can win by it, no one wins. The Wild Clans and King Cinder's Host win nothing by holding one.".into(),
@@ -2372,7 +2372,7 @@ impl CataclysmSession {
         if !g.apocalypse.carcosa_risen {
             let moved = (g.apocalypse.counter + RAZE_STRAIN).clamp(0, 100) - g.apocalypse.counter;
             if moved != 0 {
-                effect.push_str(&format!(" {:+} Strain.", moved));
+                effect.push_str(&format!(" {:+} Worldstrain.", moved));
             }
         }
         if let Some(kind) = g.apocalypse.is_lifeboat(c.id) {
@@ -2454,12 +2454,12 @@ impl CataclysmSession {
             VictoryKind::MortalLifeboat => "You held no Lifeboat that counts when the countdown ended.".to_string(),
             VictoryKind::DemonicRuin if you_won => "Every Lifeboat was razed and you can win by the Furnace victory.".to_string(),
             VictoryKind::DemonicRuin => "Every Lifeboat was razed; only Furnace civilizations win.".to_string(),
-            VictoryKind::ElohimVigil if you_won => format!("Turn {} came before Strain 100 and you are the {}.", MAX_GAME_TURNS, faction_name(FactionId::Elohim)),
-            VictoryKind::ElohimVigil => format!("Turn {} came before Strain 100; the {} win.", MAX_GAME_TURNS, faction_name(FactionId::Elohim)),
+            VictoryKind::ElohimVigil if you_won => format!("Turn {} came before Worldstrain 100 and you are the {}.", MAX_GAME_TURNS, faction_name(FactionId::Elohim)),
+            VictoryKind::ElohimVigil => format!("Turn {} came before Worldstrain 100; the {} win.", MAX_GAME_TURNS, faction_name(FactionId::Elohim)),
             VictoryKind::Conquest if you_won => "You are the last civilization alive.".to_string(),
             VictoryKind::Conquest => format!("{} is the last civilization alive.", first),
-            VictoryKind::ScoreAtTurnLimit if you_won => format!("Turn {} came before Strain 100 and you have the highest score.", MAX_GAME_TURNS),
-            VictoryKind::ScoreAtTurnLimit => format!("Turn {} came before Strain 100; {} has the highest score.", MAX_GAME_TURNS, first),
+            VictoryKind::ScoreAtTurnLimit if you_won => format!("Turn {} came before Worldstrain 100 and you have the highest score.", MAX_GAME_TURNS),
+            VictoryKind::ScoreAtTurnLimit => format!("Turn {} came before Worldstrain 100; {} has the highest score.", MAX_GAME_TURNS, first),
             VictoryKind::MutualExtinction => "No civilization won.".to_string(),
         };
         let your_result = if !you_won && !g.players[h.idx()].alive { format!("You were eliminated. {your_result}") } else { your_result };
@@ -2531,7 +2531,7 @@ impl CataclysmSession {
     }
 
     fn report_line_default(&self) -> String {
-        format!("Turn {} ({}). Worldseal Strain {}/100.", self.g.turn, self.g.apocalypse.act_label(self.g.turn), self.g.apocalypse.counter)
+        format!("Turn {} ({}). Worldstrain {}/100.", self.g.turn, self.g.apocalypse.act_label(self.g.turn), self.g.apocalypse.counter)
     }
 
     fn plot_json(&self, x: i32, y: i32, p: PlotIdx) -> Json {
