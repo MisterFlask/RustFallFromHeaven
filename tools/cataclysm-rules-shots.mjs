@@ -3,7 +3,9 @@
 // changes: the pacing pass"): phone-readable crops at deviceScaleFactor 2 on the HD-2D map of
 // - diplomacy at war, with our standing peace offer (the peace rule, the offer's turns left);
 // - the Rituals tab after Vent the Seal was cast (the recast time, "Ready in N turns");
-// - the Research tab (the tier costs, a tech's Strain for its first researcher, the Lore rule).
+// - the Research tab (the tier costs, a tech's Strain for its first researcher, the Lore rule);
+// - the new-game screen (the starting factions) and the Worldseal screen (King Cinder's Host's
+//   entry, Great Furnace's ward, the Breach, the Furnace victory).
 //
 //   node tools/cataclysm-rules-shots.mjs --bin <built>/ffh-play --out DIR [--gpu]
 
@@ -15,7 +17,7 @@ import { ROOT, parseArgs, findBin, tempDir, startServer, until, skipped, chromiu
 const args = parseArgs(process.argv.slice(2), { bin: "value", assets: "value", gpu: "flag", out: "value" });
 const ASSETS = path.resolve(args.assets ?? path.join(ROOT, "crates", "ffh-play", "assets"));
 const OUT = path.resolve(args.out ?? "cataclysm-rules-shots");
-const VIEW = { width: 900, height: 1100 };
+const VIEW = { width: 900, height: 1700 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function loadPlaywright() {
@@ -87,9 +89,15 @@ async function main() {
     // The Tappers' College starts with the Mana for a ritual.
     await until(() => page.evaluate(() => !!document.querySelector('.cat-fac-card[data-faction="amurites"]')), "the New Cataclysm screen", 30000);
     await page.click('.cat-fac-card[data-faction="amurites"]');
+    // The new-game screen: the starting factions (King Cinder's Host only enters mid-game).
+    await shot(page, "new-game");
     await press(page, /Start/);
     await until(() => page.evaluate(() => window.ffh.S.view?.mode === "cataclysm" && window.ffh.S.status?.phase === "human"), "the Cataclysm game", 120000);
     await sleep(2500);
+
+    // The Worldseal: how King Cinder's Host enters and how the Furnace wins.
+    await open(page, "finance");
+    await shot(page, "worldseal", 1600);
 
     // Research: the tier costs and the Strain of a tech nobody has researched.
     await open(page, "techs");

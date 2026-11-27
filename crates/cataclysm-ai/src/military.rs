@@ -61,7 +61,20 @@ const LAST_TURNS: i32 = 6;
 enum Role {
     Guard(CityId),
     Assault(PlotIdx),
+    /// King Cinder's Host: a worn squad goes back to Great Furnace to heal while the Breach city
+    /// is warded (it cannot be attacked there), and stays until it is whole again.
+    Mend(CityId),
     Free,
+}
+
+/// King Cinder's Host sends a squad home to heal below this mean health (percent) of its units...
+const MEND_BELOW_PCT: i32 = 60;
+/// ...and keeps it there until it is back to this.
+const MEND_UNTIL_PCT: i32 = 95;
+
+/// The mean health (percent) of a squad's units.
+fn squad_health(s: &cataclysm_core::Squad) -> i32 {
+    s.members.iter().map(|m| m.hp_pct()).sum::<i32>() / (s.members.len().max(1) as i32)
 }
 
 /// A squad of a civilization at war with `p` (the Wild Clans excluded: their squads never move).
@@ -440,10 +453,18 @@ pub(crate) fn manage_squads(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) 
     let mut paths = Paths::default();
     let roles = assign_roles(g, p, &mut paths);
 
-    // 1. Guards go to their cities and stay there.
+    // 1. Guards go to their cities and stay there; worn squads of the Host go home to heal.
     for (&sid, &role) in &roles {
-        if let Role::Guard(cid) = role {
-            run_guard(g, p, sid, cid, &mut paths, events);
+        match role {
+            Role::Guard(cid) => run_guard(g, p, sid, cid, &mut paths, events),
+            Role::Mend(cid) => {
+                let home = g.cities[&cid].plot;
+                march(g, p, sid, home, true, &mut paths, events);
+                if g.squads.get(&sid).is_some_and(|s| s.plot == home) {
+                    fortify(g, p, sid, events);
+                }
+            }
+            _ => {}
         }
     }
 
@@ -453,7 +474,7 @@ pub(crate) fn manage_squads(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) 
     let free_power: i32 = roles.iter().filter(|(_, r)| **r == Role::Free).filter_map(|(s, _)| g.squads.get(s)).map(|s| s.power_rating()).sum();
     let mut goals: BTreeMap<SquadId, PlotIdx> = BTreeMap::new();
     for (&sid, &role) in &roles {
-        if matches!(role, Role::Guard(_)) {
+        if matches!(role, Role::Guard(_) | Role::Mend(_)) {
             continue;
         }
         let Some(s) = g.squads.get(&sid) else { continue };
@@ -502,7 +523,7 @@ pub(crate) fn manage_squads(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) 
 /// The power of our squads that are not home guards this turn (the roles `manage_squads` gives).
 pub(crate) fn free_power(g: &Game, p: PlayerId) -> i32 {
     let roles = assign_roles(g, p, &mut Paths::default());
-    roles.iter().filter(|(_, r)| !matches!(r, Role::Guard(_))).filter_map(|(s, _)| g.squads.get(s)).map(|s| s.power_rating()).sum()
+    roles.iter().filter(|(_, r)| !matches!(r, Role::Guard(_) | Role::Mend(_))).filter_map(|(s, _)| g.squads.get(s)).map(|s| s.power_rating()).sum()
 }
 
 /// The Lifeboat our squads are sent at this turn, if any (the same pick `manage_squads` makes).
@@ -530,6 +551,16 @@ pub(crate) fn held_lifeboat(g: &Game, p: PlayerId) -> Option<PlotIdx> {
 
 fn assign_roles(g: &Game, p: PlayerId, paths: &mut Paths) -> BTreeMap<SquadId, Role> {
     let mut roles: BTreeMap<SquadId, Role> = g.player_squads(p).into_iter().map(|s| (s, Role::Free)).collect();
+    if let Some(breach) = g.apocalypse.breach_city.filter(|&c| g.breach_warded(c) && g.cities[&c].owner == p) {
+        let plot = g.cities[&breach].plot;
+        for (sid, role) in roles.iter_mut() {
+            let s = &g.squads[sid];
+            let worn = squad_health(s);
+            if worn < MEND_BELOW_PCT || (s.plot == plot && worn < MEND_UNTIL_PCT) {
+                *role = Role::Mend(breach);
+            }
+        }
+    }
     let needs = guard_needs(g, p);
     let mut pick_guard = |roles: &mut BTreeMap<SquadId, Role>, cid: CityId| -> bool {
         let plot = g.cities[&cid].plot;

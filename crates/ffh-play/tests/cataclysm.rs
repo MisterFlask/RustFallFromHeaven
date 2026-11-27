@@ -18,11 +18,11 @@ fn host_call(host: &mut Host, req: &str) -> Json {
 fn cataclysm_host_session_lifecycle_and_commands() {
     let mut host = Host::new(HostOptions::default(), Bot::new(1).answerer());
 
-    // 1. Setup query returns all 9 factions with embedded FFH2 art indices.
+    // 1. Setup query returns the 8 starting factions (King Cinder's Host only enters mid-game) with embedded FFH2 art indices.
     let setup = host_call(&mut host, r#"{"k":"q","q":"cataclysm_setup"}"#);
     assert_eq!(setup.get("mode").and_then(Json::as_str), Some("cataclysm"));
     let factions = setup.get("factions").and_then(Json::as_arr).expect("factions arr");
-    assert_eq!(factions.len(), 9);
+    assert_eq!(factions.len(), cataclysm_core::FactionId::STARTING.len());
     for f in factions {
         assert!(f.get("civ").and_then(Json::as_i64).is_some(), "civ art missing: {f}");
         assert!(f.get("leader").and_then(Json::as_i64).is_some(), "leader art missing: {f}");
@@ -191,7 +191,10 @@ fn cataclysm_rituals_say_why_when_mana_is_short() {
 fn cataclysm_setup_factions_carry_victory_lines() {
     let d = ffh_data::global();
     let setup = ffh_play::cataclysm::setup_json(d);
-    for f in arr(&setup, "factions") {
+    let factions = arr(&setup, "factions");
+    assert_eq!(factions.len(), cataclysm_core::FactionId::STARTING.len());
+    assert!(factions.iter().all(|f| f.get("key").and_then(Json::as_str) != Some("infernal")), "King Cinder's Host only enters mid-game");
+    for f in factions {
         assert!(!arr(f, "victory_lines").is_empty(), "{f}");
         assert!(f.get("preferred_doctrine").is_none());
     }

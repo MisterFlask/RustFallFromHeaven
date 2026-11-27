@@ -145,7 +145,8 @@ impl FactionId {
         FactionId::Infernals,
     ];
 
-    /// Factions the AI may start as (King Cinder's Host can be chosen by the human, or enters at Strain 50).
+    /// The factions a game starts with, the human's included. King Cinder's Host is not one: it
+    /// enters every game mid-way, at Strain 50, and no player can choose it.
     pub const STARTING: [FactionId; 8] = [
         FactionId::Bannor,
         FactionId::Elohim,
@@ -353,7 +354,7 @@ pub const FACTIONS: [FactionInfo; 9] = [
         starting_mana: 40,
         city_names: &["Great Furnace", "Slagspire", "Foundry Deep", "Brimshaft", "Ashpit", "Clinker"],
         lore_blurb: "The Great Empire's engineered furnace-servitors whose rebellion forced the Worldseal shut. They mean to raze every Lifeboat so they are never sealed below again.",
-        rule_summary: "Furnace victory only (every Lifeboat razed after Worldstrain 100). When no player has chosen it, it enters the game at Worldstrain 50. Each kill in a battle heals the squad's units 15% (up to 3 kills); +15% attack and defense when fighting on scorched ground.",
+        rule_summary: "Enters every game at Worldstrain 50; no player can choose it. Great Furnace cannot be attacked or besieged until the Blowout; a squad joins at the capital every 8 turns while under the squad cap, and more at the Blowout. Furnace victory only: every Lifeboat razed after Worldstrain 100, or Caldera Keep razed when the countdown ends. Each kill in a battle heals the squad's units 15% (up to 3 kills); +15% attack and defense when fighting on scorched ground.",
     },
 ];
 
@@ -1131,7 +1132,7 @@ pub const ARMAGEDDON_CRISES: [CrisisInfo; 10] = [
     CrisisInfo { threshold: 20, key: "blight", name: "Crust Cracks", summary: "10 plots of unclaimed or Evil-held land become scorched ground." },
     CrisisInfo { threshold: 30, key: "dissent", name: "Rumors from Below", summary: "-1 lasting Loyalty in every House." },
     CrisisInfo { threshold: 40, key: "burning_earth", name: "Pressurized Vents", summary: "14 plots of unclaimed or Evil-held land become scorched ground; +15 Mana to every civilization." },
-    CrisisInfo { threshold: 50, key: "hyborem", name: "The Deep Breach", summary: "If King Cinder's Host is not in the game, it enters with a city on unclaimed land, at war with every Good civilization." },
+    CrisisInfo { threshold: 50, key: "hyborem", name: "The Deep Breach", summary: "King Cinder's Host enters with Great Furnace on the unclaimed land farthest from every city, at war with every Good civilization. Great Furnace cannot be attacked until the Blowout." },
     CrisisInfo { threshold: 60, key: "plague", name: "Ash Plague", summary: "Every city above Size 1 loses 1 Size unless it has a Temple or the Great Cistern." },
     CrisisInfo { threshold: 70, key: "horsemen", name: "Runaway Engines", summary: "2 Wild Clans squads (Knight and Slagbreaker) appear on unclaimed land." },
     CrisisInfo { threshold: 80, key: "sky_bleeds", name: "Red Sky", summary: "20 plots of unclaimed or Evil-held land become scorched ground; from Worldstrain 80 all battles deal +15% damage." },

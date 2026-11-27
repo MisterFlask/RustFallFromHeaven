@@ -56,9 +56,11 @@ pub const CATACLYSM_COMMAND_NAMES: &[&str] = &[
 
 /// Setup metadata served to the Cataclysm New Game screen.
 pub fn setup_json(d: &GameData) -> Json {
-    let factions: Vec<Json> = FACTIONS
+    // The factions a player can start as: King Cinder's Host only enters mid-game.
+    let factions: Vec<Json> = FactionId::STARTING
         .iter()
-        .map(|f| {
+        .map(|id| {
+            let f = id.info();
             crate::jobj! {
                 "key" => f.key,
                 "name" => f.name,
@@ -110,7 +112,7 @@ impl CataclysmSession {
             _ => (26, 18),
         };
         let fac_key = setup_json.get("faction").and_then(Json::as_str).unwrap_or("bannor");
-        let human_faction = FACTIONS.iter().find(|f| f.key == fac_key).map_or(FactionId::Bannor, |f| f.id);
+        let human_faction = FactionId::STARTING.into_iter().find(|f| f.info().key == fac_key).unwrap_or(FactionId::STARTING[0]);
 
         let g = Game::new(GameSetup { seed, width, height, human_faction, ai_count });
         let mut sess = Self {
@@ -1628,7 +1630,7 @@ impl CataclysmSession {
                         Event::HyboremArrived { city, .. } => {
                             let cname = self.g.cities.get(city).map_or("Great Furnace", |c| c.name.as_str()).to_string();
                             self.last_report_lines.push(format!(
-                                "King Cinder's Host entered the game at {cname}, at war with every Good civilization and the Wild Clans."
+                                "King Cinder's Host entered the game at {cname}, at war with every Good civilization and the Wild Clans. {cname} cannot be attacked until the Blowout."
                             ));
                         }
                         Event::GreatPersonBorn { player, name, .. } if *player == self.human => {
@@ -1818,7 +1820,10 @@ pub fn victory_lines(f: FactionId) -> Vec<String> {
         ));
     }
     if info.can_demonic_win {
-        out.push("Furnace victory: after Worldstrain 100, every Lifeboat is razed while you are alive. Every living civilization that can win this way wins.".into());
+        out.push(
+            "Furnace victory: after Worldstrain 100, every Lifeboat is razed while you are alive; or, when the countdown ends while you are alive, Caldera Keep has been razed or no civilization that can win by Lifeboat survival holds a Lifeboat. Every living civilization that can win this way wins."
+                .into(),
+        );
     }
     out.push("Conquest: before Worldstrain 100, be the last civilization alive. A civilization with no city and no squad is eliminated.".into());
     if f == FactionId::Elohim {
@@ -2078,13 +2083,31 @@ fn apocalypse_rules() -> Vec<String> {
             cataclysm_core::great_people::BURST_PROPHET_STRAIN
         ),
         "Each multiple of 10 triggers its crisis once.".into(),
-        "At Worldstrain 50 King Cinder's Host enters the game, if it is not already in it.".into(),
+        host_entry_rule(),
+        "Great Furnace, the city King Cinder's Host enters with, cannot be attacked or besieged until the Blowout.".into(),
+        host_breach_rule(),
         format!(
             "At Worldstrain 100 (the Blowout) Caldera Keep rises, the Lifeboats are fixed, a {}-turn countdown starts, and Worldstrain no longer changes.",
             CARCOSA_TIMER_TURNS
         ),
         format!("Caldera Keep cannot be razed during its first {} turns.", CARCOSA_PROTECTED_TURNS),
     ]
+}
+
+fn host_entry_rule() -> String {
+    use cataclysm_core::game::{BREACH_SCORCH_RADIUS, HOST_ENTRY_POWER_PCT, HOST_ENTRY_SQUADS_MAX};
+    format!(
+        "At Worldstrain 50 King Cinder's Host enters on the unclaimed land farthest from every city, with the city Great Furnace and squads until it holds {}% of the squad power of all the civilizations together (at least 2 squads, at most {}), at war with every Good civilization and the Wild Clans. The land within {} plots of Great Furnace becomes scorched ground. No player can choose this civilization.",
+        HOST_ENTRY_POWER_PCT, HOST_ENTRY_SQUADS_MAX, BREACH_SCORCH_RADIUS
+    )
+}
+
+fn host_breach_rule() -> String {
+    use cataclysm_core::game::{BREACH_REINFORCE_EVERY, HOST_BLOWOUT_POWER_PCT, HOST_BLOWOUT_SQUADS_MAX};
+    format!(
+        "Every {} turns a squad joins King Cinder's Host at its capital while it is under its squad cap. At the Blowout it gets squads at its capital until it holds {}% of the squad power of all the other civilizations together (at most {}).",
+        BREACH_REINFORCE_EVERY, HOST_BLOWOUT_POWER_PCT, HOST_BLOWOUT_SQUADS_MAX
+    )
 }
 
 fn lifeboat_rules() -> Vec<String> {
@@ -2102,7 +2125,8 @@ fn lifeboat_rules() -> Vec<String> {
         "The Lifeboats are fixed at Worldstrain 100; a Wonder completed later becomes a Lifeboat when it is completed.".into(),
         "Caldera Keep starts held by the Wild Clans with a guard squad.".into(),
         "Razing a Lifeboat city destroys that Lifeboat. If every Lifeboat is razed, the Furnace civilizations alive win; if none is alive, no one wins.".into(),
-        "If the countdown ends and no Lifeboat is held by a civilization that can win by it, no one wins. The Wild Clans and King Cinder's Host win nothing by holding one.".into(),
+        "If the countdown ends with Caldera Keep razed, the Furnace civilizations alive win, whoever holds the other Lifeboats.".into(),
+        "If the countdown ends and no Lifeboat is held by a civilization that can win by it, the Furnace civilizations alive win; if none is alive, no one wins. The Wild Clans and King Cinder's Host win nothing by holding one.".into(),
     ]
 }
 
@@ -2565,6 +2589,9 @@ impl CataclysmSession {
                 faction_name(FactionId::Infernals),
                 cataclysm_core::combat::HELL_GROUND_PCT
             ));
+        }
+        if pl.city.is_some_and(|c| g.breach_warded(c)) {
+            notes.push("Cannot be attacked or besieged until the Blowout.".to_string());
         }
         if pl.improvement == cataclysm_core::Improvement::Fort {
             notes.push("Fort: while a squad stands here, the enemy's supply lines cannot pass the plots next to it.".into());

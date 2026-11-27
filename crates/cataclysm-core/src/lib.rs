@@ -280,6 +280,122 @@ mod tests {
         assert_eq!(g.cities[&cid].building, Some(BuildOrder::Caravan), "the order waits");
     }
 
+    /// A game where Strain has reached 50: King Cinder's Host has entered. Returns the Host's id.
+    fn host_entered() -> (Game, PlayerId) {
+        let mut g = Game::new(GameSetup::default());
+        let mut events = Vec::new();
+        g.shift_ac(50, "test", &mut events);
+        let host = g.players.iter().find(|p| p.faction == FactionId::Infernals).expect("the Host entered at Strain 50").id;
+        (g, host)
+    }
+
+    #[test]
+    fn no_game_starts_as_king_cinders_host() {
+        let g = Game::new(GameSetup { human_faction: FactionId::Infernals, ..GameSetup::default() });
+        assert!(g.players.iter().all(|p| p.faction != FactionId::Infernals));
+        assert_eq!(g.players[0].faction, FactionId::STARTING[0]);
+        assert!(!FactionId::STARTING.contains(&FactionId::Infernals));
+    }
+
+    #[test]
+    fn the_host_enters_with_a_third_of_the_surface_power() {
+        let mut g = Game::new(GameSetup::default());
+        let surface = g.surface_power(None);
+        let mut events = Vec::new();
+        g.shift_ac(50, "test", &mut events);
+        let host = g.players.iter().find(|p| p.faction == FactionId::Infernals).unwrap().id;
+        let squads = g.player_squads(host);
+        let power: i32 = squads.iter().map(|s| g.squads[s].power_rating()).sum();
+        assert!(squads.len() >= 2 && squads.len() <= game::HOST_ENTRY_SQUADS_MAX);
+        assert!(power * 100 >= surface * game::HOST_ENTRY_POWER_PCT || squads.len() == game::HOST_ENTRY_SQUADS_MAX);
+        let furnace = g.apocalypse.breach_city.unwrap();
+        assert_eq!(g.cities[&furnace].owner, host);
+        assert!(g.world.plot(g.cities[&furnace].plot).terrain.is_hell(), "the Breach scorches Great Furnace's land");
+        g.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn great_furnace_cannot_be_attacked_or_besieged_until_the_blowout() {
+        let (mut g, host) = host_entered();
+        let furnace = g.apocalypse.breach_city.unwrap();
+        let fplot = g.cities[&furnace].plot;
+        let enemy = g.players.iter().find(|p| p.alive && !p.is_neutral && p.id != host).unwrap().id;
+        g.set_war(enemy, host, true);
+        let next = g.world.neighbors(fplot).into_iter().find(|&nb| g.world.plot(nb).kind.is_passable_land() && g.world.plot(nb).city.is_none()).unwrap();
+        let sid = g.spawn_squad_internal(enemy, next, &[UnitClassId::Guard]);
+        g.update_city_sieges();
+        assert!(!g.cities[&furnace].besieged);
+        assert!(g.preview_attack(enemy, sid, fplot).is_err());
+        let err = g.apply(enemy, Command::AttackPlot { squad: sid, to: fplot }).unwrap_err();
+        assert!(err.detail.contains("until the Blowout"), "{}", err.detail);
+        assert_eq!(g.cities[&furnace].owner, host);
+        // After the Blowout the ward is gone.
+        g.apocalypse.carcosa_risen = true;
+        assert!(g.check_breach_ward(fplot).is_ok());
+        g.update_city_sieges();
+        assert!(g.cities[&furnace].besieged);
+    }
+
+    /// A game at the Blowout with the Host alive and the countdown run out: `apply` settles it.
+    fn countdown_over() -> (Game, PlayerId) {
+        let (mut g, host) = host_entered();
+        let mut events = Vec::new();
+        g.shift_ac(50, "test", &mut events);
+        assert!(g.apocalypse.carcosa_risen);
+        g.apocalypse.countdown = Some(0);
+        (g, host)
+    }
+
+    fn settle(g: &mut Game) {
+        let p = g.active_player;
+        let _ = g.apply(p, Command::EndTurn);
+    }
+
+    #[test]
+    fn a_razed_caldera_keep_is_a_furnace_victory_at_the_countdowns_end() {
+        let (mut g, host) = countdown_over();
+        // A surface civilization holds a Lifeboat; Caldera Keep is razed.
+        let holder = g.players.iter().find(|p| p.alive && !p.is_neutral && p.faction.info().can_mortal_win && !p.faction.info().can_demonic_win).unwrap().id;
+        let city = g.player_cities(holder)[0];
+        g.apocalypse.lifeboats.push(Lifeboat { kind: LifeboatKind::MostLegendary, city_id: city, razed: false });
+        for l in g.apocalypse.lifeboats.iter_mut().filter(|l| l.kind == LifeboatKind::Carcosa) {
+            l.razed = true;
+        }
+        settle(&mut g);
+        let o = g.apocalypse.outcome.as_ref().expect("the game is over");
+        assert_eq!(o.kind, VictoryKind::DemonicRuin);
+        assert!(o.winners.contains(&host) && !o.winners.contains(&holder));
+    }
+
+    #[test]
+    fn the_keep_standing_leaves_the_lifeboat_holders_the_win() {
+        let (mut g, host) = countdown_over();
+        let holder = g.players.iter().find(|p| p.alive && !p.is_neutral && p.faction.info().can_mortal_win && !p.faction.info().can_demonic_win).unwrap().id;
+        let keep = g.apocalypse.carcosa_city.unwrap();
+        g.cities.get_mut(&keep).unwrap().owner = holder;
+        settle(&mut g);
+        let o = g.apocalypse.outcome.as_ref().expect("the game is over");
+        assert_eq!(o.kind, VictoryKind::MortalLifeboat);
+        assert!(o.winners.contains(&holder) && !o.winners.contains(&host));
+    }
+
+    #[test]
+    fn no_surface_holder_at_the_countdowns_end_is_a_furnace_victory() {
+        let (mut g, host) = countdown_over();
+        // Caldera Keep stands, held by the Wild Clans; no other Lifeboat.
+        g.apocalypse.lifeboats.retain(|l| l.kind == LifeboatKind::Carcosa);
+        settle(&mut g);
+        let o = g.apocalypse.outcome.as_ref().expect("the game is over");
+        assert_eq!(o.kind, VictoryKind::DemonicRuin);
+        assert!(o.winners.contains(&host));
+    }
+
+    #[test]
+    fn the_hosts_rule_summary_states_the_breach_interval() {
+        let text = FactionId::Infernals.info().rule_summary;
+        assert!(text.contains(&format!("every {} turns", game::BREACH_REINFORCE_EVERY)), "{text}");
+    }
+
     #[test]
     fn no_war_starts_during_a_truce() {
         let mut g = two_at_war();

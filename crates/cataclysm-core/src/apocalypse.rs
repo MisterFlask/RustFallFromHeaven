@@ -82,6 +82,9 @@ pub struct ApocalypseState {
     /// Remaining turns once Worldseal Strain reaches 100 (`None` before 100).
     pub countdown: Option<i32>,
     pub carcosa_protected_turns: i32,
+    /// Great Furnace, the city King Cinder's Host enters with: it cannot be attacked until the
+    /// Blowout (`Game::check_breach_ward`).
+    pub breach_city: Option<CityId>,
     pub lifeboats: Vec<Lifeboat>,
     /// Transparent reasons the counter moved recently.
     pub recent_changes: Vec<String>,
@@ -100,6 +103,7 @@ impl Default for ApocalypseState {
             carcosa_city: None,
             countdown: None,
             carcosa_protected_turns: 0,
+            breach_city: None,
             lifeboats: Vec::new(),
             recent_changes: Vec::new(),
             outcome: None,
@@ -147,6 +151,11 @@ impl ApocalypseState {
             2 => "Act II · Rising Worldstrain",
             _ => "Act III · The Blowout",
         }
+    }
+
+    /// Whether Caldera Keep has risen and been razed.
+    pub fn keep_razed(&self) -> bool {
+        self.lifeboats.iter().any(|l| l.kind == LifeboatKind::Carcosa && l.razed)
     }
 
     pub fn standing_lifeboats(&self) -> usize {

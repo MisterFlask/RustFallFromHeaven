@@ -39,7 +39,7 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
 - **Vault & Crucible** (*Master-Assayer Bram*): Mortal foundry-guilds requiring full bullion vaults (`>= 200` Gold/city) to fire deep furnaces (`+35%` Industry & `+4` Armor; `+25%` Siege Bombard damage).
 - **Canopy** (*Mistress Sylva*): Dissidents who abandoned the geothermal grid for ash-filtering forest highways (cost-1 forest movement, forest supply lines, no forest ranged penalties).
 - **Wreckers** (*Broker Vane*): Collapse-profiteers trading sabotage with the deep servitors (may win Surface *or* Furnace victory; may raze own cities for `+6 Worldstrain`; Deep Shaft spawns Stokers).
-- **King Cinder's Host** (*King Cinder*): The rebel furnace-servitors breaking out at Worldstrain 50 (Furnace victory only—raze every Lifeboat after Worldstrain 100; heal `+15%` on kills; thrive on scorched ground).
+- **King Cinder's Host** (*King Cinder*): The rebel furnace-servitors breaking out at Worldstrain 50; no player can choose them (Great Furnace warded until the Blowout; reinforcements through the Breach; Furnace victory only—raze every Lifeboat, or have Caldera Keep razed when the countdown ends; heal `+15%` on kills; thrive on scorched ground).
 
 ## Core Rules Summary
 
@@ -166,6 +166,42 @@ These rules changed, each on purpose; the numbers were then set with `cataclysm-
 - **The turn skips a player eliminated at the wrap** (it went to a player who could not end it),
   and Furnace Levy is refused before it spends its Mana when there is no city.
 
+## Rules changes: King Cinder's Host (2026-11-27)
+
+The Host never won. Entering at Worldstrain 50 (turn ~48) with one city and half an average
+civilization's army, at war with every Good civilization, it was eliminated in 229 of 240 games,
+a median 11 turns after it entered: its squads were picked off in the field (it lost 7 units for
+every 1 it killed when attacked), then its city fell. A Host that started the game won 6%.
+Target for this pass: the Host wins 10-20% of the games it enters, at the default 6 civilizations.
+
+- **It only enters mid-game.** No player can choose King Cinder's Host on the new-game screen
+  (the owner's decision, 2026-11-27); every game has it enter at Worldstrain 50.
+- **It enters in force, away from the surface.** On the unclaimed land farthest from every city,
+  with squads until it holds 33% of the squad power of all the civilizations together (at least 2,
+  at most 8). The land within 2 plots of Great Furnace becomes scorched ground (it fought on
+  scorched ground anywhere at random before).
+- **Great Furnace cannot be attacked or besieged until the Blowout.** A turn-limited ward (15,
+  30 turns) only moved the elimination to a few turns after it ended, whatever the army; an
+  unwarded besieged city also starved its garrison (a besieged city supplies no squad).
+- **The Breach.** A squad joins the Host at its capital every 8 turns while it is under its squad
+  cap; at the Blowout it gets squads until it holds 33% of the others' squad power together (at
+  most 10).
+- **Caldera Keep is the Furnace's objective.** When the countdown ends with Caldera Keep razed, the
+  Furnace civilizations alive (the Host, the Wreckers) win, whoever holds the other Lifeboats; and
+  when it ends with no Lifeboat held by a civilization that can win by Lifeboat survival, they win
+  too (no one won). Every Lifeboat razed is still a Furnace victory at once. Killing the Host before
+  the countdown ends is the surface's answer to a razed Keep.
+- **Worldstrain drifts +1 every 4 turns** (was 3): a Host that lives keeps cracking the crust, and the
+  Blowout had moved 10 turns earlier (median turn 90).
+- **AI**: the Host's worn squads (below 60% health) go home to Great Furnace while it is warded and
+  stay until healed (95%).
+
+120-480 AI games: the Host alive at the Blowout in 459 of 459 games with one, alive at the end in
+425 of 477; it wins 12% of the games it enters at 6 civilizations (59 of 477, 27 of them shared
+with the Wreckers), 26% at 2 (fewer Lifeboats to deny), 22% at 4, 9% at 8; 17% when one
+civilization pushes Worldstrain all game, 2% when nobody raises Worldstrain by ritual (no Blowout in 71% of
+those games).
+
 ## The AI (`crates/cataclysm-ai`)
 
 Stateless: every turn it works out its roles again from the game, and it plays only through
@@ -175,7 +211,8 @@ trade clearly in its favour); after the Blowout every free squad at one Lifeboat
 before a city is stripped, roads in peace. `diplomacy.rs`: war only with a clear edge on a city in
 reach (the Postriders, the Seventh Garrison, the Wreckers and King Cinder's Host at a smaller
 edge), never a second front; peace when weaker, when a war is 15 turns old and going nowhere, or
-when it holds a Lifeboat; King Cinder's Host never signs. `rituals.rs`: one stance on Strain (push
+when it holds a Lifeboat; King Cinder's Host never signs, and its worn squads heal in Great
+Furnace while it is warded. `rituals.rs`: one stance on Strain (push
 when it would hold a Lifeboat if the Blowout came now, or to deny a turn-160 win; pull for the
 Keepers and for a score leader with no Keepers alive), then the useful rituals with the Mana left.
 `Policy::Quiet` and `Policy::Pusher` are measuring instruments, not ways the game's AI plays.
@@ -183,30 +220,32 @@ Keepers and for a score leader with no Keepers alive), then the useful rituals w
 ## Measuring: `cataclysm-tally`
 
 `cargo run --release -p cataclysm-ai --bin cataclysm-tally -- [--games N] [--opponents K]
-[--policy standard|quiet|pusher] [--rows] [--calibrate]` plays AI-only games (120 take a few
+[--policy standard|quiet|pusher] [--seat0 FACTION] [--rows] [--calibrate]` plays AI-only games (120 take a few
 seconds) and reports the turn of the Blowout, what raised Strain, the Lore income by turn, when
-research ran out, how wars ended, which Lifeboats won, and the attack forecast against what the
-attacks did. Its last line (`TALLY ...`) is what a commit that changes a number quotes. `quiet`:
+research ran out, how wars ended, which Lifeboats won, how King Cinder's Host fared, and the
+attack forecast against what the attacks did. Its last line (`TALLY ...`) is what a commit that changes a number quotes. `quiet`:
 nobody raises Strain by ritual. `pusher`: seat 0 raises it all game. A number of the rules is
 checked under all three, and at 2 and 8 civilizations, so that it is not tuned to one AI script.
 
 ### Pacing targets
 
-Written before the first number was tuned; "before" is the ruleset as first merged (74378bfc, with the turn-order fix), "now" the
-end of the pacing pass. 6 civilizations unless said.
+Written before the first number was tuned; "before" is the ruleset as first merged (74378bfc, with
+the turn-order fix), "now" after the King Cinder's Host pass (2026-11-27). 6 civilizations unless
+said.
 
 | | Target | Before | Now |
 |---|---|---|---|
-| Blowout, standard | median turn 95-120, 10th percentile 70 or later | 29 (22) | 100 (78); none in 7% of games |
-| Blowout, quiet | none by turn 160 in 20-70% of games | none in 60% | none in 63% |
-| Blowout, pusher | median 10+ turns before standard, 10th percentile 50 or later | 28 | 85 (65) |
-| Blowout with 2, 4 and 8 civilizations | median within 20 turns of the 6-civilization one | 45, -, 24 | 93, 91, 96 |
-| Primary Doctrine capstone | median turn 75-100 | 37 | 100 |
+| Blowout, standard | median turn 95-120, 10th percentile 70 or later | 29 (22) | 96 (77); none in 4% of games |
+| Blowout, quiet | none by turn 160 in 20-70% of games | none in 60% | none in 71% |
+| Blowout, pusher | median 10+ turns before standard, 10th percentile 50 or later | 28 | 82 (66) |
+| Blowout with 2, 4 and 8 civilizations | median within 20 turns of the 6-civilization one | 45, -, 24 | 97, 96, 93 |
+| Primary Doctrine capstone | median turn 75-100 | 37 | 101 |
 | Keepers' turn-160 win, standard | 3-25% of their games | 0% | 6% |
-| A Lifeboat captured after the Blowout | half the games or more | 70% | 53% |
-| Caldera Keep among the winning Lifeboats | 10% or more | 1% | 19% |
-| Peace made | 1 per game or more | 0 | 6.4 |
-| Seat 0 eliminated before turn 60 | 15% of games or fewer | 30% | 8% |
+| A Lifeboat captured after the Blowout | half the games or more | 70% | 73% |
+| Caldera Keep among the winning Lifeboats | 10% or more | 1% | 25% |
+| Peace made | 1 per game or more | 0 | 7.4 |
+| Seat 0 eliminated before turn 60 | 15% of games or fewer | 30% | 11% |
+| King Cinder's Host wins (written 2026-11-27) | 10-20% of the games it enters | 0% | 12% |
 
 Two targets were restated after measuring, and why:
 - "30% or fewer civilizations out of research before turn 100" collides with the capstone target:
@@ -215,17 +254,18 @@ Two targets were restated after measuring, and why:
 - "10 Great People per civilization or fewer": the count follows the length of the game, not the
   Lore conversion (15 a game at 5 Lore per Renown, 14 at 10, 14 at 15). Now 14.9 over a full game.
 
-Not met, and left: with 2 civilizations no Blowout comes in half the games (often neither of the
-two pushes); civilizations eliminated per game are 3.1 of 6 (2.1 without King Cinder's Host), since
-a side that is clearly winning does not sign a peace.
+Not met, and left: with 2 civilizations no Blowout comes in a third of the games (often neither of
+the two pushes); with nobody raising Strain by ritual no Blowout comes in 71% (one over the bound).
+Civilizations eliminated per game are 2.2 of 7 (2.1 without King Cinder's Host).
 
 ### What the tally shows that is not fixed (balance, for the owner)
 
-- **Most wins are shared.** A Lifeboat win belongs to every holder: 1 winner in 27 of 120 games,
-  2 in 57, 3 in 31, 4 in 5 (holders now guard their Lifeboat and make peace with each other).
-- **Faction shares in AI hands**: Three Hearths 65% and the Keepers 70% of their games among the
-  winners (Culture's Last Metropolis, the Great Cistern), Vault & Crucible 14%, Postriders 19%.
-  It says as much about the AI script as about the factions.
+- **Most wins are shared.** A Lifeboat win belongs to every holder, a Furnace win to the Host and
+  the Wreckers alive: 1 winner in 119 of 480 games, 2 in 214, 3 in 129, 4 in 18.
+- **Faction shares in AI hands**: the Keepers 50% of their games among the winners, Three Hearths
+  47%, Tappers' College 43%, the Wreckers 40% (they share the Host's Furnace wins), King Cinder's
+  Host 12%, Canopy 17%, Vault & Crucible 19%, Postriders 20%. It says as much about the AI script
+  as about the factions.
 - **Great Cistern and Siphon Spire** are the only Lifeboats a civilization can build, and only the
   Faith and Arcane Doctrines open them.
 

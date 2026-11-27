@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Browser smoke of the Cataclysm mode (docs/CATACLYSM.md, "Screens"): a new Cataclysm game started
 // from the title screen and driven with Playwright's Chromium on the HD-2D map:
-// - the title's New Cataclysm entry, the nine factions' cards and their details, Start;
+// - the title's New Cataclysm entry, the eight starting factions' cards (King Cinder's Host only
+//   enters mid-game) and their details, Start;
 // - the top bar's chips and the turn report (no "undefined" anywhere);
 // - every screen the menu and the F keys open (cities, research, rituals, creeds, the Court, the
 //   Houses, diplomacy, the Worldseal): each opens a screen of its own name;
@@ -117,7 +118,8 @@ async function main() {
     await page.click("#title-cataclysm");
     await until(() => page.evaluate(() => document.querySelectorAll('.modal[data-tag="cataclysm-new"] .cat-fac-card').length > 0), "the New Cataclysm screen", 30000);
     const factions = await page.evaluate(() => [...document.querySelectorAll(".cat-fac-card")].map((b) => b.dataset.faction));
-    check(factions.length === 9, `nine factions, got ${factions.length}`);
+    check(factions.length === 8, `eight starting factions, got ${factions.length}`);
+    check(!factions.includes("infernal"), "King Cinder's Host is offered at the start");
     for (const f of factions) {
       await page.click(`.cat-fac-card[data-faction="${f}"]`);
       const text = await page.evaluate(() => document.querySelector(".cat-ng-detail").innerText);

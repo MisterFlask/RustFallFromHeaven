@@ -66,7 +66,7 @@ pub const SENTINEL_REPAIR_PER_TURN: i32 = 15;
 /// Gold upkeep per squad member per turn.
 pub const UPKEEP_PER_MEMBER: i32 = 2;
 /// Strain added every this many world turns before the Blowout.
-pub const STRAIN_DRIFT_EVERY: i32 = 3;
+pub const STRAIN_DRIFT_EVERY: i32 = 4;
 /// Turns a fallen hero recovers before returning at the capital.
 pub const HERO_RECOVERY_TURNS: i32 = 8;
 /// Gold taken by ambushing an enemy Caravan.
@@ -89,6 +89,27 @@ pub const PRIMARY_DOCTRINE_COST_PCT: i32 = 75;
 pub const MIN_TECH_COST: i32 = 15;
 /// A secondary doctrine opens its techs up to this tier.
 pub const SECONDARY_DOCTRINE_MAX_TIER: u8 = 2;
+/// King Cinder's Host enters with squads worth at least this share (percent) of the squad power of
+/// all the living civilizations together, its two first squads at least.
+pub const HOST_ENTRY_POWER_PCT: i32 = 33;
+/// At most this many squads at entry.
+pub const HOST_ENTRY_SQUADS_MAX: usize = 8;
+/// At the Blowout, King Cinder's Host gets squads at its capital until it has at least this share
+/// (percent) of the squad power of all the other living civilizations together...
+pub const HOST_BLOWOUT_POWER_PCT: i32 = 33;
+/// ...at most this many.
+pub const HOST_BLOWOUT_SQUADS_MAX: usize = 10;
+/// Every this many turns a squad climbs out of the Breach at the Host's capital, while it is under
+/// its squad cap.
+pub const BREACH_REINFORCE_EVERY: i32 = 8;
+/// Land within this many plots of Great Furnace becomes scorched ground when the Host enters.
+pub const BREACH_SCORCH_RADIUS: i32 = 2;
+/// The squads King Cinder's Host enters with and that climb out of the Breach, in turn.
+pub const BREACH_SQUADS: [&[UnitClassId]; 2] = [
+    &[UnitClassId::Balor, UnitClassId::PyreZombie, UnitClassId::PyreZombie],
+    &[UnitClassId::Champion, UnitClassId::Mage, UnitClassId::PyreZombie],
+];
+
 /// A peace offer stands this many world turns; peace is signed when the other side offers too.
 pub const PEACE_OFFER_TURNS: i32 = 5;
 /// After peace is signed, neither side may start a war on the other for this many world turns.
@@ -315,8 +336,11 @@ impl Game {
     pub fn new(setup: GameSetup) -> Self {
         let mut rng = Rng::new(setup.seed);
         let ai_count = setup.ai_count.clamp(1, 7);
-        let mut factions = vec![setup.human_faction];
-        let mut pool: Vec<FactionId> = FactionId::STARTING.into_iter().filter(|&f| f != setup.human_faction).collect();
+        // King Cinder's Host only enters mid-game (`FactionId::STARTING`): asked to start as it, the
+        // human starts as the first starting faction instead.
+        let human_faction = if FactionId::STARTING.contains(&setup.human_faction) { setup.human_faction } else { FactionId::STARTING[0] };
+        let mut factions = vec![human_faction];
+        let mut pool: Vec<FactionId> = FactionId::STARTING.into_iter().filter(|&f| f != human_faction).collect();
         rng.shuffle(&mut pool);
         for f in pool.into_iter().take(ai_count) {
             factions.push(f);
@@ -1536,11 +1560,29 @@ impl Game {
         Ok(())
     }
 
+    /// Refuses an attack on Great Furnace, King Cinder's Host's Breach city, before the Blowout (it
+    /// cannot be besieged either: `update_city_sieges`).
+    pub fn check_breach_ward(&self, to: PlotIdx) -> Result<(), CmdErr> {
+        let Some(c) = self.world.plot(to).city.and_then(|cid| self.cities.get(&cid)) else { return Ok(()) };
+        if self.breach_warded(c.id) {
+            return Err(CmdErr::cannot(format!("{} cannot be attacked until the Blowout.", c.name)));
+        }
+        Ok(())
+    }
+
+    /// Whether `city` is the Host's Breach city, warded until the Blowout.
+    pub fn breach_warded(&self, city: CityId) -> bool {
+        self.apocalypse.breach_city == Some(city)
+            && !self.apocalypse.carcosa_risen
+            && self.cities.get(&city).is_some_and(|c| self.players[c.owner.idx()].faction == FactionId::Infernals)
+    }
+
     pub fn preview_attack(&self, player: PlayerId, squad_id: SquadId, to: PlotIdx) -> Result<(crate::combat::BuiltFormation, Forecast), CmdErr> {
         let att = self.own_squad(player, squad_id)?;
         if self.world.distance(att.plot, to) != 1 {
             return Err(CmdErr::invalid("The target plot must be adjacent."));
         }
+        self.check_breach_ward(to)?;
         let city = self.world.plot(to).city.and_then(|cid| self.cities.get(&cid));
         let def_squad_id = self.pick_defending_squad(player, to);
         if def_squad_id.is_none() && !city.is_some_and(|c| c.owner != player && c.standing_sentinels() > 0) {
@@ -1593,6 +1635,7 @@ impl Game {
         if self.world.distance(att.plot, to) != 1 {
             return Err(CmdErr::invalid("The target must be adjacent."));
         }
+        self.check_breach_ward(to)?;
         let city_id = self.world.plot(to).city;
         let def_squad_id = self.pick_defending_squad(player, to);
         let def_owner = def_squad_id
@@ -2664,6 +2707,18 @@ impl Game {
             }
         }
 
+        // The Breach: King Cinder's Host gets a squad at its capital every `BREACH_REINFORCE_EVERY` turns.
+        if self.players[player.idx()].faction == FactionId::Infernals && self.turn % BREACH_REINFORCE_EVERY == 0 {
+            if let Some(cp) = cap_plot {
+                if self.player_squads(player).len() < self.squad_cap(player) {
+                    let classes = BREACH_SQUADS[((self.turn / BREACH_REINFORCE_EVERY) % 2) as usize];
+                    self.spawn_squad_internal(player, cp, classes);
+                    let names: Vec<&str> = classes.iter().map(|c| c.info().name).collect();
+                    self.push_log(Some(player), Some(cp), None, format!("The Breach: a squad ({}) joined at the capital.", names.join(", ")));
+                }
+            }
+        }
+
         // Wreckers Deep Shaft bonus as Strain rises!
         if self.players[player.idx()].faction == FactionId::Sheaim && self.apocalypse.counter >= DEEP_SHAFT_STRAIN && self.turn % DEEP_SHAFT_EVERY == 0 {
             if let Some(cp) = cap_plot {
@@ -2811,7 +2866,7 @@ impl Game {
             }
             50 => {
                 // King Cinder's Host rises automatically if not already in the game!
-                if !self.apocalypse.hyborem_spawned && !self.players.iter().any(|p| p.faction == FactionId::Infernals && p.alive) {
+                if !self.apocalypse.hyborem_spawned {
                     self.spawn_hyborem(events);
                 }
             }
@@ -2842,8 +2897,31 @@ impl Game {
         }
     }
 
+    /// The squad power of all the living civilizations other than `except`, together.
+    pub fn surface_power(&self, except: Option<PlayerId>) -> i32 {
+        self.squads
+            .values()
+            .filter(|s| Some(s.owner) != except && self.players[s.owner.idx()].alive && !self.players[s.owner.idx()].is_neutral)
+            .map(|s| s.power_rating())
+            .sum()
+    }
+
+    /// Squads of `BREACH_SQUADS` for King Cinder's Host at `plot`, at least `min` of them, then more
+    /// until its squad power is `pct` of `surface_power`, at most `max` in all. Returns how many.
+    fn host_eruption(&mut self, host: PlayerId, plot: PlotIdx, surface_power: i32, pct: i32, max: usize, min: usize) -> usize {
+        let target = surface_power * pct / 100;
+        let mut n = 0;
+        while n < max && (n < min || self.squads.values().filter(|s| s.owner == host).map(|s| s.power_rating()).sum::<i32>() < target) {
+            self.spawn_squad_internal(host, plot, BREACH_SQUADS[n % 2]);
+            n += 1;
+        }
+        n
+    }
+
     fn spawn_hyborem(&mut self, events: &mut Vec<Event>) {
-        let Some(plot) = self.find_wild_land_plot() else { return };
+        // What the surface fields now, before the Host is a player: its army is measured on it.
+        let surface = self.surface_power(None);
+        let Some(plot) = self.find_breach_plot() else { return };
         self.apocalypse.hyborem_spawned = true;
         let new_id = PlayerId(self.players.len() as u16);
         let mut pl = Player::new(new_id, FactionId::Infernals, false, false);
@@ -2875,12 +2953,32 @@ impl Game {
             c.districts.push(DistrictKind::Bulwark);
             c.sync_sentinels(false);
         }
-        self.spawn_squad_internal(new_id, plot, &[UnitClassId::Balor, UnitClassId::PyreZombie, UnitClassId::PyreZombie]);
-        self.spawn_squad_internal(new_id, plot, &[UnitClassId::Champion, UnitClassId::Mage, UnitClassId::PyreZombie]);
-        self.world.spread_hell(10, &[new_id], &mut self.rng);
+        // Two squads, then more until they match `HOST_ENTRY_POWER_PCT` of the surface's power.
+        let n = self.host_eruption(new_id, plot, surface, HOST_ENTRY_POWER_PCT, HOST_ENTRY_SQUADS_MAX, 2);
+        self.apocalypse.breach_city = Some(cid);
+        // The Breach scorches the land around Great Furnace (the Host fights better on it).
+        for i in 0..self.world.len() {
+            let p = PlotIdx(i as u32);
+            if self.world.distance(p, plot) <= BREACH_SCORCH_RADIUS && self.world.plot(p).kind.is_passable_land() {
+                let pl = self.world.plot_mut(p);
+                pl.terrain = pl.terrain.hell_version();
+                if pl.feature.is_woods() {
+                    pl.feature = crate::world::Feature::BurntForest;
+                }
+            }
+        }
+        self.world.rev += 1;
         self.recompute_vision(new_id);
         events.push(Event::HyboremArrived { player: new_id, city: cid });
-        self.push_log(None, Some(plot), None, "King Cinder's Host entered the game with the city Great Furnace, at war with every Good civilization and the Wild Clans.");
+        self.push_log(
+            None,
+            Some(plot),
+            None,
+            format!(
+                "King Cinder's Host entered the game with the city Great Furnace and {} squads, at war with every Good civilization and the Wild Clans. Great Furnace cannot be attacked until the Blowout.",
+                n
+            ),
+        );
     }
 
     fn trigger_carcosa(&mut self, events: &mut Vec<Event>) {
@@ -2938,6 +3036,16 @@ impl Game {
         }
         self.apocalypse.lifeboats = lifeboats;
         events.push(Event::CarcosaRisen { city: cid, plot: cp });
+        // King Cinder's Host erupts at its capital.
+        if let Some(host) = self.players.iter().find(|p| p.alive && p.faction == FactionId::Infernals).map(|p| p.id) {
+            if let Some(at) = self.ritual_plot(host) {
+                let surface = self.surface_power(Some(host));
+                let n = self.host_eruption(host, at, surface, HOST_BLOWOUT_POWER_PCT, HOST_BLOWOUT_SQUADS_MAX, 0);
+                if n > 0 {
+                    self.push_log(None, Some(at), None, format!("The Blowout: {} squads of King Cinder's Host climbed out of the Breach.", n));
+                }
+            }
+        }
         self.push_log(
             None,
             Some(cp),
@@ -2997,13 +3105,24 @@ impl Game {
                     }
                 }
             }
-            let summary = if winners.is_empty() {
-                "The timer expired with no surface empire holding a Lifeboat. The surface burns.".into()
-            } else {
+            // The Furnace wins, when a civilization that can win that way is alive, if Caldera Keep
+            // (the plug of the Worldseal) has been razed, or if no surface civilization holds a
+            // Lifeboat.
+            let furnace: Vec<PlayerId> =
+                self.players.iter().filter(|p| p.alive && !p.is_neutral && ApocalypseState::demonic_victory_eligible(p.faction)).map(|p| p.id).collect();
+            let keep_razed = self.apocalypse.keep_razed();
+            let (kind, summary) = if keep_razed && !furnace.is_empty() {
+                winners = furnace;
+                (VictoryKind::DemonicRuin, "The countdown ended with Caldera Keep razed. Furnace victory.".to_string())
+            } else if !winners.is_empty() {
                 let names: Vec<&str> = winners.iter().map(|p| self.players[p.idx()].name()).collect();
-                format!("Lifeboat survival. Winners: {}.", names.join(", "))
+                (VictoryKind::MortalLifeboat, format!("Lifeboat survival. Winners: {}.", names.join(", ")))
+            } else if !furnace.is_empty() {
+                winners = furnace;
+                (VictoryKind::DemonicRuin, "The countdown ended with no surface civilization holding a Lifeboat. Furnace victory.".to_string())
+            } else {
+                (VictoryKind::MutualExtinction, "The countdown ended with no surface civilization holding a Lifeboat. The surface burns.".to_string())
             };
-            let kind = if winners.is_empty() { VictoryKind::MutualExtinction } else { VictoryKind::MortalLifeboat };
             events.push(Event::GameEnded { summary: summary.clone() });
             self.apocalypse.outcome = Some(GameOutcome { kind, winners, summary });
             return;
@@ -3487,7 +3606,8 @@ impl Game {
         let city_ids: Vec<CityId> = self.cities.keys().copied().collect();
         for cid in city_ids {
             let (owner, plot) = (self.cities[&cid].owner, self.cities[&cid].plot);
-            let adj_enemy = self.squads.values().any(|s| self.at_war(owner, s.owner) && self.world.distance(s.plot, plot) == 1);
+            // The Host's warded Breach city cannot be besieged either.
+            let adj_enemy = !self.breach_warded(cid) && self.squads.values().any(|s| self.at_war(owner, s.owner) && self.world.distance(s.plot, plot) == 1);
             if let Some(c) = self.cities.get_mut(&cid) {
                 c.besieged = adj_enemy;
             }
@@ -3533,6 +3653,27 @@ impl Game {
         for p in 0..self.players.len() {
             self.players[p].score = raw[p] * 10000 / total;
         }
+    }
+
+    /// Where King Cinder's Host breaks out: unclaimed land as far as can be from every city (one
+    /// of the plots within 1 of the farthest, at random), at least `MIN_CITY_DISTANCE` away when
+    /// there is such land.
+    fn find_breach_plot(&mut self) -> Option<PlotIdx> {
+        let city_plots: Vec<PlotIdx> = self.cities.values().map(|c| c.plot).collect();
+        let cands: Vec<(i32, PlotIdx)> = (0..self.world.len())
+            .map(|i| PlotIdx(i as u32))
+            .filter(|&p| {
+                let pl = self.world.plot(p);
+                pl.kind.is_passable_land() && pl.owner.is_none() && pl.city.is_none() && self.squads_at(p).is_empty()
+            })
+            .map(|p| (city_plots.iter().map(|&c| self.world.distance(c, p)).min().unwrap_or(i32::MAX), p))
+            .collect();
+        let best = cands.iter().map(|&(d, _)| d).max()?;
+        let near_best: Vec<PlotIdx> = cands.iter().filter(|&&(d, _)| d >= best - 1).map(|&(_, p)| p).collect();
+        if best < MIN_CITY_DISTANCE {
+            return self.find_wild_land_plot();
+        }
+        Some(near_best[self.rng.range_usize(near_best.len())])
     }
 
     fn find_wild_land_plot(&mut self) -> Option<PlotIdx> {
