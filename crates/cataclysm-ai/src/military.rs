@@ -409,17 +409,29 @@ pub(crate) fn manage_squads(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) 
         let reserve = if g.player_cities(p).iter().any(|c| g.cities[c].raid_streak > 0) { cataclysm_core::game::RAID_TRIBUTE_GOLD } else { 0 };
         let in_home = g.world.plot(g.squads[&sid].plot).owner == Some(p);
         if in_home && g.players[p.idx()].gold >= 80 + reserve {
-            let upgrade_target = g.squads[&sid]
-                .members
-                .iter()
-                .find(|m| m.class.info().upgrades_to.is_some_and(|n| g.can_recruit_class(p, n).is_ok()))
-                .map(|m| m.id);
-            if let Some(mid) = upgrade_target {
-                try_cmd(g, p, Command::UpgradeMember { squad: sid, member: mid }, events);
-            } else if g.squads[&sid].places_used() < cap {
+            // As many upgrades and recruits as the Gold allows (above the reserve), not one a turn.
+            for _ in 0..8 {
+                if g.players[p.idx()].gold < 80 + reserve {
+                    break;
+                }
+                let upgrades: Vec<_> = g.squads[&sid]
+                    .members
+                    .iter()
+                    .filter(|m| m.class.info().upgrades_to.is_some_and(|n| g.can_recruit_class(p, n).is_ok()))
+                    .map(|m| m.id)
+                    .collect();
+                if upgrades.into_iter().any(|mid| try_cmd(g, p, Command::UpgradeMember { squad: sid, member: mid }, events)) {
+                    continue;
+                }
+                if g.squads[&sid].places_used() >= cap {
+                    break;
+                }
                 let rec = best_squad_recipe(g, p);
-                let cl = rec[g.squads[&sid].members.len() % rec.len()];
-                try_cmd(g, p, Command::ReinforceSquad { squad: sid, class: cl }, events);
+                let start = g.squads[&sid].members.len();
+                let recruited = (0..rec.len()).any(|i| try_cmd(g, p, Command::ReinforceSquad { squad: sid, class: rec[(start + i) % rec.len()] }, events));
+                if !recruited {
+                    break;
+                }
             }
             try_cmd(g, p, Command::AutoArrangeSquad { squad: sid }, events);
         }

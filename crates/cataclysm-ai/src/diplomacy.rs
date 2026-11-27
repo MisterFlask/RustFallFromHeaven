@@ -66,46 +66,57 @@ fn assault_target_owner(g: &Game, p: PlayerId) -> Option<PlayerId> {
     g.cities.get(&cid).map(|c| c.owner)
 }
 
-/// Whether `p` wants its war with `e` to stop.
-fn wants_peace(g: &Game, p: PlayerId, e: PlayerId, wars: &[PlayerId]) -> bool {
+/// Why `p` wants its war with `e` to stop, or `None` when it does not.
+fn peace_reason(g: &Game, p: PlayerId, e: PlayerId, wars: &[PlayerId]) -> Option<&'static str> {
     let infernals = |x: PlayerId| g.players[x.idx()].faction == FactionId::Infernals;
     if infernals(p) || infernals(e) {
-        return false;
+        return None;
     }
     if g.crusades.values().any(|c| c.active && c.caller == p && c.target == e) {
-        return false;
+        return None;
     }
     if g.war_turns(p, e).unwrap_or(0) < MIN_WAR_TURNS {
-        return false;
+        return None;
     }
     if g.apocalypse.carcosa_risen {
         if held_lifeboat(g, p).is_some() {
-            return true;
+            return Some("we hold a Lifeboat");
         }
         if assault_target_owner(g, p) == Some(e) {
-            return false;
+            return None;
         }
     }
     let r = ratio(g, p, e);
     // Winning: clearly stronger, or a city of theirs is ours to take this turn.
     if r >= STRONGER_PCT || can_take_city_of(g, p, e) {
-        return false;
+        return None;
     }
-    if r < WEAKER_PCT || g.war_turns(p, e).unwrap_or(0) >= STALE_WAR_TURNS || overmatched_city(g, p, e) {
-        return true;
+    if r < WEAKER_PCT {
+        return Some("weaker");
     }
-    // At war with several: keep only the war we have the best ratio in.
-    if wars.len() >= 2 {
-        let best = wars.iter().copied().max_by_key(|&o| (ratio(g, p, o), Reverse(o))).unwrap();
-        return best != e;
+    if g.war_turns(p, e).unwrap_or(0) >= STALE_WAR_TURNS {
+        return Some("stale");
     }
-    false
+    if overmatched_city(g, p, e) {
+        return Some("a city overmatched");
+    }
+    // At war with several: keep only the war we have the best ratio in (King Cinder's Host's war,
+    // which can never end, does not count).
+    let ends: Vec<PlayerId> = wars.iter().copied().filter(|&o| !infernals(o)).collect();
+    if ends.len() >= 2 {
+        let best = ends.iter().copied().max_by_key(|&o| (ratio(g, p, o), Reverse(o))).unwrap();
+        if best != e {
+            return Some("another war is better");
+        }
+    }
+    None
 }
 
 fn manage_peace(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) {
     let wars = civ_wars(g, p);
     for &e in &wars {
-        if g.check_peace(p, e).is_ok() && wants_peace(g, p, e, &wars) {
+        // The reason is kept for reading traces; any reason is enough to offer.
+        if g.check_peace(p, e).is_ok() && peace_reason(g, p, e, &wars).is_some() {
             try_cmd(g, p, Command::MakePeace { target: e }, events);
         }
     }
@@ -213,8 +224,10 @@ fn declare(g: &mut Game, p: PlayerId, target: PlayerId, events: &mut Vec<Event>)
 
 fn manage_war(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) {
     // After the Blowout, a civilization with no Lifeboat goes to war with the holder of the one
-    // its squads are sent at: nothing else can win for it.
-    if g.apocalypse.carcosa_risen && held_lifeboat(g, p).is_none() {
+    // its squads are sent at: nothing else can win for it. King Cinder's Host sends its squads at
+    // a Lifeboat whether it holds one or not (it razes them), so it declares likewise.
+    let infernal = g.players[p.idx()].faction == FactionId::Infernals;
+    if g.apocalypse.carcosa_risen && (infernal || held_lifeboat(g, p).is_none()) {
         if let Some(owner) = assault_target_owner(g, p) {
             if !g.players[owner.idx()].is_neutral && !g.at_war(p, owner) {
                 declare(g, p, owner, events);
