@@ -236,3 +236,26 @@ fn cataclysm_eliminated_human_sees_the_game_over() {
     assert!(arr(over, "winner_factions").is_empty());
     assert!(!arr(over, "scores").is_empty());
 }
+
+#[test]
+fn cataclysm_diplomacy_states_offers_and_truces() {
+    use cataclysm_core::{Command, PlayerId};
+    let mut sess = session("bannor", 4);
+    let (me, them) = (PlayerId(0), PlayerId(1));
+    sess.g.set_war(me, them, true);
+    sess.g.apply(them, Command::MakePeace { target: me }).unwrap();
+    let view = q(&sess, r#"{"q":"view"}"#);
+    let cat = view.get("cataclysm").unwrap();
+    assert!(cat.get("peace_effect").and_then(Json::as_str).is_some_and(|t| t.contains("both sides")));
+    let rival = arr(cat, "players").iter().find(|p| p.get("id").and_then(Json::as_i64) == Some(1)).unwrap().clone();
+    assert_eq!(rival.get("peace_label").and_then(Json::as_str), Some("Accept peace"));
+    assert_eq!(rival.get("can_peace").and_then(Json::as_bool), Some(true));
+    assert!(rival.get("peace_offer_to_us").and_then(Json::as_i64).is_some());
+
+    sess.g.apply(me, Command::MakePeace { target: them }).unwrap();
+    let view = q(&sess, r#"{"q":"view"}"#);
+    let rival = arr(view.get("cataclysm").unwrap(), "players").iter().find(|p| p.get("id").and_then(Json::as_i64) == Some(1)).unwrap().clone();
+    assert_eq!(rival.get("can_declare_war").and_then(Json::as_bool), Some(false));
+    assert!(rival.get("war_why").and_then(Json::as_str).is_some_and(|w| w.starts_with("Truce")), "{rival}");
+    assert!(rival.get("truce_turns").and_then(Json::as_i64).unwrap() > 0);
+}

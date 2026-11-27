@@ -897,6 +897,8 @@ impl CataclysmSession {
                     None
                 } else if cr.target == h {
                     Some("This Crusade is against you.".to_string())
+                } else if let Err(e) = g.check_war(h, cr.target) {
+                    Some(e.detail)
                 } else {
                     Some("You have no squad that is not already lent.".to_string())
                 };
@@ -990,9 +992,33 @@ impl CataclysmSession {
             .players
             .iter()
             .map(|pl| {
+                let offer_to_us = g.peace_offer_from(pl.id, h);
+                let offer_from_us = g.peace_offer_from(h, pl.id);
+                let truce = g.truce_turns_left(h, pl.id);
+                let peace = g.check_peace(h, pl.id);
+                let war_why = g.check_war(h, pl.id).err().map(|e| e.detail);
+                let mut peace_lines = Vec::new();
+                if let Some(t) = offer_to_us {
+                    peace_lines.push(format!("Offers peace to you: {t} turns left."));
+                }
+                if let Some(t) = offer_from_us {
+                    peace_lines.push(format!("Your peace offer: {t} turns left."));
+                }
+                if truce > 0 {
+                    peace_lines.push(format!("Truce: {truce} turns left."));
+                }
                 crate::jobj! {
                     "id" => pl.id.0 as i32,
                     "name" => pl.name(),
+                    "peace_offer_to_us" => offer_to_us,
+                    "peace_offer_from_us" => offer_from_us,
+                    "truce_turns" => truce,
+                    "peace_lines" => peace_lines,
+                    "peace_label" => if peace == Ok(true) { "Accept peace" } else { "Offer peace" },
+                    "can_peace" => peace.is_ok(),
+                    "peace_why" => peace.err().map(|e| e.detail),
+                    "can_declare_war" => war_why.is_none(),
+                    "war_why" => war_why,
                     "faction_name" => if pl.is_neutral { "Wild Clans" } else { pl.faction.info().name },
                     "leader_art" => if pl.is_neutral { "LEADER_BARBARIAN" } else { pl.faction.info().leader_art },
                     "alignment" => pl.alignment.name(),
@@ -1070,7 +1096,7 @@ impl CataclysmSession {
             "call_crusade_why" => crusade_why,
             "crusade_effect" => crusade_effect(),
             "war_effect" => "Ends every Caravan between you and the target. At war, squads may attack, raid and ambush Caravans, and each side's squads block the other's supply lines. Attacking, calling a Crusade or lending a squad also starts a war, without ending Caravans.",
-            "peace_effect" => "Peace is made at once, by you alone, at no cost. No peace can be made with the Wild Clans.",
+            "peace_effect" => peace_effect(),
             "doctrine_rule" => doctrine_rule(),
             "order_help" => order_help_json(found_cost),
             "sally_help" => sally_help_json(),
@@ -1877,7 +1903,7 @@ fn rules_help_json() -> Json {
         ),
         "The loser is the side with no unit standing; else the side with more units fallen; else the side that lost more HP; otherwise it is even.".into(),
         "Outside a city a losing defender is pushed to a next plot; when no defender remains the attacker takes the plot. A city falls when no squad and no Sentinel stands in it.".into(),
-        "Attacking ends the attacking squad's movement. Attacking a civilization you are at peace with declares war on it.".into(),
+        "Attacking ends the attacking squad's movement. Attacking a civilization you are at peace with declares war on it, except during a truce.".into(),
         "In a city, defending units add half the city's defense % to their defense. Standing Sentinels hold the front row, scaled by the city's defense %, and keep their damage between battles.".into(),
         format!(
             "Attacker shots into a city deal {}%; ranged attacks into a forest deal {}%; on hills the attacker deals {}% and the defender's ranged attacks {}%.",
@@ -2163,6 +2189,14 @@ fn lore_overflow_rule() -> String {
     format!(
         "When no tech can be researched now (Doctrines not yet adopted open none), Lore converts to Sage Renown at your turn start: {} Lore per 1 Renown, the remainder kept.",
         cataclysm_core::game::LORE_PER_SAGE_RENOWN
+    )
+}
+
+fn peace_effect() -> String {
+    use cataclysm_core::game::{PEACE_OFFER_TURNS, TRUCE_TURNS};
+    format!(
+        "Peace needs both sides: an offer stands for {} turns, and peace is signed when the other side offers peace while it stands. After peace, neither side may declare war, attack the other, call a Crusade against it or lend a squad to one for {} turns. No peace can be made with the Wild Clans.",
+        PEACE_OFFER_TURNS, TRUCE_TURNS
     )
 }
 

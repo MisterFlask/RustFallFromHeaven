@@ -89,6 +89,10 @@ pub const PRIMARY_DOCTRINE_COST_PCT: i32 = 75;
 pub const MIN_TECH_COST: i32 = 15;
 /// A secondary doctrine opens its techs up to this tier.
 pub const SECONDARY_DOCTRINE_MAX_TIER: u8 = 2;
+/// A peace offer stands this many world turns; peace is signed when the other side offers too.
+pub const PEACE_OFFER_TURNS: i32 = 5;
+/// After peace is signed, neither side may start a war on the other for this many world turns.
+pub const TRUCE_TURNS: i32 = 10;
 /// Lore per 1 Sage Renown when a player has no tech it can research (the remainder is kept).
 pub const LORE_PER_SAGE_RENOWN: i32 = 5;
 
@@ -270,6 +274,12 @@ pub struct Game {
     pub neutral_player: PlayerId,
     /// Symmetric war set storing `(min(a,b), max(a,b))`.
     pub wars: BTreeSet<(PlayerId, PlayerId)>,
+    /// The world turn each war in `wars` began, keyed like `wars`.
+    pub war_started: BTreeMap<(PlayerId, PlayerId), i32>,
+    /// Standing peace offers: `(from, to)` -> the world turn the offer was made.
+    pub peace_offers: BTreeMap<(PlayerId, PlayerId), i32>,
+    /// Truces keyed like `wars`: the world turn from which war may be started again.
+    pub truces: BTreeMap<(PlayerId, PlayerId), i32>,
     pub founded_religions: BTreeMap<Religion, PlayerId>,
     pub built_wonders: BTreeMap<WonderKind, CityId>,
     pub cities: BTreeMap<CityId, City>,
@@ -328,6 +338,9 @@ impl Game {
             players,
             neutral_player,
             wars: BTreeSet::new(),
+            war_started: BTreeMap::new(),
+            peace_offers: BTreeMap::new(),
+            truces: BTreeMap::new(),
             founded_religions: BTreeMap::new(),
             built_wonders: BTreeMap::new(),
             cities: BTreeMap::new(),
@@ -427,16 +440,81 @@ impl Game {
         self.wars.contains(&pair)
     }
 
+    /// Starts or ends the war between `a` and `b`. Starting one ends any truce between them: the
+    /// callers that may start a war check `check_war` first, and those that do not (King Cinder's
+    /// Host entering at war, a vassal breaking its oath) override the truce by design. Either way
+    /// the standing peace offers between them lapse.
     pub fn set_war(&mut self, a: PlayerId, b: PlayerId, war: bool) {
         if a == b {
             return;
         }
         let pair = if a < b { (a, b) } else { (b, a) };
         if war {
-            self.wars.insert(pair);
+            if self.wars.insert(pair) {
+                self.war_started.insert(pair, self.turn);
+            }
+            self.truces.remove(&pair);
         } else {
             self.wars.remove(&pair);
+            self.war_started.remove(&pair);
         }
+        self.peace_offers.remove(&(a, b));
+        self.peace_offers.remove(&(b, a));
+    }
+
+    /// Whether `a` may start a war on `b` (Ok when they are already at war).
+    pub fn check_war(&self, a: PlayerId, b: PlayerId) -> Result<(), CmdErr> {
+        if a == b || b.idx() >= self.players.len() || !self.players[b.idx()].alive {
+            return Err(CmdErr::invalid("Invalid war target."));
+        }
+        if self.at_war(a, b) {
+            return Ok(());
+        }
+        let left = self.truce_turns_left(a, b);
+        if left > 0 {
+            return Err(CmdErr::cannot(format!("Truce with {}: {} turns left.", self.players[b.idx()].name(), left)));
+        }
+        Ok(())
+    }
+
+    /// Turns left of `from`'s standing peace offer to `to` (`None` when there is none).
+    pub fn peace_offer_from(&self, from: PlayerId, to: PlayerId) -> Option<i32> {
+        let made = *self.peace_offers.get(&(from, to))?;
+        let left = made + PEACE_OFFER_TURNS - self.turn;
+        (left > 0).then_some(left)
+    }
+
+    /// Turns left of the truce between `a` and `b` (0 when there is none).
+    pub fn truce_turns_left(&self, a: PlayerId, b: PlayerId) -> i32 {
+        let pair = if a < b { (a, b) } else { (b, a) };
+        self.truces.get(&pair).map_or(0, |&until| (until - self.turn).max(0))
+    }
+
+    /// World turns since the war between `a` and `b` began (`None` when they are not at war).
+    pub fn war_turns(&self, a: PlayerId, b: PlayerId) -> Option<i32> {
+        let pair = if a < b { (a, b) } else { (b, a) };
+        self.wars.contains(&pair).then(|| self.turn - self.war_started.get(&pair).copied().unwrap_or(self.turn))
+    }
+
+    /// Checks a Make Peace order: `Ok(true)` when it signs peace now (`target` has a standing
+    /// offer to `p`), `Ok(false)` when it records `p`'s offer.
+    pub fn check_peace(&self, p: PlayerId, target: PlayerId) -> Result<bool, CmdErr> {
+        if target == self.neutral_player {
+            return Err(CmdErr::cannot("No peace can be made with the Wild Clans."));
+        }
+        if p == target || target.idx() >= self.players.len() || !self.players[target.idx()].alive {
+            return Err(CmdErr::invalid("Invalid peace target."));
+        }
+        if !self.at_war(p, target) {
+            return Err(CmdErr::cannot("Not at war with this civilization."));
+        }
+        if self.peace_offer_from(target, p).is_some() {
+            return Ok(true);
+        }
+        if let Some(left) = self.peace_offer_from(p, target) {
+            return Err(CmdErr::cannot(format!("Your peace offer stands: {} turns left.", left)));
+        }
+        Ok(false)
     }
 
     fn alloc_character(&mut self) -> &'static crate::data::PortraitCharacter {
@@ -1221,7 +1299,7 @@ impl Game {
         if self.crusades.values().any(|c| c.active && c.target == target) {
             return Err(CmdErr::cannot("A Crusade against this civilization is already active."));
         }
-        Ok(())
+        self.check_war(p, target)
     }
 
     /// Checks a Lend Squad order.
@@ -1237,7 +1315,7 @@ impl Game {
         if s.lent_by.is_some() {
             return Err(CmdErr::cannot("This squad is already lent to a Crusade."));
         }
-        Ok(())
+        self.check_war(p, cr.target)
     }
 
     /// Checks a Commission Hero order (the Great Person and the squad).
@@ -1352,17 +1430,7 @@ impl Game {
             Command::CastRitual { ritual } => self.cmd_cast_ritual(player, ritual, &mut events)?,
             Command::UseGreatPerson { gp, action } => self.cmd_use_great_person(player, gp, action, &mut events)?,
             Command::DeclareWar { target } => self.cmd_declare_war(player, target)?,
-            Command::MakePeace { target } => {
-                if target == self.neutral_player {
-                    return Err(CmdErr::cannot("No peace can be made with the Wild Clans."));
-                }
-                if !self.at_war(player, target) {
-                    return Err(CmdErr::cannot("Not at war with this civilization."));
-                }
-                self.set_war(player, target, false);
-                let tn = self.players[target.idx()].name();
-                self.push_log(Some(player), None, None, format!("Signed peace with {}.", tn));
-            }
+            Command::MakePeace { target } => self.cmd_make_peace(player, target)?,
             Command::BreakVassalage => {
                 if !self.apocalypse.carcosa_risen {
                     return Err(CmdErr::cannot("A vassal may break free only once Worldseal Strain reaches 100."));
@@ -1370,6 +1438,7 @@ impl Game {
                 let Some(master) = self.players[player.idx()].vassal_of.take() else {
                     return Err(CmdErr::cannot("Not a vassal."));
                 };
+                // Breaking the oath overrides a truce by design (no `check_war`).
                 self.set_war(player, master, true);
                 let mn = self.players[master.idx()].name();
                 self.push_log(Some(player), None, None, format!("Broke the vassal oath and declared war on {}.", mn));
@@ -1509,6 +1578,7 @@ impl Game {
             return Err(CmdErr::cannot("You cannot attack your own forces."));
         }
         if !self.at_war(player, def_owner) {
+            self.check_war(player, def_owner)?;
             self.set_war(player, def_owner, true);
             let dn = self.players[def_owner.idx()].name();
             self.push_log(Some(player), Some(to), None, format!("Declared war on {}.", dn));
@@ -2216,6 +2286,7 @@ impl Game {
         if self.at_war(player, target) {
             return Err(CmdErr::cannot("Already at war."));
         }
+        self.check_war(player, target)?;
         self.set_war(player, target, true);
         // Cancel caravans between warring nations.
         self.caravans.retain(|_, cv| {
@@ -2224,6 +2295,24 @@ impl Game {
         });
         let tn = self.players[target.idx()].name();
         self.push_log(Some(player), None, None, format!("Declared war on {}.", tn));
+        Ok(())
+    }
+
+    fn cmd_make_peace(&mut self, player: PlayerId, target: PlayerId) -> Result<(), CmdErr> {
+        let sign = self.check_peace(player, target)?;
+        let (pn, tn) = (self.players[player.idx()].name(), self.players[target.idx()].name());
+        if sign {
+            self.set_war(player, target, false);
+            let pair = if player < target { (player, target) } else { (target, player) };
+            self.truces.insert(pair, self.turn + TRUCE_TURNS);
+            let text = |other: &str| format!("Peace signed with {}. Truce: no war between you for {} turns.", other, TRUCE_TURNS);
+            self.push_log(Some(player), None, None, text(tn));
+            self.push_log(Some(target), None, None, text(pn));
+        } else {
+            self.peace_offers.insert((player, target), self.turn);
+            self.push_log(Some(player), None, None, format!("You offer peace to {} for {} turns.", tn, PEACE_OFFER_TURNS));
+            self.push_log(Some(target), None, None, format!("{} offers peace.", pn));
+        }
         Ok(())
     }
 
@@ -2597,6 +2686,13 @@ impl Game {
             }
         }
 
+        // 5. Peace offers lapse after `PEACE_OFFER_TURNS` or with a side eliminated; truces end.
+        let turn = self.turn;
+        let players = &self.players;
+        let alive = |p: PlayerId| players.get(p.idx()).is_some_and(|pl| pl.alive);
+        self.peace_offers.retain(|&(a, b), &mut made| made + PEACE_OFFER_TURNS > turn && alive(a) && alive(b));
+        self.truces.retain(|_, &mut until| until > turn);
+
         self.recompute_scores();
     }
 
@@ -2691,7 +2787,7 @@ impl Game {
         for pt in &mut self.world.plots {
             pt.culture.push(0);
         }
-        // King Cinder's Host enters at war with Good empires & Neutral.
+        // King Cinder's Host enters at war with Good empires & Neutral (overriding any truce: no `check_war`).
         for i in 0..self.players.len() - 1 {
             let oid = PlayerId(i as u16);
             if self.players[i].alignment == Alignment::Good || self.players[i].is_neutral {
@@ -3337,6 +3433,23 @@ impl Game {
                 if self.apocalypse.carcosa_risen { "not marked" } else { "marked as triggered" },
                 if self.apocalypse.carcosa_risen { "risen" } else { "not risen" }
             ));
+        }
+        let known = |p: PlayerId| p.idx() < self.players.len();
+        for &(a, b) in self.peace_offers.keys() {
+            if a == b || !known(a) || !known(b) {
+                return Err(format!("peace offer between invalid players {a:?} {b:?}"));
+            }
+            if !self.at_war(a, b) {
+                return Err(format!("peace offer between {a:?} and {b:?}, who are not at war"));
+            }
+        }
+        for &(a, b) in self.truces.keys() {
+            if a >= b || !known(b) {
+                return Err(format!("truce between invalid players {a:?} {b:?}"));
+            }
+            if self.at_war(a, b) {
+                return Err(format!("truce and war at once between {a:?} and {b:?}"));
+            }
         }
         for (cid, c) in &self.cities {
             if c.id != *cid {

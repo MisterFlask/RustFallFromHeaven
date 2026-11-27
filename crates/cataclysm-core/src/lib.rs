@@ -153,4 +153,96 @@ mod tests {
             assert_eq!(t.cost, tier_cost[t.tier as usize], "{}", t.name);
         }
     }
+
+    /// A game where players 0 and 1 are at war.
+    fn two_at_war() -> Game {
+        let mut g = Game::new(GameSetup::default());
+        g.set_war(PlayerId(0), PlayerId(1), true);
+        g
+    }
+
+    #[test]
+    fn a_peace_offer_alone_does_not_end_the_war() {
+        let mut g = two_at_war();
+        let (a, b) = (PlayerId(0), PlayerId(1));
+        assert_eq!(g.war_turns(a, b), Some(0));
+        g.apply(a, Command::MakePeace { target: b }).unwrap();
+        assert!(g.at_war(a, b));
+        assert_eq!(g.peace_offer_from(a, b), Some(game::PEACE_OFFER_TURNS));
+        assert_eq!(g.peace_offer_from(b, a), None);
+        assert!(g.apply(a, Command::MakePeace { target: b }).is_err(), "a second offer while one stands is refused");
+        g.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn an_answered_offer_signs_peace_and_starts_the_truce() {
+        let mut g = two_at_war();
+        let (a, b) = (PlayerId(0), PlayerId(1));
+        g.apply(a, Command::MakePeace { target: b }).unwrap();
+        g.apply(b, Command::MakePeace { target: a }).unwrap();
+        assert!(!g.at_war(a, b));
+        assert_eq!(g.war_turns(a, b), None);
+        assert_eq!(g.peace_offer_from(a, b), None);
+        assert_eq!(g.truce_turns_left(a, b), game::TRUCE_TURNS);
+        assert_eq!(g.truce_turns_left(b, a), game::TRUCE_TURNS);
+        g.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn no_war_starts_during_a_truce() {
+        let mut g = two_at_war();
+        let (a, b) = (PlayerId(0), PlayerId(1));
+        g.apply(a, Command::MakePeace { target: b }).unwrap();
+        g.apply(b, Command::MakePeace { target: a }).unwrap();
+
+        // Declaring war.
+        let err = g.apply(a, Command::DeclareWar { target: b }).unwrap_err();
+        assert_eq!(err.code, "cannot");
+        assert!(err.detail.contains(&format!("{} turns left", game::TRUCE_TURNS)), "{}", err.detail);
+
+        // Attacking a city of the other side.
+        let capital = g.player_cities(b)[0];
+        let cplot = g.cities[&capital].plot;
+        let next = g.world.neighbors(cplot).into_iter().find(|&p| g.world.plot(p).kind.is_passable_land() && g.world.plot(p).city.is_none()).unwrap();
+        let sid = g.player_squads(a)[0];
+        g.squads.get_mut(&sid).unwrap().plot = next;
+        g.squads.get_mut(&sid).unwrap().moves_left = 2;
+        assert!(g.apply(a, Command::AttackPlot { squad: sid, to: cplot }).unwrap_err().detail.starts_with("Truce"));
+        assert!(!g.at_war(a, b));
+
+        // Calling a Crusade.
+        g.players[0].techs.insert(data::TECH_FANATICISM);
+        assert!(g.apply(a, Command::CallCrusade { target: b }).unwrap_err().detail.starts_with("Truce"));
+
+        // Lending a squad to another civilization's Crusade.
+        g.players[2].techs.insert(data::TECH_FANATICISM);
+        g.apply(PlayerId(2), Command::CallCrusade { target: b }).unwrap();
+        let cr = *g.crusades.keys().next().unwrap();
+        assert!(g.apply(a, Command::LendSquadToCrusade { crusade: cr, squad: sid }).unwrap_err().detail.starts_with("Truce"));
+        assert!(!g.at_war(a, b));
+        g.check_invariants().unwrap();
+
+        // Once the truce has run out, war may be declared.
+        g.turn += game::TRUCE_TURNS;
+        assert_eq!(g.truce_turns_left(a, b), 0);
+        g.apply(a, Command::DeclareWar { target: b }).unwrap();
+        assert!(g.at_war(a, b));
+        g.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn a_peace_offer_lapses() {
+        let mut g = two_at_war();
+        let (a, b) = (PlayerId(0), PlayerId(1));
+        g.apply(a, Command::MakePeace { target: b }).unwrap();
+        g.turn += game::PEACE_OFFER_TURNS - 1;
+        assert_eq!(g.peace_offer_from(a, b), Some(1));
+        g.turn += 1;
+        assert_eq!(g.peace_offer_from(a, b), None);
+        // The answer now is a new offer, not peace.
+        g.apply(b, Command::MakePeace { target: a }).unwrap();
+        assert!(g.at_war(a, b));
+        assert_eq!(g.peace_offer_from(b, a), Some(game::PEACE_OFFER_TURNS));
+        g.check_invariants().unwrap();
+    }
 }

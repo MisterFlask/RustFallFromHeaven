@@ -218,6 +218,8 @@ async function confirmWar(data, owners) {
   for (const o of owners) {
     const p = playerOf(o);
     if (!p || p.is_neutral || p.war !== false) continue;
+    // During a truce the attack is refused and says why.
+    if (p.can_declare_war === false) continue;
     const who = p.faction_name ?? p.name ?? `Player ${o}`;
     const text = [`Attacking here declares war on ${who}.`];
     if (data.war_effect) text.push(data.war_effect);

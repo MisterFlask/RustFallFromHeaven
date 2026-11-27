@@ -1040,13 +1040,15 @@ export function openDiplomacy() {
                   h("div", `${plural(p.cities ?? 0, "city", "cities")} · ${plural(p.squads ?? 0, "squad")}`),
                   h("div", `Score share ${scoreText(p.score)}`),
                   p.war ? h("div.warn", "At war") : h("div", "At peace"),
+                  ...(p.peace_lines ?? []).map((l) => h("div", l)),
                   h(
                     "div.cat-btn-row",
                     p.war
-                      ? h("button", { onclick: () => ctx.run({ c: "cat_peace", target: p.id }) }, "Make peace")
+                      ? h("button", { disabled: p.can_peace === false, onclick: () => ctx.run({ c: "cat_peace", target: p.id }) }, p.peace_label ?? "Offer peace")
                       : h(
                           "button.danger",
                           {
+                            disabled: p.can_declare_war === false,
                             onclick: async () => {
                               if (!(await confirm("Declare war", [`Declare war on ${playerLabel(p)}?`, data.war_effect], "Declare war"))) return;
                               await ctx.run({ c: "cat_war", target: p.id });
@@ -1066,6 +1068,8 @@ export function openDiplomacy() {
                       "Call crusade",
                     ),
                   ),
+                  p.war && p.can_peace === false ? why(p.peace_why) : null,
+                  !p.war && p.can_declare_war === false ? why(p.war_why) : null,
                   canCall && p.can_call_crusade === false ? why(p.call_crusade_why) : null,
                 ),
               ),
