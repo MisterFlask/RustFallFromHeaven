@@ -1,5 +1,6 @@
 //! AI player for Cataclysm — plays 100% through `cataclysm_core::Command`, with zero AI-only rules.
 
+mod diplomacy;
 mod military;
 
 use cataclysm_core::{
@@ -44,7 +45,7 @@ pub fn play_turn_as(g: &mut Game, player: PlayerId, policy: Policy) -> Vec<Event
     manage_religion(g, player, &mut events);
     manage_court(g, player, &mut events);
     manage_rituals(g, player, policy, &mut events);
-    manage_diplomacy_and_crusades(g, player, &mut events);
+    diplomacy::manage_diplomacy(g, player, &mut events);
     manage_cities_and_caravans(g, player, &mut events);
     military::manage_squads(g, player, &mut events);
     military::manage_sallies(g, player, &mut events);
@@ -193,57 +194,6 @@ fn manage_rituals(g: &mut Game, p: PlayerId, policy: Policy, events: &mut Vec<Ev
         return;
     }
     try_cmd(g, p, Command::CastRitual { ritual }, events);
-}
-
-fn manage_diplomacy_and_crusades(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) {
-    // Check if any enemy is raiding us heavily -> pay off if weak, else fight.
-    let my_power: i32 = g.squads.values().filter(|s| s.owner == p).map(|s| s.power_rating()).sum();
-    let fac = g.players[p.idx()].faction;
-
-    // Opportunistic war declaration when strong or during Armageddon Lifeboat race!
-    let at_war_count = g.players.iter().filter(|o| o.alive && !o.is_neutral && g.at_war(p, o.id)).count();
-    if at_war_count == 0 && (g.turn >= 25 || g.apocalypse.carcosa_risen) && my_power >= 300 {
-        let mut target = None;
-        if g.apocalypse.carcosa_risen {
-            // Target someone holding a Lifeboat!
-            for lb in &g.apocalypse.lifeboats {
-                if !lb.razed {
-                    if let Some(c) = g.cities.get(&lb.city_id) {
-                        if c.owner != p && !g.players[c.owner.idx()].is_neutral {
-                            target = Some(c.owner);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        if target.is_none() && (matches!(fac, FactionId::Hippus | FactionId::Bannor | FactionId::Sheaim | FactionId::Infernals) || g.turn >= 45) {
-            target = g
-                .players
-                .iter()
-                .filter(|o| o.alive && !o.is_neutral && o.id != p && o.alignment != g.players[p.idx()].alignment)
-                .min_by_key(|o| o.score)
-                .map(|o| o.id);
-        }
-        if let Some(t) = target {
-            try_cmd(g, p, Command::DeclareWar { target: t }, events);
-            try_cmd(g, p, Command::CallCrusade { target: t }, events);
-        }
-    }
-
-    // Lend a squad to an active Crusade against a rival if we have >= 3 squads.
-    if g.player_squads(p).len() >= 3 {
-        let cr = g
-            .crusades
-            .values()
-            .find(|c| c.active && c.target != p && g.players[c.target.idx()].alignment != g.players[p.idx()].alignment)
-            .map(|c| c.id);
-        if let Some(cr_id) = cr {
-            if let Some(sid) = g.squads.values().find(|s| s.owner == p && s.lent_by.is_none()).map(|s| s.id) {
-                try_cmd(g, p, Command::LendSquadToCrusade { crusade: cr_id, squad: sid }, events);
-            }
-        }
-    }
 }
 
 fn best_squad_recipe(g: &Game, p: PlayerId) -> Vec<UnitClassId> {

@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use crate::{best_squad_recipe, try_cmd};
 
 /// An enemy civilization's squad this close to one of our cities makes the city need a guard.
-const THREAT_RANGE: i32 = 4;
+pub(crate) const THREAT_RANGE: i32 = 4;
 /// Attack when the forecast gives the plot at least this chance (permille) of falling. Of the
 /// attacks this AI made at a 60-70% forecast in 120 games, about half took the plot, and they
 /// cost the attacker 0.7 fighters for 1.3-1.5 of the defender's: worth making either way.
@@ -240,7 +240,7 @@ fn fortify(g: &mut Game, p: PlayerId, sid: SquadId, events: &mut Vec<Event>) {
     }
 }
 
-fn sentinel_power(g: &Game, cid: CityId) -> i32 {
+pub(crate) fn sentinel_power(g: &Game, cid: CityId) -> i32 {
     let si = UnitClassId::Sentinel.info();
     g.cities[&cid].sentinel_damage.iter().filter(|&&d| d < 100).map(|&d| (si.atk + si.def) * (100 - d) / 100).sum()
 }
@@ -290,7 +290,7 @@ fn guard_needs(g: &Game, p: PlayerId) -> Vec<(CityId, usize, i32)> {
 }
 
 /// The Lifeboat this civilization's free squads go for after the Blowout, if any: the standing
-/// Lifeboat held by someone we are at war with that has the best prospects.
+/// Lifeboat held by someone we are at war with, or may declare war on, that has the best prospects.
 fn pick_lifeboat_target(g: &Game, p: PlayerId, free: &[SquadId], paths: &mut Paths) -> Option<PlotIdx> {
     let our_power: i32 = free.iter().filter_map(|s| g.squads.get(s)).map(|s| s.power_rating()).sum();
     if free.is_empty() {
@@ -299,7 +299,8 @@ fn pick_lifeboat_target(g: &Game, p: PlayerId, free: &[SquadId], paths: &mut Pat
     let mut best: Option<(i64, PlotIdx)> = None;
     for lb in g.apocalypse.lifeboats.iter().filter(|l| !l.razed) {
         let Some(c) = g.cities.get(&lb.city_id) else { continue };
-        if c.owner == p || !g.at_war(p, c.owner) {
+        // Held by someone we are at war with, or may go to war with (diplomacy declares on the pick).
+        if c.owner == p || (!g.at_war(p, c.owner) && g.check_war(p, c.owner).is_err()) {
             continue;
         }
         // How far our squads have to go (the nearest one), over the plots they can step on.
@@ -484,8 +485,32 @@ pub(crate) fn manage_squads(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) 
     }
 }
 
+/// The power of our squads that are not home guards this turn (the roles `manage_squads` gives).
+pub(crate) fn free_power(g: &Game, p: PlayerId) -> i32 {
+    let roles = assign_roles(g, p, &mut Paths::default());
+    roles.iter().filter(|(_, r)| !matches!(r, Role::Guard(_))).filter_map(|(s, _)| g.squads.get(s)).map(|s| s.power_rating()).sum()
+}
+
+/// The Lifeboat our squads are sent at this turn, if any (the same pick `manage_squads` makes).
+pub(crate) fn lifeboat_assault_target(g: &Game, p: PlayerId) -> Option<PlotIdx> {
+    assign_roles(g, p, &mut Paths::default()).values().find_map(|r| match r {
+        Role::Assault(t) => Some(*t),
+        _ => None,
+    })
+}
+
+/// One of our squads stands next to a city of `e` and would take it now on the forecast.
+pub(crate) fn can_take_city_of(g: &Game, p: PlayerId, e: PlayerId) -> bool {
+    g.cities.values().filter(|c| c.owner == e).any(|c| {
+        g.squads
+            .values()
+            .filter(|s| s.owner == p && g.world.distance(s.plot, c.plot) == 1)
+            .any(|s| matches!(attack_reason(g, p, s.id, c.plot, false), Some(Reason::WalkIn | Reason::Falls)))
+    })
+}
+
 /// The Lifeboat city we hold, if any (the plot).
-fn held_lifeboat(g: &Game, p: PlayerId) -> Option<PlotIdx> {
+pub(crate) fn held_lifeboat(g: &Game, p: PlayerId) -> Option<PlotIdx> {
     g.apocalypse.lifeboats.iter().filter(|l| !l.razed).filter_map(|l| g.cities.get(&l.city_id)).filter(|c| c.owner == p).map(|c| c.plot).min()
 }
 

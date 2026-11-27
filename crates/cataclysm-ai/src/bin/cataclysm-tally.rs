@@ -82,8 +82,16 @@ struct Totals {
     battles: i64,
     founded: i64,
     eliminated: i64,
+    /// Eliminated, not counting King Cinder's Host (which enters late and never signs peace).
+    eliminated_mortal: i64,
     wars_declared: i64,
     peaces: i64,
+    /// Wars between civilizations that ended in peace: (turns fought, the stronger side's squad
+    /// power over the weaker's, x100, the step before).
+    peace_signed: Vec<(i32, i32)>,
+    /// Wars between civilizations that ended with one side eliminated, and those still on at the end.
+    wars_to_elimination: usize,
+    wars_running: usize,
     lifeboat_captures: i64,
     games_with_lifeboat_capture: usize,
     /// kind -> (registered, standing at the end, held by a winner at the end)
@@ -161,6 +169,8 @@ fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut
     let mut exhausted: Vec<Option<i32>> = Vec::new();
     let mut lifeboat_captures = 0i64;
     let mut wars: BTreeSet<(PlayerId, PlayerId)> = g.wars.clone();
+    let mut war_began: BTreeMap<(PlayerId, PlayerId), i32> = g.war_started.clone();
+    let mut power: BTreeMap<PlayerId, i32> = g.players.iter().map(|pl| (pl.id, 0)).collect();
     let mut steps = 0;
     let mut stalled = false;
     while !g.is_over() {
@@ -205,7 +215,24 @@ fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut
         }
         t.wars_declared += g.wars.difference(&wars).count() as i64;
         t.peaces += wars.difference(&g.wars).count() as i64;
+        for &(a, b) in wars.difference(&g.wars) {
+            if g.players[a.idx()].is_neutral || g.players[b.idx()].is_neutral {
+                continue;
+            }
+            if g.players[a.idx()].alive && g.players[b.idx()].alive {
+                let (pa, pb) = (power.get(&a).copied().unwrap_or(0).max(1), power.get(&b).copied().unwrap_or(0).max(1));
+                t.peace_signed.push((g.turn - war_began.get(&(a, b)).copied().unwrap_or(g.turn), pa.max(pb) * 100 / pa.min(pb)));
+            } else {
+                t.wars_to_elimination += 1;
+            }
+        }
         wars = g.wars.clone();
+        war_began = g.war_started.clone();
+        power.clear();
+        for s in g.squads.values() {
+            *power.entry(s.owner).or_insert(0) += s.power_rating();
+        }
+
         if seat0_out.is_none() && !g.players[0].alive {
             seat0_out = Some(g.turn);
         }
@@ -238,6 +265,14 @@ fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut
     }
 
     t.games += 1;
+    // An eliminated civilization's wars stay in `wars`.
+    for (a, b) in g.wars.iter().filter(|(a, b)| !g.players[a.idx()].is_neutral && !g.players[b.idx()].is_neutral) {
+        if g.players[a.idx()].alive && g.players[b.idx()].alive {
+            t.wars_running += 1;
+        } else {
+            t.wars_to_elimination += 1;
+        }
+    }
     t.stalled += stalled as usize;
     t.invariant_errors += g.check_invariants().is_err() as usize;
     let outcome = g.apocalypse.outcome.clone();
@@ -258,6 +293,7 @@ fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut
         t.great_people += pl.great_people_born as i64;
         if !pl.alive {
             t.eliminated += 1;
+            t.eliminated_mortal += (pl.faction != FactionId::Infernals) as i64;
             continue;
         }
         t.civs_alive_at_end += 1;
@@ -383,6 +419,17 @@ fn main() {
         t.founded as f64 / g,
         t.eliminated as f64 / g
     );
+    let lengths: Vec<i32> = t.peace_signed.iter().map(|x| x.0).collect();
+    let ratios: Vec<i32> = t.peace_signed.iter().map(|x| x.1).collect();
+    println!(
+        "wars ended between civilizations: in peace {} (turns fought {}, stronger/weaker squad power x100 {}), by an elimination {}, still on at the end {}",
+        t.peace_signed.len(),
+        spread(&lengths),
+        spread(&ratios),
+        t.wars_to_elimination,
+        t.wars_running
+    );
+    println!("civilizations eliminated per game, King Cinder's Host not counted: {:.1}", t.eliminated_mortal as f64 / g);
     println!("seat 0 eliminated in {} games (turn {}), before turn 60 in {}", t.seat0_out.len(), spread(&t.seat0_out), t.seat0_out.iter().filter(|&&x| x < 60).count());
     println!(
         "after the Blowout ({} games): a Lifeboat was captured in {} of them ({:.1} captures per game)",
