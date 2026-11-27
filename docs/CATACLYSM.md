@@ -150,8 +150,9 @@ These rules changed, each on purpose; the numbers were then set with `cataclysm-
   230-245), the same in every Doctrine; the Primary discount (75%) and the Foundation costs are
   unchanged. Set from the measured Lore income (10 a turn early, 60 late) so that a Primary ladder
   takes until about turn 90.
-- **Lore is never idle.** A civilization with no tech it can research converts its Lore to Sage
-  Renown at its turn start, 10 Lore per 1 Renown.
+- **Lore is never idle.** A civilization that has adopted both Doctrines and has no tech it can
+  research converts its Lore to Sage Renown at its turn start, 10 Lore per 1 Renown (with a
+  Doctrine still to adopt, the Lore is kept for the techs that opens).
 - **Peace needs both sides, then a truce.** Make Peace records an offer that stands 5 turns; peace
   is signed when the other side offers while it stands. For 10 turns after, neither may declare
   war on the other, attack it, call a Crusade against it or lend a squad to one. It was one-sided
@@ -191,7 +192,7 @@ checked under all three, and at 2 and 8 civilizations, so that it is not tuned t
 
 ### Pacing targets
 
-Written before the first number was tuned; "before" is the merged ruleset (671eee87), "now" the
+Written before the first number was tuned; "before" is the ruleset as first merged (74378bfc, with the turn-order fix), "now" the
 end of the pacing pass. 6 civilizations unless said.
 
 | | Target | Before | Now |
@@ -231,4 +232,5 @@ a side that is clearly winning does not sign a peace.
 Open (rules): vassalage has a command that breaks the oath and nothing that creates a vassal; a
 Cataclysm game cannot be saved or resumed; the attack forecast sees one defending squad, so a city
 held by two looks takeable in one battle; a guard in a besieged city with no other city in supply
-range goes hungry; the Wild Clans never move; Industry made while a city has no order is lost.
+range goes hungry; the Wild Clans never move; Industry made while a city has no order is lost;
+Gold has no use late in a game (squads full and upgraded: about 2,000 unspent per AI civilization).

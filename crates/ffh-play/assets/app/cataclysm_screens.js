@@ -674,7 +674,7 @@ function researchTab(ctx, data) {
       ? h("div", `Researching: ${cur.name}, ${cur.progress}/${cur.cost} Lore, ${plural(cur.turns, "turn")}.`)
       : has(res.idle_lore_text)
         ? h("div", res.idle_lore_text)
-        : h("div.warn", "No research chosen."),
+        : h("div.warn", res.adopt_text ?? "No research chosen."),
     h("div", `Primary doctrine: ${res.primary_doctrine_name ?? "none"}. Secondary doctrine: ${res.secondary_doctrine_name ?? "none"}.`),
     has(rule) ? h("small.cat-note", rule) : null,
     h("h4", "Foundation"),

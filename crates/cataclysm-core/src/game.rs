@@ -2678,10 +2678,18 @@ impl Game {
         self.recompute_vision(player);
     }
 
-    /// With no tech left that `player` can research, its Lore becomes Sage Renown:
+    /// Whether `p`'s Lore converts to Sage Renown at its turn start: no tech can be researched and
+    /// both Doctrines are adopted. While a Doctrine is still to adopt, adopting it would open techs,
+    /// so the Lore is kept for them.
+    pub fn lore_converts(&self, p: PlayerId) -> bool {
+        let pl = &self.players[p.idx()];
+        pl.primary_doctrine.is_some() && pl.secondary_doctrine.is_some() && !self.can_research_any(p)
+    }
+
+    /// With no tech left that `player` can research (`lore_converts`), its Lore becomes Sage Renown:
     /// `LORE_PER_SAGE_RENOWN` Lore per 1 Renown, the remainder kept in `lore_progress`.
     pub(crate) fn convert_idle_lore(&mut self, player: PlayerId) {
-        if self.can_research_any(player) {
+        if !self.lore_converts(player) {
             return;
         }
         let pl = &mut self.players[player.idx()];

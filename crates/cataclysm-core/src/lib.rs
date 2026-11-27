@@ -132,6 +132,23 @@ mod tests {
     }
 
     #[test]
+    fn lore_is_kept_while_a_doctrine_is_still_to_adopt() {
+        let mut g = Game::new(GameSetup::default());
+        let p0 = PlayerId(0);
+        // Every Foundation tech and no Doctrine: nothing can be researched, and adopting one would open techs.
+        g.players[0].techs = TECHS.iter().filter(|t| t.doctrine.is_none()).map(|t| t.id).collect();
+        g.players[0].primary_doctrine = None;
+        g.players[0].secondary_doctrine = None;
+        g.players[0].current_research = None;
+        assert!(!g.can_research_any(p0));
+        g.players[0].lore_progress = 95;
+        let sage = g.players[0].renown_meters[GreatSuit::Sage.id()];
+        g.convert_idle_lore(p0);
+        assert_eq!(g.players[0].lore_progress, 95);
+        assert_eq!(g.players[0].renown_meters[GreatSuit::Sage.id()], sage);
+    }
+
+    #[test]
     fn lore_is_kept_while_a_tech_can_be_researched() {
         let mut g = Game::new(GameSetup::default());
         g.players[0].current_research = None;

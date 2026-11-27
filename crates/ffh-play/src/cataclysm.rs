@@ -1148,10 +1148,12 @@ impl CataclysmSession {
             },
             "research" => crate::jobj! {
                 "current" => current_res,
-                "idle_lore_text" => (!g.can_research_any(h)).then(|| format!(
+                "idle_lore_text" => g.lore_converts(h).then(|| format!(
                     "No tech can be researched: at your turn start Lore converts to Sage Renown, {} Lore per 1 Renown.",
                     cataclysm_core::game::LORE_PER_SAGE_RENOWN
                 )),
+                "adopt_text" => (!g.can_research_any(h) && !g.lore_converts(h))
+                    .then_some("No tech can be researched until you adopt a Doctrine. Lore is kept."),
                 "primary_doctrine" => me_pl.primary_doctrine.map(Doctrine::key),
                 "primary_doctrine_name" => me_pl.primary_doctrine.map(Doctrine::name),
                 "secondary_doctrine" => me_pl.secondary_doctrine.map(Doctrine::key),
@@ -2213,7 +2215,7 @@ fn doctrine_rule() -> String {
 
 fn lore_overflow_rule() -> String {
     format!(
-        "When no tech can be researched now (Doctrines not yet adopted open none), Lore converts to Sage Renown at your turn start: {} Lore per 1 Renown, the remainder kept.",
+        "When no tech can be researched and both Doctrines are adopted, Lore converts to Sage Renown at your turn start: {} Lore per 1 Renown, the remainder kept. Until both are adopted Lore is kept.",
         cataclysm_core::game::LORE_PER_SAGE_RENOWN
     )
 }
