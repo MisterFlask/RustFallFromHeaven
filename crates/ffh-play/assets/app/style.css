@@ -2090,9 +2090,11 @@ html.iso button.cat-tech-node.avail {
 }
 .cat-tech-head {
   display: flex;
+  /* A cost that does not fit beside the name ("1750 Lore · +6 Strain") goes under it. */
+  flex-wrap: wrap;
   justify-content: space-between;
   width: 100%;
-  gap: 6px;
+  gap: 0 6px;
 }
 .cat-doc-row {
   margin-bottom: 10px;
