@@ -94,7 +94,7 @@ pub const PEACE_OFFER_TURNS: i32 = 5;
 /// After peace is signed, neither side may start a war on the other for this many world turns.
 pub const TRUCE_TURNS: i32 = 10;
 /// Lore per 1 Sage Renown when a player has no tech it can research (the remainder is kept).
-pub const LORE_PER_SAGE_RENOWN: i32 = 5;
+pub const LORE_PER_SAGE_RENOWN: i32 = 10;
 
 /// Strain change of Vent the Seal cast by the Keepers of the Seal (others: the ritual's own).
 pub const SANCTIFY_KEEPERS_STRAIN: i32 = -5;
