@@ -37,7 +37,7 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
 - **Three Hearths** (*Ward-Heir Corin*): Imperial urbanists capped at 3 six-district megacities (`+50%` output & Culture), fed by low-upkeep Outposts.
 - **Vault & Crucible** (*Master-Assayer Bram*): Mortal foundry-guilds requiring full bullion vaults (`>= 200` Gold/city) to fire deep furnaces (`+35%` Industry & `+4` Armor; `+25%` Siege Bombard damage).
 - **Canopy** (*Mistress Sylva*): Dissidents who abandoned the geothermal grid for ash-filtering forest highways (cost-1 forest movement, forest supply lines, no forest ranged penalties).
-- **Wreckers** (*Broker Vane*): Collapse-profiteers trading sabotage with the deep servitors (may win Surface *or* Furnace victory; may raze own cities for `+6 Strain`; Deep Shaft spawns Pyre Zombies).
+- **Wreckers** (*Broker Vane*): Collapse-profiteers trading sabotage with the deep servitors (may win Surface *or* Furnace victory; may raze own cities for `+6 Strain`; Deep Shaft spawns Stokers).
 - **King Cinder's Host** (*King Cinder*): The rebel furnace-servitors breaking out at Strain 50 (Furnace victory only—raze every Lifeboat after Strain 100; heal `+15%` on kills; thrive on scorched ground).
 
 ## Core Rules Summary
@@ -46,8 +46,9 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
   2-cell units, named Captain with embedded portrait and passive aura, Wounded Hero recovery.
 - **9 asymmetric factions**: Seventh Garrison, Keepers of the Seal, Tappers' College, Postriders,
   Three Hearths, Vault & Crucible, Canopy, Wreckers, and King Cinder's Host (rising at Strain 50).
-- **25 unit classes**: 24 recruitable classes across 3 tiers plus persistent city Wall Sentinels,
-  each mapped to real `UNIT_*` sprite keys.
+- **25 unit classes**: 24 recruitable classes across 3 tiers (standard core troops plus signature
+  Worldseal units `Mender`, `Ashbound`, `Stoker`, and `Slagbreaker`) plus persistent
+  city `Wall Sentinels`, each mapped to real `UNIT_*` sprite keys.
 - **4 decoupled currencies**: Gold, Industry, Lore, and Mana (no commerce slider), with formula
   breakdowns, physical Caravans on the map, Raids & Sallies, literal Supply Lines (budget 18;
   road=1 / own=1 / wild=3; enemy/fort ZoC blocks → Hunger → Starvation), and zero Workers
@@ -58,9 +59,10 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
   Regional Houses (up to 4 cities per House under a minor-leader portrait Lord whose loyalty
   scales output and disables the House perk if Furious).
 - **Compact 36-tech tree + Creeds + Rituals**: 8 Foundation techs + 7 Doctrine Ladders × 4 tiers
-  (commit to 1 Primary Doctrine + optional Tier 1–2 Secondary dip), separate world race for 5
-  Creeds (`Code of the Watch`, `Weight & Measure`, `Old Growth`, `Choir Below`, `Open the Vent`),
-  and 6 empire-level Strategic Rituals cast with Mana.
+  (`Steel`, `Cavalry`, `Arcane`, `Faith`, `Artifice`, `Wild`, `Mercantile`; commit to 1 Primary
+  Doctrine + optional Tier 1–2 Secondary dip), separate world race for 5 Creeds (`Code of the Watch`,
+  `Weight & Measure`, `Old Growth`, `Choir Below`, `Open the Vent`), and 6 empire-level Strategic
+  Rituals cast with Mana.
 - **Great People Court**: 6 empire-wide suit Renown meters (Sage, Prophet, Engineer, Merchant,
   Bard, Commander), arriving with a visible Secret Tech drawn from a shared 24-card world deck of
   surviving Imperial manuals and a 3-way choice: (1) Discover Secret Tech, (2) Instant Tempo Burst

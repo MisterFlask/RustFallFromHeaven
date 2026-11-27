@@ -203,24 +203,26 @@ export function openMacroCity(cityId) {
 
     // Raise Squad Presets
     const unlocked = new Set(data.recruitable_classes.filter((u) => u.unlocked).map((u) => u.key));
+    const className = new Map(data.recruitable_classes.map((u) => [u.key, u.name]));
     const pick = (...keys) => keys.find((k) => unlocked.has(k)) ?? "guard";
     const presets = [
       { label: "Vanguard Squad (Front + Archers)", classes: [pick("phalanx", "champion", "axeman", "guard"), pick("pikeman", "axeman", "guard"), pick("longbowman", "archer", "guard")] },
-      { label: "Raider Squad (Fast Flanking)", classes: [pick("knight", "horseman", "guard"), pick("ranger", "assassin", "horseman", "guard"), pick("archer", "guard")] },
-      { label: "Arcane Cabal (Guard + Mages)", classes: [pick("phalanx", "axeman", "guard"), pick("archmage", "mage", "adept", "guard"), pick("acolyte", "adept", "guard")] },
-      { label: "Siege Battery (Guard + Bombards)", classes: [pick("phalanx", "axeman", "guard"), pick("trebuchet", "catapult", "archer", "guard"), pick("catapult", "archer", "guard")] },
+      { label: "Postrider Column (Fast Flanking)", classes: [pick("knight", "horseman", "guard"), pick("ranger", "assassin", "horseman", "guard"), pick("archer", "guard")] },
+      { label: "Arcane Battery (Guard + Casters)", classes: [pick("phalanx", "axeman", "guard"), pick("archmage", "mage", "adept", "guard"), pick("acolyte", "adept", "guard")] },
+      { label: "Siege Train (Guard + Bombards)", classes: [pick("phalanx", "axeman", "guard"), pick("trebuchet", "catapult", "archer", "guard"), pick("catapult", "archer", "guard")] },
     ];
     const capFull = data.squad_count >= data.squad_cap;
     buildSection.push(h("h4", `Raise Squad (${data.squad_count}/${data.squad_cap} Squad Cap)`));
     buildSection.push(
       h(
         "div.cat-grid-2",
-        ...presets.map((pr) =>
-          h(
+        ...presets.map((pr) => {
+          const labels = pr.classes.map((k) => className.get(k) ?? k);
+          return h(
             "button.cat-card-btn",
             {
               disabled: capFull,
-              title: capFull ? "Squad cap reached — build Barracks or expand" : pr.classes.join(", "),
+              title: capFull ? "Squad cap reached — build Barracks or expand" : labels.join(", "),
               onclick: async () => {
                 if (await catCmd({ c: "cat_city_build", city: c.id, kind: "squad", classes: pr.classes })) {
                   closeTag("cat-city");
@@ -228,9 +230,9 @@ export function openMacroCity(cityId) {
               },
             },
             h("strong", pr.label),
-            h("small.dim", pr.classes.join(" + ")),
-          ),
-        ),
+            h("small.dim", labels.join(" + ")),
+          );
+        }),
       ),
     );
 

@@ -117,7 +117,7 @@ impl CataclysmSession {
             reveal: Cell::new(false),
             view_version: 1,
             game_tag: format!("cataclysm-{fac_key}-{seed}"),
-            last_report_lines: vec!["Act I begins. Move your Vanguard Squad, pick a District, or explore nearby lairs.".into()],
+            last_report_lines: vec!["Act I begins. Move your Vanguard Squad, pick a District, or scout nearby Imperial Ruins.".into()],
             last_report_battles: Vec::new(),
         })
     }

@@ -663,12 +663,12 @@ impl Game {
     pub fn mana_breakdown(&self, p: PlayerId) -> RateBreakdown {
         let mut r = RateBreakdown::default();
         let pl = &self.players[p.idx()];
-        r.add(1, "Leylines Base");
+        r.add(1, "Natural Seepage");
         let mut city_mana = 0;
         for c in self.cities.values().filter(|c| c.owner == p) {
             city_mana += self.city_yields(c.id).5;
         }
-        r.add(city_mana, "Nodes, Academies & Faith");
+        r.add(city_mana, "Mana Vents, Academies & Creeds");
         if pl.has_tech(crate::data::TECH_GRAND_CONJURATION) {
             r.add(3, "Grand Conjuration");
         }
@@ -853,7 +853,7 @@ impl Game {
             return Err("Paladins serve Good or Neutral empires".into());
         }
         if class == UnitClassId::Eidolon && pl.alignment != Alignment::Evil {
-            return Err("Eidolons serve Evil empires".into());
+            return Err("Ashbound serve Evil empires".into());
         }
         if matches!(class, UnitClassId::PyreZombie | UnitClassId::Balor)
             && !matches!(pl.faction, FactionId::Sheaim | FactionId::Infernals)
@@ -1504,7 +1504,7 @@ impl Game {
             return Err(CmdErr::cannot("not your squad"));
         }
         if !self.world.plot(s.plot).lair_unexplored {
-            return Err(CmdErr::cannot("no unexplored lair on this plot"));
+            return Err(CmdErr::cannot("no unexplored Imperial Ruin on this plot"));
         }
         self.world.plot_mut(s.plot).lair_unexplored = false;
         self.world.plot_mut(s.plot).improvement = Improvement::None;
@@ -1513,16 +1513,16 @@ impl Game {
         let summary = match roll {
             0 => {
                 self.players[player.idx()].gold += 75;
-                "Ancient hoard uncovered: +75 Gold!".to_string()
+                "Imperial cache uncovered: +75 Gold!".to_string()
             }
             1 => {
                 self.players[player.idx()].mana += 25;
                 self.players[player.idx()].renown_meters[GreatSuit::Sage.id()] += 15;
-                "Arcane relics recovered: +25 Mana & +15 Sage Renown!".to_string()
+                "Pressurized canisters recovered: +25 Mana & +15 Sage Renown!".to_string()
             }
             2 => {
                 self.players[player.idx()].lore_progress += 35;
-                "Lost scrolls deciphered: +35 Lore!".to_string()
+                "Imperial schematics deciphered: +35 Lore!".to_string()
             }
             _ => {
                 if let Some(sq) = self.squads.get_mut(&squad_id) {
@@ -1530,7 +1530,7 @@ impl Game {
                         m.grant_xp(15);
                     }
                 }
-                "Lair guardian defeated: +15 XP to the whole Squad!".to_string()
+                "Ruin wardens defeated: +15 XP to the whole Squad!".to_string()
             }
         };
         if let Some(sq) = self.squads.get_mut(&squad_id) {
@@ -2224,7 +2224,7 @@ impl Game {
             if let Some(cp) = cap_plot {
                 if self.player_squads(player).len() < self.squad_cap(player) {
                     self.spawn_squad_internal(player, cp, &[UnitClassId::PyreZombie, UnitClassId::PyreZombie]);
-                    self.push_log(Some(player), Some(cp), None, "Deep Shaft opened: Pyre Zombies emerged!");
+                    self.push_log(Some(player), Some(cp), None, "Deep Shaft opened: Stokers emerged!");
                 }
             }
         }

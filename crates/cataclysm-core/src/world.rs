@@ -230,8 +230,8 @@ impl Improvement {
             Improvement::Lumbermill => "Lumbermill",
             Improvement::FishingBoats => "Fishing Boats",
             Improvement::Fort => "Fort",
-            Improvement::ManaNode => "Mana Node",
-            Improvement::RuinsLair => "Ancient Lair",
+            Improvement::ManaNode => "Mana Vent",
+            Improvement::RuinsLair => "Imperial Ruin",
         }
     }
 }

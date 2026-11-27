@@ -334,7 +334,7 @@ pub const FACTIONS: [FactionInfo; 9] = [
         starting_mana: 30,
         city_names: &["Sinktown", "Pitchworks", "Falsebeacon", "Shaftmouth", "Cinderlot", "Ashyard"],
         lore_blurb: "Expelled shaft-surveyors and collapse-profiteers who struck deals with the sealed servitors—collapsing towns to widen vents while hedging both victory paths.",
-        rule_summary: "May win Surface OR Furnace victory; may raze own cities (+6 Strain); Deep Shaft spawns Pyre Zombies as Strain rises.",
+        rule_summary: "May win Surface OR Furnace victory; may raze own cities (+6 Strain); Deep Shaft spawns Stokers as Strain rises.",
     },
     FactionInfo {
         id: FactionId::Infernals,
@@ -415,10 +415,10 @@ impl Doctrine {
         match self {
             Doctrine::Steel => "Heavy infantry, Cleave/Anti-Flank phalanxes, armored front rows.",
             Doctrine::Cavalry => "Fast flanking Charges, Raid bonuses, long-reach supply.",
-            Doctrine::Arcane => "Battle spells, Archmages, Strategic Rituals, Siphon Spire.",
-            Doctrine::Faith => "Healers, Paladins/Eidolons, Crusade bonuses, Great Cistern.",
-            Doctrine::Artifice => "Siege Bombards, Sentinel walls, Golems, Industry & Forts.",
-            Doctrine::Wild => "Rangers, Assassins, Large Beasts, forest/ambush mastery.",
+            Doctrine::Arcane => "Vent-ether battle spells, Archmages, Strategic Rituals, Siphon Spire.",
+            Doctrine::Faith => "Menders, Paladins/Ashbound, Crusade bonuses, Great Cistern.",
+            Doctrine::Artifice => "Siege Bombards, Sentinel walls, heavy industry & forts.",
+            Doctrine::Wild => "Rangers, Assassins, War Beasts, forest/ambush mastery.",
             Doctrine::Mercantile => "Extra Caravans, 5-place squads early, Mercenary captains, Gold warfare.",
         }
     }
@@ -498,15 +498,15 @@ pub const TECHS: [TechInfo; 36] = [
     // Foundation (turns 1..30)
     TechInfo { id: TECH_FIELDCRAFT, key: "fieldcraft", name: "Fieldcraft", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Enables Squad Roads, Forts, and Raid order." },
     TechInfo { id: TECH_ARCHERY, key: "archery", name: "Archery", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Archer (middle/rear Volley)." },
-    TechInfo { id: TECH_ARCANA, key: "arcana", name: "Arcana", doctrine: None, tier: 0, cost: 40, prereq: None, ac_delta: 1, unlocks_summary: "Unlocks Adept, Academy district, and Mana Nodes." },
+    TechInfo { id: TECH_ARCANA, key: "arcana", name: "Arcana", doctrine: None, tier: 0, cost: 40, prereq: None, ac_delta: 1, unlocks_summary: "Unlocks Adept, Academy district, and Mana Vents." },
     TechInfo { id: TECH_TRADE_ROADS, key: "trade_roads", name: "Trade Roads", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Market district, Caravans, and +4 Supply range." },
     TechInfo { id: TECH_FORTIFICATION, key: "fortification", name: "Fortification", doctrine: None, tier: 0, cost: 40, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Bulwark district (2 Sentinels) and Siege supply rules." },
-    TechInfo { id: TECH_MYSTICISM, key: "mysticism", name: "Mysticism", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Temple district, Acolyte (Heal), and Creed race." },
+    TechInfo { id: TECH_MYSTICISM, key: "mysticism", name: "Mysticism", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Temple district, Mender (Heal), and Creed race." },
     TechInfo { id: TECH_METALLURGY, key: "metallurgy", name: "Metallurgy", doctrine: None, tier: 0, cost: 45, prereq: None, ac_delta: 1, unlocks_summary: "Unlocks Forge district and Axeman." },
     TechInfo { id: TECH_HORSEMANSHIP, key: "horsemanship", name: "Horsemanship", doctrine: None, tier: 0, cost: 45, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Horseman (Front Charge)." },
 
     // Steel
-    TechInfo { id: TECH_BRONZE_ARMS, key: "bronze_arms", name: "Bronze Arms", doctrine: Some(Doctrine::Steel), tier: 1, cost: 70, prereq: Some(TECH_METALLURGY), ac_delta: 0, unlocks_summary: "Unlocks Pikeman (Anti-Flank); +10% Guard ATK." },
+    TechInfo { id: TECH_BRONZE_ARMS, key: "bronze_arms", name: "Bronze Arms", doctrine: Some(Doctrine::Steel), tier: 1, cost: 70, prereq: Some(TECH_METALLURGY), ac_delta: 0, unlocks_summary: "Unlocks Pikeman (Anti-Flank); +10% front-row ATK." },
     TechInfo { id: TECH_IRON_DISCIPLINE, key: "iron_discipline", name: "Iron Discipline", doctrine: Some(Doctrine::Steel), tier: 2, cost: 115, prereq: Some(TECH_BRONZE_ARMS), ac_delta: 1, unlocks_summary: "Unlocks Champion; Squad capacity increases to 5 places." },
     TechInfo { id: TECH_PHALANX_WALL, key: "phalanx_wall", name: "Phalanx Wall", doctrine: Some(Doctrine::Steel), tier: 3, cost: 170, prereq: Some(TECH_IRON_DISCIPLINE), ac_delta: 2, unlocks_summary: "Unlocks Phalanx (Armor 8, Anti-Flank); +15% front-row DEF." },
     TechInfo { id: TECH_MITHRIL_LEGIONS, key: "mithril_legions", name: "Mithril Legions", doctrine: Some(Doctrine::Steel), tier: 4, cost: 240, prereq: Some(TECH_PHALANX_WALL), ac_delta: 6, unlocks_summary: "Unlocks Berserker (Cleave) & Ogre (Large 2-cell); +20% Melee ATK." },
@@ -519,32 +519,32 @@ pub const TECHS: [TechInfo; 36] = [
 
     // Arcane
     TechInfo { id: TECH_SORCERY, key: "sorcery", name: "Sorcery", doctrine: Some(Doctrine::Arcane), tier: 1, cost: 75, prereq: Some(TECH_ARCANA), ac_delta: 2, unlocks_summary: "Unlocks Mage (Fireball splash battle spell)." },
-    TechInfo { id: TECH_ELEMENTALISM, key: "elementalism", name: "Elementalism", doctrine: Some(Doctrine::Arcane), tier: 2, cost: 120, prereq: Some(TECH_SORCERY), ac_delta: 3, unlocks_summary: "Squad capacity increases to 5 places; unlocks Crack/Draft rituals." },
+    TechInfo { id: TECH_ELEMENTALISM, key: "elementalism", name: "Elementalism", doctrine: Some(Doctrine::Arcane), tier: 2, cost: 120, prereq: Some(TECH_SORCERY), ac_delta: 3, unlocks_summary: "Squad capacity increases to 5 places; expands vent-ether tapping." },
     TechInfo { id: TECH_GRAND_CONJURATION, key: "grand_conjuration", name: "Grand Conjuration", doctrine: Some(Doctrine::Arcane), tier: 3, cost: 175, prereq: Some(TECH_ELEMENTALISM), ac_delta: 4, unlocks_summary: "+25% Battle Spell power; +3 Mana/turn." },
     TechInfo { id: TECH_STRENGTH_OF_WILL, key: "strength_of_will", name: "Strength of Will", doctrine: Some(Doctrine::Arcane), tier: 4, cost: 245, prereq: Some(TECH_GRAND_CONJURATION), ac_delta: 8, unlocks_summary: "Unlocks Archmage (Sweep spell) & Siphon Spire Lifeboat Wonder." },
 
     // Faith
-    TechInfo { id: TECH_PRIESTHOOD, key: "priesthood", name: "Priesthood", doctrine: Some(Doctrine::Faith), tier: 1, cost: 70, prereq: Some(TECH_MYSTICISM), ac_delta: -1, unlocks_summary: "Unlocks Priest (Row Heal); +1 House Loyalty." },
+    TechInfo { id: TECH_PRIESTHOOD, key: "priesthood", name: "Priesthood", doctrine: Some(Doctrine::Faith), tier: 1, cost: 70, prereq: Some(TECH_MYSTICISM), ac_delta: -1, unlocks_summary: "-1 Worldseal Strain; +1 House Loyalty across your empire." },
     TechInfo { id: TECH_FANATICISM, key: "fanaticism", name: "Fanaticism", doctrine: Some(Doctrine::Faith), tier: 2, cost: 115, prereq: Some(TECH_PRIESTHOOD), ac_delta: 0, unlocks_summary: "Squad capacity increases to 5 places; enables Crusade Calls." },
-    TechInfo { id: TECH_RIGHTEOUS_VOWS, key: "righteous_vows", name: "Righteous Vows", doctrine: Some(Doctrine::Faith), tier: 3, cost: 170, prereq: Some(TECH_FANATICISM), ac_delta: -2, unlocks_summary: "Unlocks Paladin (Good/Neutral) or Eidolon (Evil)." },
+    TechInfo { id: TECH_RIGHTEOUS_VOWS, key: "righteous_vows", name: "Righteous Vows", doctrine: Some(Doctrine::Faith), tier: 3, cost: 170, prereq: Some(TECH_FANATICISM), ac_delta: -2, unlocks_summary: "-2 Strain; unlocks Paladin (Good/Neutral) or Ashbound (Evil)." },
     TechInfo { id: TECH_DIVINE_ESSENCE, key: "divine_essence", name: "Divine Essence", doctrine: Some(Doctrine::Faith), tier: 4, cost: 240, prereq: Some(TECH_RIGHTEOUS_VOWS), ac_delta: 5, unlocks_summary: "Unlocks Great Cistern Lifeboat Wonder; Heals revive fallen." },
 
     // Artifice
     TechInfo { id: TECH_SIEGECRAFT, key: "siegecraft", name: "Siegecraft", doctrine: Some(Doctrine::Artifice), tier: 1, cost: 70, prereq: Some(TECH_FORTIFICATION), ac_delta: 0, unlocks_summary: "Unlocks Catapult (Bombard vs Sentinels)." },
     TechInfo { id: TECH_MASONRY_WARDS, key: "masonry_wards", name: "Masonry Wards", doctrine: Some(Doctrine::Artifice), tier: 2, cost: 115, prereq: Some(TECH_SIEGECRAFT), ac_delta: 1, unlocks_summary: "Squad capacity increases to 5 places; Bulwarks grant 3 Sentinels." },
     TechInfo { id: TECH_TREBUCHETS, key: "trebuchets", name: "Trebuchets", doctrine: Some(Doctrine::Artifice), tier: 3, cost: 170, prereq: Some(TECH_MASONRY_WARDS), ac_delta: 2, unlocks_summary: "Unlocks Trebuchet (+60% vs Walls, splash Bombard)." },
-    TechInfo { id: TECH_COLOSSUS_FORGE, key: "colossus_forge", name: "Colossus Forge", doctrine: Some(Doctrine::Artifice), tier: 4, cost: 240, prereq: Some(TECH_TREBUCHETS), ac_delta: 6, unlocks_summary: "Unlocks Ogre/Colossus (Large 2-cell); +25% City Industry." },
+    TechInfo { id: TECH_COLOSSUS_FORGE, key: "colossus_forge", name: "Colossus Forge", doctrine: Some(Doctrine::Artifice), tier: 4, cost: 240, prereq: Some(TECH_TREBUCHETS), ac_delta: 6, unlocks_summary: "+25% City Industry across your empire for siege & Lifeboat works." },
 
     // Wild
     TechInfo { id: TECH_TRACKING, key: "tracking", name: "Tracking", doctrine: Some(Doctrine::Wild), tier: 1, cost: 70, prereq: Some(TECH_ARCHERY), ac_delta: 0, unlocks_summary: "Unlocks Ranger (Strike front / Shoot rear); +1 Squad sight." },
     TechInfo { id: TECH_POISONS, key: "poisons", name: "Poisons", doctrine: Some(Doctrine::Wild), tier: 2, cost: 115, prereq: Some(TECH_TRACKING), ac_delta: 1, unlocks_summary: "Unlocks Assassin (Stab back row); Squad capacity increases to 5 places." },
     TechInfo { id: TECH_FERAL_BOND, key: "feral_bond", name: "Feral Bond", doctrine: Some(Doctrine::Wild), tier: 3, cost: 170, prereq: Some(TECH_POISONS), ac_delta: 2, unlocks_summary: "Unlocks Longbowman (Volley) and War Beast (Large 2-cell)." },
-    TechInfo { id: TECH_APEX_PREDATORS, key: "apex_predators", name: "Apex Predators", doctrine: Some(Doctrine::Wild), tier: 4, cost: 240, prereq: Some(TECH_FERAL_BOND), ac_delta: 5, unlocks_summary: "Stab/Shoot gain Armor-Piercing; +20% crit chance in forests." },
+    TechInfo { id: TECH_APEX_PREDATORS, key: "apex_predators", name: "Apex Predators", doctrine: Some(Doctrine::Wild), tier: 4, cost: 240, prereq: Some(TECH_FERAL_BOND), ac_delta: 5, unlocks_summary: "Stab/Shoot gain Armor-Piercing; +15% crit chance." },
 
     // Mercantile
     TechInfo { id: TECH_GUILDS, key: "guilds", name: "Guilds", doctrine: Some(Doctrine::Mercantile), tier: 1, cost: 65, prereq: Some(TECH_TRADE_ROADS), ac_delta: 0, unlocks_summary: "+2 Caravan slots; Squad capacity increases to 5 places early!" },
     TechInfo { id: TECH_WAR_CHESTS, key: "war_chests", name: "War Chests", doctrine: Some(Doctrine::Mercantile), tier: 2, cost: 110, prereq: Some(TECH_GUILDS), ac_delta: 1, unlocks_summary: "Reinforcing & upgrading squads costs -30% Gold; +25% Caravan Gold." },
-    TechInfo { id: TECH_GRAND_COMPANIES, key: "grand_companies", name: "Grand Companies", doctrine: Some(Doctrine::Mercantile), tier: 3, cost: 165, prereq: Some(TECH_WAR_CHESTS), ac_delta: 2, unlocks_summary: "+2 Squad Cap; may hire elite Mercenary squads instantly for Gold." },
+    TechInfo { id: TECH_GRAND_COMPANIES, key: "grand_companies", name: "Grand Companies", doctrine: Some(Doctrine::Mercantile), tier: 3, cost: 165, prereq: Some(TECH_WAR_CHESTS), ac_delta: 2, unlocks_summary: "+2 Squad Cap across your empire." },
     TechInfo { id: TECH_CROWN_CHARTERS, key: "crown_charters", name: "Crown Charters", doctrine: Some(Doctrine::Mercantile), tier: 4, cost: 230, prereq: Some(TECH_GRAND_COMPANIES), ac_delta: 4, unlocks_summary: "+2 House Loyalty in all Houses; +50% Gold from foreign Caravans." },
 ];
 
@@ -591,7 +591,7 @@ pub const DISTRICTS: [DistrictInfo; 6] = [
     DistrictInfo { kind: DistrictKind::Barracks, key: "barracks", name: "Barracks", cost: 55, tech: None, summary: "+1 Squad cap, +25% unit training speed, unlocks tier-2+ recruits." },
     DistrictInfo { kind: DistrictKind::Market, key: "market", name: "Market", cost: 60, tech: Some(TECH_TRADE_ROADS), summary: "+4 Gold/turn, +1 Caravan slot, +25% local Caravan pay." },
     DistrictInfo { kind: DistrictKind::Academy, key: "academy", name: "Academy", cost: 65, tech: Some(TECH_ARCANA), summary: "+5 Lore/turn, +1 Mana/turn, +2 Sage Renown/turn." },
-    DistrictInfo { kind: DistrictKind::Temple, key: "temple", name: "Temple", cost: 60, tech: Some(TECH_MYSTICISM), summary: "+4 Culture/turn, +1 House Loyalty, +2 Prophet & Bard Renown/turn." },
+    DistrictInfo { kind: DistrictKind::Temple, key: "temple", name: "Temple", cost: 60, tech: Some(TECH_MYSTICISM), summary: "+4 Culture/turn, +1 House Loyalty, +2 Prophet & Bard Renown/turn, shelters from Ash Plague." },
     DistrictInfo { kind: DistrictKind::Forge, key: "forge", name: "Forge", cost: 65, tech: Some(TECH_METALLURGY), summary: "+4 Industry/turn, +2 Engineer Renown/turn, +2 Armor to trained units." },
     DistrictInfo { kind: DistrictKind::Bulwark, key: "bulwark", name: "Bulwark", cost: 60, tech: Some(TECH_FORTIFICATION), summary: "2 Wall Sentinels (+3 with Masonry Wards), +40% city defense, stronger Sallies." },
 ];
@@ -873,7 +873,7 @@ pub const UNIT_CLASSES: [UnitClassInfo; 25] = [
         row_order: [2, 1, 0], moves: 2, upgrades_to: None,
     },
     UnitClassInfo {
-        id: UnitClassId::Acolyte, key: "acolyte", name: "Acolyte", art_unit: "UNIT_PRIEST_OF_THE_ORDER",
+        id: UnitClassId::Acolyte, key: "acolyte", name: "Mender", art_unit: "UNIT_PRIEST_OF_THE_ORDER",
         tier: 1, cost_industry: 35, cost_gold: 45, tech: Some(TECH_MYSTICISM), large: false,
         hp: 85, atk: 24, def: 28, magic: 36, mdef: 46, acc: 92, eva: 5, crit: 5, speed: 4, armor: 1,
         anti_flank: false, armor_piercing: false, damage_vs_walls: 0,
@@ -890,7 +890,7 @@ pub const UNIT_CLASSES: [UnitClassInfo; 25] = [
         row_order: [0, 1, 2], moves: 2, upgrades_to: None,
     },
     UnitClassInfo {
-        id: UnitClassId::Eidolon, key: "eidolon", name: "Eidolon", art_unit: "UNIT_EIDOLON",
+        id: UnitClassId::Eidolon, key: "eidolon", name: "Ashbound", art_unit: "UNIT_EIDOLON",
         tier: 3, cost_industry: 85, cost_gold: 115, tech: Some(TECH_RIGHTEOUS_VOWS), large: false,
         hp: 150, atk: 80, def: 56, magic: 52, mdef: 54, acc: 96, eva: 12, crit: 24, speed: 7, armor: 4,
         anti_flank: false, armor_piercing: true, damage_vs_walls: 0,
@@ -935,7 +935,7 @@ pub const UNIT_CLASSES: [UnitClassInfo; 25] = [
         row_order: [0, 1, 2], moves: 3, upgrades_to: None,
     },
     UnitClassInfo {
-        id: UnitClassId::PyreZombie, key: "pyre_zombie", name: "Pyre Zombie", art_unit: "UNIT_PYRE_ZOMBIE",
+        id: UnitClassId::PyreZombie, key: "pyre_zombie", name: "Stoker", art_unit: "UNIT_PYRE_ZOMBIE",
         tier: 2, cost_industry: 35, cost_gold: 40, tech: Some(TECH_ARCANA), large: false,
         hp: 115, atk: 50, def: 32, magic: 25, mdef: 28, acc: 90, eva: 4, crit: 12, speed: 4, armor: 1,
         anti_flank: false, armor_piercing: false, damage_vs_walls: 20,
@@ -944,7 +944,7 @@ pub const UNIT_CLASSES: [UnitClassInfo; 25] = [
         row_order: [0, 1, 2], moves: 2, upgrades_to: Some(UnitClassId::Balor),
     },
     UnitClassInfo {
-        id: UnitClassId::Balor, key: "balor", name: "Balor", art_unit: "UNIT_BALOR",
+        id: UnitClassId::Balor, key: "balor", name: "Slagbreaker", art_unit: "UNIT_BALOR",
         tier: 4, cost_industry: 110, cost_gold: 160, tech: Some(TECH_STRENGTH_OF_WILL), large: true,
         hp: 270, atk: 98, def: 70, magic: 72, mdef: 60, acc: 95, eva: 8, crit: 24, speed: 6, armor: 7,
         anti_flank: false, armor_piercing: true, damage_vs_walls: 50,
@@ -953,7 +953,7 @@ pub const UNIT_CLASSES: [UnitClassInfo; 25] = [
         row_order: [0, 1, 2], moves: 2, upgrades_to: None,
     },
     UnitClassInfo {
-        id: UnitClassId::Sentinel, key: "sentinel", name: "Sentinel Wall", art_unit: "UNIT_SENTINEL",
+        id: UnitClassId::Sentinel, key: "sentinel", name: "Wall Sentinel", art_unit: "UNIT_SENTINEL",
         tier: 1, cost_industry: 0, cost_gold: 0, tech: None, large: false,
         hp: 120, atk: 16, def: 42, magic: 0, mdef: 42, acc: 90, eva: 0, crit: 5, speed: 0, armor: 4,
         anti_flank: true, armor_piercing: false, damage_vs_walls: 0,
@@ -1068,7 +1068,7 @@ pub const SECRET_TECHS: [SecretTechInfo; 24] = [
     SecretTechInfo { id: SecretTechId(3), suit: GreatSuit::Sage, name: "Deep Tap Charter", needs: TECH_ARCANA, effect: SecretEffect::AcSurgeOnce(12), summary: "+12 Strain immediately, +40 Mana, +20% Spell power.", expert_line: "Trigger King Cinder or Blowout while holding the central shore." },
 
     // Prophet (4) — Sealing ledgers & civic vows
-    SecretTechInfo { id: SecretTechId(4), suit: GreatSuit::Prophet, name: "Aquifer Compendium", needs: TECH_MYSTICISM, effect: SecretEffect::HealBonusPct(45), summary: "+45% battle healing for Acolytes & Paladins.", expert_line: "Outlast siege attrition on Caldera Keep with double-healer squads." },
+    SecretTechInfo { id: SecretTechId(4), suit: GreatSuit::Prophet, name: "Aquifer Compendium", needs: TECH_MYSTICISM, effect: SecretEffect::HealBonusPct(45), summary: "+45% battle healing for Menders & Paladins.", expert_line: "Outlast siege attrition on Caldera Keep with double-healer squads." },
     SecretTechInfo { id: SecretTechId(5), suit: GreatSuit::Prophet, name: "Valve-Keeper's Ledger", needs: TECH_MYSTICISM, effect: SecretEffect::AcDrainPerTurn(1), summary: "Slows Worldseal Strain drift by -1 every 3 turns.", expert_line: "Lock in a Keepers Turn-160 peace win." },
     SecretTechInfo { id: SecretTechId(6), suit: GreatSuit::Prophet, name: "Sacred Concordat", needs: TECH_MYSTICISM, effect: SecretEffect::HouseLoyaltyBonus(2), summary: "+2 Loyalty in every House permanently.", expert_line: "Conquer rival-culture cities without triggering Furious Houses." },
     SecretTechInfo { id: SecretTechId(7), suit: GreatSuit::Prophet, name: "Crusader's Banner", needs: TECH_FORTIFICATION, effect: SecretEffect::AllAtkPct(15), summary: "+15% Attack for every unit in your squads.", expert_line: "Swing tight 2-round formation verdicts across every front." },
@@ -1080,7 +1080,7 @@ pub const SECRET_TECHS: [SecretTechInfo; 24] = [
     SecretTechInfo { id: SecretTechId(11), suit: GreatSuit::Engineer, name: "Imperial Causeways", needs: TECH_FIELDCRAFT, effect: SecretEffect::SupplyRangeBonus(8), summary: "+8 Supply Line budget for all squads.", expert_line: "March straight across continents to Caldera Keep without starving." },
 
     // Merchant (4) — Imperial trade & road charters
-    SecretTechInfo { id: SecretTechId(12), suit: GreatSuit::Merchant, name: "Golden Ledger", needs: TECH_TRADE_ROADS, effect: SecretEffect::GoldPerTurn(18), summary: "+18 Gold per turn empire-wide.", expert_line: "Afford constant tier-3 upgrades and Mercenary squads." },
+    SecretTechInfo { id: SecretTechId(12), suit: GreatSuit::Merchant, name: "Golden Ledger", needs: TECH_TRADE_ROADS, effect: SecretEffect::GoldPerTurn(18), summary: "+18 Gold per turn empire-wide.", expert_line: "Afford constant tier-3 upgrades and rapid reinforcements." },
     SecretTechInfo { id: SecretTechId(13), suit: GreatSuit::Merchant, name: "Silk Convoy Charter", needs: TECH_TRADE_ROADS, effect: SecretEffect::ExtraCaravanSlots(2), summary: "+2 Caravan slots empire-wide.", expert_line: "Dominate foreign trade income and strategic resource imports." },
     SecretTechInfo { id: SecretTechId(14), suit: GreatSuit::Merchant, name: "Toll-Warrant Letters", needs: TECH_FIELDCRAFT, effect: SecretEffect::RaidBonusPct(50), summary: "+50% Gold plundered from Raids.", expert_line: "Fund an offensive war purely off enemy countryside." },
     SecretTechInfo { id: SecretTechId(15), suit: GreatSuit::Merchant, name: "Mercenary Retainer", needs: TECH_TRADE_ROADS, effect: SecretEffect::SquadCapBonus(2), summary: "+2 maximum Squads.", expert_line: "Field a dedicated Raid squad alongside two Siege squads." },
@@ -1196,7 +1196,7 @@ impl RitualKind {
             RitualKind::Sanctify => "Lowers Worldseal Strain by -3 (-5 for Keepers of the Seal) and cools scorched ground near your capital.",
             RitualKind::HasteMarch => "Restores full movement (+1 bonus) to all your squads this turn (+1 Strain).",
             RitualKind::ArcaneSurge => "Converts Mana into +65 Lore immediately (+2 Strain).",
-            RitualKind::SummonHost => "Assembles a fresh 3-unit adept/pyre squad from deep-vent pitch at your capital (+4 Strain).",
+            RitualKind::SummonHost => "Assembles a fresh 3-unit Adept & Stoker squad from deep-vent pitch at your capital (+4 Strain).",
             RitualKind::BlightStrike => "Raises Worldseal Strain by +6 and vents scorched ash across enemy frontier tiles.",
             RitualKind::WardWalls => "Fully repairs all Sentinels across your empire and heals garrisons +30%.",
         }

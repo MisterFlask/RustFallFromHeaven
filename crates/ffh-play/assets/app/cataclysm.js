@@ -388,7 +388,7 @@ export function renderCataclysmPanel() {
                 ? h("button.primary", { onclick: () => catCmd({ c: "cat_raid", squad: sq.id, active: sq.order !== "raid" }) }, sq.order === "raid" ? "Stop Raid" : "Raid")
                 : null,
               sq.has_lair
-                ? h("button.primary", { onclick: () => catCmd({ c: "cat_explore", squad: sq.id }) }, "Explore Lair")
+                ? h("button.primary", { onclick: () => catCmd({ c: "cat_explore", squad: sq.id }) }, "Explore Ruin")
                 : null,
               sq.can_found_city
                 ? h("button.primary", { onclick: () => catCmd({ c: "cat_found_city", squad: sq.id }) }, `Found City (${sq.found_cost}G)`)
