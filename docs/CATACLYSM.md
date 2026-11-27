@@ -14,6 +14,7 @@ crates/ffh-battle      Pure zero-dependency 3x3 Ogre Battle formation combat eng
 crates/cataclysm-core  Deterministic command-in / event-out 4X rules engine
                        (depends ONLY on ffh-battle; std-only, WASM-safe)
 crates/cataclysm-ai    AI player controller built strictly on cataclysm_core::Command
+                       (+ the `cataclysm-tally` bin: AI-only games, counted)
 crates/ffh-play/src/cataclysm.rs
                        Transport adapter mapping Cataclysm state into the existing
                        14-layer MapRows, HD-2D/ISO stand positions, and battle_log v2
@@ -31,7 +32,7 @@ An age ago, the Great Empire built a heat-adapted subterranean caste of furnace-
 Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks through the crust; deep smelting, vent-tapping, razing, and Lifeboat construction all drive **Worldseal Strain** toward `100`. Every playable faction is a surviving department or dissident offshoot of that dead Empire:
 
 - **Seventh Garrison** (*Commander Maren Vance*): The unrelieved rim-watch legion (`+15%` front-row damage; free-upkeep, double-credit Crusade pledges).
-- **Keepers of the Seal** (*Abbot Oren Hale*): Emergency engineers turned maintenance monks (`Vent the Seal` drains `-5 Strain`; `+25%` Sentinel HP; automatic Turn-160 win if Strain stays below 100).
+- **Keepers of the Seal** (*Abbot Oren Hale*): Emergency engineers turned maintenance monks (`Vent the Seal` moves `-3 Strain`, others `-1`; `+25%` Sentinel HP; automatic Turn-160 win if Strain stays below 100).
 - **Tappers' College** (*Dean Halden Pell*): Imperial power-scholars piping vent-ether through ceramic towers (`+2 Mana/Academy`; `+20%` battle spell damage; starts with `Arcana`).
 - **Postriders** (*Factor Bajan*): The imperial highway and relay-stable network (`+1` open-ground movement; `+50%` Raid Gold; `-25%` reinforcement Gold).
 - **Three Hearths** (*Ward-Heir Corin*): Imperial urbanists capped at 3 six-district megacities (`+50%` output & Culture), fed by low-upkeep Outposts.
@@ -62,7 +63,7 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
   (`Steel`, `Cavalry`, `Arcane`, `Faith`, `Artifice`, `Wild`, `Mercantile`; commit to 1 Primary
   Doctrine + optional Tier 1–2 Secondary dip), separate world race for 5 Creeds (`Code of the Watch`,
   `Weight & Measure`, `Old Growth`, `Choir Below`, `Open the Vent`), and 6 empire-level Strategic
-  Rituals cast with Mana.
+  Rituals cast with Mana (two of them move Strain, on a 12-turn recast).
 - **Great People Court**: 6 empire-wide suit Renown meters (Sage, Prophet, Engineer, Merchant,
   Bard, Commander), arriving with a visible Secret Tech drawn from a shared 24-card world deck of
   surviving Imperial manuals and a 3-way choice: (1) Discover Secret Tech, (2) Instant Tempo Burst
@@ -127,3 +128,107 @@ screen and checks every screen, the Help, the map tooltip and a few turns for er
 Open: the alignments keep the words Good, Neutral and Evil (a working rule: creeds, Houses and some
 units read them); their names in this setting are the owner's to choose. Movement is one straight
 step at a time toward the clicked tile (no path-finding around impassable ground).
+
+## Rules changes: the pacing pass (2026-11-26)
+
+120 AI-only games of the merged ruleset showed Strain at 100 by a median turn 29 of 160, research
+over by turn 46, wars that never ended and a Caldera Keep nobody took (4 of 222 winning Lifeboats).
+These rules changed, each on purpose; the numbers were then set with `cataclysm-tally` (below).
+
+- **A tech moves Strain once for the world.** Its Strain applies to the first civilization that
+  researches it; later researchers move nothing, and starting techs count as researched. Before,
+  every civilization's research added the same Strain again, so the clock ran faster with more
+  civilizations.
+- **Two rituals move Strain, and they have a recast time.** Crack the Crust +3, Vent the Seal -1
+  (the Keepers of the Seal -3); the same civilization can cast each again only 12 turns later. The
+  other four rituals move no Strain (Vent-Ether Surge was +2, Furnace Levy +4, Draft-Wind March +1),
+  and a ritual had no limit but Mana. One civilization working a lever all game now moves the
+  Blowout by about a dozen turns.
+- **Every third bloody battle** in the world adds 1 Strain, not every one.
+- **Valve-Keeper's Ledger halves the drift** (every second +1 is skipped) instead of stopping it.
+- **Doctrine techs cost 150, 400, 900 and 1750 Lore by tier** (were 65-75, 110-120, 165-175,
+  230-245), the same in every Doctrine; the Primary discount (75%) and the Foundation costs are
+  unchanged. Set from the measured Lore income (10 a turn early, 60 late) so that a Primary ladder
+  takes until about turn 90.
+- **Lore is never idle.** A civilization with no tech it can research converts its Lore to Sage
+  Renown at its turn start, 10 Lore per 1 Renown.
+- **Peace needs both sides, then a truce.** Make Peace records an offer that stands 5 turns; peace
+  is signed when the other side offers while it stands. For 10 turns after, neither may declare
+  war on the other, attack it, call a Crusade against it or lend a squad to one. It was one-sided
+  and instant, and war could be redeclared the same turn. A Crusade ends when its caller and its
+  target sign peace.
+- **A finished order waits when there is no room for it**: a squad past the squad cap (the cap
+  was checked only when the order was given: 39 squads at a cap of 7 in one AI game), a Caravan
+  with every slot in use. The city screen says so.
+- **A lost Wonder race refunds the Industry as Gold**, 1 for 1, with a log line (it was discarded
+  without a word).
+- **The turn skips a player eliminated at the wrap** (it went to a player who could not end it),
+  and Furnace Levy is refused before it spends its Mana when there is no city.
+
+## The AI (`crates/cataclysm-ai`)
+
+Stateless: every turn it works out its roles again from the game, and it plays only through
+`Command`. `military.rs`: home guards in threatened cities, the capital and a held Lifeboat;
+attacks only on the rules' own forecast (`Game::preview_attack`: the plot likely to fall, or a
+trade clearly in its favour); after the Blowout every free squad at one Lifeboat; raids, tribute
+before a city is stripped, roads in peace. `diplomacy.rs`: war only with a clear edge on a city in
+reach (the Postriders, the Seventh Garrison, the Wreckers and King Cinder's Host at a smaller
+edge), never a second front; peace when weaker, when a war is 15 turns old and going nowhere, or
+when it holds a Lifeboat; King Cinder's Host never signs. `rituals.rs`: one stance on Strain (push
+when it would hold a Lifeboat if the Blowout came now, or to deny a turn-160 win; pull for the
+Keepers and for a score leader with no Keepers alive), then the useful rituals with the Mana left.
+`Policy::Quiet` and `Policy::Pusher` are measuring instruments, not ways the game's AI plays.
+
+## Measuring: `cataclysm-tally`
+
+`cargo run --release -p cataclysm-ai --bin cataclysm-tally -- [--games N] [--opponents K]
+[--policy standard|quiet|pusher] [--rows] [--calibrate]` plays AI-only games (120 take a few
+seconds) and reports the turn of the Blowout, what raised Strain, the Lore income by turn, when
+research ran out, how wars ended, which Lifeboats won, and the attack forecast against what the
+attacks did. Its last line (`TALLY ...`) is what a commit that changes a number quotes. `quiet`:
+nobody raises Strain by ritual. `pusher`: seat 0 raises it all game. A number of the rules is
+checked under all three, and at 2 and 8 civilizations, so that it is not tuned to one AI script.
+
+### Pacing targets
+
+Written before the first number was tuned; "before" is the merged ruleset (671eee87), "now" the
+end of the pacing pass. 6 civilizations unless said.
+
+| | Target | Before | Now |
+|---|---|---|---|
+| Blowout, standard | median turn 95-120, 10th percentile 70 or later | 29 (22) | 100 (78); none in 7% of games |
+| Blowout, quiet | none by turn 160 in 20-70% of games | none in 60% | none in 63% |
+| Blowout, pusher | median 10+ turns before standard, 10th percentile 50 or later | 28 | 85 (65) |
+| Blowout with 2, 4 and 8 civilizations | median within 20 turns of the 6-civilization one | 45, -, 24 | 93, 91, 96 |
+| Primary Doctrine capstone | median turn 75-100 | 37 | 100 |
+| Keepers' turn-160 win, standard | 3-25% of their games | 0% | 6% |
+| A Lifeboat captured after the Blowout | half the games or more | 70% | 53% |
+| Caldera Keep among the winning Lifeboats | 10% or more | 1% | 19% |
+| Peace made | 1 per game or more | 0 | 6.4 |
+| Seat 0 eliminated before turn 60 | 15% of games or fewer | 30% | 8% |
+
+Two targets were restated after measuring, and why:
+- "30% or fewer civilizations out of research before turn 100" collides with the capstone target:
+  a civilization can research 14 techs in all and the capstone is the last of them. Now 44%; Lore
+  has a use after it (above).
+- "10 Great People per civilization or fewer": the count follows the length of the game, not the
+  Lore conversion (15 a game at 5 Lore per Renown, 14 at 10, 14 at 15). Now 14.9 over a full game.
+
+Not met, and left: with 2 civilizations no Blowout comes in half the games (often neither of the
+two pushes); civilizations eliminated per game are 3.1 of 6 (2.1 without King Cinder's Host), since
+a side that is clearly winning does not sign a peace.
+
+### What the tally shows that is not fixed (balance, for the owner)
+
+- **Most wins are shared.** A Lifeboat win belongs to every holder: 1 winner in 27 of 120 games,
+  2 in 57, 3 in 31, 4 in 5 (holders now guard their Lifeboat and make peace with each other).
+- **Faction shares in AI hands**: Three Hearths 65% and the Keepers 70% of their games among the
+  winners (Culture's Last Metropolis, the Great Cistern), Vault & Crucible 14%, Postriders 19%.
+  It says as much about the AI script as about the factions.
+- **Great Cistern and Siphon Spire** are the only Lifeboats a civilization can build, and only the
+  Faith and Arcane Doctrines open them.
+
+Open (rules): vassalage has a command that breaks the oath and nothing that creates a vassal; a
+Cataclysm game cannot be saved or resumed; the attack forecast sees one defending squad, so a city
+held by two looks takeable in one battle; a guard in a besieged city with no other city in supply
+range goes hungry; the Wild Clans never move; Industry made while a city has no order is lost.

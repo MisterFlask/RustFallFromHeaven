@@ -2346,12 +2346,8 @@ impl CataclysmSession {
                 plural(c.stripped_turns, "turn", "turns")
             )));
         }
-        if c.building.as_ref().is_some_and(|o| c.build_progress >= o.cost() && self.g.build_waits_for_squad_cap(c, o)) {
-            out.push(warn(format!(
-                "Build finished, waiting: it would raise a new squad and you are at the squad cap ({}/{}). It completes at your first turn start with room.",
-                self.g.player_squads(c.owner).len(),
-                self.g.squad_cap(c.owner)
-            )));
+        if let Some(why) = c.building.as_ref().filter(|o| c.build_progress >= o.cost()).and_then(|o| self.g.build_wait_reason(c, o)) {
+            out.push(warn(format!("Build finished, waiting: {why}. It completes at your first turn start with room.")));
         }
         if c.raid_streak > 0 {
             out.push(warn(format!(

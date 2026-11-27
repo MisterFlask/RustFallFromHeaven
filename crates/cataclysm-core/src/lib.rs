@@ -243,6 +243,27 @@ mod tests {
     }
 
     #[test]
+    fn a_finished_caravan_waits_for_a_free_slot() {
+        let mut g = Game::new(GameSetup::default());
+        let p0 = PlayerId(0);
+        let cid = g.player_cities(p0)[0];
+        g.players[0].extra_caravan_slots = -10; // no slot at all: the cap's floor is 1, so fill it
+        let other = g.cities.keys().copied().find(|&c| c != cid).unwrap();
+        let cap = g.caravan_cap(p0);
+        for i in 0..cap as u32 {
+            let id = CaravanId(900 + i);
+            g.caravans.insert(id, CaravanRoute { id, owner: p0, origin: cid, destination: other, resource: Resource::None, path: vec![g.cities[&cid].plot], pos_idx: 0, outbound: true, reform_turns: 0, growth_pct: 0 });
+        }
+        let c = g.cities.get_mut(&cid).unwrap();
+        c.build_progress = BuildOrder::Caravan.cost();
+        c.building = Some(BuildOrder::Caravan);
+        let mut events = Vec::new();
+        g.try_complete_city_build(cid, &mut events);
+        assert_eq!(g.caravans.values().filter(|cv| cv.owner == p0).count(), cap);
+        assert_eq!(g.cities[&cid].building, Some(BuildOrder::Caravan), "the order waits");
+    }
+
+    #[test]
     fn no_war_starts_during_a_truce() {
         let mut g = two_at_war();
         let (a, b) = (PlayerId(0), PlayerId(1));

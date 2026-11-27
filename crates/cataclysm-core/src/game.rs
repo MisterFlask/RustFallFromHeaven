@@ -3162,14 +3162,34 @@ impl Game {
         new_squad && self.player_squads(c.owner).len() >= self.squad_cap(c.owner)
     }
 
+    /// Why a finished build order has to wait in its city (`None`: it does not): it would raise a
+    /// squad past the squad cap, or start a Caravan with every Caravan slot in use.
+    pub fn build_wait_reason(&self, c: &City, order: &BuildOrder) -> Option<String> {
+        if self.build_waits_for_squad_cap(c, order) {
+            return Some(format!(
+                "it would raise a new squad and you are at the squad cap ({}/{})",
+                self.player_squads(c.owner).len(),
+                self.squad_cap(c.owner)
+            ));
+        }
+        if matches!(order, BuildOrder::Caravan) {
+            let (active, cap) = (self.caravans.values().filter(|cv| cv.owner == c.owner).count(), self.caravan_cap(c.owner));
+            if active >= cap {
+                return Some(format!("all Caravan slots are in use ({active}/{cap})"));
+            }
+        }
+        None
+    }
+
     pub(crate) fn try_complete_city_build(&mut self, city_id: CityId, events: &mut Vec<Event>) {
         let Some(c) = self.cities.get(&city_id).cloned() else { return };
         let Some(order) = c.building.clone() else { return };
         if c.build_progress < order.cost() {
             return;
         }
-        // A finished order that would raise a squad past the squad cap waits in the city.
-        if self.build_waits_for_squad_cap(&c, &order) {
+        // A finished order with no room for what it makes (a squad past the squad cap, a Caravan
+        // with every slot in use) waits in the city.
+        if self.build_wait_reason(&c, &order).is_some() {
             return;
         }
         if let Some(cm) = self.cities.get_mut(&city_id) {
