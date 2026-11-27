@@ -114,6 +114,16 @@ set by the UX pass of 2026-11-26:
 screen and checks every screen, the Help, the map tooltip and a few turns for errors and for an
 "undefined" in any text.
 
+## Rules fixes
+
+- **A bloody battle's Strain fires its crisis** (2026-11-26). A battle with 3 or more units fallen
+  adds 1 Strain. It did so with a bare `apocalypse.shift`, which marks every crisis whose threshold
+  the change crosses as triggered without applying it: when that +1 reached a multiple of 10 the
+  crisis's effect was skipped, and at 100 Caldera Keep never rose and the countdown never started
+  (seen in a played game: Strain 100, no Lifeboat, no end before turn 160). It now goes through
+  `shift_ac`, after the battle is settled. `check_invariants` holds the pair: the Blowout crisis is
+  marked exactly when Caldera Keep has risen.
+
 Open: the alignments keep the words Good, Neutral and Evil (a working rule: creeds, Houses and some
 units read them); their names in this setting are the owner's to choose. Movement is one straight
 step at a time toward the clicked tile (no path-finding around impassable ground).

@@ -1660,9 +1660,7 @@ impl Game {
         // Commander Renown & Crusade credit from kills!
         self.players[att.owner.idx()].renown_meters[GreatSuit::Commander.id()] += renown::BATTLE_COMMANDER + att_kills * renown::BATTLE_COMMANDER_PER_KILL;
         self.players[def_owner.idx()].renown_meters[GreatSuit::Commander.id()] += renown::BATTLE_COMMANDER + def_kills * renown::BATTLE_COMMANDER_PER_KILL;
-        if att_kills + def_kills >= BLOODY_BATTLE_DEATHS {
-            self.apocalypse.shift(BLOODY_BATTLE_STRAIN, "bloody battle");
-        }
+        let bloody = att_kills + def_kills >= BLOODY_BATTLE_DEATHS;
         if let Some(lender) = att.lent_by {
             for cr in self.crusades.values_mut().filter(|c| c.active && c.target == def_owner) {
                 cr.add_credit(lender, 5 + att_kills * 10);
@@ -1749,6 +1747,12 @@ impl Game {
         self.push_log(Some(att.owner), Some(to), Some(battle_id), summary.clone());
         if def_owner != self.neutral_player {
             self.push_log(Some(def_owner), Some(to), Some(battle_id), summary);
+        }
+        // A bloody battle strains the Worldseal. Through `shift_ac`, once the battle is settled, so
+        // that a crisis whose threshold this crosses takes effect (the Blowout included): a bare
+        // `apocalypse.shift` marked the crisis as triggered and skipped what it does.
+        if bloody {
+            self.shift_ac(BLOODY_BATTLE_STRAIN, "bloody battle", events);
         }
         battle_id
     }
@@ -3293,6 +3297,15 @@ impl Game {
     pub fn check_invariants(&self) -> Result<(), String> {
         if self.apocalypse.counter < 0 || self.apocalypse.counter > 100 {
             return Err(format!("Armageddon counter out of bounds: {}", self.apocalypse.counter));
+        }
+        // A crisis marked as triggered has taken effect: the Blowout raised Caldera Keep and started
+        // the countdown (every change of Strain goes through `shift_ac`).
+        if self.apocalypse.triggered_crises.contains(&crate::apocalypse::MAX_STRAIN) != self.apocalypse.carcosa_risen {
+            return Err(format!(
+                "the Blowout crisis is {} but Caldera Keep has {}",
+                if self.apocalypse.carcosa_risen { "not marked" } else { "marked as triggered" },
+                if self.apocalypse.carcosa_risen { "risen" } else { "not risen" }
+            ));
         }
         for (cid, c) in &self.cities {
             if c.id != *cid {
