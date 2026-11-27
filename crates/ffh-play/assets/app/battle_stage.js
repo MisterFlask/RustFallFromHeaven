@@ -51,7 +51,7 @@ export const STRIKE_HIT = 430;
 const ANIM_FRAME = { w: 160, h: 128, ax: 80, ay: 126 };
 /** M7 unit sprites that face lower-left (the rest face lower-right), from the anim-sprint roster's
  *  facings (anim-sprint/roster_classified.json on the anim-all branch). */
-const FACES_LEFT = new Set(["auric", "auric_ascended", "azer", "balseraphs_adept", "barbarian_axeman", "barnaxus", "berserker", "bloodpet", "chalid", "champion", "chaos_marauder", "circle_of_urd", "clockwork_golem", "crusader", "demagog", "dwarven_soldier_runes", "flesh_golem", "harlequin", "high_priest_of_the_veil", "hill_giant", "hyborem", "illians_settler", "kraken", "lich", "lightbringer", "lucian", "mardero", "monk", "myconid", "ogre_embers", "priest_of_kilmorph", "priest_of_leaves", "priest_of_the_veil", "revelers", "sheaim_mage", "sphener", "valkyrie", "workboat"]);
+const FACES_LEFT = new Set(["auric", "auric_ascended", "azer", "balseraphs_adept", "barbarian_axeman", "barnaxus", "berserker", "bloodpet", "chalid", "champion", "chaos_marauder", "circle_of_urd", "clockwork_golem", "crusader", "demagog", "dwarven_soldier_runes", "flesh_golem", "harlequin", "high_priest_of_the_veil", "hill_giant", "hyborem", "illians_settler", "kraken", "lich", "lightbringer", "lucian", "mardero", "monk", "myconid", "ogre_embers", "priest_of_kilmorph", "priest_of_leaves", "priest_of_the_veil", "revelers", "sheaim_mage", "valkyrie", "workboat"]);
 
 export const COLORS = {
   you: "#8fb6ff",

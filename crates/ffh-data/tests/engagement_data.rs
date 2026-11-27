@@ -127,16 +127,18 @@ fn the_large_units() {
     let own = d.units.len() - card_entry_count("units");
     let mut large: Vec<&str> = d.units.iter().take(own).filter(|u| u.large).map(|u| u.base.type_.as_str()).collect();
     large.sort_unstable();
-    // The spec's (Hill Giant, the elephants, the dragons, every golem, the Treant) and the units of
-    // that size class: the giant heroes Gurid, Margalard and Wilboman (a frost giant), Barnaxus (a
-    // golem), the War Machine, the Earth Elemental (a golem of rock) and the War Tortoise.
+    // The spec's (Hill Giant, the elephants, the dragons, every golem, the Treant), the units of
+    // that size class (the giant heroes Gurid, Margalard and Wilboman, Barnaxus, the War Machine,
+    // the Earth Elemental and the War Tortoise), and the Large Angels (Basium, Herald, Ophanim,
+    // Repentant Angel, Seraph and Sphener: half the angelic roster).
     assert_eq!(
         large,
         [
-            "UNIT_ABASHI", "UNIT_ACHERON", "UNIT_BARNAXUS", "UNIT_BONE_GOLEM", "UNIT_CLOCKWORK_GOLEM", "UNIT_DRIFA", "UNIT_EARTH_ELEMENTAL",
-            "UNIT_ELEPHANT", "UNIT_EURABATRES", "UNIT_FLESH_GOLEM", "UNIT_GURID", "UNIT_HILL_GIANT", "UNIT_IRON_GOLEM", "UNIT_MARGALARD",
-            "UNIT_MITHRIL_GOLEM", "UNIT_NULLSTONE_GOLEM", "UNIT_TREANT", "UNIT_WAR_ELEPHANT", "UNIT_WAR_MACHINE",
-            "UNIT_WAR_TORTOISE", "UNIT_WILBOMAN", "UNIT_WOOD_GOLEM",
+            "UNIT_ABASHI", "UNIT_ACHERON", "UNIT_BARNAXUS", "UNIT_BASIUM", "UNIT_BONE_GOLEM", "UNIT_CLOCKWORK_GOLEM", "UNIT_DRIFA",
+            "UNIT_EARTH_ELEMENTAL", "UNIT_ELEPHANT", "UNIT_EURABATRES", "UNIT_FLESH_GOLEM", "UNIT_GURID", "UNIT_HERALD", "UNIT_HILL_GIANT",
+            "UNIT_IRON_GOLEM", "UNIT_MARGALARD", "UNIT_MITHRIL_GOLEM", "UNIT_NULLSTONE_GOLEM", "UNIT_OPHANIM", "UNIT_REPENTANT_ANGEL",
+            "UNIT_SERAPH", "UNIT_SPHENER", "UNIT_TREANT", "UNIT_WAR_ELEPHANT", "UNIT_WAR_MACHINE", "UNIT_WAR_TORTOISE", "UNIT_WILBOMAN",
+            "UNIT_WOOD_GOLEM",
         ]
     );
     // Every golem, every elephant; all of them fight on land.
