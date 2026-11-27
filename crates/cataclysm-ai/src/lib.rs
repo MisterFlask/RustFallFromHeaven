@@ -279,7 +279,14 @@ fn manage_cities_and_caravans(g: &mut Game, p: PlayerId, events: &mut Vec<Event>
         }
     }
 
-    for cid in city_ids {
+    // A Wonder is built once in the world: order it in one city only, the one with the most
+    // Industry, and not while another of our cities is already building it. The Keepers of the
+    // Seal win by holding the Strain below 100 until turn 160; a Wonder adds Strain, so they
+    // build one only once Strain is high anyway or the Blowout has come (then it is a Lifeboat).
+    let wonder_city = city_ids.iter().copied().max_by_key(|&cid| (g.city_yields(cid).1.total, std::cmp::Reverse(cid)));
+    let keepers_hold_off = g.players[p.idx()].faction == FactionId::Elohim && g.apocalypse.counter < 60 && !g.apocalypse.carcosa_risen;
+
+    for cid in city_ids.clone() {
         // Demonic AIs raze captured Lifeboats immediately when unprotected!
         if g.players[p.idx()].faction == FactionId::Infernals && g.apocalypse.is_lifeboat(cid).is_some() && g.apocalypse.can_raze_city(cid) {
             try_cmd(g, p, Command::RazeCity { city: cid }, events);
@@ -289,12 +296,15 @@ fn manage_cities_and_caravans(g: &mut Game, p: PlayerId, events: &mut Vec<Event>
         if c.building.is_some() {
             continue;
         }
-        // Priority 1: Lifeboat Wonder if unlocked!
+        // Priority 1: Lifeboat Wonder if unlocked (in the Wonder city only).
         let mut chosen = None;
-        for w in WonderKind::ALL {
-            if !g.built_wonders.contains_key(&w) && g.players[p.idx()].has_tech(w.tech()) {
-                chosen = Some(BuildOrder::Wonder(w));
-                break;
+        if Some(cid) == wonder_city && !keepers_hold_off {
+            for w in WonderKind::ALL {
+                let in_progress = city_ids.iter().any(|o| g.cities.get(o).is_some_and(|oc| oc.building == Some(BuildOrder::Wonder(w))));
+                if !g.built_wonders.contains_key(&w) && g.players[p.idx()].has_tech(w.tech()) && !in_progress {
+                    chosen = Some(BuildOrder::Wonder(w));
+                    break;
+                }
             }
         }
         // Priority 2: Raise Squads when below cap!
