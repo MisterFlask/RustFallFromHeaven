@@ -96,7 +96,12 @@ struct Totals {
     seat0_out: Vec<i32>,
     /// Forecast decile -> (attacks, sum of the predicted permille, plots that fell)
     calibration: [(usize, i64, usize); 10],
+    /// Per band of `LORE_BAND_TURNS` turns: (sum of Lore per turn, civilization-turns).
+    lore_income: [(i64, i64); 8],
 }
+
+/// Width of the turn bands the Lore income is reported in.
+const LORE_BAND_TURNS: i32 = 20;
 
 struct GameRow {
     seed: u64,
@@ -209,6 +214,11 @@ fn run_game(seed: u64, faction: FactionId, args: &Args, calibrate: bool, t: &mut
         }
         if blowout.is_none() && g.apocalypse.carcosa_risen {
             blowout = Some(g.turn);
+        }
+        if !g.players[p.idx()].is_neutral && g.players[p.idx()].alive {
+            let band = &mut t.lore_income[((g.turn.max(1) - 1) / LORE_BAND_TURNS).clamp(0, 7) as usize];
+            band.0 += g.lore_breakdown(p).total as i64;
+            band.1 += 1;
         }
         capstone.resize(g.players.len(), None);
         exhausted.resize(g.players.len(), None);
@@ -354,6 +364,14 @@ fn main() {
         pct(early, t.civs_alive_at_end),
         t.idle_lore / t.civs_alive_at_end.max(1) as i64
     );
+    let bands: Vec<String> = t
+        .lore_income
+        .iter()
+        .enumerate()
+        .filter(|(_, (_, n))| *n > 0)
+        .map(|(i, (sum, n))| format!("T{}-{} {}", i as i32 * LORE_BAND_TURNS + 1, (i as i32 + 1) * LORE_BAND_TURNS, sum / n))
+        .collect();
+    println!("Lore per turn of a living civilization, by turn: {}", bands.join(", "));
     println!("Great People per civilization: {:.2}", t.great_people as f64 / t.civ_slots.max(1) as f64);
     println!(
         "per game: wars declared {:.1}, peace made {:.1}, battles {:.1}, cities captured {:.1}, razed {:.1}, founded {:.1}, civilizations eliminated {:.1}",

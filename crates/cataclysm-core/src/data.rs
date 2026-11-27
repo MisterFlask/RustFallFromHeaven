@@ -496,10 +496,10 @@ pub const TECH_CROWN_CHARTERS: TechId = TechId(35);
 
 /// Listed cost of a Doctrine tech by tier (before the Primary Doctrine discount). Foundation techs
 /// carry their own costs.
-pub const TECH_COST_TIER_1: i32 = 100;
-pub const TECH_COST_TIER_2: i32 = 220;
-pub const TECH_COST_TIER_3: i32 = 420;
-pub const TECH_COST_TIER_4: i32 = 760;
+pub const TECH_COST_TIER_1: i32 = 150;
+pub const TECH_COST_TIER_2: i32 = 400;
+pub const TECH_COST_TIER_3: i32 = 900;
+pub const TECH_COST_TIER_4: i32 = 1750;
 
 pub const TECHS: [TechInfo; 36] = [
     // Foundation (turns 1..30)
