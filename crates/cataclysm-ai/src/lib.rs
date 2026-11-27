@@ -2,6 +2,7 @@
 
 mod diplomacy;
 mod military;
+mod rituals;
 
 use cataclysm_core::{
     Alignment, BuildOrder, Command, DistrictKind, Doctrine, Event, FactionId, Game, GreatPersonAction, HouseMood, PlayerId, Religion,
@@ -174,26 +175,7 @@ fn manage_rituals(g: &mut Game, p: PlayerId, policy: Policy, events: &mut Vec<Ev
         }
         return;
     }
-    let fac = g.players[p.idx()].faction;
-    let mana = g.players[p.idx()].mana;
-    if mana < 25 {
-        return;
-    }
-    let ritual = if fac == FactionId::Elohim && g.apocalypse.counter >= 10 {
-        RitualKind::Sanctify
-    } else if matches!(fac, FactionId::Sheaim | FactionId::Infernals) && !g.apocalypse.carcosa_risen && mana >= 35 {
-        RitualKind::BlightStrike
-    } else if mana >= 50 && g.player_squads(p).len() < g.squad_cap(p) {
-        RitualKind::SummonHost
-    } else if mana >= 35 {
-        RitualKind::ArcaneSurge
-    } else {
-        return;
-    };
-    if policy == Policy::Quiet && ritual.ac_delta() > 0 {
-        return;
-    }
-    try_cmd(g, p, Command::CastRitual { ritual }, events);
+    rituals::manage(g, p, policy == Policy::Quiet, events);
 }
 
 fn best_squad_recipe(g: &Game, p: PlayerId) -> Vec<UnitClassId> {
