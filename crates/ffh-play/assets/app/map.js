@@ -21,6 +21,7 @@ import { starHit, plateHitAt, plateTip } from "./plates.js";
 import { drawTradeFlat } from "./trade.js";
 import { drawPlateShield, shieldHit, SHIELD } from "./houses_lines.js";
 import { remindersNode } from "./keywords.js";
+import { tipLayout, stackedLayout } from "./keyword_view.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
 import { drawLanesFlat, outpostTag } from "./lanes.js";
 import { drawMarksFlat } from "./marks.js";
@@ -95,6 +96,10 @@ export class MapView {
     this.canvas = wrap.querySelector("canvas.map");
     this.mini = wrap.querySelector("canvas.minimap");
     this.tip = wrap.querySelector(".tooltip");
+    this.tipSide = document.createElement("div");
+    this.tipSide.className = "tip-side map-tip-side";
+    this.tipSide.hidden = true;
+    wrap.appendChild(this.tipSide);
     // (Set for the retired 2D art map, which read parts of its frame back; the isometric map has
     // been drawn and measured on it since.)
     this.ctx = this.canvas.getContext("2d", { willReadFrequently: true });
@@ -1905,38 +1910,80 @@ export class MapView {
   // ------------------------------------------------------------------------------------------
   // Tooltip
 
-  /** Shows `nodes` in the tooltip near the mouse. */
+  /** Shows `nodes` in the tooltip near the mouse; any `.tip-reminders` leave the box for
+   *  `this.tipSide`, beside the tooltip on a wide window and below it on a narrow one. */
   showTip(nodes) {
     if (!nodes || (Array.isArray(nodes) && nodes.length === 0)) return this.hideTip();
-    this.tip.replaceChildren(...(Array.isArray(nodes) ? nodes : [nodes]));
-    this.tip.hidden = false;
+    const frag = document.createDocumentFragment();
+    for (const n of Array.isArray(nodes) ? nodes : [nodes]) {
+      if (n) frag.appendChild(n);
+    }
+    const reminders = [...frag.querySelectorAll(".tip-reminders")];
+    for (const r of reminders) r.remove();
+    this.tip.replaceChildren(frag);
+    this.tipSide.replaceChildren(...reminders);
+    this.tipSide.hidden = !reminders.length;
+    this.tip.hidden = !this.tip.firstChild;
+    if (this.tip.hidden && this.tipSide.hidden) return this.hideTip();
     this.placeTip();
   }
 
   placeTip() {
-    if (this.tip.hidden || !this.tipAt) return;
+    if ((this.tip.hidden && this.tipSide.hidden) || !this.tipAt) return;
     const r = this.wrap.getBoundingClientRect();
-    const tw = this.tip.offsetWidth;
-    const th = this.tip.offsetHeight;
-    // The city screen's panels cover the sides (CITY_FRAME): its tooltips stay between them.
-    const lo = this.overlay.city ? CITY_FRAME.side : 4;
-    const hi = this.overlay.city ? r.width - CITY_FRAME.side : r.width - 4;
-    let x = this.tipAt.x + 16;
-    let y = this.tipAt.y + 16;
-    if (this.touch || this.pad) {
-      // Above the finger (or the controller's cursor), which would hide it below; under it when there is no room above.
-      x = Math.min(this.tipAt.x - tw / 2, hi - tw);
-      y = this.tipAt.y - th - 28;
-      if (y < 4) y = Math.min(this.tipAt.y + 36, Math.max(4, r.height - th - 4));
+    const s = this.tipSide && !this.tipSide.hidden ? this.tipSide : null;
+    const vw = r.width;
+    const stacked = stackedLayout(window.innerWidth);
+    if (s) {
+      s.classList.toggle("stacked", stacked);
+      s.style.width = stacked && !this.tip.hidden ? `${this.tip.offsetWidth}px` : "";
     }
-    if (x + tw > hi) x = this.tipAt.x - tw - 12;
-    if (y + th > r.height - 4) y = Math.max(4, r.height - th - 4);
-    this.tip.style.left = `${Math.max(lo, x)}px`;
-    this.tip.style.top = `${Math.max(4, y)}px`;
+    const tw = this.tip.hidden ? 0 : this.tip.offsetWidth;
+    const th = this.tip.hidden ? 0 : this.tip.offsetHeight;
+    const sw = s ? s.offsetWidth : 0;
+    const sh = s ? s.offsetHeight : 0;
+    // The city screen's panels cover the sides (CITY_FRAME) and the floating top bar covers the
+    // top (`this.insets.top`): map tooltips and their side cards stay clear of both.
+    const lo = this.overlay.city ? CITY_FRAME.side : 4;
+    const hi = this.overlay.city ? vw - CITY_FRAME.side : vw - 4;
+    const topLo = Math.max(4, (this.insets?.top ?? 0) + 4);
+    if (this.touch || this.pad) {
+      const gap = tw && sw ? 6 : 0;
+      const W = stacked ? Math.max(tw, sw) : tw + gap + sw;
+      const H = stacked ? th + gap + sh : Math.max(th, sh);
+      let x = Math.min(this.tipAt.x - W / 2, hi - W);
+      let y = this.tipAt.y - H - 28;
+      if (y < topLo) y = Math.min(this.tipAt.y + 36, Math.max(topLo, r.height - H - 4));
+      x = Math.max(lo, x);
+      y = Math.max(topLo, y);
+      this.tip.style.left = `${x}px`;
+      this.tip.style.top = `${y}px`;
+      if (s) {
+        s.style.left = `${stacked ? x : x + tw + gap}px`;
+        s.style.top = `${stacked ? y + th + gap : y}px`;
+      }
+      return;
+    }
+    const at = tipLayout({
+      x: this.tipAt.x - lo,
+      y: this.tipAt.y - topLo,
+      vw: hi - lo + 4,
+      vh: Math.max(120, r.height - topLo),
+      main: { w: tw, h: th },
+      side: s ? { w: sw, h: sh } : null,
+      pad: 16,
+    });
+    this.tip.style.left = `${Math.max(lo, at.main.left + lo)}px`;
+    this.tip.style.top = `${Math.max(topLo, at.main.top + topLo)}px`;
+    if (s && at.side) {
+      s.style.left = `${Math.max(lo, at.side.left + lo)}px`;
+      s.style.top = `${Math.max(topLo, at.side.top + topLo)}px`;
+    }
   }
 
   hideTip() {
     this.tip.hidden = true;
+    if (this.tipSide) this.tipSide.hidden = true;
   }
 }
 

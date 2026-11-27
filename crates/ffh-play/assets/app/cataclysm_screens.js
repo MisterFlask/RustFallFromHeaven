@@ -8,6 +8,7 @@ import { S, emit, scoreText } from "./state.js";
 import { h, toast, errorText } from "./dom.js";
 import { openModal, closeTag, ask, openTags } from "./modals.js";
 import { leaderPortrait, PORTRAIT } from "./portraits.js";
+import { catTip, unitClassTip, unitProfileNodes, unitActionKeywords } from "./cataclysm_tips.js";
 
 export async function catCmd({ c, ...fields }) {
   try {
@@ -49,6 +50,13 @@ function tipOf(title, ...lines) {
   const rest = lines.flat().filter(has);
   if (!rest.length) return null;
   return [title ? h("div.tip-title", title) : null, ...rest.map((l) => h("div", l))];
+}
+
+/** A button whose rich tooltip stays reachable on hover even when disabled. */
+function tipBtn(tag, props, ...children) {
+  const { tip, disabled, ...rest } = props;
+  const b = h(tag, { ...rest, disabled: !!disabled, tip: disabled ? null : tip }, ...children);
+  return disabled && tip ? h("span.cat-tipwrap", { tip }, b) : b;
 }
 
 /** A list of bare sentences. */
@@ -362,6 +370,7 @@ export function openMacroCity(cityId) {
     }
     out.push(h("h4", "Districts"), h("div.cat-slots-row", ...slotEls));
     if (has(c.district_slot_note)) out.push(h("small.cat-note", c.district_slot_note));
+    const dict = data.keywords ?? null;
     if (built.length < slots) {
       const builtKeys = new Set(built.map((d) => d.key));
       const options = (data.available_districts ?? []).filter((d) => !builtKeys.has(d.key));
@@ -370,9 +379,13 @@ export function openMacroCity(cityId) {
         h(
           "div.cat-grid-2",
           ...options.map((d) =>
-            h(
+            tipBtn(
               "button.cat-card-btn",
-              { disabled: !d.unlocked, onclick: () => build(ctx, c, { kind: "district", key: d.key }, d.name) },
+              {
+                disabled: !d.unlocked,
+                tip: catTip({ title: d.name, right: `${d.cost} Industry`, lines: [d.tip_summary ?? d.summary], why: d.unlocked ? null : d.why, dict }),
+                onclick: () => build(ctx, c, { kind: "district", key: d.key }, d.name),
+              },
               h("div.cat-tech-head", h("strong", d.name), h("span", `${d.cost} Industry`)),
               has(d.summary) ? h("small.cat-note", d.summary) : null,
               d.unlocked ? null : why(d.why),
@@ -393,9 +406,13 @@ export function openMacroCity(cityId) {
         h(
           "div.cat-grid-2",
           ...wonders.map((w) =>
-            h(
+            tipBtn(
               "button.cat-card-btn",
-              { disabled: !w.unlocked, onclick: () => build(ctx, c, { kind: "wonder", key: w.key }, w.name) },
+              {
+                disabled: !w.unlocked,
+                tip: catTip({ title: w.name, right: `${w.cost} Industry`, lines: [w.tip_summary ?? w.summary], why: w.unlocked ? null : w.why, dict }),
+                onclick: () => build(ctx, c, { kind: "wonder", key: w.key }, w.name),
+              },
               h("div.cat-tech-head", h("strong", w.name), h("span", `${w.cost} Industry`)),
               has(w.summary) ? h("small.cat-note", w.summary) : null,
               w.unlocked ? null : why(w.why),
@@ -406,18 +423,23 @@ export function openMacroCity(cityId) {
     }
 
     // Sally.
-    const help = data.sally_help ?? {};
+    const sallyTips = data.sally_tips ?? data.sally_help ?? {};
     out.push(
       h("h4", "Sally"),
       h(
         "div.cat-btn-row",
-        ...["never", "favoured", "always"].map((p) =>
-          h(
+        ...["never", "favoured", "always"].map((p) => {
+          const label = p[0].toUpperCase() + p.slice(1);
+          return h(
             `button${c.sally === p ? ".primary" : ""}`,
-            { "aria-pressed": String(c.sally === p), tip: tipOf(null, help[p]), onclick: () => c.sally !== p && ctx.run({ c: "cat_sally", city: c.id, posture: p }) },
-            p[0].toUpperCase() + p.slice(1),
-          ),
-        ),
+            {
+              "aria-pressed": String(c.sally === p),
+              tip: catTip({ title: `Sally · ${label}`, lines: [sallyTips[p]], dict }),
+              onclick: () => c.sally !== p && ctx.run({ c: "cat_sally", city: c.id, posture: p }),
+            },
+            label,
+          );
+        }),
       ),
     );
 
@@ -433,6 +455,7 @@ export function openMacroCity(cityId) {
           h(
             "button.danger",
             {
+              tip: catTip({ title: `Raze ${c.name}`, lines: [c.raze.tip_effect ?? c.raze.effect], dict }),
               onclick: async () => {
                 if (!(await confirm("Raze city", [`Raze ${c.name}?`, c.raze.effect], "Raze city"))) return;
                 // The city is gone: the screen closes.
@@ -482,6 +505,7 @@ export function openMacroCity(cityId) {
         "select",
         {
           "aria-label": `Member ${i + 1}`,
+          tip: () => unitClassTip(data, byKey.get(picks[i])),
           onchange: (ev) => {
             picks[i] = ev.target.value;
             ctx.redraw();
@@ -502,7 +526,12 @@ export function openMacroCity(cityId) {
               h(
                 "button",
                 {
-                  tip: tipOf(pr.label, pr.keys.map((k) => byKey.get(k)?.name ?? k).join(", ")),
+                  tip: catTip({
+                    title: pr.label,
+                    lines: [pr.keys.map((k) => byKey.get(k)?.name ?? k).join(", ")],
+                    keywords: ["CAT_FORMATION"],
+                    dict: data.keywords ?? null,
+                  }),
                   onclick: () => {
                     picks = [...pr.keys];
                     ctx.redraw();
@@ -517,9 +546,19 @@ export function openMacroCity(cityId) {
       h("div", costLine),
       h(
         "div.cat-btn-row",
-        h(
+        tipBtn(
           "button.primary",
-          { disabled: !!reason, onclick: () => build(ctx, c, { kind: "squad", classes: chosen }, "squad") },
+          {
+            disabled: !!reason,
+            tip: catTip({
+              title: "Raise squad",
+              right: `${cost} Industry`,
+              lines: [`Trains a new squad (${chosen.map((k) => byKey.get(k)?.name ?? k).join(", ") || "none"}) in this city's [KW=CAT_FORMATION]Formation[\\KW].`],
+              why: reason,
+              dict: data.keywords ?? null,
+            }),
+            onclick: () => build(ctx, c, { kind: "squad", classes: chosen }, "squad"),
+          },
           "Raise squad",
         ),
       ),
@@ -552,9 +591,19 @@ export function openMacroCity(cityId) {
         "div.cat-btn-row",
         h("span", "Destination"),
         sel,
-        h(
+        tipBtn(
           "button",
-          { disabled: !canLaunch, onclick: () => ctx.run({ c: "cat_caravan", origin: c.id, destination: caravanDest }) },
+          {
+            disabled: !canLaunch,
+            tip: catTip({
+              title: "Launch caravan",
+              right: has(cv?.cost) ? `${cv.cost} Gold` : null,
+              lines: [cv?.tip ?? "Launches a [KW=CAT_CARAVAN]Caravan[\\KW] from this city to the chosen destination."],
+              why: canLaunch ? null : reason,
+              dict: data.keywords ?? null,
+            }),
+            onclick: () => ctx.run({ c: "cat_caravan", origin: c.id, destination: caravanDest }),
+          },
           has(cv?.cost) ? `Launch caravan (${cv.cost} Gold)` : "Launch caravan",
         ),
       ),
@@ -626,11 +675,17 @@ export function openResearch({ tab = "research" } = {}) {
   });
 }
 
-function techNode(ctx, t, res) {
+function techNode(ctx, t, res, dict) {
   const isCur = res.current?.id === t.id;
   const strain = t.ac_delta ? `${signed(t.ac_delta)} Worldstrain` : null;
   const costText = [`${t.cost} Lore`, strain].filter(Boolean).join(" · ");
-  const tp = tipOf(t.name, t.unlocks, t.cost_note, t.known ? null : t.strain_text, t.known ? null : t.why);
+  const tp = catTip({
+    title: t.name,
+    right: t.known ? "known" : `${t.cost} Lore`,
+    lines: [t.tip_unlocks ?? t.unlocks, t.cost_note, t.known ? null : t.tip_strain ?? t.strain_text].filter(has),
+    why: t.known ? null : t.why,
+    dict,
+  });
   if (t.known) {
     return h("div.cat-tech-node.known", { tip: tp }, h("div.cat-tech-head", h("strong", t.name), h("span.cat-check", "✓ known")), has(t.unlocks) ? h("small.cat-note", t.unlocks) : null);
   }
@@ -665,6 +720,7 @@ function techNode(ctx, t, res) {
 }
 
 function researchTab(ctx, data) {
+  const dict = data.keywords ?? null;
   const res = data.research ?? {};
   const techs = res.techs ?? [];
   const cur = res.current;
@@ -678,7 +734,7 @@ function researchTab(ctx, data) {
     h("div", `Primary doctrine: ${res.primary_doctrine_name ?? "none"}. Secondary doctrine: ${res.secondary_doctrine_name ?? "none"}.`),
     has(rule) ? h("small.cat-note", rule) : null,
     h("h4", "Foundation"),
-    h("div.cat-grid-4", ...techs.filter((t) => !t.doctrine).map((t) => techNode(ctx, t, res))),
+    h("div.cat-grid-4", ...techs.filter((t) => !t.doctrine).map((t) => techNode(ctx, t, res, dict))),
     h("h4", "Doctrines"),
   ];
   for (const doc of res.doctrines ?? []) {
@@ -696,6 +752,11 @@ function researchTab(ctx, data) {
             ? h(
                 "button",
                 {
+                  tip: catTip({
+                    title: `${doc.name} · ${adopt.label}`,
+                    lines: [data.doctrine_tip ?? "Adopts this [KW=CAT_DOCTRINE]Doctrine[\\KW] permanently.", doc.tip_summary ?? doc.summary].filter(has),
+                    dict,
+                  }),
                   onclick: async () => {
                     if (!(await confirm("Adopt doctrine", [adopt.q, rule], adopt.label))) return;
                     await ctx.run({ c: "cat_doctrine", doctrine: doc.key, secondary: adopt.secondary });
@@ -706,7 +767,7 @@ function researchTab(ctx, data) {
             : null,
         ),
         has(doc.summary) ? h("small.cat-note", doc.summary) : null,
-        h("div.cat-grid-4", ...techs.filter((t) => t.doctrine === doc.key).map((t) => techNode(ctx, t, res))),
+        h("div.cat-grid-4", ...techs.filter((t) => t.doctrine === doc.key).map((t) => techNode(ctx, t, res, dict))),
       ),
     );
   }
@@ -714,6 +775,7 @@ function researchTab(ctx, data) {
 }
 
 function creedsTab(ctx, data) {
+  const dict = data.keywords ?? null;
   const out = [
     h("div", `Your creed: ${data.human_religion ?? "none"}. Alignment: ${data.human_alignment ?? "none"}.`),
     has(data.creed_rule) ? h("small.cat-note", data.creed_rule) : null,
@@ -723,8 +785,17 @@ function creedsTab(ctx, data) {
     const state = action === "adopted" || r.adopted ? "Adopted" : has(r.founded_by) ? `Founded by ${r.founded_by}` : "Not founded";
     const canAct = r.can_act ?? action !== "adopted";
     const label = action === "found" ? "Found" : "Adopt";
+    const cardTip = catTip({
+      title: r.name,
+      right: state,
+      lines: [r.tip_summary ?? r.summary, r.tip_effect ?? r.effect_text, has(r.cost_text) ? `Cost: ${r.cost_text}` : null].filter(has),
+      why: canAct ? null : r.why,
+      keywords: ["CAT_CREED"],
+      dict,
+    });
     return h(
       `div.cat-card${action === "adopted" ? ".selected" : ""}`,
+      { tip: cardTip },
       h("div.cat-tech-head", h("strong", r.name), h("span", state)),
       h("div", `Alignment: ${r.alignment}`),
       has(r.summary) ? h("div", r.summary) : null,
@@ -734,10 +805,11 @@ function creedsTab(ctx, data) {
         ? null
         : h(
             "div.cat-btn-row",
-            h(
+            tipBtn(
               "button",
               {
                 disabled: !canAct,
+                tip: cardTip,
                 onclick: async () => {
                   if (!(await confirm(`${label} ${r.name}`, [r.effect_text, has(r.cost_text) ? `Cost: ${r.cost_text}` : null], label))) return;
                   await ctx.run({ c: "cat_religion", religion: r.id });
@@ -754,6 +826,7 @@ function creedsTab(ctx, data) {
 }
 
 function ritualsTab(ctx, data) {
+  const dict = data.keywords ?? null;
   const cur = data.currencies ?? {};
   const mana = cur.mana ?? 0;
   const out = [h("div", `Mana ${mana} (${signed(cur.mana_rate ?? 0)}/t)`), h("h4", "Rituals")];
@@ -763,11 +836,20 @@ function ritualsTab(ctx, data) {
       ...(data.rituals ?? []).map((rk) => {
         const reason = rk.why !== undefined ? rk.why : rk.can_cast ? null : `Need ${rk.mana_cost} Mana (have ${mana}).`;
         const can = rk.why !== undefined ? !has(rk.why) : !!rk.can_cast;
+        const rkTip = catTip({
+          title: rk.name,
+          right: `${rk.mana_cost} Mana`,
+          lines: [rk.tip_summary ?? rk.summary].filter(has),
+          why: can ? null : reason,
+          keywords: ["CAT_RITUAL"],
+          dict,
+        });
         return h(
           "div.cat-card",
+          { tip: rkTip },
           h("div.cat-tech-head", h("strong", rk.name), h("span", [`${rk.mana_cost} Mana`, rk.ac_delta ? `${signed(rk.ac_delta)} Worldstrain` : null].filter(Boolean).join(" · "))),
           has(rk.summary) ? h("small.cat-note", rk.summary) : null,
-          h("div.cat-btn-row", h("button", { disabled: !can, onclick: () => ctx.run({ c: "cat_ritual", ritual: rk.key }) }, "Cast")),
+          h("div.cat-btn-row", tipBtn("button", { disabled: !can, tip: rkTip, onclick: () => ctx.run({ c: "cat_ritual", ritual: rk.key }) }, "Cast")),
           can ? null : why(reason),
         );
       }),
@@ -788,11 +870,17 @@ export function openCourtScreen() {
     build: (ctx) => {
       const data = cat();
       if (!data) return [];
+      const dict = data.keywords ?? null;
       const rules = data.court_rules ?? {};
       const ren = data.renown ?? {};
       const me = myId();
-      // The arrival rule and the sources of Renown: in the tip of the Renown line and the meters.
-      const renownTip = tipOf("Renown", rules.arrival, ren.sources) ? () => tipOf("Renown", rules.arrival, ren.sources) : null;
+      const renownTip = () =>
+        catTip({
+          title: "Renown",
+          lines: [ren.tip ?? `[KW=CAT_RENOWN]Renown[\\KW] ${ren.total ?? 0}/${ren.next_threshold ?? 0}.`],
+          keywords: ["CAT_RENOWN", "CAT_GREAT_PERSON"],
+          dict,
+        });
       const out = [
         h("div", { tip: renownTip }, `Renown ${ren.total ?? 0}/${ren.next_threshold ?? 0}`),
         h("div.cat-stats-strip", { tip: renownTip }, ...(ren.meters ?? []).map((m) => h("span", `${m.suit} ${m.value}`))),
@@ -811,6 +899,14 @@ export function openCourtScreen() {
               ...known.map((s) =>
                 h(
                   "div.cat-card",
+                  {
+                    tip: catTip({
+                      title: s.name,
+                      right: s.active ? "active" : `Needs ${s.needs_name}`,
+                      lines: [s.tip_summary ?? s.summary].filter(has),
+                      dict,
+                    }),
+                  },
                   h("div.cat-tech-head", h("strong", s.name), s.active ? h("span.good", "active") : h("span.warn", `Needs ${s.needs_name}`)),
                   has(s.summary) ? h("small.cat-note", s.summary) : null,
                 ),
@@ -826,6 +922,7 @@ export function openCourtScreen() {
 }
 
 function gpCard(ctx, gp, data, rules, me, sel) {
+  const dict = data.keywords ?? null;
   const st = sel.get(gp.id) ?? {};
   sel.set(gp.id, st);
   const squads = gp.hero_squads ?? (data.squads ?? []).filter((s) => s.owner === me && s.places_used < s.place_cap).map((s) => ({ id: s.id, name: s.name }));
@@ -851,6 +948,8 @@ function gpCard(ctx, gp, data, rules, me, sel) {
       )
     : null;
 
+  const heroCls = (data.recruitable_classes ?? []).find((u) => u.key === gp.hero_class_key) ?? null;
+
   return h(
     "div.cat-gp-card",
     h(
@@ -862,6 +961,14 @@ function gpCard(ctx, gp, data, rules, me, sel) {
         sec
           ? h(
               "div.cat-secret-box",
+              {
+                tip: catTip({
+                  title: sec.name,
+                  right: sec.needs_known ? "ready" : `Needs ${sec.needs_name}`,
+                  lines: [sec.tip_summary ?? sec.summary].filter(has),
+                  dict,
+                }),
+              },
               h("strong", `Secret Tech: ${sec.name}`),
               has(sec.summary) ? h("div", sec.summary) : null,
               h("small.cat-note", `Requires ${sec.needs_name} (${sec.needs_known ? "known" : "not researched"})`),
@@ -870,15 +977,63 @@ function gpCard(ctx, gp, data, rules, me, sel) {
       ),
     ),
     choice(
-      [h("button.primary", { disabled: !sec, onclick: () => use("secret", sec ? `Discover ${sec.name}` : "Discover", rules.secret) }, sec ? `Discover ${sec.name}` : "Discover"), sec ? null : why("No Secret Tech left in this suit.")],
+      [
+        tipBtn(
+          "button.primary",
+          {
+            disabled: !sec,
+            tip: catTip({
+              title: sec ? `Discover ${sec.name}` : "Discover Secret Tech",
+              lines: sec ? [sec.tip_summary ?? sec.summary, "Keeps the Secret Tech card (active while you know its required tech)."] : [],
+              why: sec ? null : "No Secret Tech left in this suit.",
+              dict,
+            }),
+            onclick: () => use("secret", sec ? `Discover ${sec.name}` : "Discover", rules.secret),
+          },
+          sec ? `Discover ${sec.name}` : "Discover",
+        ),
+        sec ? null : why("No Secret Tech left in this suit."),
+      ],
       rules.secret,
     ),
-    choice(h("button", { onclick: () => use("burst", "Tempo burst", [gp.burst_summary, gp.burst_note].filter(has).join(" ")) }, "Tempo burst"), gp.burst_summary, gp.burst_note, rules.burst),
+    choice(
+      h(
+        "button",
+        {
+          tip: catTip({
+            title: `Tempo burst · Great ${gp.suit}`,
+            lines: [gp.burst_tip ?? gp.burst_summary, gp.burst_note].filter(has),
+            dict,
+          }),
+          onclick: () => use("burst", "Tempo burst", [gp.burst_summary, gp.burst_note].filter(has).join(" ")),
+        },
+        "Tempo burst",
+      ),
+      gp.burst_summary,
+      gp.burst_note,
+      rules.burst,
+    ),
     choice(
       [
         h("span", `Commission as ${gp.hero_class_name ?? "a"} hero in`),
         squadSel,
-        h("button", { disabled: !squads.length, onclick: () => use("hero", "Commission", gp.hero_effect ?? rules.hero, { squad: st.squad }) }, "Commission"),
+        tipBtn(
+          "button",
+          {
+            disabled: !squads.length,
+            tip: catTip({
+              title: `Commission · ${gp.name}`,
+              right: gp.hero_class_name ?? "Hero",
+              lines: [gp.hero_tip ?? gp.hero_effect ?? rules.hero].filter(has),
+              extra: heroCls ? unitProfileNodes(heroCls) : [],
+              why: squads.length ? null : "No squad has a free place.",
+              keywords: ["CAT_HERO", ...(heroCls ? unitActionKeywords(heroCls) : [])],
+              dict,
+            }),
+            onclick: () => use("hero", "Commission", gp.hero_effect ?? rules.hero, { squad: st.squad }),
+          },
+          "Commission",
+        ),
         squads.length ? null : why("No squad has a free place."),
       ],
       gp.hero_effect ?? rules.hero,
@@ -887,7 +1042,20 @@ function gpCard(ctx, gp, data, rules, me, sel) {
       [
         h("span", "Appoint Lord of"),
         houseSel,
-        h("button", { disabled: !houses.length, onclick: () => use("lord", "Appoint", gp.lord_effect ?? rules.lord, { house: st.house }) }, "Appoint"),
+        tipBtn(
+          "button",
+          {
+            disabled: !houses.length,
+            tip: catTip({
+              title: `Appoint Lord · ${gp.name}`,
+              lines: [gp.lord_tip ?? gp.lord_effect ?? rules.lord].filter(has),
+              why: houses.length ? null : "No House to appoint to.",
+              dict,
+            }),
+            onclick: () => use("lord", "Appoint", gp.lord_effect ?? rules.lord, { house: st.house }),
+          },
+          "Appoint",
+        ),
         houses.length ? null : why("No House to appoint to."),
       ],
       gp.lord_effect ?? rules.lord,
@@ -904,7 +1072,9 @@ export function openHouses() {
     title: "Houses",
     tag: "cat-houses",
     build: () => {
-      const houses = cat()?.houses ?? [];
+      const data = cat();
+      const dict = data?.keywords ?? null;
+      const houses = data?.houses ?? [];
       if (!houses.length) return [h("div.dim", "No Houses.")];
       return [
         h("h4", "Houses"),
@@ -912,9 +1082,17 @@ export function openHouses() {
           "div.cat-grid-2",
           ...houses.map((ho) => {
             const calc = ho.loyalty_calc ?? [];
+            const kws = ho.sympathy_name ? ["CAT_HOUSE", "CAT_LOYALTY", "CAT_SYMPATHY"] : ["CAT_HOUSE", "CAT_LOYALTY"];
             return h(
               "div.cat-house-card",
-              { tip: tipOf("Loyalty", calc) },
+              {
+                tip: catTip({
+                  title: `${ho.name} · ${ho.mood} (${signed(ho.loyalty ?? 0)})`,
+                  lines: calc.map((l) => ({ cls: ".tip-calc-line", text: l })),
+                  keywords: kws,
+                  dict,
+                }),
+              },
               portrait(ho.lord_portrait, PORTRAIT.small, ho.lord_name),
               h(
                 "div",
@@ -1014,6 +1192,7 @@ export function openDiplomacy() {
     build: (ctx) => {
       const data = cat();
       if (!data) return [];
+      const dict = data.keywords ?? null;
       const me = myId();
       const rivals = (data.players ?? []).filter((p) => p.id !== me && !p.is_neutral && p.alive);
       const canCall = data.can_call_crusade ?? true;
@@ -1044,11 +1223,30 @@ export function openDiplomacy() {
                   h(
                     "div.cat-btn-row",
                     p.war
-                      ? h("button", { disabled: p.can_peace === false, onclick: () => ctx.run({ c: "cat_peace", target: p.id }) }, p.peace_label ?? "Offer peace")
-                      : h(
+                      ? tipBtn(
+                          "button",
+                          {
+                            disabled: p.can_peace === false,
+                            tip: catTip({
+                              title: p.peace_label ?? "Offer peace",
+                              lines: [data.peace_tip ?? data.peace_effect].filter(has),
+                              why: p.can_peace === false ? p.peace_why : null,
+                              dict,
+                            }),
+                            onclick: () => ctx.run({ c: "cat_peace", target: p.id }),
+                          },
+                          p.peace_label ?? "Offer peace",
+                        )
+                      : tipBtn(
                           "button.danger",
                           {
                             disabled: p.can_declare_war === false,
+                            tip: catTip({
+                              title: "Declare war",
+                              lines: [data.war_tip ?? data.war_effect].filter(has),
+                              why: p.can_declare_war === false ? p.war_why : null,
+                              dict,
+                            }),
                             onclick: async () => {
                               if (!(await confirm("Declare war", [`Declare war on ${playerLabel(p)}?`, data.war_effect], "Declare war"))) return;
                               await ctx.run({ c: "cat_war", target: p.id });
@@ -1056,10 +1254,16 @@ export function openDiplomacy() {
                           },
                           "Declare war",
                         ),
-                    h(
+                    tipBtn(
                       "button",
                       {
                         disabled: !canCall || p.can_call_crusade === false,
+                        tip: catTip({
+                          title: "Call crusade",
+                          lines: [data.crusade_tip ?? data.crusade_effect].filter(has),
+                          why: !canCall ? data.call_crusade_why : p.can_call_crusade === false ? p.call_crusade_why : null,
+                          dict,
+                        }),
                         onclick: async () => {
                           if (!(await confirm("Call crusade", [`Call a crusade against ${playerLabel(p)}?`, data.crusade_effect], "Call crusade"))) return;
                           await ctx.run({ c: "cat_crusade", target: p.id });
@@ -1094,10 +1298,18 @@ export function openDiplomacy() {
               mine.length
                 ? h("select", { "aria-label": "Squad", onchange: (ev) => lendSel.set(cr.id, Number(ev.target.value)) }, ...mine.map((s) => h("option", { value: String(s.id), selected: s.id === lendSel.get(cr.id) }, s.name)))
                 : null,
-              h(
+              tipBtn(
                 "button",
                 {
                   disabled: !canLend,
+                  tip: catTip({
+                    title: "Lend squad",
+                    lines: [
+                      `Lends the chosen squad to this [KW=CAT_CRUSADE]Crusade[\\KW] against ${cr.target_name}${cr.lend_declares_war ? " (declares war)" : ""}.`,
+                    ],
+                    why: canLend ? null : reason,
+                    dict,
+                  }),
                   onclick: async () => {
                     if (cr.lend_declares_war && !(await confirm("Lend squad", `Lending a squad declares war on ${cr.target_name}.`, "Lend"))) return;
                     await ctx.run({ c: "cat_lend", crusade: cr.id, squad: lendSel.get(cr.id) });

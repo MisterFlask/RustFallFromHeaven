@@ -721,7 +721,7 @@ html.iso .iso-name .coords { font-weight: 400; }
 /* A dialog the battle asks (declaring war) shows over it. */
 body.battle-open #modals .backdrop { z-index: 26; }
 /* The map stays, dimmed; the interface over it steps aside while a battle screen is open. */
-body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city, #mapwrap .minimap, #mapwrap .zoom, #mapwrap .layers, #mapwrap .tooltip),
+body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city, #mapwrap .minimap, #mapwrap .zoom, #mapwrap .layers, #mapwrap .tooltip, #mapwrap .tip-side),
 body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * { visibility: hidden !important; }
 /* battle.js `fit` scales the frame to the viewport and centres it (inline left, top, transform) */
 #battle .bt-frame { position: absolute; width: 1280px; height: 800px; left: 0; top: 0; transform-origin: 0 0; }

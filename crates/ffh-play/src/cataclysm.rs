@@ -13,7 +13,7 @@ use cataclysm_core::{
     GreatPersonId, GreatSuit, House, HouseId, HouseMood, LifeboatKind, MemberId, PlayerId, PlotIdx, Religion, Resource, RitualKind, SallyPosture,
     SquadId, TechId, UnitClassId, VictoryKind, WonderKind, ARMAGEDDON_CRISES, DISTRICTS, SECRET_TECHS, TECHS, UNIT_CLASSES,
 };
-use ffh_battle::{ActionKind, Fate, GroundRule, Note, RowActions, Side, ROWS};
+use ffh_battle::{ActionKind, AttackPattern, Fate, GroundRule, Note, RowActions, Side, ROWS};
 use ffh_data::{BonusType, CivilizationType, FeatureType, GameData, Idx, ImprovementType, LeaderHeadType, RouteType, TerrainType, UnitType};
 
 use crate::json::Json;
@@ -429,10 +429,12 @@ impl CataclysmSession {
                     "id" => m.id.0 as i32,
                     "class" => info.name,
                     "class_key" => info.key,
+                    "tier" => info.tier as i32,
                     "name" => m.display_name(),
                     "art_unit_type" => art_ty,
                     "row" => m.row as i32,
                     "lane" => m.lane as i32,
+                    "best_row" => info.row_order[0] as i32,
                     "large" => info.large,
                     "hp_pct" => m.hp_pct(),
                     "max_hp" => m.max_hp(),
@@ -444,9 +446,18 @@ impl CataclysmSession {
                     "def" => info.def,
                     "magic" => info.magic,
                     "mdef" => info.mdef,
+                    "acc" => info.acc,
+                    "eva" => info.eva,
+                    "crit" => info.crit,
                     "speed" => info.speed,
-                    "actions" => actions_json(&info.rows),
+                    "armor" => info.armor,
+                    "moves" => info.moves,
+                    "anti_flank" => info.anti_flank,
+                    "armor_piercing" => info.armor_piercing,
+                    "damage_vs_walls" => info.damage_vs_walls,
+                    "actions" => actions_with_patterns_json(&info.rows, &info.patterns),
                     "upgrades_to" => upgrade_to.map(|n| n.info().name),
+                    "upgrades_to_key" => upgrade_to.map(|n| n.info().key),
                     "upgrade_cost" => upgrade_cost,
                 });
             }
@@ -521,6 +532,10 @@ impl CataclysmSession {
             let fort = g.check_field_work(h, s.id, false);
             let supply = self.supply_json(s, supply_line.as_ref());
 
+            let in_borders = pl.owner == Some(s.owner);
+            let can_fit_1 = s.find_open_cell(UnitClassId::Guard).is_some();
+            let can_fit_2 = s.find_open_cell(UnitClassId::Ogre).is_some();
+
             cat_squads.push(crate::jobj! {
                 "id" => s.id.0 as i32,
                 "owner" => s.owner.0 as i32,
@@ -546,7 +561,10 @@ impl CataclysmSession {
                 "power" => s.power_rating(),
                 "places_used" => s.places_used() as i32,
                 "place_cap" => place_cap as i32,
-                "in_home_borders" => pl.owner == Some(s.owner),
+                "in_home_borders" => in_borders,
+                "can_fit_1cell" => can_fit_1,
+                "can_fit_2cell" => can_fit_2,
+                "reinforce_border_why" => (!in_borders).then_some("The squad must stand inside your borders to reinforce."),
                 "can_found_city" => site.is_ok(),
                 "found_why" => found_check.err().map(|e| e.detail),
                 "found_cost" => found_cost,
@@ -615,6 +633,13 @@ impl CataclysmSession {
                 } else {
                     Some(format!("{:+} Worldstrain for the first civilization to research it.", t.ac_delta))
                 };
+                let tip_strain = if t.ac_delta == 0 {
+                    None
+                } else if discovered {
+                    Some("Already researched in the world: 0 [KW=CAT_WORLDSTRAIN]Worldstrain[\\KW].".to_string())
+                } else {
+                    Some(format!("{:+} [KW=CAT_WORLDSTRAIN]Worldstrain[\\KW] (world-first).", t.ac_delta))
+                };
                 crate::jobj! {
                     "id" => t.id.0 as i32,
                     "key" => t.key,
@@ -628,10 +653,12 @@ impl CataclysmSession {
                     "prereq" => t.prereq.map(|p| TECHS[p.0 as usize].name),
                     "ac_delta" => strain,
                     "strain_text" => strain_text,
+                    "tip_strain" => tip_strain,
                     "known" => known,
                     "can_research" => check.is_ok(),
                     "why" => check.err(),
                     "unlocks" => t.unlocks_summary,
+                    "tip_unlocks" => mark_cat_keywords(t.unlocks_summary),
                 }
             })
             .collect();
@@ -643,6 +670,7 @@ impl CataclysmSession {
                     "key" => doc.key(),
                     "name" => doc.name(),
                     "summary" => doc.summary(),
+                    "tip_summary" => mark_cat_keywords(doc.summary()),
                     "primary" => me_pl.primary_doctrine == Some(doc),
                     "secondary" => me_pl.secondary_doctrine == Some(doc),
                 }
@@ -684,6 +712,7 @@ impl CataclysmSession {
                     _ => None,
                 };
                 let mut effect = format!("Your Creed becomes {}; your alignment becomes {}.", rel.name(), rel.alignment().name());
+                let mut tip_effect = format!("Sets your [KW=CAT_CREED]Creed[\\KW] to {} ({}).", rel.name(), rel.alignment().name());
                 if action == "found" {
                     let moved = if g.apocalypse.carcosa_risen {
                         0
@@ -692,6 +721,7 @@ impl CataclysmSession {
                     };
                     if moved != 0 {
                         effect.push_str(&format!(" {:+} Worldstrain.", moved));
+                        tip_effect.push_str(&format!(" {:+} [KW=CAT_WORLDSTRAIN]Worldstrain[\\KW].", moved));
                     }
                 }
                 crate::jobj! {
@@ -703,11 +733,13 @@ impl CataclysmSession {
                     "lore_cost" => cost,
                     "ac_delta" => rel.founding_ac_delta(),
                     "summary" => rel.summary(),
+                    "tip_summary" => mark_cat_keywords(rel.summary()),
                     "action" => action,
                     "can_act" => why.is_none(),
                     "why" => why,
                     "cost_text" => cost_text,
                     "effect_text" => effect,
+                    "tip_effect" => tip_effect,
                 }
             })
             .collect();
@@ -732,6 +764,13 @@ impl CataclysmSession {
                 } else {
                     rk.summary().to_string()
                 };
+                let mut tip_summary = mark_cat_keywords(rk.summary());
+                if delta != 0 {
+                    tip_summary.push_str(&format!(" {:+} [KW=CAT_WORLDSTRAIN]Worldstrain[\\KW].", delta));
+                }
+                if rk.recast_turns() > 0 {
+                    tip_summary.push_str(&format!(" Recast: {} turns.", rk.recast_turns()));
+                }
                 crate::jobj! {
                     "key" => rk.key(),
                     "name" => rk.name(),
@@ -740,6 +779,7 @@ impl CataclysmSession {
                     "can_cast" => why.is_none(),
                     "why" => why,
                     "summary" => summary,
+                    "tip_summary" => tip_summary,
                     "recast_turns" => rk.recast_turns(),
                     "ready_in" => g.ritual_turns_left(h, rk),
                 }
@@ -791,6 +831,7 @@ impl CataclysmSession {
                         "needs_name" => TECHS[info.needs.0 as usize].name,
                         "needs_known" => me_pl.has_tech(info.needs),
                         "summary" => info.summary,
+                        "tip_summary" => mark_cat_keywords(info.summary),
                         "expert_line" => info.expert_line,
                     }
                 });
@@ -818,7 +859,8 @@ impl CataclysmSession {
                     .filter(|ho| ho.owner == h && g.check_lord(h, gp.id, ho.id).is_ok())
                     .map(|ho| crate::jobj! { "id" => ho.id.0 as i32, "name" => ho.name.as_str(), "lord_name" => ho.lord_name.as_str() })
                     .collect();
-                let hero_class = gp.suit.hero_class().info().name;
+                let hero_class_info = gp.suit.hero_class().info();
+                let hero_class = hero_class_info.name;
                 let hero_effect = format!(
                     "{} joins the squad as a level {} hero {} (+{} max HP, +{}% battle stats) and becomes its captain: the squad takes {}'s name and portrait as captain; its aura is unchanged. A fallen hero returns at the capital after {} turns with 1 more Wound. The Secret Tech card returns to the world deck.",
                     gp.name,
@@ -829,6 +871,10 @@ impl CataclysmSession {
                     gp.name,
                     cataclysm_core::game::HERO_RECOVERY_TURNS
                 );
+                let hero_tip = format!(
+                    "{} joins the chosen squad as a [KW=CAT_HERO]Hero[\\KW] {} and becomes its captain (aura unchanged). Secret Tech card returns to the deck.",
+                    gp.name, hero_class
+                );
                 let lord_effect = format!(
                     "{} replaces the House's lord. The House takes your alignment ({}) and Creed ({}), drops its sympathy for a rival, and gains +{} lasting Loyalty; its perk is unchanged. The Secret Tech card returns to the world deck.",
                     gp.name,
@@ -836,18 +882,31 @@ impl CataclysmSession {
                     me_pl.religion.map_or("none", Religion::name),
                     cataclysm_core::great_people::LORD_LOYALTY
                 );
+                let lord_tip = format!(
+                    "{} becomes Lord of the chosen [KW=CAT_HOUSE]House[\\KW]: takes your alignment ({}) and [KW=CAT_CREED]Creed[\\KW] ({}), clears [KW=CAT_SYMPATHY]Sympathy[\\KW], and adds +{} lasting [KW=CAT_LOYALTY]Loyalty[\\KW] (perk unchanged). Secret Tech card returns to the deck.",
+                    gp.name,
+                    me_pl.alignment.name(),
+                    me_pl.religion.map_or("none", Religion::name),
+                    cataclysm_core::great_people::LORD_LOYALTY
+                );
+                let burst_summary = gp.suit.burst_summary();
+                let burst_tip = format!("{} Secret Tech card returns to the deck.", mark_cat_keywords(&burst_summary));
                 crate::jobj! {
                     "id" => gp.id.0 as i32,
                     "suit" => gp.suit.name(),
                     "name" => gp.name.as_str(),
                     "portrait" => gp.portrait,
-                    "burst_summary" => gp.suit.burst_summary(),
+                    "burst_summary" => burst_summary,
+                    "burst_tip" => burst_tip,
                     "burst_note" => burst_note,
                     "hero_class_name" => hero_class,
+                    "hero_class_key" => hero_class_info.key,
                     "hero_squads" => Json::Arr(hero_squads),
                     "hero_effect" => hero_effect,
+                    "hero_tip" => hero_tip,
                     "lord_houses" => Json::Arr(lord_houses),
                     "lord_effect" => lord_effect,
+                    "lord_tip" => lord_tip,
                     "secret_tech" => secret,
                 }
             })
@@ -871,6 +930,7 @@ impl CataclysmSession {
                     "needs_name" => TECHS[info.needs.0 as usize].name,
                     "active" => me_pl.has_tech(info.needs),
                     "summary" => info.summary,
+                    "tip_summary" => mark_cat_keywords(info.summary),
                     "expert_line" => info.expert_line,
                 }
             })
@@ -938,6 +998,27 @@ impl CataclysmSession {
             .collect();
 
         // 8. Recruitable unit classes, districts, wonders & rival summaries
+        let mut reinforce_discounts: Vec<String> = Vec::new();
+        if me_pl.faction == FactionId::Hippus {
+            reinforce_discounts.push(format!(
+                "-{}% from {}",
+                100 - cataclysm_core::game::HIPPUS_REINFORCE_PCT,
+                faction_name(FactionId::Hippus)
+            ));
+        }
+        if me_pl.has_tech(cataclysm_core::data::TECH_WAR_CHESTS) {
+            reinforce_discounts.push(format!(
+                "-{}% from {}",
+                100 - cataclysm_core::game::WAR_CHESTS_PCT,
+                tech_name(cataclysm_core::data::TECH_WAR_CHESTS)
+            ));
+        }
+        let reinforce_discount_note = if reinforce_discounts.is_empty() {
+            None
+        } else {
+            Some(format!("Reinforce discount: {}.", reinforce_discounts.join(", ")))
+        };
+
         let classes_j: Vec<Json> = UnitClassId::RECRUITABLE
             .iter()
             .map(|&cl| {
@@ -955,15 +1036,31 @@ impl CataclysmSession {
                     "name" => info.name,
                     "tier" => info.tier as i32,
                     "cost_gold" => gold_cost,
+                    "base_cost_gold" => info.cost_gold,
                     "cost_industry" => info.cost_industry,
+                    "upkeep" => cataclysm_core::game::UPKEEP_PER_MEMBER,
+                    "reinforce_discount" => reinforce_discount_note.as_deref(),
                     "large" => info.large,
                     "unlocked" => ok.is_ok(),
                     "why" => ok.err(),
                     "row_pref" => match info.row_order[0] { 0 => "Front", 1 => "Middle", _ => "Rear" },
+                    "best_row" => info.row_order[0] as i32,
                     "hp" => info.hp,
                     "atk" => info.atk,
                     "def" => info.def,
                     "magic" => info.magic,
+                    "mdef" => info.mdef,
+                    "acc" => info.acc,
+                    "eva" => info.eva,
+                    "crit" => info.crit,
+                    "speed" => info.speed,
+                    "armor" => info.armor,
+                    "moves" => info.moves,
+                    "anti_flank" => info.anti_flank,
+                    "armor_piercing" => info.armor_piercing,
+                    "damage_vs_walls" => info.damage_vs_walls,
+                    "actions" => actions_with_patterns_json(&info.rows, &info.patterns),
+                    "upgrades_to" => info.upgrades_to.map(|n| n.info().name),
                 }
             })
             .collect();
@@ -980,6 +1077,7 @@ impl CataclysmSession {
                     "unlocked" => unlocked,
                     "why" => why,
                     "summary" => di.summary,
+                    "tip_summary" => mark_cat_keywords(di.summary),
                 }
             })
             .collect();
@@ -996,6 +1094,7 @@ impl CataclysmSession {
                 } else {
                     None
                 };
+                let tip_summary = format!("{} {:+} [KW=CAT_WORLDSTRAIN]Worldstrain[\\KW] on completion.", mark_cat_keywords(wk.summary()), wk.ac_delta());
                 crate::jobj! {
                     "key" => wk.key(),
                     "name" => wk.name(),
@@ -1004,6 +1103,7 @@ impl CataclysmSession {
                     "built" => built,
                     "why" => why,
                     "summary" => wk.summary(),
+                    "tip_summary" => tip_summary,
                 }
             })
             .collect();
@@ -1104,7 +1204,55 @@ impl CataclysmSession {
             let any_target = g.players.iter().any(|p| p.id != h && !p.is_neutral && p.alive && g.check_call_crusade(h, p.id).is_ok());
             (!any_target).then(|| "No civilization can be the target of a Crusade now.".to_string())
         });
+        let leading_suit = GreatSuit::ALL
+            .iter()
+            .copied()
+            .max_by(|a, b| me_pl.renown_meters[a.id()].cmp(&me_pl.renown_meters[b.id()]).then_with(|| b.id().cmp(&a.id())))
+            .unwrap_or(GreatSuit::Sage);
+        let leading_val = me_pl.renown_meters[leading_suit.id()];
+        let renown_tip = if leading_val > 0 {
+            format!(
+                "[KW=CAT_RENOWN]Renown[\\KW] {renown_total}/{renown_need}. Leading suit: {} ({leading_val}).",
+                leading_suit.name()
+            )
+        } else {
+            format!("[KW=CAT_RENOWN]Renown[\\KW] {renown_total}/{renown_need}.")
+        };
+        let next_crisis = ARMAGEDDON_CRISES
+            .iter()
+            .find(|c| !g.apocalypse.triggered_crises.contains(&c.threshold));
+        let next_crisis_j = next_crisis.map(|c| {
+            crate::jobj! {
+                "threshold" => c.threshold,
+                "name" => c.name,
+                "summary" => c.summary,
+                "tip_summary" => mark_cat_keywords(c.summary),
+            }
+        });
+        let mut ap_tip_lines: Vec<String> = Vec::new();
+        if let Some(cd) = g.apocalypse.countdown {
+            ap_tip_lines.push(format!(
+                "[KW=CAT_BLOWOUT]Blowout[\\KW] countdown: {} left. [KW=CAT_WORLDSTRAIN]Worldstrain[\\KW] no longer changes.",
+                plural(cd.max(0), "turn", "turns")
+            ));
+        } else {
+            if let Some(nc) = next_crisis {
+                ap_tip_lines.push(format!(
+                    "Next [KW=CAT_WORLDSTRAIN]Worldstrain[\\KW] crisis at {}: {} ({}).",
+                    nc.threshold,
+                    nc.name,
+                    mark_cat_keywords(nc.summary.trim_end_matches('.'))
+                ));
+            }
+            ap_tip_lines.push(format!(
+                "At {}: the [KW=CAT_BLOWOUT]Blowout[\\KW] starts the {}-turn [KW=CAT_LIFEBOAT]Lifeboat[\\KW] countdown.",
+                cataclysm_core::apocalypse::MAX_STRAIN,
+                CARCOSA_TIMER_TURNS
+            ));
+        }
+
         let cataclysm_payload = crate::jobj! {
+            "keywords" => cataclysm_keywords_json(),
             "turn" => g.turn,
             "max_turns" => MAX_GAME_TURNS,
             "turns_left" => self.turns_left(),
@@ -1114,15 +1262,29 @@ impl CataclysmSession {
                 "cost" => cataclysm_core::game::CARAVAN_GOLD,
                 "can_launch" => caravan_check.is_none(),
                 "why" => caravan_check,
+                "tip" => format!("Launches a [KW=CAT_CARAVAN]Caravan[\\KW] from this city to the chosen destination for {} Gold.", cataclysm_core::game::CARAVAN_GOLD),
             },
             "can_call_crusade" => crusade_why.is_none(),
             "call_crusade_why" => crusade_why,
             "crusade_effect" => crusade_effect(),
+            "crusade_tip" => format!(
+                "Declares war on the target and opens a {}-turn [KW=CAT_CRUSADE]Crusade[\\KW] (does not end [KW=CAT_CARAVAN]Caravans[\\KW]).",
+                cataclysm_core::crusade::CRUSADE_TURNS
+            ),
             "war_effect" => "Ends every Caravan between you and the target. At war, squads may attack, raid and ambush Caravans, and each side's squads block the other's supply lines. Attacking, calling a Crusade or lending a squad also starts a war, without ending Caravans.",
+            "war_tip" => "Declares war and ends every [KW=CAT_CARAVAN]Caravan[\\KW] between you. Squads may attack, [KW=CAT_RAID]Raid[\\KW], ambush Caravans, and block enemy [KW=CAT_SUPPLY]Supply[\\KW].",
             "peace_effect" => peace_effect(),
+            "peace_tip" => format!(
+                "Offers peace for {} turns (signed when both sides offer), followed by a {}-turn truce prohibiting war, attacks, and [KW=CAT_CRUSADE]Crusades[\\KW].",
+                cataclysm_core::game::PEACE_OFFER_TURNS,
+                cataclysm_core::game::TRUCE_TURNS
+            ),
             "doctrine_rule" => doctrine_rule(),
+            "doctrine_tip" => "Adopts this [KW=CAT_DOCTRINE]Doctrine[\\KW] permanently.",
             "order_help" => order_help_json(found_cost),
+            "order_tips" => order_tips_json(found_cost, me_pl.faction),
             "sally_help" => sally_help_json(),
+            "sally_tips" => sally_tips_json(),
             "court_rules" => court_rules_json(),
             "rules_help" => rules_help_json(),
             "act_label" => g.apocalypse.act_label(g.turn),
@@ -1131,6 +1293,7 @@ impl CataclysmSession {
             "human_leader_art" => me_pl.faction.info().leader_art,
             "human_lore_blurb" => me_pl.faction.info().lore_blurb,
             "human_rule_summary" => me_pl.faction.info().rule_summary,
+            "human_rule_tip" => mark_cat_keywords(me_pl.faction.info().rule_summary),
             "human_alignment" => me_pl.alignment.name(),
             "human_religion" => me_pl.religion.map(Religion::name),
             "squad_cap" => g.squad_cap(h) as i32,
@@ -1154,8 +1317,14 @@ impl CataclysmSession {
                     "No tech can be researched: at your turn start Lore converts to Sage Renown, {} Lore per 1 Renown.",
                     cataclysm_core::game::LORE_PER_SAGE_RENOWN
                 )),
+                "idle_lore_tip" => g.lore_converts(h).then(|| format!(
+                    "No tech open: Lore converts to Sage [KW=CAT_RENOWN]Renown[\\KW] at turn start ({} Lore per 1).",
+                    cataclysm_core::game::LORE_PER_SAGE_RENOWN
+                )),
                 "adopt_text" => (!g.can_research_any(h) && !g.lore_converts(h))
                     .then_some("No tech can be researched until you adopt a Doctrine. Lore is kept."),
+                "adopt_tip" => (!g.can_research_any(h) && !g.lore_converts(h))
+                    .then_some("Adopt a [KW=CAT_DOCTRINE]Doctrine[\\KW] to open more techs. Lore is kept."),
                 "primary_doctrine" => me_pl.primary_doctrine.map(Doctrine::key),
                 "primary_doctrine_name" => me_pl.primary_doctrine.map(Doctrine::name),
                 "secondary_doctrine" => me_pl.secondary_doctrine.map(Doctrine::key),
@@ -1175,6 +1344,7 @@ impl CataclysmSession {
                 "total" => renown_total,
                 "next_threshold" => renown_need,
                 "sources" => renown_sources(),
+                "tip" => renown_tip,
             },
             "secrets_known" => Json::Arr(secrets_known_j),
             "apocalypse" => crate::jobj! {
@@ -1184,6 +1354,8 @@ impl CataclysmSession {
                 "hyborem_spawned" => g.apocalypse.hyborem_spawned,
                 "carcosa_risen" => g.apocalypse.carcosa_risen,
                 "countdown" => g.apocalypse.countdown,
+                "next_crisis" => next_crisis_j,
+                "tip_lines" => ap_tip_lines,
                 "recent_changes" => Json::Arr(g.apocalypse.recent_changes.iter().cloned().map(Json::from).collect()),
                 "crises" => Json::Arr(crises_j),
                 "lifeboats" => Json::Arr(lifeboats_j),
@@ -2132,10 +2304,13 @@ fn lifeboat_rules() -> Vec<String> {
 fn order_help_json(found_cost: i32) -> Json {
     use cataclysm_core::game::{
         FOUND_CITY_BASE_GOLD, FOUND_CITY_GOLD_PER_CITY, HEAL_FIELD_PCT, HEAL_FORTIFIED_PCT, LAIR_GOLD, LAIR_LORE, LAIR_MANA, LAIR_XP, MIN_CITY_DISTANCE,
-        RAID_RANGE, RAID_STREAK_TO_STRIP, RAID_TAKE_PCT, RAID_TAKE_SALLIED_PCT, STRIP_TURNS,
+        RAID_RANGE, RAID_STREAK_TO_STRIP, RAID_TAKE_PCT, RAID_TAKE_SALLIED_PCT, STRIP_TURNS, UPKEEP_PER_MEMBER,
     };
     let fc = tech_name(cataclysm_core::data::TECH_FIELDCRAFT);
     crate::jobj! {
+        "reinforce" => format!(
+            "Adds a unit of the chosen class to an open cell of this squad's 3x3 grid for Gold (instant; uses no movement; inside your borders only). Each unit costs {UPKEEP_PER_MEMBER} Gold upkeep per turn."
+        ),
         "fortify" => format!(
             "Ends the squad's movement this turn. Supplied outside your land, it heals {}% per turn instead of {}%. It has no effect in battle; moving ends it.",
             HEAL_FORTIFIED_PCT, HEAL_FIELD_PCT
@@ -2162,6 +2337,38 @@ fn order_help_json(found_cost: i32) -> Json {
     }
 }
 
+fn order_tips_json(found_cost: i32, faction: FactionId) -> Json {
+    use cataclysm_core::game::{FOUND_CITY_BASE_GOLD, FOUND_CITY_GOLD_PER_CITY, HEAL_FIELD_PCT, HEAL_FORTIFIED_PCT, MIN_CITY_DISTANCE, UPKEEP_PER_MEMBER};
+    let fc = tech_name(cataclysm_core::data::TECH_FIELDCRAFT);
+    let mut found_city = format!(
+        "Founds a city here for {found_cost} Gold ({FOUND_CITY_BASE_GOLD} + {FOUND_CITY_GOLD_PER_CITY} per city owned). Uses all remaining movement; keeps the squad. Must be at least {MIN_CITY_DISTANCE} plots from every city."
+    );
+    if faction.info().max_super_cities.is_some() {
+        found_city.push_str(" Cities past your 3 Megacities are [KW=CAT_OUTPOST]Outposts[\\KW].");
+    }
+    crate::jobj! {
+        "reinforce" => format!(
+            "Adds a unit to an open cell of this squad's [KW=CAT_FORMATION]Formation[\\KW] for Gold (instant; uses no movement; inside your borders only). Upkeep: {UPKEEP_PER_MEMBER} Gold/t."
+        ),
+        "fortify" => format!(
+            "Ends movement; moving ends the order. Increases field [KW=CAT_HEALING]Healing[\\KW] outside your land to {HEAL_FORTIFIED_PCT}% (instead of {HEAL_FIELD_PCT}%) while [KW=CAT_SUPPLY]Supplied[\\KW]. No battle bonus."
+        ),
+        "raid" => format!(
+            "Begins a [KW=CAT_RAID]Raid[\\KW] on this enemy plot. Ends movement; moving ends the order. Requires {fc}; enemy land outside a city while at war."
+        ),
+        "road" => format!(
+            "Builds a [KW=CAT_ROAD]Road[\\KW] on this plot. Free; uses all remaining movement. Requires {fc} and movement left."
+        ),
+        "fort" => format!(
+            "Builds a [KW=CAT_FORT]Fort[\\KW] on this plot, replacing any improvement. Free; uses all remaining movement. Requires {fc}, movement left, outside a city."
+        ),
+        "found_city" => found_city,
+        "disband" => "Removes this squad and all its units. No refund.",
+        "auto_arrange" => "Places every unit in its preferred row of the [KW=CAT_FORMATION]Formation[\\KW], [KW=CAT_LARGE]Large[\\KW] units first, centre lane first. Free; uses no movement.",
+        "explore" => "Explores this [KW=CAT_IMPERIAL_RUIN]Imperial Ruin[\\KW] and ends the squad's movement.",
+    }
+}
+
 fn sally_help_json() -> Json {
     use cataclysm_core::game::{RAID_RANGE, RAID_TAKE_PCT, RAID_TAKE_SALLIED_PCT, SALLY_FAVOURED_PCT};
     let cut = format!("A sally, won or lost, cuts what every raider takes from this city that turn from {RAID_TAKE_PCT}% to {RAID_TAKE_SALLIED_PCT}%.");
@@ -2171,6 +2378,17 @@ fn sally_help_json() -> Json {
             "At the end of your turn, the first squad in the city fights the first raider within {RAID_RANGE} plots if its power is at least {SALLY_FAVOURED_PCT}% of the raider's. {cut}"
         ),
         "always" => format!("At the end of your turn, the first squad in the city always fights the first raider within {RAID_RANGE} plots. {cut}"),
+    }
+}
+
+fn sally_tips_json() -> Json {
+    use cataclysm_core::game::SALLY_FAVOURED_PCT;
+    crate::jobj! {
+        "never" => "Garrison never performs a [KW=CAT_SALLY]Sally[\\KW] against nearby [KW=CAT_RAID]Raiders[\\KW].",
+        "favoured" => format!(
+            "Garrison performs a [KW=CAT_SALLY]Sally[\\KW] if its power is at least {SALLY_FAVOURED_PCT}% of the [KW=CAT_RAID]Raider's[\\KW]."
+        ),
+        "always" => "Garrison always performs a [KW=CAT_SALLY]Sally[\\KW] against a nearby [KW=CAT_RAID]Raider[\\KW].",
     }
 }
 
@@ -2279,7 +2497,7 @@ impl CataclysmSession {
         let n = s.unsupplied_turns;
         let pct = supply_combat_pct(n);
         let pen = |p: i32| format!("{:+}%", p - 100);
-        let (key, label, detail) = match (line, n) {
+        let (key, label, detail, tip) = match (line, n) {
             (Some(l), 0) => {
                 let budget = self.g.supply_budget(s.owner, s.captain_aura);
                 let d = if l.cost == 0 {
@@ -2287,7 +2505,15 @@ impl CataclysmSession {
                 } else {
                     format!("Supplied: the line costs {} of {}. Full strength in battle.", l.cost, budget)
                 };
-                ("supplied", "Supplied".to_string(), d)
+                let t = if l.cost == 0 {
+                    "[KW=CAT_SUPPLY]Supplied[\\KW]. Full battle strength; receives [KW=CAT_HEALING]Healing[\\KW] at turn start.".to_string()
+                } else {
+                    format!(
+                        "[KW=CAT_SUPPLY]Supplied[\\KW] (line cost {}/{}). Full battle strength; receives [KW=CAT_HEALING]Healing[\\KW] at turn start.",
+                        l.cost, budget
+                    )
+                };
+                ("supplied", "Supplied".to_string(), d, t)
             }
             (Some(_), _) => (
                 "recovering",
@@ -2296,12 +2522,20 @@ impl CataclysmSession {
                     "A supply line is open again. Attack and magic stay at {}% until your next turn start, when the squad returns to full strength and heals.",
                     pct
                 ),
+                format!(
+                    "[KW=CAT_SUPPLY]Supply[\\KW] restored. Attack and magic stay at {}% until turn start, then full strength and [KW=CAT_HEALING]Healing[\\KW].",
+                    pct
+                ),
             ),
             (None, 0) => (
                 "cut",
                 "Cut".to_string(),
                 format!(
                     "No supply line. No penalty yet; at your next turn start without a line the squad becomes Hungry: attack and magic {}%, no healing.",
+                    supply_combat_pct(1)
+                ),
+                format!(
+                    "Out of [KW=CAT_SUPPLY]Supply[\\KW] (0 turns). No penalty yet; next turn without a line: Hungry ({}% attack/magic, no [KW=CAT_HEALING]Healing[\\KW]).",
                     supply_combat_pct(1)
                 ),
             ),
@@ -2313,12 +2547,20 @@ impl CataclysmSession {
                     pct,
                     supply_combat_pct(next)
                 );
+                let mut t = format!(
+                    "Out of [KW=CAT_SUPPLY]Supply[\\KW] ({}): {}% attack/magic, no [KW=CAT_HEALING]Healing[\\KW]. Next turn: {}%",
+                    plural(n, "turn", "turns"),
+                    pct,
+                    supply_combat_pct(next)
+                );
                 if next >= STARVE_ATTRITION_TURNS {
                     d.push_str(&format!(", and every unit loses {}% of its max HP each turn.", STARVE_HP_LOSS_PCT));
+                    t.push_str(&format!(" and -{}% max HP/turn.", STARVE_HP_LOSS_PCT));
                 } else {
                     d.push('.');
+                    t.push('.');
                 }
-                ("hungry", format!("Hungry ({})", pen(pct)), d)
+                ("hungry", format!("Hungry ({})", pen(pct)), d, t)
             }
             (None, _) => (
                 "starving",
@@ -2329,9 +2571,15 @@ impl CataclysmSession {
                     pct,
                     STARVE_HP_LOSS_PCT
                 ),
+                format!(
+                    "Out of [KW=CAT_SUPPLY]Supply[\\KW] ({}): {}% attack/magic, -{}% max HP at turn start (min 1 HP), no [KW=CAT_HEALING]Healing[\\KW].",
+                    plural(n, "turn", "turns"),
+                    pct,
+                    STARVE_HP_LOSS_PCT
+                ),
             ),
         };
-        crate::jobj! { "key" => key, "label" => label, "detail" => detail }
+        crate::jobj! { "key" => key, "label" => label, "detail" => detail, "tip" => tip }
     }
 
     fn crew_json(&self, c: &cataclysm_core::City) -> Json {
@@ -2392,22 +2640,27 @@ impl CataclysmSession {
         let g = &self.g;
         let check = g.check_raze(self.human, c.id);
         let mut effect = format!("Removes {} for good; its plot becomes {}.", c.name, cataclysm_core::Terrain::BurningSands.name());
+        let mut tip_effect = format!("Removes {} for good; its plot becomes [KW=CAT_SCORCHED_GROUND]scorched ground[\\KW].", c.name);
         if !g.apocalypse.carcosa_risen {
             let moved = (g.apocalypse.counter + RAZE_STRAIN).clamp(0, 100) - g.apocalypse.counter;
             if moved != 0 {
                 effect.push_str(&format!(" {:+} Worldstrain.", moved));
+                tip_effect.push_str(&format!(" {:+} [KW=CAT_WORLDSTRAIN]Worldstrain[\\KW].", moved));
             }
         }
         if let Some(kind) = g.apocalypse.is_lifeboat(c.id) {
             effect.push_str(&format!(" Destroys the {} Lifeboat.", kind.name()));
+            tip_effect.push_str(&format!(" Destroys the {} [KW=CAT_LIFEBOAT]Lifeboat[\\KW].", kind.name()));
         }
         if g.caravans.values().any(|cv| cv.origin == c.id || cv.destination == c.id) {
             effect.push_str(" Ends the Caravans to and from it.");
+            tip_effect.push_str(" Ends [KW=CAT_CARAVAN]Caravans[\\KW] to and from it.");
         }
         crate::jobj! {
             "allowed" => check.is_ok(),
             "why" => check.err().map(|e| e.detail),
             "effect" => effect,
+            "tip_effect" => tip_effect,
         }
     }
 
@@ -2457,7 +2710,22 @@ impl CataclysmSession {
         });
         let mut lines = victory_lines(me.faction);
         lines.push(score_line());
-        crate::jobj! { "lines" => lines, "status" => status }
+        let info = me.faction.info();
+        let mut paths = Vec::new();
+        if info.can_mortal_win {
+            paths.push("[KW=CAT_LIFEBOAT]Lifeboat[\\KW] survival".to_string());
+        }
+        if info.can_demonic_win {
+            paths.push("[KW=CAT_FURNACE_VICTORY]Furnace victory[\\KW]".to_string());
+        }
+        paths.push("Conquest".to_string());
+        if me.faction == FactionId::Elohim {
+            paths.push(format!("Turn {MAX_GAME_TURNS} before [KW=CAT_BLOWOUT]Blowout[\\KW]"));
+        } else {
+            paths.push(format!("Turn {MAX_GAME_TURNS} Score (if no Keepers)"));
+        }
+        let tip_lines = vec![format!("Victory paths: {}.", paths.join(" · "))];
+        crate::jobj! { "lines" => lines, "tip_lines" => tip_lines, "status" => status }
     }
 
     fn turns_left(&self) -> i32 {
@@ -2582,21 +2850,25 @@ impl CataclysmSession {
         let forest_free = g.players[self.human.idx()].faction == FactionId::Ljosalfar;
         let mc = pl.move_cost(forest_free);
         let mut notes = Vec::new();
+        let mut tip_tags = Vec::new();
         if pl.terrain.is_hell() {
             notes.push(format!(
                 "Scorched ground: units of {} fight here with +{}% attack and defense.",
                 faction_name(FactionId::Infernals),
                 cataclysm_core::combat::HELL_GROUND_PCT
             ));
+            tip_tags.push("[KW=CAT_SCORCHED_GROUND]Scorched ground[\\KW]".to_string());
         }
         if pl.city.is_some_and(|c| g.breach_warded(c)) {
             notes.push("Cannot be attacked or besieged until the Blowout.".to_string());
+            tip_tags.push("Warded: cannot be attacked or [KW=CAT_BESIEGED]besieged[\\KW] until the [KW=CAT_BLOWOUT]Blowout[\\KW].".to_string());
         }
         if pl.improvement == cataclysm_core::Improvement::Fort {
             notes.push("Fort: while a squad stands here, the enemy's supply lines cannot pass the plots next to it.".into());
         }
         if pl.lair_unexplored {
             notes.push("Unexplored Imperial Ruin: a squad standing here may explore it.".into());
+            tip_tags.push("Unexplored [KW=CAT_IMPERIAL_RUIN]Imperial Ruin[\\KW]".to_string());
         }
         o.set("terrain_name", pl.terrain.name());
         o.set("features", features);
@@ -2607,7 +2879,9 @@ impl CataclysmSession {
         o.set("yields", crate::jobj! { "food" => f, "industry" => i, "gold" => gld });
         o.set("move_cost", if pl.kind.is_passable_land() { Some(mc) } else { None });
         o.set("lair", pl.lair_unexplored);
+        o.set("scorched", pl.terrain.is_hell());
         o.set("notes", notes);
+        o.set("tip_tags", tip_tags);
         o
     }
 }
@@ -2625,8 +2899,34 @@ fn kind_name(k: ActionKind) -> &'static str {
     }
 }
 
+fn pattern_name(p: AttackPattern) -> &'static str {
+    match p {
+        AttackPattern::Single => "Single",
+        AttackPattern::Volley => "Volley",
+        AttackPattern::Pierce => "Pierce",
+        AttackPattern::Sweep => "Sweep",
+        AttackPattern::Cleave => "Cleave",
+        AttackPattern::Trample => "Trample",
+    }
+}
+
 fn actions_json(rows: &[RowActions; ROWS]) -> Json {
     Json::Arr(rows.iter().map(|r| crate::jobj! { "kind" => kind_name(r.kind), "n" => r.count }).collect())
+}
+
+fn actions_with_patterns_json(rows: &[RowActions; ROWS], patterns: &[AttackPattern; ROWS]) -> Json {
+    Json::Arr(
+        rows.iter()
+            .zip(patterns.iter())
+            .map(|(r, &p)| {
+                crate::jobj! {
+                    "kind" => kind_name(r.kind),
+                    "n" => r.count,
+                    "pattern" => pattern_name(p),
+                }
+            })
+            .collect(),
+    )
 }
 
 fn ground_rule_json(r: &GroundRule) -> Option<Json> {
@@ -2659,3 +2959,527 @@ fn ground_rule_json(r: &GroundRule) -> Option<Json> {
         GroundRule::Charge { .. } | GroundRule::Uphill { .. } | GroundRule::NoFlanking => None,
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// Cataclysm Keywords & Reminder Text (mirrors docs/PLAY_DESIGN.md §4.8):
+// Every game noun's reminder is built from the rules' own constants and sent once in
+// `cataclysm.keywords`. Tooltips name the nouns with `[KW=CAT_X]Word[\KW]` and show all
+// referenced reminder cards beside (or below) the tooltip box.
+// ---------------------------------------------------------------------------------------------
+
+struct CatKeywordDef {
+    key: &'static str,
+    name: &'static str,
+    text: String,
+    implies: &'static [&'static str],
+}
+
+fn cataclysm_keyword_defs() -> Vec<CatKeywordDef> {
+    use cataclysm_core::apocalypse::{CARCOSA_TIMER_TURNS, MAX_STRAIN};
+    use cataclysm_core::combat::HELL_GROUND_PCT;
+    use cataclysm_core::crusade::CRUSADE_TURNS;
+    use cataclysm_core::game::{
+        renown as rn, BLOODY_BATTLES_PER_STRAIN, BLOODY_BATTLE_DEATHS, BLOODY_BATTLE_STRAIN, BREACH_REINFORCE_EVERY, HEAL_FIELD_PCT,
+        HEAL_FORTIFIED_PCT, HEAL_OWN_CITY_PCT, HEAL_OWN_LAND_PCT, HERO_RECOVERY_TURNS, HOST_ENTRY_POWER_PCT, LAIR_GOLD, LAIR_LORE, LAIR_MANA,
+        LAIR_XP, LIFEBOAT_CULTURE_MIN, LORE_PER_SAGE_RENOWN, PRIMARY_DOCTRINE_COST_PCT, RAID_RANGE, RAID_STREAK_TO_STRIP, RAID_TAKE_PCT,
+        RAID_TAKE_SALLIED_PCT, RAZE_STRAIN, SALLY_FAVOURED_PCT, SECONDARY_DOCTRINE_MAX_TIER, SENTINEL_REPAIR_PER_TURN, SQUAD_PLACES_BASE,
+        SQUAD_PLACES_EXPANDED, STARVE_ATTRITION_TURNS, STARVE_HP_LOSS_PCT, STRAIN_DRIFT_EVERY, STRIP_TURNS,
+    };
+    use cataclysm_core::great_people::{RENOWN_FIRST, RENOWN_STEP};
+    use cataclysm_core::house::HOUSE_MAX_CITIES;
+    use cataclysm_core::squad::{HERO_HP_BONUS, HERO_LEVEL, HERO_STAT_PCT, WOUND_PENALTY_PCT};
+    use cataclysm_core::supply::{BASE_SUPPLY_BUDGET, SUPPLY_COST_OWN, SUPPLY_COST_ROAD, SUPPLY_COST_WILD};
+
+    let bp = ffh_battle::Params::default();
+    let charge_pct = (bp.charge_bonus - 100).max(0);
+    let hungry_pct = supply_combat_pct(1);
+    let starving_pct = supply_combat_pct(STARVE_ATTRITION_TURNS);
+
+    vec![
+        // Squads & Battle
+        CatKeywordDef {
+            key: "CAT_FORMATION",
+            name: "Formation",
+            text: format!(
+                "3x3 grid (Front, Mid, Rear). Each unit's row decides its battle action. Squads hold {SQUAD_PLACES_BASE} places ({SQUAD_PLACES_EXPANDED} at Tier 2 or {}).",
+                tech_name(cataclysm_core::data::TECH_GUILDS)
+            ),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_LARGE",
+            name: "Large",
+            text: "Fills two side-by-side cells in a row and uses 2 squad places. Counts as front or back unit of both lanes.".into(),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_STRIKE",
+            name: "Strike",
+            text: "Hits the front unit of an enemy lane (adjacent lanes first). A crit pushes the target back one row when free.".into(),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_CHARGE",
+            name: "Charge",
+            text: format!(
+                "Where flanking works (outside cities, forests, marsh): hits any enemy, highest threat for HP left, +{charge_pct}% damage in round 1 (not uphill). Elsewhere acts as Strike."
+            ),
+            implies: &["CAT_STRIKE"],
+        },
+        CatKeywordDef {
+            key: "CAT_STAB",
+            name: "Stab",
+            text: "Hits any enemy unit (adjacent lanes first).".into(),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_SHOOT",
+            name: "Shoot",
+            text: format!(
+                "Hits the back unit of an enemy lane (adjacent lanes first). {} less accuracy.",
+                bp.shoot_miss_pct
+            ),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_SPELL",
+            name: "Spell",
+            text: "Hits the back unit of an enemy lane (adjacent lanes first). Never misses or crits. Uses Magic against Magic Defense.".into(),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_BOMBARD",
+            name: "Bombard",
+            text: format!(
+                "Hits the back unit of an enemy lane, a city's Sentinels first. {} less accuracy. Never crits.",
+                bp.bombard_miss_pct
+            ),
+            implies: &["CAT_SENTINELS"],
+        },
+        CatKeywordDef {
+            key: "CAT_HEAL",
+            name: "Heal",
+            text: "Heals the most hurt ally on the field, itself included. With no one hurt the action is spent.".into(),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_VOLLEY",
+            name: "Volley",
+            text: format!("Also hits the unit its kind would target in each lane beside the target's, for {}% damage.", bp.volley_pct),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_PIERCE",
+            name: "Pierce",
+            text: format!("Also hits every other unit in the target's lane, for {}% damage.", bp.pierce_pct),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_SWEEP",
+            name: "Sweep",
+            text: format!("Also hits every other unit in the target's row for {}% damage (a Heal with Sweep heals them for {}%).", bp.sweep_pct, bp.sweep_pct),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_CLEAVE",
+            name: "Cleave",
+            text: format!("Also hits the front unit of each lane beside the target's, for {}% damage.", bp.cleave_pct),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_TRAMPLE",
+            name: "Trample",
+            text: format!("Also hits the nearest unit behind the target, for {}% damage.", bp.trample_pct),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_ANTI_FLANK",
+            name: "Anti-Flank",
+            text: "Draws enemy flanking attacks (such as Charge) onto itself first when defending.".into(),
+            implies: &["CAT_CHARGE"],
+        },
+        CatKeywordDef {
+            key: "CAT_ARMOR_PIERCING",
+            name: "Armor-Piercing",
+            text: "Ignores the target's Armor in battle.".into(),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_HERO",
+            name: "Hero",
+            text: format!(
+                "Starts at level {HERO_LEVEL} (+{HERO_HP_BONUS} max HP, +{HERO_STAT_PCT}% battle stats) and captains its squad. If fallen, returns at the capital after {HERO_RECOVERY_TURNS} turns with +1 Wound."
+            ),
+            implies: &["CAT_WOUNDS"],
+        },
+        CatKeywordDef {
+            key: "CAT_WOUNDS",
+            name: "Wounds",
+            text: format!("Each Wound reduces a Hero's battle stats by {WOUND_PENALTY_PCT}%."),
+            implies: &["CAT_HERO"],
+        },
+        // Field Orders & Supply
+        CatKeywordDef {
+            key: "CAT_SUPPLY",
+            name: "Supply",
+            text: format!(
+                "Inside own land (except a besieged city) a squad is supplied; elsewhere it traces a line to an unbesieged city (budget {BASE_SUPPLY_BUDGET}; road {SUPPLY_COST_ROAD}, own {SUPPLY_COST_OWN}, wild {SUPPLY_COST_WILD}; enemy squads and occupied Forts block). Unsupplied: no healing, Hungry ({hungry_pct}% ATK/MAG), then Starving from turn {STARVE_ATTRITION_TURNS} ({starving_pct}%, -{STARVE_HP_LOSS_PCT}% max HP/turn)."
+            ),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_HEALING",
+            name: "Healing",
+            text: format!(
+                "At turn start, a supplied squad heals {HEAL_OWN_CITY_PCT}% max HP in an unbesieged city, {HEAL_OWN_LAND_PCT}% in own land, {HEAL_FORTIFIED_PCT}% fortified outside, {HEAL_FIELD_PCT}% elsewhere. Unsupplied squads do not heal."
+            ),
+            implies: &["CAT_SUPPLY"],
+        },
+        CatKeywordDef {
+            key: "CAT_RAID",
+            name: "Raid",
+            text: format!(
+                "At the owner's turn end, raiders within {RAID_RANGE} plots of a city take {RAID_TAKE_PCT}% of its Gold + Industry as Gold ({RAID_TAKE_SALLIED_PCT}% after a Sally); owner loses nothing. {RAID_STREAK_TO_STRIP} turns in a row Strip the city. Always Supplied."
+            ),
+            implies: &["CAT_SALLY", "CAT_STRIPPED", "CAT_SUPPLY"],
+        },
+        CatKeywordDef {
+            key: "CAT_SALLY",
+            name: "Sally",
+            text: format!(
+                "At turn end, the first squad in a city fights a raider within {RAID_RANGE} plots (Favoured: power >= {SALLY_FAVOURED_PCT}% of raider). Win or lose, cuts every raider's take there from {RAID_TAKE_PCT}% to {RAID_TAKE_SALLIED_PCT}%."
+            ),
+            implies: &["CAT_RAID"],
+        },
+        CatKeywordDef {
+            key: "CAT_STRIPPED",
+            name: "Stripped",
+            text: format!("Halves the city's Industry and Gold for {STRIP_TURNS} turns (caused by {RAID_STREAK_TO_STRIP} raided turns in a row)."),
+            implies: &["CAT_RAID"],
+        },
+        CatKeywordDef {
+            key: "CAT_ROAD",
+            name: "Road",
+            text: format!("Entering costs 1 move; Supply lines cross it at cost {SUPPLY_COST_ROAD}."),
+            implies: &["CAT_SUPPLY"],
+        },
+        CatKeywordDef {
+            key: "CAT_FORT",
+            name: "Fort",
+            text: "While a squad stands on it, enemy Supply lines cannot pass adjacent plots.".into(),
+            implies: &["CAT_SUPPLY"],
+        },
+        CatKeywordDef {
+            key: "CAT_IMPERIAL_RUIN",
+            name: "Imperial Ruin",
+            text: format!(
+                "Exploring ends the squad's movement for one random reward: +{LAIR_GOLD} Gold; +{LAIR_MANA} Mana and +{} Sage Renown; +{LAIR_LORE} Lore; or +{LAIR_XP} XP to every unit in the squad.",
+                rn::LAIR_RELICS_SAGE
+            ),
+            implies: &["CAT_RENOWN"],
+        },
+        // Cities, Houses, Trade & Diplomacy
+        CatKeywordDef {
+            key: "CAT_SENTINELS",
+            name: "Sentinels",
+            text: format!(
+                "Persistent city wall defenders holding the front row in battle, scaled by city defense %. Repair {SENTINEL_REPAIR_PER_TURN} HP/turn unless Besieged."
+            ),
+            implies: &["CAT_BESIEGED"],
+        },
+        CatKeywordDef {
+            key: "CAT_BESIEGED",
+            name: "Besieged",
+            text: "Enemy squad stood adjacent at last move or battle. Halts Sentinel repair and Work Crew; new Sentinels start breached; city supplies no squad.".into(),
+            implies: &["CAT_SENTINELS", "CAT_SUPPLY"],
+        },
+        CatKeywordDef {
+            key: "CAT_CARAVAN",
+            name: "Caravan",
+            text: "Travels between two cities at peace for Gold/turn (foreign routes pay more). Destroyed if ambushed or war is declared; re-forms in origin.".into(),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_HOUSE",
+            name: "House",
+            text: format!(
+                "Up to {HOUSE_MAX_CITIES} cities under a Lord. Mood (from Loyalty) scales their Industry, Gold, and Lore; its perk turns off while Furious."
+            ),
+            implies: &["CAT_LOYALTY"],
+        },
+        CatKeywordDef {
+            key: "CAT_LOYALTY",
+            name: "Loyalty",
+            text: "Base 1 + tech/Temple/Wonder bonuses, alignment and Creed match, -3 at war with Sympathy, -1 per House past 2. Sets House Mood and output %.".into(),
+            implies: &["CAT_HOUSE", "CAT_SYMPATHY"],
+        },
+        CatKeywordDef {
+            key: "CAT_SYMPATHY",
+            name: "Sympathy",
+            text: "Rival civilization a House favours (-3 Loyalty while at war with it).".into(),
+            implies: &["CAT_HOUSE", "CAT_LOYALTY"],
+        },
+        CatKeywordDef {
+            key: "CAT_OUTPOST",
+            name: "Outpost",
+            text: "City past Three Hearths' 3 Megacities: 1 District slot, -50% Industry, Gold and Lore, no House.".into(),
+            implies: &["CAT_HOUSE"],
+        },
+        CatKeywordDef {
+            key: "CAT_CRUSADE",
+            name: "Crusade",
+            text: format!(
+                "{CRUSADE_TURNS}-turn war against a target; other civilizations may lend squads (declares war, +{} Prophet Renown). Ends when caller and target sign peace.",
+                rn::LEND_PROPHET
+            ),
+            implies: &["CAT_RENOWN"],
+        },
+        // Worldseal, Court & Research
+        CatKeywordDef {
+            key: "CAT_WORLDSTRAIN",
+            name: "Worldstrain",
+            text: format!(
+                "0-{MAX_STRAIN} clock. Drifts +1 every {STRAIN_DRIFT_EVERY} turns (halved by Valve-Keeper's Ledger), plus world-first techs, rituals, Wonders, razed cities ({RAZE_STRAIN:+}), and every {BLOODY_BATTLES_PER_STRAIN}rd bloody battle (>={BLOODY_BATTLE_DEATHS} fallen, {BLOODY_BATTLE_STRAIN:+}). Fires a crisis every 10."
+            ),
+            implies: &["CAT_BLOWOUT"],
+        },
+        CatKeywordDef {
+            key: "CAT_BLOWOUT",
+            name: "Blowout",
+            text: format!(
+                "At Worldstrain {MAX_STRAIN}: Caldera Keep rises, Lifeboats lock, Worldstrain freezes, and the {CARCOSA_TIMER_TURNS}-turn countdown begins."
+            ),
+            implies: &["CAT_WORLDSTRAIN", "CAT_LIFEBOAT"],
+        },
+        CatKeywordDef {
+            key: "CAT_LIFEBOAT",
+            name: "Lifeboat",
+            text: format!(
+                "City that wins the game for its holder when the Blowout countdown ends: Caldera Keep, Siphon Spire, Great Cistern, or the highest-Culture city (>={LIFEBOAT_CULTURE_MIN})."
+            ),
+            implies: &["CAT_BLOWOUT"],
+        },
+        CatKeywordDef {
+            key: "CAT_FURNACE_VICTORY",
+            name: "Furnace victory",
+            text: "When the Blowout countdown ends, living Furnace civilizations (King Cinder's Host, Wreckers) win if one holds Caldera Keep or no surface civilization holds a Lifeboat.".into(),
+            implies: &["CAT_BLOWOUT", "CAT_LIFEBOAT"],
+        },
+        CatKeywordDef {
+            key: "CAT_KING_CINDER",
+            name: "King Cinder's Host",
+            text: format!(
+                "Enters at Worldstrain 50 with warded Great Furnace and {HOST_ENTRY_POWER_PCT}% of world squad power; reinforces every {BREACH_REINFORCE_EVERY} turns. Wins via Furnace victory by holding Caldera Keep."
+            ),
+            implies: &["CAT_WORLDSTRAIN", "CAT_BLOWOUT", "CAT_FURNACE_VICTORY"],
+        },
+        CatKeywordDef {
+            key: "CAT_SCORCHED_GROUND",
+            name: "Scorched ground",
+            text: format!("+{HELL_GROUND_PCT}% attack and defense for units of King Cinder's Host."),
+            implies: &["CAT_KING_CINDER"],
+        },
+        CatKeywordDef {
+            key: "CAT_RENOWN",
+            name: "Renown",
+            text: format!(
+                "Earned across 6 suits from battles, Districts, Caravans, Raids, Rituals, Wonders, and overflow Lore ({LORE_PER_SAGE_RENOWN} Lore = 1 Sage). Reaching threshold ({RENOWN_FIRST}, +{RENOWN_STEP} each) summons a Great Person of the highest suit and resets that meter."
+            ),
+            implies: &["CAT_GREAT_PERSON"],
+        },
+        CatKeywordDef {
+            key: "CAT_GREAT_PERSON",
+            name: "Great Person",
+            text: "Waits in Court for 1 of 4 choices: Discover its Secret Tech, Tempo Burst, Commission as a Hero Captain, or Appoint as a House Lord.".into(),
+            implies: &["CAT_RENOWN"],
+        },
+        CatKeywordDef {
+            key: "CAT_DOCTRINE",
+            name: "Doctrine",
+            text: format!(
+                "1 Primary (all 4 tiers at {PRIMARY_DOCTRINE_COST_PCT}% cost) and 1 Secondary (tiers 1-{SECONDARY_DOCTRINE_MAX_TIER} at full cost); permanent once adopted."
+            ),
+            implies: &[],
+        },
+        CatKeywordDef {
+            key: "CAT_CREED",
+            name: "Creed",
+            text: format!(
+                "World faith (requires {}). First to found pays Lore/Gold (+{} Prophet Renown) and may shift Worldstrain; others adopt free. Sets alignment and affects House Loyalty.",
+                tech_name(cataclysm_core::data::TECH_MYSTICISM),
+                rn::FOUND_CREED_PROPHET
+            ),
+            implies: &["CAT_LOYALTY"],
+        },
+        CatKeywordDef {
+            key: "CAT_RITUAL",
+            name: "Ritual",
+            text: "Empire-wide spell cast with Mana from the Rituals tab; takes effect at once.".into(),
+            implies: &[],
+        },
+    ]
+}
+
+fn expand_cat_keyword<'a>(defs: &'a [CatKeywordDef], key: &'a str, out: &mut Vec<&'a str>) {
+    if out.contains(&key) {
+        return;
+    }
+    let Some(def) = defs.iter().find(|d| d.key == key) else { return };
+    out.push(def.key);
+    for &imp in def.implies {
+        expand_cat_keyword(defs, imp, out);
+    }
+}
+
+pub fn cataclysm_keywords_json() -> Json {
+    let defs = cataclysm_keyword_defs();
+    let mut obj = Json::obj();
+    for d in &defs {
+        let mut with = Vec::new();
+        expand_cat_keyword(&defs, d.key, &mut with);
+        obj.set(
+            d.key,
+            crate::jobj! {
+                "key" => d.key,
+                "name" => d.name,
+                "text" => d.text.as_str(),
+                "with" => Json::Arr(with.into_iter().map(Json::from).collect()),
+            },
+        );
+    }
+    obj
+}
+
+fn is_word_byte(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'_'
+}
+
+/// Wraps Cataclysm game nouns in plain data summaries with `[KW=CAT_X]...[\KW]` (longest match
+/// first, word-boundary checked, never double-wrapping).
+pub fn mark_cat_keywords(input: &str) -> String {
+    // Ordered longest / most specific first so multi-word nouns win over single words.
+    const PATTERNS: &[(&str, &str)] = &[
+        ("King Cinder's Host", "CAT_KING_CINDER"),
+        ("Furnace victory", "CAT_FURNACE_VICTORY"),
+        ("Scorched ground", "CAT_SCORCHED_GROUND"),
+        ("scorched ground", "CAT_SCORCHED_GROUND"),
+        ("Imperial Ruins", "CAT_IMPERIAL_RUIN"),
+        ("Imperial Ruin", "CAT_IMPERIAL_RUIN"),
+        ("Wall Sentinels", "CAT_SENTINELS"),
+        ("Sentinels", "CAT_SENTINELS"),
+        ("Sentinel", "CAT_SENTINELS"),
+        ("Armor-Piercing", "CAT_ARMOR_PIERCING"),
+        ("armor-piercing", "CAT_ARMOR_PIERCING"),
+        ("Anti-Flank", "CAT_ANTI_FLANK"),
+        ("Great People", "CAT_GREAT_PERSON"),
+        ("Great Person", "CAT_GREAT_PERSON"),
+        ("Supply Line", "CAT_SUPPLY"),
+        ("Supply lines", "CAT_SUPPLY"),
+        ("supply lines", "CAT_SUPPLY"),
+        ("Supply range", "CAT_SUPPLY"),
+        ("Supplied", "CAT_SUPPLY"),
+        ("supplied", "CAT_SUPPLY"),
+        ("Supply", "CAT_SUPPLY"),
+        ("supply", "CAT_SUPPLY"),
+        ("Worldstrain", "CAT_WORLDSTRAIN"),
+        ("Blowout", "CAT_BLOWOUT"),
+        ("Lifeboats", "CAT_LIFEBOAT"),
+        ("Lifeboat", "CAT_LIFEBOAT"),
+        ("Formation", "CAT_FORMATION"),
+        ("Bombards", "CAT_BOMBARD"),
+        ("Bombard", "CAT_BOMBARD"),
+        ("Trample", "CAT_TRAMPLE"),
+        ("Cleave", "CAT_CLEAVE"),
+        ("Volley", "CAT_VOLLEY"),
+        ("Sweep", "CAT_SWEEP"),
+        ("Pierce", "CAT_PIERCE"),
+        ("Charge", "CAT_CHARGE"),
+        ("Strike", "CAT_STRIKE"),
+        ("Shoot", "CAT_SHOOT"),
+        ("Stab", "CAT_STAB"),
+        ("Battle Spell", "CAT_SPELL"),
+        ("battle spell", "CAT_SPELL"),
+        ("Battle spells", "CAT_SPELL"),
+        ("battle spells", "CAT_SPELL"),
+        ("Spell", "CAT_SPELL"),
+        ("spell", "CAT_SPELL"),
+        ("battle healing", "CAT_HEAL"),
+        ("Healing", "CAT_HEALING"),
+        ("healing", "CAT_HEALING"),
+        ("Heal", "CAT_HEAL"),
+        ("heals", "CAT_HEAL"),
+        ("Large", "CAT_LARGE"),
+        ("Wounds", "CAT_WOUNDS"),
+        ("Wound", "CAT_WOUNDS"),
+        ("Crusades", "CAT_CRUSADE"),
+        ("Crusade", "CAT_CRUSADE"),
+        ("Raids", "CAT_RAID"),
+        ("Raid", "CAT_RAID"),
+        ("Sallies", "CAT_SALLY"),
+        ("sallies", "CAT_SALLY"),
+        ("Sally", "CAT_SALLY"),
+        ("sally", "CAT_SALLY"),
+        ("Stripped", "CAT_STRIPPED"),
+        ("stripped", "CAT_STRIPPED"),
+        ("Forts", "CAT_FORT"),
+        ("Fort", "CAT_FORT"),
+        ("Squad Roads", "CAT_ROAD"),
+        ("Besieged", "CAT_BESIEGED"),
+        ("besieged", "CAT_BESIEGED"),
+        ("Caravans", "CAT_CARAVAN"),
+        ("Caravan", "CAT_CARAVAN"),
+        ("Houses", "CAT_HOUSE"),
+        ("House", "CAT_HOUSE"),
+        ("Loyalty", "CAT_LOYALTY"),
+        ("Sympathy", "CAT_SYMPATHY"),
+        ("sympathy", "CAT_SYMPATHY"),
+        ("Outposts", "CAT_OUTPOST"),
+        ("Outpost", "CAT_OUTPOST"),
+        ("Renown", "CAT_RENOWN"),
+        ("Doctrines", "CAT_DOCTRINE"),
+        ("Doctrine", "CAT_DOCTRINE"),
+        ("Creeds", "CAT_CREED"),
+        ("Creed", "CAT_CREED"),
+        ("Rituals", "CAT_RITUAL"),
+        ("Ritual", "CAT_RITUAL"),
+    ];
+    let bytes = input.as_bytes();
+    let mut out = String::with_capacity(input.len() + 32);
+    let mut i = 0;
+    while i < bytes.len() {
+        // Skip any existing markup tag `[KW=...]...[\KW]`.
+        if bytes[i..].starts_with(b"[KW=") {
+            if let Some(end) = input[i..].find("[\\KW]") {
+                out.push_str(&input[i..i + end + 5]);
+                i += end + 5;
+                continue;
+            }
+        }
+        let mut matched = None;
+        for &(pat, key) in PATTERNS {
+            if input[i..].starts_with(pat) {
+                let end = i + pat.len();
+                let left_ok = i == 0 || !is_word_byte(bytes[i - 1]);
+                let right_ok = end == bytes.len() || !is_word_byte(bytes[end]);
+                if left_ok && right_ok {
+                    matched = Some((pat, key, end));
+                    break;
+                }
+            }
+        }
+        if let Some((pat, key, end)) = matched {
+            out.push_str("[KW=");
+            out.push_str(key);
+            out.push(']');
+            out.push_str(pat);
+            out.push_str("[\\KW]");
+            i = end;
+        } else {
+            let ch = input[i..].chars().next().unwrap();
+            out.push(ch);
+            i += ch.len_utf8();
+        }
+    }
+    out
+}
+

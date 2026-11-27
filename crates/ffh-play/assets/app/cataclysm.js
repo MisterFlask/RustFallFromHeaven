@@ -12,6 +12,9 @@ import { leaderPortrait, PORTRAIT } from "./portraits.js";
 import { isoSkin } from "./isoui.js";
 import { openReport } from "./engagements.js";
 import { ask } from "./modals.js";
+import { render as markup } from "./markup.js";
+import { remindersNode } from "./keywords.js";
+import { catTip, extractCatReminders, reinforceTip, reinforceWhy, upgradeTip, memberTip } from "./cataclysm_tips.js";
 // A namespace import: a screen the screens module does not export (yet) is undefined here, not a
 // link error that stops the page.
 import * as screens from "./cataclysm_screens.js";
@@ -341,27 +344,38 @@ function showCatTip() {
   if (!hover || !mapViewRef) return;
   const { x, y } = hover;
   const data = cat();
+  const dict = data?.keywords ?? null;
   const p = plotInfo && plotInfo.x === x && plotInfo.y === y ? plotInfo : null;
   const i = plotIdx(x, y);
   const unexplored = p ? p.revealed === false : i >= 0 && S.map?.vis?.[i] === 0;
   const lines = [];
+  const rawTexts = [];
   const line = (text, cls = "") => lines.push(h(`div.cat-tip${cls}`, text));
+  const mline = (text, cls = "") => {
+    rawTexts.push(text);
+    lines.push(h(`div.cat-tip${cls}`, markup(text)));
+  };
   if (unexplored) {
     lines.push(h("div.tip-title.cat-tip", `Unexplored (${x}, ${y})`));
-    return place(lines);
+    return mapViewRef.showTip(lines);
   }
   if (p) {
     const feats = (p.features ?? []).filter(Boolean);
     lines.push(h("div.tip-title.cat-tip", [p.terrain_name, ...feats].filter(Boolean).join(", ") || "Plot", h("span.dim", ` (${x}, ${y})`)));
-    const extra = [p.improvement, p.road ? "Road" : null, p.resource].filter(Boolean);
-    if (extra.length) line(extra.join(" · "));
-    if (p.lair) line("Imperial Ruin");
+    const impTag = p.improvement === "Fort" ? "[KW=CAT_FORT]Fort[\\KW]" : p.improvement;
+    const extra = [impTag, p.road ? "[KW=CAT_ROAD]Road[\\KW]" : null, p.resource].filter(Boolean);
+    if (extra.length) mline(extra.join(" · "));
     if (p.owner_name) line(`Owner: ${p.owner_name}`, ".dim");
     const yl = p.yields;
     if (yl) line(`Food ${yl.food ?? 0} · Industry ${yl.industry ?? 0} · Gold ${yl.gold ?? 0}`);
     if (p.move_cost === null) line("Impassable", ".warn");
     else if (p.move_cost !== undefined) line(`Move cost ${p.move_cost}`);
-    for (const n of p.notes ?? []) line(n, ".caution");
+    if (p.tip_tags?.length) {
+      for (const tag of p.tip_tags) mline(tag, ".caution");
+    } else {
+      if (p.lair) mline("Unexplored [KW=CAT_IMPERIAL_RUIN]Imperial Ruin[\\KW]", ".caution");
+      for (const n of p.notes ?? []) line(n, ".caution");
+    }
   } else {
     lines.push(h("div.tip-title.cat-tip", `(${x}, ${y})`));
   }
@@ -371,10 +385,10 @@ function showCatTip() {
       const walls = pctList(city.sentinels);
       const bits = [`size ${city.size}`];
       if (city.defense_pct !== undefined) bits.push(`defense +${city.defense_pct}%`);
-      if (walls.length) bits.push(`Sentinels ${walls.join(" · ")}`);
-      line(`${city.capital ? "★ " : ""}${city.name} (${ownerName(city.owner)}): ${bits.join(", ")}`, ".tip-city");
-      if (city.besieged) line("Besieged", ".warn");
-      if (city.lifeboat) line(`Lifeboat: ${city.lifeboat}`);
+      if (walls.length) bits.push(`[KW=CAT_SENTINELS]Sentinels[\\KW] ${walls.join(" · ")}`);
+      mline(`${city.capital ? "★ " : ""}${city.name} (${ownerName(city.owner)}): ${bits.join(", ")}`, ".tip-city");
+      if (city.besieged) mline("[KW=CAT_BESIEGED]Besieged[\\KW]", ".warn");
+      if (city.lifeboat) mline(`[KW=CAT_LIFEBOAT]Lifeboat[\\KW]: ${city.lifeboat}`);
     }
     for (const s of squadsOf(data).filter((q) => q.x === x && q.y === y)) {
       const mine = s.owner === myId();
@@ -390,7 +404,7 @@ function showCatTip() {
       line(`${s.name} (${ownerName(s.owner)})${bits.length ? `: ${bits.join(", ")}` : ""}`, mine ? "" : ".tip-foreign");
     }
     for (const cv of (data.caravans ?? []).filter((c) => c.x === x && c.y === y)) {
-      line(`Caravan ${cv.origin_name} → ${cv.dest_name}, +${cv.gold_rate} Gold/t`);
+      mline(`[KW=CAT_CARAVAN]Caravan[\\KW] ${cv.origin_name} → ${cv.dest_name}, +${cv.gold_rate} Gold/t`);
     }
   }
   const f = forecast;
@@ -399,17 +413,9 @@ function showCatTip() {
     line(`Units lost on average: yours ${round1(f.expected_att_lost)}, theirs ${round1(f.expected_def_lost)}`, ".cat-tip-forecast");
   }
   if (armed && armed.x === x && armed.y === y) line("Tap again: move or attack.", ".dim");
-  place(lines);
-}
-
-/** Shows the tooltip and keeps it inside the window. */
-function place(lines) {
+  const rem = remindersNode(extractCatReminders(rawTexts, [], dict));
+  if (rem) lines.push(rem);
   mapViewRef.showTip(lines);
-  const t = mapViewRef.tip;
-  if (!t || t.hidden) return;
-  const r = t.getBoundingClientRect();
-  const over = r.right - (window.innerWidth - 4);
-  if (over > 0) t.style.left = `${Math.max(4, (parseFloat(t.style.left) || 0) - over)}px`;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -446,12 +452,14 @@ export function stackLabel(x, y) {
 
 const fmtRate = (n) => `${(n ?? 0) >= 0 ? "+" : ""}${n ?? 0}/t`;
 
-function calcTip(title, lines, more = []) {
+function calcTip(title, lines, more = [], dict = null, extraTexts = []) {
+  const rem = remindersNode(extractCatReminders(extraTexts, [], dict));
   return [
     h("div.tip-title", title),
     ...(lines?.length ? lines.map((l) => h("div.tip-calc-line", l)) : [h("div.dim", "No modifiers.")]),
     ...more.filter(Boolean),
-  ];
+    rem,
+  ].filter(Boolean);
 }
 
 function chip(cls, tip, onclick, ...label) {
@@ -462,11 +470,13 @@ export function renderCataclysmTop() {
   const data = cat();
   const info = document.getElementById("empire");
   if (!data || !info) return;
+  const dict = data.keywords ?? null;
   const over = S.status?.phase === "over";
   const accent = over ? "" : ".accent";
   const cur = data.currencies ?? {};
   const res = data.research?.current ?? null;
-  const idleLore = data.research?.idle_lore_text ?? null;
+  const idleLore = data.research?.idle_lore_tip ?? data.research?.idle_lore_text ?? null;
+  const adoptTip = data.research?.adopt_tip ?? data.research?.adopt_text ?? null;
   const ap = data.apocalypse ?? {};
   const court = data.court ?? [];
   const renown = data.renown ?? {};
@@ -477,44 +487,65 @@ export function renderCataclysmTop() {
   const act = ap.act_label ?? data.act_label ?? "";
   const faction = data.human_faction ?? "";
 
-  const actTip = [
-    h("div.tip-title", `${faction} · ${act}`),
-    data.human_lore_blurb ? h("div.dim", data.human_lore_blurb) : null,
-    data.human_rule_summary ? h("div", data.human_rule_summary) : null,
-    ...(data.victory?.lines ?? []).map((l) => h("div", l)),
-    data.victory?.status ? h("div.caution", data.victory.status) : null,
-    maxTurns !== undefined ? h("div.tip-hint", `Turn ${turn} of ${maxTurns}.${left !== null ? ` ${left} turns left.` : ""}`) : null,
+  const actLines = [
+    data.human_lore_blurb ? { cls: ".dim", text: data.human_lore_blurb } : null,
+    data.human_rule_tip ?? data.human_rule_summary ?? null,
+    ...(data.victory?.tip_lines ?? data.victory?.lines ?? []),
+    data.victory?.status ? { cls: ".caution", text: data.victory.status } : null,
   ].filter(Boolean);
+  const actTip = catTip({
+    title: `${faction} · ${act}`,
+    lines: actLines,
+    hint: maxTurns !== undefined ? `Turn ${turn} of ${maxTurns}.${left !== null ? ` ${left} turns left.` : ""}` : null,
+    dict,
+  });
 
+  const extraResText = !res ? idleLore ?? adoptTip : null;
   const researchTip = calcTip(
     res ? `Research: ${res.name}` : "Research: none",
     cur.lore_calc,
-    [res ? h("div.tip-hint", `${res.progress}/${res.cost} Lore`) : h("div.tip-hint", `Lore ${cur.lore ?? 0} (${fmtRate(cur.lore_rate)})`), !res && idleLore ? h("div", idleLore) : null].filter(Boolean),
+    [
+      res ? h("div.tip-hint", `${res.progress}/${res.cost} Lore`) : h("div.tip-hint", `Lore ${cur.lore ?? 0} (${fmtRate(cur.lore_rate)})`),
+      extraResText ? h("div", markup(extraResText)) : null,
+    ].filter(Boolean),
+    dict,
+    extraResText ? [extraResText] : [],
   );
 
   const counting = ap.countdown !== null && ap.countdown !== undefined;
   const strainCls = counting ? ".warn.strong" : (ap.counter ?? 0) >= 50 ? ".warn" : "";
   const recent = (ap.recent_changes ?? []).slice(0, 5);
-  const strainTip = [
-    h("div.tip-title", counting ? `Blowout in ${ap.countdown} turns` : `Worldstrain ${ap.counter ?? 0}/100`),
-    ...(ap.rules ?? []).map((l) => h("div", l)),
-    data.victory?.status ? h("div.caution", data.victory.status) : null,
-    recent.length ? h("div.tip-hint", "Recent changes") : null,
-    ...recent.map((l) => h("div.tip-calc-line", l)),
-  ].filter(Boolean);
+  const strainTip = catTip({
+    title: counting ? `Blowout in ${ap.countdown} turns` : `Worldstrain ${ap.counter ?? 0}/100`,
+    right: act || null,
+    lines: [
+      ...(ap.tip_lines ?? ap.rules ?? []),
+      data.victory?.status ? { cls: ".caution", text: data.victory.status } : null,
+    ].filter(Boolean),
+    extra: recent.length ? [h("div.tip-hint", "Recent changes"), ...recent.map((l) => h("div.tip-calc-line", l))] : [],
+    keywords: counting ? ["CAT_BLOWOUT", "CAT_LIFEBOAT", "CAT_WORLDSTRAIN"] : ["CAT_WORLDSTRAIN"],
+    dict,
+  });
 
-  const courtTip = [
-    h("div.tip-title", court.length ? `Court: ${court.length} waiting` : "Court"),
-    h("div", `Renown ${renown.total ?? 0}/${renown.next_threshold ?? 0}.`),
-    renown.sources ? h("div.dim", renown.sources) : null,
-    data.court_rules?.arrival ? h("div.dim", data.court_rules.arrival) : null,
-  ].filter(Boolean);
+  const courtTip = catTip({
+    title: court.length ? `Court: ${court.length} waiting` : "Court",
+    lines: [renown.tip ?? `[KW=CAT_RENOWN]Renown[\\KW] ${renown.total ?? 0}/${renown.next_threshold ?? 0}.`],
+    keywords: ["CAT_RENOWN", "CAT_GREAT_PERSON"],
+    dict,
+  });
 
   const inactive = houses.filter((x) => x.perk_active === false);
-  const housesTip = [
-    h("div.tip-title", `Houses ${houses.length}`),
-    ...houses.map((x) => h(`div${x.perk_active === false ? ".warn" : ""}`, `${x.name}: ${x.mood}, loyalty ${x.loyalty}. ${x.perk}: ${x.perk_active === false ? "inactive" : "active"}.`)),
-  ];
+  const housesTip = catTip({
+    title: `Houses ${houses.length}`,
+    lines: houses.length
+      ? houses.map((x) => ({
+          cls: x.perk_active === false ? ".warn" : "",
+          text: `${x.name}: ${x.mood}, [KW=CAT_LOYALTY]Loyalty[\\KW] ${x.loyalty} (${x.output_pct}%). ${x.perk}: ${x.perk_active === false ? "inactive" : "active"}.`,
+        }))
+      : [{ cls: ".dim", text: "No [KW=CAT_HOUSE]Houses[\\KW] yet." }],
+    keywords: ["CAT_HOUSE", "CAT_LOYALTY"],
+    dict,
+  });
 
   fill(
     info,
@@ -555,8 +586,8 @@ function orderBtn(tag, { tip, disabled, onclick, pressed }, label) {
   return disabled && tip ? h("span.cat-tipwrap", { tip }, b) : b;
 }
 
-function helpTip(title, help, why) {
-  return [h("div.tip-title", title), help ? h("div", help) : null, why ? h("div.warn", why) : null].filter(Boolean);
+function helpTip(data, title, tipText, why) {
+  return catTip({ title, lines: tipText ? [tipText] : [], why, dict: data?.keywords ?? null });
 }
 
 function placeName(data, s) {
@@ -634,6 +665,7 @@ export function renderCataclysmPanel() {
 }
 
 function squadCard(data, sq, help) {
+  const tips = data.order_tips ?? help;
   const port = leaderPortrait(sq.captain_portrait, { size: PORTRAIT.small, title: sq.captain_name });
   const supply = sq.supply ?? null;
   const supplyKey = supply?.key ?? (sq.supplied === false ? "cut" : "supplied");
@@ -651,50 +683,84 @@ function squadCard(data, sq, help) {
       const covered = (sq.members ?? []).find((m) => m.large && m.row === r && m.lane + 1 === l);
       if (covered) continue;
       const occ = (sq.members ?? []).find((m) => m.row === r && m.lane === l);
-      gridCells.push(formationCell(sq, occ, r, l));
+      gridCells.push(formationCell(data, sq, occ, r, l));
     }
   }
 
-  // Reinforce: the classes that fit the free places (a Large unit takes 2), inside the borders.
+  // Reinforce: the classes that fit the free places (a Large unit takes 2). Both the selector and
+  // the Reinforce button carry a live rich tooltip (unit stats, rows, keywords, and disabled reason).
   const free = (sq.place_cap ?? 0) - (sq.places_used ?? 0);
   const fitting = (data.recruitable_classes ?? []).filter((u) => u.unlocked && (u.large ? 2 : 1) <= free);
   let reinforceKey = fitting[0]?.key ?? null;
+  const chosenCls = () => fitting.find((u) => u.key === reinforceKey) ?? fitting[0] ?? null;
   let reinforceRow = null;
-  if (free > 0 && sq.in_home_borders === false) reinforceRow = h("div.small.dim", "Reinforce: inside your borders only.");
-  else if (free > 0 && fitting.length) {
+  if (free > 0 && fitting.length) {
+    const getTip = () => reinforceTip(data, sq, chosenCls());
+    const initWhy = reinforceWhy(data, sq, chosenCls());
+    const whyEl = h("small.cat-why", initWhy ?? "");
+    whyEl.hidden = !initWhy;
+    const btn = h(
+      "button.primary",
+      {
+        disabled: !!initWhy,
+        tip: getTip,
+        onclick: () => reinforceKey && catCmd({ c: "cat_reinforce", squad: sq.id, class: reinforceKey }),
+      },
+      "Reinforce",
+    );
+    const sel = h(
+      "select",
+      {
+        "aria-label": "Class to recruit",
+        tip: getTip,
+        onchange: (ev) => {
+          reinforceKey = ev.target.value;
+          const w = reinforceWhy(data, sq, chosenCls());
+          btn.disabled = !!w;
+          whyEl.textContent = w ?? "";
+          whyEl.hidden = !w;
+        },
+      },
+      ...fitting.map((u) => h("option", { value: u.key }, `${u.name}, ${u.cost_gold} Gold${u.large ? ", 2 places" : ""}`)),
+    );
     reinforceRow = h(
-      "div.cat-reinforce-row",
-      h(
-        "select",
-        { "aria-label": "Class to recruit", onchange: (ev) => (reinforceKey = ev.target.value) },
-        ...fitting.map((u) => h("option", { value: u.key }, `${u.name}, ${u.cost_gold} Gold${u.large ? ", 2 places" : ""}`)),
-      ),
-      h("button.primary", { onclick: () => reinforceKey && catCmd({ c: "cat_reinforce", squad: sq.id, class: reinforceKey }) }, "Reinforce"),
+      "div.cat-reinforce-block",
+      h("div.cat-reinforce-row", sel, h("span.cat-tipwrap", { tip: getTip }, btn)),
+      whyEl,
+    );
+  } else if (free > 0) {
+    const getTip = () => reinforceTip(data, sq, null);
+    reinforceRow = h(
+      "div.cat-reinforce-block",
+      h("div.cat-reinforce-row", h("span.cat-tipwrap", { tip: getTip }, h("button.primary", { disabled: true }, "Reinforce"))),
+      h("small.cat-why", sq.in_home_borders === false ? "Inside your borders only." : "No unlocked unit fits the remaining place."),
     );
   }
 
   const upgradeable = (sq.members ?? []).filter((m) => m.upgrades_to && sq.in_home_borders);
+  const byKey = new Map((data.recruitable_classes ?? []).map((u) => [u.key, u]));
+  const gold = data.currencies?.gold;
   const raid = order === "raid";
   const foundWhy = sq.found_why ?? null;
 
   const actions = h(
     "div.cat-actions-row",
-    orderBtn("button", { tip: helpTip("Auto-arrange", help.auto_arrange), onclick: () => catCmd({ c: "cat_auto_arrange", squad: sq.id }) }, "Auto-arrange"),
-    orderBtn(`button${order === "fortify" ? ".on" : ""}`, { tip: helpTip("Fortify", help.fortify), pressed: order === "fortify", onclick: () => catCmd({ c: "cat_fortify", squad: sq.id }) }, "Fortify"),
-    orderBtn("button", { tip: helpTip("Road", help.road, sq.road_why), disabled: sq.can_road === undefined ? sq.moves_left <= 0 : !sq.can_road, onclick: () => catCmd({ c: "cat_road", squad: sq.id }) }, "Road"),
-    orderBtn("button", { tip: helpTip("Fort", help.fort, sq.fort_why), disabled: sq.can_fort === undefined ? sq.moves_left <= 0 : !sq.can_fort, onclick: () => catCmd({ c: "cat_fort", squad: sq.id }) }, "Fort"),
+    orderBtn("button", { tip: helpTip(data, "Auto-arrange", tips.auto_arrange ?? help.auto_arrange), onclick: () => catCmd({ c: "cat_auto_arrange", squad: sq.id }) }, "Auto-arrange"),
+    orderBtn(`button${order === "fortify" ? ".on" : ""}`, { tip: helpTip(data, "Fortify", tips.fortify ?? help.fortify), pressed: order === "fortify", onclick: () => catCmd({ c: "cat_fortify", squad: sq.id }) }, "Fortify"),
+    orderBtn("button", { tip: helpTip(data, "Road", tips.road ?? help.road, sq.road_why), disabled: sq.can_road === undefined ? sq.moves_left <= 0 : !sq.can_road, onclick: () => catCmd({ c: "cat_road", squad: sq.id }) }, "Road"),
+    orderBtn("button", { tip: helpTip(data, "Fort", tips.fort ?? help.fort, sq.fort_why), disabled: sq.can_fort === undefined ? sq.moves_left <= 0 : !sq.can_fort, onclick: () => catCmd({ c: "cat_fort", squad: sq.id }) }, "Fort"),
     sq.on_enemy_countryside || raid
-      ? orderBtn(`button.primary${raid ? ".on" : ""}`, { tip: helpTip("Raid", help.raid), pressed: raid, onclick: () => catCmd({ c: "cat_raid", squad: sq.id, active: !raid }) }, raid ? "Stop raid" : "Raid")
+      ? orderBtn(`button.primary${raid ? ".on" : ""}`, { tip: helpTip(data, "Raid", tips.raid ?? help.raid), pressed: raid, onclick: () => catCmd({ c: "cat_raid", squad: sq.id, active: !raid }) }, raid ? "Stop raid" : "Raid")
       : null,
-    sq.has_lair ? orderBtn("button.primary", { tip: helpTip("Explore ruin", help.explore), onclick: () => catCmd({ c: "cat_explore", squad: sq.id }) }, "Explore ruin") : null,
+    sq.has_lair ? orderBtn("button.primary", { tip: helpTip(data, "Explore ruin", tips.explore ?? help.explore), onclick: () => catCmd({ c: "cat_explore", squad: sq.id }) }, "Explore ruin") : null,
     sq.can_found_city
-      ? orderBtn("button.primary", { tip: helpTip("Found city", help.found_city, foundWhy), disabled: !!foundWhy, onclick: () => catCmd({ c: "cat_found_city", squad: sq.id }) }, `Found city (${sq.found_cost} Gold)`)
+      ? orderBtn("button.primary", { tip: helpTip(data, "Found city", tips.found_city ?? help.found_city, foundWhy), disabled: !!foundWhy, onclick: () => catCmd({ c: "cat_found_city", squad: sq.id }) }, `Found city (${sq.found_cost} Gold)`)
       : null,
     sq.can_disband
       ? orderBtn(
           "button",
           {
-            tip: helpTip("Disband", help.disband),
+            tip: helpTip(data, "Disband", tips.disband ?? help.disband),
             onclick: async () => {
               const text = [`Disband ${sq.name}.`];
               if (help.disband) text.push(help.disband);
@@ -709,6 +775,9 @@ function squadCard(data, sq, help) {
         )
       : null,
   );
+
+  const supplyTipText = supply?.tip ?? supply?.detail ?? null;
+  const supplyTip = supplyTipText ? catTip({ title: supplyText, lines: [supplyTipText], dict: data.keywords ?? null }) : null;
 
   return h(
     "div.cat-squad-card",
@@ -727,41 +796,44 @@ function squadCard(data, sq, help) {
             h(
               "div.small",
               `Moves ${sq.moves_left}/${sq.max_moves} · Places ${sq.places_used}/${sq.place_cap} · Power ${sq.power} · `,
-              h(`span.cat-supply.${SUPPLY_CLASS[supplyKey] ?? "dim"}`, { tip: supply?.detail ? [h("div.tip-title", supplyText), h("div", supply.detail)] : null }, supplyText),
+              h(`span.cat-supply.${SUPPLY_CLASS[supplyKey] ?? "dim"}`, { tip: supplyTip }, supplyText),
             ),
           ),
         ),
         h("div.small.dim", touch ? "Tap a tile twice: move or attack." : "Right-click a tile: move or attack. Click two cells: swap them."),
         actions,
         reinforceRow,
-        ...upgradeable.map((m) =>
-          h(
+        ...upgradeable.map((m) => {
+          const targetCls = byKey.get(m.upgrades_to_key) ?? (data.recruitable_classes ?? []).find((u) => u.name === m.upgrades_to) ?? null;
+          const shortGold = typeof gold === "number" && typeof m.upgrade_cost === "number" && gold < m.upgrade_cost;
+          return orderBtn(
             "button.cat-mini-btn",
-            { onclick: () => catCmd({ c: "cat_upgrade", squad: sq.id, member: m.id }) },
+            {
+              tip: () => upgradeTip(data, sq, m, targetCls),
+              disabled: shortGold,
+              onclick: () => catCmd({ c: "cat_upgrade", squad: sq.id, member: m.id }),
+            },
             `${ROW_NAMES[m.row] ?? ""} ${m.lane + 1}: ${m.class} → ${m.upgrades_to}, ${m.upgrade_cost} Gold`,
-          ),
-        ),
+          );
+        }),
       ),
       h("div.cat-formation-grid", ...gridCells),
     ),
   );
 }
 
-function formationCell(sq, occ, r, l) {
+function formationCell(data, sq, occ, r, l) {
   const isSel = occ && occ.id === selectedMemberId;
   const rowAct = occ?.actions?.[r];
   const actText = rowAct && rowAct.n > 0 ? `${rowAct.kind} ×${rowAct.n}` : "No action";
   const selMember = selectedMemberId !== null ? (sq.members ?? []).find((m) => m.id === selectedMemberId) : null;
   const tip = occ
-    ? [
-        h("div.tip-title", occ.name),
-        h("div", `${occ.class}, level ${occ.level}${occ.is_hero ? ", hero" : ""}${occ.large ? ", Large" : ""}`),
-        occ.wounds ? h("div.warn", `Wounds ${occ.wounds}`) : null,
-        h("div", `HP ${occ.hp_pct}% · ATK ${occ.atk} · DEF ${occ.def} · MAG ${occ.magic}`),
-        h("div", `From the ${ROW_NAMES[r]} row: ${actText}`),
-        h("div.tip-hint", selMember ? (selMember.id === occ.id ? "Click: keep it here." : `Click: swap with ${selMember.name}.`) : "Click, then click another cell: move it there."),
-      ].filter(Boolean)
-    : [h("div.tip-title", `${ROW_NAMES[r]} ${l + 1}`), h("div.dim", selMember ? `Click: move ${selMember.name} here.` : "Empty")];
+    ? () => memberTip(data, occ, r, selMember)
+    : catTip({
+        title: `${ROW_NAMES[r]} ${l + 1}`,
+        lines: [{ cls: ".dim", text: selMember ? `Click: move ${selMember.name} here.` : "Empty cell in the [KW=CAT_FORMATION]Formation[\\KW]." }],
+        dict: data?.keywords ?? null,
+      });
   return h(
     `button.cat-cell${occ ? ".occupied" : ""}${isSel ? ".selected" : ""}${occ?.large ? ".large" : ""}`,
     {

@@ -105,6 +105,12 @@ set by the UX pass of 2026-11-26:
 - **Touch**: a tap selects, a second tap on the same tile moves or attacks (the map sends no
   right-click from a finger).
 - **Text is bare** (CLAUDE.md, "Rules text and tooltips"): labels, numbers, the rule.
+- **Rules text and game-noun reminders are separated** (`cataclysm_tips.js`, matching
+  `docs/PLAY_DESIGN.md` 4.8): every Cataclysm tooltip (including Reinforce, Upgrade, Formation cells,
+  squad orders, top-bar chips, map plots, and modal screens) states only what that control or state
+  does in its main box with game nouns marked `[KW=CAT_...]`, while every referenced noun's reminder
+  card (built from `cataclysm-core` constants in `cataclysm.keywords`) is drawn in its own side box
+  (beside on wide screens, stacked below on narrow screens).
 - **An eliminated player's game ends**: with no city and no squad left the status is `over`
   (`cataclysm_kind: "Eliminated"`) and the game-over screen says Defeat with the rule; before, End
   turn answered an error forever.

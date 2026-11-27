@@ -90,6 +90,7 @@ addHelp({
     list(cat()?.rules_help?.squads),
     h("h4", "Orders"),
     named(cat()?.order_help, [
+      ["reinforce", "Reinforce"],
       ["auto_arrange", "Auto-arrange"],
       ["fortify", "Fortify"],
       ["road", "Road"],

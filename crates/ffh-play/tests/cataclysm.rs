@@ -275,3 +275,163 @@ fn cataclysm_strain_ritual_states_its_recast_time() {
     assert!(r.get("why").and_then(Json::as_str).is_some_and(|w| w.starts_with("Ready in")), "{r}");
     assert!(r.get("summary").and_then(Json::as_str).is_some_and(|t| t.contains("turns after each cast")), "{r}");
 }
+
+fn collect_kw_marks(text: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut rest = text;
+    while let Some(i) = rest.find("[KW=") {
+        let after = &rest[i + 4..];
+        let Some(end) = after.find(']') else { break };
+        out.push(&after[..end]);
+        rest = &after[end + 1..];
+    }
+    out
+}
+
+#[test]
+fn cataclysm_keywords_resolve_and_tooltips_separate_reminders() {
+    let sess = session("bannor", 12);
+    let view = q(&sess, r#"{"q":"view"}"#);
+    let cat = view.get("cataclysm").unwrap();
+
+    // 1. Glossary integrity: every entry has key/name/text and every `with` entry resolves.
+    let kws = cat.get("keywords").and_then(Json::as_obj).expect("cataclysm.keywords object");
+    assert!(kws.len() >= 35, "expected full Cataclysm keyword glossary, got {}", kws.len());
+    let key_exists = |k: &str| kws.iter().any(|(name, _)| name == k);
+    for (k, v) in kws {
+        assert_eq!(v.get("key").and_then(Json::as_str), Some(k.as_str()));
+        let name = v.get("name").and_then(Json::as_str).expect("keyword name");
+        let text = v.get("text").and_then(Json::as_str).expect("keyword text");
+        assert!(!name.is_empty() && text.ends_with('.'), "{k}: {name} => {text}");
+        let with = arr(v, "with");
+        assert!(!with.is_empty(), "{k} has empty with");
+        for w in with {
+            let wk = w.as_str().expect("with string");
+            assert!(key_exists(wk), "{k} references unknown keyword {wk}");
+        }
+    }
+
+    // 2. Every `[KW=...]` mark across Cataclysm tooltip strings resolves cleanly.
+    let mut all_tip_texts: Vec<String> = Vec::new();
+    let push_opt = |list: &mut Vec<String>, j: Option<&Json>| {
+        if let Some(s) = j.and_then(Json::as_str) {
+            list.push(s.to_string());
+        }
+    };
+    push_opt(&mut all_tip_texts, cat.get("human_rule_tip"));
+    push_opt(&mut all_tip_texts, cat.get("war_tip"));
+    push_opt(&mut all_tip_texts, cat.get("peace_tip"));
+    push_opt(&mut all_tip_texts, cat.get("crusade_tip"));
+    push_opt(&mut all_tip_texts, cat.get("doctrine_tip"));
+    push_opt(&mut all_tip_texts, cat.get("caravan").and_then(|c| c.get("tip")));
+    push_opt(&mut all_tip_texts, cat.get("renown").and_then(|r| r.get("tip")));
+    for (_, v) in cat.get("order_tips").and_then(Json::as_obj).expect("order_tips") {
+        push_opt(&mut all_tip_texts, Some(v));
+    }
+    for (_, v) in cat.get("sally_tips").and_then(Json::as_obj).expect("sally_tips") {
+        push_opt(&mut all_tip_texts, Some(v));
+    }
+    for l in arr(cat.get("apocalypse").unwrap(), "tip_lines") {
+        push_opt(&mut all_tip_texts, Some(l));
+    }
+    for l in arr(cat.get("victory").unwrap(), "tip_lines") {
+        push_opt(&mut all_tip_texts, Some(l));
+    }
+    for t in arr(cat.get("research").unwrap(), "techs") {
+        push_opt(&mut all_tip_texts, t.get("tip_unlocks"));
+        push_opt(&mut all_tip_texts, t.get("tip_strain"));
+    }
+    for d in arr(cat, "available_districts") {
+        push_opt(&mut all_tip_texts, d.get("tip_summary"));
+    }
+    for w in arr(cat, "available_wonders") {
+        push_opt(&mut all_tip_texts, w.get("tip_summary"));
+    }
+    for r in arr(cat, "rituals") {
+        push_opt(&mut all_tip_texts, r.get("tip_summary"));
+    }
+    for rel in arr(cat, "religions") {
+        push_opt(&mut all_tip_texts, rel.get("tip_summary"));
+        push_opt(&mut all_tip_texts, rel.get("tip_effect"));
+    }
+    for sq in arr(cat, "squads") {
+        push_opt(&mut all_tip_texts, sq.get("supply").and_then(|s| s.get("tip")));
+    }
+
+    let mut total_marks = 0usize;
+    for t in &all_tip_texts {
+        for k in collect_kw_marks(t) {
+            assert!(key_exists(k), "unknown [KW={k}] in tooltip: {t}");
+            total_marks += 1;
+        }
+    }
+    assert!(total_marks >= 40, "expected Cataclysm tooltips to mark game nouns, found {total_marks}");
+
+    // 3. Action tooltips do not restate the full reminder definitions of their nouns.
+    let order_tips = cat.get("order_tips").unwrap();
+    let raid_tip = order_tips.get("raid").and_then(Json::as_str).unwrap();
+    assert!(raid_tip.contains("[KW=CAT_RAID]"), "{raid_tip}");
+    assert!(!raid_tip.contains("Industry and Gold halved"), "raid tooltip should not inline Stripped reminder: {raid_tip}");
+    assert!(!raid_tip.contains("always supplied"), "raid tooltip should not inline Supply reminder: {raid_tip}");
+
+    let fort_tip = order_tips.get("fort").and_then(Json::as_str).unwrap();
+    assert!(fort_tip.contains("[KW=CAT_FORT]"), "{fort_tip}");
+    assert!(!fort_tip.contains("supply lines cannot pass"), "fort tooltip should not inline Fort reminder: {fort_tip}");
+
+    let road_tip = order_tips.get("road").and_then(Json::as_str).unwrap();
+    assert!(road_tip.contains("[KW=CAT_ROAD]"), "{road_tip}");
+    assert!(!road_tip.contains("supply lines cross"), "road tooltip should not inline Road reminder: {road_tip}");
+
+    let sally_tips = cat.get("sally_tips").unwrap();
+    let always_tip = sally_tips.get("always").and_then(Json::as_str).unwrap();
+    assert!(always_tip.contains("[KW=CAT_SALLY]"), "{always_tip}");
+    assert!(!always_tip.contains("cuts what every raider takes"), "sally tooltip should not inline Sally reminder: {always_tip}");
+
+    // 4. Help text stays plain prose without raw `[KW=...]` tags, and includes Reinforce.
+    let order_help = cat.get("order_help").unwrap();
+    assert!(order_help.get("reinforce").and_then(Json::as_str).is_some_and(|s| !s.contains("[KW=")));
+    for (_, v) in order_help.as_obj().unwrap() {
+        assert!(!v.as_str().unwrap().contains("[KW="), "order_help leaked raw markup: {v}");
+    }
+}
+
+#[test]
+fn cataclysm_reinforce_classes_and_squads_carry_tooltip_data() {
+    let sess = session("hippus", 8);
+    let view = q(&sess, r#"{"q":"view"}"#);
+    let cat = view.get("cataclysm").unwrap();
+
+    let classes = arr(cat, "recruitable_classes");
+    assert_eq!(classes.len(), cataclysm_core::UnitClassId::RECRUITABLE.len());
+    for c in classes {
+        assert!(c.get("base_cost_gold").and_then(Json::as_i64).is_some(), "{c}");
+        assert!(c.get("upkeep").and_then(Json::as_i64).is_some(), "{c}");
+        assert!(c.get("mdef").and_then(Json::as_i64).is_some(), "{c}");
+        assert!(c.get("speed").and_then(Json::as_i64).is_some(), "{c}");
+        assert!(c.get("armor").and_then(Json::as_i64).is_some(), "{c}");
+        assert!(c.get("moves").and_then(Json::as_i64).is_some(), "{c}");
+        assert!(c.get("best_row").and_then(Json::as_i64).is_some(), "{c}");
+        // Postriders get a reinforce discount note.
+        assert!(c.get("reinforce_discount").and_then(Json::as_str).is_some_and(|s| s.contains("Postriders")), "{c}");
+        let actions = arr(c, "actions");
+        assert_eq!(actions.len(), 3, "{c}");
+        for a in actions {
+            assert!(a.get("kind").and_then(Json::as_str).is_some());
+            assert!(a.get("pattern").and_then(Json::as_str).is_some());
+        }
+    }
+
+    let own_sq = arr(cat, "squads")
+        .iter()
+        .find(|s| s.get("owner").and_then(Json::as_i64) == Some(0))
+        .expect("own squad");
+    assert!(own_sq.get("can_fit_1cell").and_then(Json::as_bool).is_some());
+    assert!(own_sq.get("can_fit_2cell").and_then(Json::as_bool).is_some());
+    for m in arr(own_sq, "members") {
+        assert!(m.get("best_row").and_then(Json::as_i64).is_some());
+        let acts = arr(m, "actions");
+        assert_eq!(acts.len(), 3);
+        assert!(acts[0].get("pattern").and_then(Json::as_str).is_some());
+    }
+}
+

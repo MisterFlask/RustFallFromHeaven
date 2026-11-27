@@ -130,6 +130,7 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/cataclysm.js", JS, include_str!("../../assets/app/cataclysm.js")),
     ("app/cataclysm_screens.js", JS, include_str!("../../assets/app/cataclysm_screens.js")),
     ("app/cataclysm_help.js", JS, include_str!("../../assets/app/cataclysm_help.js")),
+    ("app/cataclysm_tips.js", JS, include_str!("../../assets/app/cataclysm_tips.js")),
     // The 3D renderer (docs/R3D.md, docs/HD2D.md): the default map.
     ("app/r3d/config.js", JS, include_str!("../../assets/app/r3d/config.js")),
     ("app/r3d/decals.js", JS, include_str!("../../assets/app/r3d/decals.js")),
