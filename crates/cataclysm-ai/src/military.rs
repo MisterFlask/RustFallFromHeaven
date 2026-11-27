@@ -25,8 +25,9 @@ use crate::{best_squad_recipe, try_cmd};
 
 /// An enemy civilization's squad this close to one of our cities makes the city need a guard.
 const THREAT_RANGE: i32 = 4;
-/// Attack when the forecast gives the plot at least this chance (permille) of falling. The
-/// forecast is calibrated: at 60-70% predicted, 56% of plots fell in 120 games.
+/// Attack when the forecast gives the plot at least this chance (permille) of falling. Of the
+/// attacks this AI made at a 60-70% forecast in 120 games, about half took the plot, and they
+/// cost the attacker 0.7 fighters for 1.3-1.5 of the defender's: worth making either way.
 const FALLS_TO_ATTACK: i32 = 600;
 /// A trade attack (the plot holds, but the defender loses more) risks the attacking squad's
 /// wipe-out at most this often (permille).
@@ -333,7 +334,8 @@ fn city_defense(g: &Game, p: PlayerId, c: &cataclysm_core::City) -> i32 {
 }
 
 /// Where a free squad goes: the nearest enemy city our free squads together outmatch, an enemy
-/// squad near it, a lair (in peace only); `None` when there is nothing to do.
+/// civilization's squad near it (in peace, also a Wild Clans squad or a lair); `None` when there
+/// is nothing to do.
 fn free_target(g: &Game, p: PlayerId, from: PlotIdx, guard_of: Option<PlotIdx>, free_power: i32) -> Option<PlotIdx> {
     // A civilization holding a Lifeboat attacks only what threatens it.
     if let Some(home) = guard_of {
@@ -353,10 +355,17 @@ fn free_target(g: &Game, p: PlayerId, from: PlotIdx, guard_of: Option<PlotIdx>, 
     {
         return Some(c.plot);
     }
-    if let Some(s) = g.squads.values().filter(|s| s.owner != p && g.at_war(p, s.owner) && g.world.distance(from, s.plot) <= 6).min_by_key(|s| (g.world.distance(from, s.plot), s.id)) {
+    // At war with a civilization, its squads; in peace, the Wild Clans' too (they guard lairs).
+    let at_war = g.players.iter().any(|o| o.alive && enemy_civ(g, p, o.id));
+    if let Some(s) = g
+        .squads
+        .values()
+        .filter(|s| s.owner != p && g.at_war(p, s.owner) && (!at_war || enemy_civ(g, p, s.owner)) && g.world.distance(from, s.plot) <= 6)
+        .min_by_key(|s| (g.world.distance(from, s.plot), s.id))
+    {
         return Some(s.plot);
     }
-    if g.players.iter().any(|o| o.alive && enemy_civ(g, p, o.id)) {
+    if at_war {
         return None;
     }
     (0..g.world.len())
