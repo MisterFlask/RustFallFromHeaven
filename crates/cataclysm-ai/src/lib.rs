@@ -1,7 +1,9 @@
 //! AI player for Cataclysm — plays 100% through `cataclysm_core::Command`, with zero AI-only rules.
 
+mod military;
+
 use cataclysm_core::{
-    Alignment, BuildOrder, Command, DistrictKind, Doctrine, Event, FactionId, Game, GreatPersonAction, HouseMood, PlayerId, PlotIdx, Religion,
+    Alignment, BuildOrder, Command, DistrictKind, Doctrine, Event, FactionId, Game, GreatPersonAction, HouseMood, PlayerId, Religion,
     RitualKind, TechId, UnitClassId, WonderKind, TECHS,
 };
 
@@ -44,7 +46,9 @@ pub fn play_turn_as(g: &mut Game, player: PlayerId, policy: Policy) -> Vec<Event
     manage_rituals(g, player, policy, &mut events);
     manage_diplomacy_and_crusades(g, player, &mut events);
     manage_cities_and_caravans(g, player, &mut events);
-    manage_squads(g, player, &mut events);
+    military::manage_squads(g, player, &mut events);
+    military::manage_sallies(g, player, &mut events);
+    military::manage_raiders(g, player, &mut events);
 
     if !g.is_over() {
         if let Ok(ev) = g.apply(player, Command::EndTurn) {
@@ -340,165 +344,6 @@ fn manage_cities_and_caravans(g: &mut Game, p: PlayerId, events: &mut Vec<Event>
             try_cmd(g, p, Command::CityBuild { city: cid, order: ord }, events);
         }
     }
-}
-
-fn manage_squads(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) {
-    let squad_ids = g.player_squads(p);
-    let my_cities_count = g.player_cities(p).len();
-    let cap = g.players[p.idx()].squad_place_cap();
-
-    for sid in squad_ids {
-        if !g.squads.contains_key(&sid) {
-            continue;
-        }
-        // Upgrade or reinforce inside own borders when Gold allows.
-        let in_home = g.world.plot(g.squads[&sid].plot).owner == Some(p);
-        if in_home && g.players[p.idx()].gold >= 80 {
-            let upgrade_target = g.squads[&sid]
-                .members
-                .iter()
-                .find(|m| m.class.info().upgrades_to.is_some_and(|n| g.can_recruit_class(p, n).is_ok()))
-                .map(|m| m.id);
-            if let Some(mid) = upgrade_target {
-                try_cmd(g, p, Command::UpgradeMember { squad: sid, member: mid }, events);
-            } else if g.squads[&sid].places_used() < cap {
-                let rec = best_squad_recipe(g, p);
-                let cl = rec[g.squads[&sid].members.len() % rec.len()];
-                try_cmd(g, p, Command::ReinforceSquad { squad: sid, class: cl }, events);
-            }
-            try_cmd(g, p, Command::AutoArrangeSquad { squad: sid }, events);
-        }
-
-        // Step movement/combat up to 4 times per turn.
-        for _ in 0..4 {
-            let Some(s) = g.squads.get(&sid).cloned() else { break };
-            if s.moves_left <= 0 {
-                break;
-            }
-            // Explore lair on current tile!
-            if g.world.plot(s.plot).lair_unexplored {
-                if try_cmd(g, p, Command::SquadExploreLair { squad: sid }, events) {
-                    break;
-                }
-            }
-            // Found a new city if < 4 cities, rich, and on good open land >= 4 tiles from any city!
-            if my_cities_count < 4
-                && g.players[p.idx()].gold >= 130
-                && g.world.plot(s.plot).city.is_none()
-                && g.cities.values().all(|c| g.world.distance(c.plot, s.plot) >= 4)
-            {
-                if try_cmd(g, p, Command::SquadFoundCity { squad: sid, name: None }, events) {
-                    break;
-                }
-            }
-
-            // Pick strategic destination:
-            // 1. After AC 100: march to an unowned Lifeboat (Carcosa!) or defend own Lifeboat.
-            // 2. Otherwise: closest enemy city / squad at war, or nearest unexplored lair.
-            let target_plot = choose_squad_target(g, p, s.plot);
-            let Some(goal) = target_plot else { break };
-            if goal == s.plot {
-                try_cmd(g, p, Command::SetSquadFortify { squad: sid }, events);
-                break;
-            }
-
-            // If goal is adjacent and hostile -> attack!
-            if g.world.distance(s.plot, goal) == 1 {
-                let enemy_here = g.squads.values().any(|o| o.plot == goal && g.at_war(p, o.owner))
-                    || g.world.plot(goal).city.and_then(|cid| g.cities.get(&cid)).is_some_and(|c| g.at_war(p, c.owner));
-                if enemy_here {
-                    try_cmd(g, p, Command::AttackPlot { squad: sid, to: goal }, events);
-                    break;
-                }
-            }
-
-            // Greedy step toward `goal` along passable land (avoiding peaceful rival cities).
-            let mut nbs = g.world.neighbors(s.plot);
-            nbs.retain(|&nb| {
-                let pt = g.world.plot(nb);
-                if !pt.kind.is_passable_land() {
-                    return false;
-                }
-                if let Some(cid) = pt.city {
-                    let c = &g.cities[&cid];
-                    if c.owner != p && !g.at_war(p, c.owner) {
-                        return false;
-                    }
-                }
-                true
-            });
-            nbs.sort_by_key(|&nb| (g.world.distance(nb, goal), !g.world.plot(nb).road, nb));
-            let Some(&step) = nbs.first() else { break };
-            if g.world.distance(step, goal) >= g.world.distance(s.plot, goal) {
-                break;
-            }
-            if !try_cmd(g, p, Command::MoveSquad { squad: sid, to: step }, events) {
-                break;
-            }
-        }
-    }
-}
-
-fn choose_squad_target(g: &Game, p: PlayerId, from: PlotIdx) -> Option<PlotIdx> {
-    if g.apocalypse.carcosa_risen {
-        let demonic = g.players[p.idx()].faction == FactionId::Infernals;
-        // Prioritize any Lifeboat not owned by us (or if demonic, ANY Lifeboat to raze!).
-        let mut best_lb = None;
-        for lb in &g.apocalypse.lifeboats {
-            if lb.razed {
-                continue;
-            }
-            if let Some(c) = g.cities.get(&lb.city_id) {
-                if demonic || c.owner != p {
-                    let d = g.world.distance(from, c.plot);
-                    if best_lb.is_none_or(|(bd, _)| d < bd) {
-                        best_lb = Some((d, c.plot));
-                    }
-                }
-            }
-        }
-        if let Some((_, plot)) = best_lb {
-            return Some(plot);
-        }
-    }
-
-    // Nearest enemy city at war.
-    if let Some(c) = g
-        .cities
-        .values()
-        .filter(|c| g.at_war(p, c.owner) && !g.players[c.owner.idx()].is_neutral)
-        .min_by_key(|c| g.world.distance(from, c.plot))
-    {
-        return Some(c.plot);
-    }
-
-    // Nearest enemy squad at war within 6 tiles.
-    if let Some(es) = g
-        .squads
-        .values()
-        .filter(|s| g.at_war(p, s.owner) && g.world.distance(from, s.plot) <= 6)
-        .min_by_key(|s| g.world.distance(from, s.plot))
-    {
-        return Some(es.plot);
-    }
-
-    // Nearest unexplored lair.
-    let mut best_lair: Option<(i32, PlotIdx)> = None;
-    for i in 0..g.world.len() {
-        let pt = PlotIdx(i as u32);
-        if g.world.plot(pt).lair_unexplored {
-            let d = g.world.distance(from, pt);
-            if best_lair.is_none_or(|(bd, _)| d < bd) {
-                best_lair = Some((d, pt));
-            }
-        }
-    }
-    if let Some((_, p_lair)) = best_lair {
-        return Some(p_lair);
-    }
-
-    // Otherwise patrol near capital.
-    g.cities.values().find(|c| c.owner == p && c.capital).map(|c| c.plot)
 }
 
 fn play_neutral_turn(g: &mut Game, neutral: PlayerId, events: &mut Vec<Event>) {
