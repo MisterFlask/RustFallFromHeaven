@@ -2296,6 +2296,13 @@ impl Game {
         if wrapped {
             self.turn += 1;
             self.process_world_turn(events);
+            // The world turn marks the eliminated: the player chosen above may be one of them now,
+            // and a turn handed to a player who cannot act would never end.
+            let mut tried = 0;
+            while !self.players[next].alive && tried < n {
+                next = (next + 1) % n;
+                tried += 1;
+            }
         }
         self.active_player = PlayerId(next as u16);
         self.start_player_turn(self.active_player, events);

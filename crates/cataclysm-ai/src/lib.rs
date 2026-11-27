@@ -5,8 +5,26 @@ use cataclysm_core::{
     RitualKind, TechId, UnitClassId, WonderKind, TECHS,
 };
 
+/// How a player uses the rituals that move Worldseal Strain. `Standard` is the game's AI; the
+/// others are measuring instruments for `cataclysm-tally` (they push one direction as hard as
+/// they can, to show what the rules allow), not ways the game's AI plays.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+pub enum Policy {
+    #[default]
+    Standard,
+    /// Never casts a ritual that raises Strain.
+    Quiet,
+    /// Spends its Mana on the ritual that raises Strain most per Mana, every turn.
+    Pusher,
+}
+
 /// Plays a complete turn for `player` (ending with `Command::EndTurn`) and returns all emitted events.
 pub fn play_turn(g: &mut Game, player: PlayerId) -> Vec<Event> {
+    play_turn_as(g, player, Policy::Standard)
+}
+
+/// [`play_turn`] under a ritual [`Policy`].
+pub fn play_turn_as(g: &mut Game, player: PlayerId, policy: Policy) -> Vec<Event> {
     let mut events = Vec::new();
     if g.is_over() || !g.players[player.idx()].alive {
         return events;
@@ -23,7 +41,7 @@ pub fn play_turn(g: &mut Game, player: PlayerId) -> Vec<Event> {
     manage_doctrine_and_research(g, player, &mut events);
     manage_religion(g, player, &mut events);
     manage_court(g, player, &mut events);
-    manage_rituals(g, player, &mut events);
+    manage_rituals(g, player, policy, &mut events);
     manage_diplomacy_and_crusades(g, player, &mut events);
     manage_cities_and_caravans(g, player, &mut events);
     manage_squads(g, player, &mut events);
@@ -136,21 +154,41 @@ fn manage_court(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) {
     }
 }
 
-fn manage_rituals(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) {
+fn manage_rituals(g: &mut Game, p: PlayerId, policy: Policy, events: &mut Vec<Event>) {
+    if policy == Policy::Pusher {
+        // The most Strain per Mana, for as long as the rules let it cast.
+        for _ in 0..20 {
+            let best = RitualKind::ALL
+                .into_iter()
+                .filter(|r| r.ac_delta() > 0 && g.check_ritual(p, *r).is_ok())
+                .max_by_key(|r| (r.ac_delta() * 1000 / r.mana_cost().max(1), std::cmp::Reverse(r.mana_cost())));
+            let Some(ritual) = best else { break };
+            if !try_cmd(g, p, Command::CastRitual { ritual }, events) {
+                break;
+            }
+        }
+        return;
+    }
     let fac = g.players[p.idx()].faction;
     let mana = g.players[p.idx()].mana;
     if mana < 25 {
         return;
     }
-    if fac == FactionId::Elohim && g.apocalypse.counter >= 10 {
-        try_cmd(g, p, Command::CastRitual { ritual: RitualKind::Sanctify }, events);
+    let ritual = if fac == FactionId::Elohim && g.apocalypse.counter >= 10 {
+        RitualKind::Sanctify
     } else if matches!(fac, FactionId::Sheaim | FactionId::Infernals) && !g.apocalypse.carcosa_risen && mana >= 35 {
-        try_cmd(g, p, Command::CastRitual { ritual: RitualKind::BlightStrike }, events);
+        RitualKind::BlightStrike
     } else if mana >= 50 && g.player_squads(p).len() < g.squad_cap(p) {
-        try_cmd(g, p, Command::CastRitual { ritual: RitualKind::SummonHost }, events);
+        RitualKind::SummonHost
     } else if mana >= 35 {
-        try_cmd(g, p, Command::CastRitual { ritual: RitualKind::ArcaneSurge }, events);
+        RitualKind::ArcaneSurge
+    } else {
+        return;
+    };
+    if policy == Policy::Quiet && ritual.ac_delta() > 0 {
+        return;
     }
+    try_cmd(g, p, Command::CastRitual { ritual }, events);
 }
 
 fn manage_diplomacy_and_crusades(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) {

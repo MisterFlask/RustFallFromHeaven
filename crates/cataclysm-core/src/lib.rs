@@ -87,4 +87,29 @@ mod tests {
         assert!(g.apocalypse.standing_lifeboats() >= 1);
         g.check_invariants().unwrap();
     }
+
+    #[test]
+    fn a_player_eliminated_at_the_turn_wrap_is_skipped() {
+        let mut g = Game::new(GameSetup { seed: 5, width: 22, height: 16, human_faction: FactionId::Bannor, ai_count: 2 });
+        // Everyone ends their turn until the last player of the round is the active one.
+        let last = (0..g.players.len()).rev().find(|&i| g.players[i].alive).unwrap();
+        while g.active_player.idx() != last {
+            let p = g.active_player;
+            g.apply(p, Command::EndTurn).unwrap();
+        }
+        // Seat 0 loses every city and squad; the world turn at the wrap marks it eliminated.
+        let p0 = PlayerId(0);
+        for cid in g.player_cities(p0) {
+            let c = g.cities.get_mut(&cid).unwrap();
+            c.owner = PlayerId(1);
+            c.capital = false;
+            c.house = None;
+        }
+        g.squads.retain(|_, s| s.owner != p0);
+        g.apply(PlayerId(last as u16), Command::EndTurn).unwrap();
+        assert!(!g.players[0].alive);
+        let next = g.active_player;
+        assert!(g.players[next.idx()].alive, "the turn went to an eliminated player");
+        g.apply(next, Command::EndTurn).unwrap();
+    }
 }
