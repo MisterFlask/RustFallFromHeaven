@@ -1018,13 +1018,13 @@ impl CataclysmSession {
                 let crusade_why = g.check_call_crusade(h, pl.id).err().map(|e| e.detail);
                 let mut peace_lines = Vec::new();
                 if let Some(t) = offer_to_us {
-                    peace_lines.push(format!("Offers peace to you: {t} turns left."));
+                    peace_lines.push(format!("Offers peace to you: {} left.", plural(t, "turn", "turns")));
                 }
                 if let Some(t) = offer_from_us {
-                    peace_lines.push(format!("Your peace offer: {t} turns left."));
+                    peace_lines.push(format!("Your peace offer: {} left.", plural(t, "turn", "turns")));
                 }
                 if truce > 0 {
-                    peace_lines.push(format!("Truce: {truce} turns left."));
+                    peace_lines.push(format!("Truce: {} left.", plural(truce, "turn", "turns")));
                 }
                 crate::jobj! {
                     "id" => pl.id.0 as i32,
@@ -2229,7 +2229,7 @@ fn peace_effect() -> String {
 fn crusade_effect() -> String {
     use cataclysm_core::game::{renown, LEND_CREDIT, LEND_CREDIT_BANNOR};
     format!(
-        "Declares war on the target (Caravans are not ended) and opens a Crusade for {} turns. Any other civilization may lend squads to it: the lender goes to war with the target and gains {} Prophet Renown; Crusade credit ({} per squad, {} for the {}) is recorded but has no effect. The {} pay no upkeep for lent squads.",
+        "Declares war on the target (Caravans are not ended) and opens a Crusade for {} turns. Any other civilization may lend squads to it: the lender goes to war with the target and gains {} Prophet Renown; Crusade credit ({} per squad, {} for the {}) is recorded but has no effect. The {} pay no upkeep for lent squads. The Crusade ends when its caller and the target sign peace; a lender that signs peace with the target has its squads back.",
         cataclysm_core::crusade::CRUSADE_TURNS,
         renown::LEND_PROPHET,
         LEND_CREDIT,

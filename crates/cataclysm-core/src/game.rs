@@ -484,7 +484,7 @@ impl Game {
         }
         let left = self.truce_turns_left(a, b);
         if left > 0 {
-            return Err(CmdErr::cannot(format!("Truce with {}: {} turns left.", self.players[b.idx()].name(), left)));
+            return Err(CmdErr::cannot(format!("Truce with {}: {} left.", self.players[b.idx()].name(), turns(left))));
         }
         Ok(())
     }
@@ -524,7 +524,7 @@ impl Game {
             return Ok(true);
         }
         if let Some(left) = self.peace_offer_from(p, target) {
-            return Err(CmdErr::cannot(format!("Your peace offer stands: {} turns left.", left)));
+            return Err(CmdErr::cannot(format!("Your peace offer stands: {} left.", turns(left))));
         }
         Ok(false)
     }
@@ -1279,12 +1279,16 @@ impl Game {
     pub fn check_ritual(&self, p: PlayerId, ritual: RitualKind) -> Result<(), CmdErr> {
         let left = self.ritual_turns_left(p, ritual);
         if left > 0 {
-            return Err(CmdErr::cannot(format!("Ready in {left} turns.")));
+            return Err(CmdErr::cannot(format!("Ready in {}.", turns(left))));
         }
         let cost = ritual.mana_cost();
         let mana = self.players[p.idx()].mana;
         if mana < cost {
             return Err(CmdErr::cannot(format!("Need {cost} Mana (have {mana}).")));
+        }
+        // Checked here, before the cast spends its Mana.
+        if ritual == RitualKind::SummonHost && self.ritual_plot(p).is_none() {
+            return Err(CmdErr::cannot("Furnace Levy needs a city."));
         }
         Ok(())
     }
@@ -2340,12 +2344,45 @@ impl Game {
             let text = |other: &str| format!("Peace signed with {}. Truce: no war between you for {} turns.", other, TRUCE_TURNS);
             self.push_log(Some(player), None, None, text(tn));
             self.push_log(Some(target), None, None, text(pn));
+            // A Crusade does not outlive the peace of its caller with its target, and a lender
+            // that makes peace with the target has its squads back.
+            let ended: Vec<CrusadeId> = self
+                .crusades
+                .values()
+                .filter(|c| c.active && ((c.caller == player && c.target == target) || (c.caller == target && c.target == player)))
+                .map(|c| c.id)
+                .collect();
+            for cid in ended {
+                self.end_crusade(cid);
+            }
+            for (lender, enemy) in [(player, target), (target, player)] {
+                for cr in self.crusades.values_mut().filter(|c| c.active && c.target == enemy) {
+                    for (_, sid) in cr.lent_squads.iter().filter(|(l, _)| *l == lender) {
+                        if let Some(sq) = self.squads.get_mut(sid) {
+                            sq.lent_by = None;
+                        }
+                    }
+                    cr.lent_squads.retain(|(l, _)| *l != lender);
+                }
+            }
         } else {
             self.peace_offers.insert((player, target), self.turn);
             self.push_log(Some(player), None, None, format!("You offer peace to {} for {} turns.", tn, PEACE_OFFER_TURNS));
             self.push_log(Some(target), None, None, format!("{} offers peace.", pn));
         }
         Ok(())
+    }
+
+    /// Ends a Crusade: its lent squads are their lenders' own again.
+    fn end_crusade(&mut self, cid: CrusadeId) {
+        let Some(cr) = self.crusades.get_mut(&cid) else { return };
+        cr.active = false;
+        for (_, sid) in cr.lent_squads.clone() {
+            if let Some(sq) = self.squads.get_mut(&sid) {
+                sq.lent_by = None;
+            }
+        }
+        self.push_log(None, None, None, format!("Crusade #{} dissolved; lent squads return to normal service.", cid.0));
     }
 
     fn cmd_call_crusade(&mut self, player: PlayerId, target: PlayerId, events: &mut Vec<Event>) -> Result<(), CmdErr> {
@@ -2688,13 +2725,7 @@ impl Game {
                 }
             }
             if end {
-                let lent = self.crusades[&cid].lent_squads.clone();
-                for (_, sid) in lent {
-                    if let Some(sq) = self.squads.get_mut(&sid) {
-                        sq.lent_by = None;
-                    }
-                }
-                self.push_log(None, None, None, format!("Crusade #{} dissolved; lent squads return to normal service.", cid.0));
+                self.end_crusade(cid);
             }
         }
 
@@ -3548,6 +3579,15 @@ impl Game {
             }
         }
         Ok(())
+    }
+}
+
+/// "1 turn", "3 turns".
+fn turns(n: i32) -> String {
+    if n == 1 {
+        "1 turn".into()
+    } else {
+        format!("{n} turns")
     }
 }
 

@@ -186,6 +186,38 @@ mod tests {
     }
 
     #[test]
+    fn a_crusade_ends_with_the_peace_of_its_caller_and_target() {
+        let mut g = two_at_war();
+        let (a, b, c) = (PlayerId(0), PlayerId(1), PlayerId(2));
+        g.players[0].religion = Some(Religion::Order);
+        g.apply(a, Command::CallCrusade { target: b }).unwrap();
+        let crusade = *g.crusades.keys().next().unwrap();
+        let lent = g.player_squads(c)[0];
+        g.apply(c, Command::LendSquadToCrusade { crusade, squad: lent }).unwrap();
+        assert!(g.squads[&lent].lent_by.is_some());
+        g.apply(a, Command::MakePeace { target: b }).unwrap();
+        g.apply(b, Command::MakePeace { target: a }).unwrap();
+        assert!(!g.crusades[&crusade].active);
+        assert!(g.squads[&lent].lent_by.is_none());
+        g.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn furnace_levy_without_a_city_spends_nothing() {
+        let mut g = Game::new(GameSetup::default());
+        let p0 = PlayerId(0);
+        for cid in g.player_cities(p0) {
+            let c = g.cities.get_mut(&cid).unwrap();
+            c.owner = PlayerId(1);
+            c.capital = false;
+            c.house = None;
+        }
+        g.players[0].mana = 100;
+        assert!(g.apply(p0, Command::CastRitual { ritual: RitualKind::SummonHost }).is_err());
+        assert_eq!(g.players[0].mana, 100);
+    }
+
+    #[test]
     fn no_war_starts_during_a_truce() {
         let mut g = two_at_war();
         let (a, b) = (PlayerId(0), PlayerId(1));
