@@ -352,15 +352,39 @@ mod tests {
     }
 
     #[test]
-    fn a_razed_caldera_keep_is_a_furnace_victory_at_the_countdowns_end() {
+    fn caldera_keep_rises_in_the_hosts_hands_and_cannot_be_razed() {
+        let (g, host) = countdown_over();
+        let keep = g.apocalypse.carcosa_city.unwrap();
+        let plot = g.cities[&keep].plot;
+        assert_eq!(g.cities[&keep].owner, host);
+        assert!(g.squads.values().any(|s| s.owner == host && s.plot == plot), "the Host's Blowout squads stand in Caldera Keep");
+        assert!(g.squads.values().all(|s| !(s.owner == g.neutral_player && s.plot == plot)));
+        let err = g.check_raze(host, keep).unwrap_err();
+        assert!(err.detail.contains("cannot be razed"), "{}", err.detail);
+        assert_eq!(g.furnace_keep_holder(), Some(host));
+        g.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn without_the_host_caldera_keep_rises_with_the_wild_clans() {
+        let mut g = Game::new(GameSetup::default());
+        g.apocalypse.hyborem_spawned = true;
+        let mut events = Vec::new();
+        g.shift_ac(100, "test", &mut events);
+        let keep = g.apocalypse.carcosa_city.unwrap();
+        let plot = g.cities[&keep].plot;
+        assert_eq!(g.cities[&keep].owner, g.neutral_player);
+        assert!(g.squads.values().any(|s| s.owner == g.neutral_player && s.plot == plot));
+        assert_eq!(g.furnace_keep_holder(), None);
+    }
+
+    #[test]
+    fn a_furnace_held_caldera_keep_wins_at_the_countdowns_end() {
         let (mut g, host) = countdown_over();
-        // A surface civilization holds a Lifeboat; Caldera Keep is razed.
+        // A surface civilization holds a Lifeboat; the Host holds Caldera Keep.
         let holder = g.players.iter().find(|p| p.alive && !p.is_neutral && p.faction.info().can_mortal_win && !p.faction.info().can_demonic_win).unwrap().id;
         let city = g.player_cities(holder)[0];
         g.apocalypse.lifeboats.push(Lifeboat { kind: LifeboatKind::MostLegendary, city_id: city, razed: false });
-        for l in g.apocalypse.lifeboats.iter_mut().filter(|l| l.kind == LifeboatKind::Carcosa) {
-            l.razed = true;
-        }
         settle(&mut g);
         let o = g.apocalypse.outcome.as_ref().expect("the game is over");
         assert_eq!(o.kind, VictoryKind::DemonicRuin);
@@ -383,6 +407,8 @@ mod tests {
     fn no_surface_holder_at_the_countdowns_end_is_a_furnace_victory() {
         let (mut g, host) = countdown_over();
         // Caldera Keep stands, held by the Wild Clans; no other Lifeboat.
+        let keep = g.apocalypse.carcosa_city.unwrap();
+        g.cities.get_mut(&keep).unwrap().owner = g.neutral_player;
         g.apocalypse.lifeboats.retain(|l| l.kind == LifeboatKind::Carcosa);
         settle(&mut g);
         let o = g.apocalypse.outcome.as_ref().expect("the game is over");

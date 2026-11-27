@@ -59,7 +59,7 @@ fn overmatched_city(g: &Game, p: PlayerId, e: PlayerId) -> bool {
     })
 }
 
-/// The owner of the Lifeboat our squads are sent at, when we hold none.
+/// The owner of the Lifeboat our squads are sent at, if any.
 fn assault_target_owner(g: &Game, p: PlayerId) -> Option<PlayerId> {
     let plot = lifeboat_assault_target(g, p)?;
     let cid = g.world.plot(plot).city?;
@@ -79,11 +79,11 @@ fn peace_reason(g: &Game, p: PlayerId, e: PlayerId, wars: &[PlayerId]) -> Option
         return None;
     }
     if g.apocalypse.carcosa_risen {
-        if held_lifeboat(g, p).is_some() {
-            return Some("we hold a Lifeboat");
-        }
         if assault_target_owner(g, p) == Some(e) {
             return None;
+        }
+        if held_lifeboat(g, p).is_some() {
+            return Some("we hold a Lifeboat");
         }
     }
     let r = ratio(g, p, e);
@@ -223,11 +223,10 @@ fn declare(g: &mut Game, p: PlayerId, target: PlayerId, events: &mut Vec<Event>)
 }
 
 fn manage_war(g: &mut Game, p: PlayerId, events: &mut Vec<Event>) {
-    // After the Blowout, a civilization with no Lifeboat goes to war with the holder of the one
-    // its squads are sent at: nothing else can win for it. King Cinder's Host sends its squads at
-    // a Lifeboat whether it holds one or not (it razes them), so it declares likewise.
-    let infernal = g.players[p.idx()].faction == FactionId::Infernals;
-    if g.apocalypse.carcosa_risen && (infernal || held_lifeboat(g, p).is_none()) {
+    // After the Blowout, a civilization goes to war with the holder of the Lifeboat its squads are
+    // sent at (`military::assign_roles`): a Lifeboat for one that holds none, Caldera Keep while a
+    // Furnace civilization holds it.
+    if g.apocalypse.carcosa_risen {
         if let Some(owner) = assault_target_owner(g, p) {
             if !g.players[owner.idx()].is_neutral && !g.at_war(p, owner) {
                 declare(g, p, owner, events);

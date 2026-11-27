@@ -6,12 +6,12 @@
 
 use std::cell::Cell;
 
-use cataclysm_core::apocalypse::{CARCOSA_PROTECTED_TURNS, CARCOSA_TIMER_TURNS, MAX_GAME_TURNS};
+use cataclysm_core::apocalypse::{CARCOSA_TIMER_TURNS, MAX_GAME_TURNS};
 use cataclysm_core::supply::supply_combat_pct;
 use cataclysm_core::{
     BattleId, BattleRecord, BuildOrder, CityId, Command, CrusadeId, Doctrine, Event, FactionId, Game, GameSetup, GreatPersonAction,
     GreatPersonId, GreatSuit, House, HouseId, HouseMood, LifeboatKind, MemberId, PlayerId, PlotIdx, Religion, Resource, RitualKind, SallyPosture,
-    SquadId, TechId, UnitClassId, VictoryKind, WonderKind, ARMAGEDDON_CRISES, DISTRICTS, FACTIONS, SECRET_TECHS, TECHS, UNIT_CLASSES,
+    SquadId, TechId, UnitClassId, VictoryKind, WonderKind, ARMAGEDDON_CRISES, DISTRICTS, SECRET_TECHS, TECHS, UNIT_CLASSES,
 };
 use ffh_battle::{ActionKind, Fate, GroundRule, Note, RowActions, Side, ROWS};
 use ffh_data::{BonusType, CivilizationType, FeatureType, GameData, Idx, ImprovementType, LeaderHeadType, RouteType, TerrainType, UnitType};
@@ -1184,7 +1184,6 @@ impl CataclysmSession {
                 "hyborem_spawned" => g.apocalypse.hyborem_spawned,
                 "carcosa_risen" => g.apocalypse.carcosa_risen,
                 "countdown" => g.apocalypse.countdown,
-                "carcosa_protected_turns" => g.apocalypse.carcosa_protected_turns,
                 "recent_changes" => Json::Arr(g.apocalypse.recent_changes.iter().cloned().map(Json::from).collect()),
                 "crises" => Json::Arr(crises_j),
                 "lifeboats" => Json::Arr(lifeboats_j),
@@ -1622,9 +1621,10 @@ impl CataclysmSession {
                         Event::CrisisTriggered { threshold, name, summary } => {
                             self.last_report_lines.push(format!("Worldstrain {threshold}: {name}. {summary}"));
                         }
-                        Event::CarcosaRisen { .. } => {
+                        Event::CarcosaRisen { city, .. } => {
+                            let holder = self.g.cities.get(city).map_or("the Wild Clans", |c| self.g.players[c.owner.idx()].name()).to_string();
                             self.last_report_lines.push(format!(
-                                "Caldera Keep has risen. The {CARCOSA_TIMER_TURNS}-turn countdown has started; civilizations holding a Lifeboat when it ends win."
+                                "Caldera Keep has risen, held by {holder}. The {CARCOSA_TIMER_TURNS}-turn countdown has started. When it ends, the Furnace civilizations win if one of them holds Caldera Keep; otherwise the civilizations holding a Lifeboat win."
                             ));
                         }
                         Event::HyboremArrived { city, .. } => {
@@ -1820,10 +1820,10 @@ pub fn victory_lines(f: FactionId) -> Vec<String> {
         ));
     }
     if info.can_demonic_win {
-        out.push(
-            "Furnace victory: after Worldstrain 100, every Lifeboat is razed while you are alive; or, when the countdown ends while you are alive, Caldera Keep has been razed or no civilization that can win by Lifeboat survival holds a Lifeboat. Every living civilization that can win this way wins."
-                .into(),
-        );
+        out.push(format!(
+            "Furnace victory: when the {}-turn countdown that starts at Worldstrain 100 ends while you are alive, a Furnace civilization holds Caldera Keep, or no civilization that can win by Lifeboat survival holds a Lifeboat. Every living civilization that can win this way wins.",
+            CARCOSA_TIMER_TURNS
+        ));
     }
     out.push("Conquest: before Worldstrain 100, be the last civilization alive. A civilization with no city and no squad is eliminated.".into());
     if f == FactionId::Elohim {
@@ -2090,7 +2090,6 @@ fn apocalypse_rules() -> Vec<String> {
             "At Worldstrain 100 (the Blowout) Caldera Keep rises, the Lifeboats are fixed, a {}-turn countdown starts, and Worldstrain no longer changes.",
             CARCOSA_TIMER_TURNS
         ),
-        format!("Caldera Keep cannot be razed during its first {} turns.", CARCOSA_PROTECTED_TURNS),
     ]
 }
 
@@ -2105,7 +2104,7 @@ fn host_entry_rule() -> String {
 fn host_breach_rule() -> String {
     use cataclysm_core::game::{BREACH_REINFORCE_EVERY, HOST_BLOWOUT_POWER_PCT, HOST_BLOWOUT_SQUADS_MAX};
     format!(
-        "Every {} turns a squad joins King Cinder's Host at its capital while it is under its squad cap. At the Blowout it gets squads at its capital until it holds {}% of the squad power of all the other civilizations together (at most {}).",
+        "Every {} turns a squad joins King Cinder's Host at its capital while it is under its squad cap. At the Blowout it gets squads in Caldera Keep until it holds {}% of the squad power of all the other civilizations together (at least 1, at most {}).",
         BREACH_REINFORCE_EVERY, HOST_BLOWOUT_POWER_PCT, HOST_BLOWOUT_SQUADS_MAX
     )
 }
@@ -2123,10 +2122,10 @@ fn lifeboat_rules() -> Vec<String> {
             LIFEBOAT_CULTURE_MIN
         ),
         "The Lifeboats are fixed at Worldstrain 100; a Wonder completed later becomes a Lifeboat when it is completed.".into(),
-        "Caldera Keep starts held by the Wild Clans with a guard squad.".into(),
-        "Razing a Lifeboat city destroys that Lifeboat. If every Lifeboat is razed, the Furnace civilizations alive win; if none is alive, no one wins.".into(),
-        "If the countdown ends with Caldera Keep razed, the Furnace civilizations alive win, whoever holds the other Lifeboats.".into(),
-        "If the countdown ends and no Lifeboat is held by a civilization that can win by it, the Furnace civilizations alive win; if none is alive, no one wins. The Wild Clans and King Cinder's Host win nothing by holding one.".into(),
+        "Caldera Keep rises held by King Cinder's Host, with its Blowout squads; if the Host is not alive, by the Wild Clans with a guard squad.".into(),
+        "Caldera Keep cannot be razed. Razing another Lifeboat city destroys that Lifeboat.".into(),
+        "If the countdown ends with Caldera Keep held by a Furnace civilization, the Furnace civilizations alive win, whoever holds the other Lifeboats.".into(),
+        "If the countdown ends and no Lifeboat is held by a civilization that can win by it, the Furnace civilizations alive win; if none is alive, no one wins. The Wild Clans win nothing by holding a Lifeboat, and King Cinder's Host nothing by holding one other than Caldera Keep.".into(),
     ]
 }
 
@@ -2476,8 +2475,8 @@ impl CataclysmSession {
         let your_result = match o.kind {
             VictoryKind::MortalLifeboat if you_won => "You held a Lifeboat when the countdown ended.".to_string(),
             VictoryKind::MortalLifeboat => "You held no Lifeboat that counts when the countdown ended.".to_string(),
-            VictoryKind::DemonicRuin if you_won => "Every Lifeboat was razed and you can win by the Furnace victory.".to_string(),
-            VictoryKind::DemonicRuin => "Every Lifeboat was razed; only Furnace civilizations win.".to_string(),
+            VictoryKind::DemonicRuin if you_won => "The countdown ended in a Furnace victory, and you can win by the Furnace victory.".to_string(),
+            VictoryKind::DemonicRuin => "The countdown ended in a Furnace victory; only Furnace civilizations win.".to_string(),
             VictoryKind::ElohimVigil if you_won => format!("Turn {} came before Worldstrain 100 and you are the {}.", MAX_GAME_TURNS, faction_name(FactionId::Elohim)),
             VictoryKind::ElohimVigil => format!("Turn {} came before Worldstrain 100; the {} win.", MAX_GAME_TURNS, faction_name(FactionId::Elohim)),
             VictoryKind::Conquest if you_won => "You are the last civilization alive.".to_string(),

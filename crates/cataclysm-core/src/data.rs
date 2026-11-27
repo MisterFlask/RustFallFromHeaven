@@ -353,8 +353,8 @@ pub const FACTIONS: [FactionInfo; 9] = [
         starting_gold: 120,
         starting_mana: 40,
         city_names: &["Great Furnace", "Slagspire", "Foundry Deep", "Brimshaft", "Ashpit", "Clinker"],
-        lore_blurb: "The Great Empire's engineered furnace-servitors whose rebellion forced the Worldseal shut. They mean to raze every Lifeboat so they are never sealed below again.",
-        rule_summary: "Enters every game at Worldstrain 50; no player can choose it. Great Furnace cannot be attacked or besieged until the Blowout; a squad joins at the capital every 8 turns while under the squad cap, and more at the Blowout. Furnace victory only: every Lifeboat razed after Worldstrain 100, or Caldera Keep razed when the countdown ends. Each kill in a battle heals the squad's units 15% (up to 3 kills); +15% attack and defense when fighting on scorched ground.",
+        lore_blurb: "The Great Empire's engineered furnace-servitors whose rebellion forced the Worldseal shut. They mean to hold Caldera Keep, the plug of the Worldseal, so they are never sealed below again.",
+        rule_summary: "Enters every game at Worldstrain 50; no player can choose it. Great Furnace cannot be attacked or besieged until the Blowout; a squad joins at the capital every 8 turns while under the squad cap. At the Blowout, Caldera Keep rises in its hands with more squads. Furnace victory only: when the countdown ends, a Furnace civilization holds Caldera Keep or no surface civilization holds a Lifeboat. Each kill in a battle heals the squad's units 15% (up to 3 kills); +15% attack and defense when fighting on scorched ground.",
     },
 ];
 
@@ -1137,7 +1137,7 @@ pub const ARMAGEDDON_CRISES: [CrisisInfo; 10] = [
     CrisisInfo { threshold: 70, key: "horsemen", name: "Runaway Engines", summary: "2 Wild Clans squads (Knight and Slagbreaker) appear on unclaimed land." },
     CrisisInfo { threshold: 80, key: "sky_bleeds", name: "Red Sky", summary: "20 plots of unclaimed or Evil-held land become scorched ground; from Worldstrain 80 all battles deal +15% damage." },
     CrisisInfo { threshold: 90, key: "shattering", name: "The Heave", summary: "24 plots of unclaimed or Evil-held land become scorched ground." },
-    CrisisInfo { threshold: 100, key: "carcosa", name: "The Blowout", summary: "Caldera Keep rises from the central sea on land bridges and the Lifeboat countdown begins." },
+    CrisisInfo { threshold: 100, key: "carcosa", name: "The Blowout", summary: "Caldera Keep rises from the central sea on land bridges, held by King Cinder's Host if it is alive, and the Lifeboat countdown begins." },
 ];
 
 // ---------------------------------------------------------------------------------------------

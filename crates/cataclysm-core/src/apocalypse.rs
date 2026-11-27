@@ -10,7 +10,6 @@ use crate::data::{ARMAGEDDON_CRISES, FactionId};
 use crate::ids::{CityId, PlayerId};
 
 pub const CARCOSA_TIMER_TURNS: i32 = 40;
-pub const CARCOSA_PROTECTED_TURNS: i32 = 12;
 pub const MAX_GAME_TURNS: i32 = 160;
 /// Worldseal Strain runs from 0 to this; reaching it is the Blowout.
 pub const MAX_STRAIN: i32 = 100;
@@ -55,7 +54,7 @@ impl VictoryKind {
     pub const fn name(self) -> &'static str {
         match self {
             VictoryKind::MortalLifeboat => "Surface Lifeboat Survival",
-            VictoryKind::DemonicRuin => "Furnace Triumph (All Lifeboats Razed)",
+            VictoryKind::DemonicRuin => "Furnace Triumph",
             VictoryKind::ElohimVigil => "Worldseal Held (Blowout Averted)",
             VictoryKind::Conquest => "Total Conquest",
             VictoryKind::ScoreAtTurnLimit => "Age Survived (Highest Score)",
@@ -81,7 +80,6 @@ pub struct ApocalypseState {
     pub carcosa_city: Option<CityId>,
     /// Remaining turns once Worldseal Strain reaches 100 (`None` before 100).
     pub countdown: Option<i32>,
-    pub carcosa_protected_turns: i32,
     /// Great Furnace, the city King Cinder's Host enters with: it cannot be attacked until the
     /// Blowout (`Game::check_breach_ward`).
     pub breach_city: Option<CityId>,
@@ -102,7 +100,6 @@ impl Default for ApocalypseState {
             carcosa_risen: false,
             carcosa_city: None,
             countdown: None,
-            carcosa_protected_turns: 0,
             breach_city: None,
             lifeboats: Vec::new(),
             recent_changes: Vec::new(),
@@ -153,11 +150,6 @@ impl ApocalypseState {
         }
     }
 
-    /// Whether Caldera Keep has risen and been razed.
-    pub fn keep_razed(&self) -> bool {
-        self.lifeboats.iter().any(|l| l.kind == LifeboatKind::Carcosa && l.razed)
-    }
-
     pub fn standing_lifeboats(&self) -> usize {
         self.lifeboats.iter().filter(|l| !l.razed).count()
     }
@@ -166,11 +158,9 @@ impl ApocalypseState {
         self.lifeboats.iter().find(|l| !l.razed && l.city_id == city).map(|l| l.kind)
     }
 
+    /// Caldera Keep can never be razed.
     pub fn can_raze_city(&self, city: CityId) -> bool {
-        if Some(city) == self.carcosa_city && self.carcosa_protected_turns > 0 {
-            return false;
-        }
-        true
+        Some(city) != self.carcosa_city
     }
 
     pub fn demonic_victory_eligible(faction: FactionId) -> bool {

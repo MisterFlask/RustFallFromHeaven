@@ -17,7 +17,7 @@
 use cataclysm_core::combat::BuiltFormation;
 use cataclysm_core::game::RAID_STREAK_TO_STRIP;
 use cataclysm_core::{
-    CityId, Command, Event, FactionId, Forecast, Game, PlayerId, PlotIdx, SallyPosture, SquadId, SquadOrder, UnitClassId,
+    CityId, Command, Event, Forecast, Game, PlayerId, PlotIdx, SallyPosture, SquadId, SquadOrder, UnitClassId,
 };
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
@@ -544,9 +544,26 @@ pub(crate) fn can_take_city_of(g: &Game, p: PlayerId, e: PlayerId) -> bool {
     })
 }
 
-/// The Lifeboat city we hold, if any (the plot).
+/// The Lifeboat city we hold, if any (the plot): Caldera Keep first.
 pub(crate) fn held_lifeboat(g: &Game, p: PlayerId) -> Option<PlotIdx> {
-    g.apocalypse.lifeboats.iter().filter(|l| !l.razed).filter_map(|l| g.cities.get(&l.city_id)).filter(|c| c.owner == p).map(|c| c.plot).min()
+    g.apocalypse
+        .lifeboats
+        .iter()
+        .filter(|l| !l.razed)
+        .filter_map(|l| g.cities.get(&l.city_id))
+        .filter(|c| c.owner == p)
+        .min_by_key(|c| (!c.is_carcosa, c.plot))
+        .map(|c| c.plot)
+}
+
+/// Caldera Keep as the target of our free squads: held by someone we are at war with or may
+/// declare war on, and within reach of one of them.
+fn keep_target(g: &Game, p: PlayerId, free: &[SquadId], paths: &mut Paths) -> Option<PlotIdx> {
+    let keep = g.cities.get(&g.apocalypse.carcosa_city?)?;
+    if keep.owner == p || (!g.at_war(p, keep.owner) && g.check_war(p, keep.owner).is_err()) {
+        return None;
+    }
+    free.iter().filter_map(|s| g.squads.get(s)).any(|s| paths.dist(g, p, s.plot, keep.plot) != i32::MAX).then_some(keep.plot)
 }
 
 fn assign_roles(g: &Game, p: PlayerId, paths: &mut Paths) -> BTreeMap<SquadId, Role> {
@@ -591,12 +608,24 @@ fn assign_roles(g: &Game, p: PlayerId, paths: &mut Paths) -> BTreeMap<SquadId, R
             }
         }
     }
-    // After the Blowout, a civilization without a Lifeboat (and King Cinder's Host, which razes
-    // them) sends every free squad at one Lifeboat.
-    let infernal = g.players[p.idx()].faction == FactionId::Infernals;
-    if g.apocalypse.carcosa_risen && (infernal || held_lifeboat(g, p).is_none()) {
+    // After the Blowout, a Furnace civilization holding Caldera Keep wins when the countdown ends:
+    // while one does, every surface civilization sends its free squads at the Keep. A Furnace
+    // civilization sends them at the Keep while no Furnace civilization holds it. Otherwise a
+    // civilization without a Lifeboat sends them at one Lifeboat.
+    if g.apocalypse.carcosa_risen {
+        let furnace = g.players[p.idx()].faction.info().can_demonic_win;
         let free: Vec<SquadId> = roles.iter().filter(|(_, r)| **r == Role::Free).map(|(&s, _)| s).collect();
-        if let Some(target) = pick_lifeboat_target(g, p, &free, paths) {
+        let keep_held = g.furnace_keep_holder().is_some();
+        let target = if furnace {
+            if keep_held { None } else { keep_target(g, p, &free, paths) }
+        } else if keep_held {
+            keep_target(g, p, &free, paths)
+        } else if held_lifeboat(g, p).is_none() {
+            pick_lifeboat_target(g, p, &free, paths)
+        } else {
+            None
+        };
+        if let Some(target) = target {
             for s in free {
                 roles.insert(s, Role::Assault(target));
             }

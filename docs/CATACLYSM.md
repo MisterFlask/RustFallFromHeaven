@@ -39,7 +39,7 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
 - **Vault & Crucible** (*Master-Assayer Bram*): Mortal foundry-guilds requiring full bullion vaults (`>= 200` Gold/city) to fire deep furnaces (`+35%` Industry & `+4` Armor; `+25%` Siege Bombard damage).
 - **Canopy** (*Mistress Sylva*): Dissidents who abandoned the geothermal grid for ash-filtering forest highways (cost-1 forest movement, forest supply lines, no forest ranged penalties).
 - **Wreckers** (*Broker Vane*): Collapse-profiteers trading sabotage with the deep servitors (may win Surface *or* Furnace victory; may raze own cities for `+6 Worldstrain`; Deep Shaft spawns Stokers).
-- **King Cinder's Host** (*King Cinder*): The rebel furnace-servitors breaking out at Worldstrain 50; no player can choose them (Great Furnace warded until the Blowout; reinforcements through the Breach; Furnace victory only—raze every Lifeboat, or have Caldera Keep razed when the countdown ends; heal `+15%` on kills; thrive on scorched ground).
+- **King Cinder's Host** (*King Cinder*): The rebel furnace-servitors breaking out at Worldstrain 50; no player can choose them (Great Furnace warded until the Blowout; reinforcements through the Breach; Caldera Keep rises in their hands at the Blowout; Furnace victory only—hold Caldera Keep when the countdown ends; heal `+15%` on kills; thrive on scorched ground).
 
 ## Core Rules Summary
 
@@ -71,7 +71,7 @@ Now the **Worldseal** is failing. Pressurized vent-ether (**Mana**) leaks throug
 - **160-turn Worldseal Clock & Lifeboat Endgame**: Coupled **Worldstrain** (`0–100`), 10-card
   Crisis Deck (Worldstrain 10..100), King Cinder's Host emerging at Worldstrain 50, **Caldera Keep** heaving
   up from the central sea on basalt bridges at Worldstrain 100 + 40-turn Blowout countdown, Surface
-  Lifeboat vs. Furnace Raze-All victory, and Turn-160 Keepers of the Seal / Score resolution.
+  Lifeboat vs. Furnace hold-the-Keep victory, and Turn-160 Keepers of the Seal / Score resolution.
 
 ## Screens
 
@@ -185,12 +185,12 @@ Target for this pass: the Host wins 10-20% of the games it enters, at the defaul
   unwarded besieged city also starved its garrison (a besieged city supplies no squad).
 - **The Breach.** A squad joins the Host at its capital every 8 turns while it is under its squad
   cap; at the Blowout it gets squads until it holds 33% of the others' squad power together (at
-  most 10).
+  most 10; in Caldera Keep since the next section).
 - **Caldera Keep is the Furnace's objective.** When the countdown ends with Caldera Keep razed, the
   Furnace civilizations alive (the Host, the Wreckers) win, whoever holds the other Lifeboats; and
   when it ends with no Lifeboat held by a civilization that can win by Lifeboat survival, they win
   too (no one won). Every Lifeboat razed is still a Furnace victory at once. Killing the Host before
-  the countdown ends is the surface's answer to a razed Keep.
+  the countdown ends is the surface's answer to a razed Keep. (Replaced the same day: below.)
 - **Worldstrain drifts +1 every 4 turns** (was 3): a Host that lives keeps cracking the crust, and the
   Blowout had moved 10 turns earlier (median turn 90).
 - **AI**: the Host's worn squads (below 60% health) go home to Great Furnace while it is warded and
@@ -202,12 +202,43 @@ with the Wreckers), 26% at 2 (fewer Lifeboats to deny), 22% at 4, 9% at 8; 17% w
 civilization pushes Worldstrain all game, 2% when nobody raises Worldstrain by ritual (no Blowout in 71% of
 those games).
 
+## Rules changes: Caldera Keep to King Cinder's Host (2026-11-27)
+
+The owner's call: give Caldera Keep to King Cinder. The Host's win above took three steps the AI
+never took on purpose (a surface civilization takes the Keep from the Wild Clans, the Host takes it
+back, razes it); now there is one objective both sides see on the map. No tuning: the Infernal
+army compositions are still changing (the owner, 2026-11-27).
+
+- **Caldera Keep rises in the Host's hands.** At the Blowout it is King Cinder's Host's city, and
+  the Host's Blowout squads (33% of the others' squad power, at least 1, at most 10) appear in it
+  instead of at Great Furnace. With the Host dead it rises with the Wild Clans and their guard
+  squad, as before (no game of the 459 with a Blowout had a dead Host).
+- **Caldera Keep can never be razed** (it could after its first 12 turns).
+- **The Furnace wins by holding it.** When the countdown ends with a Furnace civilization (the
+  Host, the Wreckers) holding Caldera Keep, the Furnace civilizations alive win, whoever holds the
+  other Lifeboats. This replaces "Caldera Keep razed" and the at-once win for every Lifeboat razed,
+  which an unrazeable Keep makes impossible. No Lifeboat held by a surface civilization at the end
+  is still a Furnace win. The Host holding any other Lifeboat wins nothing.
+- **AI**: while a Furnace civilization holds the Keep, every surface civilization sends its free
+  squads at it (a holder keeps its Lifeboat guards) and goes to war with its holder; a Furnace
+  civilization sends its free squads at the Keep while none of them holds it. A holder of the Keep
+  stays home for it before any other Lifeboat.
+
+480 AI games, 6 civilizations, standard policy (turns before the Blowout identical to the run
+above): the Host wins 116 of 477 (24%, 78 of them shared with the Wreckers; it was 12%); the
+surface takes the Keep back in the other 342 of 459 Blowout games. A Lifeboat is captured in 81%
+of Blowout games (73%). The Keep is now held by a winner in every game by construction (whoever
+holds it at the end wins), so the "Caldera Keep among the winning Lifeboats" row says nothing any
+more. Not re-measured: quiet, pusher, and 2, 4 and 8 civilizations.
+
 ## The AI (`crates/cataclysm-ai`)
 
 Stateless: every turn it works out its roles again from the game, and it plays only through
 `Command`. `military.rs`: home guards in threatened cities, the capital and a held Lifeboat;
 attacks only on the rules' own forecast (`Game::preview_attack`: the plot likely to fall, or a
-trade clearly in its favour); after the Blowout every free squad at one Lifeboat; raids, tribute
+trade clearly in its favour); after the Blowout every free squad at Caldera Keep while a Furnace
+civilization holds it (a surface civilization) or does not (a Furnace one), else at one Lifeboat
+for a civilization holding none; raids, tribute
 before a city is stripped, roads in peace. `diplomacy.rs`: war only with a clear edge on a city in
 reach (the Postriders, the Seventh Garrison, the Wreckers and King Cinder's Host at a smaller
 edge), never a second front; peace when weaker, when a war is 15 turns old and going nowhere, or
@@ -241,11 +272,14 @@ said.
 | Blowout with 2, 4 and 8 civilizations | median within 20 turns of the 6-civilization one | 45, -, 24 | 97, 96, 93 |
 | Primary Doctrine capstone | median turn 75-100 | 37 | 101 |
 | Keepers' turn-160 win, standard | 3-25% of their games | 0% | 6% |
-| A Lifeboat captured after the Blowout | half the games or more | 70% | 73% |
-| Caldera Keep among the winning Lifeboats | 10% or more | 1% | 25% |
-| Peace made | 1 per game or more | 0 | 7.4 |
+| A Lifeboat captured after the Blowout | half the games or more | 70% | 81% |
+| Caldera Keep among the winning Lifeboats | 10% or more | 1% | 36% (always held by a winner since the Keep went to the Host) |
+| Peace made | 1 per game or more | 0 | 6.9 |
 | Seat 0 eliminated before turn 60 | 15% of games or fewer | 30% | 11% |
-| King Cinder's Host wins (written 2026-11-27) | 10-20% of the games it enters | 0% | 12% |
+| King Cinder's Host wins (written 2026-11-27) | 10-20% of the games it enters | 0% | 24% since the Keep went to the Host (12% before); not tuned |
+
+The quiet, pusher and 2/4/8-civilization rows were measured before Caldera Keep went to the Host
+(nothing before the Blowout changed with it).
 
 Two targets were restated after measuring, and why:
 - "30% or fewer civilizations out of research before turn 100" collides with the capstone target:
@@ -261,11 +295,11 @@ Civilizations eliminated per game are 2.2 of 7 (2.1 without King Cinder's Host).
 ### What the tally shows that is not fixed (balance, for the owner)
 
 - **Most wins are shared.** A Lifeboat win belongs to every holder, a Furnace win to the Host and
-  the Wreckers alive: 1 winner in 119 of 480 games, 2 in 214, 3 in 129, 4 in 18.
-- **Faction shares in AI hands**: the Keepers 50% of their games among the winners, Three Hearths
-  47%, Tappers' College 43%, the Wreckers 40% (they share the Host's Furnace wins), King Cinder's
-  Host 12%, Canopy 17%, Vault & Crucible 19%, Postriders 20%. It says as much about the AI script
-  as about the factions.
+  the Wreckers alive: 1 winner in 93 of 480 games, 2 in 239, 3 in 130, 4 in 18.
+- **Faction shares in AI hands**: the Keepers 48% of their games among the winners, Three Hearths
+  47%, Tappers' College 42%, the Wreckers 39% (they share the Host's Furnace wins), the Seventh
+  Garrison 29%, King Cinder's Host 24%, Postriders 17%, Canopy 16%, Vault & Crucible 14%. It says
+  as much about the AI script as about the factions.
 - **Great Cistern and Siphon Spire** are the only Lifeboats a civilization can build, and only the
   Faith and Arcane Doctrines open them.
 

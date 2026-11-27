@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use ffh_battle::{Fate, Side};
 
 use crate::apocalypse::{
-    ApocalypseState, GameOutcome, Lifeboat, LifeboatKind, VictoryKind, CARCOSA_PROTECTED_TURNS, CARCOSA_TIMER_TURNS, MAX_GAME_TURNS,
+    ApocalypseState, GameOutcome, Lifeboat, LifeboatKind, VictoryKind, CARCOSA_TIMER_TURNS, MAX_GAME_TURNS,
 };
 use crate::city::{BuildOrder, City, SallyPosture};
 use crate::combat::{build_formation, forecast_formation, verdict_of, BattleRecord, Forecast, SideMods};
@@ -1244,7 +1244,7 @@ impl Game {
             )));
         }
         if !self.apocalypse.can_raze_city(city) {
-            return Err(CmdErr::cannot(format!("Caldera Keep cannot be razed for {} more turns.", self.apocalypse.carcosa_protected_turns)));
+            return Err(CmdErr::cannot("Caldera Keep cannot be razed."));
         }
         Ok(())
     }
@@ -2792,9 +2792,6 @@ impl Game {
 
         // 3. Carcosa countdown timer after AC 100!
         if self.apocalypse.carcosa_risen {
-            if self.apocalypse.carcosa_protected_turns > 0 {
-                self.apocalypse.carcosa_protected_turns -= 1;
-            }
             if let Some(cd) = &mut self.apocalypse.countdown {
                 *cd -= 1;
             }
@@ -2987,22 +2984,25 @@ impl Game {
         }
         self.apocalypse.carcosa_risen = true;
         self.apocalypse.countdown = Some(CARCOSA_TIMER_TURNS);
-        self.apocalypse.carcosa_protected_turns = CARCOSA_PROTECTED_TURNS;
 
+        // Caldera Keep rises in the hands of King Cinder's Host, when it is alive; else of the Wild
+        // Clans, with a guard squad.
+        let host = self.players.iter().find(|p| p.alive && p.faction == FactionId::Infernals).map(|p| p.id);
         let cp = self.world.raise_carcosa();
-        let cid = self.create_city_internal(self.neutral_player, cp, Some("Caldera Keep".into()), false);
+        let cid = self.create_city_internal(host.unwrap_or(self.neutral_player), cp, Some("Caldera Keep".into()), false);
         if let Some(c) = self.cities.get_mut(&cid) {
             c.is_carcosa = true;
             c.size = 6;
             c.districts.push(DistrictKind::Bulwark);
             c.sync_sentinels(true);
         }
-        // Strong neutral guardian squad defends Caldera Keep until someone conquers it!
-        self.spawn_squad_internal(
-            self.neutral_player,
-            cp,
-            &[UnitClassId::Phalanx, UnitClassId::Phalanx, UnitClassId::Archmage, UnitClassId::Acolyte],
-        );
+        if host.is_none() {
+            self.spawn_squad_internal(
+                self.neutral_player,
+                cp,
+                &[UnitClassId::Phalanx, UnitClassId::Phalanx, UnitClassId::Archmage, UnitClassId::Acolyte],
+            );
+        }
         self.apocalypse.carcosa_city = Some(cid);
 
         // Reveal Caldera Keep and its bridges to every living player!
@@ -3036,59 +3036,40 @@ impl Game {
         }
         self.apocalypse.lifeboats = lifeboats;
         events.push(Event::CarcosaRisen { city: cid, plot: cp });
-        // King Cinder's Host erupts at its capital.
-        if let Some(host) = self.players.iter().find(|p| p.alive && p.faction == FactionId::Infernals).map(|p| p.id) {
-            if let Some(at) = self.ritual_plot(host) {
+        // King Cinder's Host erupts in Caldera Keep.
+        let held_by = match host {
+            Some(host) => {
                 let surface = self.surface_power(Some(host));
-                let n = self.host_eruption(host, at, surface, HOST_BLOWOUT_POWER_PCT, HOST_BLOWOUT_SQUADS_MAX, 0);
-                if n > 0 {
-                    self.push_log(None, Some(at), None, format!("The Blowout: {} squads of King Cinder's Host climbed out of the Breach.", n));
-                }
+                let n = self.host_eruption(host, cp, surface, HOST_BLOWOUT_POWER_PCT, HOST_BLOWOUT_SQUADS_MAX, 1);
+                format!("King Cinder's Host with {} squads", n)
             }
-        }
+            None => "the Wild Clans".to_string(),
+        };
         self.push_log(
             None,
             Some(cp),
             None,
             format!(
-                "Caldera Keep has risen. {} Lifeboats stand; the civilizations holding one when the {}-turn countdown ends win.",
+                "Caldera Keep has risen, held by {}. {} Lifeboats stand. When the {}-turn countdown ends, the Furnace civilizations win if one of them holds Caldera Keep; otherwise the civilizations holding a Lifeboat win.",
+                held_by,
                 self.apocalypse.lifeboats.len(),
                 CARCOSA_TIMER_TURNS
             ),
         );
     }
 
+    /// The Furnace civilization holding Caldera Keep, if one does: it wins when the countdown ends.
+    pub fn furnace_keep_holder(&self) -> Option<PlayerId> {
+        let keep = self.cities.get(&self.apocalypse.carcosa_city?)?;
+        let owner = &self.players[keep.owner.idx()];
+        (!owner.is_neutral && ApocalypseState::demonic_victory_eligible(owner.faction)).then_some(owner.id)
+    }
+
     fn check_victory(&mut self, events: &mut Vec<Event>) {
         if self.apocalypse.outcome.is_some() {
             return;
         }
-        // 1. After Strain 100: Furnace victory if every Lifeboat is razed!
-        if self.apocalypse.carcosa_risen && self.apocalypse.standing_lifeboats() == 0 {
-            let demonic_winners: Vec<PlayerId> = self
-                .players
-                .iter()
-                .filter(|p| p.alive && !p.is_neutral && ApocalypseState::demonic_victory_eligible(p.faction))
-                .map(|p| p.id)
-                .collect();
-            let outcome = if demonic_winners.is_empty() {
-                GameOutcome {
-                    kind: VictoryKind::MutualExtinction,
-                    winners: Vec::new(),
-                    summary: "Every Lifeboat was razed, leaving no survivors.".into(),
-                }
-            } else {
-                GameOutcome {
-                    kind: VictoryKind::DemonicRuin,
-                    winners: demonic_winners,
-                    summary: "Every Lifeboat was razed. Furnace victory.".into(),
-                }
-            };
-            events.push(Event::GameEnded { summary: outcome.summary.clone() });
-            self.apocalypse.outcome = Some(outcome);
-            return;
-        }
-
-        // 2. After Strain 100: Countdown expires -> holders of standing Lifeboats win!
+        // 1. After Strain 100: Countdown expires -> holders of standing Lifeboats win!
         if self.apocalypse.carcosa_risen && self.apocalypse.countdown.is_some_and(|t| t <= 0) {
             let mut winners = Vec::new();
             for lb in &self.apocalypse.lifeboats {
@@ -3105,15 +3086,13 @@ impl Game {
                     }
                 }
             }
-            // The Furnace wins, when a civilization that can win that way is alive, if Caldera Keep
-            // (the plug of the Worldseal) has been razed, or if no surface civilization holds a
-            // Lifeboat.
+            // The Furnace civilizations alive win if one of them holds Caldera Keep (the plug of the
+            // Worldseal), or if no surface civilization holds a Lifeboat.
             let furnace: Vec<PlayerId> =
                 self.players.iter().filter(|p| p.alive && !p.is_neutral && ApocalypseState::demonic_victory_eligible(p.faction)).map(|p| p.id).collect();
-            let keep_razed = self.apocalypse.keep_razed();
-            let (kind, summary) = if keep_razed && !furnace.is_empty() {
+            let (kind, summary) = if let Some(holder) = self.furnace_keep_holder() {
                 winners = furnace;
-                (VictoryKind::DemonicRuin, "The countdown ended with Caldera Keep razed. Furnace victory.".to_string())
+                (VictoryKind::DemonicRuin, format!("The countdown ended with Caldera Keep held by {}. Furnace victory.", self.players[holder.idx()].name()))
             } else if !winners.is_empty() {
                 let names: Vec<&str> = winners.iter().map(|p| self.players[p.idx()].name()).collect();
                 (VictoryKind::MortalLifeboat, format!("Lifeboat survival. Winners: {}.", names.join(", ")))
