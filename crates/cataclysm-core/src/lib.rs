@@ -218,6 +218,31 @@ mod tests {
     }
 
     #[test]
+    fn a_finished_squad_waits_for_room_under_the_squad_cap() {
+        let mut g = Game::new(GameSetup::default());
+        let p0 = PlayerId(0);
+        let cid = g.player_cities(p0)[0];
+        let plot = g.cities[&cid].plot;
+        while g.player_squads(p0).len() < g.squad_cap(p0) {
+            g.spawn_squad_internal(p0, plot, &[UnitClassId::Guard]);
+        }
+        let at_cap = g.player_squads(p0).len();
+        let order = BuildOrder::Squad(vec![UnitClassId::Guard]);
+        let c = g.cities.get_mut(&cid).unwrap();
+        c.build_progress = order.cost();
+        c.building = Some(order.clone());
+        let mut events = Vec::new();
+        g.try_complete_city_build(cid, &mut events);
+        assert_eq!(g.player_squads(p0).len(), at_cap, "no squad past the cap");
+        assert_eq!(g.cities[&cid].building, Some(order), "the order waits");
+        let gone = g.player_squads(p0)[0];
+        g.squads.remove(&gone);
+        g.try_complete_city_build(cid, &mut events);
+        assert_eq!(g.player_squads(p0).len(), at_cap);
+        assert_eq!(g.cities[&cid].building, None);
+    }
+
+    #[test]
     fn no_war_starts_during_a_truce() {
         let mut g = two_at_war();
         let (a, b) = (PlayerId(0), PlayerId(1));

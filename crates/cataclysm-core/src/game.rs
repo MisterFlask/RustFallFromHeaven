@@ -3148,10 +3148,30 @@ impl Game {
         }
     }
 
+    /// Whether a finished build order has to wait: it would raise a new squad (a Squad order, or a
+    /// Reinforce with no squad on the city's plot that has room) while its owner is at the squad
+    /// cap. The order completes at the owner's first turn start with room.
+    pub fn build_waits_for_squad_cap(&self, c: &City, order: &BuildOrder) -> bool {
+        let new_squad = match order {
+            BuildOrder::Squad(_) => true,
+            BuildOrder::Reinforce(cl) => {
+                let cap = self.players[c.owner.idx()].squad_place_cap();
+                let places = if cl.info().large { 2 } else { 1 };
+                !self.squads.values().any(|s| s.owner == c.owner && s.plot == c.plot && s.places_used() + places <= cap)
+            }
+            _ => false,
+        };
+        new_squad && self.player_squads(c.owner).len() >= self.squad_cap(c.owner)
+    }
+
     pub(crate) fn try_complete_city_build(&mut self, city_id: CityId, events: &mut Vec<Event>) {
         let Some(c) = self.cities.get(&city_id).cloned() else { return };
         let Some(order) = c.building.clone() else { return };
         if c.build_progress < order.cost() {
+            return;
+        }
+        // A finished order that would raise a squad past the squad cap waits in the city.
+        if self.build_waits_for_squad_cap(&c, &order) {
             return;
         }
         if let Some(cm) = self.cities.get_mut(&city_id) {
