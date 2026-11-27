@@ -89,6 +89,8 @@ pub const PRIMARY_DOCTRINE_COST_PCT: i32 = 75;
 pub const MIN_TECH_COST: i32 = 15;
 /// A secondary doctrine opens its techs up to this tier.
 pub const SECONDARY_DOCTRINE_MAX_TIER: u8 = 2;
+/// Lore per 1 Sage Renown when a player has no tech it can research (the remainder is kept).
+pub const LORE_PER_SAGE_RENOWN: i32 = 5;
 
 /// Strain change of Vent the Seal cast by the Keepers of the Seal (others: the ritual's own).
 pub const SANCTIFY_KEEPERS_STRAIN: i32 = -5;
@@ -834,6 +836,12 @@ impl Game {
             return Err(format!("Requires {} as Primary Doctrine.", doc.name()));
         }
         Ok(())
+    }
+
+    /// Whether any tech passes `can_research` for `p` now. When none does, the player's Lore turns
+    /// into Sage Renown at its turn start (`LORE_PER_SAGE_RENOWN`).
+    pub fn can_research_any(&self, p: PlayerId) -> bool {
+        TECHS.iter().any(|t| self.can_research(p, t.id).is_ok())
     }
 
     /// Why a tech's effective cost differs from its listed cost (`None` when it does not).
@@ -2334,6 +2342,7 @@ impl Game {
                 self.push_log(Some(player), None, None, format!("Completed research: {}.", info.name));
             }
         }
+        self.convert_idle_lore(player);
 
         // Cities: growth, Work Crews, Sentinel repair, Industry build progress, Renown meters!
         let city_ids = self.player_cities(player);
@@ -2506,6 +2515,21 @@ impl Game {
 
         self.ensure_houses_for(player);
         self.recompute_vision(player);
+    }
+
+    /// With no tech left that `player` can research, its Lore becomes Sage Renown:
+    /// `LORE_PER_SAGE_RENOWN` Lore per 1 Renown, the remainder kept in `lore_progress`.
+    pub(crate) fn convert_idle_lore(&mut self, player: PlayerId) {
+        if self.can_research_any(player) {
+            return;
+        }
+        let pl = &mut self.players[player.idx()];
+        if pl.lore_progress < LORE_PER_SAGE_RENOWN {
+            return;
+        }
+        let renown = pl.lore_progress / LORE_PER_SAGE_RENOWN;
+        pl.lore_progress -= renown * LORE_PER_SAGE_RENOWN;
+        pl.renown_meters[GreatSuit::Sage.id()] += renown;
     }
 
     fn process_world_turn(&mut self, events: &mut Vec<Event>) {

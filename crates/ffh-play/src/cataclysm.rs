@@ -1101,6 +1101,10 @@ impl CataclysmSession {
             },
             "research" => crate::jobj! {
                 "current" => current_res,
+                "idle_lore_text" => (!g.can_research_any(h)).then(|| format!(
+                    "No tech can be researched: at your turn start Lore converts to Sage Renown, {} Lore per 1 Renown.",
+                    cataclysm_core::game::LORE_PER_SAGE_RENOWN
+                )),
                 "primary_doctrine" => me_pl.primary_doctrine.map(Doctrine::key),
                 "primary_doctrine_name" => me_pl.primary_doctrine.map(Doctrine::name),
                 "secondary_doctrine" => me_pl.secondary_doctrine.map(Doctrine::key),
@@ -2148,8 +2152,17 @@ fn creed_rule() -> String {
 fn doctrine_rule() -> String {
     use cataclysm_core::game::{PRIMARY_DOCTRINE_COST_PCT, SECONDARY_DOCTRINE_MAX_TIER};
     format!(
-        "Each player adopts one Primary and one Secondary Doctrine, once each; neither can be changed this game. The Primary opens all tiers of its techs at {}% cost; the Secondary, adopted after the Primary, opens tiers 1-{} at full cost.",
-        PRIMARY_DOCTRINE_COST_PCT, SECONDARY_DOCTRINE_MAX_TIER
+        "Each player adopts one Primary and one Secondary Doctrine, once each; neither can be changed this game. The Primary opens all tiers of its techs at {}% cost; the Secondary, adopted after the Primary, opens tiers 1-{} at full cost. {}",
+        PRIMARY_DOCTRINE_COST_PCT,
+        SECONDARY_DOCTRINE_MAX_TIER,
+        lore_overflow_rule()
+    )
+}
+
+fn lore_overflow_rule() -> String {
+    format!(
+        "When no tech can be researched now (Doctrines not yet adopted open none), Lore converts to Sage Renown at your turn start: {} Lore per 1 Renown, the remainder kept.",
+        cataclysm_core::game::LORE_PER_SAGE_RENOWN
     )
 }
 

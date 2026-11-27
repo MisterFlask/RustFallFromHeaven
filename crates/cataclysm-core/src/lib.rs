@@ -112,4 +112,45 @@ mod tests {
         assert!(g.players[next.idx()].alive, "the turn went to an eliminated player");
         g.apply(next, Command::EndTurn).unwrap();
     }
+
+    /// Gives player 0 every tech its doctrines can open, so none is left to research.
+    fn exhaust_research(g: &mut Game) {
+        g.players[0].primary_doctrine = Some(Doctrine::Steel);
+        g.players[0].secondary_doctrine = Some(Doctrine::Cavalry);
+        while let Some(t) = TECHS.iter().find(|t| g.can_research(PlayerId(0), t.id).is_ok()) {
+            g.players[0].techs.insert(t.id);
+        }
+    }
+
+    #[test]
+    fn idle_lore_becomes_sage_renown_with_the_remainder_kept() {
+        let mut g = Game::new(GameSetup::default());
+        exhaust_research(&mut g);
+        assert!(!g.can_research_any(PlayerId(0)));
+        g.players[0].lore_progress = 23;
+        let sage = g.players[0].renown_meters[GreatSuit::Sage.id()];
+        g.convert_idle_lore(PlayerId(0));
+        assert_eq!(g.players[0].lore_progress, 23 % game::LORE_PER_SAGE_RENOWN);
+        assert_eq!(g.players[0].renown_meters[GreatSuit::Sage.id()], sage + 23 / game::LORE_PER_SAGE_RENOWN);
+    }
+
+    #[test]
+    fn lore_is_kept_while_a_tech_can_be_researched() {
+        let mut g = Game::new(GameSetup::default());
+        g.players[0].current_research = None;
+        assert!(g.can_research_any(PlayerId(0)));
+        g.players[0].lore_progress = 500;
+        let sage = g.players[0].renown_meters[GreatSuit::Sage.id()];
+        g.convert_idle_lore(PlayerId(0));
+        assert_eq!(g.players[0].lore_progress, 500);
+        assert_eq!(g.players[0].renown_meters[GreatSuit::Sage.id()], sage);
+    }
+
+    #[test]
+    fn doctrine_techs_cost_the_same_by_tier() {
+        let tier_cost = [0, data::TECH_COST_TIER_1, data::TECH_COST_TIER_2, data::TECH_COST_TIER_3, data::TECH_COST_TIER_4];
+        for t in TECHS.iter().filter(|t| t.doctrine.is_some()) {
+            assert_eq!(t.cost, tier_cost[t.tier as usize], "{}", t.name);
+        }
+    }
 }

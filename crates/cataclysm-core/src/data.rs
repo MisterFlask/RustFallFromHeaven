@@ -494,6 +494,13 @@ pub const TECH_WAR_CHESTS: TechId = TechId(33);
 pub const TECH_GRAND_COMPANIES: TechId = TechId(34);
 pub const TECH_CROWN_CHARTERS: TechId = TechId(35);
 
+/// Listed cost of a Doctrine tech by tier (before the Primary Doctrine discount). Foundation techs
+/// carry their own costs.
+pub const TECH_COST_TIER_1: i32 = 100;
+pub const TECH_COST_TIER_2: i32 = 220;
+pub const TECH_COST_TIER_3: i32 = 420;
+pub const TECH_COST_TIER_4: i32 = 760;
+
 pub const TECHS: [TechInfo; 36] = [
     // Foundation (turns 1..30)
     TechInfo { id: TECH_FIELDCRAFT, key: "fieldcraft", name: "Fieldcraft", doctrine: None, tier: 0, cost: 35, prereq: None, ac_delta: 0, unlocks_summary: "Enables Squad Roads, Forts, and Raid order." },
@@ -506,46 +513,46 @@ pub const TECHS: [TechInfo; 36] = [
     TechInfo { id: TECH_HORSEMANSHIP, key: "horsemanship", name: "Horsemanship", doctrine: None, tier: 0, cost: 45, prereq: None, ac_delta: 0, unlocks_summary: "Unlocks Horseman (Front Charge)." },
 
     // Steel
-    TechInfo { id: TECH_BRONZE_ARMS, key: "bronze_arms", name: "Bronze Arms", doctrine: Some(Doctrine::Steel), tier: 1, cost: 70, prereq: Some(TECH_METALLURGY), ac_delta: 0, unlocks_summary: "Unlocks Pikeman (Anti-Flank); +10% front-row attack." },
-    TechInfo { id: TECH_IRON_DISCIPLINE, key: "iron_discipline", name: "Iron Discipline", doctrine: Some(Doctrine::Steel), tier: 2, cost: 115, prereq: Some(TECH_BRONZE_ARMS), ac_delta: 1, unlocks_summary: "Unlocks Champion; Squad capacity increases to 5 places." },
-    TechInfo { id: TECH_PHALANX_WALL, key: "phalanx_wall", name: "Phalanx Wall", doctrine: Some(Doctrine::Steel), tier: 3, cost: 170, prereq: Some(TECH_IRON_DISCIPLINE), ac_delta: 2, unlocks_summary: "Unlocks Phalanx (Armor 8, Anti-Flank); +15% front-row DEF." },
-    TechInfo { id: TECH_MITHRIL_LEGIONS, key: "mithril_legions", name: "Mithril Legions", doctrine: Some(Doctrine::Steel), tier: 4, cost: 240, prereq: Some(TECH_PHALANX_WALL), ac_delta: 6, unlocks_summary: "Unlocks Berserker (Cleave) and Ogre (Large 2-cell); +20% attack for all units." },
+    TechInfo { id: TECH_BRONZE_ARMS, key: "bronze_arms", name: "Bronze Arms", doctrine: Some(Doctrine::Steel), tier: 1, cost: TECH_COST_TIER_1, prereq: Some(TECH_METALLURGY), ac_delta: 0, unlocks_summary: "Unlocks Pikeman (Anti-Flank); +10% front-row attack." },
+    TechInfo { id: TECH_IRON_DISCIPLINE, key: "iron_discipline", name: "Iron Discipline", doctrine: Some(Doctrine::Steel), tier: 2, cost: TECH_COST_TIER_2, prereq: Some(TECH_BRONZE_ARMS), ac_delta: 1, unlocks_summary: "Unlocks Champion; Squad capacity increases to 5 places." },
+    TechInfo { id: TECH_PHALANX_WALL, key: "phalanx_wall", name: "Phalanx Wall", doctrine: Some(Doctrine::Steel), tier: 3, cost: TECH_COST_TIER_3, prereq: Some(TECH_IRON_DISCIPLINE), ac_delta: 2, unlocks_summary: "Unlocks Phalanx (Armor 8, Anti-Flank); +15% front-row DEF." },
+    TechInfo { id: TECH_MITHRIL_LEGIONS, key: "mithril_legions", name: "Mithril Legions", doctrine: Some(Doctrine::Steel), tier: 4, cost: TECH_COST_TIER_4, prereq: Some(TECH_PHALANX_WALL), ac_delta: 6, unlocks_summary: "Unlocks Berserker (Cleave) and Ogre (Large 2-cell); +20% attack for all units." },
 
     // Cavalry
-    TechInfo { id: TECH_STIRRUPS, key: "stirrups", name: "Stirrups", doctrine: Some(Doctrine::Cavalry), tier: 1, cost: 70, prereq: Some(TECH_HORSEMANSHIP), ac_delta: 0, unlocks_summary: "+25% first-round damage for Charge units." },
-    TechInfo { id: TECH_OUTRIDERS, key: "outriders", name: "Outriders", doctrine: Some(Doctrine::Cavalry), tier: 2, cost: 115, prereq: Some(TECH_STIRRUPS), ac_delta: 1, unlocks_summary: "Squad capacity increases to 5 places; +6 Supply range." },
-    TechInfo { id: TECH_SHOCK_LANCES, key: "shock_lances", name: "Shock Lances", doctrine: Some(Doctrine::Cavalry), tier: 3, cost: 170, prereq: Some(TECH_OUTRIDERS), ac_delta: 2, unlocks_summary: "Unlocks Knight (Trample Charge, Armor 6)." },
-    TechInfo { id: TECH_WARHORSE_LORDS, key: "warhorse_lords", name: "Warhorse Lords", doctrine: Some(Doctrine::Cavalry), tier: 4, cost: 240, prereq: Some(TECH_SHOCK_LANCES), ac_delta: 5, unlocks_summary: "Squads with a Horseman or Knight gain +1 move." },
+    TechInfo { id: TECH_STIRRUPS, key: "stirrups", name: "Stirrups", doctrine: Some(Doctrine::Cavalry), tier: 1, cost: TECH_COST_TIER_1, prereq: Some(TECH_HORSEMANSHIP), ac_delta: 0, unlocks_summary: "+25% first-round damage for Charge units." },
+    TechInfo { id: TECH_OUTRIDERS, key: "outriders", name: "Outriders", doctrine: Some(Doctrine::Cavalry), tier: 2, cost: TECH_COST_TIER_2, prereq: Some(TECH_STIRRUPS), ac_delta: 1, unlocks_summary: "Squad capacity increases to 5 places; +6 Supply range." },
+    TechInfo { id: TECH_SHOCK_LANCES, key: "shock_lances", name: "Shock Lances", doctrine: Some(Doctrine::Cavalry), tier: 3, cost: TECH_COST_TIER_3, prereq: Some(TECH_OUTRIDERS), ac_delta: 2, unlocks_summary: "Unlocks Knight (Trample Charge, Armor 6)." },
+    TechInfo { id: TECH_WARHORSE_LORDS, key: "warhorse_lords", name: "Warhorse Lords", doctrine: Some(Doctrine::Cavalry), tier: 4, cost: TECH_COST_TIER_4, prereq: Some(TECH_SHOCK_LANCES), ac_delta: 5, unlocks_summary: "Squads with a Horseman or Knight gain +1 move." },
 
     // Arcane
-    TechInfo { id: TECH_SORCERY, key: "sorcery", name: "Sorcery", doctrine: Some(Doctrine::Arcane), tier: 1, cost: 75, prereq: Some(TECH_ARCANA), ac_delta: 2, unlocks_summary: "Unlocks Mage (Fireball splash battle spell)." },
-    TechInfo { id: TECH_ELEMENTALISM, key: "elementalism", name: "Elementalism", doctrine: Some(Doctrine::Arcane), tier: 2, cost: 120, prereq: Some(TECH_SORCERY), ac_delta: 3, unlocks_summary: "Squad capacity increases to 5 places." },
-    TechInfo { id: TECH_GRAND_CONJURATION, key: "grand_conjuration", name: "Grand Conjuration", doctrine: Some(Doctrine::Arcane), tier: 3, cost: 175, prereq: Some(TECH_ELEMENTALISM), ac_delta: 4, unlocks_summary: "+25% Battle Spell power; +3 Mana/turn." },
-    TechInfo { id: TECH_STRENGTH_OF_WILL, key: "strength_of_will", name: "Strength of Will", doctrine: Some(Doctrine::Arcane), tier: 4, cost: 245, prereq: Some(TECH_GRAND_CONJURATION), ac_delta: 8, unlocks_summary: "Unlocks Archmage (Sweep spell) and the Siphon Spire Wonder." },
+    TechInfo { id: TECH_SORCERY, key: "sorcery", name: "Sorcery", doctrine: Some(Doctrine::Arcane), tier: 1, cost: TECH_COST_TIER_1, prereq: Some(TECH_ARCANA), ac_delta: 2, unlocks_summary: "Unlocks Mage (Fireball splash battle spell)." },
+    TechInfo { id: TECH_ELEMENTALISM, key: "elementalism", name: "Elementalism", doctrine: Some(Doctrine::Arcane), tier: 2, cost: TECH_COST_TIER_2, prereq: Some(TECH_SORCERY), ac_delta: 3, unlocks_summary: "Squad capacity increases to 5 places." },
+    TechInfo { id: TECH_GRAND_CONJURATION, key: "grand_conjuration", name: "Grand Conjuration", doctrine: Some(Doctrine::Arcane), tier: 3, cost: TECH_COST_TIER_3, prereq: Some(TECH_ELEMENTALISM), ac_delta: 4, unlocks_summary: "+25% Battle Spell power; +3 Mana/turn." },
+    TechInfo { id: TECH_STRENGTH_OF_WILL, key: "strength_of_will", name: "Strength of Will", doctrine: Some(Doctrine::Arcane), tier: 4, cost: TECH_COST_TIER_4, prereq: Some(TECH_GRAND_CONJURATION), ac_delta: 8, unlocks_summary: "Unlocks Archmage (Sweep spell) and the Siphon Spire Wonder." },
 
     // Faith
-    TechInfo { id: TECH_PRIESTHOOD, key: "priesthood", name: "Priesthood", doctrine: Some(Doctrine::Faith), tier: 1, cost: 70, prereq: Some(TECH_MYSTICISM), ac_delta: -1, unlocks_summary: "+1 Loyalty in every House." },
-    TechInfo { id: TECH_FANATICISM, key: "fanaticism", name: "Fanaticism", doctrine: Some(Doctrine::Faith), tier: 2, cost: 115, prereq: Some(TECH_PRIESTHOOD), ac_delta: 0, unlocks_summary: "Squad capacity increases to 5 places; enables Crusade Calls." },
-    TechInfo { id: TECH_RIGHTEOUS_VOWS, key: "righteous_vows", name: "Righteous Vows", doctrine: Some(Doctrine::Faith), tier: 3, cost: 170, prereq: Some(TECH_FANATICISM), ac_delta: -2, unlocks_summary: "Unlocks Paladin (Good/Neutral) or Ashbound (Evil)." },
-    TechInfo { id: TECH_DIVINE_ESSENCE, key: "divine_essence", name: "Divine Essence", doctrine: Some(Doctrine::Faith), tier: 4, cost: 240, prereq: Some(TECH_RIGHTEOUS_VOWS), ac_delta: 5, unlocks_summary: "Unlocks the Great Cistern Wonder; heals can revive fallen units." },
+    TechInfo { id: TECH_PRIESTHOOD, key: "priesthood", name: "Priesthood", doctrine: Some(Doctrine::Faith), tier: 1, cost: TECH_COST_TIER_1, prereq: Some(TECH_MYSTICISM), ac_delta: -1, unlocks_summary: "+1 Loyalty in every House." },
+    TechInfo { id: TECH_FANATICISM, key: "fanaticism", name: "Fanaticism", doctrine: Some(Doctrine::Faith), tier: 2, cost: TECH_COST_TIER_2, prereq: Some(TECH_PRIESTHOOD), ac_delta: 0, unlocks_summary: "Squad capacity increases to 5 places; enables Crusade Calls." },
+    TechInfo { id: TECH_RIGHTEOUS_VOWS, key: "righteous_vows", name: "Righteous Vows", doctrine: Some(Doctrine::Faith), tier: 3, cost: TECH_COST_TIER_3, prereq: Some(TECH_FANATICISM), ac_delta: -2, unlocks_summary: "Unlocks Paladin (Good/Neutral) or Ashbound (Evil)." },
+    TechInfo { id: TECH_DIVINE_ESSENCE, key: "divine_essence", name: "Divine Essence", doctrine: Some(Doctrine::Faith), tier: 4, cost: TECH_COST_TIER_4, prereq: Some(TECH_RIGHTEOUS_VOWS), ac_delta: 5, unlocks_summary: "Unlocks the Great Cistern Wonder; heals can revive fallen units." },
 
     // Artifice
-    TechInfo { id: TECH_SIEGECRAFT, key: "siegecraft", name: "Siegecraft", doctrine: Some(Doctrine::Artifice), tier: 1, cost: 70, prereq: Some(TECH_FORTIFICATION), ac_delta: 0, unlocks_summary: "Unlocks Catapult (Bombard vs Sentinels)." },
-    TechInfo { id: TECH_MASONRY_WARDS, key: "masonry_wards", name: "Masonry Wards", doctrine: Some(Doctrine::Artifice), tier: 2, cost: 115, prereq: Some(TECH_SIEGECRAFT), ac_delta: 1, unlocks_summary: "Squad capacity increases to 5 places; Bulwarks grant 3 Sentinels." },
-    TechInfo { id: TECH_TREBUCHETS, key: "trebuchets", name: "Trebuchets", doctrine: Some(Doctrine::Artifice), tier: 3, cost: 170, prereq: Some(TECH_MASONRY_WARDS), ac_delta: 2, unlocks_summary: "Unlocks Trebuchet (+60% vs Walls, splash Bombard)." },
-    TechInfo { id: TECH_COLOSSUS_FORGE, key: "colossus_forge", name: "Colossus Forge", doctrine: Some(Doctrine::Artifice), tier: 4, cost: 240, prereq: Some(TECH_TREBUCHETS), ac_delta: 6, unlocks_summary: "+25% Industry in every city." },
+    TechInfo { id: TECH_SIEGECRAFT, key: "siegecraft", name: "Siegecraft", doctrine: Some(Doctrine::Artifice), tier: 1, cost: TECH_COST_TIER_1, prereq: Some(TECH_FORTIFICATION), ac_delta: 0, unlocks_summary: "Unlocks Catapult (Bombard vs Sentinels)." },
+    TechInfo { id: TECH_MASONRY_WARDS, key: "masonry_wards", name: "Masonry Wards", doctrine: Some(Doctrine::Artifice), tier: 2, cost: TECH_COST_TIER_2, prereq: Some(TECH_SIEGECRAFT), ac_delta: 1, unlocks_summary: "Squad capacity increases to 5 places; Bulwarks grant 3 Sentinels." },
+    TechInfo { id: TECH_TREBUCHETS, key: "trebuchets", name: "Trebuchets", doctrine: Some(Doctrine::Artifice), tier: 3, cost: TECH_COST_TIER_3, prereq: Some(TECH_MASONRY_WARDS), ac_delta: 2, unlocks_summary: "Unlocks Trebuchet (+60% vs Walls, splash Bombard)." },
+    TechInfo { id: TECH_COLOSSUS_FORGE, key: "colossus_forge", name: "Colossus Forge", doctrine: Some(Doctrine::Artifice), tier: 4, cost: TECH_COST_TIER_4, prereq: Some(TECH_TREBUCHETS), ac_delta: 6, unlocks_summary: "+25% Industry in every city." },
 
     // Wild
-    TechInfo { id: TECH_TRACKING, key: "tracking", name: "Tracking", doctrine: Some(Doctrine::Wild), tier: 1, cost: 70, prereq: Some(TECH_ARCHERY), ac_delta: 0, unlocks_summary: "Unlocks Ranger (Strike front / Shoot rear); +1 Squad sight." },
-    TechInfo { id: TECH_POISONS, key: "poisons", name: "Poisons", doctrine: Some(Doctrine::Wild), tier: 2, cost: 115, prereq: Some(TECH_TRACKING), ac_delta: 1, unlocks_summary: "Unlocks Assassin (Stab back row); Squad capacity increases to 5 places." },
-    TechInfo { id: TECH_FERAL_BOND, key: "feral_bond", name: "Feral Bond", doctrine: Some(Doctrine::Wild), tier: 3, cost: 170, prereq: Some(TECH_POISONS), ac_delta: 2, unlocks_summary: "Unlocks Longbowman (Volley) and War Beast (Large 2-cell)." },
-    TechInfo { id: TECH_APEX_PREDATORS, key: "apex_predators", name: "Apex Predators", doctrine: Some(Doctrine::Wild), tier: 4, cost: 240, prereq: Some(TECH_FERAL_BOND), ac_delta: 5, unlocks_summary: "Stab and Shoot units gain Armor-Piercing; +15 crit chance for all units." },
+    TechInfo { id: TECH_TRACKING, key: "tracking", name: "Tracking", doctrine: Some(Doctrine::Wild), tier: 1, cost: TECH_COST_TIER_1, prereq: Some(TECH_ARCHERY), ac_delta: 0, unlocks_summary: "Unlocks Ranger (Strike front / Shoot rear); +1 Squad sight." },
+    TechInfo { id: TECH_POISONS, key: "poisons", name: "Poisons", doctrine: Some(Doctrine::Wild), tier: 2, cost: TECH_COST_TIER_2, prereq: Some(TECH_TRACKING), ac_delta: 1, unlocks_summary: "Unlocks Assassin (Stab back row); Squad capacity increases to 5 places." },
+    TechInfo { id: TECH_FERAL_BOND, key: "feral_bond", name: "Feral Bond", doctrine: Some(Doctrine::Wild), tier: 3, cost: TECH_COST_TIER_3, prereq: Some(TECH_POISONS), ac_delta: 2, unlocks_summary: "Unlocks Longbowman (Volley) and War Beast (Large 2-cell)." },
+    TechInfo { id: TECH_APEX_PREDATORS, key: "apex_predators", name: "Apex Predators", doctrine: Some(Doctrine::Wild), tier: 4, cost: TECH_COST_TIER_4, prereq: Some(TECH_FERAL_BOND), ac_delta: 5, unlocks_summary: "Stab and Shoot units gain Armor-Piercing; +15 crit chance for all units." },
 
     // Mercantile
-    TechInfo { id: TECH_GUILDS, key: "guilds", name: "Guilds", doctrine: Some(Doctrine::Mercantile), tier: 1, cost: 65, prereq: Some(TECH_TRADE_ROADS), ac_delta: 0, unlocks_summary: "+2 Caravan slots; squad capacity increases to 5 places." },
-    TechInfo { id: TECH_WAR_CHESTS, key: "war_chests", name: "War Chests", doctrine: Some(Doctrine::Mercantile), tier: 2, cost: 110, prereq: Some(TECH_GUILDS), ac_delta: 1, unlocks_summary: "Reinforcing & upgrading squads costs -30% Gold; +25% Caravan Gold." },
-    TechInfo { id: TECH_GRAND_COMPANIES, key: "grand_companies", name: "Grand Companies", doctrine: Some(Doctrine::Mercantile), tier: 3, cost: 165, prereq: Some(TECH_WAR_CHESTS), ac_delta: 2, unlocks_summary: "+2 Squad cap." },
-    TechInfo { id: TECH_CROWN_CHARTERS, key: "crown_charters", name: "Crown Charters", doctrine: Some(Doctrine::Mercantile), tier: 4, cost: 230, prereq: Some(TECH_GRAND_COMPANIES), ac_delta: 4, unlocks_summary: "+2 House Loyalty in all Houses; +50% Gold from foreign Caravans." },
+    TechInfo { id: TECH_GUILDS, key: "guilds", name: "Guilds", doctrine: Some(Doctrine::Mercantile), tier: 1, cost: TECH_COST_TIER_1, prereq: Some(TECH_TRADE_ROADS), ac_delta: 0, unlocks_summary: "+2 Caravan slots; squad capacity increases to 5 places." },
+    TechInfo { id: TECH_WAR_CHESTS, key: "war_chests", name: "War Chests", doctrine: Some(Doctrine::Mercantile), tier: 2, cost: TECH_COST_TIER_2, prereq: Some(TECH_GUILDS), ac_delta: 1, unlocks_summary: "Reinforcing & upgrading squads costs -30% Gold; +25% Caravan Gold." },
+    TechInfo { id: TECH_GRAND_COMPANIES, key: "grand_companies", name: "Grand Companies", doctrine: Some(Doctrine::Mercantile), tier: 3, cost: TECH_COST_TIER_3, prereq: Some(TECH_WAR_CHESTS), ac_delta: 2, unlocks_summary: "+2 Squad cap." },
+    TechInfo { id: TECH_CROWN_CHARTERS, key: "crown_charters", name: "Crown Charters", doctrine: Some(Doctrine::Mercantile), tier: 4, cost: TECH_COST_TIER_4, prereq: Some(TECH_GRAND_COMPANIES), ac_delta: 4, unlocks_summary: "+2 House Loyalty in all Houses; +50% Gold from foreign Caravans." },
 ];
 
 // ---------------------------------------------------------------------------------------------
